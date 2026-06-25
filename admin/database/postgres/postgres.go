@@ -2890,7 +2890,7 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
 	var res []*database.VirtualFile
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT path, data, owner_id, deleted, updated_on
+		SELECT path, data, deleted, updated_on
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND (updated_on>$3 OR updated_on=$3 AND path>$4)
 		ORDER BY updated_on, path LIMIT $5
@@ -2904,24 +2904,10 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environmen
 func (c *connection) FindVirtualFile(ctx context.Context, projectID, environment, path string) (*database.VirtualFile, error) {
 	res := &database.VirtualFile{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT path, data, owner_id, deleted, updated_on
+		SELECT path, data, deleted, updated_on
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND path=$3
 	`, projectID, environment, path).StructScan(res)
-	if err != nil {
-		return nil, parseErr("virtual files", err)
-	}
-	return res, nil
-}
-
-func (c *connection) FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*database.VirtualFile, error) {
-	var res []*database.VirtualFile
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT path, data, owner_id, deleted, updated_on
-		FROM virtual_files
-		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND owner_id=$3
-		ORDER BY path
-	`, projectID, environment, ownerID)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}
@@ -2934,14 +2920,13 @@ func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.Inser
 	}
 
 	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO virtual_files (project_id, environment, owner_id, path, data, deleted)
-		VALUES ($1, $2, $3, $4, $5, FALSE)
+		INSERT INTO virtual_files (project_id, environment, path, data, deleted)
+		VALUES ($1, $2, $3, $4, FALSE)
 		ON CONFLICT (project_id, environment, path) DO UPDATE SET
 			data = EXCLUDED.data,
-		    owner_id = EXCLUDED.owner_id,
 			deleted = FALSE,
 			updated_on = now()
-	`, opts.ProjectID, opts.Environment, opts.OwnerID, opts.Path, opts.Data)
+	`, opts.ProjectID, opts.Environment, opts.Path, opts.Data)
 	if err != nil {
 		return parseErr("virtual file", err)
 	}

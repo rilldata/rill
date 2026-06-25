@@ -9,7 +9,6 @@
     FileAndResourceWatcher,
   } from "./file-and-resource-watcher";
   import { WATCHER_CONTEXT_KEY } from "./watcher-context";
-  import { RuntimeFileIO } from "@rilldata/web-common/features/entity-management/file-io.ts";
 
   export let errorBody = "Try restarting the Rill via the CLI";
   /** Idle lifecycle strategy. "aggressive" is right for Rill Developer
@@ -23,7 +22,7 @@
   const runtimeClient = useRuntimeClient();
 
   // File artifacts client must be set before descendants try to read it.
-  fileArtifacts.setClient(runtimeClient, new RuntimeFileIO());
+  fileArtifacts.setClient(runtimeClient);
 
   // Construct the watcher synchronously so `setContext` runs during init —
   // descendants that call `getContext` during their own init would see

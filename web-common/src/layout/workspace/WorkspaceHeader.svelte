@@ -27,7 +27,6 @@
     hasUnsavedChanges,
     filePath,
     codeToggle = false,
-    showBreadcrumbs = true,
     onTitleChange,
     workspaceControls,
     cta,
@@ -41,7 +40,6 @@
     hasUnsavedChanges: boolean;
     filePath: string;
     codeToggle?: boolean;
-    showBreadcrumbs?: boolean;
     onTitleChange?: (title: string) => void;
     workspaceControls?: Snippet<[number]>;
     cta?: Snippet<[number]>;
@@ -67,14 +65,12 @@
 </script>
 
 <header bind:clientWidth={width}>
-  {#if showBreadcrumbs}
-    <div
-      class="slide pl-3.5 h-7 flex items-center"
-      class:!pl-10={!$navigationOpen}
-    >
-      <WorkspaceBreadcrumbs {resource} {filePath} />
-    </div>
-  {/if}
+  <div
+    class="slide pl-3.5 h-7 flex items-center"
+    class:!pl-10={!$navigationOpen}
+  >
+    <WorkspaceBreadcrumbs {resource} {filePath} />
+  </div>
 
   <div class="second-level-wrapper">
     <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>

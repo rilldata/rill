@@ -52,10 +52,6 @@ export function isCanvasDashboardPage(page: Page): boolean {
   );
 }
 
-export function isPersonalFilePage(page: Page): boolean {
-  return page.route.id === "/[organization]/[project]/-/personal/[name]";
-}
-
 /**
  * Returns true if the page is any kind of dashboard page (either a Metrics Explorer or a Custom Dashboard).
  */

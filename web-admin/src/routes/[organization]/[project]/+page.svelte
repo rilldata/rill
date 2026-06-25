@@ -7,17 +7,13 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import PersonalCanvasesList from "@rilldata/web-admin/features/personal-files/canvas/PersonalCanvasesList.svelte";
-  import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/CreatePersonalCanvasDialog.svelte";
-  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
-  const { chat, personalCanvases } = featureFlags;
+  const { chat } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
 
   $: ({
-    params: { organization, project },
+    params: { project },
   } = $page);
 
   // Query the instance to get the project display name
@@ -26,16 +22,6 @@
     $instanceQuery.data?.instance?.projectDisplayName || project;
   $: isLoadingDisplayName = $instanceQuery.isLoading;
   $: isErrorDisplayName = $instanceQuery.isError;
-
-  $: personalCanvasesQuery = getPersonalFilteredResources(
-    runtimeClient,
-    organization,
-    project,
-    ResourceKind.Canvas,
-  );
-  $: hasNoPersonalCanvases =
-    !$personalCanvasesQuery.isPending &&
-    ($personalCanvasesQuery.data?.length ?? 0) === 0;
 </script>
 
 <svelte:head>
@@ -86,17 +72,8 @@
     </div>
 
     <!-- Dashboards Section -->
-    {#if $personalCanvases}
-      <PersonalCanvasesList org={organization} {project} />
-    {/if}
-
     <div class="flex flex-col gap-y-4">
-      <h2 class="flex text-xl font-semibold text-fg-secondary justify-between">
-        Dashboards
-        {#if $personalCanvases && hasNoPersonalCanvases}
-          <CreatePersonalCanvasDialog org={organization} {project} />
-        {/if}
-      </h2>
+      <h2 class="text-xl font-semibold text-fg-secondary">Dashboards</h2>
       <DashboardsTable isPreview />
     </div>
   </div>

@@ -43,13 +43,11 @@
     isCanvasDashboardPage,
     isEditDashboardPreviewPage,
     isMetricsExplorerPage,
-    isPersonalFilePage,
     isProjectPage,
     isPublicURLPage,
   } from "../navigation/nav-utils";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
-  import SharePersonalFile from "@rilldata/web-admin/features/personal-files/SharePersonalFile.svelte";
 
   export let organization: string;
   export let project: string;
@@ -74,7 +72,7 @@
   } = featureFlags;
 
   $: ({
-    params: { dashboard, alert, report, name },
+    params: { dashboard, alert, report },
   } = $page);
 
   $: onAlertPage = !!alert;
@@ -82,7 +80,6 @@
   $: onProjectPage = isProjectPage($page);
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
-  $: onPersonalFilePage = isPersonalFilePage($page);
   $: onPublicURLPage = isPublicURLPage($page);
 
   $: onEditDashboardPreview = isEditDashboardPreviewPage($page);
@@ -221,7 +218,7 @@
       {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
         <EditButton {organization} {project} {activeBranch} {primaryBranch} />
       {/if}
-      {#if onProjectPage && projectPermissions.manageProjectMembers && !onPersonalFilePage}
+      {#if onProjectPage && projectPermissions.manageProjectMembers}
         <ShareProjectPopover
           {organization}
           {project}
@@ -290,10 +287,6 @@
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
         />
       {/if}
-    {/if}
-
-    {#if onPersonalFilePage}
-      <SharePersonalFile {organization} {project} {name} />
     {/if}
 
     {#if $user.isSuccess}

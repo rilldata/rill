@@ -5078,13 +5078,6 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   requiredFilters: string[] = [];
 
-  /**
-   * Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
-   *
-   * @generated from field: map<string, string> annotations = 20;
-   */
-  annotations: { [key: string]: string } = {};
-
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5110,7 +5103,6 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

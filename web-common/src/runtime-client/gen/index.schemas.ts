@@ -482,7 +482,6 @@ The values should be valid IANA location identifiers. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
   requiredFilters?: string[];
-  annotations?: Record<string, string>;
 }
 
 export interface V1CanvasState {

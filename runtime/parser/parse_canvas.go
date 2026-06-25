@@ -49,8 +49,7 @@ type CanvasYAML struct {
 			InlineComponent map[string]yaml.Node `yaml:",inline"`   // Any other properties are considered an inline component definition
 		} `yaml:"items"`
 	}
-	Security    *SecurityPolicyYAML `yaml:"security"`
-	Annotations map[string]string   `yaml:"annotations"`
+	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -291,7 +290,6 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.SecurityRules = rules
 	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 	r.CanvasSpec.RequiredFilters = tmp.Filters.Required
-	r.CanvasSpec.Annotations = tmp.Annotations
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {

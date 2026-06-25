@@ -42,12 +42,6 @@ describe("inferResourceName", () => {
       `\n\n-- @type : invalid\nselect * from AdBids`,
       ResourceKind.Model,
     ],
-    [
-      "matches the correct type key",
-      "dashboards/canvas.yaml",
-      `rows:\n  type: invalid\ntype: canvas`,
-      ResourceKind.Canvas,
-    ],
   ];
 
   testCases.forEach(([title, path, contents, expected]) => {

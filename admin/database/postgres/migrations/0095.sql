@@ -1,1 +1,0 @@
-ALTER TABLE virtual_files ADD COLUMN owner_id UUID;

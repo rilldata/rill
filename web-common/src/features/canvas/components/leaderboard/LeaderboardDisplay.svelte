@@ -149,8 +149,9 @@
     );
   }
 
-  $: mvFilters = metricsViewFilters.get(metricsViewName);
-  $: parsed = mvFilters?.parsed;
+  $: mvFilters = metricsViewFilters.get(metricsViewName)!;
+
+  $: ({ parsed } = mvFilters);
 </script>
 
 {#if schema.isValid}

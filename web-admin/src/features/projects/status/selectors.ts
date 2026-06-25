@@ -204,13 +204,3 @@ export function useRuntimeVersion(client: RuntimeClient) {
     },
   );
 }
-
-export function isPersonalFile(resource: V1Resource) {
-  return (
-    resource?.canvas?.state?.validSpec?.annotations?.admin_managed === "true"
-  );
-}
-
-export function getPersonalFileOwner(resource: V1Resource) {
-  return resource?.canvas?.state?.validSpec?.annotations?.admin_owner_user_id;
-}

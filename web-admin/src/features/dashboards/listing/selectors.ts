@@ -30,9 +30,7 @@ export function useDashboardsLastUpdated(
 
       const max = Math.max(
         ...dashboardsResp.data.map((res) =>
-          res.meta?.stateUpdatedOn
-            ? new Date(res.meta.stateUpdatedOn).getTime()
-            : 0,
+          new Date(res.meta!.stateUpdatedOn!).getTime(),
         ),
       );
       return new Date(max);
@@ -56,25 +54,14 @@ export function useDashboards(
     {},
     {
       query: {
-        select: (data) =>
-          data.resources?.filter((res) => {
-            if (res.canvas)
-              return isManagedOrShared(res.canvas?.state?.validSpec ?? {});
-            return !!res.explore;
-          }) ?? [],
+        select: (data) => {
+          return data.resources.filter((res) => res.canvas || res.explore);
+        },
         enabled: !!client.instanceId,
         refetchInterval: dashboardRefetchInterval,
       },
     },
   );
-}
-
-function isManagedOrShared({
-  annotations,
-}: {
-  annotations?: Record<string, string>;
-}) {
-  return !annotations?.admin_managed || annotations?.admin_shared === "true";
 }
 
 /**
