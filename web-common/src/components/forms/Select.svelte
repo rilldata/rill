@@ -23,6 +23,9 @@
     disabled?: boolean;
     tooltip?: string;
     icon?: ComponentType<SvelteComponent>;
+    /** Optional section heading; a heading is rendered above the first
+     * option of each consecutive group. */
+    group?: string;
   }[];
   export let optionsLoading: boolean = false;
   export let onAddNew: (() => void) | null = null;
@@ -182,7 +185,14 @@
             </div>
           </div>
         {:else}
-          {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon } (value)}
+          {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon, group }, i (value)}
+            {#if group && group !== filteredOptions[i - 1]?.group}
+              <div
+                class="px-2 pt-2 pb-1 text-fg-secondary text-[11px] font-semibold uppercase tracking-wide"
+              >
+                {group}
+              </div>
+            {/if}
             <Select.Item
               {value}
               {label}
@@ -192,7 +202,9 @@
             >
               {#if tooltip}
                 <Tooltip.Root>
-                  <Tooltip.Trigger class="select-tooltip cursor-default">
+                  <Tooltip.Trigger
+                    class="inline-flex items-center gap-x-2 cursor-default text-left"
+                  >
                     {#if icon}
                       <svelte:component this={icon} size="16px" />
                     {:else if type}

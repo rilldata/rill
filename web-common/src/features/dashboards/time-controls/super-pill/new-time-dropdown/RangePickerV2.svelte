@@ -62,7 +62,11 @@
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
   export let showFullRange = true;
-  export let timeDimensions: { value: string; label: string }[];
+  export let timeDimensions: {
+    value: string;
+    label: string;
+    description?: string;
+  }[];
   export let primaryTimeDimension: string | undefined;
   export let selectedTimeDimension: string | undefined;
   export let onTimeDimensionSelect: ((dimension: string) => void) | undefined =
@@ -108,6 +112,13 @@
   $: dateTimeAnchor = returnAnchor(ref, zone);
 
   $: selectedLabel = getRangeLabel(timeString);
+
+  // Resolve the active time axis to a defined time dimension, if any. When the
+  // timeseries points at a raw column this is undefined and the tooltip omits
+  // the dimension name and description.
+  $: activeTimeDimension = timeDimensions.find(
+    ({ value }) => value === (selectedTimeDimension || primaryTimeDimension),
+  );
 
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate ?? DateTime.now(), zone);
 
@@ -269,7 +280,12 @@
 
     <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
       {#if interval}
-        <PrimaryRangeTooltip {timeString} {interval} />
+        <PrimaryRangeTooltip
+          {timeString}
+          {interval}
+          timeDimensionLabel={activeTimeDimension?.label}
+          timeDimensionDescription={activeTimeDimension?.description}
+        />
       {/if}
     </Tooltip.Content>
   </Tooltip.Root>
@@ -429,7 +445,7 @@
           </div>
         {/if}
 
-        {#if timeDimensions.length && onTimeDimensionSelect}
+        {#if timeDimensions.length > 1 && onTimeDimensionSelect}
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1"></div>
 
@@ -460,21 +476,41 @@
                 sideOffset={12}
                 class="p-1 z-50"
               >
-                {#each timeDimensions as { value, label } (value)}
-                  <button
-                    class="item"
-                    aria-label="Select {label} time dimension"
-                    onclick={() => {
-                      onTimeDimensionSelect(value);
-                      closeMenu();
-                      timeAxisPickerOpen = false;
-                    }}
-                  >
-                    {label}
-                    {#if value === (selectedTimeDimension || primaryTimeDimension)}
-                      <Check class="size-4" color="var(--color-gray-800)" />
+                {#each timeDimensions as { value, label, description } (value)}
+                  <Tooltip.Root>
+                    <Tooltip.Trigger>
+                      {#snippet child({ props })}
+                        <button
+                          {...props}
+                          class="item"
+                          aria-label="Select {label} time dimension"
+                          onclick={() => {
+                            onTimeDimensionSelect(value);
+                            closeMenu();
+                            timeAxisPickerOpen = false;
+                          }}
+                        >
+                          {label}
+                          {#if value === (selectedTimeDimension || primaryTimeDimension)}
+                            <Check
+                              class="size-4"
+                              color="var(--color-gray-800)"
+                            />
+                          {/if}
+                        </button>
+                      {/snippet}
+                    </Tooltip.Trigger>
+                    {#if description}
+                      <Tooltip.Content
+                        side="right"
+                        sideOffset={8}
+                        class="max-w-64"
+                      >
+                        <div class="font-bold text-fg-inverse">{label}</div>
+                        <div class="text-fg-inverse/70">{description}</div>
+                      </Tooltip.Content>
                     {/if}
-                  </button>
+                  </Tooltip.Root>
                 {/each}
               </Popover.Content>
             </Popover.Root>
