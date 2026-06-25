@@ -66,6 +66,7 @@
       void queryClient.invalidateQueries({
         queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {
           remoteBranch: primaryBranch,
+          changedFiles: true,
         }),
       });
     }

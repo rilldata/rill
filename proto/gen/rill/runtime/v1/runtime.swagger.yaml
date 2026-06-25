@@ -1448,6 +1448,13 @@ paths:
           in: query
           required: false
           type: string
+        - name: changedFiles
+          description: |-
+            changed_files requests the list of changed files in the response. It is opt-in because
+            computing it requires extra git work that the frequently-polled status does not need.
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:
@@ -3735,6 +3742,25 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type of the property
+  GitStatusResponseGitFileChange:
+    type: object
+    properties:
+      path:
+        type: string
+      status:
+        $ref: '#/definitions/GitStatusResponseGitFileStatus'
+      oldPath:
+        type: string
+        description: old_path is the previous path; only set when status is GIT_FILE_STATUS_RENAMED.
+  GitStatusResponseGitFileStatus:
+    type: string
+    enum:
+      - GIT_FILE_STATUS_UNSPECIFIED
+      - GIT_FILE_STATUS_ADDED
+      - GIT_FILE_STATUS_MODIFIED
+      - GIT_FILE_STATUS_DELETED
+      - GIT_FILE_STATUS_RENAMED
+    default: GIT_FILE_STATUS_UNSPECIFIED
   MetricsViewFilterCond:
     type: object
     properties:
@@ -5682,6 +5708,15 @@ definitions:
         type: integer
         format: int32
         description: remote_commits returns number of remote commits not pulled yet.
+      changedFiles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/GitStatusResponseGitFileChange'
+        description: |-
+          changed_files lists the files that would land on the target branch, relative to the project subpath.
+          Only populated when the request sets changed_files. The comparison ref is the requested
+          remote_branch, or the upstream of the current branch when remote_branch is empty.
   v1GitSwitchBranchResponse:
     type: object
   v1HealthResponse:

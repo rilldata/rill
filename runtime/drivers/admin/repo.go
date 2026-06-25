@@ -441,7 +441,7 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
+func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles bool) (*drivers.RepoStatus, error) {
 	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
@@ -470,10 +470,22 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 	}
 
 	// run git status
-	st, err := gitutil.Status(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+	st, err := gitutil.Status(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch, changedFiles)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
+	var fileChanges []drivers.RepoFileChange
+	if len(st.ChangedFiles) > 0 {
+		fileChanges = make([]drivers.RepoFileChange, len(st.ChangedFiles))
+		for i, f := range st.ChangedFiles {
+			fileChanges[i] = drivers.RepoFileChange{
+				Path:    f.Path,
+				OldPath: f.OldPath,
+				Status:  repoFileStatus(f.Status),
+			}
+		}
+	}
+
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
 		Branch:        st.Branch,
@@ -483,7 +495,23 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 		LocalChanges:  st.LocalChanges,
 		LocalCommits:  st.LocalCommits,
 		RemoteCommits: st.RemoteCommits,
+		ChangedFiles:  fileChanges,
 	}, nil
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }
 
 func (r *repo) Commit(ctx context.Context, message string) (string, error) {

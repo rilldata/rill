@@ -14221,6 +14221,8 @@ func (m *GitStatusRequest) validate(all bool) error {
 
 	// no validation rules for RemoteBranch
 
+	// no validation rules for ChangedFiles
+
 	if len(errors) > 0 {
 		return GitStatusRequestMultiError(errors)
 	}
@@ -14336,6 +14338,40 @@ func (m *GitStatusResponse) validate(all bool) error {
 	// no validation rules for LocalCommits
 
 	// no validation rules for RemoteCommits
+
+	for idx, item := range m.GetChangedFiles() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GitStatusResponseValidationError{
+						field:  fmt.Sprintf("ChangedFiles[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GitStatusResponseValidationError{
+						field:  fmt.Sprintf("ChangedFiles[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GitStatusResponseValidationError{
+					field:  fmt.Sprintf("ChangedFiles[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return GitStatusResponseMultiError(errors)
@@ -16450,3 +16486,112 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ConnectorDriver_PropertyValidationError{}
+
+// Validate checks the field values on GitStatusResponse_GitFileChange with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GitStatusResponse_GitFileChange) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitStatusResponse_GitFileChange with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GitStatusResponse_GitFileChangeMultiError, or nil if none found.
+func (m *GitStatusResponse_GitFileChange) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitStatusResponse_GitFileChange) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Path
+
+	// no validation rules for Status
+
+	// no validation rules for OldPath
+
+	if len(errors) > 0 {
+		return GitStatusResponse_GitFileChangeMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitStatusResponse_GitFileChangeMultiError is an error wrapping multiple
+// validation errors returned by GitStatusResponse_GitFileChange.ValidateAll()
+// if the designated constraints aren't met.
+type GitStatusResponse_GitFileChangeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitStatusResponse_GitFileChangeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitStatusResponse_GitFileChangeMultiError) AllErrors() []error { return m }
+
+// GitStatusResponse_GitFileChangeValidationError is the validation error
+// returned by GitStatusResponse_GitFileChange.Validate if the designated
+// constraints aren't met.
+type GitStatusResponse_GitFileChangeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitStatusResponse_GitFileChangeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitStatusResponse_GitFileChangeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitStatusResponse_GitFileChangeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitStatusResponse_GitFileChangeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitStatusResponse_GitFileChangeValidationError) ErrorName() string {
+	return "GitStatusResponse_GitFileChangeValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GitStatusResponse_GitFileChangeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitStatusResponse_GitFileChange.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitStatusResponse_GitFileChangeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitStatusResponse_GitFileChangeValidationError{}

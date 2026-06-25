@@ -60,7 +60,8 @@ type RepoStore interface {
 	// Status returns the current status of the repository.
 	// If remoteBranch is non-empty and the repo is git-backed, ahead/behind counts compare
 	// against `<remote>/<remoteBranch>` instead of the upstream of the current local branch.
-	Status(ctx context.Context, remoteBranch string) (*RepoStatus, error)
+	// If changedFiles is true, the returned status lists the files that differ from the comparison branch.
+	Status(ctx context.Context, remoteBranch string, changedFiles bool) (*RepoStatus, error)
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
@@ -145,6 +146,27 @@ type RepoStatus struct {
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
 	LocalCommits  int32
 	RemoteCommits int32
+	// ChangedFiles lists the files that would land on the comparison branch.
+	// Only populated when Status is called with changedFiles set to true.
+	ChangedFiles []RepoFileChange
+}
+
+type RepoFileStatus int
+
+const (
+	RepoFileStatusUnspecified RepoFileStatus = iota
+	RepoFileStatusAdded
+	RepoFileStatusModified
+	RepoFileStatusDeleted
+	RepoFileStatusRenamed
+)
+
+// RepoFileChange is a single file that differs from a comparison branch.
+type RepoFileChange struct {
+	Path string
+	// OldPath is the previous path; only set when Status is RepoFileStatusRenamed.
+	OldPath string
+	Status  RepoFileStatus
 }
 
 type PullOptions struct {
