@@ -18,9 +18,6 @@ type GitStatus struct {
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
 	LocalCommits  int32
 	RemoteCommits int32
-	// ChangedFiles lists the files that differ from the comparison ref. It is only populated
-	// when Status is called with changedFiles set to true.
-	ChangedFiles []ChangedFile
 }
 
 // ChangedFileStatus describes how a file changed relative to a comparison ref.
@@ -46,8 +43,7 @@ type ChangedFile struct {
 // If subpath is non-empty, local changes and ahead/behind counts are scoped to it.
 // If remoteBranch is non-empty, ahead/behind counts compare the local branch against
 // `<remoteName>/<remoteBranch>` instead of `<remoteName>/<localBranch>`.
-// If changedFiles is true, the changed files relative to the comparison ref are listed.
-func Status(ctx context.Context, path, subpath, remoteName, remoteBranch string, changedFiles bool) (GitStatus, error) {
+func Status(ctx context.Context, path, subpath, remoteName, remoteBranch string) (GitStatus, error) {
 	args := []string{"status", "--porcelain=v2", "--branch"}
 	if subpath != "" {
 		args = append(args, "--", subpath)
@@ -97,16 +93,6 @@ func Status(ctx context.Context, path, subpath, remoteName, remoteBranch string,
 		status.RemoteCommits = behind
 	}
 
-	// Only list changed files when the caller opts in; skip the extra git work for the
-	// frequently-polled current-branch status. Best-effort: like the ahead/behind counts above,
-	// a failure here (e.g. the remote-tracking ref not resolving) must not break the status,
-	// since the merge flow depends on it.
-	if changedFiles {
-		if files, err := listChangedFiles(ctx, path, subpath, remoteRef); err == nil {
-			status.ChangedFiles = files
-		}
-	}
-
 	// get the remote URL
 	remoteURL, err := Run(ctx, path, "remote", "get-url", remoteName)
 	if err == nil {
@@ -115,14 +101,26 @@ func Status(ctx context.Context, path, subpath, remoteName, remoteBranch string,
 	return status, nil
 }
 
-// changedFiles returns the files that differ between the working tree at path and ref, i.e. the
-// changes that would land on ref if merged. Paths are returned relative to subpath (with the
-// subpath prefix stripped). Uncommitted and untracked changes are included, since those are
-// committed before a merge (see MergeToBranch). Renames are reported with status Renamed and the
-// old path, but only when git can detect them (a committed or staged rename); a rename that is
-// still uncommitted in the working tree appears as a deleted old path plus an added new path,
-// because git cannot pair an untracked new file with a deleted old one.
-func listChangedFiles(ctx context.Context, path, subpath, ref string) ([]ChangedFile, error) {
+// ChangedFiles returns the files that differ between the working tree at path and the comparison
+// ref, i.e. the changes that would land on the ref if merged.
+//
+// Paths are returned relative to subpath (with the subpath prefix stripped). Uncommitted and
+// untracked changes are included, since those are committed before a merge.
+// Renames are reported with status Renamed and the old path, but only when git can detect them (a
+// committed or staged rename); a rename that is still uncommitted in the working tree appears as a
+// deleted old path plus an added new path, because git cannot pair an untracked new file with a
+// deleted old one.
+func ChangedFiles(ctx context.Context, path, subpath, remoteName, remoteBranch string) ([]ChangedFile, error) {
+	compareBranch := remoteBranch
+	if compareBranch == "" {
+		branch, err := Run(ctx, path, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return nil, err
+		}
+		compareBranch = branch
+	}
+	ref := fmt.Sprintf("%s/%s", remoteName, compareBranch)
+
 	diffArgs := []string{"diff", "--name-status", "-M", ref}
 	if subpath != "" {
 		diffArgs = append(diffArgs, "--", subpath)
@@ -183,27 +181,6 @@ func listChangedFiles(ctx context.Context, path, subpath, ref string) ([]Changed
 	return result, nil
 }
 
-func trimSubpath(file, subpath string) string {
-	return strings.TrimPrefix(strings.TrimPrefix(file, subpath), "/")
-}
-
-// changedFileStatusFromCode maps a `git diff --name-status` status code to a ChangedFileStatus.
-// Copies are reported as added against their destination path.
-func changedFileStatusFromCode(code byte) ChangedFileStatus {
-	switch code {
-	case 'A', 'C':
-		return ChangedFileStatusAdded
-	case 'M', 'T':
-		return ChangedFileStatusModified
-	case 'D':
-		return ChangedFileStatusDeleted
-	case 'R':
-		return ChangedFileStatusRenamed
-	default:
-		return ChangedFileStatusUnspecified
-	}
-}
-
 // Fetch fetches the latest changes from the remote described by config, updating the
 // remote-tracking refs under `refs/remotes/<remote-name>/`.
 // If config is nil or carries no credentials, it fetches from origin relying on git's own
@@ -245,7 +222,7 @@ func FetchBranches(ctx context.Context, path string, branches ...string) error {
 // message is returned as the output with a nil error, so callers can surface it to users.
 func Pull(ctx context.Context, path string, discardLocal bool, remote, remoteName string) (string, error) {
 	// current status of the full repo
-	st, err := Status(ctx, path, "", remoteName, "", false)
+	st, err := Status(ctx, path, "", remoteName, "")
 	if err != nil {
 		return "", err
 	}
@@ -400,4 +377,25 @@ func countAheadBehind(ctx context.Context, path, subpath, local, remote string) 
 		return 0, 0, fmt.Errorf("failed to parse behind count: %w", err)
 	}
 	return int32(ahead), int32(behind), nil
+}
+
+func trimSubpath(file, subpath string) string {
+	return strings.TrimPrefix(strings.TrimPrefix(file, subpath), "/")
+}
+
+// changedFileStatusFromCode maps a `git diff --name-status` status code to a ChangedFileStatus.
+// Copies are reported as added against their destination path.
+func changedFileStatusFromCode(code byte) ChangedFileStatus {
+	switch code {
+	case 'A', 'C':
+		return ChangedFileStatusAdded
+	case 'M', 'T':
+		return ChangedFileStatusModified
+	case 'D':
+		return ChangedFileStatusDeleted
+	case 'R':
+		return ChangedFileStatusRenamed
+	default:
+		return ChangedFileStatusUnspecified
+	}
 }

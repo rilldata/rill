@@ -22,7 +22,7 @@ func TestStatus(t *testing.T) {
 	// Run GitFetch
 	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch changes from remote repository")
 	// Run the Status function again
-	status, err := Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed after local commit")
 
 	// Validate the updated status
@@ -36,7 +36,7 @@ func TestStatus(t *testing.T) {
 	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch changes from remote repository")
 
 	// Run the Status function again
-	status, err = Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed after local commit")
 
 	// Validate the updated status
@@ -48,7 +48,7 @@ func TestStatus(t *testing.T) {
 	err = os.WriteFile(filePath, []byte("untracked content"), 0644)
 	require.NoError(t, err, "failed to create untracked file")
 
-	status, err = Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed with untracked files")
 	require.True(t, status.LocalChanges, "expected local changes due to untracked files")
 
@@ -60,7 +60,7 @@ func TestStatus(t *testing.T) {
 	err = cmd.Run()
 	require.NoError(t, err, "failed to stage file")
 
-	status, err = Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed with staged changes")
 	require.True(t, status.LocalChanges, "expected local changes due to staged files")
 
@@ -68,7 +68,7 @@ func TestStatus(t *testing.T) {
 	err = os.WriteFile(filePath, []byte("unstaged content"), 0644)
 	require.NoError(t, err, "failed to modify file for unstaged changes")
 
-	status, err = Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed with unstaged changes")
 	require.True(t, status.LocalChanges, "expected local changes due to unstaged files")
 }
@@ -78,7 +78,7 @@ func TestStatus_Monorepo(t *testing.T) {
 	tempDir, _ := setupMonorepoTestRepository(t)
 
 	// Test case 1: Check initial status of subprojects
-	status, err := Status(context.Background(), tempDir, "subproject1", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "Status failed for subproject1")
 	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits for subproject1")
 	require.Equal(t, int32(0), status.RemoteCommits, "unexpected remote commits for subproject1")
@@ -88,13 +88,13 @@ func TestStatus_Monorepo(t *testing.T) {
 	createCommit(t, tempDir, "subproject1/local.txt", "local content in subproject1", "subproject1: local commit")
 	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch changes")
 
-	status, err = Status(context.Background(), tempDir, "subproject1", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "Status failed for subproject1 after local commit")
 	require.Equal(t, int32(1), status.LocalCommits, "expected 1 local commit for subproject1")
 	require.Equal(t, int32(0), status.RemoteCommits, "unexpected remote commits for subproject1")
 
 	// Test case 3: Verify subproject2 is unaffected by subproject1 changes
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "Status failed for subproject2")
 	require.Equal(t, int32(0), status.LocalCommits, "subproject2 should have no local commits")
 	require.Equal(t, int32(0), status.RemoteCommits, "subproject2 should have no remote commits")
@@ -113,12 +113,12 @@ func TestStatus_MonorepoLocalChanges(t *testing.T) {
 	err = cmd.Run()
 	require.NoError(t, err, "failed to stage file")
 
-	status, err := Status(context.Background(), tempDir, "subproject1", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "Status failed")
 	require.True(t, status.LocalChanges, "expected local changes in subproject1")
 
 	// Verify subproject2 is unaffected
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "Status failed")
 	require.False(t, status.LocalChanges, "subproject2 should not have local changes")
 
@@ -127,7 +127,7 @@ func TestStatus_MonorepoLocalChanges(t *testing.T) {
 	err = os.WriteFile(existingFile, []byte("modified content"), 0644)
 	require.NoError(t, err, "failed to modify file")
 
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "Status failed")
 	require.True(t, status.LocalChanges, "expected local changes in subproject2")
 
@@ -136,12 +136,12 @@ func TestStatus_MonorepoLocalChanges(t *testing.T) {
 	err = os.WriteFile(outsideFile, []byte("outside content"), 0644)
 	require.NoError(t, err, "failed to create file outside subprojects")
 
-	status, err = Status(context.Background(), tempDir, "subproject1", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "Status failed")
 	// Should still show only the previously staged change
 	require.True(t, status.LocalChanges, "expected local changes from staged file")
 
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "Status failed")
 	// Should still show only the unstaged change to file2.txt
 	require.True(t, status.LocalChanges, "expected local changes from modified file")
@@ -156,11 +156,11 @@ func TestStatus_MonorepoRemoteCommits(t *testing.T) {
 	createRemoteCommit(t, remoteDir, "subproject1/feature2.txt", "feature 2", "subproject1: add feature 2")
 	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch changes")
 
-	status, err := Status(context.Background(), tempDir, "subproject1", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "Status failed for subproject1")
 	require.Equal(t, int32(2), status.RemoteCommits, "expected 2 remote commits for subproject1")
 
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "Status failed for subproject2")
 	require.Equal(t, int32(0), status.RemoteCommits, "subproject2 should have no remote commits")
 
@@ -169,12 +169,12 @@ func TestStatus_MonorepoRemoteCommits(t *testing.T) {
 	createRemoteCommit(t, remoteDir, "subproject2/feature3.txt", "feature 3", "subproject2: add feature 3")
 	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch changes")
 
-	status, err = Status(context.Background(), tempDir, "subproject1", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "Status failed for subproject1")
 	require.Equal(t, int32(1), status.LocalCommits, "subproject1 should have 1 local commit")
 	require.Equal(t, int32(2), status.RemoteCommits, "subproject1 should have 2 remote commits")
 
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "Status failed for subproject2")
 	require.Equal(t, int32(0), status.LocalCommits, "subproject2 should have no local commits")
 	require.Equal(t, int32(1), status.RemoteCommits, "subproject2 should have 1 remote commit")
@@ -183,11 +183,11 @@ func TestStatus_MonorepoRemoteCommits(t *testing.T) {
 	createRemoteCommit(t, remoteDir, "root-file.txt", "root content", "add root file")
 	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch changes")
 
-	status, err = Status(context.Background(), tempDir, "subproject1", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "Status failed for subproject1")
 	require.Equal(t, int32(2), status.RemoteCommits, "subproject1 should still have 2 remote commits")
 
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "Status failed for subproject2")
 	require.Equal(t, int32(1), status.RemoteCommits, "subproject2 should still have 1 remote commit")
 }
@@ -214,7 +214,7 @@ func TestStatus_ExcludesLocalMergeCommits(t *testing.T) {
 
 	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch")
 
-	status, err := Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed")
 
 	// History has 3 commits ahead (feature, main, merge), but the merge must be excluded.
@@ -232,7 +232,7 @@ func TestStatus_ExcludesRemoteMergeCommits(t *testing.T) {
 
 	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch")
 
-	status, err := Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed")
 
 	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits")
@@ -263,7 +263,7 @@ func TestPull_DiscardsLocalMergeCommits(t *testing.T) {
 	require.NoError(t, err, "Pull with discardLocal failed")
 
 	// After discard, local should fully match remote.
-	status, err := Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed after pull")
 	require.Equal(t, int32(0), status.LocalCommits, "expected no local commits after discard pull")
 	require.Equal(t, int32(0), status.RemoteCommits, "expected no remote commits after pull")
@@ -484,11 +484,11 @@ func TestChangedFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test3.txt"), []byte("edit"), 0644), "failed to modify")
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "untracked.txt"), []byte("x"), 0644), "failed to create untracked")
 
-	status, err := Status(context.Background(), tempDir, "", "origin", mainBranch, true)
-	require.NoError(t, err, "Status failed")
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed")
 
 	got := map[string]ChangedFileStatus{}
-	for _, f := range status.ChangedFiles {
+	for _, f := range files {
 		got[f.Path] = f.Status
 	}
 	require.Equal(t, map[string]ChangedFileStatus{
@@ -499,16 +499,11 @@ func TestChangedFiles(t *testing.T) {
 		"untracked.txt":       ChangedFileStatusAdded,
 	}, got)
 
-	// With changedFiles=false, ChangedFiles is not computed even though a remoteBranch is given.
-	status, err = Status(context.Background(), tempDir, "", "origin", mainBranch, false)
-	require.NoError(t, err, "Status failed")
-	require.Empty(t, status.ChangedFiles, "ChangedFiles should be empty when not requested")
-
-	// With changedFiles=true and no remoteBranch, files are compared against the current branch's
-	// upstream (origin/<mainBranch>) and still reported, confirming the two flags are independent.
-	status, err = Status(context.Background(), tempDir, "", "origin", "", true)
-	require.NoError(t, err, "Status failed")
-	require.NotEmpty(t, status.ChangedFiles, "ChangedFiles should be computed when requested without a remoteBranch")
+	// With no remoteBranch, files are compared against the current branch's upstream
+	// (origin/<mainBranch>) and still reported.
+	files, err = ChangedFiles(context.Background(), tempDir, "", "origin", "")
+	require.NoError(t, err, "ChangedFiles failed")
+	require.NotEmpty(t, files, "ChangedFiles should be computed without a remoteBranch")
 }
 
 func TestChangedFiles_Rename(t *testing.T) {
@@ -524,11 +519,11 @@ func TestChangedFiles_Rename(t *testing.T) {
 	// Uncommitted rename: the new file is untracked, so git cannot detect the rename.
 	require.NoError(t, os.Rename(filepath.Join(tempDir, "test2.txt"), filepath.Join(tempDir, "renamed2.txt")), "failed to rename")
 
-	status, err := Status(context.Background(), tempDir, "", "origin", mainBranch, true)
-	require.NoError(t, err, "Status failed")
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed")
 
 	got := map[string]ChangedFile{}
-	for _, f := range status.ChangedFiles {
+	for _, f := range files {
 		got[f.Path] = f
 	}
 	require.Equal(t, ChangedFile{Path: "renamed1.txt", OldPath: "test1.txt", Status: ChangedFileStatusRenamed}, got["renamed1.txt"])
@@ -543,13 +538,13 @@ func TestChangedFiles_Monorepo(t *testing.T) {
 	createCommit(t, tempDir, "subproject1/new.txt", "new", "subproject1: add file")
 	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subproject2", "file2.txt"), []byte("edit"), 0644), "failed to modify")
 
-	status, err := Status(context.Background(), tempDir, "subproject1", "origin", mainBranch, true)
-	require.NoError(t, err, "Status failed for subproject1")
-	require.Equal(t, []ChangedFile{{Path: "new.txt", Status: ChangedFileStatusAdded}}, status.ChangedFiles)
+	files, err := ChangedFiles(context.Background(), tempDir, "subproject1", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed for subproject1")
+	require.Equal(t, []ChangedFile{{Path: "new.txt", Status: ChangedFileStatusAdded}}, files)
 
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", mainBranch, true)
-	require.NoError(t, err, "Status failed for subproject2")
-	require.Equal(t, []ChangedFile{{Path: "file2.txt", Status: ChangedFileStatusModified}}, status.ChangedFiles)
+	files, err = ChangedFiles(context.Background(), tempDir, "subproject2", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed for subproject2")
+	require.Equal(t, []ChangedFile{{Path: "file2.txt", Status: ChangedFileStatusModified}}, files)
 }
 
 // Helper: compare canonicalized paths
@@ -612,7 +607,7 @@ func setupRepoWithRemote(t *testing.T) (string, string) {
 	require.NoError(t, err, "failed to push initial commit")
 
 	// Run the Status function
-	status, err := Status(context.Background(), tempDir, "", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "", "origin", "")
 	require.NoError(t, err, "Status failed")
 
 	// Validate the status
@@ -691,12 +686,12 @@ func setupMonorepoTestRepository(t *testing.T) (string, string) {
 	require.NoError(t, err, "failed to push initial commit")
 
 	// Verify the initial status for both subprojects
-	status, err := Status(context.Background(), tempDir, "subproject1", "origin", "", false)
+	status, err := Status(context.Background(), tempDir, "subproject1", "origin", "")
 	require.NoError(t, err, "Status failed for subproject1")
 	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits in subproject1")
 	require.False(t, status.LocalChanges, "unexpected local changes in subproject1")
 
-	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "", false)
+	status, err = Status(context.Background(), tempDir, "subproject2", "origin", "")
 	require.NoError(t, err, "Status failed for subproject2")
 	require.Equal(t, int32(0), status.LocalCommits, "unexpected local commits in subproject2")
 	require.False(t, status.LocalChanges, "unexpected local changes in subproject2")
@@ -803,7 +798,7 @@ func TestFetch_UpdatesRemoteTrackingRefs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEqual(t, before, after, "fetch must advance the remote-tracking ref")
 
-	st, err := Status(ctx, path, "", config.RemoteName(), "", false)
+	st, err := Status(ctx, path, "", config.RemoteName(), "")
 	require.NoError(t, err)
 	require.Equal(t, int32(1), st.RemoteCommits)
 	require.Equal(t, int32(0), st.LocalCommits)
