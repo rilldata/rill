@@ -18,7 +18,6 @@ export function getDeploymentGithubStatus(
       createRuntimeServiceGitStatus(runtimeClient, {}),
       createRuntimeServiceGitStatus(runtimeClient, {
         remoteBranch: primaryBranch,
-        changedFiles: true,
       }),
     ],
     ([currentBranchGitStatusResp, primaryBranchGitStatusResp]) => {
@@ -38,7 +37,6 @@ export function getDeploymentGithubStatus(
             hasLocalCommitsOnCurrent: false,
             alreadyOnPrimary: false,
             disabledPerGitStatus: true,
-            changedFiles: [],
           },
         };
       }
@@ -83,8 +81,6 @@ export function getDeploymentGithubStatus(
           hasLocalCommitsOnCurrent,
           alreadyOnPrimary,
           disabledPerGitStatus,
-          // Files that would land on prod, compared against the primary branch.
-          changedFiles: primaryBranchGitStatusResp.data?.changedFiles ?? [],
         },
       };
     },
@@ -109,7 +105,6 @@ export async function fetchDeploymentGithubStatusChanges(
     queryClient.getQueryData<V1GitStatusResponse>(
       getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {
         remoteBranch: primaryBranch,
-        changedFiles: true,
       }),
     );
   const hasChangesAgainstPrimary = Boolean(
@@ -126,7 +121,8 @@ export function invalidateGitStatusQueries(
 ) {
   // GitStatus is cached under two keys (see `getDeploymentGithubStatus`):
   // one with no `remoteBranch` for the current branch and one keyed by the
-  // primary branch (which also requests changedFiles). Invalidate both so subscribers refetch.
+  // primary branch. Invalidating by the primary-branch key partial-matches the
+  // popovers' on-demand `changedFiles` query too, so both refetch.
   void globalQueryClient.invalidateQueries({
     queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {}),
   });
@@ -134,7 +130,6 @@ export function invalidateGitStatusQueries(
     void globalQueryClient.invalidateQueries({
       queryKey: getRuntimeServiceGitStatusQueryKey(runtimeClient.instanceId, {
         remoteBranch: primaryBranch,
-        changedFiles: true,
       }),
     });
   }
