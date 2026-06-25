@@ -923,16 +923,20 @@ export class CanvasEntity {
     };
   };
 
+  // Inspector inputs (component title/description, tab name/display name) commit their value
+  // on blur. The elements that change the selection (canvas components, tab strip) are not
+  // focusable in a way that blurs the input first, so the pending edit would otherwise be lost
+  // or applied to the newly-selected target. Blurring the active element synchronously runs the
+  // input's onBlur — which writes the edit to the editor content — before the selection changes
+  // or the inspector panel unmounts. This is a single commit point for all blur-committed inputs.
+  private commitPendingInspectorEdit = () => {
+    if (typeof document === "undefined") return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+  };
+
   setSelectedComponent = (id: string | null) => {
-    // Inspector inputs commit their value on blur. Canvas component elements are
-    // not focusable, so clicking another component never blurs the focused input,
-    // which would otherwise apply the pending edit to the newly-selected component.
-    // Blur the active element first so the edit commits against the component that
-    // is still selected, before we switch.
-    if (id !== get(this.selectedComponent) && typeof document !== "undefined") {
-      const active = document.activeElement;
-      if (active instanceof HTMLElement) active.blur();
-    }
+    if (id !== get(this.selectedComponent)) this.commitPendingInspectorEdit();
     // Selecting a component takes over the inspector from any selected tab group.
     if (id) this.selectedTabGroup.set(null);
     this.selectedComponent.set(id);
@@ -941,6 +945,7 @@ export class CanvasEntity {
   // Select a tab group for editing (opens the tab-group inspector panel). Clears any
   // selected component so the two never fight over the inspector.
   setSelectedTabGroup = (name: string | null) => {
+    if (name !== get(this.selectedTabGroup)) this.commitPendingInspectorEdit();
     if (name) this.selectedComponent.set(null);
     this.selectedTabGroup.set(name);
   };
