@@ -96,7 +96,7 @@ You can declare coverage on the metrics view itself the same way — this skips 
 data_time_range: -5Y to now
 ```
 
-When `data_time_range` is set, the rilltime expression is resolved against fixed anchors at query time: `now`/`latest`/`watermark` all resolve to the current wallclock, and `earliest` resolves to the zero epoch. So `inf` (a shorthand for `earliest to latest`) declares "all time from zero epoch to now." Mixing declared and undeclared rollups in the same metrics view is fine — each table independently decides whether to probe or to use its declaration.
+When `data_time_range` is set, the rilltime expression is resolved against fixed anchors: `now`/`latest`/`watermark` all resolve to the current wallclock. The start must be bounded — `inf` and `earliest` are rejected, because they resolve start time to the zero time value, which the system treats as "no data". To declare full historical coverage, either omit `data_time_range` so the bounds are probed from the table, or use a concrete early bound such as `-100Y to now`. Mixing declared and undeclared rollups in the same metrics view is fine — each table independently decides whether to probe or to use its declaration.
 
 ### Selection Priority and Definition Order
 

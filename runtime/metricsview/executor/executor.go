@@ -175,7 +175,7 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 		timeDim = e.metricsView.TimeDimension
 	}
 
-	if res, ok := e.timestamps[timeDim]; ok && !res.Min.IsZero() {
+	if res, ok := e.timestamps[timeDim]; ok {
 		return res, nil
 	}
 

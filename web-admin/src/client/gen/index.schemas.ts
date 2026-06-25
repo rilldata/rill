@@ -393,6 +393,10 @@ export interface V1CreateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1CreatePersonalFileResponse {
+  name?: string;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -426,6 +430,10 @@ export interface V1DeleteDeploymentResponse {
 }
 
 export interface V1DeleteOrganizationResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeletePersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -490,6 +498,10 @@ export const V1DeploymentStatus = {
 } as const;
 
 export interface V1EditAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1EditPersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -691,6 +703,11 @@ export interface V1GetPaymentsPortalURLResponse {
   url?: string;
 }
 
+export interface V1GetPersonalFileResponse {
+  path?: string;
+  yaml?: string;
+}
+
 export interface V1GetProjectAccessRequestResponse {
   email?: string;
 }
@@ -859,6 +876,10 @@ export interface V1ListOrganizationMemberUsersResponse {
 export interface V1ListOrganizationsResponse {
   organizations?: V1Organization[];
   nextPageToken?: string;
+}
+
+export interface V1ListPersonalFilesResponse {
+  files?: string[];
 }
 
 export interface V1ListProjectInvitesResponse {
@@ -1460,6 +1481,15 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
 
 export interface V1SudoDeleteOrganizationBillingMessageResponse {
   [key: string]: unknown;
+}
+
+export interface V1SudoExtendTrialRequest {
+  org?: string;
+  days?: number;
+}
+
+export interface V1SudoExtendTrialResponse {
+  trialEnd?: string;
 }
 
 export interface V1SudoGetResourceResponse {
@@ -2133,6 +2163,18 @@ export type AdminServiceAddProjectMemberUserBody = {
   role?: string;
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+};
+
+export type AdminServiceCreatePersonalFileBody = {
+  displayName?: string;
+  kind?: string;
+  /** Optional: initial YAML body. If empty, the server generates a blank template for the given type. */
+  yaml?: string;
+};
+
+export type AdminServiceEditPersonalFileBody = {
+  kind?: string;
+  yaml?: string;
 };
 
 export type AdminServiceRedeployProjectParams = {
