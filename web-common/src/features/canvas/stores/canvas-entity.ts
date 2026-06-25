@@ -835,7 +835,10 @@ export class CanvasEntity {
     this.tabGroups.forEach((group, name) => {
       const tabName = active.get(name);
       if (tabName) group.setActiveByName(tabName);
-      else group.activeTabIndex.set(0);
+      // In view mode, a group absent from the param is reset to its first tab so back/forward
+      // restores state symmetrically. In edit mode the active tab is editor-local (driven by
+      // clicks), so don't reset it here — doing so on every URL change fought direct selection.
+      else if (!this.allowUnvalidatedSpec) group.activeTabIndex.set(0);
     });
   };
 

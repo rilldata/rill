@@ -48,15 +48,15 @@ export class Tab {
 export class TabGroup {
   /** Stable identifier; used for URL state. */
   name: string;
-  /** Index of the active (mounted) tab. Editor-local while editing; URL-driven in view mode. */
+  /** Index of the active (mounted) tab. Editor-local while editing; URL-driven in view mode.
+   *  The active tab is tracked by its name across spec rebuilds (see updateFromSpec), so this
+   *  index always points at the same tab after a reorder. */
   activeTabIndex = writable<number>(0);
   /** The tabs in this group. */
   tabs = writable<Tab[]>([]);
-  /* A tab index to activate as soon as it exists in the spec (used after add/duplicate). */
+  /* A tab index to activate as soon as it exists in the spec (used after add/duplicate, where
+     the new tab's name isn't known on the client until the spec reflects it). */
   private pendingActiveTabIndex: number | null = null;
-  /* A tab name to activate once it appears in the spec (used after reorder, where the
-     destination index isn't known until the spec reflects the move). */
-  private pendingActiveTabName: string | null = null;
 
   constructor(
     private canvas: CanvasEntity,
@@ -71,11 +71,16 @@ export class TabGroup {
    */
   updateFromSpec(name: string, tabs: V1CanvasTab[], blockIndex: number) {
     this.name = name;
+    const current = get(this.tabs);
+    // The active tab is tracked by name: capture it before the rebuild so we can re-point the
+    // index at the same tab afterwards, no matter how the order changed.
+    const activeName = current[get(this.activeTabIndex)]?.name;
+
     // Match existing Tab instances by their stable name, not by index. On reorder a tab keeps
     // its own grid and component instances and simply moves to a new index; matching by index
     // would instead repurpose the object at each slot, leaving stale content (a tab showing
     // its neighbour's widgets) until a full reload.
-    const byName = new Map(get(this.tabs).map((t) => [t.name, t]));
+    const byName = new Map(current.map((t) => [t.name, t]));
 
     const next = tabs.map((tab, tabIndex) => {
       // NOTE: this is the YAML path (row.tabs[t].rows), which differs from the
@@ -98,20 +103,19 @@ export class TabGroup {
 
     this.tabs.set(next);
 
-    // Activate a pending tab by name (after a reorder) or index (after add/duplicate), once it
-    // exists in the spec.
-    if (this.pendingActiveTabName !== null) {
-      const index = next.findIndex((t) => t.name === this.pendingActiveTabName);
-      if (index !== -1) {
-        this.activeTabIndex.set(index);
-        this.pendingActiveTabName = null;
-      }
-    } else if (
+    if (
       this.pendingActiveTabIndex !== null &&
       this.pendingActiveTabIndex < next.length
     ) {
+      // A just-added/duplicated tab: activate it by its (now-known) index.
       this.activeTabIndex.set(this.pendingActiveTabIndex);
       this.pendingActiveTabIndex = null;
+    } else if (activeName !== undefined) {
+      // Keep the same tab active across the rebuild. If it still exists (reorder), follow it to
+      // its new index; if it was renamed (name changed) or removed, the index is left as-is and
+      // clamped below, which keeps the active position stable for an in-place rename.
+      const index = next.findIndex((t) => t.name === activeName);
+      if (index !== -1) this.activeTabIndex.set(index);
     }
 
     // Clamp the active index if tabs were removed.
@@ -127,17 +131,6 @@ export class TabGroup {
    */
   activateWhenReady(index: number) {
     this.pendingActiveTabIndex = index;
-    this.pendingActiveTabName = null;
-  }
-
-  /**
-   * Request that the tab with the given name become active once the spec reflects it. Used
-   * after a reorder, where the moved tab keeps its name but its destination index only becomes
-   * known after reconcile.
-   */
-  activateByNameWhenReady(tabName: string) {
-    this.pendingActiveTabName = tabName;
-    this.pendingActiveTabIndex = null;
   }
 
   /**

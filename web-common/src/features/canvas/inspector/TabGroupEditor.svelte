@@ -86,10 +86,7 @@
   }
 
   async function move(index: number, direction: -1 | 1) {
-    // Keep the moved tab active by name: its destination index is only known after the spec
-    // reflects the reorder, and matching by name survives the index shuffle.
-    const movedName = $tabs[index]?.name;
-    if (movedName) group.activateByNameWhenReady(movedName);
+    // The active tab is preserved by name across the reorder (see TabGroup.updateFromSpec).
     await applyEdit((doc) => moveTab(doc, blockIndex, index, direction));
   }
 

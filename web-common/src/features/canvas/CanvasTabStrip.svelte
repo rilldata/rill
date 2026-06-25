@@ -91,11 +91,9 @@
     if (tab && onSelect) onSelect(tab.name);
   }
 
-  // Move a tab and keep that moved tab active. Track it by name: its destination index is
-  // only known once the spec reflects the reorder, and matching by name survives the shuffle.
+  // Move a tab. The active tab is preserved by name across the reorder (see
+  // TabGroup.updateFromSpec), so no explicit re-activation is needed here.
   function moveWithFocus(index: number, direction: -1 | 1) {
-    const movedName = $tabs[index]?.name;
-    if (movedName) group.activateByNameWhenReady(movedName);
     onMoveTab?.(index, direction);
   }
 
