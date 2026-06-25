@@ -12,7 +12,9 @@ import {
   moveItemAcrossContainers,
   moveTab,
   renameTab,
+  renameTabGroup,
   reorderTab,
+  setTabName,
   tabCount,
   tabHasContent,
 } from "./tab-edit";
@@ -28,7 +30,8 @@ describe("tab-edit YAML transforms", () => {
     const doc = parseDocument(`type: canvas
 rows:
   - tabs:
-      - label: Overview
+      - name: ov
+        label: Overview
         rows:
           - items:
               - component: a
@@ -41,11 +44,28 @@ rows:
     const tabs = doc.toJSON().rows[0].tabs;
     expect(tabs).toHaveLength(3);
     expect(tabs[1].label).toBe("Overview (copy)");
-    // The copy carries the original's rows/content.
+    // The copy carries the original's rows/content but not its URL name.
     expect(tabs[1].rows).toEqual([{ items: [{ component: "a" }] }]);
+    expect(tabs[1].name).toBeUndefined();
     // The original and the tab that followed it are preserved and in order.
     expect(tabs[0].label).toBe("Overview");
     expect(tabs[2].label).toBe("Detail");
+  });
+
+  it("renameTabGroup sets and clears the group name", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - name: deep_dive
+    tabs:
+      - label: A
+        rows: []
+`);
+    renameTabGroup(doc, 0, "Sales overview");
+    expect(doc.toJSON().rows[0].name).toBe("Sales overview");
+
+    // Clearing the name removes the key so the parser can default it.
+    renameTabGroup(doc, 0, "  ");
+    expect("name" in doc.toJSON().rows[0]).toBe(false);
   });
 
   it("deleteTabGroup removes the whole group entry", () => {
@@ -111,6 +131,15 @@ rows:
     addTabGroup(doc);
     renameTab(doc, 1, 0, "Overview");
     expect(doc.toJSON().rows[1].tabs[0].label).toBe("Overview");
+  });
+
+  it("setTabName sets and clears the tab URL name", () => {
+    const doc = parseDocument(BASE);
+    addTabGroup(doc);
+    setTabName(doc, 1, 0, "overview");
+    expect(doc.toJSON().rows[1].tabs[0].name).toBe("overview");
+    setTabName(doc, 1, 0, "  ");
+    expect("name" in doc.toJSON().rows[1].tabs[0]).toBe(false);
   });
 
   it("deleteTab removes a tab when more than one remains", () => {

@@ -58,7 +58,9 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
   - **`tabs`** - _[array of object]_ - Makes this entry a tab group instead of a plain row. Only the active tab's rows render; tabs cannot be nested. 
 
-    - **`label`** - _[string]_ - User-facing tab label. A URL-safe name is derived from it for deep-linking. 
+    - **`label`** - _[string]_ - User-facing tab label shown on the tab. 
+
+    - **`name`** - _[string]_ - Stable identifier used as the tab's deep-link URL key. Defaults to a slug of the label if omitted. 
 
     - **`rows`** - _[array]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`. 
 

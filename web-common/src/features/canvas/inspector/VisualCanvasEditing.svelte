@@ -97,6 +97,7 @@
       {fileArtifact}
       {autoSave}
       onClose={() => setSelectedTabGroup(null)}
+      onRename={(name) => setSelectedTabGroup(name)}
     />
   {:else}
     <PageEditor {canvasName} {fileArtifact} {updateProperties} />

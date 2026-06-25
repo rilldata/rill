@@ -99,8 +99,10 @@
     let nextActive = active;
     if (active === index) nextActive = target;
     else if (active === target) nextActive = index;
-    onMoveTab?.(index, direction);
+    // Queue the follow-up activation before the edit so the reorder reconcile applies it
+    // (otherwise the active tab can end up pointing at the swapped position until refresh).
     group.activateWhenReady(nextActive);
+    onMoveTab?.(index, direction);
   }
 
   function commitRename(index: number, value: string) {

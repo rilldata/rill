@@ -5,12 +5,14 @@ import { isMap, isSeq, type Document } from "yaml";
 // mutate it in place; the caller persists the result via the file artifact.
 //
 // The YAML shape of a tab group is a top-level rows entry with `tabs` (and an
-// optional `name`), where each tab has a `label` and its own `rows`:
+// optional `name`), where each tab has a `label` (display), an optional `name`
+// (URL key, defaulted from the label), and its own `rows`:
 //
 //   rows:
 //     - name: <group>          # optional
 //       tabs:
-//         - label: Overview
+//         - name: overview     # optional URL key
+//           label: Overview    # display label
 //           rows: [ ... ]
 //
 // This differs from the proto JSON shape (row.tabGroup.tabs); see canvasRowYAML
@@ -139,7 +141,25 @@ export function addTab(doc: Document, blockIndex: number): number {
   return tabCount(doc, blockIndex) - 1;
 }
 
-/** Rename the tab at [blockIndex, tabIndex]. */
+/**
+ * Set (or clear) the tab group's `name` at the given top-level index. The name is the
+ * group's stable URL key; clearing it lets the parser fall back to `group-<index>`.
+ */
+export function renameTabGroup(
+  doc: Document,
+  blockIndex: number,
+  name: string,
+): void {
+  if (!isTabGroupRow(doc, blockIndex)) return;
+  const trimmed = name.trim();
+  if (trimmed) {
+    doc.setIn(["rows", blockIndex, "name"], trimmed);
+  } else {
+    doc.deleteIn(["rows", blockIndex, "name"]);
+  }
+}
+
+/** Set the display label of the tab at [blockIndex, tabIndex]. */
 export function renameTab(
   doc: Document,
   blockIndex: number,
@@ -148,6 +168,25 @@ export function renameTab(
 ): void {
   if (!isTabGroupRow(doc, blockIndex)) return;
   doc.setIn(["rows", blockIndex, "tabs", tabIndex, "label"], label);
+}
+
+/**
+ * Set (or clear) the URL `name` of the tab at [blockIndex, tabIndex]. Clearing it lets the
+ * parser re-derive the key from the label.
+ */
+export function setTabName(
+  doc: Document,
+  blockIndex: number,
+  tabIndex: number,
+  name: string,
+): void {
+  if (!isTabGroupRow(doc, blockIndex)) return;
+  const trimmed = name.trim();
+  if (trimmed) {
+    doc.setIn(["rows", blockIndex, "tabs", tabIndex, "name"], trimmed);
+  } else {
+    doc.deleteIn(["rows", blockIndex, "tabs", tabIndex, "name"]);
+  }
 }
 
 /** Move the tab at tabIndex one position in the given direction (-1 left, 1 right). */
@@ -178,9 +217,9 @@ export function reorderTab(
 
 /**
  * Duplicate the tab at [blockIndex, tabIndex], inserting the copy immediately after it.
- * The copy's label gets a " (copy)" suffix; inline component definitions are re-derived to
- * fresh names by the parser (they are position-keyed), so no manual renaming is needed.
- * Returns the index of the new tab, or -1 if the entry is not a tab group.
+ * The copy's label gets a " (copy)" suffix and its `name` is dropped so the parser derives a
+ * fresh URL key; inline component definitions are re-derived to fresh names too (they are
+ * position-keyed). Returns the index of the new tab, or -1 if the entry is not a tab group.
  */
 export function duplicateTab(
   doc: Document,
@@ -193,10 +232,17 @@ export function duplicateTab(
   const original = tabs.items[tabIndex];
   if (!isMap(original)) return -1;
 
-  const json = original.toJSON() as { label?: string };
-  const label =
-    typeof json.label === "string" ? `${json.label} (copy)` : "Tab (copy)";
-  const clone = doc.createNode({ ...json, label });
+  // Drop the name so the copy gets a fresh URL key; carry everything else (rows, etc.).
+  const { name, label, ...rest } = original.toJSON() as {
+    name?: string;
+    label?: string;
+    [key: string]: unknown;
+  };
+  void name;
+  const clone = doc.createNode({
+    label: `${label ?? "Tab"} (copy)`,
+    ...rest,
+  });
   tabs.items.splice(tabIndex + 1, 0, clone);
   return tabIndex + 1;
 }

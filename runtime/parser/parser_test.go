@@ -2102,6 +2102,45 @@ rows:
 	require.Equal(t, "sales-3", tabs[2].Name)
 }
 
+// TestCanvasTabExplicitName verifies a tab can carry an explicit URL `name` alongside its
+// display `label`, and that `name` defaults from the label when omitted.
+func TestCanvasTabExplicitName(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- tabs:
+  - name: ov
+    label: Overview
+    rows: []
+  - label: Deep Dive
+    rows: []
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	var canvas *runtimev1.CanvasSpec
+	for _, r := range p.Resources {
+		if r.CanvasSpec != nil {
+			canvas = r.CanvasSpec
+		}
+	}
+	require.NotNil(t, canvas)
+
+	tabs := canvas.Rows[0].TabGroup.Tabs
+	// Explicit name + label.
+	require.Equal(t, "ov", tabs[0].Name)
+	require.Equal(t, "Overview", tabs[0].DisplayName)
+	// Name defaults from the label.
+	require.Equal(t, "deep-dive", tabs[1].Name)
+	require.Equal(t, "Deep Dive", tabs[1].DisplayName)
+}
+
 func TestKindBackwardsCompatibility(t *testing.T) {
 	files := map[string]string{
 		// rill.yaml

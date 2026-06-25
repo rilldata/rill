@@ -4,8 +4,9 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { ArrowLeft, ArrowRight, Copy, Trash2 } from "lucide-svelte";
+  import { Trash2 } from "lucide-svelte";
   import { parseDocument, type Document } from "yaml";
+  import TabListItem from "./TabListItem.svelte";
   import type { TabGroup } from "../stores/tab-group";
   import {
     deleteTab,
@@ -13,6 +14,8 @@
     duplicateTab,
     moveTab,
     renameTab,
+    renameTabGroup,
+    setTabName,
     tabHasContent,
   } from "../stores/tab-edit";
 
@@ -22,24 +25,27 @@
   export let autoSave: boolean;
   // Clear the tab-group selection (e.g. after deleting the whole group).
   export let onClose: () => void;
+  // Re-point the selection at the group's new name after a rename, so the inspector stays
+  // open on it (the group is re-keyed by name when the spec reprocesses).
+  export let onRename: (name: string) => void;
 
   $: ({ editorContent, updateEditorContent, saveLocalContent } = fileArtifact);
 
   $: tabs = group.tabs;
   $: activeTabIndex = group.activeTabIndex;
-  $: activeTab = $tabs[$activeTabIndex];
   $: tabCount = $tabs.length;
 
-  // Local copy of the active tab's label for inline editing, reset only when the active
-  // tab's identity changes (not on every reconcile) so typing isn't clobbered.
-  let label = "";
-  let labelTabName = "";
-  $: if (activeTab && activeTab.name !== labelTabName) {
-    label = activeTab.displayName;
-    labelTabName = activeTab.name;
+  // Local copy of the group name. The `group` prop is a fresh object only when the group is
+  // re-keyed (i.e. renamed), so syncing on group.name keeps typing from being clobbered.
+  let groupName = "";
+  let lastGroupName = "";
+  $: if (group.name !== lastGroupName) {
+    groupName = group.name;
+    lastGroupName = group.name;
   }
 
-  let pendingTabDelete = false;
+  // Index pending a delete confirmation, or null when no dialog is open.
+  let pendingTabDelete: number | null = null;
   let pendingGroupDelete = false;
 
   async function applyEdit(mutate: (doc: Document) => void) {
@@ -49,49 +55,56 @@
     await saveLocalContent();
   }
 
-  async function commitRename() {
-    const trimmed = label.trim();
-    if (!trimmed || trimmed === activeTab?.displayName) return;
-    await applyEdit((doc) =>
-      renameTab(doc, blockIndex, $activeTabIndex, trimmed),
-    );
+  async function commitGroupRename() {
+    const trimmed = groupName.trim();
+    if (trimmed === group.name) return;
+    await applyEdit((doc) => renameTabGroup(doc, blockIndex, trimmed));
+    // Follow the group to its new key (an empty name defaults to `group-<index>`).
+    onRename(trimmed || `group-${blockIndex}`);
   }
 
-  async function move(direction: -1 | 1) {
-    const target = $activeTabIndex + direction;
-    await applyEdit((doc) =>
-      moveTab(doc, blockIndex, $activeTabIndex, direction),
-    );
-    group.activateWhenReady(target);
+  async function commitLabel(index: number, value: string) {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === $tabs[index]?.displayName) return;
+    await applyEdit((doc) => renameTab(doc, blockIndex, index, trimmed));
   }
 
-  async function duplicate() {
-    const index = $activeTabIndex;
-    let newIndex = -1;
+  async function commitName(index: number, value: string) {
+    if (value.trim() === $tabs[index]?.name) return;
+    await applyEdit((doc) => setTabName(doc, blockIndex, index, value));
+  }
+
+  async function move(index: number, direction: -1 | 1) {
+    const active = $activeTabIndex;
+    let nextActive = active;
+    if (active === index) nextActive = index + direction;
+    else if (active === index + direction) nextActive = index;
+    // Queue the activation before the edit so the reorder reconcile applies it (otherwise the
+    // active tab points at the swapped position until a refresh).
+    group.activateWhenReady(nextActive);
+    await applyEdit((doc) => moveTab(doc, blockIndex, index, direction));
+  }
+
+  async function duplicate(index: number) {
+    // duplicateTab inserts the copy immediately after the original; activate it.
+    group.activateWhenReady(index + 1);
     await applyEdit((doc) => {
-      newIndex = duplicateTab(doc, blockIndex, index);
+      duplicateTab(doc, blockIndex, index);
     });
-    if (newIndex >= 0) group.activateWhenReady(newIndex);
   }
 
-  function requestDeleteTab() {
-    if (
-      tabHasContent(
-        parseDocument($editorContent ?? ""),
-        blockIndex,
-        $activeTabIndex,
-      )
-    ) {
-      pendingTabDelete = true;
+  function requestDeleteTab(index: number) {
+    if (tabHasContent(parseDocument($editorContent ?? ""), blockIndex, index)) {
+      pendingTabDelete = index;
     } else {
-      void confirmDeleteTab();
+      void confirmDeleteTab(index);
     }
   }
 
-  async function confirmDeleteTab() {
-    pendingTabDelete = false;
+  async function confirmDeleteTab(index: number) {
+    pendingTabDelete = null;
     const wasLastTab = tabCount <= 1;
-    await applyEdit((doc) => deleteTab(doc, blockIndex, $activeTabIndex));
+    await applyEdit((doc) => deleteTab(doc, blockIndex, index));
     // Deleting the last tab unwraps the group, so the group no longer exists.
     if (wasLastTab) onClose();
   }
@@ -119,45 +132,37 @@
   <div class="param">
     <Input
       capitalizeLabel={false}
+      textClass="text-sm"
       size="sm"
       labelGap={2}
-      label="Tab name"
-      bind:value={label}
-      onBlur={commitRename}
-      onEnter={commitRename}
+      label="Tab group name"
+      hint="Stable identifier used as the group's deep-link URL key"
+      bind:value={groupName}
+      onBlur={commitGroupRename}
+      onEnter={commitGroupRename}
     />
   </div>
 
   <div class="param flex flex-col gap-y-2">
-    <span class="text-xs font-medium text-fg-secondary">Tab</span>
-    <div class="flex flex-wrap gap-2">
-      <Button
-        type="secondary"
-        small
-        disabled={$activeTabIndex === 0}
-        onClick={() => move(-1)}
-      >
-        <ArrowLeft size="14px" />
-        Move left
-      </Button>
-      <Button
-        type="secondary"
-        small
-        disabled={$activeTabIndex >= tabCount - 1}
-        onClick={() => move(1)}
-      >
-        <ArrowRight size="14px" />
-        Move right
-      </Button>
-      <Button type="secondary" small onClick={duplicate}>
-        <Copy size="14px" />
-        Duplicate
-      </Button>
-      <Button type="secondary" small onClick={requestDeleteTab}>
-        <Trash2 size="14px" />
-        Delete tab
-      </Button>
-    </div>
+    <span class="text-xs font-medium text-fg-secondary">Tabs</span>
+    <ul class="flex flex-col gap-y-2">
+      {#each $tabs as tab, index (index)}
+        <TabListItem
+          displayName={tab.displayName}
+          name={tab.name}
+          active={index === $activeTabIndex}
+          canMoveUp={index > 0}
+          canMoveDown={index < tabCount - 1}
+          onCommitLabel={(value) => commitLabel(index, value)}
+          onInputLabel={(value) => group.setTabDisplayName(index, value)}
+          onCommitName={(value) => commitName(index, value)}
+          onMoveUp={() => move(index, -1)}
+          onMoveDown={() => move(index, 1)}
+          onDuplicate={() => duplicate(index)}
+          onDelete={() => requestDeleteTab(index)}
+        />
+      {/each}
+    </ul>
   </div>
 
   <div class="param">
@@ -168,8 +173,12 @@
   </div>
 </SidebarWrapper>
 
-{#if pendingTabDelete}
-  <AlertDialog.Root open onOpenChange={(open) => (pendingTabDelete = open)}>
+{#if pendingTabDelete !== null}
+  {@const index = pendingTabDelete}
+  <AlertDialog.Root
+    open
+    onOpenChange={(open) => !open && (pendingTabDelete = null)}
+  >
     <AlertDialog.Content>
       <AlertDialog.Title>Delete tab?</AlertDialog.Title>
       <AlertDialog.Description>
@@ -187,7 +196,7 @@
               {...props}
               large
               type="destructive"
-              onClick={confirmDeleteTab}
+              onClick={() => confirmDeleteTab(index)}
             >
               Delete
             </Button>

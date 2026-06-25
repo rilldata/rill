@@ -56,8 +56,10 @@ type canvasRowYAML struct {
 	Tabs []*canvasTabYAML `yaml:"tabs"`
 }
 
-// canvasTabYAML is a single tab within a tab group.
+// canvasTabYAML is a single tab within a tab group. `label` is the display name shown on the
+// tab; `name` is the stable URL key (defaulted from the label when omitted).
 type canvasTabYAML struct {
+	Name  string           `yaml:"name"`
 	Label string           `yaml:"label"`
 	Rows  []*canvasRowYAML `yaml:"rows"`
 }
@@ -375,12 +377,19 @@ func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int,
 		if tab == nil {
 			return nil, fmt.Errorf("tab %d in tab group at row %d is empty", t, rowIdx)
 		}
+
 		if tab.Label == "" {
 			return nil, fmt.Errorf("tab %d in tab group at row %d is missing a label", t, rowIdx)
 		}
 
-		// Derive a stable, URL-safe name from the label, uniquified against earlier tabs in this group.
-		tabName := uniqueName(slugify(tab.Label), fmt.Sprintf("tab-%d", t), seenNames)
+		// Use the explicit name as the URL key when provided, otherwise derive one from the
+		// label. Either way uniquify it against earlier tabs in this group.
+		var tabName string
+		if tab.Name != "" {
+			tabName = uniqueName(tab.Name, fmt.Sprintf("tab-%d", t), seenNames)
+		} else {
+			tabName = uniqueName(slugify(tab.Label), fmt.Sprintf("tab-%d", t), seenNames)
+		}
 		seenNames[tabName] = true
 
 		tabRows, err := p.parseCanvasRows(node, tab.Rows, false, fmt.Sprintf("%sg%d-t%d-", posPrefix, rowIdx, t), inlineComponentDefs)

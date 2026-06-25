@@ -53,8 +53,16 @@ import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/
 
 export const lastVisitedState = new Map<string, string>();
 
-// URL param encoding each tab group's active tab as comma-separated "group:tab" pairs.
+// URL param encoding each tab group's active tab as comma-separated `tabgroup_name.tab_name`
+// references, e.g. `?tabs=deep_dive.detail,financials.costs`.
 export const CANVAS_TABS_URL_PARAM = "tabs";
+
+// Encode a group or tab name for the `tabs` URL param. encodeURIComponent already escapes the
+// "," pair delimiter; we additionally escape "." so a name can't be confused with the
+// "group.tab" separator. decodeURIComponent restores both on read.
+function encodeTabKey(name: string): string {
+  return encodeURIComponent(name).replace(/\./g, "%2E");
+}
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
@@ -808,14 +816,13 @@ export class CanvasEntity {
     const active = new Map<string, string>();
     if (param) {
       for (const pair of param.split(",")) {
-        const [groupName, tabName] = pair.split(":");
-        // Each part is encoded on write so group/tab names containing ":" or "," round-trip.
-        if (groupName && tabName) {
-          active.set(
-            decodeURIComponent(groupName),
-            decodeURIComponent(tabName),
-          );
-        }
+        // Split on the first "." into group and tab; both parts are encoded on write so any
+        // "." / "," in a name is escaped and won't be mistaken for a delimiter.
+        const sep = pair.indexOf(".");
+        if (sep === -1) continue;
+        const groupName = decodeURIComponent(pair.slice(0, sep));
+        const tabName = decodeURIComponent(pair.slice(sep + 1));
+        if (groupName && tabName) active.set(groupName, tabName);
       }
     }
 
@@ -838,11 +845,9 @@ export class CanvasEntity {
     this.tabGroups.forEach((g, name) => {
       const index = get(g.activeTabIndex);
       const tab = get(g.tabs)[index];
-      // Encode each part so a group/tab name containing the ":" or "," delimiters survives.
+      // Reference the active tab as `tabgroup_name.tab_name`, encoding each part.
       if (tab && index > 0) {
-        pairs.push(
-          `${encodeURIComponent(name)}:${encodeURIComponent(tab.name)}`,
-        );
+        pairs.push(`${encodeTabKey(name)}.${encodeTabKey(tab.name)}`);
       }
     });
 

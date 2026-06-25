@@ -2420,7 +2420,10 @@ definitions:
                     properties:
                       label:
                         type: string
-                        description: User-facing tab label. A URL-safe name is derived from it for deep-linking.
+                        description: User-facing tab label shown on the tab.
+                      name:
+                        type: string
+                        description: Stable identifier used as the tab's deep-link URL key. Defaults to a slug of the label if omitted.
                       rows:
                         type: array
                         description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.

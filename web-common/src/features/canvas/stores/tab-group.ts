@@ -114,6 +114,19 @@ export class TabGroup {
     this.pendingActiveTabIndex = index;
   }
 
+  /**
+   * Optimistically update a tab's display name so the strip reflects edits as the user types,
+   * before the YAML change is saved and reconciled. The committed value is reconciled later
+   * via updateFromSpec.
+   */
+  setTabDisplayName(index: number, displayName: string) {
+    const list = get(this.tabs);
+    const tab = list[index];
+    if (!tab || tab.displayName === displayName) return;
+    tab.displayName = displayName;
+    this.tabs.set([...list]);
+  }
+
   /** Select a tab by its stable name. Returns false if no such tab exists. */
   setActiveByName(name: string): boolean {
     const index = get(this.tabs).findIndex((t) => t.name === name);
