@@ -373,7 +373,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingIssueTypeNeverSubscribed,
-			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
+			Metadata:  &database.BillingIssueMetadataNeverSubscribed{},
 			EventTime: org.CreatedOn,
 		})
 		if err != nil {

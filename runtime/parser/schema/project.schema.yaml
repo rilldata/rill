@@ -2078,7 +2078,7 @@ definitions:
             description: A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten
           data_time_range:
             type: string
-            description: 'Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table''s time coverage (e.g. `-5Y to now`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks.'
+            description: 'Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table''s time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.'
           smallest_time_grain:
             type: string
             description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
@@ -2311,7 +2311,7 @@ definitions:
                   description: Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included.
                 data_time_range:
                   type: string
-                  description: 'Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup''s time coverage (e.g. `-1Y to now`, `-5Y to -1Y`, `inf`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks.'
+                  description: 'Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup''s time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.'
               required:
                 - model
                 - time_grain

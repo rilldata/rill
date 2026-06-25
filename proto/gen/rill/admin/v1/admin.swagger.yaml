@@ -2004,6 +2004,148 @@ paths:
           in: path
           required: true
           type: string
+  /v1/orgs/{org}/projects/{project}/personal-files:
+    get:
+      summary: ListPersonalFiles lists the calling user's personal files.
+      operationId: AdminService_ListPersonalFiles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListPersonalFilesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+    post:
+      summary: CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+      operationId: AdminService_CreatePersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreatePersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              displayName:
+                type: string
+              kind:
+                type: string
+              yaml:
+                type: string
+                description: 'Optional: initial YAML body. If empty, the server generates a blank template for the given type.'
+  /v1/orgs/{org}/projects/{project}/personal-files/{name}:
+    get:
+      summary: GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+      operationId: AdminService_GetPersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetPersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+    delete:
+      summary: DeletePersonalFile deletes a personal virtual file the caller owns.
+      operationId: AdminService_DeletePersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeletePersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+    post:
+      summary: EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+      operationId: AdminService_EditPersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditPersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              kind:
+                type: string
+              yaml:
+                type: string
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -3971,6 +4113,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
+  /v1/superuser/organization/trial/extend:
+    post:
+      summary: SudoExtendTrial extends the trial period for an organization
+      operationId: AdminService_SudoExtendTrial
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoExtendTrialResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoExtendTrialRequest'
   /v1/superuser/organization/trial/grant-credits:
     post:
       summary: SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
@@ -5019,11 +5180,18 @@ definitions:
       inputTokens:
         type: integer
         format: int64
-        description: Number of tokens in the input.
+        description: Number of full-rate (non-cached) tokens in the input.
       outputTokens:
         type: integer
         format: int64
         description: Number of tokens in the output.
+      cachedInputTokens:
+        type: integer
+        format: int64
+        description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+      provider:
+        type: string
+        description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
   v1CompletionMessage:
     type: object
     properties:
@@ -5138,6 +5306,11 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+  v1CreatePersonalFileResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1CreateProjectResponse:
     type: object
     properties:
@@ -5170,6 +5343,8 @@ definitions:
       deploymentId:
         type: string
   v1DeleteOrganizationResponse:
+    type: object
+  v1DeletePersonalFileResponse:
     type: object
   v1DeleteProjectResponse:
     type: object
@@ -5237,6 +5412,8 @@ definitions:
       - DEPLOYMENT_STATUS_DELETED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1EditAlertResponse:
+    type: object
+  v1EditPersonalFileResponse:
     type: object
   v1EditReportResponse:
     type: object
@@ -5490,6 +5667,13 @@ definitions:
     properties:
       url:
         type: string
+  v1GetPersonalFileResponse:
+    type: object
+    properties:
+      path:
+        type: string
+      yaml:
+        type: string
   v1GetProjectAccessRequestResponse:
     type: object
     properties:
@@ -5740,6 +5924,13 @@ definitions:
           $ref: '#/definitions/v1Organization'
       nextPageToken:
         type: string
+  v1ListPersonalFilesResponse:
+    type: object
+    properties:
+      files:
+        type: array
+        items:
+          type: string
   v1ListProjectInvitesResponse:
     type: object
     properties:
@@ -6693,6 +6884,20 @@ definitions:
     type: object
   v1SudoDeleteOrganizationBillingMessageResponse:
     type: object
+  v1SudoExtendTrialRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      days:
+        type: integer
+        format: int32
+  v1SudoExtendTrialResponse:
+    type: object
+    properties:
+      trialEnd:
+        type: string
+        format: date-time
   v1SudoGetResourceResponse:
     type: object
     properties:

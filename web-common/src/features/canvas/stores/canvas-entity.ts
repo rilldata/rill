@@ -199,15 +199,7 @@ export class CanvasEntity {
       this._metricsViews,
     );
 
-    this.unsubscriber = this.specStore.subscribe(({ data }) => {
-      if (this.firstTimeLoad) {
-        this.firstTimeLoad = false;
-        return;
-      }
-      if (data) {
-        this.processSpec(data);
-      }
-    });
+    this.resubscribe();
 
     this.viewingDefaultsStore = derived(
       [
@@ -540,6 +532,20 @@ export class CanvasEntity {
     this.saveSnapshot(searchParams.toString());
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL();
+  };
+
+  // Resubscribes to the spec store. Internal call to processSpec will recreate the components.
+  // This ensures that cached canvas entities are not left in an error state.
+  resubscribe = () => {
+    this.unsubscriber = this.specStore.subscribe(({ data }) => {
+      if (this.firstTimeLoad) {
+        this.firstTimeLoad = false;
+        return;
+      }
+      if (data) {
+        this.processSpec(data);
+      }
+    });
   };
 
   // Tears down the spec subscription opened in the constructor and disposes

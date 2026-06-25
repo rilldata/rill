@@ -398,8 +398,12 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cachedInputTokens:
+                    description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+                    format: int64
+                    type: integer
                 inputTokens:
-                    description: Number of tokens in the input.
+                    description: Number of full-rate (non-cached) tokens in the input.
                     format: int64
                     type: integer
                 message:
@@ -408,6 +412,9 @@ components:
                     description: Number of tokens in the output.
                     format: int64
                     type: integer
+                provider:
+                    description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
+                    type: string
             type: object
         v1CompletionMessage:
             properties:
@@ -521,6 +528,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePersonalFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -553,6 +565,8 @@ components:
                     type: string
             type: object
         v1DeleteOrganizationResponse:
+            type: object
+        v1DeletePersonalFileResponse:
             type: object
         v1DeleteProjectResponse:
             properties:
@@ -620,6 +634,8 @@ components:
                 - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
+            type: object
+        v1EditPersonalFileResponse:
             type: object
         v1EditReportResponse:
             type: object
@@ -872,6 +888,13 @@ components:
                 url:
                     type: string
             type: object
+        v1GetPersonalFileResponse:
+            properties:
+                path:
+                    type: string
+                yaml:
+                    type: string
+            type: object
         v1GetProjectAccessRequestResponse:
             properties:
                 email:
@@ -1108,6 +1131,13 @@ components:
                 organizations:
                     items:
                         $ref: '#/components/schemas/v1Organization'
+                    type: array
+            type: object
+        v1ListPersonalFilesResponse:
+            properties:
+                files:
+                    items:
+                        type: string
                     type: array
             type: object
         v1ListProjectInvitesResponse:
@@ -2035,6 +2065,20 @@ components:
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
         v1SudoDeleteOrganizationBillingMessageResponse:
+            type: object
+        v1SudoExtendTrialRequest:
+            properties:
+                days:
+                    format: int32
+                    type: integer
+                org:
+                    type: string
+            type: object
+        v1SudoExtendTrialResponse:
+            properties:
+                trialEnd:
+                    format: date-time
+                    type: string
             type: object
         v1SudoGetResourceResponse:
             properties:
@@ -3303,6 +3347,8 @@ paths:
             summary: SetProjectMemberUserRole sets the role for the member
             x-visibility: public
     /v1/orgs/{org}/projects/{project}/members/{email}/usergroups: {}
+    /v1/orgs/{org}/projects/{project}/personal-files: {}
+    /v1/orgs/{org}/projects/{project}/personal-files/{name}: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
     /v1/orgs/{org}/projects/{project}/reports/-/yaml: {}
@@ -3865,6 +3911,7 @@ paths:
     /v1/superuser/organization/billing/customer_id: {}
     /v1/superuser/organization/billing/report-usage: {}
     /v1/superuser/organization/custom-domain: {}
+    /v1/superuser/organization/trial/extend: {}
     /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}
     /v1/superuser/organizations/{org}/billing/message: {}

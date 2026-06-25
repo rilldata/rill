@@ -41,8 +41,9 @@ type CanvasYAML struct {
 		Filters             map[string]string `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
-	Rows      []*canvasRowYAML         `yaml:"rows"`
-	Security  *SecurityPolicyYAML      `yaml:"security"`
+	Rows        []*canvasRowYAML    `yaml:"rows"`
+	Security    *SecurityPolicyYAML `yaml:"security"`
+	Annotations map[string]string   `yaml:"annotations"`
 }
 
 // canvasRowYAML is a single entry in a canvas's (or tab's) rows list.
@@ -236,6 +237,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.SecurityRules = rules
 	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 	r.CanvasSpec.RequiredFilters = tmp.Filters.Required
+	r.CanvasSpec.Annotations = tmp.Annotations
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {

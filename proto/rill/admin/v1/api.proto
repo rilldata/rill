@@ -912,6 +912,14 @@ service AdminService {
     };
   }
 
+  // SudoExtendTrial extends the trial period for an organization
+  rpc SudoExtendTrial(SudoExtendTrialRequest) returns (SudoExtendTrialResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/trial/extend",
+      body: "*"
+    };
+  }
+
   // SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
   rpc SudoGrantTrialCredits(SudoGrantTrialCreditsRequest) returns (SudoGrantTrialCreditsResponse) {
     option (google.api.http) = {
@@ -1268,6 +1276,39 @@ service AdminService {
     option (google.api.http) = {
       get: "/v1/orgs/{org}/projects/{project}/alerts/{name}/yaml"
     };
+  }
+
+  // ListPersonalFiles lists the calling user's personal files.
+  rpc ListPersonalFiles(ListPersonalFilesRequest) returns (ListPersonalFilesResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/personal-files"};
+  }
+
+  // CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+  rpc CreatePersonalFile(CreatePersonalFileRequest) returns (CreatePersonalFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-files",
+      body: "*"
+    };
+  }
+
+  // GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+  rpc GetPersonalFile(GetPersonalFileRequest) returns (GetPersonalFileResponse) {
+    option (google.api.http) = {
+      get: "/v1/orgs/{org}/projects/{project}/personal-files/{name}"
+    };
+  }
+
+  // EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+  rpc EditPersonalFile(EditPersonalFileRequest) returns (EditPersonalFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-files/{name}",
+      body: "*"
+    };
+  }
+
+  // DeletePersonalFile deletes a personal virtual file the caller owns.
+  rpc DeletePersonalFile(DeletePersonalFileRequest) returns (DeletePersonalFileResponse) {
+    option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/personal-files/{name}"};
   }
 
   // GetBillingSubscription lists the subscription for the organization
@@ -2155,6 +2196,15 @@ message SudoUpdateOrganizationBillingCustomerRequest {
 message SudoUpdateOrganizationBillingCustomerResponse {
   Organization organization = 1;
   Subscription subscription = 2;
+}
+
+message SudoExtendTrialRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  int32 days = 2 [(validate.rules).int32 = {gt: 0, lte: 30}];
+}
+
+message SudoExtendTrialResponse {
+  google.protobuf.Timestamp trial_end = 1;
 }
 
 message SudoGrantTrialCreditsRequest {
@@ -3150,6 +3200,59 @@ message GetAlertYAMLRequest {
 
 message GetAlertYAMLResponse {
   string yaml = 1;
+}
+
+message ListPersonalFilesRequest {
+  string org = 1;
+  string project = 2;
+}
+
+message ListPersonalFilesResponse {
+  repeated string files = 1;
+}
+
+message CreatePersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string display_name = 3 [(validate.rules).string.min_len = 1];
+  string kind = 4;
+  // Optional: initial YAML body. If empty, the server generates a blank template for the given type.
+  string yaml = 5;
+}
+
+message CreatePersonalFileResponse {
+  string name = 1;
+}
+
+message GetPersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message GetPersonalFileResponse {
+  string path = 1;
+  string yaml = 2;
+}
+
+message EditPersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+  string kind = 4;
+  string yaml = 5;
+}
+
+message EditPersonalFileResponse {
+}
+
+message DeletePersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message DeletePersonalFileResponse {
 }
 
 message GetBillingSubscriptionRequest {

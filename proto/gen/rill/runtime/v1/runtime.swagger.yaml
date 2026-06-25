@@ -3904,7 +3904,6 @@ definitions:
         description: |-
           Optional rilltime expression describing the time range covered by the rollup.
           When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
         description: Time grain of the rollup.
@@ -4506,6 +4505,11 @@ definitions:
         description: |-
           Array of dimension or measure names that must have a value before the canvas can render.
           Required filters are implicitly pinned.
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        description: Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
   v1CanvasState:
     type: object
     properties:
@@ -6568,7 +6572,6 @@ definitions:
         description: |-
           Optional rilltime expression describing the time range covered by the base table.
           When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-          Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
       dimensions:
         type: array
         items:

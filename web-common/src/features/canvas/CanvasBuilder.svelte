@@ -85,7 +85,6 @@
       componentsStore,
       processRows,
       specStore,
-      unsubscribe,
       _rows,
       layout,
       firstLoad,
@@ -130,7 +129,7 @@
 
   $: maxWidth = canvasMaxWidth || DEFAULT_DASHBOARD_WIDTH;
 
-  $: specCanvasRows = structuredClone(rows) as V1CanvasRow[];
+  $: specCanvasRows = structuredClone(rows);
 
   $: columnWidth = clientWidth / 12;
 
@@ -750,8 +749,6 @@
     if (timeout) {
       clearTimeout(timeout);
     }
-
-    unsubscribe();
   });
 </script>
 

@@ -228,7 +228,11 @@
   let openDropdownId = $state("");
   let pendingId = $state("");
   let deleteDialogOpen = $state(false);
-  let pendingDelete = $state<{ id: string; branch: string } | null>(null);
+  let pendingDelete = $state<{
+    id: string;
+    branch: string;
+    editable: boolean;
+  } | null>(null);
 
   function onFilterChange(key: string, selected: string[]) {
     if (key === "status") statusFilter = selected;
@@ -265,8 +269,12 @@
     }
   }
 
-  function confirmDelete(deploymentId: string, branch: string | undefined) {
-    pendingDelete = { id: deploymentId, branch: branch ?? "" };
+  function confirmDelete(
+    deploymentId: string,
+    branch: string | undefined,
+    editable: boolean,
+  ) {
+    pendingDelete = { id: deploymentId, branch: branch ?? "", editable };
     deleteDialogOpen = true;
   }
 
@@ -467,7 +475,12 @@
                   <DropdownMenu.Item
                     class="font-normal flex items-center"
                     disabled={isPending}
-                    onclick={() => confirmDelete(id, deployment.branch)}
+                    onclick={() =>
+                      confirmDelete(
+                        id,
+                        deployment.branch,
+                        !!deployment.editable,
+                      )}
                   >
                     <div class="flex items-center">
                       <Trash2Icon size="12px" />
@@ -494,6 +507,7 @@
 <DeleteBranchConfirmDialog
   bind:open={deleteDialogOpen}
   branch={pendingDelete?.branch || primaryBranch || "main"}
+  editable={pendingDelete?.editable ?? false}
   onConfirm={handleDelete}
 />
 

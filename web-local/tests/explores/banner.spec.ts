@@ -11,7 +11,6 @@ test.describe("banner in explore preview", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     await page.getByRole("button", { name: "Preview" }).click();
-    await page.waitForTimeout(1000);
 
     const banner = page.locator(".app-banner");
     await expect(banner).toBeHidden();
@@ -34,7 +33,6 @@ test.describe("banner in explore preview", () => {
     await page.getByRole("button", { name: "switch to code editor" }).click();
     await watcher.updateAndWaitForDashboard(exploreWithBanner);
     await page.getByRole("button", { name: "Preview" }).click();
-    await page.waitForTimeout(500);
 
     const banner = page.locator(".app-banner");
     await expect(banner).toBeVisible();
