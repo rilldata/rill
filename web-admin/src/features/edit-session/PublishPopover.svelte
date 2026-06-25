@@ -9,6 +9,7 @@
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -20,7 +21,6 @@
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitPushMutation,
-    createRuntimeServiceGitStatus,
     type V1GitMergeToBranchResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -69,27 +69,16 @@
 
   $: ({
     isPending,
+    isFetching,
     data: {
       hasLocalChanges,
       hasChangesOnCurrent,
       hasRemoteChanges,
       alreadyOnPrimary,
       disabledPerGitStatus,
+      changedFiles,
     },
   } = $gitStatusQuery);
-
-  // The changed-files list is shown only inside the popover, so request it
-  // on-demand (gated on `open`) rather than on the polled status query that
-  // also drives the always-visible button state.
-  $: changedFilesQuery = createRuntimeServiceGitStatus(
-    client,
-    { remoteBranch: primaryBranch, changedFiles: true },
-    // `refetchOnMount: "always"` overrides the global `refetchOnMount: false` so the list
-    // refetches each time the popover reopens; otherwise re-enabling the query serves the
-    // stale cache from the previous open without hitting the server.
-    { query: { enabled: open && !!primaryBranch, refetchOnMount: "always" } },
-  );
-  $: changedFiles = $changedFilesQuery.data?.changedFiles ?? [];
 
   $: projectLoaded = $projectQuery.data !== undefined;
   $: prodDeployment = $projectQuery.data?.deployment;
@@ -321,7 +310,12 @@
             so you can watch updates reconcile.
           {/if}
         </p>
-        {#if changedFiles.length > 0}
+        {#if isFetching}
+          <div class="flex items-center gap-x-2 text-xs text-fg-secondary">
+            <DelayedSpinner isLoading={true} size="14px" />
+            <span>Checking for changes…</span>
+          </div>
+        {:else if changedFiles.length > 0}
           <ChangedFilesList {changedFiles} />
         {/if}
         <Button

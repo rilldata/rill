@@ -1448,13 +1448,6 @@ paths:
           in: query
           required: false
           type: string
-        - name: changedFiles
-          description: |-
-            changed_files requests the list of changed files in the response. It is opt-in because
-            computing it requires extra git work that the frequently-polled status does not need.
-          in: query
-          required: false
-          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:
@@ -5715,8 +5708,8 @@ definitions:
           $ref: '#/definitions/GitStatusResponseGitFileChange'
         description: |-
           changed_files lists the files that would land on the target branch, relative to the project subpath.
-          Only populated when the request sets changed_files. The comparison ref is the requested
-          remote_branch, or the upstream of the current branch when remote_branch is empty.
+          The comparison ref is the requested remote_branch, or the upstream of the current branch when
+          remote_branch is empty.
   v1GitSwitchBranchResponse:
     type: object
   v1HealthResponse:
