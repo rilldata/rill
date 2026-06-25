@@ -2027,6 +2027,20 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingMessageResponse:
             type: object
+        v1SudoExtendTrialRequest:
+            properties:
+                days:
+                    format: int32
+                    type: integer
+                org:
+                    type: string
+            type: object
+        v1SudoExtendTrialResponse:
+            properties:
+                trialEnd:
+                    format: date-time
+                    type: string
+            type: object
         v1SudoGetResourceResponse:
             properties:
                 deployment:
@@ -7279,6 +7293,30 @@ paths:
                 SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
                 It only updates the custom domain in the database, which is used to ensure correct redirects.
                 The DNS records and ingress TLS must be configured separately.
+    /v1/superuser/organization/trial/extend:
+        post:
+            operationId: AdminService_SudoExtendTrial
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoExtendTrialRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoExtendTrialResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoExtendTrial extends the trial period for an organization
     /v1/superuser/organization/trial/grant-credits:
         post:
             operationId: AdminService_SudoGrantTrialCredits
