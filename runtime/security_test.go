@@ -473,8 +473,8 @@ func TestResolveMetricsView(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			// External users carry an "org_id" attribute, so the conditional row filter restricts them to their org.
-			name: "test_conditional_row_filter_external_user",
+			// test conditional row filter with custom "org_id" attribute
+			name: "test_conditional_row_filter_custom_attribute",
 			args: args{
 				attr: map[string]any{
 					"name":   "test",
@@ -494,8 +494,7 @@ func TestResolveMetricsView(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			// Internal users have no "org_id" attribute, so the conditional row filter resolves to "1=1" (no restriction).
-			name: "test_conditional_row_filter_internal_user",
+			name: "test_conditional_row_filter_no_custom_attribute",
 			args: args{
 				attr: map[string]any{
 					"name":   "test",
@@ -514,8 +513,8 @@ func TestResolveMetricsView(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			// An empty "org_id" attribute is falsy, so the conditional row filter resolves to "1=1" (no restriction).
-			name: "test_conditional_row_filter_empty_org_id",
+			// An empty custom attribute is ignored, so the conditional row filter resolves to "1=1" (no restriction).
+			name: "test_conditional_row_filter_empty_custom_attribute",
 			args: args{
 				attr: map[string]any{
 					"name":   "test",
