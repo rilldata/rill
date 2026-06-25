@@ -512,6 +512,8 @@ export class CanvasEntity {
     this.timeManager.state.onUrlChange(searchParams);
   };
 
+  // Resubscribes to the spec store. Internal call to processSpec will recreate the components.
+  // This ensures that cached canvas entities are not left in an error state.
   resubscribe = () => {
     this.unsubscriber = this.specStore.subscribe(({ data }) => {
       if (this.firstTimeLoad) {

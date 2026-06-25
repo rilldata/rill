@@ -173,6 +173,7 @@
     }
 
     existingStore?.canvasEntity?.resubscribe();
+    unsubscribe?.(); // cleanup old entities if any
     unsubscribe = existingStore?.canvasEntity?.unsubscribe;
 
     return existingStore;
