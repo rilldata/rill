@@ -177,6 +177,43 @@ export function reorderTab(
 }
 
 /**
+ * Duplicate the tab at [blockIndex, tabIndex], inserting the copy immediately after it.
+ * The copy's label gets a " (copy)" suffix; inline component definitions are re-derived to
+ * fresh names by the parser (they are position-keyed), so no manual renaming is needed.
+ * Returns the index of the new tab, or -1 if the entry is not a tab group.
+ */
+export function duplicateTab(
+  doc: Document,
+  blockIndex: number,
+  tabIndex: number,
+): number {
+  if (!isTabGroupRow(doc, blockIndex)) return -1;
+  const tabs = doc.getIn(["rows", blockIndex, "tabs"]);
+  if (!isSeq(tabs)) return -1;
+  const original = tabs.items[tabIndex];
+  if (!isMap(original)) return -1;
+
+  const json = original.toJSON() as { label?: string };
+  const label =
+    typeof json.label === "string" ? `${json.label} (copy)` : "Tab (copy)";
+  const clone = doc.createNode({ ...json, label });
+  tabs.items.splice(tabIndex + 1, 0, clone);
+  return tabIndex + 1;
+}
+
+/**
+ * Delete the entire tab group (and all of its tabs/components) at the given top-level index.
+ * Returns true if a tab group was removed.
+ */
+export function deleteTabGroup(doc: Document, blockIndex: number): boolean {
+  if (!isTabGroupRow(doc, blockIndex)) return false;
+  const rows = doc.get("rows");
+  if (!isSeq(rows)) return false;
+  rows.items.splice(blockIndex, 1);
+  return true;
+}
+
+/**
  * Wrap the plain row at rowIndex into a new single-tab tab group in place. The row's
  * content becomes "Tab 1"'s only row. Returns true if the conversion happened.
  */

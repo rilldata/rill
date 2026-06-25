@@ -7,6 +7,7 @@
     ArrowRight,
     ChevronLeft,
     ChevronRight,
+    Copy,
     Pencil,
     Plus,
     Trash2,
@@ -29,6 +30,10 @@
   export let onMoveTab:
     | ((tabIndex: number, direction: -1 | 1) => void)
     | undefined = undefined;
+  export let onDuplicateTab: ((tabIndex: number) => void) | undefined =
+    undefined;
+  // Fired (edit mode) when a tab is clicked, so the parent can open the tab-group inspector.
+  export let onSelectGroup: (() => void) | undefined = undefined;
   // When a component is being dragged, tabs become drop targets for cross-tab moves.
   export let dragComponent: BaseCanvasComponent | null = null;
   export let onDropOnTab: ((tabIndex: number) => void) | undefined = undefined;
@@ -77,10 +82,25 @@
   }
 
   function select(index: number) {
+    // In edit mode, clicking a tab also selects the group so the inspector shows its
+    // settings; this fires even when re-clicking the already-active tab.
+    onSelectGroup?.();
     if (index === $activeTabIndex) return;
     group.activeTabIndex.set(index);
     const tab = $tabs[index];
     if (tab && onSelect) onSelect(tab.name);
+  }
+
+  // Move a tab while keeping the focused tab focused: the active tab follows its content
+  // to the new position rather than the position staying fixed.
+  function moveWithFocus(index: number, direction: -1 | 1) {
+    const active = $activeTabIndex;
+    const target = index + direction;
+    let nextActive = active;
+    if (active === index) nextActive = target;
+    else if (active === target) nextActive = index;
+    onMoveTab?.(index, direction);
+    group.activateWhenReady(nextActive);
   }
 
   function commitRename(index: number, value: string) {
@@ -214,8 +234,15 @@
                   </DropdownMenu.Item>
                   <DropdownMenu.Item
                     class="flex flex-row gap-x-2 text-fg-primary"
+                    onclick={() => onDuplicateTab?.(index)}
+                  >
+                    <Copy size="14px" />
+                    Duplicate
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    class="flex flex-row gap-x-2 text-fg-primary"
                     disabled={index === 0}
-                    onclick={() => onMoveTab?.(index, -1)}
+                    onclick={() => moveWithFocus(index, -1)}
                   >
                     <ArrowLeft size="14px" />
                     Move left
@@ -223,7 +250,7 @@
                   <DropdownMenu.Item
                     class="flex flex-row gap-x-2 text-fg-primary"
                     disabled={index === tabsLength - 1}
-                    onclick={() => onMoveTab?.(index, 1)}
+                    onclick={() => moveWithFocus(index, 1)}
                   >
                     <ArrowRight size="14px" />
                     Move right

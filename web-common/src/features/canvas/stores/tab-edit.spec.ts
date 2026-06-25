@@ -6,6 +6,8 @@ import {
   addTabGroupAt,
   convertRowToTabGroup,
   deleteTab,
+  deleteTabGroup,
+  duplicateTab,
   isTabGroupRow,
   moveItemAcrossContainers,
   moveTab,
@@ -22,6 +24,50 @@ rows:
 `;
 
 describe("tab-edit YAML transforms", () => {
+  it("duplicateTab inserts a copy after the original with a (copy) label", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - tabs:
+      - label: Overview
+        rows:
+          - items:
+              - component: a
+      - label: Detail
+        rows: []
+`);
+    const newIndex = duplicateTab(doc, 0, 0);
+    expect(newIndex).toBe(1);
+
+    const tabs = doc.toJSON().rows[0].tabs;
+    expect(tabs).toHaveLength(3);
+    expect(tabs[1].label).toBe("Overview (copy)");
+    // The copy carries the original's rows/content.
+    expect(tabs[1].rows).toEqual([{ items: [{ component: "a" }] }]);
+    // The original and the tab that followed it are preserved and in order.
+    expect(tabs[0].label).toBe("Overview");
+    expect(tabs[2].label).toBe("Detail");
+  });
+
+  it("deleteTabGroup removes the whole group entry", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - component: header
+  - tabs:
+      - label: A
+        rows:
+          - items:
+              - component: a
+`);
+    expect(deleteTabGroup(doc, 1)).toBe(true);
+
+    const json = doc.toJSON();
+    expect(json.rows).toHaveLength(1);
+    expect(json.rows[0]).toEqual({ items: [{ component: "header" }] });
+    // Deleting a non-tab-group entry is a no-op.
+    expect(deleteTabGroup(doc, 0)).toBe(false);
+  });
+
   it("addTabGroup appends a group with one empty tab", () => {
     const doc = parseDocument(BASE);
     const index = addTabGroup(doc);

@@ -11,6 +11,7 @@
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import type { TabGroup } from "./stores/tab-group";
+  import { dropZone } from "./stores/ui-stores";
 
   export let group: TabGroup;
   export let blockIndex: number;
@@ -80,7 +81,10 @@
     tabIndex: number,
     direction: -1 | 1,
   ) => void;
+  export let onDuplicateTab: (blockIndex: number, tabIndex: number) => void;
   export let onSelect: ((tabName: string) => void) | undefined = undefined;
+  // Select this tab group for editing (opens the tab-group inspector panel).
+  export let onSelectGroup: (() => void) | undefined = undefined;
   // Drop a dragged component onto a tab (cross-container move).
   export let onDropOnTab: (blockIndex: number, tabIndex: number) => void;
   // Insert a new tab group at a given top-level index (for the "add outside" affordance).
@@ -115,6 +119,8 @@
         onDeleteTab={(tabIndex) => onDeleteTab(blockIndex, tabIndex)}
         onMoveTab={(tabIndex, direction) =>
           onMoveTab(blockIndex, tabIndex, direction)}
+        onDuplicateTab={(tabIndex) => onDuplicateTab(blockIndex, tabIndex)}
+        {onSelectGroup}
         onDropOnTab={(tabIndex) => onDropOnTab(blockIndex, tabIndex)}
       />
 
@@ -154,12 +160,32 @@
           >
             <ItemWrapper fitContent zIndex={0}>
               {#if hasValidMetrics}
-                <AddComponentDropdown
-                  componentForm
-                  label="Add widget to tab"
-                  onItemClick={(type) =>
-                    initializeRow($grid.length, type, target)}
-                />
+                <!-- The empty-tab body doubles as a drop target so a dragged widget can be
+                     dropped straight into an empty tab (which has no rows/drop zones yet). -->
+                <div
+                  role="presentation"
+                  class="w-full"
+                  on:mouseenter={() => {
+                    if (dragComponent) dropZone.set(tabZoneScope);
+                  }}
+                  on:mouseleave={() => {
+                    if (dragComponent) dropZone.clear();
+                  }}
+                  on:mouseup={() => {
+                    if (dragComponent) onDrop(0, null, target);
+                  }}
+                >
+                  <!-- While dragging, let the drop pass through to the wrapper instead of
+                       opening the add menu. -->
+                  <div class:pointer-events-none={!!dragComponent}>
+                    <AddComponentDropdown
+                      componentForm
+                      label="Add widget to tab"
+                      onItemClick={(type) =>
+                        initializeRow($grid.length, type, target)}
+                    />
+                  </div>
+                </div>
               {:else}
                 <ComponentError error="No valid metrics view in project" />
               {/if}

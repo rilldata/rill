@@ -44,6 +44,7 @@
     addTabGroupAt,
     convertRowToTabGroup,
     deleteTab,
+    duplicateTab,
     moveItemAcrossContainers,
     moveTab,
     renameTab,
@@ -79,6 +80,7 @@
     canvasEntity: {
       setActiveTabInURL,
       setSelectedComponent,
+      setSelectedTabGroup,
       selectedComponent,
       componentsStore,
       processRows,
@@ -480,6 +482,22 @@
     updateContents();
   }
 
+  function duplicateTabAction(blockIndex: number, tabIndex: number) {
+    const newTabIndex = duplicateTab(contents, blockIndex, tabIndex);
+    if (newTabIndex >= 0) {
+      const block = blocks[blockIndex];
+      if (block?.kind === "tab-group") {
+        block.group.activateWhenReady(newTabIndex);
+      }
+    }
+    updateContents();
+  }
+
+  function selectTabGroup(name: string) {
+    setSelectedTabGroup(name);
+    openSidebar();
+  }
+
   function convertRowToTabGroupAction(rowIndex: number) {
     if (convertRowToTabGroup(contents, rowIndex)) updateContents();
   }
@@ -567,6 +585,7 @@
 
   function resetSelection() {
     setSelectedComponent(null);
+    setSelectedTabGroup(null);
   }
 
   function scrollToBottom() {
@@ -788,7 +807,9 @@
         onRenameTab={renameTabAction}
         onDeleteTab={deleteTabAction}
         onMoveTab={moveTabAction}
+        onDuplicateTab={duplicateTabAction}
         onSelect={(tabName) => setActiveTabInURL(block.group.name, tabName)}
+        onSelectGroup={() => selectTabGroup(block.group.name)}
         onDropOnTab={dropComponentOnTab}
         onAddTabGroup={addTabGroupAtAction}
       />

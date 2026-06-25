@@ -92,6 +92,9 @@ export class CanvasEntity {
 
   selectedComponent = writable<string | null>(null);
   activeComponent = writable<string | null>(null);
+  // Name of the tab group currently selected for editing (drives the tab-group inspector
+  // panel). Mutually exclusive with selectedComponent.
+  selectedTabGroup = writable<string | null>(null);
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   public specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
@@ -919,8 +922,20 @@ export class CanvasEntity {
       const active = document.activeElement;
       if (active instanceof HTMLElement) active.blur();
     }
+    // Selecting a component takes over the inspector from any selected tab group.
+    if (id) this.selectedTabGroup.set(null);
     this.selectedComponent.set(id);
   };
+
+  // Select a tab group for editing (opens the tab-group inspector panel). Clears any
+  // selected component so the two never fight over the inspector.
+  setSelectedTabGroup = (name: string | null) => {
+    if (name) this.selectedComponent.set(null);
+    this.selectedTabGroup.set(name);
+  };
+
+  // Look up a tab group by its stable name (for the inspector panel).
+  getTabGroup = (name: string) => this.tabGroups.get(name);
 
   setActiveComponent = (id: string) => {
     this.activeComponent.set(id);
