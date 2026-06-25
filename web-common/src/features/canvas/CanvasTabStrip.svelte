@@ -91,17 +91,11 @@
     if (tab && onSelect) onSelect(tab.name);
   }
 
-  // Move a tab while keeping the focused tab focused: the active tab follows its content
-  // to the new position rather than the position staying fixed.
+  // Move a tab and keep that moved tab active. Track it by name: its destination index is
+  // only known once the spec reflects the reorder, and matching by name survives the shuffle.
   function moveWithFocus(index: number, direction: -1 | 1) {
-    const active = $activeTabIndex;
-    const target = index + direction;
-    let nextActive = active;
-    if (active === index) nextActive = target;
-    else if (active === target) nextActive = index;
-    // Queue the follow-up activation before the edit so the reorder reconcile applies it
-    // (otherwise the active tab can end up pointing at the swapped position until refresh).
-    group.activateWhenReady(nextActive);
+    const movedName = $tabs[index]?.name;
+    if (movedName) group.activateByNameWhenReady(movedName);
     onMoveTab?.(index, direction);
   }
 

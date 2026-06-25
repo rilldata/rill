@@ -65,7 +65,18 @@
 
   async function commitLabel(index: number, value: string) {
     const trimmed = value.trim();
-    if (!trimmed || trimmed === $tabs[index]?.displayName) return;
+    if (!trimmed) return;
+    // Compare against the persisted YAML, not $tabs[index].displayName: the live typing
+    // optimistically updates the latter (so the strip reflects edits), which would make a
+    // naive guard think nothing changed and skip the save, losing the edit on refresh.
+    const persisted = parseDocument($editorContent ?? "").getIn([
+      "rows",
+      blockIndex,
+      "tabs",
+      index,
+      "label",
+    ]);
+    if (trimmed === persisted) return;
     await applyEdit((doc) => renameTab(doc, blockIndex, index, trimmed));
   }
 
@@ -75,13 +86,10 @@
   }
 
   async function move(index: number, direction: -1 | 1) {
-    const active = $activeTabIndex;
-    let nextActive = active;
-    if (active === index) nextActive = index + direction;
-    else if (active === index + direction) nextActive = index;
-    // Queue the activation before the edit so the reorder reconcile applies it (otherwise the
-    // active tab points at the swapped position until a refresh).
-    group.activateWhenReady(nextActive);
+    // Keep the moved tab active by name: its destination index is only known after the spec
+    // reflects the reorder, and matching by name survives the index shuffle.
+    const movedName = $tabs[index]?.name;
+    if (movedName) group.activateByNameWhenReady(movedName);
     await applyEdit((doc) => moveTab(doc, blockIndex, index, direction));
   }
 
