@@ -84,7 +84,10 @@
   $: changedFilesQuery = createRuntimeServiceGitStatus(
     client,
     { remoteBranch: primaryBranch, changedFiles: true },
-    { query: { enabled: open && !!primaryBranch } },
+    // `refetchOnMount: "always"` overrides the global `refetchOnMount: false` so the list
+    // refetches each time the popover reopens; otherwise re-enabling the query serves the
+    // stale cache from the previous open without hitting the server.
+    { query: { enabled: open && !!primaryBranch, refetchOnMount: "always" } },
   );
   $: changedFiles = $changedFilesQuery.data?.changedFiles ?? [];
 

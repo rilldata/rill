@@ -470,18 +470,22 @@ func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles boo
 	}
 
 	// run git status
-	st, err := gitutil.Status(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch, changedFiles)
+	st, err := gitutil.Status(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
+	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed
+	// separately. Best-effort: a failure here must not break the status the merge flow depends on.
 	var fileChanges []drivers.RepoFileChange
-	if len(st.ChangedFiles) > 0 {
-		fileChanges = make([]drivers.RepoFileChange, len(st.ChangedFiles))
-		for i, f := range st.ChangedFiles {
-			fileChanges[i] = drivers.RepoFileChange{
-				Path:    f.Path,
-				OldPath: f.OldPath,
-				Status:  repoFileStatus(f.Status),
+	if changedFiles {
+		if files, err := gitutil.ChangedFiles(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch); err == nil {
+			fileChanges = make([]drivers.RepoFileChange, len(files))
+			for i, f := range files {
+				fileChanges[i] = drivers.RepoFileChange{
+					Path:    f.Path,
+					OldPath: f.OldPath,
+					Status:  repoFileStatus(f.Status),
+				}
 			}
 		}
 	}

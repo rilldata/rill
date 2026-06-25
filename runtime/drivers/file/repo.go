@@ -373,7 +373,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, changedFil
 	if err != nil {
 		if errors.Is(err, errProjectNotFound) || errors.Is(err, drivers.ErrNotAuthenticated) {
 			// not connected to a rill project or not authenticated, return minimal status
-			st, err := gitutil.Status(ctx, gitPath, subPath, "origin", remoteBranch, changedFiles)
+			st, err := gitutil.Status(ctx, gitPath, subPath, "origin", remoteBranch)
 			if err != nil {
 				return nil, err
 			}
@@ -392,9 +392,17 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, changedFil
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.Status(ctx, gitPath, subPath, config.RemoteName(), remoteBranch, changedFiles)
+	gs, err := gitutil.Status(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
 	if err != nil {
 		return nil, err
+	}
+	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed
+	// separately. Best-effort: a failure here must not break the status the merge flow depends on.
+	var files []gitutil.ChangedFile
+	if changedFiles {
+		if f, err := gitutil.ChangedFiles(ctx, gitPath, subPath, config.RemoteName(), remoteBranch); err == nil {
+			files = f
+		}
 	}
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
@@ -405,7 +413,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, changedFil
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
-		ChangedFiles:  repoFileChanges(gs.ChangedFiles),
+		ChangedFiles:  repoFileChanges(files),
 	}, nil
 }
 
@@ -610,7 +618,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 	}
 
 	// fetch the status
-	gs, err := gitutil.Status(ctx, gitPath, subpath, gitConfig.RemoteName(), "", false)
+	gs, err := gitutil.Status(ctx, gitPath, subpath, gitConfig.RemoteName(), "")
 	if err != nil {
 		return err
 	}
