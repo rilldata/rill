@@ -4,6 +4,7 @@
   import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { detectOverflow } from "@rilldata/web-common/lib/actions/detect-overflow";
   import { modifierHeld } from "@rilldata/web-common/lib/modifier-key";
   import { dragDataStore } from "./DragList.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
@@ -51,6 +52,8 @@
 
   const dimensionCount = $derived(dimensions.length);
   const measureCount = $derived(measures.length);
+
+  let isTruncated = $state(false);
 
   const actionBtnClass =
     "flex items-center justify-center h-[18px] w-[18px] rounded-sm text-icon-muted hover:text-fg-primary hover:bg-surface-background transition-colors";
@@ -190,7 +193,11 @@
   role="presentation"
   onmousedown={handleMouseDown}
 >
-  <span class="truncate flex-1 min-w-0 text-fg-primary">
+  <span
+    class="truncate flex-1 min-w-0 text-left text-fg-primary"
+    use:detectOverflow={(v) => (isTruncated = v)}
+    title={isTruncated ? tag.name : undefined}
+  >
     {tag.name}
   </span>
 
