@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
 
@@ -103,6 +104,8 @@
     });
   }
 
+  let unsubscribe: (() => void) | undefined = undefined;
+
   onNavigate(() => {
     if (hasBanner) {
       eventBus.emit("remove-banner", DashboardBannerID);
@@ -169,8 +172,15 @@
       }
     }
 
+    existingStore?.canvasEntity?.resubscribe();
+    unsubscribe = existingStore?.canvasEntity?.unsubscribe;
+
     return existingStore;
   }
+
+  onDestroy(() => {
+    unsubscribe?.();
+  });
 </script>
 
 <svelte:head>
