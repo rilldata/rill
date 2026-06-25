@@ -89,6 +89,9 @@
   export let connectNulls: boolean = true;
   export let dynamicYAxis: boolean = false;
   export let tddChartType: TDDChart = TDDChart.DEFAULT;
+  // Chart height when expanded in the Time Dimension Detail view. Driven by the
+  // resizable divider between the timeseries and the detail table.
+  export let tddChartHeight: number = 245;
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
@@ -111,7 +114,7 @@
     annotationPopover.destroy();
   });
 
-  $: height = showTimeDimensionDetail ? 245 : 145;
+  $: height = showTimeDimensionDetail ? tddChartHeight : 145;
   $: config = computeChartConfig(clientWidth, height, showTimeDimensionDetail);
   $: pb = config.plotBounds;
 

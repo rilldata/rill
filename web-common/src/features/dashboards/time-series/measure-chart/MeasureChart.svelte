@@ -64,6 +64,9 @@
   export let scrubController: ScrubController | undefined = undefined;
   export let connectNulls: boolean = true;
   export let dynamicYAxis: boolean = false;
+  // Chart height when expanded in the Time Dimension Detail view. Driven by the
+  // resizable divider between the timeseries and the detail table.
+  export let tddChartHeight: number = 245;
 
   const client = useRuntimeClient();
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
@@ -80,7 +83,7 @@
   });
 
   $: measureName = measure.name ?? "";
-  $: height = showTimeDimensionDetail ? 245 : 145;
+  $: height = showTimeDimensionDetail ? tddChartHeight : 145;
 
   $: effectiveChartType = resolveEffectiveChartType(
     tddChartType,
@@ -316,17 +319,11 @@
 
 <div bind:this={container} class="size-full relative">
   {#if !$visible || (isFetching && data.length === 0)}
-    <div
-      class="flex items-center justify-center h-[145px]"
-      class:h-[245px]={showTimeDimensionDetail}
-    >
+    <div class="flex items-center justify-center" style:height="{height}px">
       <Spinner status={EntityStatus.Running} size="24px" />
     </div>
   {:else if isError}
-    <div
-      class="flex items-center justify-center h-[145px]"
-      class:h-[245px]={showTimeDimensionDetail}
-    >
+    <div class="flex items-center justify-center" style:height="{height}px">
       <InlineErrorIndicator message={error} />
     </div>
   {:else if usesVegaChart && data.length > 0}
@@ -375,6 +372,7 @@
       {connectNulls}
       {dynamicYAxis}
       {tddChartType}
+      {tddChartHeight}
     />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">
