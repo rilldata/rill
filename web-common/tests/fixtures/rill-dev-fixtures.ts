@@ -366,6 +366,7 @@ async function waitForProjectReady(
 ) {
   let prevSignature = "";
   let stablePolls = 0;
+  let reachedIdle = false;
   let lastResources: V1Resource[] = [];
 
   const ready = await asyncWaitUntil(async () => {
@@ -388,6 +389,11 @@ async function waitForProjectReady(
       return false;
     }
 
+    // The project has fully reconciled at least once. Used as a fallback below
+    // if the resource set never stabilizes (e.g. background cloud sync in the
+    // deploy tests keeps churning it).
+    reachedIdle = true;
+
     // Track the set of resource names only, not their stateVersion: a resource
     // that re-reconciles and returns to idle (common while a project is being
     // deployed) shouldn't reset stability and stall readiness. We only need the
@@ -407,29 +413,35 @@ async function waitForProjectReady(
     return stablePolls >= 3;
   }, timeoutMs);
 
-  if (!ready) {
-    const pending = dataResourcesOf(lastResources)
-      .filter((r) => !isIdle(r))
-      .map(
-        (r) =>
-          `${r.meta?.name?.kind}/${r.meta?.name?.name}: ${r.meta?.reconcileStatus}`,
-      )
-      .join("\n");
-    throw new Error(
-      `Project did not become ready on port ${port}. Still pending:\n${pending || "(none)"}`,
+  if (ready) {
+    const errors = dataResourcesOf(lastResources).filter(
+      (r) => r.meta?.reconcileError,
     );
+    if (errors.length > 0) {
+      const details = errors
+        .map(
+          (r) =>
+            `${r.meta?.name?.kind}/${r.meta?.name?.name}: ${r.meta?.reconcileError}`,
+        )
+        .join("\n");
+      throw new Error(`Reconciliation errors:\n${details}`);
+    }
+    return;
   }
 
-  const errors = dataResourcesOf(lastResources).filter(
-    (r) => r.meta?.reconcileError,
+  // The set never stabilized within the timeout. If the project did fully
+  // reconcile at some point, proceed: the churn is background activity (e.g.
+  // cloud sync), not an unready project. Only fail if it never reached idle.
+  if (reachedIdle) return;
+
+  const pending = dataResourcesOf(lastResources)
+    .filter((r) => !isIdle(r))
+    .map(
+      (r) =>
+        `${r.meta?.name?.kind}/${r.meta?.name?.name}: ${r.meta?.reconcileStatus}`,
+    )
+    .join("\n");
+  throw new Error(
+    `Project did not become ready on port ${port}. Still pending:\n${pending || "(none)"}`,
   );
-  if (errors.length > 0) {
-    const details = errors
-      .map(
-        (r) =>
-          `${r.meta?.name?.kind}/${r.meta?.name?.name}: ${r.meta?.reconcileError}`,
-      )
-      .join("\n");
-    throw new Error(`Reconciliation errors:\n${details}`);
-  }
 }

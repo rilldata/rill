@@ -9,10 +9,6 @@ test.describe.skip("Postgres connector", () => {
   // So retry to not make the tests flaky.
   test.describe.configure({ retries: 3 });
 
-  // The welcome-screen tests need an uninitialized project, so each test gets
-  // its own pristine instance rather than the shared per-worker runtime.
-  test.use({ freshInstance: true });
-
   const postgresOne = new PostgresTestContainer();
   const postgresTwo = new PostgresTestContainer();
 
@@ -29,6 +25,11 @@ test.describe.skip("Postgres connector", () => {
   });
 
   test.describe("Welcome screen", () => {
+    // The welcome flow needs an uninitialized project, so use a pristine
+    // instance rather than the shared per-worker runtime. The Home page block
+    // below stays on the shared runtime.
+    test.use({ freshInstance: true });
+
     test("Create connector using individual fields", async ({ page }) => {
       await page.getByLabel("See more connectors").click();
       await enterPostgresCredentials(page, postgresOne);

@@ -11,12 +11,6 @@ test.describe("ClickHouse connector", () => {
   // TODO: fix FileAndResourceWatcher to be more robust.
   test.describe.configure({ retries: 3 });
 
-  // These tests drive the welcome flow (which needs an uninitialized project)
-  // and change the olap_connector, which restarts the controller. Both are
-  // incompatible with the shared per-worker runtime, so each test gets its own
-  // pristine instance.
-  test.use({ freshInstance: true });
-
   const clickhouseOne = new ClickHouseTestContainer();
   const clickhouseTwo = new ClickHouseTestContainer();
 
@@ -33,6 +27,11 @@ test.describe("ClickHouse connector", () => {
   });
 
   test.describe("Welcome screen", () => {
+    // The welcome flow needs an uninitialized project, so use a pristine
+    // instance rather than the shared per-worker runtime (which keeps a
+    // rill.yaml present). The Home page block below stays on the shared runtime.
+    test.use({ freshInstance: true });
+
     test("Create connector using individual fields", async ({ page }) => {
       // Open the connect to clickhouse modal
       await page.getByLabel("Connect to clickhouse").click();
