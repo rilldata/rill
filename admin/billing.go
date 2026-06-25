@@ -507,7 +507,7 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, cr
 		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     orgID,
 			Type:      database.BillingIssueTypeNeverSubscribed,
-			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
+			Metadata:  &database.BillingIssueMetadataNeverSubscribed{},
 			EventTime: creationTime,
 		})
 		if err != nil {
