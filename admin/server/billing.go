@@ -663,6 +663,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 		return nil, status.Errorf(codes.FailedPrecondition, "organization %s never subscribed to a plan", org.Name)
 	}
 
+	// find existing trial end date
 	currentEndDate := time.Time{}
 	onTrial, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnTrial)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
@@ -698,12 +699,14 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 
 	newEndDate := currentEndDate.AddDate(0, 0, days)
 
+	// start a new trial, if already on trial plan, this will not create new subscription, if not on trial plan it will error
 	_, sub, err := s.admin.StartTrial(ctx, org)
 	if err != nil {
 		return nil, err
 	}
 
 	if sub.ID != "" {
+		// update on trial metadata with new end date
 		_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeOnTrial,
@@ -719,6 +722,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 			return nil, err
 		}
 
+		// send trial extended email
 		err = s.admin.Email.SendTrialExtended(&email.TrialExtended{
 			ToEmail:      org.BillingEmail,
 			ToName:       org.Name,
@@ -730,6 +734,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 		}
 	}
 
+	// if trial subscription was cancelled then unschedule the cancellation
 	if sub.EndDate.Equal(sub.CurrentBillingCycleEndDate) {
 		_, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
 		if err != nil {
