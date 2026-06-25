@@ -1306,6 +1306,9 @@ message GitStatusRequest {
   // remote_branch is the remote branch to compare the current local branch against.
   // If empty, the upstream of the current local branch is used.
   string remote_branch = 2;
+  // changed_files requests the list of changed files in the response. It is opt-in because
+  // computing it requires extra git work that the frequently-polled status does not need.
+  bool changed_files = 3;
 }
 
 message GitStatusResponse {
@@ -1323,6 +1326,26 @@ message GitStatusResponse {
   int32 local_commits = 5;
   // remote_commits returns number of remote commits not pulled yet.
   int32 remote_commits = 6;
+
+  enum GitFileStatus {
+    GIT_FILE_STATUS_UNSPECIFIED = 0;
+    GIT_FILE_STATUS_ADDED = 1;
+    GIT_FILE_STATUS_MODIFIED = 2;
+    GIT_FILE_STATUS_DELETED = 3;
+    GIT_FILE_STATUS_RENAMED = 4;
+  }
+
+  message GitFileChange {
+    string path = 1;
+    GitFileStatus status = 2;
+    // old_path is the previous path; only set when status is GIT_FILE_STATUS_RENAMED.
+    string old_path = 3;
+  }
+
+  // changed_files lists the files that would land on the target branch, relative to the project subpath.
+  // Only populated when the request sets changed_files. The comparison ref is the requested
+  // remote_branch, or the upstream of the current branch when remote_branch is empty.
+  repeated GitFileChange changed_files = 8;
 }
 
 message ListGitBranchesRequest {

@@ -354,7 +354,7 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 	return commits, nextPageToken, nil
 }
 
-func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
+func (c *connection) Status(ctx context.Context, remoteBranch string, changedFiles bool) (*drivers.RepoStatus, error) {
 	if !gitutil.IsGitRepo(c.root) {
 		return &drivers.RepoStatus{}, nil
 	}
@@ -373,7 +373,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 	if err != nil {
 		if errors.Is(err, errProjectNotFound) || errors.Is(err, drivers.ErrNotAuthenticated) {
 			// not connected to a rill project or not authenticated, return minimal status
-			st, err := gitutil.Status(ctx, gitPath, subPath, "origin", remoteBranch)
+			st, err := gitutil.Status(ctx, gitPath, subPath, "origin", remoteBranch, changedFiles)
 			if err != nil {
 				return nil, err
 			}
@@ -392,7 +392,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.Status(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
+	gs, err := gitutil.Status(ctx, gitPath, subPath, config.RemoteName(), remoteBranch, changedFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +405,39 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
+		ChangedFiles:  repoFileChanges(gs.ChangedFiles),
 	}, nil
+}
+
+// repoFileChanges maps gitutil changed files to driver changed files.
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }
 
 // Pull implements drivers.RepoStore.
@@ -578,7 +610,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 	}
 
 	// fetch the status
-	gs, err := gitutil.Status(ctx, gitPath, subpath, gitConfig.RemoteName(), "")
+	gs, err := gitutil.Status(ctx, gitPath, subpath, gitConfig.RemoteName(), "", false)
 	if err != nil {
 		return err
 	}

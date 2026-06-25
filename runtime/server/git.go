@@ -98,13 +98,25 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx, req.RemoteBranch)
+	gs, err := repo.Status(ctx, req.RemoteBranch, req.ChangedFiles)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
 	if !gs.IsGitRepo {
 		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
 	}
+	var changedFiles []*runtimev1.GitStatusResponse_GitFileChange
+	if len(gs.ChangedFiles) > 0 {
+		changedFiles = make([]*runtimev1.GitStatusResponse_GitFileChange, len(gs.ChangedFiles))
+		for i, f := range gs.ChangedFiles {
+			changedFiles[i] = &runtimev1.GitStatusResponse_GitFileChange{
+				Path:    f.Path,
+				OldPath: f.OldPath,
+				Status:  gitFileStatusToPB(f.Status),
+			}
+		}
+	}
+
 	return &runtimev1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
@@ -113,7 +125,23 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
+		ChangedFiles:  changedFiles,
 	}, nil
+}
+
+func gitFileStatusToPB(s drivers.RepoFileStatus) runtimev1.GitStatusResponse_GitFileStatus {
+	switch s {
+	case drivers.RepoFileStatusAdded:
+		return runtimev1.GitStatusResponse_GIT_FILE_STATUS_ADDED
+	case drivers.RepoFileStatusModified:
+		return runtimev1.GitStatusResponse_GIT_FILE_STATUS_MODIFIED
+	case drivers.RepoFileStatusDeleted:
+		return runtimev1.GitStatusResponse_GIT_FILE_STATUS_DELETED
+	case drivers.RepoFileStatusRenamed:
+		return runtimev1.GitStatusResponse_GIT_FILE_STATUS_RENAMED
+	default:
+		return runtimev1.GitStatusResponse_GIT_FILE_STATUS_UNSPECIFIED
+	}
 }
 
 func (s *Server) ListGitCommits(ctx context.Context, req *runtimev1.ListGitCommitsRequest) (*runtimev1.ListGitCommitsResponse, error) {

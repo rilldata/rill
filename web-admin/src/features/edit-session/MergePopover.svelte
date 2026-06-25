@@ -30,6 +30,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
+  import ChangedFilesList from "./ChangedFilesList.svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
 
   export let organization: string;
@@ -75,6 +76,7 @@
       hasRemoteChanges,
       alreadyOnPrimary,
       disabledPerGitStatus,
+      changedFiles,
     },
   } = $gitStatusQuery);
 
@@ -250,7 +252,10 @@
 </script>
 
 <Tooltip distance={8} suppress={open}>
-  <Popover.Root bind:open>
+  <Popover.Root
+    bind:open
+    onOpenChange={(o) => o && invalidateGitStatusQueries(client, primaryBranch)}
+  >
     <Popover.Trigger>
       {#snippet child({ props })}
         <Button {...props} type="primary" {disabled}>
@@ -278,6 +283,9 @@
             to production. We'll open a new tab so you can watch updates reconcile.
           {/if}
         </p>
+        {#if changedFiles.length > 0}
+          <ChangedFilesList {changedFiles} />
+        {/if}
         {#if branchUrl}
           <a
             class="github-link"
