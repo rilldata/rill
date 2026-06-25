@@ -2066,6 +2066,20 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingMessageResponse:
             type: object
+        v1SudoExtendTrialRequest:
+            properties:
+                days:
+                    format: int32
+                    type: integer
+                org:
+                    type: string
+            type: object
+        v1SudoExtendTrialResponse:
+            properties:
+                trialEnd:
+                    format: date-time
+                    type: string
+            type: object
         v1SudoGetResourceResponse:
             properties:
                 deployment:
@@ -3897,6 +3911,7 @@ paths:
     /v1/superuser/organization/billing/customer_id: {}
     /v1/superuser/organization/billing/report-usage: {}
     /v1/superuser/organization/custom-domain: {}
+    /v1/superuser/organization/trial/extend: {}
     /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}
     /v1/superuser/organizations/{org}/billing/message: {}
