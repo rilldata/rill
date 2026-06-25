@@ -76,9 +76,18 @@
       hasRemoteChanges,
       alreadyOnPrimary,
       disabledPerGitStatus,
-      changedFiles,
     },
   } = $gitStatusQuery);
+
+  // The changed-files list is shown only inside the popover, so request it
+  // on-demand (gated on `open`) rather than on the polled status query that
+  // also drives the always-visible button state.
+  $: changedFilesQuery = createRuntimeServiceGitStatus(
+    client,
+    { remoteBranch: primaryBranch, changedFiles: true },
+    { query: { enabled: open && !!primaryBranch } },
+  );
+  $: changedFiles = $changedFilesQuery.data?.changedFiles ?? [];
 
   $: currentBranch = $currentBranchStatusQuery.data?.branch ?? "";
   $: branchUrl =

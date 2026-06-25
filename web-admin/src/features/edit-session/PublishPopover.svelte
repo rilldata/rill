@@ -20,6 +20,7 @@
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitPushMutation,
+    createRuntimeServiceGitStatus,
     type V1GitMergeToBranchResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -74,9 +75,18 @@
       hasRemoteChanges,
       alreadyOnPrimary,
       disabledPerGitStatus,
-      changedFiles,
     },
   } = $gitStatusQuery);
+
+  // The changed-files list is shown only inside the popover, so request it
+  // on-demand (gated on `open`) rather than on the polled status query that
+  // also drives the always-visible button state.
+  $: changedFilesQuery = createRuntimeServiceGitStatus(
+    client,
+    { remoteBranch: primaryBranch, changedFiles: true },
+    { query: { enabled: open && !!primaryBranch } },
+  );
+  $: changedFiles = $changedFilesQuery.data?.changedFiles ?? [];
 
   $: projectLoaded = $projectQuery.data !== undefined;
   $: prodDeployment = $projectQuery.data?.deployment;
