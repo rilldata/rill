@@ -40,10 +40,10 @@ type CanvasYAML struct {
 		ComparisonDimension string            `yaml:"comparison_dimension"`
 		Filters             map[string]string `yaml:"filters"`
 	} `yaml:"defaults"`
-	Variables []*ComponentVariableYAML `yaml:"variables"`
-	Rows        []*canvasRowYAML    `yaml:"rows"`
-	Security    *SecurityPolicyYAML `yaml:"security"`
-	Annotations map[string]string   `yaml:"annotations"`
+	Variables   []*ComponentVariableYAML `yaml:"variables"`
+	Rows        []*canvasRowYAML         `yaml:"rows"`
+	Security    *SecurityPolicyYAML      `yaml:"security"`
+	Annotations map[string]string        `yaml:"annotations"`
 }
 
 // canvasRowYAML is a single entry in a canvas's (or tab's) rows list.
