@@ -91,6 +91,16 @@
     if (tab && onSelect) onSelect(tab.name);
   }
 
+  // Clicking anywhere on the strip row (empty space, between tabs, the bar) selects the tab
+  // group so the inspector opens — not just the tab labels. The inline rename input is
+  // excluded so clicking into it doesn't steal its focus (onSelectGroup blurs the active
+  // element to commit pending edits).
+  function handleStripClick(e: MouseEvent) {
+    if (!onSelectGroup) return;
+    if (e.target instanceof HTMLElement && e.target.closest("input")) return;
+    onSelectGroup();
+  }
+
   // Move a tab. The active tab is preserved by name across the reorder (see
   // TabGroup.updateFromSpec), so no explicit re-activation is needed here.
   function moveWithFocus(index: number, direction: -1 | 1) {
@@ -125,7 +135,13 @@
   });
 </script>
 
-<div class="tab-strip-shell" style:max-width="{maxWidth}px">
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<div
+  class="tab-strip-shell"
+  style:max-width="{maxWidth}px"
+  role="presentation"
+  on:click={handleStripClick}
+>
   {#if canScrollToStart}
     <button
       class="scroll-button scroll-to-start"
