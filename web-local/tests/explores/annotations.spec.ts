@@ -4,7 +4,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schem
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { DateTime } from "luxon";
 import { test } from "../setup/base";
-import { waitForReconciliation } from "../utils/wait-for-reconciliation";
+import { waitForReconciliation } from "@rilldata/web-common/tests/utils/wait-for-reconciliation";
 
 // Annotation timestamps as they'll be serialized from DuckDB (UTC).
 // All annotations that may be visible at day grain in "Last 7 days":

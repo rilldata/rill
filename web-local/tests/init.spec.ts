@@ -2,7 +2,12 @@ import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants";
 import { expect } from "playwright/test";
 import { test } from "./setup/base";
 import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
-import { waitForReconciliation } from "./utils/wait-for-reconciliation";
+import { waitForReconciliation } from "@rilldata/web-common/tests/utils/wait-for-reconciliation";
+
+// These tests drive the welcome / project-initialization flow, which only
+// appears for an uninitialized project. The shared per-worker runtime always
+// keeps a rill.yaml present, so these need their own pristine instance.
+test.use({ freshInstance: true });
 
 test.describe("Example project initialization", () => {
   EXAMPLES.forEach((example) => {

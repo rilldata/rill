@@ -74,3 +74,18 @@ export async function waitForReconciliation(page: Page, timeoutMs = 60_000) {
 
   return dataResources;
 }
+
+/**
+ * Navigates to a URL that depends on freshly created or edited resources, then
+ * waits for the project to finish reconciling before returning. Use this in
+ * place of a bare `page.goto(...)` whenever the destination needs resources to
+ * be ready (the recurring cause of navigate-before-reconcile flakiness).
+ */
+export async function gotoWhenReady(
+  page: Page,
+  url: string,
+  timeoutMs = 60_000,
+) {
+  await page.goto(url);
+  await waitForReconciliation(page, timeoutMs);
+}

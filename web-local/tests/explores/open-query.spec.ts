@@ -1,5 +1,5 @@
 import { test } from "../setup/base";
-import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
+import { waitForReconciliation } from "@rilldata/web-common/tests/utils/wait-for-reconciliation";
 
 test.describe("Query-to-Explore routing", () => {
   test.use({ project: "AdBids" });

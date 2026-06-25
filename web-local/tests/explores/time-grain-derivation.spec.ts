@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
-import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
+import { waitForReconciliation } from "@rilldata/web-common/tests/utils/wait-for-reconciliation";
 
 test.describe("Time grain derivation from URL", () => {
   test.use({ project: "AdBids" });

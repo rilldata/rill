@@ -13,6 +13,10 @@ async function expectRillYAMLToContainOlapConnector(page: Page, text: string) {
 }
 
 test.describe("Default olap_connector behavior", () => {
+  // Exercises the empty/uninitialized project flow, which needs a pristine
+  // instance rather than the shared per-worker runtime (which keeps a rill.yaml).
+  test.use({ freshInstance: true });
+
   test("Should set default olap_connector to duckdb for empty project", async ({
     page,
   }) => {

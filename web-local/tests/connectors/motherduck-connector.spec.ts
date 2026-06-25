@@ -3,8 +3,10 @@ import { test } from "../setup/base";
 import { updateCodeEditor } from "../utils/commonHelpers";
 
 test.describe("MotherDuck welcome flow", () => {
-  // Start from an empty workspace to exercise the onboarding path
-  test.use({ project: undefined });
+  // Start from an empty workspace to exercise the onboarding path. The welcome
+  // flow needs an uninitialized project, so use a pristine instance rather than
+  // the shared per-worker runtime (which keeps a rill.yaml present).
+  test.use({ project: undefined, freshInstance: true });
 
   test("initializes MotherDuck from welcome screen and persists secrets before connector", async ({
     page,

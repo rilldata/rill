@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "../setup/base";
-import { waitForReconciliation } from "../utils/wait-for-reconciliation";
+import { waitForReconciliation } from "@rilldata/web-common/tests/utils/wait-for-reconciliation";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("visual explore editing", () => {
