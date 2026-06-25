@@ -326,7 +326,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeSubscriptionCancelled,
-			Metadata: database.BillingIssueMetadataSubscriptionCancelled{
+			Metadata: &database.BillingIssueMetadataSubscriptionCancelled{
 				EndDate: endDate,
 			},
 			EventTime: time.Now(),
