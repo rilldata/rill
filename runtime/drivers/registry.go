@@ -143,6 +143,8 @@ type InstanceConfig struct {
 	ModelPartitionsWarnOnFailure bool `mapstructure:"rill.model.partitions_warn_on_failure"`
 	// ModelTestsWarnOnFailure: when true, model test failures are surfaced as non-blocking warnings instead of errors.
 	ModelTestsWarnOnFailure bool `mapstructure:"rill.model.tests_warn_on_failure"`
+	// DisableModels: when true, model execution is disabled. Useful for stopping any ingestion from Rill temporarily.
+	DisableModels bool `mapstructure:"rill.model.disable"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.

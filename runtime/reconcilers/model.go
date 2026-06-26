@@ -152,6 +152,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		defer cancel()
 	}
 
+	if cfg.DisableModels { // Global disable
+		return runtime.ReconcileResult{Err: errors.New("model execution is paused")}
+	}
+
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
 		if prevManager != nil {
