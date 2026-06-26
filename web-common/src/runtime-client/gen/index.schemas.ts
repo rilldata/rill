@@ -1200,25 +1200,6 @@ export interface V1GitPushResponse {
   [key: string]: unknown;
 }
 
-export type V1GitStatusResponseGitFileStatus =
-  (typeof V1GitStatusResponseGitFileStatus)[keyof typeof V1GitStatusResponseGitFileStatus];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1GitStatusResponseGitFileStatus = {
-  GIT_FILE_STATUS_UNSPECIFIED: "GIT_FILE_STATUS_UNSPECIFIED",
-  GIT_FILE_STATUS_ADDED: "GIT_FILE_STATUS_ADDED",
-  GIT_FILE_STATUS_MODIFIED: "GIT_FILE_STATUS_MODIFIED",
-  GIT_FILE_STATUS_DELETED: "GIT_FILE_STATUS_DELETED",
-  GIT_FILE_STATUS_RENAMED: "GIT_FILE_STATUS_RENAMED",
-} as const;
-
-export interface V1GitStatusResponseGitFileChange {
-  path?: string;
-  status?: V1GitStatusResponseGitFileStatus;
-  /** old_path is the previous path; only set when status is GIT_FILE_STATUS_RENAMED. */
-  oldPath?: string;
-}
-
 export interface V1GitStatusResponse {
   /** The current branch of the git repo. */
   branch?: string;
@@ -1234,8 +1215,6 @@ export interface V1GitStatusResponse {
   localCommits?: number;
   /** remote_commits returns number of remote commits not pulled yet. */
   remoteCommits?: number;
-  /** changed_files lists the files that would land on the target branch, relative to the project subpath. Only populated when the request specifies a remote_branch. */
-  changedFiles?: V1GitStatusResponseGitFileChange[];
 }
 
 export interface V1GitSwitchBranchResponse {

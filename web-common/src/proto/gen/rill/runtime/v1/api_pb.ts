@@ -5945,15 +5945,6 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
    */
   remoteCommits = 0;
 
-  /**
-   * changed_files lists the files that would land on the target branch, relative to the project subpath.
-   * The comparison ref is the requested remote_branch, or the upstream of the current branch when
-   * remote_branch is empty.
-   *
-   * @generated from field: repeated rill.runtime.v1.GitStatusResponse.GitFileChange changed_files = 8;
-   */
-  changedFiles: GitStatusResponse_GitFileChange[] = [];
-
   constructor(data?: PartialMessage<GitStatusResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5969,7 +5960,6 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
     { no: 4, name: "local_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "local_commits", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 6, name: "remote_commits", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 8, name: "changed_files", kind: "message", T: GitStatusResponse_GitFileChange, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusResponse {
@@ -5990,9 +5980,96 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
 }
 
 /**
- * @generated from enum rill.runtime.v1.GitStatusResponse.GitFileStatus
+ * @generated from message rill.runtime.v1.GitDiffRequest
  */
-export enum GitStatusResponse_GitFileStatus {
+export class GitDiffRequest extends Message$1<GitDiffRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * remote_branch is the branch to compare against. Same semantics as GitStatusRequest:
+   * if empty, the upstream of the current local branch is used.
+   *
+   * @generated from field: string remote_branch = 2;
+   */
+  remoteBranch = "";
+
+  constructor(data?: PartialMessage<GitDiffRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitDiffRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffRequest {
+    return new GitDiffRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitDiffRequest {
+    return new GitDiffRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitDiffRequest {
+    return new GitDiffRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitDiffRequest | PlainMessage<GitDiffRequest> | undefined, b: GitDiffRequest | PlainMessage<GitDiffRequest> | undefined): boolean {
+    return proto3.util.equals(GitDiffRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GitDiffResponse
+ */
+export class GitDiffResponse extends Message$1<GitDiffResponse> {
+  /**
+   * changed_files lists the files that would land on the target branch, relative to the project subpath.
+   * The comparison ref is the requested remote_branch, or the upstream of the current branch when
+   * remote_branch is empty.
+   *
+   * @generated from field: repeated rill.runtime.v1.GitDiffResponse.GitFileChange changed_files = 1;
+   */
+  changedFiles: GitDiffResponse_GitFileChange[] = [];
+
+  constructor(data?: PartialMessage<GitDiffResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitDiffResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "changed_files", kind: "message", T: GitDiffResponse_GitFileChange, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffResponse {
+    return new GitDiffResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitDiffResponse {
+    return new GitDiffResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitDiffResponse {
+    return new GitDiffResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitDiffResponse | PlainMessage<GitDiffResponse> | undefined, b: GitDiffResponse | PlainMessage<GitDiffResponse> | undefined): boolean {
+    return proto3.util.equals(GitDiffResponse, a, b);
+  }
+}
+
+/**
+ * @generated from enum rill.runtime.v1.GitDiffResponse.GitFileStatus
+ */
+export enum GitDiffResponse_GitFileStatus {
   /**
    * @generated from enum value: GIT_FILE_STATUS_UNSPECIFIED = 0;
    */
@@ -6018,8 +6095,8 @@ export enum GitStatusResponse_GitFileStatus {
    */
   RENAMED = 4,
 }
-// Retrieve enum metadata with: proto3.getEnumType(GitStatusResponse_GitFileStatus)
-proto3.util.setEnumType(GitStatusResponse_GitFileStatus, "rill.runtime.v1.GitStatusResponse.GitFileStatus", [
+// Retrieve enum metadata with: proto3.getEnumType(GitDiffResponse_GitFileStatus)
+proto3.util.setEnumType(GitDiffResponse_GitFileStatus, "rill.runtime.v1.GitDiffResponse.GitFileStatus", [
   { no: 0, name: "GIT_FILE_STATUS_UNSPECIFIED" },
   { no: 1, name: "GIT_FILE_STATUS_ADDED" },
   { no: 2, name: "GIT_FILE_STATUS_MODIFIED" },
@@ -6028,18 +6105,18 @@ proto3.util.setEnumType(GitStatusResponse_GitFileStatus, "rill.runtime.v1.GitSta
 ]);
 
 /**
- * @generated from message rill.runtime.v1.GitStatusResponse.GitFileChange
+ * @generated from message rill.runtime.v1.GitDiffResponse.GitFileChange
  */
-export class GitStatusResponse_GitFileChange extends Message$1<GitStatusResponse_GitFileChange> {
+export class GitDiffResponse_GitFileChange extends Message$1<GitDiffResponse_GitFileChange> {
   /**
    * @generated from field: string path = 1;
    */
   path = "";
 
   /**
-   * @generated from field: rill.runtime.v1.GitStatusResponse.GitFileStatus status = 2;
+   * @generated from field: rill.runtime.v1.GitDiffResponse.GitFileStatus status = 2;
    */
-  status = GitStatusResponse_GitFileStatus.UNSPECIFIED;
+  status = GitDiffResponse_GitFileStatus.UNSPECIFIED;
 
   /**
    * old_path is the previous path; only set when status is GIT_FILE_STATUS_RENAMED.
@@ -6048,33 +6125,33 @@ export class GitStatusResponse_GitFileChange extends Message$1<GitStatusResponse
    */
   oldPath = "";
 
-  constructor(data?: PartialMessage<GitStatusResponse_GitFileChange>) {
+  constructor(data?: PartialMessage<GitDiffResponse_GitFileChange>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GitStatusResponse.GitFileChange";
+  static readonly typeName = "rill.runtime.v1.GitDiffResponse.GitFileChange";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "status", kind: "enum", T: proto3.getEnumType(GitStatusResponse_GitFileStatus) },
+    { no: 2, name: "status", kind: "enum", T: proto3.getEnumType(GitDiffResponse_GitFileStatus) },
     { no: 3, name: "old_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusResponse_GitFileChange {
-    return new GitStatusResponse_GitFileChange().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffResponse_GitFileChange {
+    return new GitDiffResponse_GitFileChange().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitStatusResponse_GitFileChange {
-    return new GitStatusResponse_GitFileChange().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitDiffResponse_GitFileChange {
+    return new GitDiffResponse_GitFileChange().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitStatusResponse_GitFileChange {
-    return new GitStatusResponse_GitFileChange().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitDiffResponse_GitFileChange {
+    return new GitDiffResponse_GitFileChange().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GitStatusResponse_GitFileChange | PlainMessage<GitStatusResponse_GitFileChange> | undefined, b: GitStatusResponse_GitFileChange | PlainMessage<GitStatusResponse_GitFileChange> | undefined): boolean {
-    return proto3.util.equals(GitStatusResponse_GitFileChange, a, b);
+  static equals(a: GitDiffResponse_GitFileChange | PlainMessage<GitDiffResponse_GitFileChange> | undefined, b: GitDiffResponse_GitFileChange | PlainMessage<GitDiffResponse_GitFileChange> | undefined): boolean {
+    return proto3.util.equals(GitDiffResponse_GitFileChange, a, b);
   }
 }
 

@@ -9,11 +9,10 @@
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import ChangedFilesList from "./ChangedFilesList.svelte";
+  import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -69,14 +68,12 @@
 
   $: ({
     isPending,
-    isFetching,
     data: {
       hasLocalChanges,
       hasChangesOnCurrent,
       hasRemoteChanges,
       alreadyOnPrimary,
       disabledPerGitStatus,
-      changedFiles,
     },
   } = $gitStatusQuery);
 
@@ -283,10 +280,7 @@
 </script>
 
 <Tooltip distance={8} suppress={open}>
-  <Popover.Root
-    bind:open
-    onOpenChange={(o) => o && invalidateGitStatusQueries(client, primaryBranch)}
-  >
+  <Popover.Root bind:open>
     <Popover.Trigger>
       {#snippet child({ props })}
         <Button {...props} type="primary" {disabled}>
@@ -310,14 +304,7 @@
             so you can watch updates reconcile.
           {/if}
         </p>
-        {#if isFetching}
-          <div class="flex items-center gap-x-2 text-xs text-fg-secondary">
-            <DelayedSpinner isLoading={true} size="14px" />
-            <span>Checking for changes…</span>
-          </div>
-        {:else if changedFiles.length > 0}
-          <ChangedFilesList {changedFiles} />
-        {/if}
+        <ChangedFilesList remoteBranch={primaryBranch} {open} />
         <Button
           type="primary"
           small

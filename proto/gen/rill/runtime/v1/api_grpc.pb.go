@@ -65,6 +65,7 @@ const (
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
 	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
+	RuntimeService_GitDiff_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitDiff"
 	RuntimeService_ListGitBranches_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListGitBranches"
 	RuntimeService_GitCommit_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitCommit"
 	RuntimeService_RestoreGitCommit_FullMethodName        = "/rill.runtime.v1.RuntimeService/RestoreGitCommit"
@@ -181,6 +182,8 @@ type RuntimeServiceClient interface {
 	ListGitCommits(ctx context.Context, in *ListGitCommitsRequest, opts ...grpc.CallOption) (*ListGitCommitsResponse, error)
 	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	// GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+	GitDiff(ctx context.Context, in *GitDiffRequest, opts ...grpc.CallOption) (*GitDiffResponse, error)
 	ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
@@ -707,6 +710,16 @@ func (c *runtimeServiceClient) GitStatus(ctx context.Context, in *GitStatusReque
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GitDiff(ctx context.Context, in *GitDiffRequest, opts ...grpc.CallOption) (*GitDiffResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitDiffResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitDiff_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListGitBranchesResponse)
@@ -893,6 +906,8 @@ type RuntimeServiceServer interface {
 	ListGitCommits(context.Context, *ListGitCommitsRequest) (*ListGitCommitsResponse, error)
 	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	// GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+	GitDiff(context.Context, *GitDiffRequest) (*GitDiffResponse, error)
 	ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
@@ -1060,6 +1075,9 @@ func (UnimplementedRuntimeServiceServer) ListGitCommits(context.Context, *ListGi
 }
 func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitDiff(context.Context, *GitDiffRequest) (*GitDiffResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitDiff not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGitBranches not implemented")
@@ -1906,6 +1924,24 @@ func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GitDiff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitDiffRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitDiff(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitDiff_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitDiff(ctx, req.(*GitDiffRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListGitBranches_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListGitBranchesRequest)
 	if err := dec(in); err != nil {
@@ -2224,6 +2260,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitStatus",
 			Handler:    _RuntimeService_GitStatus_Handler,
+		},
+		{
+			MethodName: "GitDiff",
+			Handler:    _RuntimeService_GitDiff_Handler,
 		},
 		{
 			MethodName: "ListGitBranches",

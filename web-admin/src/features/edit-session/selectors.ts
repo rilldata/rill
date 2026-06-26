@@ -26,13 +26,9 @@ export function getDeploymentGithubStatus(
         primaryBranchGitStatusResp.isPending;
       const error =
         currentBranchGitStatusResp.error || primaryBranchGitStatusResp.error;
-      // The primary-branch query carries `changedFiles`, so its in-flight state
-      // is what the popovers gate the changed-files list on.
-      const isFetching = primaryBranchGitStatusResp.isFetching;
       if (isPending || error) {
         return {
           isPending,
-          isFetching,
           error,
           data: {
             hasLocalChanges: false,
@@ -41,7 +37,6 @@ export function getDeploymentGithubStatus(
             hasLocalCommitsOnCurrent: false,
             alreadyOnPrimary: false,
             disabledPerGitStatus: true,
-            changedFiles: [],
           },
         };
       }
@@ -76,11 +71,8 @@ export function getDeploymentGithubStatus(
         alreadyOnPrimary ||
         !hasLocalChanges;
 
-      const changedFiles = primaryBranchGitStatusResp.data?.changedFiles ?? [];
-
       return {
         isPending: false,
-        isFetching,
         error: undefined,
         data: {
           hasLocalChanges,
@@ -89,7 +81,6 @@ export function getDeploymentGithubStatus(
           hasLocalCommitsOnCurrent,
           alreadyOnPrimary,
           disabledPerGitStatus,
-          changedFiles,
         },
       };
     },
@@ -141,4 +132,6 @@ export function invalidateGitStatusQueries(
       }),
     });
   }
+  // The GitDiff (changed-files) query is not invalidated here: it refetches on
+  // every popover open via `refetchOnMount: "always"` in ChangedFilesList.
 }
