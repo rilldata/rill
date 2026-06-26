@@ -20,6 +20,10 @@ export function waitForStore<T>(
 
   return new Promise((resolve) => {
     let settled = false;
+    let shouldUnsubscribeAfterSubscribe = false;
+    let unsub = () => {
+      shouldUnsubscribeAfterSubscribe = true;
+    };
     const finish = (value: boolean) => {
       if (settled) return;
       settled = true;
@@ -28,9 +32,10 @@ export function waitForStore<T>(
       resolve(value);
     };
     const timer = setTimeout(() => finish(false), timeoutMs);
-    const unsub = store.subscribe((value) => {
+    unsub = store.subscribe((value) => {
       if (predicate(value)) finish(true);
     });
+    if (shouldUnsubscribeAfterSubscribe) unsub();
   });
 }
 

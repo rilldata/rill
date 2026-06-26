@@ -63,12 +63,14 @@
   {#if formattedTimeRange}
     <div class="text-sm text-fg-secondary">
       {formattedTimeRange}
-      {#if formattedComparisonRange}vs {formattedComparisonRange}{/if}
+      {#if formattedComparisonRange}
+        <span> vs {formattedComparisonRange}</span>
+      {/if}
       <span class="text-fg-muted">· {$timeZoneStore}</span>
     </div>
   {/if}
 
   {#if hasFilters}
-    <CanvasFilterChipsReadOnly {uiFilters} col={false} />
+    <CanvasFilterChipsReadOnly {uiFilters} col={false} ariaLabel={undefined} />
   {/if}
 </div>

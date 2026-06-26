@@ -72,13 +72,11 @@ describe("paginate", () => {
   });
 
   it("paginates multiple rows without splitting a component across pages", () => {
-    // Each row is ~half a page tall, so 3 rows span 2 pages and no single
-    // placement is sliced.
-    const rowHeight = 280; // px; scaled by ~0.547 => ~153pt, but tall enough that 3 don't fit one page
+    // Each row fits within one page, so rows move page-by-page without slicing
+    // individual components.
     const blocks = [0, 1, 2, 3].map((i) =>
       block({ id: `r${i}`, rowIndex: i, widthPx: 1000, heightPx: 900 }),
     );
-    void rowHeight;
     const result = paginate(blocks, { ...A4, contentWidthPx: 1000 });
     // No placement should be a slice.
     expect(result.placements.every((p) => p.srcHeightPx === undefined)).toBe(

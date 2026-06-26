@@ -10,6 +10,7 @@
   export let timeStart: string | undefined = undefined;
   export let timeEnd: string | undefined = undefined;
   export let col = true;
+  export let ariaLabel: string | undefined = "Readonly Filter Chips";
 
   $: ({ dimensionFilters, measureFilters } = uiFilters);
 </script>
@@ -18,7 +19,7 @@
   class:flex-col={col}
   class:flex-wrap={!col}
   class="flex gap-y-2 gap-x-2 w-full flex-none"
-  aria-label="Readonly Filter Chips"
+  aria-label={ariaLabel}
 >
   <div class="flex gap-x-2">
     {#if timeRangeString}

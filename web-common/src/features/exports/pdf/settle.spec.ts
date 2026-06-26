@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { isCanvasExportQuery } from "./settle";
+import type { Readable } from "svelte/store";
+import { isCanvasExportQuery, waitForStore } from "./settle";
+
+describe("waitForStore", () => {
+  it("handles stores that synchronously satisfy the predicate on subscribe", async () => {
+    let subscriptions = 0;
+    let unsubscriptions = 0;
+    const store: Readable<boolean> = {
+      subscribe(run) {
+        subscriptions += 1;
+        run(subscriptions > 1);
+        return () => {
+          unsubscriptions += 1;
+        };
+      },
+    };
+
+    await expect(waitForStore(store, Boolean, 100)).resolves.toBe(true);
+    expect(subscriptions).toBe(2);
+    expect(unsubscriptions).toBe(2);
+  });
+});
 
 describe("isCanvasExportQuery", () => {
   it("matches query service queries for the active runtime instance", () => {

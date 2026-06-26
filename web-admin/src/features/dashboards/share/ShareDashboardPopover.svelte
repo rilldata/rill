@@ -29,8 +29,9 @@
   const { hidePublicUrl } = featureFlags;
   let isOpen = false;
   let copied = false;
+  let runPdfExport: ((o: PdfExportRunOptions) => Promise<void>) | null = null;
 
-  $: runPdfExport = ((): ((o: PdfExportRunOptions) => Promise<void>) | null => {
+  $: runPdfExport = (() => {
     if (canvasName && instanceId) {
       const name = canvasName;
       const id = instanceId;
