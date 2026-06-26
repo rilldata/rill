@@ -173,6 +173,9 @@ type configProperties struct {
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
 	Cluster string `mapstructure:"cluster"`
+	// SyncReplicas controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster.
+	// This ensures all inserted parts are visible across replicas before the partition swap. Defaults to true.
+	SyncReplicas bool `mapstructure:"sync_replicas"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
@@ -226,6 +229,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	// Parse config properties
 	conf := &configProperties{
 		CanScaleToZero: true,
+		SyncReplicas:   true,
 		MaxOpenConns:   20,
 		MaxIdleConns:   5,
 	}

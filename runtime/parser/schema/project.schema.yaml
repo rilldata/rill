@@ -266,6 +266,9 @@ definitions:
             cluster:
               type: string
               description: Cluster name, required for running distributed queries
+            sync_replicas:
+              type: boolean
+              description: "Controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster, ensuring all inserted parts are visible across replicas before the partition swap. Defaults to true"
             write_dsn:
               type: string
               description: Separate connection string for write operations
