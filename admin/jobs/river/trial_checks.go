@@ -276,6 +276,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 			QuotaSlotsPerDeployment:             0,
 			QuotaOutstandingInvites:             0,
 			QuotaStorageLimitBytesPerDeployment: 0,
+			QuotaSeats:                          0,
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,

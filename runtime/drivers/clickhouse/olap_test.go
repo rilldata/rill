@@ -38,7 +38,6 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
-	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 	t.Run("CreateTableAsSelect_WithPrePostExec", func(t *testing.T) { testCreateTableAsSelect_WithPrePostExec(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPrePostExec", func(t *testing.T) { testInsertTableAsSelect_WithPrePostExec(t, c, olap) })
@@ -68,7 +67,6 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
-	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 }
 
@@ -232,10 +230,6 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyMerge}
 	_, err = c.insertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts, props)
-	require.NoError(t, err)
-
-	// Force merge/deduplication in ReplacingMergeTree
-	err = c.optimizeTable(context.Background(), "merge_tbl")
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl FINAL ORDER BY id"})
@@ -448,78 +442,6 @@ func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 		require.Equal(t, c.ms, ms)
 		require.NoError(t, rows.Close())
 	}
-}
-
-func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	ctx := context.Background()
-	tempTableName := "optimize_basic_test"
-
-	// Determine table names based on cluster mode
-	var localTableName, distTableName string
-	if c.config.Cluster != "" {
-		localTableName = tempTableName + "_local"
-		distTableName = tempTableName
-	} else {
-		localTableName = tempTableName
-		distTableName = tempTableName
-	}
-
-	// Create table with MergeTree engine - handle cluster mode
-	var err error
-	if c.config.Cluster != "" {
-		localCreateQuery := fmt.Sprintf("CREATE TABLE %s ON CLUSTER %s (id INT, value VARCHAR) ENGINE=MergeTree ORDER BY id", localTableName, c.config.Cluster)
-		err = olap.Exec(ctx, &drivers.Statement{Query: localCreateQuery})
-		require.NoError(t, err)
-
-		// Create distributed table
-		distCreateQuery := fmt.Sprintf("CREATE TABLE %s ON CLUSTER %s AS %s ENGINE=Distributed(%s, currentDatabase(), %s, rand())", distTableName, c.config.Cluster, localTableName, c.config.Cluster, localTableName)
-		err = olap.Exec(ctx, &drivers.Statement{Query: distCreateQuery})
-		require.NoError(t, err)
-	} else {
-		createQuery := fmt.Sprintf("CREATE TABLE %s (id INT, value VARCHAR) ENGINE=MergeTree ORDER BY id", tempTableName)
-		err = olap.Exec(ctx, &drivers.Statement{Query: createQuery})
-		require.NoError(t, err)
-	}
-
-	// Insert test data via distributed table
-	err = olap.Exec(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("INSERT INTO %s VALUES (1, 'test1'), (2, 'test2'), (3, 'test3')", distTableName),
-	})
-	require.NoError(t, err)
-
-	// Run OPTIMIZE
-	err = c.optimizeTable(ctx, tempTableName)
-	require.NoError(t, err)
-
-	// Verify data integrity after optimization via distributed table
-	res, err := olap.Query(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("SELECT id, value FROM %s ORDER BY id", distTableName),
-	})
-	require.NoError(t, err)
-
-	var results []struct {
-		ID    int
-		Value string
-	}
-	for res.Next() {
-		var r struct {
-			ID    int
-			Value string
-		}
-		require.NoError(t, res.Scan(&r.ID, &r.Value))
-		results = append(results, r)
-	}
-	require.NoError(t, res.Close())
-
-	expected := []struct {
-		ID    int
-		Value string
-	}{
-		{1, "test1"},
-		{2, "test2"},
-		{3, "test3"},
-	}
-	require.Equal(t, expected, results)
 }
 
 func testCreateTableAsSelect_WithPrePostExec(t *testing.T, c *Connection, olap drivers.OLAPStore) {

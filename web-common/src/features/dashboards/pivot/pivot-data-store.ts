@@ -5,6 +5,7 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
+  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
@@ -57,6 +58,7 @@ import {
   getTimeForQuery,
   getTimeGrainFromDimension,
   getTotalColumnCount,
+  getUriMeasuresForDimensions,
   isTimeDimension,
   splitPivotChips,
 } from "./pivot-utils";
@@ -218,6 +220,7 @@ function createRowAxesStage(args: RowAxesStageArgs): Readable<PivotDataState> {
       plan.timeRange,
       plan.rowAxisLimitToQuery,
       plan.rowOffset.toString(),
+      true,
     );
   }
 
@@ -581,7 +584,15 @@ export function createTableCellQuery(
       };
     } else return { name: dimension };
   });
-  const measureBody = measureNames.map((m) => ({ name: m }));
+  const measureBody: V1MetricsViewAggregationMeasure[] = measureNames.map(
+    (m) => ({ name: m }),
+  );
+
+  // Flat tables produce one query for all row dimensions, so request URI
+  // measures here for any row dimension that declares a `uri`.
+  if (isFlat) {
+    measureBody.push(...getUriMeasuresForDimensions(rowDimensionNames, config));
+  }
 
   const { filters: filterForInitialTable, timeFilters } =
     getFilterForPivotTable(

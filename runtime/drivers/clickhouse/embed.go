@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const embedVersion = "25.12.5.44"
+const embedVersion = "26.5.1.882"
 
 var (
 	embed             *embedClickHouse
@@ -373,7 +373,18 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
     </users>
 
     <profiles>
-        <default/>
+        <default>
+            <!-- On macOS, LLVM's mangler prepends "_" to C symbol names but ClickHouse registers its JIT
+                 external symbols unmangled, so symbol lookup misses (e.g. _memcmpSmallCharsAllowOverflow15)
+                 and any sort/expression/aggregate JIT codegen fails with CANNOT_COMPILE_CODE. Disable JIT
+                 until the embedded version includes the fix (ClickHouse/ClickHouse#104946, backported to
+                 26.5 in #107601). Linux is unaffected, but disabling everywhere keeps behavior consistent.
+                 TODO: remove this block once embedVersion is bumped to a 26.5.x release (>26.5.2.39, cut
+                 after 2026-06-16) that contains the fix. -->
+            <compile_expressions>0</compile_expressions>
+            <compile_aggregate_expressions>0</compile_aggregate_expressions>
+            <compile_sort_description>0</compile_sort_description>
+        </default>
     </profiles>
 
     <quotas>

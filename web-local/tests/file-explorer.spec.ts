@@ -38,9 +38,11 @@ test.describe("File Explorer", () => {
       await page.getByLabel("Auto-save").click(); // Turn off auto-save
       await page.getByRole("textbox").nth(1).click();
       await page.keyboard.type("Here's a README.md file for the e2e test!");
-      await page.getByRole("button", { name: "Save" }).click();
-      // Wait half a second for the changes to be saved
-      await page.waitForTimeout(500);
+      const saveButton = page.getByRole("button", { name: "Save" });
+      await saveButton.click();
+      // The Save button disables once the write finishes; wait for that UI
+      // feedback so navigating away doesn't race the save.
+      await expect(saveButton).toBeDisabled();
       // Navigate away from the file and back to it to verify the changes
       await page.getByRole("link", { name: "rill.yaml" }).click();
       await page.getByRole("link", { name: "README.md" }).first().click();
@@ -90,8 +92,11 @@ test.describe("File Explorer", () => {
       await page.getByLabel("Folder name").fill("my-directory");
       await page.getByLabel("Folder name").press("Enter");
 
-      // Page reloads in test environment
-      await page.waitForTimeout(2000);
+      // The rename triggers a reload in the test environment; wait for the
+      // renamed entry to render before interacting with it.
+      await expect(
+        page.getByRole("directory", { name: "my-directory" }),
+      ).toBeVisible();
 
       // Add something to the folder
       await page.getByRole("directory", { name: "my-directory" }).hover();
@@ -115,7 +120,6 @@ test.describe("File Explorer", () => {
         }),
       ).toBeVisible();
 
-      await page.waitForTimeout(2000);
       // Delete the folder
       await page
         .getByRole("button", { name: "my-directory my-directory" })

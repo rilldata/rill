@@ -7,7 +7,8 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { slide } from "svelte/transition";
-  import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
+  import { makeHref } from "@rilldata/web-common/features/dashboards/dashboard-utils";
+  import { type LeaderboardItemData } from "./leaderboard-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
     DEFAULT_COLUMN_WIDTH,

@@ -15,7 +15,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { ComponentType, SvelteComponent } from "svelte";
-import type { Readable } from "svelte/store";
+import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
@@ -50,6 +50,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   localTimeControls: TimeState;
 
   visible = writable(false);
+
+  // Tears down the spec subscription opened in the constructor. Without this,
+  // a component replaced in CanvasEntity.processRows keeps reacting to spec
+  // emissions and mutates the shared filter/time state of a deleted widget.
+  private unsubscribeSpec: Unsubscriber;
 
   abstract type: CanvasComponentType;
   // Component responsible for DOM rendering
@@ -137,7 +142,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.metricsViewName,
     );
 
-    this.specStore.subscribe((spec) => {
+    this.unsubscribeSpec = this.specStore.subscribe((spec) => {
       this.localFilters.onFilterStringChange(
         spec["dimension_filters"] as string,
       );
@@ -146,6 +151,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         new URLSearchParams(spec?.["time_filters"] ?? ""),
       );
     });
+  }
+
+  destroy() {
+    this.unsubscribeSpec?.();
   }
 
   update(resource: V1Resource, path: ComponentPath) {

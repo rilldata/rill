@@ -64,9 +64,9 @@
 
   let createdGitRepo = $state("");
 
+  // No need to be reactive to default name. It is derived from list of projects that wont change during the form creation.
+  // svelte-ignore state_referenced_locally
   const { form, errors, enhance, submit, submitting } = superForm(
-    // No need to be reactive to default name. It is derived from list of projects that wont change during the form creation.
-    // eslint-disable-next-line svelte/valid-compile
     defaults({ name: defaultName }, schema),
     {
       SPA: true,

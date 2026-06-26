@@ -191,10 +191,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, httputil.Handler(s.healthCheckHandler)))
 
 	// Add HTTP handler for query export downloads
-	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
+	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceUI)(http.HandlerFunc(s.downloadHandler)))))
 
 	// Add handler for dynamic APIs, i.e. APIs backed by resolvers (such as custom APIs defined in YAML).
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.apiHandler))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceAPI)(httputil.Handler(s.apiHandler)))))
 
 	// Add handler for combined OpenAPI spec of custom APIs
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/openapi", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.combinedOpenAPISpec))))
@@ -209,7 +209,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/sse", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))       // Deprecated: Use /sse?streams=files
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/resources/-/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))) // Deprecated: Use /sse?streams=resources
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceChat)(http.HandlerFunc(s.CompleteStreamingHandler)))))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -218,7 +218,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Adds the MCP server handlers.
 	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
-	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.mcpHandler()))
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceMCP)(s.mcpHandler())))
 	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
 	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility

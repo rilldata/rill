@@ -54,6 +54,9 @@
 
   export let exploreName: string;
   export let hideStartPivotButton = false;
+  // Height of the expanded chart in the Time Dimension Detail view, controlled
+  // by the resizable divider between the timeseries and the detail table.
+  export let tddChartHeight = 245;
 
   const StateManagers = getStateManagers();
 
@@ -429,6 +432,7 @@
               onPanRight={() => handlePan("right")}
               {showComparison}
               {showTimeDimensionDetail}
+              {tddChartHeight}
               dynamicYAxis={dynamicYAxisScale}
               onScrub={handleScrub}
               onScrubClear={() => {

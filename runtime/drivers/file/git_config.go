@@ -5,8 +5,6 @@ import (
 	"errors"
 	"path/filepath"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
 	"github.com/rilldata/rill/admin/client"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -97,12 +95,10 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 }
 
 func (c *connection) gitSignature(ctx context.Context, client *client.Client, path string) (gitutil.Signature, error) {
-	repo, err := git.PlainOpen(path)
-	if err == nil {
-		cfg, err := repo.ConfigScoped(config.SystemScope)
-		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-			// user has git properly configured use that
-			return gitutil.Signature{Name: cfg.User.Name, Email: cfg.User.Email}, nil
+	if gitutil.IsGitRepo(path) {
+		// User has git properly configured, use that.
+		if sig, err := gitutil.UserSignature(ctx, path); err == nil {
+			return sig, nil
 		}
 	}
 

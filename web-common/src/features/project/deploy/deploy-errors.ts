@@ -21,18 +21,18 @@ export enum DeployErrorType {
 }
 const ErrorMessageVariants = {
   [DeployErrorType.OrgLimitHit]: {
-    title: "To deploy to more organizations, start a Team plan",
-    message: "",
+    title: "To deploy to another organization, choose a plan",
+    message:
+      "Your trial plan supports a single organization. Choose a plan to deploy to more.",
   },
   [DeployErrorType.TrialEnded]: {
-    title: "To deploy this project, start a Team plan",
-    message:
-      "Your trial has ended. In order to deploy this project, start a Team plan.",
+    title: "To deploy this project, choose a plan",
+    message: "Your trial has ended. Choose a plan to deploy this project.",
   },
   [DeployErrorType.SubscriptionEnded]: {
-    title: "To deploy this project, start a Team plan",
+    title: "To deploy this project, renew your plan",
     message:
-      "Your subscription has ended. In order to deploy this project, renew Team plan.",
+      "Your subscription has ended. Renew your plan to deploy this project.",
   },
 };
 
@@ -104,12 +104,12 @@ function parseDeployErrorMessage(message: string, orgOnTrial: boolean) {
   const projectQuotaMatch = ProjectQuotaErrorMatcher.exec(message);
   if (projectQuotaMatch?.length) {
     const projectQuota = Number(projectQuotaMatch[1]);
-    const planLabel = orgOnTrial ? "current plan" : "trial plan";
+    const planLabel = orgOnTrial ? "trial plan" : "current plan";
 
     return {
       type: DeployErrorType.ProjectLimitHit,
-      title: "To deploy this project, start a Team plan",
-      message: `Your ${planLabel} is limited to ${projectQuota} project${projectQuota > 1 ? "s" : ""}. To have unlimited projects, upgrade to a Team plan.`,
+      title: "To deploy more projects, upgrade your plan",
+      message: `Your ${planLabel} is limited to ${projectQuota} project${projectQuota > 1 ? "s" : ""}. Upgrade your plan to deploy more, or contact us about unlimited projects.`,
     };
   }
 
