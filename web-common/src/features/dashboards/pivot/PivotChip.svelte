@@ -2,6 +2,7 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { detectOverflow } from "@rilldata/web-common/lib/actions/detect-overflow";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
   import type { PivotChipData } from "./types";
@@ -30,14 +31,14 @@
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
     .join(" ");
+
+  let isTruncated = false;
+  // Show the tooltip whenever the label is clipped, even without a description,
+  // so the full measure/dimension name is always discoverable.
+  $: showTooltip = !!item.description || isTruncated;
 </script>
 
-<Tooltip
-  distance={8}
-  location="top"
-  suppress={!item.description}
-  activeDelay={200}
->
+<Tooltip distance={8} location="top" suppress={!showTooltip} activeDelay={200}>
   <Chip
     theme
     type={item.type}
@@ -63,12 +64,24 @@
           <p class="grain-label truncate">{capitalizedLabel}</p>
         {/if}
       {:else}
-        <p class="font-semibold truncate">{item.title}</p>
+        <p
+          class="font-semibold truncate"
+          use:detectOverflow={(v) => (isTruncated = v)}
+        >
+          {item.title}
+        </p>
       {/if}
       <slot name="body" />
     </div>
   </Chip>
   <TooltipContent slot="tooltip-content">
-    {item.description}
+    {#if item.type === PivotChipType.Time}
+      {item.description}
+    {:else}
+      <span class="font-semibold">{item.title}</span>
+      {#if item.description}
+        <div class="text-fg-secondary">{item.description}</div>
+      {/if}
+    {/if}
   </TooltipContent>
 </Tooltip>

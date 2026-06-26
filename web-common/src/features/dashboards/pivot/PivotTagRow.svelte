@@ -193,13 +193,25 @@
   role="presentation"
   onmousedown={handleMouseDown}
 >
-  <span
-    class="truncate flex-1 min-w-0 text-left text-fg-primary"
-    use:detectOverflow={(v) => (isTruncated = v)}
-    title={isTruncated ? tag.name : undefined}
-  >
-    {tag.name}
-  </span>
+  <Tooltip.Root delayDuration={200} disabled={!isTruncated}>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <span
+          {...props}
+          class="truncate flex-1 min-w-0 text-left text-fg-primary"
+          use:detectOverflow={(v) => (isTruncated = v)}
+        >
+          {tag.name}
+        </span>
+      {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content
+      side="top"
+      class="bg-popover text-fg-primary z-popover text-xs px-2 py-1"
+    >
+      {tag.name}
+    </Tooltip.Content>
+  </Tooltip.Root>
 
   <div class="flex items-center gap-x-1 flex-none group-hover:hidden">
     {#if measureCount > 0}

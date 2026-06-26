@@ -21,10 +21,11 @@ export const MAX_PIVOT_SIDEBAR_WIDTH = 900;
 // dropdown (explore) and the pivot sidebar. In auto mode the column sizes to
 // its content between MIN and CAP; dragging the divider can widen it up to
 // DRAG_MAX. Pivot is additionally capped to PCT_CAP percent of the sidebar so
-// the items list stays usable.
+// the items list stays usable. The minimums are deliberately generous: a
+// narrower column clips most tag names down to a few characters.
 export const TAG_COLUMN = {
-  explore: { MIN: 200, CAP: 340, DRAG_MAX: 360 },
-  pivot: { MIN: 140, CAP: 240, DRAG_MAX: 600, PCT_CAP: 65 },
+  explore: { MIN: 220, CAP: 340, DRAG_MAX: 360 },
+  pivot: { MIN: 180, CAP: 280, DRAG_MAX: 600, PCT_CAP: 65 },
 } as const;
 
 /**
