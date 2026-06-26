@@ -341,6 +341,12 @@ func TestClickhouseCluster(t *testing.T) {
 	r, db := provisionClickHouse(t, p)
 	defer db.Close()
 
+	// Get the name of the provisioned database. ON CLUSTER statements run as distributed DDL,
+	// which does not carry the session's default database, so tables must be qualified explicitly.
+	dsnCfg, err := clickhouse.ParseDSN(r.Config["dsn"].(string))
+	require.NoError(t, err)
+	dbName := dsnCfg.Auth.Database
+
 	// Create a table with the connection
 	_, err = db.Exec(fmt.Sprintf("CREATE TABLE test ON CLUSTER %s (id UInt64) ENGINE = ReplicatedMergeTree ORDER BY id", cluster))
 	require.NoError(t, err)
@@ -348,8 +354,9 @@ func TestClickhouseCluster(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check the user can sync replicas (requires the SYSTEM SYNC REPLICA privilege).
-	_, err = db.Exec("SYSTEM SYNC REPLICA test")
+	_, err = db.Exec(fmt.Sprintf("SYSTEM SYNC REPLICA ON CLUSTER %s %s.test", cluster, dbName))
 	require.NoError(t, err)
+
 	rows, err := db.Query("SELECT COUNT(*) FROM system.tables WHERE database <> 'system'")
 	require.NoError(t, err)
 	for rows.Next() {
