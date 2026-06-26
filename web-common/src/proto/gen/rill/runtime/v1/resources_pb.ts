@@ -4473,6 +4473,13 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
    */
   allErroredPartitions = false;
 
+  /**
+   * If true, it will refresh all partitions that are currently marked as skipped.
+   *
+   * @generated from field: bool all_skipped_partitions = 5;
+   */
+  allSkippedPartitions = false;
+
   constructor(data?: PartialMessage<RefreshModelTrigger>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4485,6 +4492,7 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
     { no: 2, name: "full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "all_errored_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "all_skipped_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshModelTrigger {
