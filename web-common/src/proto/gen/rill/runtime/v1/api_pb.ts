@@ -2657,6 +2657,11 @@ export class ModelPartition extends Message$1<ModelPartition> {
    */
   elapsedMs = 0;
 
+  /**
+   * @generated from field: bool skipped = 7;
+   */
+  skipped = false;
+
   constructor(data?: PartialMessage<ModelPartition>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2671,6 +2676,7 @@ export class ModelPartition extends Message$1<ModelPartition> {
     { no: 4, name: "executed_on", kind: "message", T: Timestamp },
     { no: 5, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "elapsed_ms", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "skipped", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelPartition {
@@ -3269,6 +3275,11 @@ export class GetModelPartitionsRequest extends Message$1<GetModelPartitionsReque
   errored = false;
 
   /**
+   * @generated from field: bool skipped = 7;
+   */
+  skipped = false;
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -3290,6 +3301,7 @@ export class GetModelPartitionsRequest extends Message$1<GetModelPartitionsReque
     { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "pending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "errored", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "skipped", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -3351,6 +3363,104 @@ export class GetModelPartitionsResponse extends Message$1<GetModelPartitionsResp
 
   static equals(a: GetModelPartitionsResponse | PlainMessage<GetModelPartitionsResponse> | undefined, b: GetModelPartitionsResponse | PlainMessage<GetModelPartitionsResponse> | undefined): boolean {
     return proto3.util.equals(GetModelPartitionsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SkipModelPartitionsRequest
+ */
+export class SkipModelPartitionsRequest extends Message$1<SkipModelPartitionsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string model = 2;
+   */
+  model = "";
+
+  /**
+   * Specific partition keys to skip.
+   *
+   * @generated from field: repeated string partitions = 3;
+   */
+  partitions: string[] = [];
+
+  /**
+   * Skip all pending partitions.
+   *
+   * @generated from field: bool pending = 4;
+   */
+  pending = false;
+
+  /**
+   * Skip all errored partitions, clearing them from the model's error state.
+   *
+   * @generated from field: bool errored = 5;
+   */
+  errored = false;
+
+  constructor(data?: PartialMessage<SkipModelPartitionsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SkipModelPartitionsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "pending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "errored", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SkipModelPartitionsRequest {
+    return new SkipModelPartitionsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SkipModelPartitionsRequest {
+    return new SkipModelPartitionsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SkipModelPartitionsRequest {
+    return new SkipModelPartitionsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SkipModelPartitionsRequest | PlainMessage<SkipModelPartitionsRequest> | undefined, b: SkipModelPartitionsRequest | PlainMessage<SkipModelPartitionsRequest> | undefined): boolean {
+    return proto3.util.equals(SkipModelPartitionsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SkipModelPartitionsResponse
+ */
+export class SkipModelPartitionsResponse extends Message$1<SkipModelPartitionsResponse> {
+  constructor(data?: PartialMessage<SkipModelPartitionsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SkipModelPartitionsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SkipModelPartitionsResponse {
+    return new SkipModelPartitionsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SkipModelPartitionsResponse {
+    return new SkipModelPartitionsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SkipModelPartitionsResponse {
+    return new SkipModelPartitionsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SkipModelPartitionsResponse | PlainMessage<SkipModelPartitionsResponse> | undefined, b: SkipModelPartitionsResponse | PlainMessage<SkipModelPartitionsResponse> | undefined): boolean {
+    return proto3.util.equals(SkipModelPartitionsResponse, a, b);
   }
 }
 
@@ -6224,6 +6334,13 @@ export class GitMergeToBranchResponse extends Message$1<GitMergeToBranchResponse
    */
   output = "";
 
+  /**
+   * Conflict is true if the merge failed due to conflicts.
+   *
+   * @generated from field: bool conflict = 2;
+   */
+  conflict = false;
+
   constructor(data?: PartialMessage<GitMergeToBranchResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6233,6 +6350,7 @@ export class GitMergeToBranchResponse extends Message$1<GitMergeToBranchResponse
   static readonly typeName = "rill.runtime.v1.GitMergeToBranchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conflict", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitMergeToBranchResponse {
@@ -6399,6 +6517,13 @@ export class GitPullResponse extends Message$1<GitPullResponse> {
    */
   mergedBranch = "";
 
+  /**
+   * Conflict is true if the pull failed due to merge conflicts.
+   *
+   * @generated from field: bool conflict = 3;
+   */
+  conflict = false;
+
   constructor(data?: PartialMessage<GitPullResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6409,6 +6534,7 @@ export class GitPullResponse extends Message$1<GitPullResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "merged_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "conflict", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitPullResponse {

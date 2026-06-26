@@ -1,4 +1,4 @@
-import { makeHref } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
+import { makeHref } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { describe, it, expect } from "vitest";
 
 describe("makeHref", () => {

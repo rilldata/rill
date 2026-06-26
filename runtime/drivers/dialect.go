@@ -52,6 +52,8 @@ type Dialect interface {
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
 	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
 	UnnestSQLSuffix(tbl string) string
+	// AutoUnnest wraps an expression so the dialect unnests it automatically (used when LateralUnnest reports auto == true).
+	AutoUnnest(expr string) string
 	MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error)
 	AnyValueExpression(expr string) string
 	MinDimensionExpression(expr string) string
@@ -218,6 +220,10 @@ func (b *BaseDialect) LateralUnnest(expr, tableAlias, colName string) (tbl strin
 
 func (b *BaseDialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(", %s", tbl)
+}
+
+func (b *BaseDialect) AutoUnnest(expr string) string {
+	return expr
 }
 
 func (b *BaseDialect) RequiresArrayContainsForInOperator() bool {

@@ -49,6 +49,10 @@ export function removeCanvasStore(
   instanceId: string,
 ): void {
   const id = makeCanvasId(canvasName, instanceId);
+  // Tear down the entity's subscriptions before dropping it from the registry,
+  // otherwise the orphaned entity keeps reacting to spec emissions and races
+  // the entity created on the next visit.
+  canvasRegistry.get(id)?.canvasEntity.unsubscribe();
   canvasRegistry.delete(id);
 }
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
@@ -27,20 +28,36 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	// Get args from URL path components
 	org := r.PathValue("org")
 	project := r.PathValue("project")
+	branch := r.PathValue("branch") // Empty for the non-branch routes
 	proxyPath := r.PathValue("path")
 	proxyRawQuery := r.URL.RawQuery
 
-	// Find the production deployment for the project we're proxying to
+	// Find the project we're proxying to
 	proj, err := s.admin.DB.FindProjectByName(r.Context(), org, project)
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
 	}
-	if proj.PrimaryDeploymentID == nil {
-		return httputil.Errorf(http.StatusBadRequest, "no prod deployment for project")
-	}
-	depl, err := s.admin.DB.FindDeployment(r.Context(), *proj.PrimaryDeploymentID)
-	if err != nil {
-		return httputil.Error(http.StatusBadRequest, err)
+
+	// Find the deployment to proxy to.
+	// If a branch was specified, use the deployment for that branch; otherwise use the project's primary deployment.
+	var depl *database.Deployment
+	if branch == "" {
+		if proj.PrimaryDeploymentID == nil {
+			return httputil.Errorf(http.StatusBadRequest, "no prod deployment for project")
+		}
+		depl, err = s.admin.DB.FindDeployment(r.Context(), *proj.PrimaryDeploymentID)
+		if err != nil {
+			return httputil.Error(http.StatusBadRequest, err)
+		}
+	} else {
+		depls, err := s.admin.DB.FindDeploymentsForProject(r.Context(), proj.ID, "", branch)
+		if err != nil {
+			return httputil.Error(http.StatusBadRequest, err)
+		}
+		if len(depls) == 0 {
+			return httputil.Errorf(http.StatusBadRequest, "no deployment for branch %q", branch)
+		}
+		depl = depls[0] // At most one deployment per branch is allowed
 	}
 
 	// Prepare a JWT to use for the proxied request.

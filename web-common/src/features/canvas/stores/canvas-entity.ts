@@ -178,15 +178,7 @@ export class CanvasEntity {
       this._metricsViews,
     );
 
-    this.unsubscriber = this.specStore.subscribe(({ data }) => {
-      if (this.firstTimeLoad) {
-        this.firstTimeLoad = false;
-        return;
-      }
-      if (data) {
-        this.processSpec(data);
-      }
-    });
+    this.resubscribe();
 
     this.viewingDefaultsStore = derived(
       [
@@ -520,9 +512,28 @@ export class CanvasEntity {
     this.timeManager.state.onUrlChange(searchParams);
   };
 
-  // Not currently being used
+  // Resubscribes to the spec store. Internal call to processSpec will recreate the components.
+  // This ensures that cached canvas entities are not left in an error state.
+  resubscribe = () => {
+    this.unsubscriber = this.specStore.subscribe(({ data }) => {
+      if (this.firstTimeLoad) {
+        this.firstTimeLoad = false;
+        return;
+      }
+      if (data) {
+        this.processSpec(data);
+      }
+    });
+  };
+
+  // Tears down the spec subscription opened in the constructor and disposes
+  // every child component. Without this, a stale entity left over from a
+  // "reset to defaults" save keeps reacting to spec emissions and races the
+  // live entity over URL and YAML writes.
   unsubscribe = () => {
-    // this.unsubscriber();
+    this.unsubscriber();
+    this.componentsStore.read().forEach((component) => component.destroy());
+    this.componentsStore.reset();
   };
 
   handleCanvasRedirect = async ({
@@ -679,6 +690,10 @@ export class CanvasEntity {
           existingClass.update(newResource, path);
         } else {
           createdNewComponent = true;
+          // Tear down the replaced instance's spec subscription before
+          // overwriting it, otherwise the orphan keeps mutating shared
+          // filter/time state.
+          existingClass?.destroy();
           this.componentsStore.set(
             componentName,
             createComponent(newResource, this, path),
@@ -692,6 +707,7 @@ export class CanvasEntity {
     existingKeys.difference(set).forEach((componentName) => {
       const component = this.componentsStore.getNonReactive(componentName);
       if (component) {
+        component.destroy();
         this.componentsStore.delete(componentName);
       }
     });
@@ -752,6 +768,15 @@ export class CanvasEntity {
   };
 
   setSelectedComponent = (id: string | null) => {
+    // Inspector inputs commit their value on blur. Canvas component elements are
+    // not focusable, so clicking another component never blurs the focused input,
+    // which would otherwise apply the pending edit to the newly-selected component.
+    // Blur the active element first so the edit commits against the component that
+    // is still selected, before we switch.
+    if (id !== get(this.selectedComponent) && typeof document !== "undefined") {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    }
     this.selectedComponent.set(id);
   };
 
@@ -764,6 +789,7 @@ export class CanvasEntity {
   };
 
   removeComponent = (componentName: string) => {
+    this.componentsStore.getNonReactive(componentName)?.destroy();
     this.componentsStore.delete(componentName);
   };
 }

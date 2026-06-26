@@ -482,6 +482,7 @@ The values should be valid IANA location identifiers. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
   requiredFilters?: string[];
+  annotations?: Record<string, string>;
 }
 
 export interface V1CanvasState {
@@ -1167,11 +1168,13 @@ export interface V1GitCommitResponse {
 export interface V1GitMergeToBranchResponse {
   /** The output of the git merge command. Only set for unsuccessful merges. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPushResponse {
@@ -1886,6 +1889,7 @@ export interface V1ModelPartition {
   executedOn?: string;
   error?: string;
   elapsedMs?: number;
+  skipped?: boolean;
 }
 
 export type V1ModelSpecIncrementalStateResolverProperties = {

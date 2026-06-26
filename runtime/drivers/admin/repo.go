@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	cligitutil "github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -460,7 +459,7 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 	branches := []string{currentBranch}
 
 	// If a remote branch was explicitly requested and it differs from the current branch, fetch it too
-	// so that ahead/behind counts in RunGitStatus have an up-to-date remote tracking ref to compare against.
+	// so that ahead/behind counts in gitutil.Status have an up-to-date remote tracking ref to compare against.
 	if remoteBranch != "" && remoteBranch != branches[0] {
 		branches = append(branches, remoteBranch)
 	}
@@ -471,7 +470,7 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 	}
 
 	// run git status
-	st, err := cligitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+	st, err := gitutil.Status(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
@@ -501,7 +500,7 @@ func (r *repo) Commit(ctx context.Context, message string) (string, error) {
 	if !r.git.editable() {
 		return "", fmt.Errorf("repo is not editable")
 	}
-	return gitutil.CommitAll(ctx, r.git.repoDir, r.git.subpath, message, "Rill", "noreply@rilldata.com")
+	return gitutil.CommitAll(ctx, r.git.repoDir, r.git.subpath, message, gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 }
 
 // Pull implements drivers.RepoStore.
@@ -846,6 +845,16 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 		r.git.primaryBranch = meta.PrimaryBranch
 		r.git.subpath = meta.GitSubpath
 		r.git.managedRepo = meta.ManagedGitRepo
+
+		// The credential token is embedded in the remote URL and rotates on every refresh.
+		// If the repo is already cloned, write the refreshed URL to the on-disk `origin` remote so that
+		// subsequent git operations (e.g. the fetch in Status) authenticate with the current token rather
+		// than the stale one captured at clone time. A fresh clone uses r.git.remoteURL directly.
+		if isRepoRoot(r.git.repoDir) {
+			if err := setRemoteURL(r.git.repoDir, meta.GitUrl); err != nil {
+				return fmt.Errorf("failed to update git remote url: %w", err)
+			}
+		}
 	} else {
 		r.git = nil
 	}

@@ -77,6 +77,7 @@ func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *riv
 			QuotaSlotsPerDeployment:             0,
 			QuotaOutstandingInvites:             0,
 			QuotaStorageLimitBytesPerDeployment: 0,
+			QuotaSeats:                          0,
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,

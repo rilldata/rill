@@ -201,7 +201,16 @@ service RuntimeService {
   rpc GetModelPartitions(GetModelPartitionsRequest) returns (GetModelPartitionsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/partitions"};
   }
-  
+
+  // SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+  // Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+  rpc SkipModelPartitions(SkipModelPartitionsRequest) returns (SkipModelPartitionsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/models/{model}/partitions/skip",
+      body: "*"
+    };
+  }
+
   // CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
   // Triggers are ephemeral resources that will be cleaned up by the controller.
   rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse) {
@@ -787,6 +796,7 @@ message ModelPartition {
   google.protobuf.Timestamp executed_on = 4;
   string error = 5;
   uint32 elapsed_ms = 6;
+  bool skipped = 7;
 }
 
 message GetLogsRequest {
@@ -863,6 +873,7 @@ message GetModelPartitionsRequest {
   string model = 2;
   bool pending = 5;
   bool errored = 6;
+  bool skipped = 7;
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
   string page_token = 4;
 }
@@ -871,6 +882,19 @@ message GetModelPartitionsResponse {
   repeated ModelPartition partitions = 1;
   string next_page_token = 2;
 }
+
+message SkipModelPartitionsRequest {
+  string instance_id = 1;
+  string model = 2;
+  // Specific partition keys to skip.
+  repeated string partitions = 3;
+  // Skip all pending partitions.
+  bool pending = 4;
+  // Skip all errored partitions, clearing them from the model's error state.
+  bool errored = 5;
+}
+
+message SkipModelPartitionsResponse {}
 
 message CreateTriggerRequest {
   // Instance to target.
@@ -1346,6 +1370,8 @@ message GitMergeToBranchRequest {
 message GitMergeToBranchResponse {
   // The output of the git merge command. Only set for unsuccessful merges.
   string output = 1;
+  // Conflict is true if the merge failed due to conflicts.
+  bool conflict = 2;
 }
 
 message GitSwitchBranchRequest {
@@ -1367,6 +1393,8 @@ message GitPullResponse {
   string output = 1;
   // The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
   string merged_branch = 2;
+  // Conflict is true if the pull failed due to merge conflicts.
+  bool conflict = 3;
 }
 
 message GitPushRequest {

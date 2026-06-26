@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -364,13 +365,20 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 	// Everyone can access a component.
 	case ResourceKindComponent:
 		rules = append(rules, allowAccessRule)
-	// Determine access using the canvas' security rules. If there are none, then everyone can access it.
+	// Determine access using the canvas' security rules. If there are none, then everyone can access it,
+	// unless the canvas is admin-managed (e.g. a personal canvas) in which case only the owner and admins can access it.
 	case ResourceKindCanvas:
 		spec := r.GetCanvas().State.ValidSpec
 		if spec == nil {
 			spec = r.GetCanvas().Spec // Not ideal, but better than giving access to the full resource
 		}
-		if len(spec.SecurityRules) == 0 {
+		if isAdminManagedAnnotations(spec.Annotations) {
+			// Personal / admin-managed canvas: only owner and admins can access. No default-allow fallthrough.
+			rule := p.builtInCanvasSecurityRule(r.Meta.Name, spec, claims)
+			if rule != nil {
+				rules = append([]*runtimev1.SecurityRule{rule}, rules...)
+			}
+		} else if len(spec.SecurityRules) == 0 {
 			rules = append(rules, allowAccessRule)
 		} else {
 			rules = append(rules, spec.SecurityRules...)
@@ -567,6 +575,56 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 			},
 		},
 	}
+}
+
+// isAdminManagedAnnotations returns true if the resource annotations indicate it is admin-managed
+// (i.e. created by the admin server via the personal virtual file APIs).
+func isAdminManagedAnnotations(annotations map[string]string) bool {
+	if annotations == nil {
+		return false
+	}
+	v, _ := strconv.ParseBool(annotations["admin_managed"])
+	return v
+}
+
+// builtInCanvasSecurityRule returns a built-in security rule to apply to an admin-managed canvas.
+// Returns nil if the caller is not an admin and not the owner, so the caller of resolveRules treats it as a deny.
+func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.ResourceName, spec *runtimev1.CanvasSpec, claims *SecurityClaims) *runtimev1.SecurityRule {
+	// Allow if the user is an admin
+	if claims.Admin() {
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow:              true,
+					ConditionResources: []*runtimev1.ResourceName{canvasRes},
+				},
+			},
+		}
+	}
+
+	// Extract the calling user id
+	var userID string
+	if len(claims.UserAttributes) != 0 {
+		userID, _ = claims.UserAttributes["id"].(string)
+	}
+	ownedByUser := userID != "" && userID == spec.Annotations["admin_owner_user_id"]
+
+	shared, ok := spec.Annotations["admin_shared"]
+	sharedBool := ok && shared == "true"
+
+	// Allow if the calling user is the owner or if the canvas is shared
+	if spec.Annotations != nil && (ownedByUser || sharedBool) {
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow:              true,
+					ConditionResources: []*runtimev1.ResourceName{canvasRes},
+				},
+			},
+		}
+	}
+
+	return nil
 }
 
 // applySecurityRuleAccess applies an access rule to the resolved security.

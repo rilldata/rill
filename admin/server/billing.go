@@ -180,9 +180,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	if planDowngrade(plan, org) {
-		if !forceAccess {
-			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
-		}
 		s.logger.Named("billing").Warn("plan downgrade request", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_name", plan.Name))
 	}
 
@@ -329,7 +326,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID: org.ID,
 			Type:  database.BillingIssueTypeSubscriptionCancelled,
-			Metadata: database.BillingIssueMetadataSubscriptionCancelled{
+			Metadata: &database.BillingIssueMetadataSubscriptionCancelled{
 				EndDate: endDate,
 			},
 			EventTime: time.Now(),
@@ -557,6 +554,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   valOrDefault(req.BillingCustomerId, org.BillingCustomerID),
 		PaymentCustomerID:                   valOrDefault(req.PaymentCustomerId, org.PaymentCustomerID),
 		BillingEmail:                        org.BillingEmail,
@@ -640,6 +638,111 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		Organization: s.organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
+}
+
+func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTrialRequest) (*adminv1.SudoExtendTrialResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+	days := int(req.Days)
+	observability.AddRequestAttributes(ctx, attribute.Int("args.days", days))
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can extend trial")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	ns, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if ns != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "organization %s never subscribed to a plan", org.Name)
+	}
+
+	// find existing trial end date
+	currentEndDate := time.Time{}
+	onTrial, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnTrial)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if onTrial != nil {
+		currentEndDate = onTrial.Metadata.(*database.BillingIssueMetadataOnTrial).GracePeriodEndDate
+	}
+
+	if currentEndDate.IsZero() {
+		trialEnded, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialEnded)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		if trialEnded != nil {
+			currentEndDate = trialEnded.Metadata.(*database.BillingIssueMetadataTrialEnded).GracePeriodEndDate
+		}
+	}
+
+	if currentEndDate.IsZero() {
+		subCancelled, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		if subCancelled != nil {
+			currentEndDate = subCancelled.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate
+		}
+	}
+
+	if currentEndDate.IsZero() || currentEndDate.Before(time.Now()) {
+		currentEndDate = time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1)
+	}
+
+	newEndDate := currentEndDate.AddDate(0, 0, days)
+
+	// start a new trial, if already on trial plan, this will not create new subscription, if not on trial plan it will error
+	_, sub, err := s.admin.StartTrial(ctx, org)
+	if err != nil {
+		return nil, err
+	}
+
+	if sub.ID != "" {
+		// update on trial metadata with new end date
+		_, err = s.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID: org.ID,
+			Type:  database.BillingIssueTypeOnTrial,
+			Metadata: &database.BillingIssueMetadataOnTrial{
+				SubID:              sub.ID,
+				PlanID:             sub.Plan.ID,
+				EndDate:            newEndDate,
+				GracePeriodEndDate: newEndDate,
+			},
+			EventTime: time.Now(),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// send trial extended email
+		err = s.admin.Email.SendTrialExtended(&email.TrialExtended{
+			ToEmail:      org.BillingEmail,
+			ToName:       org.Name,
+			OrgName:      org.Name,
+			TrialEndDate: newEndDate,
+		})
+		if err != nil {
+			s.logger.Named("billing").Error("failed to send trial extended email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+		}
+	}
+
+	// if trial subscription was cancelled then unschedule the cancellation
+	if sub.EndDate.Equal(sub.CurrentBillingCycleEndDate) {
+		_, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &adminv1.SudoExtendTrialResponse{TrialEnd: timestamppb.New(newEndDate)}, nil
 }
 
 // SudoGrantTrialCredits grants additional credits to an organization on the credit-based trial.
@@ -1065,6 +1168,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		QuotaSlotsPerDeployment:             valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
 		QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaSeats:                          valOrDefault(sub.Plan.Quotas.NumSeats, org.QuotaSeats),
 		BillingCustomerID:                   org.BillingCustomerID,
 		BillingPlanName:                     &sub.Plan.Name,
 		BillingPlanDisplayName:              &sub.Plan.DisplayName,
@@ -1157,6 +1261,7 @@ func (s *Server) getSubscriptionAndUpdateOrg(ctx context.Context, org *database.
 			QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 			QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 			QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+			QuotaSeats:                          org.QuotaSeats,
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
@@ -1201,6 +1306,8 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 			SlotsPerDeployment:             valOrEmptyString(plan.Quotas.NumSlotsPerDeployment),
 			OutstandingInvites:             valOrEmptyString(plan.Quotas.NumOutstandingInvites),
 			StorageLimitBytesPerDeployment: val64OrEmptyString(plan.Quotas.StorageLimitBytesPerDeployment),
+			ApiCallsPerSeat:                valOrEmptyString(plan.Quotas.NumAPICallsPerSeat),
+			Seats:                          valOrEmptyString(plan.Quotas.NumSeats),
 		},
 	}
 }
@@ -1295,6 +1402,10 @@ func planTypeToDTO(t billing.PlanType) adminv1.BillingPlanType {
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_FREE
 	case billing.ProPlanType:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_PRO
+	case billing.StarterPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_STARTER
+	case billing.GrowthPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_GROWTH
 	default:
 		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_UNSPECIFIED
 	}

@@ -7,11 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -55,12 +51,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			name: "pull changes on default branch in non-editable mode",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				// Clone the repository first
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  true,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", true, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir) // Ensure git config is set up
 				return &gitRepo{
@@ -111,38 +102,15 @@ func TestGitRepo_pullInner(t *testing.T) {
 			name: "switch to edit branch when already on edit branch",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				// Clone and create edit branch
-				repo, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", false, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir) // Ensure git config is set up
 
-				// Create and switch to edit branch
-				worktree, err := repo.Worktree()
-				require.NoError(t, err)
-				err = worktree.Checkout(&git.CheckoutOptions{
-					Branch: plumbing.ReferenceName("refs/heads/edit-branch"),
-					Create: true,
-				})
-				require.NoError(t, err)
-
-				// Make a local commit on edit branch
-				filePath := filepath.Join(localDir, "edit_change.txt")
-				err = os.WriteFile(filePath, []byte("edit content"), 0644)
-				require.NoError(t, err)
-				_, err = worktree.Add("edit_change.txt")
-				require.NoError(t, err)
-				_, err = worktree.Commit("Edit branch change", &git.CommitOptions{
-					Author: &object.Signature{
-						Name:  "Test User",
-						Email: "test@example.com",
-						When:  time.Now(),
-					},
-				})
-				require.NoError(t, err)
+				// Create and switch to edit branch with a local commit.
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
+				require.NoError(t, os.WriteFile(filepath.Join(localDir, "edit_change.txt"), []byte("edit content"), 0644))
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "add", "edit_change.txt")))
+				require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "commit", "-m", "Edit branch change")))
 
 				return newEditableGitRepo(localDir, remoteURL, "edit-branch", "main", "")
 			},
@@ -167,12 +135,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			name: "force pull discards local changes",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				// Clone repository in non-editable mode
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  true,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", true, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir) // Ensure git config is set up
 
@@ -333,12 +296,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			name: "pull preserves git-ignored files",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
 				// Clone the repository
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  true,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", true, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir)
 
@@ -416,12 +374,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 		{
 			name: "editable mode - force=false - conflicting local changes returns error",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", false, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir)
 
@@ -448,12 +401,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 		{
 			name: "editable mode - force=false - non-conflicting local changes merged successfully",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", false, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir)
 
@@ -629,12 +577,7 @@ func TestGitRepo_commitToDefaultBranch(t *testing.T) {
 		{
 			name: "defaultBranch == primaryBranch: commit and push works",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", false, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir)
 				return newEditableGitRepo(localDir, remoteURL, "main", "main", "")
@@ -673,12 +616,7 @@ func TestGitRepo_commitToDefaultBranch(t *testing.T) {
 		{
 			name: "error when repository is not editable",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  true,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", true, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir)
 				return &gitRepo{
@@ -741,12 +679,7 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 		{
 			name: "error when repository is not editable",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  true,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", true, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir)
 				return &gitRepo{
@@ -783,12 +716,7 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 		{
 			name: "defaultBranch == branch: commits and pushes changes",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false,
-				})
+				err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", false, false)
 				require.NoError(t, err)
 				setupGitConfig(t, localDir)
 				return newEditableGitRepo(localDir, remoteURL, "main", "main", "")
@@ -902,6 +830,44 @@ func TestGitRepo_mergeToBranch(t *testing.T) {
 	}
 }
 
+// TestGitRepo_refreshedRemoteURLRecoversRemoteOps reproduces the managed-git stale-token bug.
+//
+// The credential token is embedded in the on-disk `origin` URL captured at clone time. Once it
+// expires, every operation that talks to the remote via `origin` (the fetch in Status, and the
+// fetch+push in CommitAndPush/MergeToBranch) fails until the URL is rewritten. checkHandshake now
+// rewrites the on-disk `origin` on each credential refresh via setRemoteURL; this test verifies that
+// rewriting `origin` restores both the fetch and push paths that those APIs depend on.
+func TestGitRepo_refreshedRemoteURLRecoversRemoteOps(t *testing.T) {
+	remoteDir := setupTestGitRepository(t)
+	localDir := t.TempDir()
+
+	// Clone so the on-disk `origin` initially points at the real remote.
+	err := gitutil.Clone(context.Background(), localDir, remoteDir, "main", false, false)
+	require.NoError(t, err)
+	setupGitConfig(t, localDir)
+
+	ctx := context.Background()
+
+	// Simulate an expired credential by pointing the on-disk `origin` at a URL git rejects.
+	staleURL := filepath.Join(t.TempDir(), "does-not-exist.git")
+	require.NoError(t, setRemoteURL(localDir, staleURL))
+
+	// Before the refresh: the Status fetch path fails because `origin` is stale.
+	require.Error(t, gitutil.FetchBranches(ctx, localDir, "main"))
+
+	// checkHandshake's fix: rewrite the on-disk `origin` to the refreshed URL.
+	require.NoError(t, setRemoteURL(localDir, remoteDir))
+
+	// After the refresh: the Status fetch path works again.
+	require.NoError(t, gitutil.FetchBranches(ctx, localDir, "main"))
+
+	// And the fetch+push path used by CommitAndPush/MergeToBranch works against the refreshed `origin`.
+	repo := newEditableGitRepo(localDir, remoteDir, "main", "main", "")
+	require.NoError(t, os.WriteFile(filepath.Join(localDir, "after_refresh.txt"), []byte("ok"), 0644))
+	require.NoError(t, repo.commitToDefaultBranch(ctx, "commit after refresh", false))
+	verifyRemoteBranchFile(t, remoteDir, "main", "after_refresh.txt", "ok")
+}
+
 func TestGitCheckout_refNotFound(t *testing.T) {
 	repoDir := t.TempDir()
 	require.NoError(t, execGitCommand(exec.Command("git", "init", repoDir)))
@@ -912,7 +878,7 @@ func TestGitCheckout_refNotFound(t *testing.T) {
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoDir, "add", "seed.txt")))
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", repoDir, "commit", "-m", "seed")))
 
-	err := gitCheckout(repoDir, "does-not-exist", false, false, "")
+	err := gitutil.Checkout(repoDir, "does-not-exist", false, false, "")
 	require.ErrorIs(t, err, gitutil.ErrRefNotFound, "missing ref must surface as ErrRefNotFound so pullInner can create the branch")
 }
 
@@ -950,12 +916,7 @@ func newEditableGitRepo(localDir, remoteURL, defaultBranch, primaryBranch, subpa
 // cloneAndCreateRemoteEditBranch clones the remote, creates "edit-branch" locally, and pushes it to remote.
 func cloneAndCreateRemoteEditBranch(t *testing.T, localDir, remoteURL string) {
 	t.Helper()
-	_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-		URL:           remoteURL,
-		RemoteName:    "origin",
-		ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-		SingleBranch:  false,
-	})
+	err := gitutil.Clone(context.Background(), localDir, remoteURL, "main", false, false)
 	require.NoError(t, err)
 	setupGitConfig(t, localDir)
 	require.NoError(t, execGitCommand(exec.Command("git", "-C", localDir, "checkout", "-b", "edit-branch")))
@@ -1126,13 +1087,9 @@ func execGitCommand(cmd *exec.Cmd) error {
 
 // verifyCurrentBranch verifies that the repository is currently on the expected branch
 func verifyCurrentBranch(t *testing.T, repoPath, expectedBranch string) {
-	repo, err := git.PlainOpen(repoPath)
-	require.NoError(t, err, "failed to open repository")
-
-	head, err := repo.Head()
-	require.NoError(t, err, "failed to get HEAD")
-
-	require.Equal(t, expectedBranch, head.Name().Short(), "unexpected branch")
+	branch, err := gitutil.CurrentBranch(context.Background(), repoPath)
+	require.NoError(t, err, "failed to get current branch")
+	require.Equal(t, expectedBranch, branch, "unexpected branch")
 }
 
 func withCleanGitEnv(t *testing.T) {

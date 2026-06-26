@@ -63,9 +63,11 @@ var defaultFeatureFlags = map[string]string{
 	// Controls if the dashboard state is persisted when user revisits the same dashboard.
 	"disable_persistent_dashboard_state": "false",
 	// Controls visibility of the cloud editing feature (Edit button and edit routes)
-	"cloud_editing": "true",
+	"cloud_editing": "false",
 	// Controls visibility of the custom chart option in canvas dashboards
 	"custom_charts": "false",
+	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
+	"personal_canvases": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

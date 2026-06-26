@@ -52,6 +52,40 @@ sql: SELECT '{{.partition.now}}::TIMESTAMP' AS now
 	})
 }
 
+func TestPartitionedIncrementalPostExecSeesIncrementalFlag(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/multiply.yaml": `
+type: model
+incremental: true
+materialize: true
+partitions:
+  sql: SELECT range AS num FROM range(1, 4)
+sql: SELECT {{ .partition.num }} AS num
+post_exec: |
+  {{ if incremental }} UPDATE multiply SET num = num * 10 WHERE num = {{ .partition.num }} {{ end }}
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Exactly two of the three partitions ran incrementally and were multiplied by 10 (>= 10).
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM multiply WHERE num >= 10`},
+		Result:     []map[string]any{{"count": 2}},
+	})
+
+	// The first partition ran non-incrementally and was left untouched (< 10).
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM multiply WHERE num < 10`},
+		Result:     []map[string]any{{"count": 1}},
+	})
+}
+
 func TestModelTests(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 
@@ -262,6 +296,46 @@ tests:
 	}
 }
 
+func TestModelPartitionsSkippedClearsErrorState(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	// Incremental, partitioned model where the partition with value 'x' fails to execute (invalid CAST),
+	// while '1' and '2' succeed. The first partition to run is the one with the highest index (partitions are
+	// loaded idx DESC), so we order the values descending to ensure a successful, numeric partition runs first.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+partitions:
+  sql: SELECT v FROM (VALUES ('1'), ('2'), ('x')) t(v) ORDER BY v DESC
+sql: SELECT CAST('{{.partition.v}}' AS INTEGER) AS n
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	// Full refresh so every partition actually executes (the first incremental run only runs one partition).
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "partitioned", Full: true})
+
+	// The 'x' partition errored, so the model is in an error state.
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.True(t, model.State.PartitionsHaveErrors)
+
+	// Skip the errored partition, then reconcile the model (mirrors what the SkipModelPartitions RPC does).
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	err = catalog.UpdateModelPartitionsSkipped(ctx, model.State.PartitionsModelId, nil, false, true)
+	release()
+	require.NoError(t, err)
+
+	testruntime.ReconcileAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partitioned"})
+
+	// Reconciling recomputes the partition error state: with the errored partition skipped, the model is no longer errored.
+	model = testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.False(t, model.State.PartitionsHaveErrors)
+}
+
 func TestExplicitPartitionRefreshDoesNotProcessNewPartitions(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 	ctx := t.Context()
@@ -336,4 +410,93 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 	require.NotEmpty(t, partitions[0].ExecutedOn)
 	require.NotEmpty(t, partitionsAfterRefresh[0].ExecutedOn)
 	require.Greater(t, partitionsAfterRefresh[0].ExecutedOn.UnixNano(), partitions[0].ExecutedOn.UnixNano(), "The refreshed partition should have an updated timestamp")
+}
+
+func TestPartitionedIncrementalPostExecWithStaging(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"models/multiply_staged.yaml": `
+type: model
+incremental: true
+materialize: true
+partitions:
+  sql: SELECT range AS num FROM range(1, 4)
+sql: SELECT {{ .partition.num }} AS num
+post_exec: UPDATE multiply_staged SET num = num * 10 WHERE num = {{ .partition.num }}
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// All three partitions (including the first, which is staged) must be multiplied: {10, 20, 30}.
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM multiply_staged WHERE num >= 10`},
+		Result:     []map[string]any{{"count": 3}},
+	})
+}
+
+func TestIncrementalAppendPostExecWithStaging(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"models/appendmodel.yaml": `
+type: model
+incremental: true
+materialize: true
+incremental_strategy: append
+sql: SELECT 1 AS num UNION ALL SELECT 2 AS num
+post_exec: UPDATE appendmodel SET num = num + 100
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Exactly two rows, each incremented once: {101, 102}.
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT num FROM appendmodel ORDER BY num`},
+		Result:     []map[string]any{{"num": 101}, {"num": 102}},
+	})
+}
+
+func TestViewPostExecWithStaging(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"models/staged_view.yaml": `
+type: model
+materialize: false
+sql: SELECT 1 AS num
+post_exec: SELECT * FROM zzz_missing_table
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	res := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "staged_view")
+	require.Contains(t, res.Meta.ReconcileError, "zzz_missing_table", "post_exec must run for a staged view")
+}
+
+func TestStagedPostExecPairsWithPreExec(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"models/attach_model.yaml": `
+type: model
+materialize: true
+pre_exec: ATTACH ':memory:' AS extdb
+sql: SELECT 1 AS num
+post_exec: DETACH extdb
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 }

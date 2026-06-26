@@ -6463,6 +6463,8 @@ func (m *ModelPartition) validate(all bool) error {
 
 	// no validation rules for ElapsedMs
 
+	// no validation rules for Skipped
+
 	if len(errors) > 0 {
 		return ModelPartitionMultiError(errors)
 	}
@@ -8129,6 +8131,8 @@ func (m *GetModelPartitionsRequest) validate(all bool) error {
 
 	// no validation rules for Errored
 
+	// no validation rules for Skipped
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 10000 {
@@ -8363,6 +8367,219 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetModelPartitionsResponseValidationError{}
+
+// Validate checks the field values on SkipModelPartitionsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SkipModelPartitionsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SkipModelPartitionsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SkipModelPartitionsRequestMultiError, or nil if none found.
+func (m *SkipModelPartitionsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SkipModelPartitionsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Model
+
+	// no validation rules for Pending
+
+	// no validation rules for Errored
+
+	if len(errors) > 0 {
+		return SkipModelPartitionsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SkipModelPartitionsRequestMultiError is an error wrapping multiple
+// validation errors returned by SkipModelPartitionsRequest.ValidateAll() if
+// the designated constraints aren't met.
+type SkipModelPartitionsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SkipModelPartitionsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SkipModelPartitionsRequestMultiError) AllErrors() []error { return m }
+
+// SkipModelPartitionsRequestValidationError is the validation error returned
+// by SkipModelPartitionsRequest.Validate if the designated constraints aren't met.
+type SkipModelPartitionsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SkipModelPartitionsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SkipModelPartitionsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SkipModelPartitionsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SkipModelPartitionsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SkipModelPartitionsRequestValidationError) ErrorName() string {
+	return "SkipModelPartitionsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SkipModelPartitionsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSkipModelPartitionsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SkipModelPartitionsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SkipModelPartitionsRequestValidationError{}
+
+// Validate checks the field values on SkipModelPartitionsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SkipModelPartitionsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SkipModelPartitionsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SkipModelPartitionsResponseMultiError, or nil if none found.
+func (m *SkipModelPartitionsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SkipModelPartitionsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SkipModelPartitionsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SkipModelPartitionsResponseMultiError is an error wrapping multiple
+// validation errors returned by SkipModelPartitionsResponse.ValidateAll() if
+// the designated constraints aren't met.
+type SkipModelPartitionsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SkipModelPartitionsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SkipModelPartitionsResponseMultiError) AllErrors() []error { return m }
+
+// SkipModelPartitionsResponseValidationError is the validation error returned
+// by SkipModelPartitionsResponse.Validate if the designated constraints
+// aren't met.
+type SkipModelPartitionsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SkipModelPartitionsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SkipModelPartitionsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SkipModelPartitionsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SkipModelPartitionsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SkipModelPartitionsResponseValidationError) ErrorName() string {
+	return "SkipModelPartitionsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SkipModelPartitionsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSkipModelPartitionsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SkipModelPartitionsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SkipModelPartitionsResponseValidationError{}
 
 // Validate checks the field values on CreateTriggerRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -15150,6 +15367,8 @@ func (m *GitMergeToBranchResponse) validate(all bool) error {
 
 	// no validation rules for Output
 
+	// no validation rules for Conflict
+
 	if len(errors) > 0 {
 		return GitMergeToBranchResponseMultiError(errors)
 	}
@@ -15593,6 +15812,8 @@ func (m *GitPullResponse) validate(all bool) error {
 	// no validation rules for Output
 
 	// no validation rules for MergedBranch
+
+	// no validation rules for Conflict
 
 	if len(errors) > 0 {
 		return GitPullResponseMultiError(errors)

@@ -11,26 +11,23 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/eapache/go-resiliency/retrier"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	"github.com/rilldata/rill/cli/pkg/web"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -212,55 +209,44 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 		return nil, fmt.Errorf("failed to create repository: %w", err)
 	}
 
-	var repo *git.Repository
 	// init git repo
+	// initGit is true only if there was no .git entry at exactly s.app.ProjectPath above, so
+	// the commit below operates on this repo and never on a repo in a parent directory.
 	if initGit {
-		repo, err = git.PlainInitWithOptions(s.app.ProjectPath, &git.PlainInitOptions{
-			InitOptions: git.InitOptions{
-				DefaultBranch: plumbing.NewBranchReferenceName("main"),
-			},
-			Bare: false,
-		})
+		err = gitutil.EnsureInit(ctx, s.app.ProjectPath, "main")
 		if err != nil {
 			return nil, fmt.Errorf("failed to init git repo: %w", err)
 		}
-	} else {
-		repo, err = git.PlainOpen(s.app.ProjectPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open git repo: %w", err)
-		}
 	}
 
-	wt, err := repo.Worktree()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	// git add .
-	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
-		return nil, fmt.Errorf("failed to add files to git: %w", err)
-	}
-
-	// git commit -m
+	// git add . && git commit -m
 	author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate git commit signature: %w", err)
 	}
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true, Author: author})
-	if err != nil {
-		if !errors.Is(err, git.ErrEmptyCommit) {
-			return nil, fmt.Errorf("failed to commit files to git: %w", err)
-		}
+	_, err = gitutil.CommitAll(ctx, s.app.ProjectPath, "", "Auto committed by Rill", author)
+	if err != nil && !errors.Is(err, gitutil.ErrEmptyCommit) {
+		// on ErrEmptyCommit we still trigger the push
+		return nil, fmt.Errorf("failed to commit files to git: %w", err)
 	}
 
-	// Create the remote
-	_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{*githubRepo.CloneURL}})
+	// Create the remote; this errors if origin already exists, so an existing remote is never overwritten
+	_, err = gitutil.Run(ctx, s.app.ProjectPath, "remote", "add", "origin", *githubRepo.CloneURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create remote: %w", err)
 	}
 
-	// push the changes
-	if err := repo.PushContext(ctx, &git.PushOptions{Auth: &githttp.BasicAuth{Username: "x-access-token", Password: gitStatus.AccessToken}}); err != nil {
+	// push all local branches, passing the access token on the command line only so it is never persisted in .git/config
+	config := &gitutil.Config{
+		Remote:   *githubRepo.CloneURL,
+		Username: "x-access-token",
+		Password: gitStatus.AccessToken,
+	}
+	authRemote, err := config.FullyQualifiedRemote()
+	if err != nil {
+		return nil, err
+	}
+	if err := gitutil.Push(ctx, s.app.ProjectPath, authRemote, "refs/heads/*:refs/heads/*"); err != nil {
 		return nil, fmt.Errorf("failed to push to remote %q : %w", *githubRepo.CloneURL, err)
 	}
 
@@ -355,7 +341,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ArchiveAssetId: assetID,
 		}
 	} else if r.Msg.Upload { // upload repo to rill managed storage instead of github
-		gitBranch, err := currentGitBranch(s.app.ProjectPath)
+		gitBranch, err := currentGitBranch(ctx, s.app.ProjectPath)
 		if err != nil {
 			return nil, err
 		}
@@ -407,7 +393,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 
 		// check if there are uncommitted changes
-		st, err := gitutil.RunGitStatus(gitPath, subPath, remote.Name, "")
+		st, err := gitutil.Status(ctx, gitPath, subPath, remote.Name, "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to get git status: %w", err)
 		}
@@ -537,7 +523,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			}
 		} else if projResp.Project.ArchiveAssetId != "" || r.Msg.CreateManagedRepo {
 			// project was previously deployed using zip and ship, or we are overwriting another project already connected to github
-			gitBranch, err := currentGitBranch(s.app.ProjectPath)
+			gitBranch, err := currentGitBranch(ctx, s.app.ProjectPath)
 			if err != nil {
 				return nil, err
 			}
@@ -1075,18 +1061,19 @@ func (s *Server) traceHandler() http.Handler {
 }
 
 // currentGitBranch returns the current git branch of the repository at the given path.
-// It does not return error if the repo does not exist.
-func currentGitBranch(path string) (string, error) {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
+// It does not return error if the repo does not exist. The exact-path .git check matters:
+// without it, a non-repo project directory nested inside an unrelated repo would report the
+// parent repo's branch.
+func currentGitBranch(ctx context.Context, path string) (string, error) {
+	if _, err := os.Stat(filepath.Join(path, ".git")); err != nil {
 		return "", nil
 	}
-	head, err := repo.Head()
+	branch, err := gitutil.CurrentBranch(ctx, path)
 	if err != nil {
+		if errors.Is(err, gitutil.ErrDetachedHead) {
+			return "", fmt.Errorf("HEAD is not a branch. Checkout a branch to deploy")
+		}
 		return "", err
 	}
-	if head.Name().IsBranch() {
-		return head.Name().Short(), nil
-	}
-	return "", fmt.Errorf("HEAD is not a branch. Checkout a branch to deploy")
+	return branch, nil
 }

@@ -57,6 +57,7 @@ saved-state.json
 last-query-output.json
 staging-databases
 /rilldata
+/rill-examples/
 docs/dist/
 coverage
 # locally deployed test projects can generate this
@@ -98,6 +99,7 @@ latest.txt
 .claude/plans/
 .claude/worktrees/
 .claude/projects/
+.mcp.json
 
 # Vite temp files
 vite.config.ts.timestamp-*

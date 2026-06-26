@@ -12,8 +12,6 @@ test.describe("canvas global dimension filters", () => {
 
     await page.getByRole("button", { name: "Preview" }).click();
 
-    await page.waitForTimeout(1000);
-
     await expect(page.getByText("Total records 1,122")).toBeVisible();
 
     await page.getByRole("button", { name: "Add filter button" }).click();

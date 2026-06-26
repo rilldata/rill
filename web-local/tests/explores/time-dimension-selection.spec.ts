@@ -9,7 +9,6 @@ async function waitForDashboard(page: Page) {
   await expect(page.getByLabel("Select time range")).toBeVisible({
     timeout: 10000,
   });
-  await page.waitForTimeout(1000);
 }
 
 function getMetricsViewYaml(includeSecondTimeDimension = false) {
@@ -73,7 +72,6 @@ test.describe("time dimension selection", () => {
     await waitForDashboard(page);
 
     await page.getByLabel("Select time range").click();
-    await page.waitForTimeout(500);
 
     const timeZoneButton = page.getByRole("button", { name: /Time zone/ });
     await expect(timeZoneButton).toBeVisible({ timeout: 5000 });
@@ -92,8 +90,6 @@ test.describe("time dimension selection", () => {
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 7 days" }).click();
     });
-
-    await page.waitForTimeout(1000);
 
     await expect(page.getByText("Last 7 Days")).toBeVisible();
 
@@ -136,7 +132,6 @@ test.describe("time dimension selection", () => {
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "All Time" }).click();
     });
-    await page.waitForTimeout(1000);
 
     await expect(page.getByText("Publisher")).toBeVisible();
     await expect(

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-git/go-git/v5"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
@@ -79,7 +79,7 @@ func (s *Server) GitSwitchBranch(ctx context.Context, req *runtimev1.GitSwitchBr
 
 	err = repo.SwitchBranch(ctx, req.Branch, req.Create, req.IgnoreLocalChanges)
 	if err != nil {
-		if errors.Is(err, git.ErrBranchNotFound) {
+		if errors.Is(err, gitutil.ErrRefNotFound) {
 			return nil, status.Errorf(codes.NotFound, "branch %s not found", req.Branch)
 		}
 		return nil, fmt.Errorf("failed to switch git branch: %w", err)
@@ -204,7 +204,8 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 		var mergeErr *drivers.MergeFailedError
 		if errors.As(err, &mergeErr) {
 			return &runtimev1.GitMergeToBranchResponse{
-				Output: mergeErr.Error(),
+				Output:   mergeErr.Error(),
+				Conflict: mergeErr.Conflict,
 			}, nil
 		}
 		return nil, err
@@ -233,6 +234,7 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 			return &runtimev1.GitPullResponse{
 				Output:       mergeErr.Error(),
 				MergedBranch: mergeErr.MergedBranch,
+				Conflict:     mergeErr.Conflict,
 			}, nil
 		}
 		return nil, fmt.Errorf("failed to pull: %w", err)
@@ -251,7 +253,12 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 	}
 	defer release()
 
-	err = repo.CommitAndPush(ctx, req.CommitMessage, req.Force)
+	msg := req.CommitMessage
+	if msg == "" {
+		msg = "User triggered commit from Rill"
+	}
+
+	err = repo.CommitAndPush(ctx, msg, req.Force)
 	if err != nil {
 		if errors.Is(err, drivers.ErrRemoteAhead) {
 			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")

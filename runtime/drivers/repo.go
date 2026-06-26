@@ -17,6 +17,8 @@ type MergeFailedError struct {
 	Output string
 	// MergedBranch is the name of the branch that was being merged when the error occurred.
 	MergedBranch string
+	// Conflict is true if the merge failed due to conflicts.
+	Conflict bool
 }
 
 func (e *MergeFailedError) Error() string {

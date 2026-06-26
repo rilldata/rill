@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -202,7 +200,10 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, err
 	}
 
-	name, err := s.generateReportName(ctx, depl, req.Options.DisplayName)
+	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+		_, err := s.admin.LookupReport(ctx, depl, name)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -217,6 +218,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		Environment: "prod",
 		Path:        virtualFilePathForManagedReport(name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -284,6 +286,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		Environment: "prod",
 		Path:        virtualFilePathForManagedReport(req.Name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -303,6 +306,9 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
+	if req.Email != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -414,6 +420,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			Environment: "prod",
 			Path:        virtualFilePathForManagedReport(req.Name),
 			Data:        data,
+			OwnerID:     nil,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -644,27 +651,6 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	return yaml.Marshal(res)
 }
 
-// generateReportName generates a random report name with the display name as a seed.
-// Example: "My report!" -> "my-report-5b3f7e1a".
-// It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateReportName(ctx context.Context, depl *database.Deployment, displayName string) (string, error) {
-	for i := 0; i < 5; i++ {
-		name := randomReportName(displayName)
-
-		_, err := s.admin.LookupReport(ctx, depl, name)
-		if err != nil {
-			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-				// Success! Name isn't taken
-				return name, nil
-			}
-			return "", fmt.Errorf("failed to check report name: %w", err)
-		}
-	}
-
-	// Fail-safe in case all names we tried were taken
-	return uuid.New().String(), nil
-}
-
 func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
@@ -840,23 +826,6 @@ func (s *Server) getAttributesForProjectMember(ctx context.Context, email, orgID
 		return nil, "", nil
 	}
 	return attr, id, nil
-}
-
-var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
-
-var reportNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
-
-func randomReportName(displayName string) string {
-	name := reportNameToDashCharsRegexp.ReplaceAllString(displayName, "-")
-	name = reportNameExcludeCharsRegexp.ReplaceAllString(name, "")
-	name = strings.ToLower(name)
-	name = strings.Trim(name, "-")
-	if name == "" {
-		name = uuid.New().String()
-	} else {
-		name = name + "-" + uuid.New().String()[0:8]
-	}
-	return name
 }
 
 // reportYAML is derived from runtime/parser.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
