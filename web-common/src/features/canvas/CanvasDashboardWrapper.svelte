@@ -54,11 +54,15 @@
       </header>
     {/if}
 
-    <!-- Off-screen read-only header used only as the PDF capture target. -->
+    <!-- Read-only header used only as the PDF capture target. Kept display:none
+         so it never duplicates the live filter bar's text/labels in the
+         accessibility tree or e2e queries; capture.ts reveals it (still
+         off-screen) just long enough to rasterize. -->
     <div
+      id="canvas-pdf-export-frame"
       aria-hidden="true"
       class="pointer-events-none absolute"
-      style="left: -99999px; top: 0;"
+      style="display: none; left: -99999px; top: 0;"
     >
       <CanvasPdfExportHeader {canvasName} {instanceId} {maxWidth} />
     </div>
