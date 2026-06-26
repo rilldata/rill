@@ -110,23 +110,19 @@ export async function captureCanvasBlocks(
   const reportProgress = () => opts.onProgress?.(total ? done / total : 1);
 
   if (opts.includeFilters) {
-    // Read-only summary block (title + exact time range + filter chips). The
-    // frame is display:none in normal use so it doesn't duplicate the live
-    // filter bar; reveal it (still off-screen) only while we measure and
-    // rasterize. See CanvasPdfExportHeader.
+    // Read-only summary block (title + exact time range + filter chips),
+    // rendered off-screen specifically for capture; see CanvasPdfExportHeader.
+    // It is mounted only during an active export (canvasPdfExportActive), so by
+    // the time we reach here prepareCanvasForCapture has flushed it into the DOM.
     const header = document.querySelector<HTMLElement>(
       "#canvas-pdf-export-header",
     );
-    const frame = document.querySelector<HTMLElement>(
-      "#canvas-pdf-export-frame",
-    );
-    if (header && frame) {
-      frame.style.display = "block";
-      try {
-        // Match the header's width to the content area so it scales consistently
-        // with the component blocks during pagination.
-        header.style.width = `${contentWidthPx}px`;
-        if (header.scrollHeight > 0) {
+    if (header) {
+      // Match the header's width to the content area so it scales consistently
+      // with the component blocks during pagination.
+      header.style.width = `${contentWidthPx}px`;
+      if (header.scrollHeight > 0) {
+        try {
           const dataUrl = await rasterizeNode(header, backgroundColor);
           blocks.push({
             id: FILTER_BAR_ID,
@@ -137,11 +133,9 @@ export async function captureCanvasBlocks(
             heightPx: header.scrollHeight,
             rowIndex: FILTER_BAR_ROW_INDEX,
           });
+        } catch (e) {
+          console.warn("Failed to capture canvas header for PDF export", e);
         }
-      } catch (e) {
-        console.warn("Failed to capture canvas header for PDF export", e);
-      } finally {
-        frame.style.display = "none";
       }
     }
     done += 1;

@@ -7,6 +7,7 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
   import CanvasPdfExportHeader from "../exports/pdf/CanvasPdfExportHeader.svelte";
+  import { canvasPdfExportActive } from "../exports/pdf/export-state";
 
   const client = useRuntimeClient();
 
@@ -54,18 +55,19 @@
       </header>
     {/if}
 
-    <!-- Read-only header used only as the PDF capture target. Kept display:none
-         so it never duplicates the live filter bar's text/labels in the
-         accessibility tree or e2e queries; capture.ts reveals it (still
-         off-screen) just long enough to rasterize. -->
-    <div
-      id="canvas-pdf-export-frame"
-      aria-hidden="true"
-      class="pointer-events-none absolute"
-      style="display: none; left: -99999px; top: 0;"
-    >
-      <CanvasPdfExportHeader {canvasName} {instanceId} {maxWidth} />
-    </div>
+    <!-- Off-screen read-only header used only as the PDF capture target. Mounted
+         solely during an active export: Playwright locators and the a11y tree
+         match elements regardless of CSS visibility, so an always-mounted header
+         would duplicate the live filter bar's text/labels. -->
+    {#if $canvasPdfExportActive}
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute"
+        style="left: -99999px; top: 0;"
+      >
+        <CanvasPdfExportHeader {canvasName} {instanceId} {maxWidth} />
+      </div>
+    {/if}
 
     <div
       role="presentation"
