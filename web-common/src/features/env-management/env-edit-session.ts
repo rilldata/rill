@@ -48,7 +48,15 @@ export class EnvEditSession {
     });
     this.entries.clear();
 
+    // Seed the collision set with every live mapped name: both the parent
+    // store's keys and the names still held by in-flight (uncommitted preview)
+    // entries. Without the latter, a new acquire could hand out a name an
+    // in-flight entry is about to reclaim, producing two entries with the same
+    // mapped env var name.
     this.assignedVars = new Set<string>(this.parentStore.store.keys());
+    this.inflightEntries.forEach((v) =>
+      this.assignedVars.add(v.mappedEnvVarName),
+    );
   }
 
   public acquire(key: string, value: string, envVarName?: string) {
@@ -57,7 +65,7 @@ export class EnvEditSession {
       entry.value = value;
       this.inflightEntries.delete(key);
       this.entries.set(key, entry);
-      this.assignedVars.add(key);
+      this.assignedVars.add(entry.mappedEnvVarName);
       return entry;
     }
 
@@ -66,7 +74,7 @@ export class EnvEditSession {
     const entry = new EnvEditSessionVariable(key, value, mappedEnvVarName);
 
     this.entries.set(key, entry);
-    this.assignedVars.add(key);
+    this.assignedVars.add(mappedEnvVarName);
     return entry;
   }
 

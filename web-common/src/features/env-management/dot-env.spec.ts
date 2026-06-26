@@ -46,10 +46,16 @@ describe("parseDotEnv", () => {
     });
   });
 
-  it("expands \\n and \\r escapes inside double quotes", () => {
+  it('expands \\n, \\r, \\" and \\\\ escapes inside double quotes', () => {
     expect(parseDotEnv('JSON="{\\n  \\"k\\": 1\\n}"').JSON).toBe(
-      '{\n  \\"k\\": 1\n}',
+      '{\n  "k": 1\n}',
     );
+  });
+
+  it("unescapes a literal backslash without re-interpreting the next char", () => {
+    // `\\n` (escaped backslash) must yield a literal `\n`, not a newline.
+    expect(parseDotEnv('PATH="C:\\\\new"').PATH).toBe("C:\\new");
+    expect(parseDotEnv('RAW="a\\\\nb"').RAW).toBe("a\\nb");
   });
 
   it("does not expand escapes inside single quotes", () => {
@@ -124,6 +130,11 @@ describe("round-trip", () => {
     { MSG: "it's fine" },
     { MULTI: "line1\nline2" },
     { EMPTY: "" },
+    { WIN_PATH: "C:\\new\\folder" },
+    { BACKSLASH_N: "a\\nb" },
+    { QUOTE: 'say "hi"' },
+    { JSON: '{\n  "k": 1\n}' },
+    { MIXED: 'a\\b"c\nd' },
     { FOO: "bar", URL: "https://example.com#section", MSG: "it's fine" },
   ] as Record<string, string>[])(
     "serialize → parse preserves %j",

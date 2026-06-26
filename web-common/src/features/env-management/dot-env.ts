@@ -15,11 +15,13 @@ export function parseDotEnv(src: string): Record<string, string> {
     const quote = value[0];
     value = value.replace(/^(['"`])([\s\S]*)\1$/, "$2");
     if (quote === '"') {
-      value = value
-        .replace(/\\n/g, "\n")
-        .replace(/\\r/g, "\r")
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, "\\");
+      // Unescape in a single pass so each backslash is consumed exactly once.
+      // Chained `.replace` calls would let an earlier substitution's output be
+      // re-interpreted by a later one (e.g. `\\n` -> `\` + newline), corrupting
+      // values that contain literal backslashes.
+      value = value.replace(/\\([nr"\\])/g, (_, c) =>
+        c === "n" ? "\n" : c === "r" ? "\r" : c,
+      );
     }
     obj[key] = value;
   }
