@@ -132,6 +132,4 @@ export function invalidateGitStatusQueries(
       }),
     });
   }
-  // The GitDiff (changed-files) query is not invalidated here: it refetches on
-  // every popover open via `refetchOnMount: "always"` in ChangedFilesList.
 }
