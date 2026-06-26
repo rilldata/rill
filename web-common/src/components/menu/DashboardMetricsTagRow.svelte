@@ -2,6 +2,7 @@
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { detectOverflow } from "@rilldata/web-common/lib/actions/detect-overflow";
   import type { DimensionTag, TagVisibilityState } from "./tag-utils";
 
   type Props = {
@@ -26,6 +27,8 @@
 
   const actionBtnClass =
     "flex items-center justify-center h-[22px] w-[22px] rounded-sm text-icon-muted hover:text-fg-primary hover:bg-surface-background transition-colors";
+
+  let isTruncated = $state(false);
 </script>
 
 <div
@@ -62,9 +65,25 @@
         />
       {/if}
     </svg>
-    <span class="truncate flex-1 min-w-0 text-fg-primary">
-      {tag.name}
-    </span>
+    <Tooltip.Root delayDuration={200} disabled={!isTruncated}>
+      <Tooltip.Trigger>
+        {#snippet child({ props })}
+          <span
+            {...props}
+            class="truncate flex-1 min-w-0 text-left text-fg-primary"
+            use:detectOverflow={(v) => (isTruncated = v)}
+          >
+            {tag.name}
+          </span>
+        {/snippet}
+      </Tooltip.Trigger>
+      <Tooltip.Content
+        side="top"
+        class="bg-popover text-fg-primary z-popover text-xs px-2 py-1"
+      >
+        {tag.name}
+      </Tooltip.Content>
+    </Tooltip.Root>
     <span
       class="tabular-nums text-xs text-fg-secondary flex-none"
       aria-label={`${visibility.visibleCount} of ${visibility.totalCount} shown`}
