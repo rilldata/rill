@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"github.com/rilldata/rill/runtime/pkg/urlutils"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
@@ -384,14 +385,13 @@ func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int,
 			return nil, fmt.Errorf("tab %d in tab group at row %d is missing a label", t, rowIdx)
 		}
 
-		// Use the explicit name as the URL key when provided, otherwise derive one from the
-		// label. Either way uniquify it against earlier tabs in this group.
-		var tabName string
-		if tab.Name != "" {
-			tabName = uniqueName(tab.Name, fmt.Sprintf("tab-%d", t), seenNames)
-		} else {
-			tabName = uniqueName(slugify(tab.Label), fmt.Sprintf("tab-%d", t), seenNames)
+		// Prefer the explicit name as the URL key, then a slug of the label, then a positional
+		// fallback. uniqueName uniquifies the result against earlier tabs in this group.
+		target := tab.Name
+		if target == "" {
+			target = urlutils.Slugify(tab.Label)
 		}
+		tabName := uniqueName(target, fmt.Sprintf("tab-%d", t), seenNames)
 		seenNames[tabName] = true
 
 		tabRows, err := p.parseCanvasRows(node, tab.Rows, false, fmt.Sprintf("%sg%d-t%d-", posPrefix, rowIdx, t), inlineComponentDefs)
@@ -427,25 +427,6 @@ func uniqueName(name, fallback string, seen map[string]bool) string {
 			return candidate
 		}
 	}
-}
-
-// slugify converts a label into a lowercase, URL-safe identifier.
-func slugify(s string) string {
-	var b strings.Builder
-	prevDash := false
-	for _, r := range strings.ToLower(strings.TrimSpace(s)) {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			b.WriteRune(r)
-			prevDash = false
-		default:
-			if !prevDash && b.Len() > 0 {
-				b.WriteRune('-')
-				prevDash = true
-			}
-		}
-	}
-	return strings.Trim(b.String(), "-")
 }
 
 // parseCanvasInlineComponent parses an inline component definition in a canvas item.

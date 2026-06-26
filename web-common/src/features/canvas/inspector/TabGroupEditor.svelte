@@ -178,70 +178,27 @@
   </div>
 </SidebarWrapper>
 
-{#if pendingTabDelete !== null}
-  {@const index = pendingTabDelete}
-  <AlertDialog.Root
-    open
-    onOpenChange={(open) => !open && (pendingTabDelete = null)}
-  >
-    <AlertDialog.Content>
-      <AlertDialog.Title>Delete tab?</AlertDialog.Title>
-      <AlertDialog.Description>
-        This tab and all of its widgets will be permanently removed.
-      </AlertDialog.Description>
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel>
-          {#snippet child({ props })}
-            <Button {...props} large type="secondary">Cancel</Button>
-          {/snippet}
-        </AlertDialog.Cancel>
-        <AlertDialog.Action>
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              large
-              type="destructive"
-              onClick={() => confirmDeleteTab(index)}
-            >
-              Delete
-            </Button>
-          {/snippet}
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
-{/if}
+<AlertDialog.Confirmation
+  open={pendingTabDelete !== null}
+  onOpenChange={(open) => !open && (pendingTabDelete = null)}
+  title="Delete tab?"
+  description="This tab and all of its widgets will be permanently removed."
+  confirmLabel="Delete"
+  confirmType="destructive"
+  onConfirm={() => {
+    if (pendingTabDelete !== null) void confirmDeleteTab(pendingTabDelete);
+  }}
+/>
 
-{#if pendingGroupDelete}
-  <AlertDialog.Root open onOpenChange={(open) => (pendingGroupDelete = open)}>
-    <AlertDialog.Content>
-      <AlertDialog.Title>Delete tab group?</AlertDialog.Title>
-      <AlertDialog.Description>
-        This tab group and all of its tabs and widgets will be permanently
-        removed.
-      </AlertDialog.Description>
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel>
-          {#snippet child({ props })}
-            <Button {...props} large type="secondary">Cancel</Button>
-          {/snippet}
-        </AlertDialog.Cancel>
-        <AlertDialog.Action>
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              large
-              type="destructive"
-              onClick={confirmDeleteGroup}
-            >
-              Delete
-            </Button>
-          {/snippet}
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
-{/if}
+<AlertDialog.Confirmation
+  open={pendingGroupDelete}
+  onOpenChange={(open) => (pendingGroupDelete = open)}
+  title="Delete tab group?"
+  description="This tab group and all of its tabs and widgets will be permanently removed."
+  confirmLabel="Delete"
+  confirmType="destructive"
+  onConfirm={confirmDeleteGroup}
+/>
 
 <style lang="postcss">
   .param {
