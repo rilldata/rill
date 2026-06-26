@@ -14,7 +14,6 @@
   } from "@rilldata/web-admin/features/edit-session/selectors.ts";
   import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -31,7 +30,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
-  import ChangedFilesList from "./ChangedFilesList.svelte";
+  import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
 
   export let organization: string;
@@ -72,13 +71,11 @@
 
   $: ({
     isPending,
-    isFetching,
     data: {
       hasLocalChanges,
       hasRemoteChanges,
       alreadyOnPrimary,
       disabledPerGitStatus,
-      changedFiles,
     },
   } = $gitStatusQuery);
 
@@ -254,10 +251,7 @@
 </script>
 
 <Tooltip distance={8} suppress={open}>
-  <Popover.Root
-    bind:open
-    onOpenChange={(o) => o && invalidateGitStatusQueries(client, primaryBranch)}
-  >
+  <Popover.Root bind:open>
     <Popover.Trigger>
       {#snippet child({ props })}
         <Button {...props} type="primary" {disabled}>
@@ -285,14 +279,7 @@
             to production. We'll open a new tab so you can watch updates reconcile.
           {/if}
         </p>
-        {#if isFetching}
-          <div class="flex items-center gap-x-2 text-xs text-fg-secondary">
-            <DelayedSpinner isLoading={true} size="14px" />
-            <span>Checking for changes…</span>
-          </div>
-        {:else if changedFiles.length > 0}
-          <ChangedFilesList {changedFiles} />
-        {/if}
+        <ChangedFilesList remoteBranch={primaryBranch} {open} />
         {#if branchUrl}
           <a
             class="github-link"
