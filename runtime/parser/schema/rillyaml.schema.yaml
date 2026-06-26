@@ -142,6 +142,9 @@ allOf:
           rill.model.tests_warn_on_failure:
             type: boolean
             description: "When true, model test failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise."
+          rill.models.disable:
+            type: boolean
+            description: "When true, model execution is disabled. Useful for stopping any ingestion in Rill temporarily. Default: false."
           rill.metrics.approximate_comparisons:
             type: boolean
             description: "Rewrite metrics comparison queries to use an approximate, faster form. Approximate comparisons may not return data points for all values. Default: true."

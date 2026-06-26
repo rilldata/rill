@@ -146,6 +146,8 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
 
   - **`rill.model.tests_warn_on_failure`** - _[boolean]_ - When true, model test failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise. 
 
+  - **`rill.models.disable`** - _[boolean]_ - When true, model execution is disabled. Useful for stopping any ingestion in Rill temporarily. Default: false. 
+
   - **`rill.metrics.approximate_comparisons`** - _[boolean]_ - Rewrite metrics comparison queries to use an approximate, faster form. Approximate comparisons may not return data points for all values. Default: true. 
 
   - **`rill.metrics.approximate_comparisons_cte`** - _[boolean]_ - Rewrite metrics comparison queries to use a CTE for the base query. Default: false. 
