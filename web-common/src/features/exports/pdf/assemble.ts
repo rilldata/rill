@@ -7,6 +7,7 @@ export interface AssembleMeta {
   filename: string;
   backgroundColor: string;
   generatedAt: string;
+  dashboardUrl: string;
 }
 
 interface RGB {
@@ -50,17 +51,35 @@ export async function assemblePdf(
       await drawPlacement(doc, placement, imageCache);
     }
 
-    // Always stamp the generation time (UTC) in the footer.
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text(
-      `Generated ${meta.generatedAt}`,
-      result.marginPt,
-      result.pageHeightPt - 10,
-    );
+    drawFooter(doc, result, meta);
   }
 
   doc.save(meta.filename);
+}
+
+function drawFooter(
+  doc: jsPDF,
+  result: PaginationResult,
+  meta: AssembleMeta,
+): void {
+  const yPt = result.pageHeightPt - 10;
+  const generatedText = `Generated ${meta.generatedAt}`;
+  const linkPrefix = "Open the live dashboard: ";
+  const linkText = "View in Rill";
+
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text(generatedText, result.marginPt, yPt);
+
+  const linkXPt =
+    result.pageWidthPt -
+    result.marginPt -
+    doc.getTextWidth(`${linkPrefix}${linkText}`);
+  doc.text(linkPrefix, linkXPt, yPt);
+  doc.setTextColor(37, 99, 235);
+  doc.textWithLink(linkText, linkXPt + doc.getTextWidth(linkPrefix), yPt, {
+    url: meta.dashboardUrl,
+  });
 }
 
 async function drawPlacement(

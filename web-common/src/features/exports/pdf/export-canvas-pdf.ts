@@ -59,6 +59,7 @@ export async function exportCanvasPdf(
       filename: buildPdfFilename(title),
       backgroundColor,
       generatedAt,
+      dashboardUrl: window.location.href,
     });
     opts.onProgress?.({ phase: "assembling", ratio: 1 });
   } finally {
