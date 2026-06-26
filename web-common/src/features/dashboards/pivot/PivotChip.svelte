@@ -78,9 +78,9 @@
     {#if item.type === PivotChipType.Time}
       {item.description}
     {:else}
-      <span class="font-semibold">{item.title}</span>
+      <div class="font-bold">{item.title}</div>
       {#if item.description}
-        <div class="text-fg-secondary">{item.description}</div>
+        <div class="text-fg-inverse/70 mt-0.5">{item.description}</div>
       {/if}
     {/if}
   </TooltipContent>
