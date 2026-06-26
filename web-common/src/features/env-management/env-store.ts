@@ -4,10 +4,26 @@ import { EnvVariable } from "@rilldata/web-common/features/env-management/env-va
 export class EnvStore {
   public store = new Map<string, EnvVariable>();
 
+  // Resolves once the first pull() has completed. Callers that allocate env var
+  // names (the add-data forms) await this before constructing an edit session,
+  // so the collision set is seeded from the persisted .env rather than an empty
+  // store, which would otherwise let commit() overwrite an existing secret.
+  public readonly ready: Promise<void>;
+  private resolveReady!: () => void;
+  private hasPulled = false;
+
   public constructor(
     private readonly getter: () => Promise<Record<string, string>>,
     private readonly setter: (entries: Record<string, string>) => Promise<void>,
-  ) {}
+  ) {
+    this.ready = new Promise<void>((resolve) => {
+      this.resolveReady = resolve;
+    });
+  }
+
+  public whenReady() {
+    return this.ready;
+  }
 
   public async pull() {
     const newEntries = await this.getter();
@@ -16,6 +32,10 @@ export class EnvStore {
       newStore.set(key, new EnvVariable(key, value));
     }
     this.store = newStore;
+    if (!this.hasPulled) {
+      this.hasPulled = true;
+      this.resolveReady();
+    }
   }
 
   public async flush(editSession: EnvEditSession) {

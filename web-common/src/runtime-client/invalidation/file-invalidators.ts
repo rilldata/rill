@@ -77,6 +77,10 @@ export async function handleFileEvent(
         // project-bound and the next load of rill.yaml handles re-issuance.
         if (event.path === "/rill.yaml") {
           await invalidate("app:init");
+        } else if (event.path === "/.env") {
+          // Notify the env store on delete too, otherwise it keeps stale keys
+          // and a later commit would re-serialize the removed secrets.
+          eventBus.emit("env-file-updated", event.path);
         }
         state.seenFiles.delete(event.path);
         break;

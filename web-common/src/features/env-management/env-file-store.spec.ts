@@ -164,6 +164,39 @@ describe("env-file-store", () => {
     });
   });
 
+  describe("whenReady", () => {
+    it("resolves after the first pull completes", async () => {
+      mockEnvContent = "FOO=bar";
+      const unsubscribe = createEnvFileStore(runtimeClient);
+      const store = getEnvFileStore();
+
+      await store.whenReady();
+      expect(store.store.get("FOO")?.value).toBe("bar");
+      unsubscribe();
+    });
+
+    it("lets a session created before the first pull still suffix a colliding name", async () => {
+      // Simulate a slow initial fetch: the store is still empty when the
+      // session is constructed, but whenReady() gates name allocation until the
+      // pull populates the existing secret, so commit() suffixes rather than
+      // overwrites.
+      mockEnvContent = "CLICKHOUSE_PASSWORD=existing";
+      const unsubscribe = createEnvFileStore(runtimeClient);
+      const store = getEnvFileStore();
+
+      const session = new EnvEditSession(store, "clickhouse");
+
+      await store.whenReady();
+      session.startEdit();
+      session.acquire("password", "secret", "CLICKHOUSE_PASSWORD");
+      await session.commit();
+
+      expect(store.store.get("CLICKHOUSE_PASSWORD")?.value).toBe("existing");
+      expect(store.store.get("CLICKHOUSE_PASSWORD_1")?.value).toBe("secret");
+      unsubscribe();
+    });
+  });
+
   describe("event-bus subscription", () => {
     it("re-pulls when an env-file-updated event fires", async () => {
       mockEnvContent = "FOO=initial";

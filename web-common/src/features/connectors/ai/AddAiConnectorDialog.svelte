@@ -139,6 +139,10 @@
     saving = true;
     error = "";
     try {
+      // Wait for the first .env pull so the edit session allocates names against
+      // the persisted secrets rather than an empty store, which would let the
+      // commit overwrite an existing secret instead of suffixing it.
+      await envStore.whenReady();
       const formValues: Record<string, string> = { api_key: apiKey };
       if (model) formValues.model = model;
       await saveAiConnector(

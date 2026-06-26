@@ -215,6 +215,44 @@ describe("handleFileEvent", () => {
     expect(removeFile).toHaveBeenCalledWith("/models/foo.sql");
   });
 
+  it("write on /.env emits env-file-updated", async () => {
+    const qc = fakeQueryClient();
+    const state = makeState();
+
+    await handleFileEvent(
+      {
+        path: "/.env",
+        event: V1FileEvent.FILE_EVENT_WRITE,
+        isDir: false,
+      },
+      qc,
+      fakeRuntimeClient,
+      state,
+    );
+
+    expect(eventBus.emit).toHaveBeenCalledWith("env-file-updated", "/.env");
+  });
+
+  it("delete on /.env emits env-file-updated so the env store clears stale keys", async () => {
+    const qc = fakeQueryClient();
+    const state = makeState();
+    state.seenFiles.add("/.env");
+
+    await handleFileEvent(
+      {
+        path: "/.env",
+        event: V1FileEvent.FILE_EVENT_DELETE,
+        isDir: false,
+      },
+      qc,
+      fakeRuntimeClient,
+      state,
+    );
+
+    expect(removeFile).toHaveBeenCalledWith("/.env");
+    expect(eventBus.emit).toHaveBeenCalledWith("env-file-updated", "/.env");
+  });
+
   it("invalidates git status on a non-dir file event", async () => {
     const qc = fakeQueryClient();
     const state = makeState();
