@@ -396,13 +396,14 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, changedFil
 	if err != nil {
 		return nil, err
 	}
-	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed
-	// separately. Best-effort: a failure here must not break the status the merge flow depends on.
+	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed separately
 	var files []gitutil.ChangedFile
 	if changedFiles {
-		if f, err := gitutil.ChangedFiles(ctx, gitPath, subPath, config.RemoteName(), remoteBranch); err == nil {
-			files = f
+		f, err := gitutil.ChangedFiles(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
+		if err != nil {
+			return nil, err
 		}
+		files = f
 	}
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
@@ -415,37 +416,6 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, changedFil
 		RemoteCommits: gs.RemoteCommits,
 		ChangedFiles:  repoFileChanges(files),
 	}, nil
-}
-
-// repoFileChanges maps gitutil changed files to driver changed files.
-func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
-	if len(files) == 0 {
-		return nil
-	}
-	out := make([]drivers.RepoFileChange, len(files))
-	for i, f := range files {
-		out[i] = drivers.RepoFileChange{
-			Path:    f.Path,
-			OldPath: f.OldPath,
-			Status:  repoFileStatus(f.Status),
-		}
-	}
-	return out
-}
-
-func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
-	switch s {
-	case gitutil.ChangedFileStatusAdded:
-		return drivers.RepoFileStatusAdded
-	case gitutil.ChangedFileStatusModified:
-		return drivers.RepoFileStatusModified
-	case gitutil.ChangedFileStatusDeleted:
-		return drivers.RepoFileStatusDeleted
-	case gitutil.ChangedFileStatusRenamed:
-		return drivers.RepoFileStatusRenamed
-	default:
-		return drivers.RepoFileStatusUnspecified
-	}
 }
 
 // Pull implements drivers.RepoStore.
@@ -722,4 +692,34 @@ func restoreToCommit(path, subpath, commithash string) error {
 		return fmt.Errorf("failed to restore to commit: %s, %w", string(output), err)
 	}
 	return nil
+}
+
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }
