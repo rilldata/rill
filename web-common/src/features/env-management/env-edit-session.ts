@@ -24,6 +24,11 @@ export class EnvEditSession {
     this.assignedVars = new Set<string>(this.parentStore.store.keys());
   }
 
+  /**
+   * Start a new edit session. Any prior allocations made by this session will be cleared,
+   * and any externally changed values will be rolled back.
+   * If changes are meant to be persisted, call commit().
+   */
   public startEdit() {
     this.inflightEntries.clear();
     this.entries.forEach((v: EnvEditSessionVariable) => {

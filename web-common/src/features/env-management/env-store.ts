@@ -12,8 +12,8 @@ export class EnvStore {
   public async pull() {
     const newEntries = await this.getter();
     const newStore = new Map<string, EnvVariable>();
-    for (const key in newEntries) {
-      newStore.set(key, new EnvVariable(key, newEntries[key]));
+    for (const [key, value] of Object.entries(newEntries)) {
+      newStore.set(key, new EnvVariable(key, value));
     }
     this.store = newStore;
   }

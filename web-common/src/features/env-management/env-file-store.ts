@@ -26,6 +26,8 @@ export function createEnvFileStore(runtimeClient: RuntimeClient) {
       await runtimeServicePutFile(runtimeClient, {
         path: "/.env",
         blob: serializeDotEnv(entries),
+        create: true,
+        createOnly: false,
       });
       if (isCloudRuntimeEditEnvironment()) {
         // Only push env on cloud for now. We will revisit this for rill-dev.

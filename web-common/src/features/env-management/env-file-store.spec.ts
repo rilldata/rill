@@ -136,6 +136,8 @@ describe("env-file-store", () => {
       expect(runtimeServicePutFile).toHaveBeenCalledWith(runtimeClient, {
         path: "/.env",
         blob: "CLICKHOUSE_PASSWORD=secret",
+        create: true,
+        createOnly: false,
       });
       unsubscribe();
     });

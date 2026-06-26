@@ -15,7 +15,11 @@ export function parseDotEnv(src: string): Record<string, string> {
     const quote = value[0];
     value = value.replace(/^(['"`])([\s\S]*)\1$/, "$2");
     if (quote === '"') {
-      value = value.replace(/\\n/g, "\n").replace(/\\r/g, "\r");
+      value = value
+        .replace(/\\n/g, "\n")
+        .replace(/\\r/g, "\r")
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, "\\");
     }
     obj[key] = value;
   }
@@ -36,10 +40,13 @@ export function serializeDotEnv(entries: Record<string, string>): string {
       // Newlines can't appear inside single quotes since the value must
       // stay on one line; fall through to double quotes in that case.
       if (!v.includes("'") && !/[\n\r]/.test(v)) return `${k}='${v}'`;
-      // Double-quoted: the parser only unescapes \n and \r, so those are
-      // the only sequences we escape. Backslashes are passed through
-      // verbatim because the parser would not unescape them either.
-      const escaped = v.replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+      // Double-quoted: escape backslashes and quotes so the line stays valid.
+      // parseDotEnv unescapes these sequences back to the original value.
+      const escaped = v
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
       return `${k}="${escaped}"`;
     })
     .join("\n");
