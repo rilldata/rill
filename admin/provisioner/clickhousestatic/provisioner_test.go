@@ -346,6 +346,10 @@ func TestClickhouseCluster(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.Exec("INSERT INTO test VALUES (1)")
 	require.NoError(t, err)
+
+	// Check the user can sync replicas (requires the SYSTEM SYNC REPLICA privilege).
+	_, err = db.Exec("SYSTEM SYNC REPLICA test")
+	require.NoError(t, err)
 	rows, err := db.Query("SELECT COUNT(*) FROM system.tables WHERE database <> 'system'")
 	require.NoError(t, err)
 	for rows.Next() {
