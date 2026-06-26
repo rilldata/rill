@@ -23,14 +23,23 @@ const SVG_PROPS = [
   "color",
 ];
 
-export function inlineSvgStyles(root: HTMLElement) {
+export function inlineSvgStyles(root: HTMLElement): () => void {
+  const previousStyles: Array<{ el: Element; style: string | null }> = [];
   root.querySelectorAll("svg, svg *").forEach((el) => {
     const cs = getComputedStyle(el);
     const inline = SVG_PROPS.map((p) => `${p}: ${cs.getPropertyValue(p)}`).join(
       "; ",
     );
+    previousStyles.push({ el, style: el.getAttribute("style") });
     el.setAttribute("style", `${inline}; ${el.getAttribute("style") ?? ""}`);
   });
+
+  return () => {
+    for (const { el, style } of previousStyles) {
+      if (style === null) el.removeAttribute("style");
+      else el.setAttribute("style", style);
+    }
+  };
 }
 
 const PIXEL_RATIO = 2;
@@ -43,13 +52,17 @@ export async function rasterizeNode(
   node: HTMLElement,
   backgroundColor: string,
 ): Promise<string> {
-  inlineSvgStyles(node);
-  return toJpeg(node, {
-    cacheBust: true,
-    pixelRatio: PIXEL_RATIO,
-    quality: JPEG_QUALITY,
-    backgroundColor,
-  });
+  const restoreSvgStyles = inlineSvgStyles(node);
+  try {
+    return await toJpeg(node, {
+      cacheBust: true,
+      pixelRatio: PIXEL_RATIO,
+      quality: JPEG_QUALITY,
+      backgroundColor,
+    });
+  } finally {
+    restoreSvgStyles();
+  }
 }
 
 export interface CaptureResult {

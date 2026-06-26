@@ -120,6 +120,46 @@ describe("paginate", () => {
     expect(new Set(slices.map((s) => s.page)).size).toBe(slices.length);
   });
 
+  it("slices every component in a multi-component row taller than a full page", () => {
+    const result = paginate(
+      [
+        block({
+          id: "left-table",
+          xPx: 0,
+          widthPx: 500,
+          heightPx: 5000,
+          rowIndex: 0,
+        }),
+        block({
+          id: "right-table",
+          xPx: 500,
+          widthPx: 500,
+          heightPx: 5000,
+          rowIndex: 0,
+        }),
+      ],
+      { ...A4, contentWidthPx: 1000 },
+    );
+
+    const leftSlices = result.placements.filter(
+      (p) => p.block.id === "left-table",
+    );
+    const rightSlices = result.placements.filter(
+      (p) => p.block.id === "right-table",
+    );
+    expect(leftSlices.length).toBeGreaterThan(1);
+    expect(leftSlices).toHaveLength(rightSlices.length);
+    expect(new Set(leftSlices.map((s) => s.page))).toEqual(
+      new Set(rightSlices.map((s) => s.page)),
+    );
+    for (const placement of result.placements) {
+      expect(placement.srcHeightPx).toBeDefined();
+      expect(placement.yPt + placement.hPt).toBeLessThanOrEqual(
+        result.pageHeightPt - result.marginPt + 0.5,
+      );
+    }
+  });
+
   it("places the filter bar (rowIndex -1) before content rows", () => {
     const result = paginate(
       [

@@ -88,33 +88,45 @@ export function paginate(
     const rowTopPx = Math.min(...row.map((b) => b.yPx));
     const rowHeightPt = Math.max(...row.map((b) => b.heightPx)) * scale;
 
-    // A row taller than a full page must be sliced. We only slice single-block
-    // rows (the common case: a tall table); multi-block tall rows are rare and
-    // fall through to normal placement on a fresh page.
-    if (rowHeightPt > contentHeightPt && row.length === 1) {
+    // A row taller than a full page must be sliced. For multi-component rows,
+    // slice every block against the same row-height bands so horizontal layout
+    // is preserved across pages.
+    if (rowHeightPt > contentHeightPt) {
       if (cursorYPt > marginPt) {
         page += 1;
         cursorYPt = marginPt;
       }
-      const block = row[0];
-      const wPt = block.widthPx * scale;
-      const xPt = marginPt + block.xPx * scale;
-      // How many source pixels fit in one page of content height.
+
+      const rowHeightPx = rowHeightPt / scale;
       const pageSrcPx = contentHeightPt / scale;
-      let srcYPx = 0;
-      while (srcYPx < block.heightPx - 0.5) {
-        const srcHeightPx = Math.min(pageSrcPx, block.heightPx - srcYPx);
-        placements.push({
-          block,
-          page,
-          xPt,
-          yPt: marginPt,
-          wPt,
-          hPt: srcHeightPx * scale,
-          srcYPx,
-          srcHeightPx,
-        });
-        srcYPx += srcHeightPx;
+      let rowSrcYPx = 0;
+      while (rowSrcYPx < rowHeightPx - 0.5) {
+        const rowSrcHeightPx = Math.min(pageSrcPx, rowHeightPx - rowSrcYPx);
+
+        for (const block of row) {
+          const blockTopPx = block.yPx - rowTopPx;
+          const blockBottomPx = blockTopPx + block.heightPx;
+          const sliceTopPx = Math.max(blockTopPx, rowSrcYPx);
+          const sliceBottomPx = Math.min(
+            blockBottomPx,
+            rowSrcYPx + rowSrcHeightPx,
+          );
+          const srcHeightPx = sliceBottomPx - sliceTopPx;
+          if (srcHeightPx <= 0.5) continue;
+
+          placements.push({
+            block,
+            page,
+            xPt: marginPt + block.xPx * scale,
+            yPt: marginPt + (sliceTopPx - rowSrcYPx) * scale,
+            wPt: block.widthPx * scale,
+            hPt: srcHeightPx * scale,
+            srcYPx: sliceTopPx - blockTopPx,
+            srcHeightPx,
+          });
+        }
+
+        rowSrcYPx += rowSrcHeightPx;
         page += 1;
         cursorYPt = marginPt;
       }

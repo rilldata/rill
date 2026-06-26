@@ -29,6 +29,7 @@ export async function exportCanvasPdf(
   try {
     opts.onProgress?.({ phase: "preparing", ratio: 0 });
     await prepareCanvasForCapture(canvasEntity, queryClient, {
+      instanceId: opts.instanceId,
       timeoutMs: opts.timeoutMs,
     });
     opts.onProgress?.({ phase: "preparing", ratio: 1 });
