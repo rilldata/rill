@@ -60,13 +60,12 @@ export interface CaptureResult {
 
 export interface CaptureOptions {
   includeFilters: boolean;
-  truncatedNotes: Map<string, string>;
   onProgress?: (ratio: number) => void;
 }
 
-// Rasterizes the filter bar (optional) and each canvas component into PNG blocks
-// positioned relative to the canvas content area. Per-block failures degrade to
-// a skipped block rather than aborting the whole export.
+// Rasterizes the filter bar (optional) and each canvas component into image
+// blocks positioned relative to the canvas content area. Per-block failures
+// degrade to a skipped block rather than aborting the whole export.
 export async function captureCanvasBlocks(
   opts: CaptureOptions,
 ): Promise<CaptureResult> {
@@ -140,7 +139,6 @@ export async function captureCanvasBlocks(
         widthPx: rect.width,
         heightPx: rect.height,
         rowIndex: rowIndexFor(article, rowContainer),
-        truncatedNote: opts.truncatedNotes.get(article.id),
       });
     } catch (e) {
       console.warn(`Failed to capture canvas component "${article.id}"`, e);

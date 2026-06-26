@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import chroma from "chroma-js";
 import type { PaginationResult, Placement } from "./layout";
 
 export interface AssembleMeta {
@@ -88,13 +89,6 @@ async function drawPlacement(
     placement.wPt,
     placement.hPt,
   );
-
-  if (placement.block.truncatedNote && placement.srcYPx === undefined) {
-    const note = placement.block.truncatedNote;
-    doc.setFontSize(7);
-    doc.setTextColor(120, 120, 120);
-    doc.text(note, placement.xPt + 4, placement.yPt + placement.hPt - 4);
-  }
 }
 
 function loadImage(
@@ -140,12 +134,59 @@ function cropImage(
   return canvas.toDataURL("image/jpeg", 0.85);
 }
 
-function parseColor(color: string): RGB | null {
+export function parseColor(color: string): RGB | null {
+  const trimmed = color.trim();
+
+  const rgb = parseRgbColor(trimmed);
+  if (rgb) return rgb;
+
+  const srgb = parseSrgbColor(trimmed);
+  if (srgb) return srgb;
+
+  try {
+    const [r, g, b] = chroma(trimmed).rgb();
+    return { r, g, b };
+  } catch {
+    return null;
+  }
+}
+
+function parseRgbColor(color: string): RGB | null {
   const match = color.match(/rgba?\(([^)]+)\)/);
   if (!match) return null;
-  const parts = match[1].split(",").map((p) => parseFloat(p.trim()));
+  const parts = match[1]
+    .split(/[,\s/]+/)
+    .filter(Boolean)
+    .map((p) => parseFloat(p.trim()));
   if (parts.length < 3) return null;
   // Treat a fully transparent background as white (the canvas paints white).
   if (parts.length >= 4 && parts[3] === 0) return { r: 255, g: 255, b: 255 };
   return { r: parts[0], g: parts[1], b: parts[2] };
+}
+
+function parseSrgbColor(color: string): RGB | null {
+  const match = color.match(/^color\(\s*srgb\s+([^)]+)\)$/i);
+  if (!match) return null;
+
+  const parts = match[1].split(/[,\s/]+/).filter(Boolean);
+  if (parts.length < 3) return null;
+
+  const alpha = parts[3] ? parseCssUnit(parts[3]) : 1;
+  if (alpha === 0) return { r: 255, g: 255, b: 255 };
+
+  return {
+    r: toByte(parseCssUnit(parts[0])),
+    g: toByte(parseCssUnit(parts[1])),
+    b: toByte(parseCssUnit(parts[2])),
+  };
+}
+
+function parseCssUnit(value: string): number {
+  if (value.endsWith("%")) return parseFloat(value) / 100;
+  return parseFloat(value);
+}
+
+function toByte(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.round(Math.min(1, Math.max(0, value)) * 255);
 }

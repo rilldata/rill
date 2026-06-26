@@ -3,6 +3,9 @@ export type PdfPageFormat = "a4" | "letter";
 // "auto" resolves to landscape for wide canvases and portrait otherwise.
 export type PdfOrientation = "portrait" | "landscape" | "auto";
 
+export const DEFAULT_PDF_PAGE_FORMAT: PdfPageFormat = "a4";
+export const DEFAULT_PDF_ORIENTATION: PdfOrientation = "auto";
+
 // Resolved orientation (after "auto" has been decided).
 export type ResolvedOrientation = "portrait" | "landscape";
 
@@ -16,9 +19,6 @@ export interface ExportProgress {
 // orchestrators (canvas, explore) receive these plus their own identifiers.
 export interface PdfExportRunOptions {
   includeFilters: boolean;
-  format: PdfPageFormat;
-  orientation: PdfOrientation;
-  tableRowCap: number;
   onProgress?: (progress: ExportProgress) => void;
 }
 
@@ -26,10 +26,6 @@ export interface ExportCanvasPdfOptions {
   canvasName: string;
   instanceId: string;
   includeFilters: boolean;
-  format: PdfPageFormat;
-  orientation: PdfOrientation;
-  // Max rows captured per virtualized table/pivot component.
-  tableRowCap: number;
   timeoutMs?: number;
   onProgress?: (progress: ExportProgress) => void;
 }
@@ -50,6 +46,4 @@ export interface CapturedBlock {
   heightPx: number;
   // Components sharing a rowIndex are laid out on the same canvas row.
   rowIndex: number;
-  // Footnote drawn on the block, e.g. "Showing first 100 of 540 rows".
-  truncatedNote?: string;
 }
