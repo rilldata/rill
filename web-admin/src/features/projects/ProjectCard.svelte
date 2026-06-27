@@ -11,6 +11,9 @@
   import GuardedDeleteProjectConfirmation from "@rilldata/web-admin/features/projects/settings/GuardedDeleteProjectConfirmation.svelte";
   import ProjectRenameDialog from "@rilldata/web-admin/features/projects/settings/ProjectRenameDialog.svelte";
   import EditBranchDialog from "@rilldata/web-admin/features/edit-session/EditBranchDialog.svelte";
+  import { getFeatureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { getRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { createQuery } from "@tanstack/svelte-query";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -28,9 +31,49 @@
   function doesProjectNameIncludeUnderscores(project: string) {
     return project.includes("_");
   }
+
+  let runtimeConfig = $derived.by(() => {
+    const deployment = $proj.data?.deployment;
+    if (!deployment?.runtimeHost || !deployment.runtimeInstanceId) {
+      return undefined;
+    }
+
+    return {
+      host: deployment.runtimeHost,
+      instanceId: deployment.runtimeInstanceId,
+      jwt: $proj.data?.jwt,
+    };
+  });
+
+  let cloudEditingQuery = $derived(
+    createQuery({
+      queryKey: [
+        "project-card-cloud-editing",
+        organization,
+        project,
+        runtimeConfig?.host,
+        runtimeConfig?.instanceId,
+      ],
+      enabled: !!runtimeConfig,
+      queryFn: async () => {
+        if (!runtimeConfig) return false;
+        const flags = await getFeatureFlags(getRuntimeClient(runtimeConfig));
+        return !!flags.cloudEditing;
+      },
+    }),
+  );
+
+  let canEditProject = $derived(
+    !!$cloudEditingQuery.data && !!$proj.data?.projectPermissions?.manageDev,
+  );
+
+  $effect(() => {
+    if (!canEditProject) editProjectOpen = false;
+  });
 </script>
 
-{#if $proj.data}
+{#if $proj.data?.project}
+  {@const projectData = $proj.data.project}
   <Card href="/{organization}/{project}" bind:hovering>
     <!-- Project name -->
     <h2
@@ -49,6 +92,7 @@
           {organization}
           {project}
           bind:open={actionsOpen}
+          canEdit={canEditProject}
           onEdit={() => (editProjectOpen = true)}
           onRename={() => (renameProjectOpen = true)}
           onDelete={() => (deleteProjectOpen = true)}
@@ -65,7 +109,7 @@
     <!-- Public vs Private indicator -->
     <div class="absolute bottom-2.5 right-2.5 text-fg-secondary">
       <Tooltip distance={10}>
-        {#if $proj.data.project.public}
+        {#if projectData.public}
           <Globe size="16px" />
         {:else}
           <Lock size="16px" />
@@ -73,7 +117,7 @@
         <TooltipContent slot="tooltip-content">
           <span class="text-xs"
             >This project is
-            {#if $proj.data.project.public}
+            {#if projectData.public}
               <span class="font-medium"> public</span>
             {:else}
               <span class="font-medium"> private</span>
@@ -94,9 +138,11 @@
   button={false}
 />
 
-<EditBranchDialog
-  bind:open={editProjectOpen}
-  {organization}
-  {project}
-  {primaryBranch}
-/>
+{#if canEditProject}
+  <EditBranchDialog
+    bind:open={editProjectOpen}
+    {organization}
+    {project}
+    {primaryBranch}
+  />
+{/if}
