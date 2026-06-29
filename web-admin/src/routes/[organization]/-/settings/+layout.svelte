@@ -5,6 +5,7 @@
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let { children }: { children: Snippet } = $props();
 
@@ -14,13 +15,13 @@
   // The Usage tab is intentionally hidden for all plans until the new usage
   // page is ready. Pro and Team users still get a `View detailed usage` link
   // out to the Orb billing portal from the Plan card.
-  let navItems = [
-    { label: "General", route: "", hasPermission: true },
-    { label: "Billing", route: "/billing", hasPermission: true },
-  ];
+  let navItems = $derived([
+    { label: m.settings_nav_general(), route: "", hasPermission: true },
+    { label: m.settings_nav_billing(), route: "/billing", hasPermission: true },
+  ]);
 </script>
 
-<ContentContainer title="Organization settings" maxWidth={1100}>
+<ContentContainer title={m.settings_org_page_title()} maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav
       {basePage}

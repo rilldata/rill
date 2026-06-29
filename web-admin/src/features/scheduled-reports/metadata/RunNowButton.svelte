@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { createAdminServiceTriggerReport } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -30,7 +31,7 @@
     });
 
     eventBus.emit("notification", {
-      message: "Triggered an ad-hoc run of this report.",
+      message: m.report_triggered_adhoc(),
       type: "success",
     });
 
@@ -59,10 +60,9 @@
     onClick={handleRunNow}
     disabled={$triggerReport.isPending}
   >
-    Run now
+    {m.report_run_now()}
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="300px">
-    Run this report immediately. A new report will be generated and emailed to
-    recipients.
+    {m.report_run_now_tooltip()}
   </TooltipContent>
 </Tooltip>

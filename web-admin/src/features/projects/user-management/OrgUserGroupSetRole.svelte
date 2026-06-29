@@ -11,9 +11,9 @@
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { PROJECT_ROLES_DESCRIPTION_MAP } from "./constants";
 
   export let organization: string;
   export let group: V1MemberUsergroup;
@@ -52,7 +52,7 @@
       });
 
       eventBus.emit("notification", {
-        message: "User group role added",
+        message: m.groups_role_added(),
       });
     } catch (error) {
       eventBus.emit("notification", {
@@ -78,7 +78,7 @@
       });
 
       eventBus.emit("notification", {
-        message: "User group role updated",
+        message: m.groups_role_updated(),
       });
     } catch (error) {
       eventBus.emit("notification", {
@@ -101,7 +101,7 @@
       });
 
       eventBus.emit("notification", {
-        message: "User group removed",
+        message: m.groups_removed(),
       });
     } catch (error) {
       eventBus.emit("notification", {
@@ -137,9 +137,9 @@
           : ''}"
         onclick={() => handleRoleSelect(OrgUserRoles.Admin)}
       >
-        <span class="font-medium">Admin</span>
+        <span class="font-medium">{m.project_share_role_admin()}</span>
         <span class="text-xs text-fg-secondary"
-          >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
+          >{m.project_share_role_admin_description()}</span
         >
       </DropdownMenu.Item>
     {/if}
@@ -151,9 +151,9 @@
         : ''}"
       onclick={() => handleRoleSelect(OrgUserRoles.Editor)}
     >
-      <span class="font-medium">Editor</span>
+      <span class="font-medium">{m.project_share_role_editor()}</span>
       <span class="text-xs text-fg-secondary"
-        >{PROJECT_ROLES_DESCRIPTION_MAP.editor}</span
+        >{m.project_share_role_editor_description()}</span
       >
     </DropdownMenu.Item>
 
@@ -164,9 +164,9 @@
         : ''}"
       onclick={() => handleRoleSelect(OrgUserRoles.Viewer)}
     >
-      <span class="font-medium">Viewer</span>
+      <span class="font-medium">{m.project_share_role_viewer()}</span>
       <span class="text-xs text-fg-secondary"
-        >{PROJECT_ROLES_DESCRIPTION_MAP.viewer}</span
+        >{m.project_share_role_viewer_description()}</span
       >
     </DropdownMenu.Item>
 
@@ -176,7 +176,7 @@
         class="font-normal flex items-center py-2"
         onclick={handleRemove}
       >
-        <span class="text-red-600">Remove</span>
+        <span class="text-red-600">{m.users_remove()}</span>
       </DropdownMenu.Item>
     {/if}
   </DropdownMenu.Content>

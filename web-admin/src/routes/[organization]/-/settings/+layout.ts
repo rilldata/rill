@@ -4,6 +4,7 @@ import {
   type RpcStatus,
 } from "@rilldata/web-admin/client";
 import { getNeverSubscribedIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error, redirect } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
@@ -35,7 +36,7 @@ export const load: PageLoad = async ({ parent, params }) => {
     };
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {
-      throw error(500, "Failed to fetch billing subscription");
+      throw error(500, m.route_error_fetching_billing_subscription());
     }
 
     throw error(e.response.status, e.response.data.message);

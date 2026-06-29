@@ -15,6 +15,7 @@
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let activeResource: V1ResourceName;
   export let navigationEnabled: boolean = true;
@@ -60,7 +61,7 @@
           {#if !onProjectPage}
             <div class="flex gap-x-2">
               <a class="text-fg-muted hover:text-fg-secondary" href="/-/embed">
-                Home
+                {m.embed_home()}
               </a>
               <span class="text-fg-muted">/</span>
             </div>

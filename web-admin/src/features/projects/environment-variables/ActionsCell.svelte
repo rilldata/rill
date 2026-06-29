@@ -6,6 +6,7 @@
   import EditDialog from "./EditDialog.svelte";
   import DeleteDialog from "./DeleteDialog.svelte";
   import type { VariableNames } from "./types";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let id: string;
   export let environment: string;
@@ -33,7 +34,7 @@
         }}
       >
         <Pencil size="12px" />
-        <span class="ml-2">Edit</span>
+        <span class="ml-2">{m.env_edit_action()}</span>
       </DropdownMenu.Item>
       <DropdownMenu.Item
         class="font-normal flex items-center"
@@ -43,7 +44,7 @@
         }}
       >
         <Trash2Icon size="12px" />
-        <span class="ml-2">Delete</span>
+        <span class="ml-2">{m.env_delete_action()}</span>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

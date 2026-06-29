@@ -1,5 +1,6 @@
 import type { RpcStatus } from "@rilldata/web-admin/client";
 import type { AxiosError } from "axios";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 
 export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
   if (!err) {
@@ -18,8 +19,7 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
     err.response.data?.message?.includes("worktree has additional contents")
   ) {
     return {
-      message:
-        "The subpath you specified already exists in this repo. Please use a different subpath or remove the existing folder before pushing.",
+      message: m.github_error_subpath_exists(),
     };
   }
 
@@ -27,13 +27,12 @@ export function extractGithubConnectError(err: AxiosError<RpcStatus>) {
     err.response.data?.message?.includes("name already exists on this account")
   ) {
     return {
-      message: "This repo already exists. Please choose a new repo name.",
+      message: m.github_error_repo_exists(),
     };
   }
 
   return {
-    message:
-      "Unable to complete push. Please check your repo and subpath settings and try again.",
+    message: m.github_error_push_failed(),
   };
 }
 

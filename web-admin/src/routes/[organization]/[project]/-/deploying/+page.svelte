@@ -5,6 +5,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let data: PageData;
   const { organization, project, targetDashboard, preCommitSha } = data;
@@ -34,7 +35,7 @@
     if (dashboardsErrored) {
       eventBus.emit("notification", {
         type: "error",
-        message: "Failed to deploy dashboards",
+        message: m.error_deploy_dashboards(),
       });
     }
     redirected = true;

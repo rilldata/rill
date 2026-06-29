@@ -9,6 +9,7 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
@@ -17,25 +18,26 @@
 </script>
 
 <svelte:head>
-  <title>Could not connect to GitHub</title>
+  <title>{m.github_could_not_connect()}</title>
 </svelte:head>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <GithubFail />
-    <CtaHeader>Could not connect to GitHub</CtaHeader>
+    <CtaHeader>{m.github_could_not_connect()}</CtaHeader>
     <CtaMessage>
-      Your authorized GitHub account <GithubUserInline {githubUsername} />
-      does not have access to <GithubRepoInline gitRemote={remote} />.
+      {m.github_no_access_to_repo()}
+      <GithubUserInline {githubUsername} />
+      <GithubRepoInline gitRemote={remote} />
     </CtaMessage>
     <CtaMessage>
-      Click the button below to re-authorize/authorize another account.
+      {m.github_click_to_reauthorize()}
     </CtaMessage>
     <CtaButton
       variant="primary"
       onClick={() => redirectToGithubLogin(remote, redirect, "auth")}
     >
-      Connect to GitHub
+      {m.github_connect_to_github()}
     </CtaButton>
   </CtaContentContainer>
 </CtaLayoutContainer>

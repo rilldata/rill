@@ -11,6 +11,7 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import KeyboardKey from "@rilldata/web-common/components/calls-to-action/KeyboardKey.svelte";
   import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
@@ -18,28 +19,27 @@
 </script>
 
 <svelte:head>
-  <title>Could not connect to GitHub</title>
+  <title>{m.github_could_not_connect()}</title>
 </svelte:head>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <GithubFail />
-    <CtaHeader>Could not connect to GitHub</CtaHeader>
+    <CtaHeader>{m.github_could_not_connect()}</CtaHeader>
     <CtaMessage>
-      It looks like you did not grant access to the desired repository at <GithubRepoInline
+      {m.github_did_not_grant_access()} <GithubRepoInline
         gitRemote={remote}
-      />.
+      />
     </CtaMessage>
     <CtaMessage>
-      Click the button below to retry. (Or if this was intentional, press
-      <KeyboardKey label="Control" /> + <KeyboardKey label="C" /> in the CLI to cancel
-      the connect request.)
+      {m.github_click_to_retry()}
+      <KeyboardKey label="Control" /> + <KeyboardKey label="C" /> {m.github_cancel_in_cli()}
     </CtaMessage>
     <CtaButton
       variant="primary"
       onClick={() => redirectToGithubLogin(remote, redirect, "connect")}
     >
-      Connect to GitHub
+      {m.github_connect_to_github()}
     </CtaButton>
   </CtaContentContainer>
 </CtaLayoutContainer>

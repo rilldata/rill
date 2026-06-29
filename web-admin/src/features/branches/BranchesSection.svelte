@@ -51,6 +51,7 @@
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { onMount } from "svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -145,13 +146,13 @@
 
   let filterGroups = $derived([
     {
-      label: "Status",
+      label: m.common_status(),
       key: "status",
       options: [
-        { label: "Ready", value: "running" },
-        { label: "Pending", value: "pending" },
-        { label: "Error", value: "errored" },
-        { label: "Stopped", value: "stopped" },
+        { label: m.branch_status_ready(), value: "running" },
+        { label: m.branch_status_pending(), value: "pending" },
+        { label: m.branch_status_error(), value: "errored" },
+        { label: m.branch_status_stopped(), value: "stopped" },
       ],
       selected: statusFilter,
       defaultValue: [],
@@ -246,7 +247,7 @@
       deploymentId: string;
       data: object;
     }) => Promise<unknown>,
-    actionName: string,
+    errorMsg: (error: string) => string,
   ) {
     openDropdownId = "";
     pendingId = deploymentId;
@@ -262,7 +263,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to ${actionName} branch: ${getRpcErrorMessage(err)}`,
+        message: errorMsg(getRpcErrorMessage(err)),
       });
     } finally {
       pendingId = "";
@@ -293,7 +294,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to delete branch: ${getRpcErrorMessage(err)}`,
+        message: m.branch_delete_failed({ error: getRpcErrorMessage(err) }),
       });
     } finally {
       pendingId = "";
@@ -302,7 +303,7 @@
 </script>
 
 <section class="flex flex-col gap-y-5">
-  <h2 class="text-lg font-medium">Branches</h2>
+  <h2 class="text-lg font-medium">{m.branch_branches()}</h2>
 
   <TableToolbar
     bind:searchText
@@ -318,33 +319,33 @@
   {#if $allDeployments.isLoading}
     <div class="empty-container">
       <DelayedSpinner isLoading={true} size="20px" />
-      <span class="text-sm text-fg-secondary">Loading branches</span>
+      <span class="text-sm text-fg-secondary">{m.branch_loading()}</span>
     </div>
   {:else if $allDeployments.isError}
     <div class="text-red-500 text-sm">
-      Error loading branches: {$allDeployments.error?.message}
+      {m.branch_error_loading({ error: $allDeployments.error?.message })}
     </div>
   {:else if visibleDeployments.length === 0}
     <div class="empty-container">
-      <span class="text-fg-secondary font-semibold text-sm"> No branches </span>
+      <span class="text-fg-secondary font-semibold text-sm">{m.branch_no_branches()}</span>
     </div>
   {:else}
     <div class="table-wrapper">
       <div class="header-row">
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Branch
+          {m.branch_branch()}
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Author
+          {m.branch_author()}
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Status
+          {m.common_status()}
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Slots
+          {m.branch_slots()}
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm">
-          Last updated
+          {m.branch_last_updated()}
         </div>
         <div class="pl-4 py-2 font-semibold text-fg-secondary text-sm"></div>
       </div>
@@ -369,16 +370,16 @@
               {branchName}
             </span>
             {#if prod}
-              <span class="prod-badge">Production</span>
+              <span class="prod-badge">{m.branch_production()}</span>
             {/if}
             {#if !prod && !deployment.editable}
               <Tooltip location="bottom" distance={8}>
-                <span class="readonly-badge">Read-only</span>
+                <span class="readonly-badge">{m.branch_read_only()}</span>
                 <TooltipContent slot="tooltip-content">
                   <div class="text-xs max-w-[360px] flex flex-col gap-y-1">
-                    <span>This deployment isn't configured for editing.</span>
+                    <span>{m.branch_not_editable()}</span>
                     <span>
-                      To edit this branch, recreate it with
+                      {m.branch_recreate_with()}
                       <code class="font-mono"
                         >rill project deployment create {branchName} --editable</code
                       >.
@@ -388,7 +389,7 @@
               </Tooltip>
             {/if}
             {#if isCurrent}
-              <span class="current-badge">Current</span>
+              <span class="current-badge">{m.branch_current()}</span>
             {/if}
           </div>
           <div
@@ -432,7 +433,7 @@
                     >
                       <div class="flex items-center">
                         <PlayIcon size="12px" />
-                        <span class="ml-2">Open editor</span>
+                        <span class="ml-2">{m.branch_open_editor()}</span>
                       </div>
                     </DropdownMenu.Item>
                   {/if}
@@ -445,12 +446,12 @@
                           deployment.branch,
                           V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING,
                           $startMutation.mutateAsync,
-                          "resume",
+                          (error) => m.branch_resume_failed({ error }),
                         )}
                     >
                       <div class="flex items-center">
                         <PlayIcon size="12px" />
-                        <span class="ml-2">Resume</span>
+                        <span class="ml-2">{m.branch_resume()}</span>
                       </div>
                     </DropdownMenu.Item>
                   {/if}
@@ -463,12 +464,12 @@
                           deployment.branch,
                           V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING,
                           $stopMutation.mutateAsync,
-                          "hibernate",
+                          (error) => m.branch_hibernate_failed({ error }),
                         )}
                     >
                       <div class="flex items-center">
                         <StopCircleIcon size="12px" />
-                        <span class="ml-2">Hibernate</span>
+                        <span class="ml-2">{m.branch_hibernate()}</span>
                       </div>
                     </DropdownMenu.Item>
                   {/if}
@@ -484,7 +485,7 @@
                   >
                     <div class="flex items-center">
                       <Trash2Icon size="12px" />
-                      <span class="ml-2">Delete</span>
+                      <span class="ml-2">{m.common_delete()}</span>
                     </div>
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
@@ -496,7 +497,7 @@
       <div class="branch-hint">
         <GitBranchIcon size="14" class="shrink-0 text-fg-muted" />
         <span class="text-xs text-fg-secondary">
-          Add a branch from the CLI:
+          {m.branch_add_from_cli()}
         </span>
         <CopyableCodeBlock code="rill project deployment create <branch>" />
       </div>

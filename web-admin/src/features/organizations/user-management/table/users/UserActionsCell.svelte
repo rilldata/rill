@@ -15,6 +15,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { page } from "$app/stores";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let email: string;
   export let role: string;
@@ -62,12 +63,12 @@
       await invalidateAfterUserDelete(queryClient, organization);
 
       eventBus.emit("notification", {
-        message: "User removed from organization",
+        message: m.users_removed_from_org(),
       });
     } catch (error) {
       console.error("Error removing user from organization", error);
       eventBus.emit("notification", {
-        message: "Error removing user from organization",
+        message: m.users_error_removing(),
         type: "error",
       });
     }
@@ -87,7 +88,7 @@
           class="font-normal flex items-center"
           onclick={onConvertToMember}
         >
-          Convert to member
+          {m.users_convert_to_member()}
         </DropdownMenu.Item>
       {/if}
       <DropdownMenu.Item
@@ -95,7 +96,7 @@
         type="destructive"
         onclick={onRemoveClick}
       >
-        Remove
+        {m.users_remove()}
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

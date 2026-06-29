@@ -4,6 +4,7 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
   import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
@@ -90,7 +91,7 @@
       </div>
     {:else if $dashboardStateForAlert.error}
       <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">Unable to open Alert</h2>
+        <h2 class="text-lg font-semibold">{m.alert_unable_to_open()}</h2>
         <CtaMessage>
           {$dashboardStateForAlert.error}
         </CtaMessage>
@@ -99,7 +100,7 @@
         variant="secondary"
         href={`/${organization}/${project}/-/alerts/${alertId}`}
       >
-        Go to Alerts page
+        {m.alert_go_to_page()}
       </CtaButton>
     {/if}
   </CtaContentContainer>

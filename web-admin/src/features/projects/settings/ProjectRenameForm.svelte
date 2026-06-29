@@ -19,6 +19,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let {
     organization,
@@ -76,7 +77,7 @@
             err as AxiosError<RpcStatus>,
           );
           if (parsedErr.duplicateProject) {
-            form.errors.name = [`The name ${newProject} is already taken`];
+            form.errors.name = [m.settings_name_already_taken({ name: newProject })];
           }
           return;
         }
@@ -91,7 +92,7 @@
           });
         }
         eventBus.emit("notification", {
-          message: "Updated project",
+          message: m.settings_updated_project_notification(),
         });
         setTimeout(() => onRename?.(newProject));
       },
@@ -144,8 +145,8 @@
     bind:value={$form.name}
     errors={$errors?.name}
     id="name"
-    label="Name"
-    description={`Your project will be available at https://ui.rilldata.com/${organization}/${sanitizeSlug($form.name)}.`}
+    label={m.settings_name_label()}
+    description={m.settings_project_url_description({ org: organization, slug: sanitizeSlug($form.name) })}
     textClass="text-sm"
     alwaysShowError
     additionalClass="max-w-[520px]"

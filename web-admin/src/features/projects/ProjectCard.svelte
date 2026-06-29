@@ -11,6 +11,7 @@
   import GuardedDeleteProjectConfirmation from "@rilldata/web-admin/features/projects/settings/GuardedDeleteProjectConfirmation.svelte";
   import ProjectRenameDialog from "@rilldata/web-admin/features/projects/settings/ProjectRenameDialog.svelte";
   import EditBranchDialog from "@rilldata/web-admin/features/edit-session/EditBranchDialog.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -58,8 +59,10 @@
     <!-- Permissions tag -->
     <Tag>
       <ProjectAccessControls {organization} {project}>
-        <svelte:fragment slot="read-project">Viewer</svelte:fragment>
-        <svelte:fragment slot="manage-project">Admin</svelte:fragment>
+        <svelte:fragment slot="read-project"
+          >{m.project_role_viewer()}</svelte:fragment
+        >
+        <svelte:fragment slot="manage-project">{m.project_role_admin()}</svelte:fragment>
       </ProjectAccessControls>
     </Tag>
     <!-- Public vs Private indicator -->

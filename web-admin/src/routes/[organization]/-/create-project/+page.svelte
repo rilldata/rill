@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
@@ -58,11 +59,11 @@
       >
         Upgrade
       </Button>
-      <Button type="secondary" noStroke href="/{organization}">Back</Button>
+      <Button type="secondary" noStroke href="/{organization}">{m.common_back()}</Button>
     {:else}
       <RillLogoSquareNegative size="36px" />
       <div class="text-2xl font-extrabold text-fg-accent text-center">
-        Create {hasProjects ? "your first" : "a new"} project
+        {hasProjects ? m.project_create_first() : m.project_create_new()}
       </div>
 
       <div
@@ -70,10 +71,10 @@
       >
         <div>
           <div class="text-base font-semibold">
-            Name your {hasProjects ? "first " : ""}project
+            {hasProjects ? m.project_name_first() : m.project_name_new()}
           </div>
           <div class="text-sm text-fg-muted">
-            You can rename anytime from project settings.
+            {m.project_rename_anytime()}
           </div>
         </div>
 

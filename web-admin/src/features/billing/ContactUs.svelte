@@ -1,7 +1,9 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
+
   export let variant: "normal" | "enterprise" = "normal";
 
-  $: text = variant === "normal" ? "contact us" : "contact support";
+  $: text = variant === "normal" ? m.billing_contact_us_link() : m.billing_contact_support();
 
   function onClick() {
     window.Pylon("show");

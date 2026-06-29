@@ -25,6 +25,8 @@
     createAdminServiceGetCurrentUser,
     type V1ProjectPermissions,
   } from "../../client";
+  import LanguageSwitcher from "@rilldata/web-common/components/i18n/LanguageSwitcher.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
@@ -93,7 +95,7 @@
               subMenuOpen = !subMenuOpen;
             }}
           >
-            View as
+            {m.avatar_view_as()}
           </DropdownMenu.SubTrigger>
           <DropdownMenu.SubContent
             class="flex flex-col min-w-[150px] max-w-[300px]"
@@ -113,17 +115,18 @@
         <DropdownMenu.Item
           href={`/${params.organization}/${params.project}/-/alerts`}
         >
-          Alerts
+          {m.nav_tab_alerts()}
         </DropdownMenu.Item>
         <DropdownMenu.Item
           href={`/${params.organization}/${params.project}/-/reports`}
         >
-          Reports
+          {m.nav_tab_reports()}
         </DropdownMenu.Item>
       {/if}
     {/if}
 
     <ThemeToggle />
+    <LanguageSwitcher />
     <DropdownMenu.Separator />
 
     <DropdownMenu.Item
@@ -131,18 +134,20 @@
       target="_blank"
       rel="noreferrer noopener"
     >
-      Documentation
+      {m.avatar_documentation()}
     </DropdownMenu.Item>
     <DropdownMenu.Item
       href="https://discord.gg/2ubRfjC7Rh"
       target="_blank"
       rel="noreferrer noopener"
     >
-      Join us on Discord
+      {m.avatar_join_discord()}
     </DropdownMenu.Item>
     <DropdownMenu.Item onclick={handlePylon}>
-      Contact Rill support
+      {m.avatar_contact_support()}
     </DropdownMenu.Item>
-    <DropdownMenu.Item onclick={redirectToLogout}>Logout</DropdownMenu.Item>
+    <DropdownMenu.Item onclick={redirectToLogout}
+      >{m.avatar_logout()}</DropdownMenu.Item
+    >
   </DropdownMenu.Content>
 </DropdownMenu.Root>

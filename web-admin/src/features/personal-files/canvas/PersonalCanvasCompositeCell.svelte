@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -53,7 +54,7 @@
     {#if lastRefreshedDate}
       <Tooltip distance={8}>
         <span class="shrink-0">
-          Last refreshed {timeAgo(lastRefreshedDate)}
+          {m.dashboard_last_refreshed_ago({ time: timeAgo(lastRefreshedDate) })}
         </span>
         <TooltipContent slot="tooltip-content">
           {lastRefreshedDate.toLocaleString()}

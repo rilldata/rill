@@ -1,6 +1,7 @@
 import type { RpcStatus, V1BillingIssue } from "@rilldata/web-admin/client";
 import { fetchOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
 import { getBillingIssuesUsingBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token.ts";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import { error } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 
@@ -17,7 +18,7 @@ export const load = async ({ params: { organization }, parent }) => {
         : await fetchOrganizationBillingIssues(organization);
     } catch (e) {
       if (!isAxiosError<RpcStatus>(e) || !e.response) {
-        throw error(500, "Error fetching billing issues");
+        throw error(500, m.route_error_fetching_billing_issues());
       }
 
       throw error(e.response.status, e.response.data.message);

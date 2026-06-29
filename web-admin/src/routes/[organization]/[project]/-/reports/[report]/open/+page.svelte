@@ -4,6 +4,7 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
@@ -93,7 +94,7 @@
       </div>
     {:else if $dashboardStateForReport.error}
       <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">Unable to open report</h2>
+        <h2 class="text-lg font-semibold">{m.report_unable_to_open()}</h2>
         <CtaMessage>
           {$dashboardStateForReport.error}
         </CtaMessage>
@@ -102,7 +103,7 @@
         href={`/${organization}/${project}/-/reports/${reportId}`}
         variant="secondary"
       >
-        Go to report page
+        {m.report_go_to_page()}
       </CtaButton>
     {/if}
   </CtaContentContainer>

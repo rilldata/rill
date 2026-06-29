@@ -5,6 +5,7 @@
   import CancelPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/CancelPlanDialog.svelte";
   import { SELF_SERVE_PLANS_BY_NAME } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
   import ChoosePlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/ChoosePlanDialog.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let {
     organization,
@@ -37,13 +38,13 @@
 <div class="plan-actions">
   {#if showCancel}
     <button class="plan-action" onclick={() => (cancelOpen = true)}>
-      Cancel subscription
+      {m.billing_cancel_subscription()}
     </button>
   {/if}
 
   {#if showChangePlan}
     <button class="plan-action" onclick={() => (showChangePlanDialog = true)}>
-      Change subscription
+      {m.billing_change_subscription()}
     </button>
   {/if}
 </div>

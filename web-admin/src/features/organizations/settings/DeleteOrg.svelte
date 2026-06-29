@@ -11,6 +11,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import AlertDialogGuardedConfirmation from "@rilldata/web-common/components/alert-dialog/alert-dialog-guarded-confirmation.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let { organization }: { organization: string } = $props();
 
@@ -35,29 +36,28 @@
       queryKey: getAdminServiceGetOrganizationQueryKey(organization),
     });
     eventBus.emit("notification", {
-      message: "Deleted organization",
+      message: m.settings_deleted_org_notification(),
     });
     void goto(`/`);
   }
 </script>
 
-<SettingsContainer title="Delete Organization">
-  Permanently delete this organization and all of its contents from the Rill
-  platform. This action is not reversible — please continue with caution.
+<SettingsContainer title={m.settings_delete_org_title()}>
+  {m.settings_delete_org_description()}
 
   {#snippet action()}
     <AlertDialogGuardedConfirmation
-      title="Delete this organization?"
-      description={`The organization "${organization}" will be permanently deleted along with all its projects, data, and settings. This action cannot be undone.`}
+      title={m.settings_delete_org_confirm_title()}
+      description={m.settings_delete_org_confirm_description({ organization })}
       confirmText={`delete ${organization}`}
-      confirmButtonText="Delete"
+      confirmButtonText={m.settings_delete_button()}
       confirmButtonType="destructive"
       loading={deleteOrgResult.isPending}
       error={deleteOrgResult.error?.message}
       onConfirm={deleteOrg}
     >
-      <Button type="destructive" label="Delete organization">
-        Delete Organization
+      <Button type="destructive" label={m.settings_delete_org_button()}>
+        {m.settings_delete_org_button()}
       </Button>
     </AlertDialogGuardedConfirmation>
   {/snippet}

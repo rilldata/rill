@@ -10,6 +10,7 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   /**
    * Unsubscribe uses just a token with access to only unsub so we do not need to query project or organization details.
@@ -54,14 +55,14 @@
   <CtaContentContainer>
     <div class="flex flex-col gap-y-2">
       {#if error}
-        <h2 class="text-lg font-semibold">Failed to unsubscribe.</h2>
+        <h2 class="text-lg font-semibold">{m.report_unsubscribe_failed()}</h2>
         <CtaMessage>
           {error}
         </CtaMessage>
       {:else if loading}
-        <h2 class="text-lg font-semibold">Unsubscribing...</h2>
+        <h2 class="text-lg font-semibold">{m.report_unsubscribing()}</h2>
       {:else}
-        <h2 class="text-lg font-semibold">Unsubscribed from report.</h2>
+        <h2 class="text-lg font-semibold">{m.report_unsubscribed()}</h2>
       {/if}
     </div>
   </CtaContentContainer>

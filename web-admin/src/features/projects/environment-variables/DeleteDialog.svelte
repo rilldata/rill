@@ -16,6 +16,7 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let open = false;
   export let name: string;
@@ -49,12 +50,12 @@
       });
 
       eventBus.emit("notification", {
-        message: "Environment variable deleted",
+        message: m.env_variable_deleted_notification(),
       });
     } catch (error) {
       console.error("Error deleting environment variable", error);
       eventBus.emit("notification", {
-        message: "Error deleting environment variable",
+        message: m.env_variable_delete_error_notification(),
         type: "error",
       });
     }
@@ -78,12 +79,10 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this environment variable?</AlertDialogTitle>
+      <AlertDialogTitle>{m.env_delete_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          The environment variable <span class="source-code text-sm font-medium"
-            >{name}</span
-          > will no longer be available for this project.
+          {m.env_delete_description({ name })}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -94,9 +93,9 @@
           open = false;
         }}
       >
-        Cancel
+        {m.env_cancel_button()}
       </Button>
-      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
+      <Button type="destructive" onClick={handleDelete}>{m.env_yes_delete_button()}</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

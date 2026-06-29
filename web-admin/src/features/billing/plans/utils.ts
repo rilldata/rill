@@ -1,4 +1,5 @@
 import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import { DateTime } from "luxon";
 import { writable } from "svelte/store";
 import { V1BillingPlanType } from "@rilldata/web-admin/client";
@@ -15,7 +16,7 @@ export function formatUsageVsQuota(
     usageInBytes > quota
       ? "100+"
       : Math.round((usageInBytes * 100) / quota) + "";
-  return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
+  return m.billing_usage_of_quota({ usage: formattedUsage, quota: formattedQuota, percent });
 }
 
 // Mapping of externalID/planName to a type.
@@ -73,10 +74,10 @@ export const PaidPlanTypes = {
 export function getSubscriptionResumedText(endDate: string) {
   const date = DateTime.fromJSDate(new Date(endDate));
   if (!date.isValid || date.toMillis() < Date.now()) {
-    return "today";
+    return m.billing_today();
   }
   const resumeDate = date.plus({ day: 1 });
-  return "on " + resumeDate.toLocaleString(DateTime.DATE_MED);
+  return m.billing_on_date({ date: resumeDate.toLocaleString(DateTime.DATE_MED) });
 }
 
 // Since this could be triggered in a route that could be navigated from,

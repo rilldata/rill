@@ -30,6 +30,7 @@
     getDeploymentGithubStatus,
     invalidateGitStatusQueries,
   } from "@rilldata/web-admin/features/edit-session/selectors.ts";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let organization: string;
   export let project: string;
@@ -129,7 +130,7 @@
     if (!hasLocalChanges && !hasChangesOnCurrent) {
       eventBus.emit("notification", {
         type: "default",
-        message: "No changes detected",
+        message: m.edit_no_changes_detected(),
       });
       isPublishing = false;
       return;
@@ -150,7 +151,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: extractErrorMessage(err) || "Failed to publish",
+        message: extractErrorMessage(err) || m.edit_failed_to_publish(),
       });
       isPublishing = false;
       return;
@@ -232,7 +233,7 @@
       void goto(targetUrl);
       eventBus.emit("notification", {
         type: "error",
-        message: "Pop-up was blocked.",
+        message: m.edit_popup_blocked(),
       });
     }
   }
@@ -278,7 +279,7 @@
     type="primary"
     {disabled}
     loading={isPublishing}
-    loadingCopy="Publishing..."
+    loadingCopy={m.edit_publishing()}
     onClick={handlePublish}
   >
     <Rocket size="14" />

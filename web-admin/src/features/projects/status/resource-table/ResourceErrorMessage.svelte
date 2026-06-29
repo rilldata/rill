@@ -8,6 +8,7 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { AlertTriangleIcon } from "lucide-svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let message: string;
   export let status: V1ReconcileStatus;
@@ -21,14 +22,14 @@
   {#if status === V1ReconcileStatus.RECONCILE_STATUS_PENDING || status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
     <Tooltip distance={8}>
       <LoadingSpinner size="18px" />
-      <TooltipContent slot="tooltip-content">Reconciling</TooltipContent>
+      <TooltipContent slot="tooltip-content">{m.status_reconciling()}</TooltipContent>
     </Tooltip>
   {:else if hasTestErrors}
     <Tooltip distance={8}>
       <button
         class="hover:bg-surface-hover rounded p-1 active:bg-surface-active group"
         onclick={() =>
-          copyToClipboard(testErrorMessage, "Copied test error to clipboard")}
+          copyToClipboard(testErrorMessage, m.status_copied_test_error())}
       >
         <CopyIcon
           size="18px"
@@ -49,7 +50,7 @@
       <button
         class="hover:bg-surface-hover rounded p-1 active:bg-surface-active group"
         onclick={() =>
-          copyToClipboard(message, "Copied error message to clipboard")}
+          copyToClipboard(message, m.status_copied_error_message())}
       >
         <CopyIcon
           size="18px"
@@ -65,7 +66,7 @@
   {:else}
     <Tooltip distance={8}>
       <Check size="18px" className="text-green-500" />
-      <TooltipContent slot="tooltip-content">Complete</TooltipContent>
+      <TooltipContent slot="tooltip-content">{m.status_complete()}</TooltipContent>
     </Tooltip>
   {/if}
 </div>

@@ -10,6 +10,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let {
     organization,
@@ -100,15 +101,15 @@
   }
 </script>
 
-<SettingsContainer title="Logo">
+<SettingsContainer title={m.settings_logo_title()}>
   <div class="flex flex-col gap-y-4">
     <div>
-      Click to upload your logo and customize Rill for your organization.
+      {m.settings_logo_description()}
     </div>
     <div class="flex flex-row gap-x-6 items-start">
       <!-- Light Logo -->
       <div class="flex flex-col gap-y-2">
-        <div class="text-sm font-medium">Light Logo</div>
+        <div class="text-sm font-medium">{m.settings_light_logo_label()}</div>
         <UploadImagePopover
           imageUrl={organizationLogoUrl}
           accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
@@ -129,7 +130,7 @@
             disabled={isLogoLoading}
             class="w-fit"
           >
-            Remove
+            {m.settings_remove_button()}
           </Button>
         {/if}
       </div>
@@ -138,9 +139,9 @@
       <div class="flex flex-col gap-y-2">
         <div class="text-sm font-medium">
           {#if organizationLogoDarkUrl}
-            Dark Logo
+            {m.settings_dark_logo_label()}
           {:else}
-            <span class="text-slate-500">Dark Logo</span>
+            <span class="text-slate-500">{m.settings_dark_logo_label()}</span>
           {/if}
         </div>
         <UploadImagePopover
@@ -164,7 +165,7 @@
             disabled={isLogoDarkLoading}
             class="w-fit"
           >
-            Remove
+            {m.settings_remove_button()}
           </Button>
         {/if}
       </div>

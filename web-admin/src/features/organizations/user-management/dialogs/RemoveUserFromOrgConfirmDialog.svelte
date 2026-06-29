@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -32,10 +33,10 @@
   </AlertDialogTrigger>
   <AlertDialogContent noCancel>
     <AlertDialogHeader>
-      <AlertDialogTitle>Remove user from organization?</AlertDialogTitle>
+      <AlertDialogTitle>{m.users_remove_confirm_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          This user will no longer be able to access the organization.
+          {m.users_remove_confirm_desc()}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -44,9 +45,9 @@
         type="tertiary"
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.users_cancel()}</Button
       >
-      <Button type="destructive" onClick={handleRemove}>Yes, remove</Button>
+      <Button type="destructive" onClick={handleRemove}>{m.users_yes_remove()}</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

@@ -34,6 +34,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let organization: string;
   export let project: string;
@@ -63,7 +64,7 @@
   // Get human-readable frequency
   $: humanReadableFrequency = alertSpec?.refreshSchedule?.cron
     ? formatRefreshSchedule(alertSpec.refreshSchedule.cron)
-    : "Whenever your data refreshes";
+    : m.alert_whenever_data_refreshes();
 
   $: queryArgsJson =
     (alertSpec?.resolverProperties?.query_args_json as string) ||
@@ -146,13 +147,13 @@
           <EditAlert {alertSpec} disabled={!$exploreIsValid} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <IconButton ariaLabel="Alert context menu">
+              <IconButton ariaLabel={m.alert_context_menu_aria()}>
                 <ThreeDot size="16px" />
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
               <DropdownMenu.Item onclick={handleDeleteAlert}>
-                Delete Alert
+                {m.alert_delete()}
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
@@ -165,7 +166,7 @@
       <!-- Dashboard -->
       <div class="flex flex-col gap-y-3" aria-label="Alert dashboard name">
         {#if dashboardTitle}
-          <MetadataLabel>Dashboard</MetadataLabel>
+          <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
           <MetadataValue>
             {#if dashboardDoesNotExist}
               <div class="flex items-center gap-x-1">
@@ -173,7 +174,7 @@
                 <Tooltip distance={8}>
                   <CancelCircle size="16px" className="text-red-500" />
                   <TooltipContent slot="tooltip-content">
-                    Dashboard does not exist
+                    {m.alert_dashboard_not_exist()}
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -184,7 +185,7 @@
             {/if}
           </MetadataValue>
         {:else}
-          <MetadataLabel>Name</MetadataLabel>
+          <MetadataLabel>{m.alert_name_label()}</MetadataLabel>
           <MetadataValue>
             {$alertQuery.data?.resource?.meta?.name?.name}
           </MetadataValue>
@@ -193,21 +194,22 @@
 
       <!-- Split by dimension -->
       <div class="flex flex-col gap-y-3" aria-label="Alert split by dimension">
-        <MetadataLabel>Split by dimension</MetadataLabel>
+        <MetadataLabel>{m.alert_split_by_dimension()}</MetadataLabel>
         <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions?.[0]?.name ?? "None"}
+          {metricsViewAggregationRequest?.dimensions?.[0]?.name ??
+            m.alert_none()}
         </MetadataValue>
       </div>
 
       <!-- Schedule: TODO: change based on non UI settings -->
       <div class="flex flex-col gap-y-3" aria-label="Alert schedule">
-        <MetadataLabel>Schedule</MetadataLabel>
+        <MetadataLabel>{m.alert_schedule()}</MetadataLabel>
         <MetadataValue>{humanReadableFrequency}</MetadataValue>
       </div>
 
       <!-- Snooze -->
       <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Snooze</MetadataLabel>
+        <MetadataLabel>{m.alert_snooze()}</MetadataLabel>
         <MetadataValue>{snoozeLabel}</MetadataValue>
       </div>
     </div>
@@ -232,7 +234,7 @@
     {#if slackNotifier}
       <MetadataList
         data={[...slackNotifier.channels, ...slackNotifier.users]}
-        label="Slack notifications"
+        label={m.alert_slack_notifications()}
       />
     {/if}
 
@@ -240,7 +242,7 @@
     {#if emailNotifier}
       <MetadataList
         data={emailNotifier.recipients}
-        label="Email notifications"
+        label={m.alert_email_notifications()}
       />
     {/if}
   </div>

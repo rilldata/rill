@@ -9,6 +9,7 @@
   } from "@rilldata/web-admin/client/index.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { goto } from "$app/navigation";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let {
     organization,
@@ -42,7 +43,7 @@
     });
 
     eventBus.emit("notification", {
-      message: "Deleted project",
+      message: m.settings_deleted_project_notification(),
     });
 
     await goto(`/${organization}`);
@@ -51,17 +52,17 @@
 
 <AlertDialogGuardedConfirmation
   bind:open
-  title="Delete Project?"
-  description={`The project "${project}" will be permanently deleted along with all its dashboards, data, and settings. This action cannot be undone.`}
+  title={m.settings_delete_project_confirm_title()}
+  description={m.settings_delete_project_confirm_description({ project })}
   confirmText={`delete ${project}`}
-  confirmButtonText="Delete"
+  confirmButtonText={m.settings_delete_button()}
   confirmButtonType="destructive"
   loading={deleteProjectResult.isPending}
   error={deleteProjectResult.error?.message}
   onConfirm={deleteProject}
 >
   {#if button}
-    <Button type="destructive">Delete Project</Button>
+    <Button type="destructive">{m.settings_delete_project_button()}</Button>
   {:else}
     <div class="hidden"></div>
   {/if}

@@ -10,6 +10,7 @@
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards, useIsInitialBuild } from "./selectors";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let isEmbedded = false;
   export let isPreview = false;
@@ -140,16 +141,12 @@
       <ResourceListEmptyState
         slot="empty"
         icon={ExploreIcon}
-        message="You don't have any dashboards yet"
+        message={m.dashboard_list_empty()}
       >
         <span slot="action">
-          <a
-            href="https://docs.rilldata.com/developers/build/dashboards"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Create a dashboard</a
-          > to get started
+          {@html m.dashboard_list_create_to_start({
+            link: `<a href="https://docs.rilldata.com/developers/build/dashboards" target="_blank" rel="noopener noreferrer">${m.dashboard_list_create()}</a>`,
+          })}
         </span>
       </ResourceListEmptyState>
     </ResourceList>
@@ -159,7 +156,7 @@
           href={`/${organization}/${project}/-/dashboards`}
           class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
         >
-          See all dashboards →
+          {m.dashboard_list_see_all()} →
         </a>
       </div>
     {/if}

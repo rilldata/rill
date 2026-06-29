@@ -10,6 +10,7 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -49,14 +50,14 @@
   <CtaContentContainer>
     <div class="flex flex-col gap-y-2">
       {#if error}
-        <h2 class="text-lg font-semibold">Failed to unsubscribe.</h2>
+        <h2 class="text-lg font-semibold">{m.alert_unsubscribe_failed()}</h2>
         <CtaMessage>
           {error}
         </CtaMessage>
       {:else if loading}
-        <h2 class="text-lg font-semibold">Unsubscribing...</h2>
+        <h2 class="text-lg font-semibold">{m.alert_unsubscribing()}</h2>
       {:else}
-        <h2 class="text-lg font-semibold">Unsubscribed from alert.</h2>
+        <h2 class="text-lg font-semibold">{m.alert_unsubscribed()}</h2>
       {/if}
     </div>
   </CtaContentContainer>

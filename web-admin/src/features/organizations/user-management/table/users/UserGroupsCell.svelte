@@ -4,6 +4,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { writable } from "svelte/store";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let organization: string;
   export let userId: string;
@@ -31,7 +32,7 @@
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
       <span class="capitalize">
-        {groupCount} Group{groupCount !== 1 ? "s" : ""}
+        {m.users_group_count({ count: groupCount })}
       </span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
@@ -41,16 +42,16 @@
     </Dropdown.Trigger>
     <Dropdown.Content align="start">
       {#if isPending}
-        Loading...
+        {m.users_loading()}
       {:else if error}
-        Error
+        {m.users_error()}
       {:else}
         {#each userGroups as userGroup (userGroup.id)}
           <Dropdown.Item onclick={() => onEditUserGroup(userGroup.name)}>
             <span class="text-fg-primary">{userGroup.name}</span>
             {#if userGroup.count > 0}
               <span class="text-fg-secondary">
-                {userGroup.count} member{userGroup.count > 1 ? "s" : ""}
+                {m.users_member_count({ count: userGroup.count })}
               </span>
             {/if}
           </Dropdown.Item>
@@ -59,5 +60,5 @@
     </Dropdown.Content>
   </Dropdown.Root>
 {:else}
-  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">No groups</div>
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">{m.users_no_groups()}</div>
 {/if}
