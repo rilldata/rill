@@ -16,6 +16,11 @@ interface RGB {
   b: number;
 }
 
+const TITLE_FONT_SIZE_PT = 13;
+// Vertical space the title header reserves at the top of the first page: the
+// title text plus a gap before the content. Passed to paginate() as titleReservePt.
+export const TITLE_BAND_PT = 30;
+
 // Renders the paginated placements into a PDF and triggers a download.
 export async function assemblePdf(
   result: PaginationResult,
@@ -46,6 +51,10 @@ export async function assemblePdf(
     doc.setFillColor(background.r, background.g, background.b);
     doc.rect(0, 0, result.pageWidthPt, result.pageHeightPt, "F");
 
+    if (page === 0) {
+      drawTitle(doc, result, meta);
+    }
+
     for (const placement of result.placements) {
       if (placement.page !== page) continue;
       await drawPlacement(doc, placement, imageCache);
@@ -55,6 +64,34 @@ export async function assemblePdf(
   }
 
   doc.save(meta.filename);
+}
+
+// Draws the dashboard title as vector text in the band reserved at the top of
+// the first page (see TITLE_BAND_PT). Truncated with an ellipsis if it would
+// overflow the content width.
+function drawTitle(
+  doc: jsPDF,
+  result: PaginationResult,
+  meta: AssembleMeta,
+): void {
+  if (!meta.title) return;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(TITLE_FONT_SIZE_PT);
+  doc.setTextColor(31, 35, 41);
+
+  const maxWidthPt = result.pageWidthPt - 2 * result.marginPt;
+  let title = meta.title;
+  if (doc.getTextWidth(title) > maxWidthPt) {
+    while (title.length > 1 && doc.getTextWidth(`${title}…`) > maxWidthPt) {
+      title = title.slice(0, -1);
+    }
+    title = `${title}…`;
+  }
+
+  // Baseline near the bottom of the reserved band, leaving a gap before content.
+  doc.text(title, result.marginPt, result.marginPt + TITLE_FONT_SIZE_PT);
+  doc.setFont("helvetica", "normal");
 }
 
 function drawFooter(

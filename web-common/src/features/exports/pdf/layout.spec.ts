@@ -158,6 +158,15 @@ describe("paginate", () => {
     }
   });
 
+  it("offsets the first page's content by titleReservePt", () => {
+    const withTitle = paginate(
+      [block({ id: "a", widthPx: 1000, heightPx: 200 })],
+      { ...A4, contentWidthPx: 1000, titleReservePt: 30 },
+    );
+    // The first block starts one title band below the margin.
+    expect(withTitle.placements[0].yPt).toBeCloseTo(withTitle.marginPt + 30, 1);
+  });
+
   it("places the filter bar (rowIndex -1) before content rows", () => {
     const result = paginate(
       [

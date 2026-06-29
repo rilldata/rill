@@ -24,6 +24,9 @@ export interface PaginateOptions {
   format: PdfPageFormat;
   orientation: PdfOrientation;
   marginPt?: number;
+  // Vertical space reserved at the top of the first page for the title header
+  // (drawn by assemblePdf). Subsequent pages start at the margin.
+  titleReservePt?: number;
 }
 
 export interface Placement {
@@ -82,7 +85,8 @@ export function paginate(
 
   const placements: Placement[] = [];
   let page = 0;
-  let cursorYPt = marginPt;
+  // The title header occupies the top of the first page; content starts below it.
+  let cursorYPt = marginPt + (opts.titleReservePt ?? 0);
 
   for (const row of rows) {
     const rowTopPx = Math.min(...row.map((b) => b.yPx));

@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import { assemblePdf } from "./assemble";
+import { assemblePdf, TITLE_BAND_PT } from "./assemble";
 import { captureCanvasBlocks } from "./capture";
 import { canvasPdfExportActive } from "./export-state";
 import { buildPdfFilename } from "./filename";
@@ -54,14 +54,16 @@ export async function exportCanvasPdf(
       throw new Error("Nothing to export on this canvas.");
     }
 
+    const title = get(canvasEntity.titleStore) || opts.canvasName;
+
     opts.onProgress?.({ phase: "assembling", ratio: 0 });
     const pagination = paginate(blocks, {
       contentWidthPx,
       format: DEFAULT_PDF_PAGE_FORMAT,
       orientation: DEFAULT_PDF_ORIENTATION,
+      titleReservePt: title ? TITLE_BAND_PT : 0,
     });
 
-    const title = get(canvasEntity.titleStore) || opts.canvasName;
     // UTC, e.g. "2026-06-19 02:20 UTC".
     const generatedAt = `${new Date().toISOString().replace("T", " ").slice(0, 16)} UTC`;
     await assemblePdf(pagination, {

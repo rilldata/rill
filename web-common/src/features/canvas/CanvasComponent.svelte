@@ -44,6 +44,16 @@
       observer.observe(container);
     }
   }
+
+  // `visible` is normally a one-way latch: the observer flips it true once and
+  // unobserves. The PDF export temporarily forces it true and restores it to
+  // false; re-observe on that transition so the component still lazy-loads when
+  // it later scrolls into view (and snaps back to true immediately if it is in
+  // fact already on screen). observe() on an already-observed target is a no-op.
+  $: visibleStore = component.visible;
+  $: if (mounted && container && !$visibleStore) {
+    observer.observe(container);
+  }
   export let selected = false;
   export let active = false;
   export let ghost = false;
