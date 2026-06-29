@@ -1,9 +1,4 @@
 <script lang="ts">
-  import {
-    GitDiffResponse_GitFileStatus,
-    type GitDiffResponse_GitFileChange,
-  } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
-  import type { PartialMessage } from "@bufbuild/protobuf";
   import { createRuntimeServiceGitDiff } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -28,37 +23,32 @@
 
   let expanded = false;
 
+  // The v2 client serializes proto enums as their JSON string names (e.g. "GIT_FILE_STATUS_ADDED").
   const badges: Record<
-    number,
+    string,
     { letter: string; class: string; label: string }
   > = {
-    [GitDiffResponse_GitFileStatus.ADDED]: {
+    GIT_FILE_STATUS_ADDED: {
       letter: "A",
       class: "badge-added",
       label: "Added",
     },
-    [GitDiffResponse_GitFileStatus.MODIFIED]: {
+    GIT_FILE_STATUS_MODIFIED: {
       letter: "M",
       class: "badge-modified",
       label: "Modified",
     },
-    [GitDiffResponse_GitFileStatus.DELETED]: {
+    GIT_FILE_STATUS_DELETED: {
       letter: "D",
       class: "badge-deleted",
       label: "Deleted",
     },
-    [GitDiffResponse_GitFileStatus.RENAMED]: {
+    GIT_FILE_STATUS_RENAMED: {
       letter: "R",
       class: "badge-renamed",
       label: "Renamed",
     },
   };
-
-  function isRenamed(file: PartialMessage<GitDiffResponse_GitFileChange>) {
-    return (
-      file.status === GitDiffResponse_GitFileStatus.RENAMED && !!file.oldPath
-    );
-  }
 
   $: count = changedFiles.length;
 </script>
@@ -82,13 +72,13 @@
       <ul class="file-list">
         {#each changedFiles as file (file.path)}
           {@const badge =
-            badges[file.status ?? GitDiffResponse_GitFileStatus.UNSPECIFIED] ??
-            badges[GitDiffResponse_GitFileStatus.MODIFIED]}
+            badges[file.status as unknown as string] ??
+            badges["GIT_FILE_STATUS_MODIFIED"]}
           <li class="file-row">
             <span class="badge {badge.class}" title={badge.label}
               >{badge.letter}</span
             >
-            {#if isRenamed(file)}
+            {#if (file.status as unknown as string) === "GIT_FILE_STATUS_RENAMED"}
               <span class="file-path" title="{file.oldPath} → {file.path}">
                 <span class="old-path">{file.oldPath}</span>
                 <span class="arrow">→</span>{file.path}
@@ -131,7 +121,7 @@
   }
 
   .badge-added {
-    @apply bg-green-100 text-green-700;
+    @apply bg-primary-100 text-primary-800;
   }
 
   .badge-modified {
@@ -143,7 +133,7 @@
   }
 
   .badge-renamed {
-    @apply bg-blue-100 text-blue-700;
+    @apply bg-secondary-100 text-secondary-800;
   }
 
   .file-path {
