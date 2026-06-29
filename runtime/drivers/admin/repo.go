@@ -479,7 +479,7 @@ func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles boo
 	var fileChanges []drivers.RepoFileChange
 	if changedFiles {
 		if files, err := gitutil.ChangedFiles(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch); err == nil {
-			fileChanges = gitutil.ToRepoFileChanges(files)
+			fileChanges = repoFileChanges(files)
 		}
 	}
 
@@ -494,6 +494,36 @@ func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles boo
 		RemoteCommits: st.RemoteCommits,
 		ChangedFiles:  fileChanges,
 	}, nil
+}
+
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }
 
 func (r *repo) Commit(ctx context.Context, message string) (string, error) {
