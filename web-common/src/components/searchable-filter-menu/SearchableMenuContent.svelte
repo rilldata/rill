@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import { matchSorter } from "match-sorter";
@@ -70,7 +71,7 @@
   <div class="px-3 pt-3 pb-1">
     <Search
       bind:value={searchText}
-      label="Search list"
+      label={m.common_search_list()}
       showBorderOnFocus={false}
     />
   </div>

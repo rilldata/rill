@@ -10,9 +10,12 @@ import {
   getSmallestGrain,
   grainAliasToDateTimeUnit,
   GrainAliasToV1TimeGrain,
+  translateGrainName,
+  translateGrainNamePlural,
   V1TimeGrainToDateTimeUnit,
   type TimeGrainAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import type { TimeRangeMeta } from "@rilldata/web-common/lib/time/types";
 
 const absTimeRegex =
@@ -242,7 +245,7 @@ export class RillPeriodToGrainInterval implements RillTimeInterval {
 
   public getLabel(): [label: string, supported: boolean] {
     const grain = grainAliasToDateTimeUnit(this.grain as any);
-    return [`${grain} to date`, true];
+    return [m.time_range_grain_to_date({ grain: translateGrainName(grain) }), true];
   }
 
   public getGrain() {
@@ -309,7 +312,7 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     const parentOffset = offset.toObject();
 
     if (this.start?.parts?.[0]?.point instanceof RillAbsoluteTime) {
-      return ["Custom", true];
+      return [m.time_custom(), true];
     }
 
     if (
@@ -345,24 +348,40 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     const numDiff = Math.abs(startOffsetAmount - endOffsetAmount);
 
     const grainSingular = grain.replace(/s$/, "");
-    const grainSuffix = numDiff > 1 ? "s" : "";
-    const grainPrefix = numDiff ? numDiff + " " : "";
-    const grainLabel = `${grainPrefix}${grainSingular}${grainSuffix}`;
+    const translatedSingular = translateGrainName(grainSingular);
+    const translatedPlural = translateGrainNamePlural(grainSingular);
 
     if (startOffsetAmount === 0 || startOffsetAmount === 1) {
       if (numDiff === 1) {
-        const prefix = startOffsetAmount === 0 ? "this" : "next";
-        return [`${prefix} ${grainSingular}`, true];
+        return startOffsetAmount === 0
+          ? [m.time_range_this_grain({ grain: translatedSingular }), true]
+          : [m.time_range_next_grain({ grain: translatedSingular }), true];
       }
-      return [`next ${grainLabel}`, true];
+      return [
+        m.time_range_next_n_grains({
+          count: String(numDiff),
+          grains: translatedPlural,
+        }),
+        true,
+      ];
     }
 
     if (endOffsetAmount === 0 || endOffsetAmount === 1) {
       if (numDiff === 1) {
-        const prefix = endOffsetAmount === 1 ? "this" : "previous";
-        return [`${prefix} ${grainSingular}`, true];
+        return endOffsetAmount === 1
+          ? [m.time_range_this_grain({ grain: translatedSingular }), true]
+          : [
+              m.time_range_previous_grain({ grain: translatedSingular }),
+              true,
+            ];
       }
-      return [`last ${grainLabel}`, true];
+      return [
+        m.time_range_last_n_grains({
+          count: String(numDiff),
+          grains: translatedPlural,
+        }),
+        true,
+      ];
     }
 
     return ["", false];
@@ -394,7 +413,7 @@ export class RillIsoInterval implements RillTimeInterval {
   }
 
   public getLabel(): [label: string, supported: boolean] {
-    return ["Custom", true];
+    return [m.time_custom(), true];
   }
 
   // Checks for non-zero time components to determine smallest grain
@@ -441,7 +460,7 @@ export class RillAllTimeInterval implements RillTimeInterval {
   }
 
   public getLabel(): [label: string, supported: boolean] {
-    return ["All time", true];
+    return [m.time_all_time(), true];
   }
 
   public getGrain() {
@@ -465,7 +484,9 @@ export class RillLegacyIsoInterval implements RillTimeInterval {
 
   public getLabel(): [label: string, supported: boolean] {
     const isoDuration = this.toString();
-    const label = "Last " + humaniseISODuration(isoDuration, false);
+    const label = m.time_last_duration({
+      duration: humaniseISODuration(isoDuration, false),
+    });
     return [label, true];
   }
 

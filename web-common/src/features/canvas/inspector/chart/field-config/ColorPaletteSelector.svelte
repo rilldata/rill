@@ -1,6 +1,7 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import type {
@@ -90,7 +91,7 @@
       class="w-full p-1 flex items-center justify-between hover:bg-surface-background"
       onclick={toggleExpanded}
     >
-      <span class="text-xs font-medium">Color mapping</span>
+      <span class="text-xs font-medium">{m.canvas_color_mapping()}</span>
       <div class="flex items-center gap-x-2">
         {#if isExpanded}
           <ChevronDown size="14px" class="text-fg-secondary" />
@@ -117,26 +118,28 @@
         {/each}
         {#if allColorMappings.length === 0}
           <div class="px-2 py-2 text-xs text-fg-secondary">
-            No color values found
+            {m.canvas_no_color_values_found()}
           </div>
         {/if}
         <div class="p-1 flex items-center justify-between">
           <div>
             {#if hasMoreThanThreshold && !showAllValues}
               <Button type="text" onClick={() => (showAllValues = true)}>
-                See {allColorMappings.length - THRESHOLD} more value{allColorMappings.length -
-                  THRESHOLD !==
-                1
-                  ? "s"
-                  : ""}
+                {allColorMappings.length - THRESHOLD === 1
+                  ? m.canvas_see_more_value()
+                  : m.canvas_see_more_values({
+                      count: allColorMappings.length - THRESHOLD,
+                    })}
               </Button>
             {:else if hasMoreThanThreshold && showAllValues}
               <Button type="text" onClick={() => (showAllValues = false)}>
-                See less
+                {m.canvas_see_less()}
               </Button>
             {/if}
           </div>
-          <Button type="text" onClick={resetToDefault}>Reset to default</Button>
+          <Button type="text" onClick={resetToDefault}
+            >{m.canvas_reset_to_default()}</Button
+          >
         </div>
       </div>
     {/if}

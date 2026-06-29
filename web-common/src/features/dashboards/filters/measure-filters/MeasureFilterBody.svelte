@@ -4,6 +4,7 @@
   - a short hand notation of the filter criteria
 -->
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
     AllMeasureFilterOperationOptions,
@@ -30,7 +31,8 @@
       filter.type === MeasureFilterType.AbsoluteChange ||
       filter.type === MeasureFilterType.PercentChange
     ) {
-      typeLabel += ` from ${comparisonLabel}`;
+      typeLabel +=
+        " " + m.filter_measure_from_comparison({ comparison: comparisonLabel });
     }
 
     switch (filter.operation) {
@@ -66,7 +68,9 @@
     {label}
     {#if dimensionName}
       <!-- span needed to make sure the space before the `for` is not removed by prettier -->
-      <span> for {dimensionName}</span>
+      <span>
+        {m.filter_measure_for_dimension({ dimension: dimensionName })}</span
+      >
     {/if}
     {#if typeLabel}
       <span>{typeLabel}</span>

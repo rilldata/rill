@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -133,7 +134,7 @@
 <SidebarWrapper
   type="secondary"
   disableHorizontalPadding
-  title="Canvas configurations"
+  title={m.canvas_configurations()}
 >
   <CanvasTabs bind:currentTab slot="header" />
   {#if currentTab === "options"}
@@ -143,7 +144,7 @@
         capitalizeLabel={false}
         size="sm"
         labelGap={2}
-        label="Display name"
+        label={m.canvas_display_name()}
         bind:value={title}
         onBlur={async () => {
           await updateProperties({ display_name: title }, ["title"]);
@@ -158,7 +159,7 @@
         capitalizeLabel={false}
         size="sm"
         labelGap={2}
-        label="Max width"
+        label={m.canvas_max_width()}
         inputType="number"
         bind:value={maxWidth}
         onBlur={async () => {
@@ -178,7 +179,7 @@
           id="canvas-filter"
           faint={!showFilterBar}
           small
-          label="Filter bar"
+          label={m.canvas_filter_bar()}
         />
         <Switch checked={showFilterBar} onclick={toggleFilterBar} small />
       </div>
@@ -187,7 +188,7 @@
         <div class="flex flex-col gap-y-2">
           <MultiSelectInput
             small
-            label="Time ranges"
+            label={m.canvas_time_ranges()}
             id="canvas-time-range"
             defaultLabel="Default time ranges"
             showLabel={false}
@@ -209,7 +210,7 @@
 
           <MultiSelectInput
             small
-            label="Time zones"
+            label={m.canvas_time_zones()}
             id="visual-explore-zone"
             showLabel={false}
             defaultLabel="Default time zones"

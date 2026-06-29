@@ -1,4 +1,5 @@
 import { page } from "$app/stores";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   createInExpression,
@@ -69,7 +70,7 @@ export function toggleMultipleDimensionValueSelections(
     eventBus.emit("notification", {
       message: "Converted filter type to Select",
       link: {
-        text: "Undo",
+        text: m.common_undo(),
         href: get(page).url.href,
       },
     });
@@ -81,7 +82,7 @@ export function toggleMultipleDimensionValueSelections(
     eventBus.emit("notification", {
       message: "Converted filter type to Select",
       link: {
-        text: "Undo",
+        text: m.common_undo(),
         href: get(page).url.href,
       },
     });

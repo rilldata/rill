@@ -3,6 +3,7 @@
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let mode: DimensionFilterMode;
   export let excludeMode: boolean;
@@ -20,17 +21,19 @@
       id="include-exclude"
       small
       onCheckedChange={onToggleExcludeMode}
-      label="Include exclude toggle"
+      label={m.dashboard_include_exclude_toggle()}
     />
-    <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
+    <Label class="font-normal text-xs" for="include-exclude"
+      >{m.dashboard_exclude()}</Label
+    >
   </div>
   <div class="flex gap-2">
     {#if mode === DimensionFilterMode.Select}
       <Button onClick={onToggleSelectAll} type="tertiary">
         {#if allSelected}
-          Deselect all
+          {m.dashboard_deselect_all()}
         {:else}
-          Select all
+          {m.dashboard_select_all()}
         {/if}
       </Button>
     {:else}
@@ -40,7 +43,7 @@
         class="justify-end"
         disabled={disableApplyButton}
       >
-        Apply
+        {m.common_apply()}
       </Button>
     {/if}
   </div>

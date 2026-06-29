@@ -2,6 +2,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import HideSidebar from "@rilldata/web-common/components/icons/HideSidebar.svelte";
   import SurfaceView from "@rilldata/web-common/components/icons/SurfaceView.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let navWidth: number;
   export let navOpen: boolean;
@@ -9,7 +10,7 @@
   export let show = true;
   export let onClick: () => void;
 
-  $: label = navOpen ? "Close sidebar" : "Show sidebar";
+  $: label = navOpen ? m.nav_close_sidebar() : m.nav_show_sidebar();
 </script>
 
 <span

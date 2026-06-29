@@ -1,11 +1,14 @@
 <script lang="ts">
-  export let text: string =
-    "AI can make mistakes. Consider your dashboard the source of truth.";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
+
+  export let text: string | undefined = undefined;
+
+  $: displayText = text ?? m.chat_ai_disclaimer();
 </script>
 
 <div class="chat-footer bg-surface-subtle">
   <div class="chat-footer-text">
-    {text}
+    {displayText}
   </div>
 </div>
 

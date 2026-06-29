@@ -1,3 +1,4 @@
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import type { V1Conversation } from "../../../../runtime-client";
 
 /**
@@ -71,3 +72,25 @@ export const GROUP_ORDER = [
   "6d ago",
   "Older",
 ] as const;
+
+/**
+ * Translate a group key into a localised display label.
+ * Must be called at render time (not module scope) so Paraglide can react to language changes.
+ */
+export function getGroupLabel(key: string): string {
+  switch (key) {
+    case "Today":
+      return m.chat_group_today();
+    case "Yesterday":
+      return m.chat_group_yesterday();
+    case "Older":
+      return m.chat_group_older();
+    default: {
+      const match = key.match(/^(\d+)d ago$/);
+      if (match) {
+        return m.chat_group_days_ago({ days: match[1] });
+      }
+      return key;
+    }
+  }
+}

@@ -10,13 +10,14 @@
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Check, Link, Share } from "lucide-svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let conversationId: string | undefined = undefined;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
   export let disabled = false;
 
-  const DISABLED_TOOLTIP = "Start a conversation to share";
+  const DISABLED_TOOLTIP = m.chat_share_start_first();
   const COPIED_FEEDBACK_DURATION_MS = 1500;
 
   let isOpen = false;
@@ -65,7 +66,7 @@
 <Popover bind:open={isOpen}>
   <PopoverTrigger {disabled}>
     <IconButton
-      ariaLabel="Share conversation"
+      ariaLabel={m.chat_share_conversation()}
       bgGray
       active={isOpen}
       {disabled}
@@ -73,16 +74,17 @@
     >
       <Share class="text-fg-muted" size="16px" />
       <svelte:fragment slot="tooltip-content">
-        {disabled ? DISABLED_TOOLTIP : "Share conversation"}
+        {disabled ? DISABLED_TOOLTIP : m.chat_share_conversation()}
       </svelte:fragment>
     </IconButton>
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[320px] p-4">
     <div class="flex flex-col gap-y-3">
-      <h3 class="text-sm font-medium text-fg-primary">Share conversation</h3>
+      <h3 class="text-sm font-medium text-fg-primary">
+        {m.chat_share_conversation()}
+      </h3>
       <p class="text-xs text-fg-secondary">
-        Share this conversation with other project members. They can view and
-        continue the conversation.
+        {m.chat_share_description()}
       </p>
       {#if shareError}
         <p class="text-xs text-red-600">{shareError}</p>
@@ -90,12 +92,12 @@
       <Button type="secondary" onClick={handleCreateLink} disabled={isSharing}>
         {#if copied}
           <Check size="16px" class="text-green-600" />
-          Copied!
+          {m.chat_share_copied()}
         {:else if isSharing}
-          Creating link...
+          {m.chat_share_creating()}
         {:else}
           <Link size="16px" class="text-primary-500" />
-          Create link
+          {m.chat_share_create_link()}
         {/if}
       </Button>
     </div>

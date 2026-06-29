@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
@@ -262,7 +263,7 @@
 <div
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
-  aria-label="Filters form"
+  aria-label={m.report_form_filters_aria()}
 >
   <div
     class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
@@ -329,7 +330,7 @@
           class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
-          No filters selected
+          {m.dashboard_no_filters_selected()}
         </div>
       {:else}
         {#each $allDimensionFilterItems as filterData (filterData.name)}
@@ -382,7 +383,9 @@
         <!-- if filters are present, place a chip at the end of the flex container
       that enables clearing all filters -->
         {#if $hasFilters}
-          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}
+            >{m.report_form_clear_filters()}</Button
+          >
         {/if}
       {/if}
     </div>

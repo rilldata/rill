@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
   import { Button } from "@rilldata/web-common/components/button/index.ts";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector.ts";
@@ -12,4 +13,6 @@
   let canvasFilePath = $derived($canvasQuery.data?.filePath ?? "");
 </script>
 
-<Button type="secondary" href={getFileHref(canvasFilePath)}>Edit</Button>
+<Button type="secondary" href={getFileHref(canvasFilePath)}
+  >{m.canvas_edit()}</Button
+>

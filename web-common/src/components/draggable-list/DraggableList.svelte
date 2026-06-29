@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
 
@@ -202,7 +203,7 @@
       {:else}
         <input
           bind:value={searchValue}
-          placeholder="Search..."
+          placeholder={m.common_search()}
           class="w-full px-2 py-1 border rounded text-sm"
         />
       {/if}

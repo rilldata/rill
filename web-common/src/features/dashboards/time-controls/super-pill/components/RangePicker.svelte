@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
@@ -44,7 +45,7 @@
       <button
         {...props}
         class="flex gap-x-1"
-        aria-label="Select time range"
+        aria-label={m.dashboard_select_time_range_aria()}
         type="button"
       >
         <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>

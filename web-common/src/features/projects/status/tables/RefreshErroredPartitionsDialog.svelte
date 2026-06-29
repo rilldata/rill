@@ -8,6 +8,7 @@
     AlertDialogTitle,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let open = false;
   export let modelName: string;
@@ -32,12 +33,11 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>
-        Refresh Errored Partitions for {modelName}?
+        {m.status_refresh_errored_confirm_title({ modelName })}
       </AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          This will re-execute all partitions that failed during their last run.
-          The refresh will happen in the background.
+          {m.status_refresh_errored_confirm_body()}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -47,13 +47,13 @@
         disabled={isRefreshing}
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.status_cancel()}</Button
       >
       <Button
         type="primary"
         onClick={handleRefresh}
         disabled={isRefreshing}
-        loading={isRefreshing}>Refresh Errored Partitions</Button
+        loading={isRefreshing}>{m.status_action_refresh_errored_partitions()}</Button
       >
     </AlertDialogFooter>
   </AlertDialogContent>

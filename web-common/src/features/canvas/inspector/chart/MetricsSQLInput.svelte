@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { sql } from "@codemirror/lang-sql";
   import { EditorState } from "@codemirror/state";
   import { EditorView, placeholder } from "@codemirror/view";
@@ -121,7 +122,7 @@
             <button
               class="remove-btn"
               onclick={() => removeQuery(entry.id)}
-              aria-label="Remove query {idx + 1}"
+              aria-label={m.canvas_remove_query_aria({ idx: String(idx + 1) })}
             >
               <Trash size="14px" />
             </button>

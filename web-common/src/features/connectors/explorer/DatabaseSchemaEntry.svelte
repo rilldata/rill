@@ -15,6 +15,7 @@
   import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { onMount } from "svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let connector: V1AnalyzedConnector;
   export let database: string;
@@ -127,7 +128,7 @@
       </div>
     {:else if isLoading && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        Loading tables...
+        {m.status_loading_tables_short()}
       </div>
     {:else if connector?.errorMessage}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
@@ -174,7 +175,7 @@
               small
               disabled={isFetchingNextPage}
               loading={isFetchingNextPage}
-              loadingCopy={isNarrow ? "Loading..." : "Loading tables..."}
+              loadingCopy={isNarrow ? m.common_loading() : m.status_loading_tables_short()}
               class="w-full"
               onClick={() => fetchNextPage()}
             >

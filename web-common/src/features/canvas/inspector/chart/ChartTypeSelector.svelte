@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { Button } from "@rilldata/web-common/components/button";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -32,7 +33,7 @@
 </script>
 
 <div class="section">
-  <InputLabel small label="Chart type" id="chart-components" />
+  <InputLabel small label={m.canvas_chart_type()} id="chart-components" />
   <div class="chart-icons">
     {#each VISIBLE_CHART_TYPES as chart, i (i)}
       <Tooltip distance={8} location="right">

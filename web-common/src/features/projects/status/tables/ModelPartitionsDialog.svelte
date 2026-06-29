@@ -9,6 +9,7 @@
     shouldFilterByPending,
     type PartitionFilterType,
   } from "./utils";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let open = false;
   export let resource: V1Resource | null = null;
@@ -38,7 +39,7 @@
 >
   <Dialog.Content class="max-w-screen-xl h-[40vh] flex flex-col gap-y-4">
     <Dialog.Header>
-      <Dialog.Title>Model Partitions: {modelName}</Dialog.Title>
+      <Dialog.Title>{m.status_model_partitions()}: {modelName}</Dialog.Title>
     </Dialog.Header>
 
     {#if resource}
@@ -46,7 +47,6 @@
         <div class="flex-1 min-w-0 min-h-9">
           <Search
             bind:value={searchText}
-            placeholder="Search"
             large
             autofocus={false}
             showBorderOnFocus={false}

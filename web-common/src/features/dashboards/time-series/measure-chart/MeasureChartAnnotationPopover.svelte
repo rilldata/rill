@@ -2,6 +2,7 @@
   import type { AnnotationGroup } from "./annotation-utils";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   export let hoveredGroup: AnnotationGroup | null;
   export let onHover: (hovered: boolean) => void;
 
@@ -97,7 +98,7 @@
               class="flex flex-row items-center gap-x-1 mb-1 p-1 text-sm text-fg-secondary hover:bg-popover-accent hover:rounded-sm outline-0"
             >
               <ThreeDot className="rotate-90" size="16px" />
-              <span>See more</span>
+              <span>{m.dashboard_see_more()}</span>
             </button>
           {/if}
         </div>

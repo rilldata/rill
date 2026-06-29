@@ -13,6 +13,7 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
   import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
@@ -87,7 +88,7 @@
             }}
           >
             <MetricsViewIcon size="16" />
-            {resource?.meta?.name?.name ?? "Loading..."}
+            {resource?.meta?.name?.name ?? m.common_loading()}
           </DropdownMenu.Item>
         {/each}
         <DropdownMenu.Separator />

@@ -12,6 +12,7 @@
   import { parseDocument } from "yaml";
   import ComponentError from "../components/ComponentError.svelte";
   import type { FileArtifact } from "../entity-management/file-artifact";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
@@ -547,7 +548,7 @@
               }}
             />
           {:else if canvasData}
-            <ComponentError error="No valid metrics view in project" />
+            <ComponentError error={m.canvas_no_valid_metrics_view()} />
           {/if}
         </ItemWrapper>
       </RowWrapper>
@@ -593,10 +594,10 @@
     }}
   >
     <AlertDialog.Content>
-      <AlertDialog.Title>Delete widget?</AlertDialog.Title>
+      <AlertDialog.Title>{m.canvas_delete_widget()}</AlertDialog.Title>
 
       <AlertDialog.Description>
-        This widget and its configuration will be permanently removed.
+        {m.canvas_delete_widget_description()}
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
@@ -610,7 +611,7 @@
                 pendingComponentDelete = undefined;
               }}
             >
-              Cancel
+              {m.canvas_cancel()}
             </Button>
           {/snippet}
         </AlertDialog.Cancel>
@@ -631,7 +632,7 @@
                 pendingComponentDelete = undefined;
               }}
             >
-              Delete
+              {m.canvas_delete()}
             </Button>
           {/snippet}
         </AlertDialog.Action>

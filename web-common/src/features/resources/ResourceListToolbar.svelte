@@ -1,5 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { Search } from "@rilldata/web-common/components/search";
   import type { Table } from "tanstack-table-8-svelte-5";
   import { getContext } from "svelte";
@@ -20,7 +21,7 @@
 </script>
 
 <Search
-  placeholder="Search"
+  placeholder={m.resource_search_placeholder()}
   autofocus={false}
   bind:value={filter}
   rounded="lg"

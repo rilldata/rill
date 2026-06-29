@@ -4,13 +4,15 @@ import {
   type ComponentAlignment,
   type ComponentCommonProperties,
 } from "@rilldata/web-common/features/canvas/components/types";
-import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
+import { getCommonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import Image from "./Image.svelte";
 
 export { default as Image } from "./Image.svelte";
+
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 
 export const defaultImageAlignment: ComponentAlignment = {
   horizontal: "center",
@@ -43,13 +45,13 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
   inputParams(): InputParams<ImageSpec> {
     return {
       options: {
-        url: { type: "text", label: "URL" },
+        url: { type: "text", label: m.canvas_url_label() },
         alignment: {
           type: "alignment",
-          label: "Alignment",
+          label: m.canvas_alignment_label(),
           meta: { defaultAlignment: defaultImageAlignment },
         },
-        ...commonOptions,
+        ...getCommonOptions(),
       },
       filter: {},
     };

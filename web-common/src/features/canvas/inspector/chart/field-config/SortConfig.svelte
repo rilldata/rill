@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import DraggableList from "@rilldata/web-common/components/draggable-list";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
@@ -73,7 +74,7 @@
 
 {#if sortConfig?.enable}
   <div class="py-1 flex items-center justify-between">
-    <span class="text-xs">Sort</span>
+    <span class="text-xs">{m.canvas_sort()}</span>
     <div class="flex items-center gap-x-1">
       <Select
         size="sm"

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import { getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
@@ -105,7 +106,7 @@
       bgClass="bg-surface-background"
     >
       <Cell
-        label="Filter dimension value"
+        label={m.dashboard_filter_dimension_value()}
         positionStatic
         {row}
         column={{ start: 0, size: width }}

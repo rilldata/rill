@@ -21,6 +21,7 @@
   import { DEFAULT_NAV_WIDTH, MAX_NAV_WIDTH, MIN_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   // When false, hides the footer (version info, links, traffic light).
   // Used in cloud editing where the footer isn't relevant.
@@ -148,13 +149,13 @@
                 className="text-fg-secondary transition-transform {!showConnectors &&
                   '-rotate-90'}"
               />
-              <h3 class="text-fg-muted">Data Explorer</h3>
+              <h3 class="text-fg-muted">{m.nav_data_explorer()}</h3>
             </button>
 
             <div
               class="connector-wrapper"
               role="region"
-              aria-label="Data explorer"
+              aria-label={m.nav_data_explorer()}
               bind:this={connectorWrapper}
               style:height="{showConnectors ? connectorSectionHeight : 0}px"
             >

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Code2, Database } from "lucide-svelte";
   import { isLikelyView as checkIsLikelyView } from "./utils";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let isView: boolean | undefined;
   export let physicalSizeBytes: string | number | undefined;
@@ -17,7 +18,7 @@
         : 'bg-emerald-600/15 text-emerald-600'}"
     >
       <svelte:component this={likelyView ? Code2 : Database} size="12px" />
-      {likelyView ? "View" : "Table"}
+      {likelyView ? m.status_view_singular() : m.status_table_singular()}
     </span>
   </div>
 {/if}

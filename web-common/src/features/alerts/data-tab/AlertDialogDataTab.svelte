@@ -1,6 +1,7 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
@@ -38,7 +39,7 @@
   $: dimensionOptions = [
     {
       value: "",
-      label: "None",
+      label: m.alert_form_data_none(),
     },
     ...($metricsView.data?.dimensions?.map((d) => ({
       value: d.name as string,
@@ -50,32 +51,32 @@
 </script>
 
 <div class="flex flex-col gap-y-3">
-  <FormSection title="Filters">
+  <FormSection title={m.alert_form_data_filters()}>
     <FiltersForm {filters} {timeControls} maxWidth={750} />
   </FormSection>
   <FormSection
-    description="Select the measures you want to monitor."
-    title="Alert data"
+    description={m.alert_form_data_measures_desc()}
+    title={m.alert_form_data_title()}
   >
     <Select
       bind:value={$form["measure"]}
       id="measure"
-      label="Measure"
+      label={m.alert_form_data_measure()}
       options={measureOptions}
-      placeholder="Select a measure"
+      placeholder={m.alert_form_data_measure_placeholder()}
     />
     <Select
       bind:value={$form["splitByDimension"]}
       id="splitByDimension"
-      label="Split by dimension"
+      label={m.alert_form_data_split_by()}
       optional
       options={dimensionOptions}
-      placeholder="Select a dimension"
+      placeholder={m.alert_form_data_split_placeholder()}
     />
   </FormSection>
   <FormSection
-    title="Data preview"
-    description="Here’s a look at the data you’ve selected above."
+    title={m.alert_form_data_preview()}
+    description={m.alert_form_data_preview_desc()}
   >
     <DataPreview formValues={$form} {filters} {timeControls} />
   </FormSection>

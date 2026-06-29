@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { ArrowLeftRight } from "lucide-svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
@@ -64,7 +65,10 @@
 >
   {#if !addDisabled || !isSpreadEvenly || isDropZone}
     <button
-      aria-label="Resize row {rowIndex + 1} column {resizeIndex + 1}"
+      aria-label={m.canvas_resize_aria({
+        row: String(rowIndex + 1),
+        col: String(resizeIndex + 1),
+      })}
       disabled={resizeDisabled}
       data-width={columnWidth}
       data-row={rowIndex}
@@ -125,7 +129,7 @@
           </button>
 
           <TooltipContent slot="tooltip-content" side="bottom">
-            Evenly distribute widgets
+            {m.canvas_evenly_distribute()}
           </TooltipContent>
         </Tooltip>
       {/if}

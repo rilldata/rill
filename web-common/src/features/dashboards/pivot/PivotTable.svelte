@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
   import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
@@ -173,7 +174,9 @@
   $: clickToFilterEnabled = enableClickToFilter && !!onCellClickToFilter;
   function getCustomShortcuts(rowHeader: boolean) {
     if (clickToFilterEnabled) {
-      return [{ description: "Filter by this value", shortcut: "Click" }];
+      return [
+        { description: m.dashboard_filter_by_value(), shortcut: "Click" },
+      ];
     }
     if (canShowDataViewer && !rowHeader) {
       return [

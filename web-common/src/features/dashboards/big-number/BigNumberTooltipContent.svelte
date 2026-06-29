@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -31,10 +32,12 @@
 
   <TooltipShortcutContainer>
     <div>
-      <StackingWord key="shift">Copy</StackingWord> this value to clipboard
+      <StackingWord key="shift">{m.chart_copy_to_clipboard()}</StackingWord>
+      {m.bignumber_copy_value()}
     </div>
     <Shortcut>
-      <span style="font-family: var(--system);">⇧</span> + Click
+      <span style="font-family: var(--system);">⇧</span>
+      {m.bignumber_shift_click()}
     </Shortcut>
   </TooltipShortcutContainer>
 </TooltipContent>

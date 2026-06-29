@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { AlertTriangleIcon, Copy } from "lucide-svelte";
 
   export let message: string | undefined;
@@ -14,11 +15,11 @@
         {...props}
         type="button"
         class="inline-flex items-center gap-1 text-fg-secondary text-xs"
-        aria-label="An error occurred. Hover for details."
+        aria-label={m.dashboard_error_occurred_hover()}
       >
         <AlertTriangleIcon class="text-red-500" size="16px" />
         {#if !compact}
-          <span>An error occurred</span>
+          <span>{m.dashboard_error_occurred()}</span>
         {/if}
       </button>
     {/snippet}
@@ -29,15 +30,16 @@
       <div
         class="text-fg-inverse whitespace-pre-wrap break-words max-h-60 overflow-auto text-xs font-mono"
       >
-        {message || "No additional details available."}
+        {message || m.dashboard_no_additional_details()}
       </div>
       {#if message}
         <button
           type="button"
           class="shrink-0 p-1 rounded hover:bg-white/10 transition-colors text-fg-inverse"
-          on:click={() => copyToClipboard(message, "Copied error to clipboard")}
-          title="Copy error to clipboard"
-          aria-label="Copy error to clipboard"
+          on:click={() =>
+            copyToClipboard(message, m.dashboard_copied_error_clipboard())}
+          title={m.dashboard_copy_error_clipboard()}
+          aria-label={m.dashboard_copy_error_clipboard()}
         >
           <Copy size="14px" />
         </button>

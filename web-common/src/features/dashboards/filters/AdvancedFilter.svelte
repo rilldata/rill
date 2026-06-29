@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
@@ -13,11 +14,11 @@
 >
   <Tooltip.Root>
     <Tooltip.Trigger>
-      <span class="font-bold mr-1">Advanced (BETA)</span>
+      <span class="font-bold mr-1">{m.filter_advanced_beta()}</span>
       <span>{filterText}</span>
     </Tooltip.Trigger>
     <Tooltip.Content sideOffset={8}>
-      Advanced filters are a bleeding edge feature! There may be bugs.
+      {m.filter_advanced_warning()}
     </Tooltip.Content>
   </Tooltip.Root>
 </div>

@@ -5,7 +5,7 @@ import {
   getLinkStateForTimeDimensionDetail,
 } from "@rilldata/web-common/features/canvas/components/charts/util";
 import {
-  commonOptions,
+  getCommonOptions,
   createComponent,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
@@ -40,6 +40,8 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 import Chart from "./CanvasChart.svelte";
+
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 
 // Base interface for all chart configurations
 export type BaseChartConfig = ComponentFilterProperties &
@@ -83,11 +85,15 @@ export abstract class BaseChart<
   inputParams(): InputParams<TConfig> {
     return {
       options: {
-        metrics_view: { type: "metrics", label: "Metrics view" },
-        tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
+        metrics_view: { type: "metrics", label: m.canvas_metrics_view_label() },
+        tooltip: {
+          type: "tooltip",
+          label: m.canvas_tooltip_label(),
+          showInUI: false,
+        },
         vl_config: { type: "config", showInUI: false },
         ...this.getChartSpecificOptions(),
-        ...commonOptions,
+        ...getCommonOptions(),
       },
       filter: getFilterOptions(this.supportsComparison()),
     };

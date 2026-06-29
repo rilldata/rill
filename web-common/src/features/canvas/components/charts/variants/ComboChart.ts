@@ -32,6 +32,8 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
+import * as m from "@rilldata/web-common/paraglide/messages.js";
+
 export type ComboCanvasChartSpec = BaseChartConfig & ComboChartSpecBase;
 
 const DEFAULT_NOMINAL_LIMIT = 20;
@@ -40,72 +42,77 @@ const DEFAULT_SORT = ChartSortType.Y_DESC;
 export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
   private provider: ComboChartProvider;
 
-  static chartInputParams: Record<string, ComponentInputParam> = {
-    x: {
-      type: "positional",
-      label: "X-axis",
-      meta: {
-        chartFieldInput: {
-          type: "dimension",
-          axisTitleSelector: true,
-          sortSelector: {
-            enable: true,
-            defaultSort: DEFAULT_SORT,
-            options: [
-              ChartSortType.X_ASC,
-              ChartSortType.X_DESC,
-              ChartSortType.Y_ASC,
-              ChartSortType.Y_DESC,
-              ChartSortType.CUSTOM,
-            ],
+  // Static getter (not a static field) so the localized labels inside resolve
+  // in the active locale at access time (render) rather than freezing to the
+  // locale active when this class was defined at module load.
+  static get chartInputParams(): Record<string, ComponentInputParam> {
+    return {
+      x: {
+        type: "positional",
+        label: m.canvas_x_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            axisTitleSelector: true,
+            sortSelector: {
+              enable: true,
+              defaultSort: DEFAULT_SORT,
+              options: [
+                ChartSortType.X_ASC,
+                ChartSortType.X_DESC,
+                ChartSortType.Y_ASC,
+                ChartSortType.Y_DESC,
+                ChartSortType.CUSTOM,
+              ],
+            },
+            limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
+            nullSelector: true,
+            labelAngleSelector: true,
           },
-          limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
-          nullSelector: true,
-          labelAngleSelector: true,
         },
       },
-    },
-    y1: {
-      type: "positional",
-      label: "Left Y-Axis",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          axisTitleSelector: true,
-          originSelector: true,
-          axisRangeSelector: true,
-          markTypeSelector: true,
+      y1: {
+        type: "positional",
+        label: m.canvas_left_y_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            axisTitleSelector: true,
+            originSelector: true,
+            axisRangeSelector: true,
+            markTypeSelector: true,
+          },
         },
       },
-    },
 
-    y2: {
-      type: "positional",
-      label: "Right Y-Axis",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          axisTitleSelector: true,
-          originSelector: true,
-          axisRangeSelector: true,
-          markTypeSelector: true,
+      y2: {
+        type: "positional",
+        label: m.canvas_right_y_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            axisTitleSelector: true,
+            originSelector: true,
+            axisRangeSelector: true,
+            markTypeSelector: true,
+          },
         },
       },
-    },
 
-    color: {
-      type: "mark",
-      label: "Color",
-      meta: {
-        type: "color",
-        chartFieldInput: {
-          type: "value",
-          defaultLegendOrientation: "top",
-          colorMappingSelector: { enable: true },
+      color: {
+        type: "mark",
+        label: m.canvas_color_label(),
+        meta: {
+          type: "color",
+          chartFieldInput: {
+            type: "value",
+            defaultLegendOrientation: "top",
+            colorMappingSelector: { enable: true },
+          },
         },
       },
-    },
-  };
+    };
+  }
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);

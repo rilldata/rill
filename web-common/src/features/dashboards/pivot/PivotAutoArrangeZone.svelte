@@ -1,6 +1,7 @@
 <script lang="ts">
   import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
   import { modifierHeld } from "@rilldata/web-common/lib/modifier-key";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { slide } from "svelte/transition";
   import { dragDataStore } from "./DragList.svelte";
   import type { PivotChipData } from "./types";
@@ -61,25 +62,36 @@
       onmouseleave={() => (hover = false)}
       onmouseup={handleDrop}
       aria-label={$modifierHeld
-        ? "Drop here to replace rows and columns with this tag"
-        : "Drop here to auto-arrange tag"}
+        ? m.pivot_drop_replace_aria()
+        : m.pivot_drop_arrange_aria()}
     >
       {#if $modifierHeld}
-        Drop to <strong>replace</strong>:
-        <strong>{dragData.tagPayload.dimensions.length}</strong>
-        {dragData.tagPayload.dimensions.length === 1 ? "dim" : "dims"}
-        → rows,
-        <strong>{dragData.tagPayload.measures.length}</strong>
-        {dragData.tagPayload.measures.length === 1 ? "measure" : "measures"}
-        → columns
+        {@html m.pivot_drop_replace_text({
+          dimCount: String(dragData.tagPayload.dimensions.length),
+          dimLabel:
+            dragData.tagPayload.dimensions.length === 1
+              ? m.pivot_dim_one()
+              : m.pivot_dim_other(),
+          measureCount: String(dragData.tagPayload.measures.length),
+          measureLabel:
+            dragData.tagPayload.measures.length === 1
+              ? m.pivot_measure_one()
+              : m.pivot_measure_other(),
+        })}
       {:else}
-        Drop here to split:
-        <strong>{dragData.tagPayload.dimensions.length}</strong>
-        {dragData.tagPayload.dimensions.length === 1 ? "dim" : "dims"}
-        → rows,
-        <strong>{dragData.tagPayload.measures.length}</strong>
-        {dragData.tagPayload.measures.length === 1 ? "measure" : "measures"}
-        → columns (<span class="kbd">⌘</span> + Drop to replace)
+        {@html m.pivot_drop_split_text({
+          dimCount: String(dragData.tagPayload.dimensions.length),
+          dimLabel:
+            dragData.tagPayload.dimensions.length === 1
+              ? m.pivot_dim_one()
+              : m.pivot_dim_other(),
+          measureCount: String(dragData.tagPayload.measures.length),
+          measureLabel:
+            dragData.tagPayload.measures.length === 1
+              ? m.pivot_measure_one()
+              : m.pivot_measure_other(),
+        })}
+        (<span class="kbd">⌘</span> + {m.pivot_drop_split_hint()})
       {/if}
     </div>
   </div>

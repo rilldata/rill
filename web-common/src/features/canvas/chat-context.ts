@@ -10,14 +10,14 @@ import { getCanvasNameStore } from "@rilldata/web-common/features/dashboards/nav
 import { derived, type Readable } from "svelte/store";
 import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 
 export function createCanvasChatConfig(client: RuntimeClient): ChatConfig {
   return {
     agent: ToolName.ANALYST_AGENT,
     additionalContextStoreGetter: () => getActiveCanvasContext(client),
-    emptyChatLabel: "Happy to help explore your data",
-    placeholder:
-      "Type a question, or press @ to insert a metric, dimension, or measure.",
+    emptyChatLabel: m.chat_happy_to_explore(),
+    placeholder: m.chat_placeholder_analyst(),
     minChatHeight: "min-h-[4rem]",
   };
 }

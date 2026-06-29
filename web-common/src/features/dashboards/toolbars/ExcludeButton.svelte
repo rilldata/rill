@@ -6,6 +6,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let excludeMode: boolean;
   export let onClick: () => void;
@@ -16,17 +17,23 @@
 <Tooltip distance={8} location="top">
   <Button type="toolbar" {onClick}>
     <Switch checked={excludeMode} small />
-    <p>Exclude</p>
+    <p>{m.dashboard_exclude()}</p>
   </Button>
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>
       <svelte:fragment slot="name">
-        Output {getMode(excludeMode)}s selected values
+        {excludeMode
+          ? m.dashboard_output_excludes()
+          : m.dashboard_output_includes()}
       </svelte:fragment>
     </TooltipTitle>
     <TooltipShortcutContainer>
-      <div>Toggle to {getMode(!excludeMode)} values</div>
-      <Shortcut>Click</Shortcut>
+      <div>
+        {excludeMode
+          ? m.dashboard_toggle_include()
+          : m.dashboard_toggle_exclude()}
+      </div>
+      <Shortcut>{m.footer_shortcut_click()}</Shortcut>
     </TooltipShortcutContainer>
   </TooltipContent>
 </Tooltip>

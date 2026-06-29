@@ -11,6 +11,7 @@
     MetricsViewSpecMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { getMeasureDisplayName } from "./getDisplayName";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let allDimensions: MetricsViewSpecDimension[];
   export let filteredSimpleMeasures: MetricsViewSpecMeasure[];
@@ -24,7 +25,7 @@
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
-      name: "DIMENSIONS",
+      name: m.filter_dimensions(),
       items:
         allDimensions
           ?.map((d) => ({
@@ -34,7 +35,7 @@
           .filter((d) => !dimensionHasFilter(d.name)) ?? [],
     },
     <SearchableFilterSelectableGroup>{
-      name: "MEASURES",
+      name: m.filter_measures(),
       items:
         filteredSimpleMeasures
           ?.map((m) => ({
@@ -54,11 +55,13 @@
           {...props}
           class:addBorder
           class:active={open}
-          aria-label="Add filter button"
+          aria-label={m.dashboard_add_filter_button()}
         >
           <Add size="17px" />
         </button>
-        <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
+        <TooltipContent slot="tooltip-content"
+          >{m.dashboard_add_filter()}</TooltipContent
+        >
       </Tooltip>
     {/snippet}
   </DropdownMenu.Trigger>
