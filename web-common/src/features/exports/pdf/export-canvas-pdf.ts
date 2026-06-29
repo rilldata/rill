@@ -30,13 +30,18 @@ export async function exportCanvasPdf(
   // Mount the off-screen capture header (see CanvasPdfExportHeader); the tick()
   // inside prepareCanvasForCapture flushes it into the DOM before we capture.
   canvasPdfExportActive.set(true);
+  let restoreVisibility: (() => void) | undefined;
 
   try {
     opts.onProgress?.({ phase: "preparing", ratio: 0 });
-    await prepareCanvasForCapture(canvasEntity, queryClient, {
-      instanceId: opts.instanceId,
-      timeoutMs: opts.timeoutMs,
-    });
+    restoreVisibility = await prepareCanvasForCapture(
+      canvasEntity,
+      queryClient,
+      {
+        instanceId: opts.instanceId,
+        timeoutMs: opts.timeoutMs,
+      },
+    );
     opts.onProgress?.({ phase: "preparing", ratio: 1 });
 
     const { blocks, contentWidthPx, backgroundColor } =
@@ -68,6 +73,7 @@ export async function exportCanvasPdf(
     });
     opts.onProgress?.({ phase: "assembling", ratio: 1 });
   } finally {
+    restoreVisibility?.();
     canvasPdfExportActive.set(false);
     if (scrollContainer) scrollContainer.scrollTop = scrollTop;
   }

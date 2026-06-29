@@ -2,6 +2,7 @@ import type { QueryClient, QueryKey } from "@tanstack/svelte-query";
 import { get, type Readable } from "svelte/store";
 import { tick } from "svelte";
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 
 const DEFAULT_TIMEOUT_MS = 60_000;
 
@@ -77,17 +78,28 @@ export function isCanvasExportQuery(
 // Forces every canvas component to render (bypassing the IntersectionObserver
 // lazy-load), then waits for the canvas, its data, and fonts to settle so the
 // DOM is ready to be rasterized. Best-effort: returns even on timeout.
+//
+// Returns a function that restores each component's prior `visible` value.
+// `visible` gates component queries, so without this an export would leave every
+// below-the-fold component permanently visible, keeping their queries active on
+// later filter/time changes. The IntersectionObserver keeps observing the
+// restored-hidden components, so lazy-load still kicks in when they scroll in.
 export async function prepareCanvasForCapture(
   canvasEntity: CanvasEntity,
   queryClient: QueryClient,
   opts: { instanceId: string; timeoutMs?: number },
-): Promise<void> {
+): Promise<() => void> {
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   // Force-render all components; idempotent with the IntersectionObserver.
+  const previouslyHidden: BaseCanvasComponent[] = [];
   for (const component of canvasEntity.componentsStore.read().values()) {
+    if (!get(component.visible)) previouslyHidden.push(component);
     component.visible.set(true);
   }
+  const restoreVisibility = () => {
+    for (const component of previouslyHidden) component.visible.set(false);
+  };
 
   await tick();
   await raf();
@@ -105,4 +117,6 @@ export async function prepareCanvasForCapture(
   // Give Vega/canvas renderers a couple of frames to flush their final paint.
   await raf();
   await raf();
+
+  return restoreVisibility;
 }

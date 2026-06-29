@@ -23,6 +23,9 @@
   };
 
   async function onExport() {
+    // Guard against re-entry: the button shows a spinner while exporting but
+    // stays clickable, and overlapping exports share one capture header.
+    if (exporting) return;
     exporting = true;
     progressLabel = PROGRESS_COPY.preparing;
     try {
