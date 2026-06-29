@@ -36,9 +36,6 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
 
-      - name: Build i18n files
-        run: npm run build:i18n
-
       - name: Web code quality checks
         run: bash ./scripts/web-test-code-quality.sh
         env:
