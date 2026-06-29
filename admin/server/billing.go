@@ -928,7 +928,7 @@ func (s *Server) SudoReportUsage(ctx context.Context, req *adminv1.SudoReportUsa
 	}
 
 	return &adminv1.SudoReportUsageResponse{
-		CustomerId: org.ID,
+		CustomerId: customerID,
 		EventName:  req.EventName,
 		Value:      req.Value,
 		StartTime:  timestamppb.New(usage.StartTime),
