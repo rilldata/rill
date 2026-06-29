@@ -11,6 +11,7 @@
   export let addIndex: number;
   export let rowLength: number;
   export let rowIndex: number;
+  export let zoneScope = "canvas";
   export let columnWidth: number | undefined = undefined;
   export let isSpreadEvenly: boolean;
   export let dragging: boolean;
@@ -27,11 +28,11 @@
   $: firstElement = addIndex === 0;
   $: lastElement = addIndex === rowLength;
 
-  $: dividerId = `row:${rowIndex}::column:${resizeIndex}`;
+  $: dividerId = `${zoneScope}::row:${rowIndex}::column:${resizeIndex}`;
 
   $: isActiveDivider = $activeDivider === dividerId;
 
-  $: dropId = `row:${rowIndex}::column:${addIndex}`;
+  $: dropId = `${zoneScope}::row:${rowIndex}::column:${addIndex}`;
   $: isDropZone = $dropZone === dropId;
 
   $: notActiveDivider = !isActiveDivider && !!$activeDivider;

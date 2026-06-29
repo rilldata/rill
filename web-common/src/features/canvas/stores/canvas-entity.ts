@@ -9,6 +9,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   V1ExploreComparisonMode,
   type V1CanvasPreset,
+  type V1CanvasRow,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsView,
@@ -39,17 +40,29 @@ import {
 import { FilterManager, flattenExpression } from "./filter-manager";
 import { getFilterParam } from "./filter-state";
 import { Grid } from "./grid";
+import { TabGroup, type LayoutBlock } from "./tab-group";
 import { getComparisonTypeFromRangeString } from "./time-state";
 import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
+import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
 
 export const lastVisitedState = new Map<string, string>();
+
+// URL param encoding each tab group's active tab as comma-separated `tabgroup_name.tab_name`
+// references, e.g. `?tabs=deep_dive.detail,financials.costs`.
+export const CANVAS_TABS_URL_PARAM = "tabs";
+
+// Encode a group or tab name for the `tabs` URL param. encodeURIComponent already escapes the
+// "," pair delimiter; we additionally escape "." so a name can't be confused with the
+// "group.tab" separator. decodeURIComponent restores both on read.
+function encodeTabKey(name: string): string {
+  return encodeURIComponent(name).replace(/\./g, "%2E");
+}
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
@@ -68,6 +81,11 @@ export type SearchParamsStore = {
 export class CanvasEntity {
   componentsStore = createCustomMapStore<BaseCanvasComponent>();
   _rows: Grid = new Grid(this);
+  // Ordered list of top-level layout blocks (plain rows and tab groups).
+  // For untabbed canvases this mirrors _rows one-to-one; tab groups are rendered from here.
+  layout = writable<LayoutBlock[]>([]);
+  // Tab groups keyed by their stable name, reused across spec updates so active-tab state survives.
+  private tabGroups = new Map<string, TabGroup>();
 
   // Time state controls
   timeManager: TimeManager;
@@ -82,6 +100,9 @@ export class CanvasEntity {
 
   selectedComponent = writable<string | null>(null);
   activeComponent = writable<string | null>(null);
+  // Name of the tab group currently selected for editing (drives the tab-group inspector
+  // panel). Mutually exclusive with selectedComponent.
+  selectedTabGroup = writable<string | null>(null);
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   public specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
@@ -510,6 +531,7 @@ export class CanvasEntity {
     this.searchParams.set(searchParams);
     this.saveSnapshot(searchParams.toString());
     this.timeManager.state.onUrlChange(searchParams);
+    this.applyTabsFromURL();
   };
 
   // Resubscribes to the spec store. Internal call to processSpec will recreate the components.
@@ -618,8 +640,10 @@ export class CanvasEntity {
     const component = this.componentsStore.getNonReactive(id);
     if (!component) return;
     const { pathInYAML, type, resource } = component;
-    const [, rowIndex, , columnIndex] = pathInYAML;
-    const path = constructPath(rowIndex, columnIndex, type);
+    const { row: rowIndex, col: columnIndex } = rowColFromPath(pathInYAML);
+    // Preserve any tab/group prefix so the duplicate lands in the same container.
+    const prefix = pathInYAML.slice(0, -4);
+    const path = constructPath(rowIndex, columnIndex, type, prefix);
 
     const existingResource = get(resource);
 
@@ -644,6 +668,7 @@ export class CanvasEntity {
       column: columnIndex,
       metricsViewName,
       metricsViewSpec,
+      namePrefix: namePrefixFromPath(pathInYAML),
     });
 
     const newComponent = createComponent(newResource, this, path);
@@ -659,50 +684,71 @@ export class CanvasEntity {
     if (!rows) return;
 
     const set = new Set<string>();
-
     let createdNewComponent = false;
     const isFirstLoad = get(this.firstLoad);
 
-    rows.forEach((row, rowIndex) => {
-      const items = row.items ?? [];
-
-      items.forEach((item, columnIndex) => {
-        const componentName = item.component;
-
-        if (!componentName) return;
-
-        set.add(componentName ?? "");
-
-        const newResource = newComponents?.[componentName];
-        if (!newResource) {
-          throw new Error("No component found: " + componentName);
+    // Create/update component instances for a list of rows, descending into tab groups.
+    // The prefix is the YAML path at which the rows live (top level is ["rows"]).
+    const processRowItems = (
+      rowList: V1CanvasRow[],
+      prefix: (string | number)[],
+    ) => {
+      rowList.forEach((row, rowIndex) => {
+        if (row.tabGroup) {
+          // The spec uses the proto shape (row.tabGroup.tabs), but the YAML path
+          // omits the tab_group wrapper (row.tabs[t].rows) — see parser canvasRowYAML.
+          row.tabGroup.tabs?.forEach((tab, tabIndex) => {
+            processRowItems(tab.rows ?? [], [
+              ...prefix,
+              rowIndex,
+              "tabs",
+              tabIndex,
+              "rows",
+            ]);
+          });
+          return;
         }
 
-        const newType = (newResource.component?.state?.validSpec?.renderer ??
-          (this.allowUnvalidatedSpec
-            ? newResource.component?.spec?.renderer
-            : undefined)) as CanvasComponentType;
-        const existingClass =
-          this.componentsStore.getNonReactive(componentName);
-        const path = constructPath(rowIndex, columnIndex, newType);
+        const items = row.items ?? [];
+        items.forEach((item, columnIndex) => {
+          const componentName = item.component;
+          if (!componentName) return;
 
-        if (existingClass && areSameType(newType, existingClass.type)) {
-          existingClass.update(newResource, path);
-        } else {
-          createdNewComponent = true;
-          // Tear down the replaced instance's spec subscription before
-          // overwriting it, otherwise the orphan keeps mutating shared
-          // filter/time state.
-          existingClass?.destroy();
-          this.componentsStore.set(
-            componentName,
-            createComponent(newResource, this, path),
-          );
-        }
+          set.add(componentName);
+
+          const newResource = newComponents?.[componentName];
+          if (!newResource) {
+            throw new Error("No component found: " + componentName);
+          }
+
+          const newType = (newResource.component?.state?.validSpec?.renderer ??
+            (this.allowUnvalidatedSpec
+              ? newResource.component?.spec?.renderer
+              : undefined)) as CanvasComponentType;
+          const existingClass =
+            this.componentsStore.getNonReactive(componentName);
+          const path = constructPath(rowIndex, columnIndex, newType, prefix);
+
+          if (existingClass && areSameType(newType, existingClass.type)) {
+            existingClass.update(newResource, path);
+          } else {
+            createdNewComponent = true;
+            // Tear down the replaced instance's spec subscription before
+            // overwriting it, otherwise the orphan keeps mutating shared
+            // filter/time state.
+            existingClass?.destroy();
+            this.componentsStore.set(
+              componentName,
+              createComponent(newResource, this, path),
+            );
+          }
+        });
       });
-    });
+    };
 
-    const didUpdateRowCount = this._rows.updateFromCanvasRows(rows);
+    processRowItems(rows, ["rows"]);
+
+    const didUpdateRowCount = this.processLayout(rows);
 
     existingKeys.difference(set).forEach((componentName) => {
       const component = this.componentsStore.getNonReactive(componentName);
@@ -722,8 +768,113 @@ export class CanvasEntity {
     this.selectedComponent.update(($) => $);
   };
 
-  generateId = (row: number | undefined, column: number | undefined) => {
-    return `${this.name}--component-${row ?? 0}-${column ?? 0}`;
+  // Build the ordered list of layout blocks (plain rows and tab groups) from the spec,
+  // and sync the underlying grids: _rows holds the top-level plain rows (in order),
+  // while each tab group owns a grid per tab.
+  private processLayout = (rows: V1CanvasRow[]): boolean => {
+    const freeRows: V1CanvasRow[] = [];
+    const blocks: LayoutBlock[] = [];
+    const seenGroupNames = new Set<string>();
+
+    rows.forEach((row, rowIndex) => {
+      if (row.tabGroup) {
+        const name = row.tabGroup.name ?? `group-${rowIndex}`;
+        let group = this.tabGroups.get(name);
+        if (!group) {
+          group = new TabGroup(this, name);
+          this.tabGroups.set(name, group);
+        }
+        group.updateFromSpec(name, row.tabGroup.tabs ?? [], rowIndex);
+        seenGroupNames.add(name);
+        blocks.push({ kind: "tab-group", rowIndex, group });
+      } else {
+        blocks.push({ kind: "row", rowIndex, freeRowIndex: freeRows.length });
+        freeRows.push(row);
+      }
+    });
+
+    // Drop tab groups that no longer exist in the spec.
+    for (const name of [...this.tabGroups.keys()]) {
+      if (!seenGroupNames.has(name)) this.tabGroups.delete(name);
+    }
+
+    const didUpdateRowCount = this._rows.updateFromCanvasRows(freeRows);
+    this.layout.set(blocks);
+
+    // In view mode, spec updates follow the URL. In the editor, URL changes are
+    // applied in onUrlChange so spec churn from YAML edits does not reset local tab state.
+    if (!this.allowUnvalidatedSpec) {
+      this.applyTabsFromURL();
+    }
+
+    return didUpdateRowCount;
+  };
+
+  // Read the `tabs` URL param (group:tab pairs) and apply it to the matching tab groups.
+  // Groups absent from the param are reset to their first tab so back/forward navigation
+  // restores tab state symmetrically (a removed pair means "first tab").
+  applyTabsFromURL = () => {
+    if (typeof window === "undefined") return;
+    const param = new URLSearchParams(window.location.search).get(
+      CANVAS_TABS_URL_PARAM,
+    );
+
+    const active = new Map<string, string>();
+    if (param) {
+      for (const pair of param.split(",")) {
+        // Split on the first "." into group and tab; both parts are encoded on write so any
+        // "." / "," in a name is escaped and won't be mistaken for a delimiter.
+        const sep = pair.indexOf(".");
+        if (sep === -1) continue;
+        const groupName = decodeURIComponent(pair.slice(0, sep));
+        const tabName = decodeURIComponent(pair.slice(sep + 1));
+        if (groupName && tabName) active.set(groupName, tabName);
+      }
+    }
+
+    this.tabGroups.forEach((group, name) => {
+      const tabName = active.get(name);
+      if (tabName) group.setActiveByName(tabName);
+      // In view mode, a group absent from the param is reset to its first tab so back/forward
+      // restores state symmetrically. In edit mode the active tab is editor-local (driven by
+      // clicks), so don't reset it here — doing so on every URL change fought direct selection.
+      else if (!this.allowUnvalidatedSpec) group.activeTabIndex.set(0);
+    });
+  };
+
+  // Select a tab in a group and reflect every group's active tab in the URL.
+  // Groups left on their first tab are omitted to keep the URL short.
+  setActiveTabInURL = (groupName: string, tabName: string) => {
+    const group = this.tabGroups.get(groupName);
+    if (group) group.setActiveByName(tabName);
+
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const pairs: string[] = [];
+    this.tabGroups.forEach((g, name) => {
+      const index = get(g.activeTabIndex);
+      const tab = get(g.tabs)[index];
+      // Reference the active tab as `tabgroup_name.tab_name`, encoding each part.
+      if (tab && index > 0) {
+        pairs.push(`${encodeTabKey(name)}.${encodeTabKey(tab.name)}`);
+      }
+    });
+
+    if (pairs.length) params.set(CANVAS_TABS_URL_PARAM, pairs.join(","));
+    else params.delete(CANVAS_TABS_URL_PARAM);
+
+    goto(`?${params.toString()}`, { replaceState: true }).catch(console.error);
+  };
+
+  // namePrefix disambiguates components nested in tabs (e.g. "g2-t0-") so they don't collide
+  // with top-level components at the same row/col. It mirrors layout-util's generateId and the
+  // parser's position key (see parse_canvas.go).
+  generateId = (
+    row: number | undefined,
+    column: number | undefined,
+    namePrefix = "",
+  ) => {
+    return `${this.name}--component-${namePrefix}${row ?? 0}-${column ?? 0}`;
   };
 
   createOptimisticResource = (options: {
@@ -733,8 +884,16 @@ export class CanvasEntity {
     metricsViewName: string;
     metricsViewSpec: V1MetricsViewSpec | undefined;
     spec?: ComponentSpec;
+    namePrefix?: string;
   }): V1Resource => {
-    const { type, row, column, metricsViewName, metricsViewSpec } = options;
+    const {
+      type,
+      row,
+      column,
+      metricsViewName,
+      metricsViewSpec,
+      namePrefix = "",
+    } = options;
 
     const spec =
       options.spec ??
@@ -746,7 +905,7 @@ export class CanvasEntity {
     return {
       meta: {
         name: {
-          name: this.generateId(row, column),
+          name: this.generateId(row, column, namePrefix),
           kind: ResourceKind.Component,
         },
       },
@@ -767,18 +926,35 @@ export class CanvasEntity {
     };
   };
 
+  // Inspector inputs (component title/description, tab name/display name) commit their value
+  // on blur. The elements that change the selection (canvas components, tab strip) are not
+  // focusable in a way that blurs the input first, so the pending edit would otherwise be lost
+  // or applied to the newly-selected target. Blurring the active element synchronously runs the
+  // input's onBlur — which writes the edit to the editor content — before the selection changes
+  // or the inspector panel unmounts. This is a single commit point for all blur-committed inputs.
+  private commitPendingInspectorEdit = () => {
+    if (typeof document === "undefined") return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+  };
+
   setSelectedComponent = (id: string | null) => {
-    // Inspector inputs commit their value on blur. Canvas component elements are
-    // not focusable, so clicking another component never blurs the focused input,
-    // which would otherwise apply the pending edit to the newly-selected component.
-    // Blur the active element first so the edit commits against the component that
-    // is still selected, before we switch.
-    if (id !== get(this.selectedComponent) && typeof document !== "undefined") {
-      const active = document.activeElement;
-      if (active instanceof HTMLElement) active.blur();
-    }
+    if (id !== get(this.selectedComponent)) this.commitPendingInspectorEdit();
+    // Selecting a component takes over the inspector from any selected tab group.
+    if (id) this.selectedTabGroup.set(null);
     this.selectedComponent.set(id);
   };
+
+  // Select a tab group for editing (opens the tab-group inspector panel). Clears any
+  // selected component so the two never fight over the inspector.
+  setSelectedTabGroup = (name: string | null) => {
+    if (name !== get(this.selectedTabGroup)) this.commitPendingInspectorEdit();
+    if (name) this.selectedComponent.set(null);
+    this.selectedTabGroup.set(name);
+  };
+
+  // Look up a tab group by its stable name (for the inspector panel).
+  getTabGroup = (name: string) => this.tabGroups.get(name);
 
   setActiveComponent = (id: string) => {
     this.activeComponent.set(id);
@@ -794,20 +970,31 @@ export class CanvasEntity {
   };
 }
 
-export type ComponentPath = [
-  "rows",
-  number,
-  "items",
-  number,
-  CanvasComponentType,
-];
+// A YAML path to a component's renderer block. For a top-level row it looks like
+// ["rows", row, "items", col, type]; for a row nested in a tab it is prefixed, e.g.
+// ["rows", b, "tabs", t, "rows", row, "items", col, type] (the YAML omits the proto's
+// tab_group wrapper). The path always ends with [..., "rows", row, "items", col, type],
+// so row/col are read from the end.
+export type ComponentPath = (string | number)[];
 
 function constructPath(
   row: number,
   column: number,
   type: CanvasComponentType,
+  prefix: (string | number)[] = ["rows"],
 ): ComponentPath {
-  return ["rows", row, "items", column, type];
+  return [...prefix, row, "items", column, type];
+}
+
+/** Extract the row and column indices from a component path, regardless of any tab prefix. */
+export function rowColFromPath(path: ComponentPath): {
+  row: number;
+  col: number;
+} {
+  return {
+    row: Number(path.at(-4)),
+    col: Number(path.at(-2)),
+  };
 }
 
 function areSameType(
