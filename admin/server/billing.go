@@ -1308,6 +1308,7 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 			StorageLimitBytesPerDeployment: val64OrEmptyString(plan.Quotas.StorageLimitBytesPerDeployment),
 			ApiCallsPerSeat:                valOrEmptyString(plan.Quotas.NumAPICallsPerSeat),
 			Seats:                          valOrEmptyString(plan.Quotas.NumSeats),
+			TokensPerSeat:                  valOrEmptyString(plan.Quotas.NumTokensPerSeat),
 		},
 	}
 }
