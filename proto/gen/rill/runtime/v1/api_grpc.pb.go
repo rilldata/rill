@@ -48,6 +48,7 @@ const (
 	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
 	RuntimeService_GetExplore_FullMethodName              = "/rill.runtime.v1.RuntimeService/GetExplore"
 	RuntimeService_GetModelPartitions_FullMethodName      = "/rill.runtime.v1.RuntimeService/GetModelPartitions"
+	RuntimeService_SkipModelPartitions_FullMethodName     = "/rill.runtime.v1.RuntimeService/SkipModelPartitions"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
@@ -141,6 +142,9 @@ type RuntimeServiceClient interface {
 	GetExplore(ctx context.Context, in *GetExploreRequest, opts ...grpc.CallOption) (*GetExploreResponse, error)
 	// GetModelPartitions returns the partitions of a model
 	GetModelPartitions(ctx context.Context, in *GetModelPartitionsRequest, opts ...grpc.CallOption) (*GetModelPartitionsResponse, error)
+	// SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+	// Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+	SkipModelPartitions(ctx context.Context, in *SkipModelPartitionsRequest, opts ...grpc.CallOption) (*SkipModelPartitionsResponse, error)
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
@@ -524,6 +528,16 @@ func (c *runtimeServiceClient) GetModelPartitions(ctx context.Context, in *GetMo
 	return out, nil
 }
 
+func (c *runtimeServiceClient) SkipModelPartitions(ctx context.Context, in *SkipModelPartitionsRequest, opts ...grpc.CallOption) (*SkipModelPartitionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkipModelPartitionsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_SkipModelPartitions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateTriggerResponse)
@@ -840,6 +854,9 @@ type RuntimeServiceServer interface {
 	GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error)
 	// GetModelPartitions returns the partitions of a model
 	GetModelPartitions(context.Context, *GetModelPartitionsRequest) (*GetModelPartitionsResponse, error)
+	// SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+	// Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+	SkipModelPartitions(context.Context, *SkipModelPartitionsRequest) (*SkipModelPartitionsResponse, error)
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
@@ -992,6 +1009,9 @@ func (UnimplementedRuntimeServiceServer) GetExplore(context.Context, *GetExplore
 }
 func (UnimplementedRuntimeServiceServer) GetModelPartitions(context.Context, *GetModelPartitionsRequest) (*GetModelPartitionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetModelPartitions not implemented")
+}
+func (UnimplementedRuntimeServiceServer) SkipModelPartitions(context.Context, *SkipModelPartitionsRequest) (*SkipModelPartitionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SkipModelPartitions not implemented")
 }
 func (UnimplementedRuntimeServiceServer) CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTrigger not implemented")
@@ -1587,6 +1607,24 @@ func _RuntimeService_GetModelPartitions_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_SkipModelPartitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkipModelPartitionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).SkipModelPartitions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_SkipModelPartitions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).SkipModelPartitions(ctx, req.(*SkipModelPartitionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_CreateTrigger_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateTriggerRequest)
 	if err := dec(in); err != nil {
@@ -2122,6 +2160,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetModelPartitions",
 			Handler:    _RuntimeService_GetModelPartitions_Handler,
+		},
+		{
+			MethodName: "SkipModelPartitions",
+			Handler:    _RuntimeService_SkipModelPartitions_Handler,
 		},
 		{
 			MethodName: "CreateTrigger",

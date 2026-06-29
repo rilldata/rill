@@ -5,9 +5,10 @@ import {
   inferSourceName,
   buildDuckDbQuery,
   maybeRewriteToDuckDb,
-  compileSourceYAML,
+  generateSourceYAML,
   prepareSourceFormData,
 } from "./sourceUtils";
+import { makeTestEnvEditSession } from "@rilldata/web-common/features/env-management/test/test-env-store.ts";
 
 const gcsTests = [
   {
@@ -328,12 +329,20 @@ describe("maybeRewriteToDuckDb", () => {
   });
 });
 
-describe("compileSourceYAML", () => {
-  it("should produce basic model YAML with SQL", () => {
+describe("generateSourceYAML", () => {
+  it("should produce basic model YAML with SQL", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(connector, {
-      sql: "SELECT * FROM events",
-    });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      {
+        sql: "SELECT * FROM events",
+      },
+      envEditSession,
+    );
     expect(result).toContain("# Model YAML");
     expect(result).toContain("type: model");
     expect(result).toContain("materialize: true");
@@ -342,124 +351,208 @@ describe("compileSourceYAML", () => {
     expect(result).toContain("  SELECT * FROM events");
   });
 
-  it("should replace secret properties with env var placeholders", () => {
+  it("should replace secret properties with env var placeholders", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
       connector,
       { password: "super_secret", sql: "SELECT 1" },
+      envEditSession,
       { secretKeys: ["password"] },
     );
     expect(result).toContain("{{ .env.CLICKHOUSE_PASSWORD }}");
     expect(result).not.toContain("super_secret");
   });
 
-  it("should quote string properties", () => {
+  it("should quote string properties", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
       connector,
       { host: "ch.example.com", sql: "SELECT 1" },
+      envEditSession,
       { stringKeys: ["host"] },
     );
     expect(result).toContain('host: "ch.example.com"');
   });
 
-  it("should not quote non-string properties", () => {
+  it("should not quote non-string properties", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(connector, {
-      port: 9000,
-      sql: "SELECT 1",
-    });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      {
+        port: 9000,
+        sql: "SELECT 1",
+      },
+      envEditSession,
+    );
     expect(result).toContain("port: 9000");
     expect(result).not.toContain('port: "9000"');
   });
 
-  it("should filter out empty string values", () => {
+  it("should filter out empty string values", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(connector, {
-      database: "",
-      sql: "SELECT 1",
-    });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      {
+        database: "",
+        sql: "SELECT 1",
+      },
+      envEditSession,
+    );
     expect(result).not.toContain("database:");
   });
 
-  it("should filter out undefined values", () => {
+  it("should filter out undefined values", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(connector, {
-      database: undefined,
-      sql: "SELECT 1",
-    });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      {
+        database: undefined,
+        sql: "SELECT 1",
+      },
+      envEditSession,
+    );
     expect(result).not.toContain("database:");
   });
 
-  it("should always exclude the name field", () => {
+  it("should always exclude the name field", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(connector, {
-      name: "my_source",
-      sql: "SELECT 1",
-    });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      {
+        name: "my_source",
+        sql: "SELECT 1",
+      },
+      envEditSession,
+    );
     expect(result).not.toContain("name: my_source");
   });
 
-  it("should include dev section for warehouse connectors", () => {
+  it("should include dev section for warehouse connectors", async () => {
     const connector: V1ConnectorDriver = {
       name: "clickhouse",
       implementsWarehouse: true,
     };
-    const result = compileSourceYAML(connector, {
-      sql: "SELECT * FROM events;",
-    });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      {
+        sql: "SELECT * FROM events;",
+      },
+      envEditSession,
+    );
     expect(result).toContain("dev:");
     expect(result).toContain("limit 10000");
     // Dev SQL should strip trailing semicolons
     expect(result).toContain("SELECT * FROM events limit 10000");
   });
 
-  it("should skip dev section for redshift", () => {
+  it("should skip dev section for redshift", async () => {
     const connector: V1ConnectorDriver = {
       name: "redshift",
       implementsWarehouse: true,
     };
-    const result = compileSourceYAML(connector, {
-      sql: "SELECT * FROM events",
-    });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      {
+        sql: "SELECT * FROM events",
+      },
+      envEditSession,
+    );
     expect(result).not.toContain("dev:");
   });
 
-  it("should skip dev section for non-warehouse connectors", () => {
+  it("should skip dev section for non-warehouse connectors", async () => {
     const connector: V1ConnectorDriver = {
       name: "duckdb",
       implementsWarehouse: false,
     };
-    const result = compileSourceYAML(connector, {
-      sql: "SELECT * FROM events",
-    });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      {
+        sql: "SELECT * FROM events",
+      },
+      envEditSession,
+    );
     expect(result).not.toContain("dev:");
   });
 
-  it("should skip dev section when no SQL", () => {
+  it("should skip dev section when no SQL", async () => {
     const connector: V1ConnectorDriver = {
       name: "clickhouse",
       implementsWarehouse: true,
     };
-    const result = compileSourceYAML(connector, { host: "ch.example.com" });
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
+      connector,
+      { host: "ch.example.com" },
+      envEditSession,
+    );
     expect(result).not.toContain("dev:");
   });
 
-  it("should use connectorInstanceName as connector value", () => {
+  it("should use connectorInstanceName as connector value", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
       connector,
       { sql: "SELECT 1" },
+      envEditSession,
       { connectorInstanceName: "clickhouse_prod" },
     );
     expect(result).toContain("connector: clickhouse_prod");
   });
 
-  it("should use originalDriverName in header comment", () => {
+  it("should use originalDriverName in header comment", async () => {
     const connector: V1ConnectorDriver = { name: "duckdb" };
-    const result = compileSourceYAML(
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+    );
+    const result = generateSourceYAML(
       connector,
       { sql: "SELECT 1" },
+      envEditSession,
       { originalDriverName: "s3" },
     );
     expect(result).toContain(
@@ -467,14 +560,20 @@ describe("compileSourceYAML", () => {
     );
   });
 
-  it("should handle env var conflict resolution with existingEnvBlob", () => {
+  it("should handle env var conflict resolution with existingEnvBlob", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const result = compileSourceYAML(
+    const { envEditSession } = await makeTestEnvEditSession(
+      connector.name,
+      undefined,
+      {},
+      { CLICKHOUSE_PASSWORD: "old_value" },
+    );
+    const result = generateSourceYAML(
       connector,
       { password: "secret", sql: "SELECT 1" },
+      envEditSession,
       {
         secretKeys: ["password"],
-        existingEnvBlob: "CLICKHOUSE_PASSWORD=old_value",
       },
     );
     expect(result).toContain("CLICKHOUSE_PASSWORD_1");

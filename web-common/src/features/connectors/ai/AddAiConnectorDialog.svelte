@@ -28,11 +28,14 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
+  import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
   export let open = false;
 
   const queryClient = useQueryClient();
   const runtimeClient = useRuntimeClient();
+  const envStore = getEnvFileStore();
 
   /** Expected API key prefixes per provider, used for soft validation. */
   const API_KEY_PREFIXES: Record<string, { prefix: string; label: string }> = {
@@ -65,6 +68,8 @@
   $: docsUrl = schemaName
     ? `https://docs.rilldata.com/developers/build/connectors/services/${getBackendConnectorName(schemaName)}`
     : "";
+
+  $: envEditSession = new EnvEditSession(envStore, schemaName, schema);
 
   // Soft validation: warn when the API key doesn't match the expected prefix
   $: apiKeyWarning = getApiKeyWarning(schemaName, apiKey);
@@ -134,9 +139,19 @@
     saving = true;
     error = "";
     try {
+      // Wait for the first .env pull so the edit session allocates names against
+      // the persisted secrets rather than an empty store, which would let the
+      // commit overwrite an existing secret instead of suffixing it.
+      await envStore.whenReady();
       const formValues: Record<string, string> = { api_key: apiKey };
       if (model) formValues.model = model;
-      await saveAiConnector(runtimeClient, queryClient, schemaName, formValues);
+      await saveAiConnector(
+        runtimeClient,
+        queryClient,
+        schemaName,
+        formValues,
+        envEditSession,
+      );
       behaviourEvent?.fireSourceTriggerEvent(
         BehaviourEventAction.SourceAdd,
         BehaviourEventMedium.Button,

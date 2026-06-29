@@ -45,6 +45,7 @@
     isInSelectedColRange,
   } from "./pivot-selection-indices";
   import { isShowMoreRow } from "./pivot-utils";
+  import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -454,6 +455,11 @@
               {#if !header.isPlaceholder}
                 {#if icon}
                   <svelte:component this={icon} />
+                {:else if !dimMeta?.dimensionPath && header.column.columnDef.header}
+                  <PivotHeaderLabel
+                    label={String(header.column.columnDef.header)}
+                    description={dimMeta?.description}
+                  />
                 {:else}
                   <p class="truncate">
                     {header.column.columnDef.header}

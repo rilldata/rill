@@ -482,6 +482,7 @@ The values should be valid IANA location identifiers. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
   requiredFilters?: string[];
+  annotations?: Record<string, string>;
 }
 
 export interface V1CanvasState {
@@ -1888,6 +1889,7 @@ export interface V1ModelPartition {
   executedOn?: string;
   error?: string;
   elapsedMs?: number;
+  skipped?: boolean;
 }
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
@@ -2206,6 +2208,8 @@ For non-incremental models, this is equivalent to a normal refresh. */
   partitions?: string[];
   /** If true, it will refresh all partitions that errored on their last execution. */
   allErroredPartitions?: boolean;
+  /** If true, it will refresh all partitions that are currently marked as skipped. */
+  allSkippedPartitions?: boolean;
 }
 
 export interface V1RefreshTrigger {

@@ -665,6 +665,7 @@ func toModelPartitionRow(s *runtimev1.ModelPartition) *modelPartition {
 		DataJSON:   string(data),
 		ExecutedOn: executedOn,
 		Elapsed:    (time.Duration(s.ElapsedMs) * time.Millisecond).String(),
+		Skipped:    s.Skipped,
 		Error:      s.Error,
 	}
 }
@@ -674,6 +675,7 @@ type modelPartition struct {
 	DataJSON   string `header:"data" json:"data"`
 	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`
 	Elapsed    string `header:"elapsed" json:"elapsed"`
+	Skipped    bool   `header:"skipped" json:"skipped"`
 	Error      string `header:"error" json:"error"`
 }
 
@@ -740,6 +742,7 @@ func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
 	p.Printf("Editable: %t\n", d.Editable)
 	p.Printf("Created: %s\n", d.CreatedOn.AsTime().Local().Format(time.RFC1123))
 	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
+	p.Printf("Last used: %s\n", d.UsedOn.AsTime().Local().Format(time.RFC1123))
 }
 
 func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
@@ -775,6 +778,7 @@ func toDeploymentRow(d *adminv1.Deployment) *deployment {
 		Environment: d.Environment,
 		Status:      status,
 		Editable:    d.Editable,
+		UsedOn:      d.UsedOn.AsTime().Local().Format(time.RFC1123),
 	}
 }
 
@@ -806,6 +810,7 @@ type deployment struct {
 	Environment string `header:"environment" json:"environment"`
 	Status      string `header:"status" json:"status"`
 	Editable    bool   `header:"editable" json:"editable"`
+	UsedOn      string `header:"last_used" json:"last_used"`
 }
 
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)

@@ -169,12 +169,13 @@ type configProperties struct {
 	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
 	// This does not list queries to other databases.
 	DatabaseWhitelist string `mapstructure:"database_whitelist"`
-	// OptimizeTemporaryTablesBeforePartitionReplace determines whether to optimize temporary tables before partition replacement.
-	OptimizeTemporaryTablesBeforePartitionReplace bool `mapstructure:"optimize_temporary_tables_before_partition_replace"`
 	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
 	Cluster string `mapstructure:"cluster"`
+	// SyncReplicas controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster.
+	// This ensures all inserted parts are visible across replicas before the partition swap. Defaults to true.
+	SyncReplicas bool `mapstructure:"sync_replicas"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
@@ -228,6 +229,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	// Parse config properties
 	conf := &configProperties{
 		CanScaleToZero: true,
+		SyncReplicas:   true,
 		MaxOpenConns:   20,
 		MaxIdleConns:   5,
 	}

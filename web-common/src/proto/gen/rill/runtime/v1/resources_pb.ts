@@ -1452,7 +1452,6 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Optional rilltime expression describing the time range covered by the base table.
    * When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
    *
    * @generated from field: string data_time_range = 37;
    */
@@ -2213,7 +2212,6 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
   /**
    * Optional rilltime expression describing the time range covered by the rollup.
    * When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
    *
    * @generated from field: string data_time_range = 11;
    */
@@ -4475,6 +4473,13 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
    */
   allErroredPartitions = false;
 
+  /**
+   * If true, it will refresh all partitions that are currently marked as skipped.
+   *
+   * @generated from field: bool all_skipped_partitions = 5;
+   */
+  allSkippedPartitions = false;
+
   constructor(data?: PartialMessage<RefreshModelTrigger>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4487,6 +4492,7 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
     { no: 2, name: "full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "all_errored_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "all_skipped_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshModelTrigger {
@@ -5080,6 +5086,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   requiredFilters: string[] = [];
 
+  /**
+   * Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
+   *
+   * @generated from field: map<string, string> annotations = 20;
+   */
+  annotations: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5105,6 +5118,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

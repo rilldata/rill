@@ -19,7 +19,6 @@
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
     getFileHref,
     withEditorPrefix,
@@ -113,11 +112,7 @@
   }
 
   async function cleanupAndBack() {
-    await cleanupImportStep(
-      runtimeClient,
-      queryClient,
-      importAddDataStep.config,
-    );
+    await cleanupImportStep(runtimeClient, importAddDataStep.config);
 
     onBack();
   }

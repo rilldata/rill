@@ -10,13 +10,13 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -29,6 +29,12 @@ import (
 const devDeplTTL = time.Hour
 
 const prodDeplTTL = 14 * 24 * time.Hour
+
+// defaultProdSlots and defaultDevSlots are the slot counts applied when a CreateProject
+// request omits them (e.g. the UI, or older CLIs that don't pass these fields).
+const defaultProdSlots = 4
+
+const defaultDevSlots = 4
 
 // runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
 // This TTL is not used for tokens created for internal communication between the admin and runtime services.
@@ -482,6 +488,16 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, err
 	}
 
+	// Apply defaults when slots are omitted (e.g. the UI, or older CLIs that don't pass these fields).
+	prodSlots := int(req.ProdSlots)
+	if prodSlots == 0 {
+		prodSlots = defaultProdSlots
+	}
+	devSlots := int(req.DevSlots)
+	if devSlots == 0 {
+		devSlots = defaultDevSlots
+	}
+
 	// Check projects quota
 	usage, err := s.admin.DB.CountProjectsQuotaUsage(ctx, org.ID)
 	if err != nil {
@@ -490,13 +506,13 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	if org.QuotaProjects >= 0 && usage.Projects >= org.QuotaProjects {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d projects", org.Name, org.QuotaProjects)
 	}
-	if org.QuotaSlotsPerDeployment >= 0 && int(req.ProdSlots) > org.QuotaSlotsPerDeployment {
+	if org.QuotaSlotsPerDeployment >= 0 && prodSlots > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
 	}
-	if org.QuotaSlotsPerDeployment >= 0 && int(req.DevSlots) > org.QuotaSlotsPerDeployment {
+	if org.QuotaSlotsPerDeployment >= 0 && devSlots > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
 	}
-	if org.QuotaSlotsTotal >= 0 && usage.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
+	if org.QuotaSlotsTotal >= 0 && usage.Slots+prodSlots > org.QuotaSlotsTotal {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
 	}
 	if org.QuotaDeployments >= 0 && usage.Deployments >= org.QuotaDeployments {
@@ -525,11 +541,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		userID = &tmp
 	}
 
-	devSlots := 4 // default value for older CLIs which will not pass this field
-	if req.DevSlots != 0 {
-		devSlots = int(req.DevSlots)
-	}
-
 	// Prepare the project options
 	opts := &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
@@ -547,7 +558,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		PrimaryBranch:        "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
-		ProdSlots:            int(req.ProdSlots),
+		ProdSlots:            prodSlots,
 		ProdTTLSeconds:       prodTTL,
 		DevSlots:             devSlots,
 		DevTTLSeconds:        devTTL,
