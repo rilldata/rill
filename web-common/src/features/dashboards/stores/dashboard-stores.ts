@@ -579,6 +579,23 @@ const metricsViewReducers = {
     });
   },
 
+  setPivotTotals(
+    name: string,
+    showTotalsColumn: boolean,
+    showTotalsRow: boolean,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        showTotalsColumn,
+        showTotalsRow,
+        expanded: {},
+        activeCell: null,
+        rowPage: 1,
+      };
+    });
+  },
+
   setPivotRowLimitForExpandedRow(
     name: string,
     expandIndex: string,

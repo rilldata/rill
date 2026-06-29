@@ -148,19 +148,23 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 	var qry strings.Builder
 	var args []any
 
-	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_partitions WHERE instance_id=? AND model_id=?")
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms, skipped FROM model_partitions WHERE instance_id=? AND model_id=?")
 	args = append(args, c.instanceID, opts.ModelID)
 
 	if opts.WhereErrored {
-		qry.WriteString(" AND error != ''")
+		qry.WriteString(" AND error != '' AND skipped = false")
 	}
 
 	if opts.WherePending {
-		qry.WriteString(" AND executed_on IS NULL")
+		qry.WriteString(" AND executed_on IS NULL AND skipped = false")
 	}
 
 	if opts.WhereSuccessful {
 		qry.WriteString(" AND executed_on IS NOT NULL AND error == ''")
+	}
+
+	if opts.WhereSkipped {
+		qry.WriteString(" AND skipped = true")
 	}
 
 	if !opts.BeforeExecutedOn.IsZero() || opts.AfterKey != "" {
@@ -185,7 +189,7 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 	for rows.Next() {
 		var elapsedMs int64
 		r := drivers.ModelPartition{}
-		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs, &r.Skipped)
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +208,7 @@ func (c *catalogStore) FindModelPartitionsByKeys(ctx context.Context, modelID st
 	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
 	var qry strings.Builder
 	var args []any
-	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_partitions WHERE instance_id=? AND model_id=? AND key IN (")
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms, skipped FROM model_partitions WHERE instance_id=? AND model_id=? AND key IN (")
 	args = append(args, c.instanceID, modelID)
 
 	qry.Grow(len(keys)*2 + 14) // Makes room for one ",?" per key plus the ORDER BY clause
@@ -228,7 +232,7 @@ func (c *catalogStore) FindModelPartitionsByKeys(ctx context.Context, modelID st
 	for rows.Next() {
 		var elapsedMs int64
 		r := drivers.ModelPartition{}
-		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs, &r.Skipped)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +250,7 @@ func (c *catalogStore) FindModelPartitionsByKeys(ctx context.Context, modelID st
 func (c *catalogStore) CheckModelPartitionsHaveErrors(ctx context.Context, modelID string) (bool, error) {
 	rows, err := c.db.QueryContext(
 		ctx,
-		"SELECT 1 FROM model_partitions WHERE instance_id=? AND model_id=? AND error != '' LIMIT 1",
+		"SELECT 1 FROM model_partitions WHERE instance_id=? AND model_id=? AND error != '' AND skipped = false LIMIT 1",
 		c.instanceID,
 		modelID,
 	)
@@ -270,7 +274,7 @@ func (c *catalogStore) CheckModelPartitionsHaveErrors(ctx context.Context, model
 func (c *catalogStore) InsertModelPartition(ctx context.Context, modelID string, partition drivers.ModelPartition) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"INSERT INTO model_partitions(instance_id, model_id, key, data_json, idx, watermark, executed_on, error, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO model_partitions(instance_id, model_id, key, data_json, idx, watermark, executed_on, error, elapsed_ms, skipped) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		c.instanceID,
 		modelID,
 		partition.Key,
@@ -280,6 +284,7 @@ func (c *catalogStore) InsertModelPartition(ctx context.Context, modelID string,
 		partition.ExecutedOn,
 		partition.Error,
 		partition.Elapsed.Milliseconds(),
+		partition.Skipped,
 	)
 	if err != nil {
 		return err
@@ -309,15 +314,61 @@ func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string,
 	return nil
 }
 
-func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error {
+func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored, whereSkipped bool) error {
 	var qry strings.Builder
 	var args []any
 
-	qry.WriteString("UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=?")
+	// Triggering a partition also clears its skipped flag, so explicitly triggering is the way to un-skip a partition.
+	qry.WriteString("UPDATE model_partitions SET executed_on=NULL, skipped=false WHERE instance_id=? AND model_id=?")
 	args = append(args, c.instanceID, modelID)
 
 	// Add conditions
 	qry.WriteString(" AND (false") // false ensures it's a no-op if no conditions are added; safer that way
+	if whereErrored {
+		qry.WriteString(" OR error != ''")
+	}
+	if whereSkipped {
+		qry.WriteString(" OR skipped = true")
+	}
+	if len(wherePartitionKeyIn) > 0 {
+		qry.WriteString(" OR key IN (")
+		for i, k := range wherePartitionKeyIn {
+			if i == 0 {
+				qry.WriteString("?")
+			} else {
+				qry.WriteString(",?")
+			}
+			args = append(args, k)
+		}
+		qry.WriteString(")")
+	}
+	qry.WriteString(")")
+
+	_, err := c.db.ExecContext(ctx, qry.String(), args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateModelPartitionsSkipped marks partitions as skipped so they are excluded from execution and from the model's error state.
+// It also clears any error and the executed_on timestamp on the skipped partitions, since a skipped partition is no longer
+// considered to have executed or failed (clearing executed_on also prevents a previously errored partition from being
+// counted as successful once its error is cleared).
+// The conditions are ORed: specific keys, all pending partitions, and/or all errored partitions.
+func (c *catalogStore) UpdateModelPartitionsSkipped(ctx context.Context, modelID string, wherePartitionKeyIn []string, wherePending, whereErrored bool) error {
+	var qry strings.Builder
+	var args []any
+
+	qry.WriteString("UPDATE model_partitions SET skipped=true, error='', executed_on=NULL WHERE instance_id=? AND model_id=?")
+	args = append(args, c.instanceID, modelID)
+
+	// Add conditions
+	qry.WriteString(" AND (false") // false ensures it's a no-op if no conditions are added; safer that way
+	if wherePending {
+		qry.WriteString(" OR executed_on IS NULL")
+	}
 	if whereErrored {
 		qry.WriteString(" OR error != ''")
 	}

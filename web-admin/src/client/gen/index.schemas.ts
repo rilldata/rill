@@ -170,6 +170,11 @@ export interface V1BillingIssueMetadata {
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
   onCreditTrial?: V1BillingIssueMetadataOnCreditTrial;
   trialCreditsDepleted?: V1BillingIssueMetadataTrialCreditsDepleted;
+  message?: V1BillingIssueMetadataMessage;
+}
+
+export interface V1BillingIssueMetadataMessage {
+  message?: string;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -244,6 +249,7 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL",
   BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
     "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
+  BILLING_ISSUE_TYPE_MESSAGE: "BILLING_ISSUE_TYPE_MESSAGE",
 } as const;
 
 export interface V1BillingPlan {
@@ -270,6 +276,8 @@ export const V1BillingPlanType = {
   BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
   BILLING_PLAN_TYPE_FREE: "BILLING_PLAN_TYPE_FREE",
   BILLING_PLAN_TYPE_PRO: "BILLING_PLAN_TYPE_PRO",
+  BILLING_PLAN_TYPE_STARTER: "BILLING_PLAN_TYPE_STARTER",
+  BILLING_PLAN_TYPE_GROWTH: "BILLING_PLAN_TYPE_GROWTH",
 } as const;
 
 export interface V1Bookmark {
@@ -301,10 +309,14 @@ export interface V1CompleteRequest {
 
 export interface V1CompleteResponse {
   message?: V1CompletionMessage;
-  /** Number of tokens in the input. */
+  /** Number of full-rate (non-cached) tokens in the input. */
   inputTokens?: number;
   /** Number of tokens in the output. */
   outputTokens?: number;
+  /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
+  cachedInputTokens?: number;
+  /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
+  provider?: string;
 }
 
 export interface V1CompletionMessage {
@@ -381,6 +393,10 @@ export interface V1CreateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1CreatePersonalFileResponse {
+  name?: string;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -414,6 +430,10 @@ export interface V1DeleteDeploymentResponse {
 }
 
 export interface V1DeleteOrganizationResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeletePersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -478,6 +498,10 @@ export const V1DeploymentStatus = {
 } as const;
 
 export interface V1EditAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1EditPersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -679,6 +703,11 @@ export interface V1GetPaymentsPortalURLResponse {
   url?: string;
 }
 
+export interface V1GetPersonalFileResponse {
+  path?: string;
+  yaml?: string;
+}
+
 export interface V1GetProjectAccessRequestResponse {
   email?: string;
 }
@@ -847,6 +876,10 @@ export interface V1ListOrganizationMemberUsersResponse {
 export interface V1ListOrganizationsResponse {
   organizations?: V1Organization[];
   nextPageToken?: string;
+}
+
+export interface V1ListPersonalFilesResponse {
+  files?: string[];
 }
 
 export interface V1ListProjectInvitesResponse {
@@ -1062,6 +1095,7 @@ export interface V1OrganizationQuotas {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1OrganizationRole {
@@ -1225,6 +1259,9 @@ export interface V1Quotas {
   slotsPerDeployment?: string;
   outstandingInvites?: string;
   storageLimitBytesPerDeployment?: string;
+  apiCallsPerSeat?: string;
+  seats?: string;
+  tokensPerSeat?: string;
 }
 
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
@@ -1443,6 +1480,19 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: unknown;
 }
 
+export interface V1SudoDeleteOrganizationBillingMessageResponse {
+  [key: string]: unknown;
+}
+
+export interface V1SudoExtendTrialRequest {
+  org?: string;
+  days?: number;
+}
+
+export interface V1SudoExtendTrialResponse {
+  trialEnd?: string;
+}
+
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
@@ -1523,6 +1573,10 @@ export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   subscription?: V1Subscription;
 }
 
+export interface V1SudoUpdateOrganizationBillingMessageResponse {
+  [key: string]: unknown;
+}
+
 export interface V1SudoUpdateOrganizationCustomDomainRequest {
   name?: string;
   customDomain?: string;
@@ -1540,6 +1594,7 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
@@ -2111,6 +2166,18 @@ export type AdminServiceAddProjectMemberUserBody = {
   resources?: V1ResourceName[];
 };
 
+export type AdminServiceCreatePersonalFileBody = {
+  displayName?: string;
+  kind?: string;
+  /** Optional: initial YAML body. If empty, the server generates a blank template for the given type. */
+  yaml?: string;
+};
+
+export type AdminServiceEditPersonalFileBody = {
+  kind?: string;
+  yaml?: string;
+};
+
 export type AdminServiceRedeployProjectParams = {
   superuserForceAccess?: boolean;
 };
@@ -2344,6 +2411,11 @@ export type AdminServiceGetReportMetaBody = {
   webOpenMode?: string;
   whereFilterJson?: string;
   accessibleFields?: string[];
+};
+
+export type AdminServiceSudoUpdateOrganizationBillingMessageBody = {
+  level?: V1BillingIssueLevel;
+  message?: string;
 };
 
 export type AdminServiceSearchProjectNamesParams = {

@@ -11,15 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/go-github/v71/github"
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/testadmin"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/testcli"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 )
@@ -194,10 +193,9 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	// the create repo API does not wait for repo creation to be fully processed; poll until ready
 	waitForGithubRepo(t, ghClient, *repo.Owner.Login, repoName)
 
-	author := &object.Signature{
+	author := gitutil.Signature{
 		Name:  "Rill test user",
 		Email: "test.user@rilldata.com",
-		When:  time.Now(),
 	}
 	authCloneURL := authGitURL(t, *repo.CloneURL, token)
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
@@ -268,10 +266,9 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 	// the create repo API does not wait for repo creation to be fully processed; poll until ready
 	waitForGithubRepo(t, ghClient, *repo.Owner.Login, repoName)
 
-	author := &object.Signature{
+	author := gitutil.Signature{
 		Name:  "Rill test user",
 		Email: "test.user@rilldata.com",
-		When:  time.Now(),
 	}
 	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
 		Remote:        authGitURL(t, *repo.CloneURL, token),

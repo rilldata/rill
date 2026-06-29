@@ -24,6 +24,7 @@ import {
   getErrorFromResponses,
   getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
+  getUriMeasuresForDimensions,
   isTimeDimension,
   prepareMeasureForComparison,
 } from "./pivot-utils";
@@ -122,6 +123,9 @@ export function getAxisForDimensions(
   timeRange: TimeRangeString | undefined = undefined,
   limit = "100",
   offset = "0",
+  // When true, append URI measures for dimensions that declare a `uri`, so the
+  // resolved URL rides along on each row. Used for row (not column) dimensions.
+  includeUriMeasures = false,
 ): Readable<PivotAxesData | null> {
   if (!dimensions.length) return readable(null);
 
@@ -163,10 +167,20 @@ export function getAxisForDimensions(
           },
         ];
       }
+      // Append the URI measure for this dimension (if it has one) without
+      // affecting the sort, which was derived from `measures` above.
+      const measuresForDimension =
+        includeUriMeasures && !dimension.alias
+          ? [
+              ...measures,
+              ...getUriMeasuresForDimensions([dimension.name], config),
+            ]
+          : measures;
+
       return createPivotAggregationRowQuery(
         ctx,
         config,
-        measures,
+        measuresForDimension,
         [dimension],
         whereFilter,
         sortByForDimension,

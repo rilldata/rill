@@ -59,7 +59,6 @@ test.describe("MotherDuck welcome flow", () => {
     );
     await updateCodeEditor(page, updatedContent);
     await page.getByRole("button", { name: "Save" }).click();
-    await page.waitForTimeout(1000);
 
     // Verify the updated syntax is now in the file
     await expect(connectorEditor).toContainText(

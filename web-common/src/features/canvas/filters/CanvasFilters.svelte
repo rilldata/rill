@@ -199,6 +199,7 @@
             {activeTimeZone}
             {minTimeGrain}
             {showTimeComparison}
+            {allowCustomTimeRange}
             onDisplayTimeComparison={set.comparison}
             onSetSelectedComparisonRange={(range) => {
               if (range.name === "CUSTOM_COMPARISON_RANGE") {

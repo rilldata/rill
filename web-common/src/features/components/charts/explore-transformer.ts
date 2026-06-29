@@ -33,6 +33,10 @@ export function transformChartSpecToPivotState(
 
     const fieldConfig = value;
 
+    if (fieldConfig.type === "value") {
+      continue;
+    }
+
     // Handle multiple fields case
     if (fieldConfig.fields?.length) {
       columns.push(
@@ -55,11 +59,20 @@ export function transformChartSpecToPivotState(
       type: chipType,
     };
 
-    if (key === "x" || chipType === PivotChipType.Measure) {
+    if (chipType === PivotChipType.Measure) {
       columns.push(chipData);
     } else {
       rows.push(chipData);
     }
+  }
+
+  const hasDimensionRows = rows.some((r) => r.type === PivotChipType.Dimension);
+  if (hasDimensionRows) {
+    const timeChips = rows.filter((r) => r.type === PivotChipType.Time);
+    const nonTimeRows = rows.filter((r) => r.type !== PivotChipType.Time);
+    columns.push(...timeChips);
+    rows.length = 0;
+    rows.push(...nonTimeRows);
   }
 
   return {
@@ -70,6 +83,8 @@ export function transformChartSpecToPivotState(
     columnPage: 0,
     rowPage: 0,
     enableComparison: false,
+    showTotalsColumn: true,
+    showTotalsRow: true,
     tableMode: "nest",
     activeCell: null,
   };

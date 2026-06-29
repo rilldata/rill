@@ -12,13 +12,10 @@ import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetInstance,
-  runtimeServicePushEnv,
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import {
-  deleteFileArtifact,
   maybeDeleteFileArtifact,
-  runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
 } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import {
@@ -30,18 +27,15 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { get } from "svelte/store";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
-  compileSourceYAML,
+  generateSourceYAML,
   inferModelNameFromSQL,
 } from "@rilldata/web-common/features/sources/sourceUtils.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { generateBlobForNewResourceFile } from "@rilldata/web-common/features/entity-management/add/new-files.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
-import type { QueryClient } from "@tanstack/svelte-query";
-import { unsetResourceEnvVars } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import { maybeGetConnectorDriver } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
-import { isCloudRuntimeEditEnvironment } from "@rilldata/web-common/features/entity-management/edit-environment.ts";
 
 export async function runImportSteps(
   runtimeClient: RuntimeClient,
@@ -122,35 +116,14 @@ export function generateImportToConfig(
 
 export async function cleanupImportStep(
   runtimeClient: RuntimeClient,
-  queryClient: QueryClient,
   config: ImportStepConfig,
 ) {
   const importToConfig = config.importTo;
 
-  let envBlob: string | null = null;
-  let envBlobChanged = false;
-  if (
-    importToConfig.modelPath &&
-    fileArtifacts.hasFileArtifact(importToConfig.modelPath)
-  ) {
-    const modelArtifact = fileArtifacts.getFileArtifact(
-      importToConfig.modelPath,
-    );
-    const modelYaml = await modelArtifact.fetchContent();
-
-    // Get the existing env and remove the connector's env vars
-    [envBlob, envBlobChanged] = await unsetResourceEnvVars(
-      runtimeClient,
-      queryClient,
-      modelYaml ?? "",
-    );
-
-    await deleteFileArtifact(runtimeClient, importToConfig.modelPath);
-  }
-
   // Cleanup any generated files.
   await Promise.all(
     [
+      importToConfig.modelPath,
       importToConfig.metricsViewPath,
       importToConfig.explorePath,
       importToConfig.canvasPath,
@@ -160,17 +133,7 @@ export async function cleanupImportStep(
     }),
   );
 
-  if (envBlob && envBlobChanged) {
-    // Update the .env file with the removed env vars
-    await runtimeServicePutFile(runtimeClient, {
-      path: ".env",
-      blob: envBlob,
-    });
-    if (isCloudRuntimeEditEnvironment()) {
-      // Only push env on cloud for now. We will revisit this for rill-dev.
-      await runtimeServicePushEnv(runtimeClient, {});
-    }
-  }
+  await config.envEditSession.rollback();
 }
 
 async function runCreateModelStep(
@@ -215,12 +178,13 @@ async function runCreateModelStep(
 
     // User provided a SQL query to generate the model.
     case "sql":
-      yaml = compileSourceYAML(
+      yaml = generateSourceYAML(
         connectorDriver,
         {
           name: importToConfig.modelName,
           sql: importFromConfig.sql,
         },
+        config.envEditSession,
         {
           connectorInstanceName: config.connector,
           outputConnector: defaultOLAP,
@@ -235,12 +199,13 @@ async function runCreateModelStep(
         (importFromConfig.schema ? importFromConfig.schema + "." : "") +
         importFromConfig.table;
       const sql = `SELECT * FROM ${fromTableName}`;
-      yaml = compileSourceYAML(
+      yaml = generateSourceYAML(
         connectorDriver,
         {
           name: importToConfig.modelName,
           sql: sql,
         },
+        config.envEditSession,
         {
           connectorInstanceName: config.connector,
           outputConnector: defaultOLAP,
@@ -250,19 +215,7 @@ async function runCreateModelStep(
     }
   }
 
-  if (config.envBlob) {
-    // Make sure the file has reconciled before testing the connection
-    await runtimeServicePutFileAndWaitForReconciliation(runtimeClient, {
-      path: ".env",
-      blob: config.envBlob,
-      create: true,
-      createOnly: false,
-    });
-    if (isCloudRuntimeEditEnvironment()) {
-      // Only push env on cloud for now. We will revisit this for rill-dev.
-      await runtimeServicePushEnv(runtimeClient, {});
-    }
-  }
+  await config.envEditSession.commit();
 
   let putFile = true;
   // Determine if the model file already exists and has the same content as the generated YAML.

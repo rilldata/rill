@@ -9,21 +9,27 @@ export function localStorageStore<T>(itemKey: string, defaultValue: T) {
   const store = writable<T>(defaultValue);
 
   if (browser) {
-    const stored = localStorage.getItem(itemKey);
-    if (stored !== null) {
-      try {
+    try {
+      // Accessing localStorage can throw, not just return null: a sandboxed or
+      // storage-partitioned iframe (embed mode) raises a SecurityError. Keep the
+      // read inside the try so initialization degrades to in-memory only.
+      const stored = localStorage.getItem(itemKey);
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (parsed !== undefined) {
           store.set(parsed);
         }
-      } catch {
-        // ignore
       }
+    } catch {
+      // ignore: localStorage unavailable or unreadable
     }
   }
   const debouncer = debounce((v: T) => {
-    if (typeof localStorage === "undefined") return;
-    localStorage.setItem(itemKey, JSON.stringify(v));
+    try {
+      localStorage.setItem(itemKey, JSON.stringify(v));
+    } catch {
+      // ignore: localStorage unavailable or over quota (e.g. embed iframe)
+    }
   }, 300);
   store.subscribe(debouncer);
 
@@ -31,7 +37,11 @@ export function localStorageStore<T>(itemKey: string, defaultValue: T) {
     ...store,
     reset() {
       store.set(defaultValue);
-      localStorage.setItem(itemKey, JSON.stringify(defaultValue));
+      try {
+        localStorage.setItem(itemKey, JSON.stringify(defaultValue));
+      } catch {
+        // ignore: localStorage unavailable
+      }
     },
   };
 }

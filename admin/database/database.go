@@ -164,6 +164,7 @@ type DB interface {
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
+	UpdateUserAuthTokenExpiresOn(ctx context.Context, id string, expiresOn time.Time) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error)
 	DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error
@@ -236,7 +237,7 @@ type DB interface {
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*OrganizationMemberUser, error)
 	FindOrganizationMemberUser(ctx context.Context, orgID, userID string) (*OrganizationMemberUser, error)
-	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, searchPattern string) (int, error)
+	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, searchPattern string, negateSearch bool) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]any, ifNotExists bool) (bool, error)
@@ -309,6 +310,8 @@ type DB interface {
 
 	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
+	// FindVirtualFilesByOwner TODO: pagination
+	FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
@@ -392,6 +395,7 @@ type Organization struct {
 	QuotaSlotsPerDeployment             int       `db:"quota_slots_per_deployment"`
 	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
+	QuotaSeats                          int       `db:"quota_seats"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
@@ -417,6 +421,7 @@ type InsertOrganizationOptions struct {
 	QuotaSlotsPerDeployment             int
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
+	QuotaSeats                          int
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
@@ -440,6 +445,7 @@ type UpdateOrganizationOptions struct {
 	QuotaSlotsPerDeployment             int
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
+	QuotaSeats                          int
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
@@ -1225,6 +1231,7 @@ type UpdateBookmarkOptions struct {
 type VirtualFile struct {
 	Path      string    `db:"path"`
 	Data      []byte    `db:"data"`
+	OwnerID   *string   `db:"owner_id"`
 	Deleted   bool      `db:"deleted"`
 	UpdatedOn time.Time `db:"updated_on"`
 }
@@ -1233,8 +1240,9 @@ type VirtualFile struct {
 type InsertVirtualFileOptions struct {
 	ProjectID   string
 	Environment string
-	Path        string `validate:"required"`
-	Data        []byte `validate:"max=131072"` // 128kb
+	Path        string  `validate:"required"`
+	OwnerID     *string `db:"owner_id"`
+	Data        []byte  `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.
@@ -1315,6 +1323,7 @@ const (
 	BillingIssueTypeNeverSubscribed                        = 7
 	BillingIssueTypeOnCreditTrial                          = 8
 	BillingIssueTypeTrialCreditsDepleted                   = 9
+	BillingIssueTypeMessage                                = 10
 )
 
 type BillingIssueLevel int
@@ -1389,9 +1398,16 @@ type BillingIssueMetadataTrialCreditsDepleted struct {
 	DepletedOn time.Time `json:"depleted_on"`
 }
 
+type BillingIssueMetadataMessage struct {
+	Message string `json:"message"`
+}
+
 type UpsertBillingIssueOptions struct {
-	OrgID     string           `validate:"required"`
-	Type      BillingIssueType `validate:"required"`
+	OrgID string           `validate:"required"`
+	Type  BillingIssueType `validate:"required"`
+	// Level is optional; if unspecified, it is derived from Type. It is used for types whose
+	// severity is not implied by the type itself (e.g. BillingIssueTypeMessage).
+	Level     BillingIssueLevel `exhaustruct:"optional"`
 	Metadata  BillingIssueMetadata
 	EventTime time.Time `validate:"required"`
 }

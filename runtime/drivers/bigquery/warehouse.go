@@ -33,8 +33,6 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/bigquery")
 // 64MB seems to be a good balance
 const rowGroupBufferSize = int64(datasize.MB) * 64
 
-const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
-
 // Regex to parse BigQuery SELECT ALL statement: SELECT * FROM `project_id.dataset.table`
 var selectQueryRegex = regexp.MustCompile(
 	`(?is)^\s*` +
@@ -191,18 +189,20 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 	return &fileIterator{
-		client:  client,
-		bqIter:  it,
-		logger:  c.logger,
-		tempDir: tempDir,
+		client:           client,
+		bqIter:           it,
+		logger:           c.logger,
+		tempDir:          tempDir,
+		allowStandardAPI: c.config.AllowStandardAPI,
 	}, nil
 }
 
 type fileIterator struct {
-	client  *bigquery.Client
-	bqIter  *bigquery.RowIterator
-	logger  *zap.Logger
-	tempDir string
+	client           *bigquery.Client
+	bqIter           *bigquery.RowIterator
+	logger           *zap.Logger
+	tempDir          string
+	allowStandardAPI bool
 
 	downloaded bool
 }
@@ -235,6 +235,9 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
+		if !f.allowStandardAPI {
+			return nil, fmt.Errorf("bigquery: query results cannot be read with the BigQuery Storage Read API. Granting the necessary BigQuery roles is recommended; alternatively, set 'allow_standard_api: true' on the connector to read results via the standard API (less efficient and may fail for large results)")
+		}
 		f.logger.Debug("downloading results in json file", observability.ZapCtx(ctx))
 		span.SetAttributes(attribute.Bool("storage_api", false))
 
@@ -386,17 +389,6 @@ func (f *fileIterator) downloadAsJSONFile(ctx context.Context) (string, error) {
 			return "", fmt.Errorf("conversion of row to json failed with error: %w", err)
 		}
 
-		// If we don't have storage API access, BigQuery may return massive JSON results. (But even with storage API access, it may return JSON for small results.)
-		// We want to avoid JSON for massive results. Currently, the only way to do so is to error at a limit.
 		rows++
-		if rows != 0 && rows%10000 == 0 { // Check file size every 10k rows
-			fileInfo, err := os.Stat(fw.Name())
-			if err != nil {
-				return "", fmt.Errorf("bigquery: failed to poll json file size: %w", err)
-			}
-			if fileInfo.Size() >= _jsonDownloadLimitBytes {
-				return "", fmt.Errorf("bigquery: json download exceeded limit of %d bytes (enable and provide access to the BigQuery Storage Read API to read larger results)", _jsonDownloadLimitBytes)
-			}
-		}
 	}
 }

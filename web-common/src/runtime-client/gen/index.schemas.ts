@@ -482,6 +482,7 @@ The values should be valid IANA location identifiers. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
   requiredFilters?: string[];
+  annotations?: Record<string, string>;
 }
 
 export interface V1CanvasState {
@@ -925,6 +926,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
   pivotRowLimit?: number;
+  pivotShowTotalsColumn?: boolean;
+  pivotShowTotalsRow?: boolean;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
@@ -1102,6 +1105,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetAIMessageResponse {
   message?: V1Message;
+  result?: V1Message;
 }
 
 export interface V1GetConversationResponse {
@@ -1164,11 +1168,13 @@ export interface V1GitCommitResponse {
 export interface V1GitMergeToBranchResponse {
   /** The output of the git merge command. Only set for unsuccessful merges. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPushResponse {
@@ -1883,6 +1889,7 @@ export interface V1ModelPartition {
   executedOn?: string;
   error?: string;
   elapsedMs?: number;
+  skipped?: boolean;
 }
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
@@ -2201,6 +2208,8 @@ For non-incremental models, this is equivalent to a normal refresh. */
   partitions?: string[];
   /** If true, it will refresh all partitions that errored on their last execution. */
   allErroredPartitions?: boolean;
+  /** If true, it will refresh all partitions that are currently marked as skipped. */
+  allSkippedPartitions?: boolean;
 }
 
 export interface V1RefreshTrigger {

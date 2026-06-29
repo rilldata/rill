@@ -312,7 +312,6 @@ message MetricsViewSpec {
     string model = 4;
     // Optional rilltime expression describing the time range covered by the rollup.
     // When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-    // Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
     string data_time_range = 11;
     // Time grain of the rollup.
     TimeGrain time_grain = 5;
@@ -352,7 +351,6 @@ message MetricsViewSpec {
   string watermark_expression = 20;
   // Optional rilltime expression describing the time range covered by the base table.
   // When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-  // Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
   string data_time_range = 37;
   // Dimensions in the metrics view
   repeated Dimension dimensions = 6;
@@ -581,6 +579,8 @@ message ExplorePreset {
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
   optional int32 pivot_row_limit = 33;
+  optional bool pivot_show_totals_column = 37;
+  optional bool pivot_show_totals_row = 38;
 
   // Chart display settings (frontend-only; persisted in URL state)
   optional bool chart_dynamic_y_axis = 35;
@@ -787,6 +787,8 @@ message RefreshModelTrigger {
   repeated string partitions = 3;
   // If true, it will refresh all partitions that errored on their last execution.
   bool all_errored_partitions = 4;
+  // If true, it will refresh all partitions that are currently marked as skipped.
+  bool all_skipped_partitions = 5;
 }
 
 message Theme {
@@ -885,6 +887,8 @@ message CanvasSpec {
   // Array of dimension or measure names that must have a value before the canvas can render.
   // Required filters are implicitly pinned.
   repeated string required_filters = 19;
+  // Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
+  map<string, string> annotations = 20;
 }
 
 message CanvasState {

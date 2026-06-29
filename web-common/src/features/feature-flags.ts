@@ -67,6 +67,8 @@ class FeatureFlags {
   cloudEditing = new FeatureFlag("user", false);
   customCharts = new FeatureFlag("user", false);
   tagAsFolders = new FeatureFlag("user", false);
+  disablePersistentDashboardState = new FeatureFlag("user", false);
+  personalCanvases = new FeatureFlag("user", false);
 
   private flagsUnsub?: () => void;
 

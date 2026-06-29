@@ -26,6 +26,7 @@
     dimKeyFromRow,
   } from "./pivot-click-selection";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
   import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
   // State props
@@ -142,7 +143,7 @@
 <table
   role="presentation"
   style:width="{totalLength}px"
-  class:with-measure={measures.length > 0}
+  class:with-totals-row={!!totalsRow && measures.length > 0}
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
   onmouseleave={onTableLeave}
@@ -174,9 +175,10 @@
                 {#if icon}
                   <svelte:component this={icon} />
                 {:else}
-                  <p class="truncate">
-                    {header.column.columnDef.header}
-                  </p>
+                  <PivotHeaderLabel
+                    label={String(header.column.columnDef.header)}
+                    description={header.column.columnDef.meta?.description}
+                  />
                 {/if}
                 {#if sortDirection}
                   <span
@@ -337,7 +339,7 @@
   }
 
   /* The totals row */
-  .with-measure tbody > tr:nth-of-type(2) {
+  .with-totals-row tbody > tr:nth-of-type(2) {
     @apply bg-surface-background sticky z-20;
     top: var(--total-header-height);
   }
@@ -371,7 +373,7 @@
     box-shadow: 0 0 0 1px theme(colors.primary.400);
   }
   /* The totals row is z-20 and covers the outset top shadow; use an inset top border instead */
-  .with-measure tbody > tr:nth-of-type(3) > td.selected-cell.cell {
+  .with-totals-row tbody > tr:nth-of-type(3) > td.selected-cell.cell {
     box-shadow:
       0 0 0 1px theme(colors.primary.400),
       inset 0 1px 0 0 theme(colors.primary.400);

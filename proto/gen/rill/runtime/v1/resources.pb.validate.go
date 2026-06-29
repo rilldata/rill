@@ -5595,6 +5595,14 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotRowLimit
 	}
 
+	if m.PivotShowTotalsColumn != nil {
+		// no validation rules for PivotShowTotalsColumn
+	}
+
+	if m.PivotShowTotalsRow != nil {
+		// no validation rules for PivotShowTotalsRow
+	}
+
 	if m.ChartDynamicYAxis != nil {
 		// no validation rules for ChartDynamicYAxis
 	}
@@ -8701,6 +8709,8 @@ func (m *RefreshModelTrigger) validate(all bool) error {
 
 	// no validation rules for AllErroredPartitions
 
+	// no validation rules for AllSkippedPartitions
+
 	if len(errors) > 0 {
 		return RefreshModelTriggerMultiError(errors)
 	}
@@ -10413,6 +10423,8 @@ func (m *CanvasSpec) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for Annotations
 
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)

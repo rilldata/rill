@@ -8,11 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -439,8 +437,7 @@ func readFile(t *testing.T, repoPath, relativePath string) string {
 	return string(content)
 }
 
-var author = &object.Signature{
+var author = gitutil.Signature{
 	Name:  "Test User",
 	Email: "test@rilldata.com",
-	When:  time.Now(),
 }

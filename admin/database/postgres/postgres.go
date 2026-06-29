@@ -130,9 +130,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, logo_dark_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, logo_dark_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id, quota_seats)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.QuotaSeats).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -151,8 +151,8 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, logo_dark_asset_id=$5, favicon_asset_id=$6, thumbnail_asset_id=$7, custom_domain=$8, default_project_role_id=$9, quota_projects=$10, quota_deployments=$11, quota_slots_total=$12, quota_slots_per_deployment=$13, quota_outstanding_invites=$14, quota_storage_limit_bytes_per_deployment=$15, billing_customer_id=$16, payment_customer_id=$17, billing_email=$18, created_by_user_id=$19, billing_plan_name=$20, billing_plan_display_name=$21, updated_on=now() WHERE id=$22 RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, id).StructScan(res)
+		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, logo_dark_asset_id=$5, favicon_asset_id=$6, thumbnail_asset_id=$7, custom_domain=$8, default_project_role_id=$9, quota_projects=$10, quota_deployments=$11, quota_slots_total=$12, quota_slots_per_deployment=$13, quota_outstanding_invites=$14, quota_storage_limit_bytes_per_deployment=$15, billing_customer_id=$16, payment_customer_id=$17, billing_email=$18, created_by_user_id=$19, billing_plan_name=$20, billing_plan_display_name=$21, quota_seats=$22, updated_on=now() WHERE id=$23 RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, opts.QuotaSeats, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -1232,6 +1232,14 @@ func (c *connection) UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string
 	return nil
 }
 
+func (c *connection) UpdateUserAuthTokenExpiresOn(ctx context.Context, id string, expiresOn time.Time) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE user_auth_tokens SET expires_on=$2 WHERE id=$1", id, expiresOn)
+	if err != nil {
+		return parseErr("auth token", err)
+	}
+	return nil
+}
+
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
@@ -2003,7 +2011,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	return res, nil
 }
 
-func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, searchPattern string) (int, error) {
+func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, searchPattern string, negateSearch bool) (int, error) {
 	var count int
 	query := "SELECT COUNT(*) FROM users_orgs_roles uor JOIN users u ON u.id = uor.user_id WHERE uor.org_id=$1"
 	args := []any{orgID}
@@ -2014,7 +2022,11 @@ func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, fi
 	}
 
 	if searchPattern != "" {
-		query += fmt.Sprintf(" AND (lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", len(args)+1, len(args)+1)
+		not := ""
+		if negateSearch {
+			not = "NOT "
+		}
+		query += fmt.Sprintf(" AND %s(lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", not, len(args)+1, len(args)+1)
 		args = append(args, searchPattern)
 	}
 
@@ -2882,7 +2894,7 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
 	var res []*database.VirtualFile
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT path, data, deleted, updated_on
+		SELECT path, data, owner_id, deleted, updated_on
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND (updated_on>$3 OR updated_on=$3 AND path>$4)
 		ORDER BY updated_on, path LIMIT $5
@@ -2896,10 +2908,24 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environmen
 func (c *connection) FindVirtualFile(ctx context.Context, projectID, environment, path string) (*database.VirtualFile, error) {
 	res := &database.VirtualFile{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT path, data, deleted, updated_on
+		SELECT path, data, owner_id, deleted, updated_on
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND path=$3
 	`, projectID, environment, path).StructScan(res)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*database.VirtualFile, error) {
+	var res []*database.VirtualFile
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT path, data, owner_id, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND owner_id=$3
+		ORDER BY path
+	`, projectID, environment, ownerID)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}
@@ -2912,13 +2938,14 @@ func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.Inser
 	}
 
 	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO virtual_files (project_id, environment, path, data, deleted)
-		VALUES ($1, $2, $3, $4, FALSE)
+		INSERT INTO virtual_files (project_id, environment, owner_id, path, data, deleted)
+		VALUES ($1, $2, $3, $4, $5, FALSE)
 		ON CONFLICT (project_id, environment, path) DO UPDATE SET
 			data = EXCLUDED.data,
+		    owner_id = EXCLUDED.owner_id,
 			deleted = FALSE,
 			updated_on = now()
-	`, opts.ProjectID, opts.Environment, opts.Path, opts.Data)
+	`, opts.ProjectID, opts.Environment, opts.OwnerID, opts.Path, opts.Data)
 	if err != nil {
 		return parseErr("virtual file", err)
 	}
@@ -3114,15 +3141,18 @@ func (c *connection) UpsertBillingIssue(ctx context.Context, opts *database.Upse
 	temp := &billingIssueDTO{
 		OrgID:     opts.OrgID,
 		Type:      opts.Type,
+		Level:     opts.Level,
 		Metadata:  metadata,
 		EventTime: opts.EventTime,
 	}
 
-	temp.Level = temp.getBillingIssueLevel()
+	if temp.Level == database.BillingIssueLevelUnspecified {
+		temp.Level = temp.getBillingIssueLevel()
+	}
 
 	res := &billingIssueDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO billing_issues (org_id, type, level, metadata, event_time) VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (org_id, type) DO UPDATE SET metadata = $4, event_time = $5 RETURNING *`, temp.OrgID, temp.Type, temp.Level, temp.Metadata, temp.EventTime).StructScan(res)
+		ON CONFLICT (org_id, type) DO UPDATE SET level = $3, metadata = $4, event_time = $5 RETURNING *`, temp.OrgID, temp.Type, temp.Level, temp.Metadata, temp.EventTime).StructScan(res)
 	if err != nil {
 		return nil, parseErr("billing issue", err)
 	}
@@ -3745,6 +3775,8 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataOnCreditTrial{}
 	case database.BillingIssueTypeTrialCreditsDepleted:
 		metadata = &database.BillingIssueMetadataTrialCreditsDepleted{}
+	case database.BillingIssueTypeMessage:
+		metadata = &database.BillingIssueMetadataMessage{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {

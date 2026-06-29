@@ -188,6 +188,8 @@ components:
             type: string
         v1BillingIssueMetadata:
             properties:
+                message:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataMessage'
                 neverSubscribed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNeverSubscribed'
                 noBillableAddress:
@@ -206,6 +208,11 @@ components:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialCreditsDepleted'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
+            type: object
+        v1BillingIssueMetadataMessage:
+            properties:
+                message:
+                    type: string
             type: object
         v1BillingIssueMetadataNeverSubscribed:
             type: object
@@ -301,6 +308,7 @@ components:
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
                 - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
                 - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+                - BILLING_ISSUE_TYPE_MESSAGE
             type: string
         v1BillingPlan:
             properties:
@@ -335,6 +343,8 @@ components:
                 - BILLING_PLAN_TYPE_ENTERPRISE
                 - BILLING_PLAN_TYPE_FREE
                 - BILLING_PLAN_TYPE_PRO
+                - BILLING_PLAN_TYPE_STARTER
+                - BILLING_PLAN_TYPE_GROWTH
             type: string
         v1Bookmark:
             properties:
@@ -388,8 +398,12 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cachedInputTokens:
+                    description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+                    format: int64
+                    type: integer
                 inputTokens:
-                    description: Number of tokens in the input.
+                    description: Number of full-rate (non-cached) tokens in the input.
                     format: int64
                     type: integer
                 message:
@@ -398,6 +412,9 @@ components:
                     description: Number of tokens in the output.
                     format: int64
                     type: integer
+                provider:
+                    description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
+                    type: string
             type: object
         v1CompletionMessage:
             properties:
@@ -511,6 +528,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePersonalFileResponse:
+            properties:
+                name:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -543,6 +565,8 @@ components:
                     type: string
             type: object
         v1DeleteOrganizationResponse:
+            type: object
+        v1DeletePersonalFileResponse:
             type: object
         v1DeleteProjectResponse:
             properties:
@@ -610,6 +634,8 @@ components:
                 - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
+            type: object
+        v1EditPersonalFileResponse:
             type: object
         v1EditReportResponse:
             type: object
@@ -862,6 +888,13 @@ components:
                 url:
                     type: string
             type: object
+        v1GetPersonalFileResponse:
+            properties:
+                path:
+                    type: string
+                yaml:
+                    type: string
+            type: object
         v1GetProjectAccessRequestResponse:
             properties:
                 email:
@@ -1098,6 +1131,13 @@ components:
                 organizations:
                     items:
                         $ref: '#/components/schemas/v1Organization'
+                    type: array
+            type: object
+        v1ListPersonalFilesResponse:
+            properties:
+                files:
+                    items:
+                        type: string
                     type: array
             type: object
         v1ListProjectInvitesResponse:
@@ -1471,6 +1511,9 @@ components:
                 projects:
                     format: int32
                     type: integer
+                seats:
+                    format: int32
+                    type: integer
                 slotsPerDeployment:
                     format: int32
                     type: integer
@@ -1751,17 +1794,23 @@ components:
             type: object
         v1Quotas:
             properties:
+                apiCallsPerSeat:
+                    type: string
                 deployments:
                     type: string
                 outstandingInvites:
                     type: string
                 projects:
                     type: string
+                seats:
+                    type: string
                 slotsPerDeployment:
                     type: string
                 slotsTotal:
                     type: string
                 storageLimitBytesPerDeployment:
+                    type: string
+                tokensPerSeat:
                     type: string
             type: object
         v1RecordEventsRequest:
@@ -2017,6 +2066,22 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
+        v1SudoDeleteOrganizationBillingMessageResponse:
+            type: object
+        v1SudoExtendTrialRequest:
+            properties:
+                days:
+                    format: int32
+                    type: integer
+                org:
+                    type: string
+            type: object
+        v1SudoExtendTrialResponse:
+            properties:
+                trialEnd:
+                    format: date-time
+                    type: string
+            type: object
         v1SudoGetResourceResponse:
             properties:
                 deployment:
@@ -2128,6 +2193,8 @@ components:
                 subscription:
                     $ref: '#/components/schemas/v1Subscription'
             type: object
+        v1SudoUpdateOrganizationBillingMessageResponse:
+            type: object
         v1SudoUpdateOrganizationCustomDomainRequest:
             properties:
                 customDomain:
@@ -2151,6 +2218,9 @@ components:
                     format: int32
                     type: integer
                 projects:
+                    format: int32
+                    type: integer
+                seats:
                     format: int32
                     type: integer
                 slotsPerDeployment:
@@ -4855,6 +4925,185 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+    /v1/orgs/{org}/projects/{project}/personal-files:
+        get:
+            operationId: AdminService_ListPersonalFiles
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListPersonalFilesResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListPersonalFiles lists the calling user's personal files.
+        post:
+            operationId: AdminService_CreatePersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                displayName:
+                                    type: string
+                                kind:
+                                    type: string
+                                yaml:
+                                    description: 'Optional: initial YAML body. If empty, the server generates a blank template for the given type.'
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreatePersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+    /v1/orgs/{org}/projects/{project}/personal-files/{name}:
+        delete:
+            operationId: AdminService_DeletePersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeletePersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: DeletePersonalFile deletes a personal virtual file the caller owns.
+        get:
+            operationId: AdminService_GetPersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetPersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+        post:
+            operationId: AdminService_EditPersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                kind:
+                                    type: string
+                                yaml:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1EditPersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
     /v1/orgs/{org}/projects/{project}/redeploy:
         post:
             operationId: AdminService_RedeployProject
@@ -7267,6 +7516,30 @@ paths:
                 SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
                 It only updates the custom domain in the database, which is used to ensure correct redirects.
                 The DNS records and ingress TLS must be configured separately.
+    /v1/superuser/organization/trial/extend:
+        post:
+            operationId: AdminService_SudoExtendTrial
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoExtendTrialRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoExtendTrialResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoExtendTrial extends the trial period for an organization
     /v1/superuser/organization/trial/grant-credits:
         post:
             operationId: AdminService_SudoGrantTrialCredits
@@ -7315,6 +7588,7 @@ paths:
                         - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
                         - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
                         - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+                        - BILLING_ISSUE_TYPE_MESSAGE
                     type: string
             responses:
                 "200":
@@ -7330,6 +7604,63 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+    /v1/superuser/organizations/{org}/billing/message:
+        delete:
+            operationId: AdminService_SudoDeleteOrganizationBillingMessage
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoDeleteOrganizationBillingMessageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+        post:
+            operationId: AdminService_SudoUpdateOrganizationBillingMessage
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                level:
+                                    $ref: '#/components/schemas/v1BillingIssueLevel'
+                                message:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoUpdateOrganizationBillingMessageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
     /v1/superuser/projects/annotations:
         patch:
             operationId: AdminService_SudoUpdateAnnotations

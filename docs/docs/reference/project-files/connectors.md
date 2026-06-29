@@ -207,6 +207,10 @@ _[boolean]_ - Controls whether to log raw SQL queries
 
 _[integer]_ - Maximum number of bytes billed for a query. Queries that exceed this limit will fail with an error. This can help prevent unexpectedly high costs from large queries. It is highly recommended to set this when running on `on-demand pricing` model. The default value is 0 i.e. no limits are enforced in Rill. 
 
+### `allow_standard_api`
+
+_[boolean]_ - Allow querying BigQuery using the standard API instead of the Storage Read API. This is less efficient and may lead to higher latency, but can be used as a fallback if the Storage Read API is not available due to insufficient permissions or other issues. 
+
 ```yaml
 # Example: BigQuery connector configuration
 type: connector # Must be `connector` (required)
@@ -261,6 +265,10 @@ _[boolean]_ - Indicates whether a secured SSL connection is required
 ### `cluster`
 
 _[string]_ - Cluster name, required for running distributed queries 
+
+### `sync_replicas`
+
+_[boolean]_ - Controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster, ensuring all inserted parts are visible across replicas before the partition swap. Defaults to true 
 
 ### `write_dsn`
 

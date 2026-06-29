@@ -6,13 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -155,7 +153,10 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, err
 	}
 
-	name, err := s.generateAlertName(ctx, depl, req.Options.DisplayName)
+	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+		_, err := s.admin.LookupAlert(ctx, depl, name)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -170,6 +171,7 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		Environment: "prod",
 		Path:        virtualFilePathForManagedAlert(name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -240,6 +242,7 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		Environment: "prod",
 		Path:        virtualFilePathForManagedAlert(req.Name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -262,6 +265,9 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
+	if req.Email != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -384,6 +390,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 			Environment: "prod",
 			Path:        virtualFilePathForManagedAlert(req.Name),
 			Data:        data,
+			OwnerID:     nil,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -585,44 +592,6 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
-}
-
-// generateAlertName generates a random alert name with the display name as a seed.
-// Example: "My alert!" -> "my-alert-5b3f7e1a".
-// It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateAlertName(ctx context.Context, depl *database.Deployment, displayName string) (string, error) {
-	for i := 0; i < 5; i++ {
-		name := randomAlertName(displayName)
-
-		_, err := s.admin.LookupAlert(ctx, depl, name)
-		if err != nil {
-			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-				// Success! Name isn't taken
-				return name, nil
-			}
-			return "", fmt.Errorf("failed to check alert name: %w", err)
-		}
-	}
-
-	// Fail-safe in case all names we tried were taken
-	return uuid.New().String(), nil
-}
-
-var alertNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
-
-var alertNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
-
-func randomAlertName(displayName string) string {
-	name := alertNameToDashCharsRegexp.ReplaceAllString(displayName, "-")
-	name = alertNameExcludeCharsRegexp.ReplaceAllString(name, "")
-	name = strings.ToLower(name)
-	name = strings.Trim(name, "-")
-	if name == "" {
-		name = uuid.New().String()
-	} else {
-		name = name + "-" + uuid.New().String()[0:8]
-	}
-	return name
 }
 
 // alertYAML is derived from runtime/parser.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.

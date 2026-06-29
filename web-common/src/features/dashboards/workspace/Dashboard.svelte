@@ -30,14 +30,23 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import {
+    DEFAULT_TDD_CHART_HEIGHT,
+    DEFAULT_TIMESERIES_WIDTH,
+    MIN_TDD_CHART_HEIGHT,
+    MIN_TIMESERIES_WIDTH,
+    exploreTimeseriesWidth,
+    tddChartHeight,
+  } from "./dashboard-layout-store";
 
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
   export let embedThemeName: Readable<string | null> | null = null;
 
-  const DEFAULT_TIMESERIES_WIDTH = 580;
-  const MIN_TIMESERIES_WIDTH = 440;
+  // Vertical space reserved below the chart for the chart toolbar, axis, big
+  // number, and a minimum detail table height when computing the drag maximum.
+  const TDD_RESERVED_HEIGHT = 280;
   const StateManagers = getStateManagers();
   const {
     selectors: {
@@ -53,7 +62,7 @@
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let exploreContainerWidth: number;
-  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
+  let exploreContainerHeight: number;
   let resizing = false;
 
   const client = useRuntimeClient();
@@ -184,17 +193,21 @@
         class:left-shift={extraLeftPadding}
         class:w-full={$dynamicHeight}
         class:size-full={!$dynamicHeight}
+        bind:clientHeight={exploreContainerHeight}
       >
         <div
           class="flex-none pl-4"
           class:pt-2={!showTimeDimensionDetail}
-          style:width={showTimeDimensionDetail ? "auto" : `${metricsWidth}px`}
+          style:width={showTimeDimensionDetail
+            ? "auto"
+            : `${$exploreTimeseriesWidth}px`}
         >
           {#key exploreName}
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
                 hideStartPivotButton={hidePivot}
+                tddChartHeight={$tddChartHeight}
               />
             {:else}
               <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
@@ -203,6 +216,23 @@
         </div>
 
         {#if showTimeDimensionDetail && expandedMeasureName}
+          <div class="relative flex-none bg-border h-[1px]">
+            <Resizer
+              direction="NS"
+              side="bottom"
+              dimension={$tddChartHeight}
+              min={MIN_TDD_CHART_HEIGHT}
+              max={Math.max(
+                MIN_TDD_CHART_HEIGHT,
+                (exploreContainerHeight || 600) - TDD_RESERVED_HEIGHT,
+              )}
+              basis={DEFAULT_TDD_CHART_HEIGHT}
+              bind:resizing
+              onUpdate={(height: number) => {
+                tddChartHeight.set(height);
+              }}
+            />
+          </div>
           <TimeDimensionDisplay
             {exploreName}
             {expandedMeasureName}
@@ -211,14 +241,14 @@
         {:else}
           <div class="relative flex-none bg-border w-[1px]">
             <Resizer
-              dimension={metricsWidth}
+              dimension={$exploreTimeseriesWidth}
               min={MIN_TIMESERIES_WIDTH}
               max={exploreContainerWidth - 500}
               basis={DEFAULT_TIMESERIES_WIDTH}
               bind:resizing
               side="right"
-              onUpdate={(width) => {
-                metricsWidth = width;
+              onUpdate={(width: number) => {
+                exploreTimeseriesWidth.set(width);
               }}
             />
           </div>

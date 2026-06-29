@@ -10,6 +10,7 @@
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { VirtualItem } from "@tanstack/svelte-virtual";
+  import { makeDimensionHref } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import type { DimensionTableRow } from "./dimension-table-types";
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -56,6 +57,7 @@
       suppressTooltip: scrolling,
       barValue: 0,
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
+      href: makeDimensionHref(rows[row.index], column.name, value as string),
     };
   };
 </script>

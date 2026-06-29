@@ -50,6 +50,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
 			fmt.Printf("Primary deployment ID: %s\n", project.PrimaryDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
+			fmt.Printf("Prod deployment status: %s\n", prodDeploymentStatus(res.Deployment))
 			fmt.Printf("Annotations: %s\n", strings.Join(annotations, "; "))
 
 			return nil
@@ -57,4 +58,32 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	return getCmd
+}
+
+// prodDeploymentStatus returns a human-readable description of the prod deployment's status.
+// A project with no prod deployment, or one that is stopped, is hibernated.
+func prodDeploymentStatus(depl *adminv1.Deployment) string {
+	if depl == nil {
+		return "Hibernated (no deployment)"
+	}
+	switch depl.Status {
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING:
+		return "Pending"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING:
+		return "Running"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED:
+		return "Errored"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED:
+		return "Hibernated (stopped)"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING:
+		return "Updating"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING:
+		return "Hibernating (stopping)"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING:
+		return "Deleting"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED:
+		return "Deleted"
+	default:
+		return "Unknown"
+	}
 }

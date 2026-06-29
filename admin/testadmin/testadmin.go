@@ -25,12 +25,12 @@ import (
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -338,6 +338,10 @@ func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repo
 
 func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (string, time.Time, error) {
 	return "", time.Time{}, nil
+}
+
+func (m *mockGithub) DeleteBranch(ctx context.Context, installationID, repoID int64, remote, branch string) error {
+	return nil
 }
 
 func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error) {

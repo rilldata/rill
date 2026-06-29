@@ -1,7 +1,6 @@
 <script lang="ts">
   import DraggableList from "@rilldata/web-common/components/draggable-list";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
@@ -11,27 +10,37 @@
     MetricsViewSpecMeasure,
   } from "@rilldata/web-common/runtime-client";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { Button } from "../button";
   import Search from "../search/Search.svelte";
   import DashboardMetricsTagRow from "./DashboardMetricsTagRow.svelte";
+  import TagFilterBanner from "./TagFilterBanner.svelte";
+  import {
+    exploreTagColumnWidth,
+    TAG_COLUMN,
+  } from "@rilldata/web-common/features/dashboards/workspace/dashboard-layout-store";
   import {
     applyHideAllInTag,
     applyOnlyShowTag,
     applyShowAllInTag,
-    buildTagIndex,
     computeTagVisibility,
+    type TagIndex,
   } from "./tag-utils";
 
   type SelectableItem = MetricsViewSpecMeasure | MetricsViewSpecDimension;
 
   export let selectedItems: string[];
   export let allItems: SelectableItem[] = [];
+  export let tagIndex: TagIndex;
   export let type: "measure" | "dimension" = "measure";
   export let onSelectedChange: (items: string[]) => void;
 
   let searchText = "";
   let active = false;
   let selectedTag: string | null = null;
+  // Rendered width of the auto-sized tags column; seeds the resizer until the
+  // user drags it to an explicit width.
+  let tagsColMeasured: number = TAG_COLUMN.explore.MIN;
 
   const toggleButtonBaseClass =
     "flex h-[26px] w-[42px] items-center justify-center rounded-sm text-icon-muted transition-colors hover:bg-surface-hover hover:text-fg-primary active:bg-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed";
@@ -44,7 +53,6 @@
   $: tooltipText = `Choose ${type === "measure" ? "measures" : "dimensions"} to display`;
   $: pluralLabel = type === "measure" ? "measures" : "dimensions";
 
-  $: tagIndex = buildTagIndex(allItems);
   $: tags = tagIndex.tags;
 
   $: hasTags = tags.length > 0;
@@ -160,11 +168,28 @@
 
       <div class="flex flex-row" class:divide-x={hasTags}>
         {#if hasTags}
-          <!-- Left column: tags -->
+          <!-- Left column: tags. Auto-fits to content (capped) until the user
+               drags the divider to an explicit width. -->
           <div
-            class="flex flex-col flex-none w-[240px] p-1.5"
+            class="flex flex-col flex-none p-1.5 relative"
             data-testid="tags-section"
+            bind:clientWidth={tagsColMeasured}
+            style="width: {$exploreTagColumnWidth !== null
+              ? `${$exploreTagColumnWidth}px`
+              : 'fit-content'}; min-width: {TAG_COLUMN.explore
+              .MIN}px; max-width: {$exploreTagColumnWidth !== null
+              ? TAG_COLUMN.explore.DRAG_MAX
+              : TAG_COLUMN.explore.CAP}px;"
           >
+            <Resizer
+              direction="EW"
+              side="right"
+              min={TAG_COLUMN.explore.MIN}
+              max={TAG_COLUMN.explore.DRAG_MAX}
+              basis={0}
+              dimension={$exploreTagColumnWidth ?? tagsColMeasured}
+              onUpdate={(d) => exploreTagColumnWidth.set(d === 0 ? null : d)}
+            />
             <h3
               class="uppercase font-semibold text-[11px] text-fg-secondary px-2 pt-1 pb-1"
             >
@@ -194,25 +219,13 @@
           </div>
         {/if}
 
-        <!-- Right column: shown/hidden lists -->
-        <div class="flex flex-col flex-1 min-w-0">
-          {#if filterActive}
-            <div
-              class="flex items-center justify-between gap-x-2 px-3 py-1.5 bg-popover-accent"
-            >
-              <div class="text-xs text-fg-secondary truncate">
-                Filtered by tag
-                <span class="text-fg-primary font-medium">{selectedTag}</span>
-              </div>
-              <button
-                type="button"
-                class="flex items-center gap-x-1 text-xs text-theme-500 hover:text-theme-600 font-medium"
-                onclick={clearTagFilter}
-              >
-                <CancelCircle size="12px" />
-                Clear
-              </button>
-            </div>
+        <!-- Right column: shown/hidden lists. A min width keeps the list usable
+             as the tags column is dragged wider within the fixed-width popover. -->
+        <div
+          class="flex flex-col flex-1 {hasTags ? 'min-w-[240px]' : 'min-w-0'}"
+        >
+          {#if filterActive && selectedTag}
+            <TagFilterBanner tagName={selectedTag} onClear={clearTagFilter} />
           {/if}
 
           {#key selectedTag}

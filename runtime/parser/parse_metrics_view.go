@@ -314,8 +314,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	if tmp.DataTimeRange != "" {
-		_, err := rilltime.Parse(tmp.DataTimeRange, rilltime.ParseOptions{})
-		if err != nil {
+		if err := validateDataTimeRange(tmp.DataTimeRange); err != nil {
 			return fmt.Errorf(`invalid "data_time_range": %w`, err)
 		}
 	}
@@ -801,7 +800,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			}
 		}
 		if rollup.DataTimeRange != "" {
-			if _, err := rilltime.Parse(rollup.DataTimeRange, rilltime.ParseOptions{}); err != nil {
+			if err := validateDataTimeRange(rollup.DataTimeRange); err != nil {
 				return fmt.Errorf(`rollup[%d]: invalid "data_time_range": %w`, i, err)
 			}
 		}
@@ -1266,6 +1265,24 @@ func inferRefsFromSecurityRules(rules []*runtimev1.SecurityRule) ([]ResourceName
 	}
 	// No need to deduplicate because that's done upstream when the resource is inserted.
 	return refs, nil
+}
+
+// validateDataTimeRange parses a data_time_range expression and rejects it if it resolves to an
+// unbounded lower bound (e.g. "inf" or "earliest to now"). A zero start is the system-wide assumption
+// for "no time data present" (see valOrNullTime in the server and the metrics_time_range resolver),
+// so a declared range must have a concrete start; otherwise omit data_time_range to probe the table.
+func validateDataTimeRange(expr string) error {
+	rt, err := rilltime.Parse(expr, rilltime.ParseOptions{})
+	if err != nil {
+		return err
+	}
+	// Evaluate against the same synthetic anchors used when resolving declared ranges.
+	now := time.Now()
+	start, _, _ := rt.Eval(rilltime.EvalOptions{Now: now, MinTime: time.Time{}, MaxTime: now, Watermark: now})
+	if start.IsZero() {
+		return errors.New("must have a bounded start; \"inf\" and \"earliest\" resolve to an unbounded lower bound which the system treats as no data (use a concrete range like \"-90d to now\", or omit data_time_range to detect bounds from the table)")
+	}
+	return nil
 }
 
 // validateQueryAttributes validates query attribute keys

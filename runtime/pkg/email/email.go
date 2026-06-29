@@ -540,6 +540,31 @@ Thank you for trying Rill Cloud. We hope to see you again in the future!
 	})
 }
 
+type TrialStarted struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	FrontendURL  string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialStarted(opts *TrialStarted) error {
+	return c.SendWelcomeToTrial(&Welcome{
+		ToEmail:     opts.ToEmail,
+		ToName:      opts.ToName,
+		Subject:     fmt.Sprintf("A 30-day free trial for %s has started", opts.OrgName),
+		FrontendURL: opts.FrontendURL,
+		WelcomeText: template.HTML(fmt.Sprintf(`
+You now have access to Rill Cloud until <b>%s</b> to explore all features including:
+<ul>
+<li>User management (RBAC)</li>
+<li>Embedded dashboards</li>
+<li>Alerts and scheduled reports</li>
+</ul>
+`, opts.TrialEndDate.Format(dateFormat))),
+	})
+}
+
 type TrialEndingSoon struct {
 	ToEmail      string
 	ToName       string
@@ -619,6 +644,23 @@ We'd love to hear from you! If you have any feedback about your experience or ho
 Thank you for trying Rill Cloud. We hope to see you again in the future!
 `,
 		ShowFooter: false,
+	})
+}
+
+type TrialExtended struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialExtended(opts *TrialExtended) error {
+	return c.SendInformational(&Informational{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your trial for %s has been extended", opts.OrgName),
+		Body:       template.HTML(fmt.Sprintf("Your trial for <b>%q</b> has been extended until %s.", opts.OrgName, opts.TrialEndDate.Format(dateFormat))),
+		ShowFooter: true,
 	})
 }
 

@@ -361,6 +361,7 @@ func (w *PlanChangedWorker) Work(ctx context.Context, job *river.Job[PlanChanged
 			QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 			QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 			QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+			QuotaSeats:                          org.QuotaSeats,
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,

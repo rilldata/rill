@@ -912,6 +912,14 @@ service AdminService {
     };
   }
 
+  // SudoExtendTrial extends the trial period for an organization
+  rpc SudoExtendTrial(SudoExtendTrialRequest) returns (SudoExtendTrialResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/trial/extend",
+      body: "*"
+    };
+  }
+
   // SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
   rpc SudoGrantTrialCredits(SudoGrantTrialCreditsRequest) returns (SudoGrantTrialCreditsResponse) {
     option (google.api.http) = {
@@ -959,6 +967,21 @@ service AdminService {
   rpc SudoDeleteOrganizationBillingIssue(SudoDeleteOrganizationBillingIssueRequest) returns (SudoDeleteOrganizationBillingIssueResponse) {
     option (google.api.http) = {
       delete: "/v1/superuser/organizations/{org}/billing/issues/{type}"
+    };
+  }
+
+  // SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+  rpc SudoUpdateOrganizationBillingMessage(SudoUpdateOrganizationBillingMessageRequest) returns (SudoUpdateOrganizationBillingMessageResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organizations/{org}/billing/message",
+      body: "*"
+    };
+  }
+
+  // SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+  rpc SudoDeleteOrganizationBillingMessage(SudoDeleteOrganizationBillingMessageRequest) returns (SudoDeleteOrganizationBillingMessageResponse) {
+    option (google.api.http) = {
+      delete: "/v1/superuser/organizations/{org}/billing/message"
     };
   }
 
@@ -1253,6 +1276,39 @@ service AdminService {
     option (google.api.http) = {
       get: "/v1/orgs/{org}/projects/{project}/alerts/{name}/yaml"
     };
+  }
+
+  // ListPersonalFiles lists the calling user's personal files.
+  rpc ListPersonalFiles(ListPersonalFilesRequest) returns (ListPersonalFilesResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/personal-files"};
+  }
+
+  // CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+  rpc CreatePersonalFile(CreatePersonalFileRequest) returns (CreatePersonalFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-files",
+      body: "*"
+    };
+  }
+
+  // GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+  rpc GetPersonalFile(GetPersonalFileRequest) returns (GetPersonalFileResponse) {
+    option (google.api.http) = {
+      get: "/v1/orgs/{org}/projects/{project}/personal-files/{name}"
+    };
+  }
+
+  // EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+  rpc EditPersonalFile(EditPersonalFileRequest) returns (EditPersonalFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-files/{name}",
+      body: "*"
+    };
+  }
+
+  // DeletePersonalFile deletes a personal virtual file the caller owns.
+  rpc DeletePersonalFile(DeletePersonalFileRequest) returns (DeletePersonalFileResponse) {
+    option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/personal-files/{name}"};
   }
 
   // GetBillingSubscription lists the subscription for the organization
@@ -2124,6 +2180,7 @@ message SudoUpdateOrganizationQuotasRequest {
   optional int32 slots_per_deployment = 5;
   optional int32 outstanding_invites = 6;
   optional int64 storage_limit_bytes_per_deployment = 7;
+  optional int32 seats = 8;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -2139,6 +2196,15 @@ message SudoUpdateOrganizationBillingCustomerRequest {
 message SudoUpdateOrganizationBillingCustomerResponse {
   Organization organization = 1;
   Subscription subscription = 2;
+}
+
+message SudoExtendTrialRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  int32 days = 2 [(validate.rules).int32 = {gt: 0, lte: 30}];
+}
+
+message SudoExtendTrialResponse {
+  google.protobuf.Timestamp trial_end = 1;
 }
 
 message SudoGrantTrialCreditsRequest {
@@ -2215,6 +2281,20 @@ message SudoDeleteOrganizationBillingIssueRequest {
 }
 
 message SudoDeleteOrganizationBillingIssueResponse {}
+
+message SudoUpdateOrganizationBillingMessageRequest {
+  string org = 1;
+  BillingIssueLevel level = 2;
+  string message = 3;
+}
+
+message SudoUpdateOrganizationBillingMessageResponse {}
+
+message SudoDeleteOrganizationBillingMessageRequest {
+  string org = 1;
+}
+
+message SudoDeleteOrganizationBillingMessageResponse {}
 
 message SudoTriggerBillingRepairRequest {}
 
@@ -3122,6 +3202,59 @@ message GetAlertYAMLResponse {
   string yaml = 1;
 }
 
+message ListPersonalFilesRequest {
+  string org = 1;
+  string project = 2;
+}
+
+message ListPersonalFilesResponse {
+  repeated string files = 1;
+}
+
+message CreatePersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string display_name = 3 [(validate.rules).string.min_len = 1];
+  string kind = 4;
+  // Optional: initial YAML body. If empty, the server generates a blank template for the given type.
+  string yaml = 5;
+}
+
+message CreatePersonalFileResponse {
+  string name = 1;
+}
+
+message GetPersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message GetPersonalFileResponse {
+  string path = 1;
+  string yaml = 2;
+}
+
+message EditPersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+  string kind = 4;
+  string yaml = 5;
+}
+
+message EditPersonalFileResponse {
+}
+
+message DeletePersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message DeletePersonalFileResponse {
+}
+
 message GetBillingSubscriptionRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   bool superuser_force_access = 2;
@@ -3338,6 +3471,7 @@ message OrganizationQuotas {
   int32 slots_per_deployment = 4;
   int32 outstanding_invites = 5;
   int64 storage_limit_bytes_per_deployment = 6;
+  int32 seats = 7;
 }
 
 message Project {
@@ -3637,6 +3771,8 @@ enum BillingPlanType {
   BILLING_PLAN_TYPE_ENTERPRISE = 4;
   BILLING_PLAN_TYPE_FREE = 5;
   BILLING_PLAN_TYPE_PRO = 6;
+  BILLING_PLAN_TYPE_STARTER = 7;
+  BILLING_PLAN_TYPE_GROWTH = 8;
 }
 
 message BillingPlan {
@@ -3659,6 +3795,9 @@ message Quotas {
   string slots_per_deployment = 4;
   string outstanding_invites = 5;
   string storage_limit_bytes_per_deployment = 6;
+  string api_calls_per_seat = 7;
+  string seats = 8;
+  string tokens_per_seat = 9;
 }
 
 message Usergroup {
@@ -3693,6 +3832,7 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
   BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL = 8;
   BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED = 9;
+  BILLING_ISSUE_TYPE_MESSAGE = 10;
 }
 
 enum BillingIssueLevel {
@@ -3721,6 +3861,7 @@ message BillingIssueMetadata {
     BillingIssueMetadataNeverSubscribed never_subscribed = 7;
     BillingIssueMetadataOnCreditTrial on_credit_trial = 8;
     BillingIssueMetadataTrialCreditsDepleted trial_credits_depleted = 9;
+    BillingIssueMetadataMessage message = 10;
   }
 }
 
@@ -3770,4 +3911,8 @@ message BillingIssueMetadataTrialCreditsDepleted {
   string subscription_id = 1;
   string plan_id = 2;
   google.protobuf.Timestamp depleted_on = 3;
+}
+
+message BillingIssueMetadataMessage {
+  string message = 1;
 }

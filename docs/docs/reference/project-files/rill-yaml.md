@@ -164,7 +164,7 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
 
   - **`rill.ai.completion_timeout_seconds`** - _[integer]_ - Maximum duration of a full AI completion request (which may include multiple LLM calls and tool uses), in seconds. Default: 300. 
 
-  - **`rill.ai.llm_timeout_seconds`** - _[integer]_ - Maximum duration of a single LLM completion request, in seconds. Default: 180. 
+  - **`rill.ai.llm_timeout_seconds`** - _[integer]_ - Maximum duration of a single LLM completion request, in seconds. Default: 180. Note: when using Rill's hosted AI service (i.e. not a self-configured LLM), the admin server enforces a hard upper bound of 10 minutes, so values above that have no effect. 
 
   - **`rill.ai.default_query_limit`** - _[integer]_ - Default row limit applied to AI tool queries when no limit is specified. Default: 25. 
 
