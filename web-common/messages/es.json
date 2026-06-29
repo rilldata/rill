@@ -1063,6 +1063,7 @@
   "language_en": "English",
   "language_es": "Español",
   "language_switcher_label": "Idioma",
+  "language_switcher_persist_error": "No se pudo guardar tu preferencia de idioma. Puede revertirse al recargar.",
   "layout_inspector_panel_aria": "Panel del inspector",
   "leaderboard_compare": "Comparar",
   "leaderboard_copy_value": "Copiar este valor al portapapeles",

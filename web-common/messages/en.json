@@ -1063,6 +1063,7 @@
   "language_en": "English",
   "language_es": "Español",
   "language_switcher_label": "Language",
+  "language_switcher_persist_error": "Couldn't save your language preference. It may revert on reload.",
   "layout_inspector_panel_aria": "Inspector Panel",
   "leaderboard_compare": "Compare",
   "leaderboard_copy_value": "Copy this value to clipboard",

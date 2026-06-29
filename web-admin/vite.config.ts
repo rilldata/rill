@@ -45,7 +45,7 @@ export default defineConfig({
       project: "../web-common/project.inlang",
       outdir: "../web-common/src/paraglide",
       strategy: ["cookie", "preferredLanguage", "baseLocale"],
-      emitGitIgnore: false,
+      emitGitIgnore: true,
       emitPrettierIgnore: false,
       outputStructure: "locale-modules",
     }),

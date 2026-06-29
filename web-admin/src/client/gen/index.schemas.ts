@@ -1745,6 +1745,7 @@ export interface V1UserAuthToken {
 
 export interface V1UserPreferences {
   timeZone?: string;
+  preferredLocale?: string;
 }
 
 export interface V1UserQuotas {
