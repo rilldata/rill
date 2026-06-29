@@ -39,8 +39,7 @@ build, so you rarely need to run `build:i18n` manually during development.
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 </script>
 
-<button>{m.common_cancel()}</button>
-<p>{m.welcome_greeting({ name })}</p>
+<button>{m.common_cancel()}</button><p>{m.welcome_greeting({ name })}</p>
 ```
 
 - Import the `m` namespace; call messages as functions.
@@ -62,7 +61,7 @@ Use `feature_component_purpose`, lower snake_case, grouped by prefix in
   "common_cancel": "Cancel",
   "common_save": "Save",
   "welcome_greeting": "Welcome, {name}",
-  "dashboards_filters_clear_all": "Clear all filters"
+  "dashboards_filters_clear_all": "Clear all filters",
 }
 ```
 
