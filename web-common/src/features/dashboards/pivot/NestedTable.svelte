@@ -1,13 +1,8 @@
-<script lang="ts" context="module">
-  import { writable } from "svelte/store";
-  const measureLengths = writable(new Map<string, number>());
-  const rowDimensionLengths = writable(new Map<string, number>());
-</script>
-
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { writable } from "svelte/store";
   import type { HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
@@ -17,9 +12,9 @@
     nestedRowState,
   } from "./pivot-cell-classes";
   import {
-    type PivotClickSelectionState,
     dimKeyFromRow,
     nestedDimKeyFromRow,
+    type PivotClickSelectionState,
   } from "./pivot-click-selection";
   import {
     getRowNestedLabel,
@@ -29,9 +24,9 @@
   import {
     calculateMeasureWidth,
     calculateRowDimensionWidth,
-    COLUMN_WIDTH_CONSTANTS as WIDTHS,
     distributeColumnWidthsToFillContainer,
     getNestedRowDimensionWidthKey,
+    COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import {
@@ -39,11 +34,11 @@
     computeCellSelectedColDimGroupIndices,
     computeCellSelectedColIndices,
     computeSelectedColIndices,
-    type HoveredColRange,
     isHeaderInHoveredRange,
     isHoveredHeader,
     isInCellSelectedColRange,
     isInSelectedColRange,
+    type HoveredColRange,
   } from "./pivot-selection-indices";
   import { isShowMoreRow } from "./pivot-utils";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
@@ -82,6 +77,9 @@
   export let onColumnHeaderClick:
     | ((dimensionPath: Record<string, string>) => void)
     | undefined = undefined;
+
+  const measureLengths = writable(new Map<string, number>());
+  const rowDimensionLengths = writable(new Map<string, number>());
 
   const HEADER_HEIGHT = 30;
 

@@ -1,19 +1,15 @@
-<script lang="ts" context="module">
-  import { writable } from "svelte/store";
-  const columnLengths = writable(new Map<string, number>());
-</script>
-
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { MeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import {
+    COLUMN_WIDTH_CONSTANTS as WIDTHS,
     calculateColumnWidth,
     calculateMeasureWidth,
-    COLUMN_WIDTH_CONSTANTS as WIDTHS,
     distributeColumnWidthsToFillContainer,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { writable } from "svelte/store";
   import type { Column, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
@@ -58,6 +54,8 @@
   export let onMouseMove: (e: MouseEvent) => void;
   export let onTableLeave: () => void;
   export let onCellCopy: (e: MouseEvent) => void;
+
+  const columnLengths = writable(new Map<string, number>());
 
   const HEADER_HEIGHT = 30;
 
