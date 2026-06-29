@@ -27,7 +27,6 @@
   } from "../../client";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
-  import LanguageSelector from "./LanguageSelector.svelte";
 
   export let projectPermissions: V1ProjectPermissions | undefined = undefined;
 
@@ -125,8 +124,6 @@
     {/if}
 
     <ThemeToggle />
-    <LanguageSelector />
-
     <DropdownMenu.Separator />
 
     <DropdownMenu.Item

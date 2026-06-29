@@ -5,7 +5,6 @@
     width,
     position,
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let organizationPermissions: V1OrganizationPermissions;
@@ -14,17 +13,17 @@
   $: tabs = [
     {
       route: `/${organization}`,
-      label: m.common_projects(),
+      label: "Projects",
       hasPermission: true,
     },
     {
       route: `/${organization}/-/users`,
-      label: m.common_users(),
+      label: "Users",
       hasPermission: organizationPermissions.manageOrgMembers,
     },
     {
       route: `/${organization}/-/settings`,
-      label: m.common_settings(),
+      label: "Settings",
       hasPermission: organizationPermissions.manageOrg,
     },
   ];

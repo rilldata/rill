@@ -1,6 +1,5 @@
 <script lang="ts">
   import ProjectCard from "./ProjectCard.svelte";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Button } from "@rilldata/web-common/components/button";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { createQuery } from "@tanstack/svelte-query";
@@ -22,10 +21,10 @@
   <span
     class="flex flex-row items-center text-fg-secondary text-base font-normal leading-normal"
   >
-    <span class="grow">{m.projects_cards_subtitle()}</span>
+    <span class="grow">Check out your projects below.</span>
     {#if showNewProject}
       <Button type="secondary" href="/{organization}/-/create-project">
-        {m.projects_cards_new_project()}
+        + New project
       </Button>
     {/if}
   </span>
@@ -37,7 +36,7 @@
       </li>
     {:else}
       <p class="text-fg-secondary text-xs">
-        {m.projects_cards_empty()}
+        This organization has no projects yet.
       </p>
     {/each}
   </ol>

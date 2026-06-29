@@ -4,7 +4,6 @@
   import FeatherEditIcon from "@rilldata/web-common/components/icons/FeatherEditIcon.svelte";
   import PencilIcon from "@rilldata/web-common/components/icons/PencilIcon.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ShareIcon } from "lucide-svelte";
 
   let {
@@ -30,23 +29,19 @@
   </Dropdown.Trigger>
   <Dropdown.Content class="w-48" align="start" side="right">
     <Dropdown.Item class="text-sm" onclick={onEdit}>
-      <FeatherEditIcon />
-      {m.common_edit()}
+      <FeatherEditIcon /> Edit
     </Dropdown.Item>
     <Dropdown.Item class="text-sm" onclick={onRename}>
-      <PencilIcon />
-      {m.common_rename()}
+      <PencilIcon /> Rename
     </Dropdown.Item>
     <Dropdown.Item
       href="/{organization}/{project}/-/dashboards?share=true"
       class="text-sm"
     >
-      <ShareIcon size={14} />
-      {m.common_share()}
+      <ShareIcon size={14} /> Share
     </Dropdown.Item>
     <Dropdown.Item class="text-sm text-destructive" onclick={onDelete}>
-      <Trash />
-      {m.common_delete()}
+      <Trash /> Delete
     </Dropdown.Item>
   </Dropdown.Content>
 </Dropdown.Root>

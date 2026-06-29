@@ -5,7 +5,6 @@
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
   import ProjectCardActions from "@rilldata/web-admin/features/projects/ProjectCardActions.svelte";
@@ -59,12 +58,8 @@
     <!-- Permissions tag -->
     <Tag>
       <ProjectAccessControls {organization} {project}>
-        <svelte:fragment slot="read-project"
-          >{m.common_viewer()}</svelte:fragment
-        >
-        <svelte:fragment slot="manage-project"
-          >{m.common_admin()}</svelte:fragment
-        >
+        <svelte:fragment slot="read-project">Viewer</svelte:fragment>
+        <svelte:fragment slot="manage-project">Admin</svelte:fragment>
       </ProjectAccessControls>
     </Tag>
     <!-- Public vs Private indicator -->
@@ -76,12 +71,12 @@
           <Lock size="16px" />
         {/if}
         <TooltipContent slot="tooltip-content">
-          <span class="text-xs">
-            {m.projects_card_visibility_prefix()}
+          <span class="text-xs"
+            >This project is
             {#if $proj.data.project.public}
-              <span class="font-medium">{m.common_public()}</span>
+              <span class="font-medium"> public</span>
             {:else}
-              <span class="font-medium">{m.common_private()}</span>
+              <span class="font-medium"> private</span>
             {/if}
           </span>
         </TooltipContent>

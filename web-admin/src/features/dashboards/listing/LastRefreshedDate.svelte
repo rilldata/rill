@@ -3,7 +3,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
 
   export let dashboard: string;
@@ -29,7 +28,7 @@
 {#if data}
   <Tooltip distance={8}>
     <div class="text-[11px] text-fg-secondary">
-      {m.dashboards_listing_last_refreshed({ time: timeAgo(data) })}
+      Last refreshed {timeAgo(data)}
     </div>
     <TooltipContent slot="tooltip-content">
       {data.toLocaleString()}

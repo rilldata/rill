@@ -15,7 +15,6 @@
   import MoonCircleOutline from "@rilldata/web-common/components/icons/MoonCircleOutline.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
   export let organization: string;
@@ -53,9 +52,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: m.projects_redeploy_wake_failed({
-          error: getRpcErrorMessage(err),
-        }),
+        message: `Failed to wake project: ${getRpcErrorMessage(err)}`,
       });
     }
   }
@@ -85,18 +82,18 @@
         </div>
         <CtaHeader variant="bold">
           {isWaking
-            ? m.projects_redeploy_waking()
-            : m.projects_redeploy_hibernating()}
+            ? "Waking up your project..."
+            : "Your project is hibernating"}
         </CtaHeader>
         <Button
           type="primary"
           wide
           disabled={isWaking}
           loading={isWaking}
-          loadingCopy={m.projects_redeploy_waking_button()}
+          loadingCopy="Waking..."
           onClick={handleWakeProject}
         >
-          {m.projects_redeploy_wake_button()}
+          Wake project
         </Button>
         <CtaNeedHelp />
       </svelte:fragment>
@@ -106,11 +103,9 @@
           className="text-gray-300"
           gradientStopColor="slate-200"
         />
-        <CtaHeader variant="bold">
-          {m.projects_redeploy_hibernating_readonly()}
-        </CtaHeader>
+        <CtaHeader variant="bold">This project is hibernating</CtaHeader>
         <CtaMessage>
-          {m.projects_redeploy_contact_admin()}
+          Contact the project's administrator to redeploy the project.
         </CtaMessage>
         <CtaNeedHelp />
       </svelte:fragment>
