@@ -909,8 +909,12 @@ func (s *Server) SudoReportUsage(ctx context.Context, req *adminv1.SudoReportUsa
 		}
 	}
 
+	customerID := org.ID
+	if org.BillingCustomerID != "" {
+		customerID = org.BillingCustomerID
+	}
 	usage := &billing.Usage{
-		CustomerID:     org.ID,
+		CustomerID:     customerID,
 		MetricName:     req.EventName,
 		Value:          req.Value,
 		ReportingGrain: s.admin.Biller.GetReportingGranularity(),
@@ -924,7 +928,7 @@ func (s *Server) SudoReportUsage(ctx context.Context, req *adminv1.SudoReportUsa
 	}
 
 	return &adminv1.SudoReportUsageResponse{
-		CustomerId: org.ID,
+		CustomerId: customerID,
 		EventName:  req.EventName,
 		Value:      req.Value,
 		StartTime:  timestamppb.New(usage.StartTime),
