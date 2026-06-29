@@ -680,7 +680,12 @@
   // Drop the currently-dragged component onto a tab (appends a new row in that tab).
   function dropComponentOnTab(blockIndex: number, tabIndex: number) {
     if (!dragComponent) return;
-    moveComponentToTarget(dragComponent, { blockIndex, tabIndex });
+    const target = { blockIndex, tabIndex };
+    // Releasing over the label of the tab the component already lives in has no positional
+    // intent, so skip it: otherwise the move would pull the item from its row and re-append
+    // it as a new last row, reshaping the tab for a harmless release.
+    if (sameTarget(tabTargetFromPath(dragComponent.pathInYAML), target)) return;
+    moveComponentToTarget(dragComponent, target);
   }
 
   function handleComponentMouseDown({
