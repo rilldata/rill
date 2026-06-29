@@ -167,6 +167,39 @@ describe("paginate", () => {
     expect(withTitle.placements[0].yPt).toBeCloseTo(withTitle.marginPt + 30, 1);
   });
 
+  it("places the first slice of a tall component on page 0 below the title band", () => {
+    // A component taller than a full page must still begin on page 0, not strand
+    // the title on an otherwise-empty first page.
+    const result = paginate(
+      [block({ id: "tall", widthPx: 1000, heightPx: 5000 })],
+      { ...A4, contentWidthPx: 1000, titleReservePt: 30 },
+    );
+    const slices = result.placements
+      .filter((p) => p.block.id === "tall")
+      .sort((a, b) => a.page - b.page);
+    expect(slices[0].page).toBe(0);
+    // The first slice starts below the title band.
+    expect(slices[0].yPt).toBeCloseTo(result.marginPt + 30, 1);
+  });
+
+  it("does not strand the title when the first row fits a page but not the title band", () => {
+    // A row that fills nearly a full page (just under content height) would
+    // overflow once the title band is reserved; it must still land on page 0.
+    const contentHeightPx = (841.89 - 48) / ((595.28 - 48) / 1000);
+    const result = paginate(
+      [
+        block({
+          id: "near-full",
+          widthPx: 1000,
+          heightPx: Math.round(contentHeightPx) - 10,
+        }),
+      ],
+      { ...A4, contentWidthPx: 1000, titleReservePt: 30 },
+    );
+    // Page 0 must carry content, not just the title.
+    expect(result.placements.some((p) => p.page === 0)).toBe(true);
+  });
+
   it("places the filter bar (rowIndex -1) before content rows", () => {
     const result = paginate(
       [

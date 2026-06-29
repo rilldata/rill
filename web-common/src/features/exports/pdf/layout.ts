@@ -83,28 +83,44 @@ export function paginate(
 
   const rows = groupIntoRows(blocks);
 
+  // The title header occupies the top of the first page; content starts below
+  // it. Subsequent pages start at the margin.
+  const titleReservePt = opts.titleReservePt ?? 0;
+  const pageTopPt = (p: number) => marginPt + (p === 0 ? titleReservePt : 0);
+
   const placements: Placement[] = [];
   let page = 0;
-  // The title header occupies the top of the first page; content starts below it.
-  let cursorYPt = marginPt + (opts.titleReservePt ?? 0);
+  let cursorYPt = pageTopPt(0);
 
   for (const row of rows) {
     const rowTopPx = Math.min(...row.map((b) => b.yPx));
     const rowHeightPt = Math.max(...row.map((b) => b.heightPx)) * scale;
 
-    // A row taller than a full page must be sliced. For multi-component rows,
-    // slice every block against the same row-height bands so horizontal layout
-    // is preserved across pages.
-    if (rowHeightPt > contentHeightPt) {
-      if (cursorYPt > marginPt) {
+    // True when nothing has been placed on the current page yet, so we must not
+    // advance to a fresh page (that would strand the page, e.g. page 0 holding
+    // only the title band).
+    const atPageTop = cursorYPt <= pageTopPt(page) + 0.5;
+    const remainingPt = pageHeightPt - marginPt - cursorYPt;
+
+    // A row must be sliced when it can't fit a fresh page here: either it is
+    // taller than a full page, or it is the first thing on this page and still
+    // overflows (the title band leaves too little room on page 0). For
+    // multi-component rows, slice every block against the same row-height bands
+    // so horizontal layout is preserved across pages.
+    if (
+      rowHeightPt > contentHeightPt ||
+      (atPageTop && rowHeightPt > remainingPt + 0.5)
+    ) {
+      if (!atPageTop) {
         page += 1;
-        cursorYPt = marginPt;
+        cursorYPt = pageTopPt(page);
       }
 
       const rowHeightPx = rowHeightPt / scale;
-      const pageSrcPx = contentHeightPt / scale;
       let rowSrcYPx = 0;
       while (rowSrcYPx < rowHeightPx - 0.5) {
+        // The first page of a sliced row may have less room due to the title band.
+        const pageSrcPx = (pageHeightPt - marginPt - pageTopPt(page)) / scale;
         const rowSrcHeightPx = Math.min(pageSrcPx, rowHeightPx - rowSrcYPx);
 
         for (const block of row) {
@@ -122,7 +138,7 @@ export function paginate(
             block,
             page,
             xPt: marginPt + block.xPx * scale,
-            yPt: marginPt + (sliceTopPx - rowSrcYPx) * scale,
+            yPt: pageTopPt(page) + (sliceTopPx - rowSrcYPx) * scale,
             wPt: block.widthPx * scale,
             hPt: srcHeightPx * scale,
             srcYPx: sliceTopPx - blockTopPx,
@@ -132,19 +148,16 @@ export function paginate(
 
         rowSrcYPx += rowSrcHeightPx;
         page += 1;
-        cursorYPt = marginPt;
+        cursorYPt = pageTopPt(page);
       }
       continue;
     }
 
     // Move the whole row to the next page if it doesn't fit and isn't already
     // at the top of a page.
-    if (
-      cursorYPt > marginPt &&
-      cursorYPt + rowHeightPt > pageHeightPt - marginPt
-    ) {
+    if (!atPageTop && cursorYPt + rowHeightPt > pageHeightPt - marginPt) {
       page += 1;
-      cursorYPt = marginPt;
+      cursorYPt = pageTopPt(page);
     }
 
     for (const block of row) {
