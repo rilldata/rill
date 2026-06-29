@@ -11,9 +11,9 @@
   import GuardedDeleteProjectConfirmation from "@rilldata/web-admin/features/projects/settings/GuardedDeleteProjectConfirmation.svelte";
   import ProjectRenameDialog from "@rilldata/web-admin/features/projects/settings/ProjectRenameDialog.svelte";
   import EditBranchDialog from "@rilldata/web-admin/features/edit-session/EditBranchDialog.svelte";
-  import { getFeatureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { getRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { createQuery } from "@tanstack/svelte-query";
+  import { readable } from "svelte/store";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -27,6 +27,7 @@
   let editProjectOpen = $state(false);
   let renameProjectOpen = $state(false);
   let deleteProjectOpen = $state(false);
+  const disabledCloudEditingQuery = readable({ data: false });
 
   function doesProjectNameIncludeUnderscores(project: string) {
     return project.includes("_");
@@ -45,23 +46,19 @@
     };
   });
 
-  let cloudEditingQuery = $derived(
-    createQuery({
-      queryKey: [
-        "project-card-cloud-editing",
-        organization,
-        project,
-        runtimeConfig?.host,
-        runtimeConfig?.instanceId,
-      ],
-      enabled: !!runtimeConfig,
-      queryFn: async () => {
-        if (!runtimeConfig) return false;
-        const flags = await getFeatureFlags(getRuntimeClient(runtimeConfig));
-        return !!flags.cloudEditing;
+  let cloudEditingQuery = $derived.by(() => {
+    if (!runtimeConfig) return disabledCloudEditingQuery;
+    const runtimeClient = getRuntimeClient(runtimeConfig);
+    return createRuntimeServiceGetInstance(
+      runtimeClient,
+      {},
+      {
+        query: {
+          select: (data) => !!data.instance?.featureFlags?.cloudEditing,
+        },
       },
-    }),
-  );
+    );
+  });
 
   let canEditProject = $derived(
     !!$cloudEditingQuery.data && !!$proj.data?.projectPermissions?.manageDev,
