@@ -785,6 +785,8 @@ message RefreshModelTrigger {
   repeated string partitions = 3;
   // If true, it will refresh all partitions that errored on their last execution.
   bool all_errored_partitions = 4;
+  // If true, it will refresh all partitions that are currently marked as skipped.
+  bool all_skipped_partitions = 5;
 }
 
 message Theme {

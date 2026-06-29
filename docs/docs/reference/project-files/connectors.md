@@ -260,11 +260,15 @@ _[boolean]_ - Indicates whether a secured SSL connection is required
 
 ### `cluster`
 
-_[string]_ - Cluster name, required for running distributed queries 
+_[string]_ - Cluster name, required for running distributed queries
+
+### `sync_replicas`
+
+_[boolean]_ - Controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster, ensuring all inserted parts are visible across replicas before the partition swap. Defaults to true
 
 ### `write_dsn`
 
-_[string]_ - Separate connection string for write operations 
+_[string]_ - Separate connection string for write operations
 
 ### `database_whitelist`
 

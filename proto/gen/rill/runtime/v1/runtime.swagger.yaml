@@ -7550,6 +7550,9 @@ definitions:
       allErroredPartitions:
         type: boolean
         description: If true, it will refresh all partitions that errored on their last execution.
+      allSkippedPartitions:
+        type: boolean
+        description: If true, it will refresh all partitions that are currently marked as skipped.
   v1RefreshTrigger:
     type: object
     properties:

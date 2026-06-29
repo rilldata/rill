@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
 import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
 import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
 export enum AddDataStep {
   // Used purely to transition from Init to one of the other steps.
@@ -104,7 +105,7 @@ export type ImportStepConfig = {
   connector: string;
   importFrom: ImportFromConfig;
   importTo: ImportToConfig;
-  envBlob: string | null;
+  envEditSession: EnvEditSession;
 };
 
 export type ImportFromConfig =

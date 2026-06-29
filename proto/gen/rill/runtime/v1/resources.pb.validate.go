@@ -8709,6 +8709,8 @@ func (m *RefreshModelTrigger) validate(all bool) error {
 
 	// no validation rules for AllErroredPartitions
 
+	// no validation rules for AllSkippedPartitions
+
 	if len(errors) > 0 {
 		return RefreshModelTriggerMultiError(errors)
 	}
