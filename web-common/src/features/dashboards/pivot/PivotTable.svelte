@@ -53,6 +53,7 @@
   export let border = true;
   export let overscan = 20;
   export let rounded = true;
+  export let fillWidth = false;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -115,6 +116,7 @@
   $: table = createSvelteTable(options);
 
   let containerRefElement: HTMLDivElement;
+  let containerWidth = 0;
   let stickyRows: number[] = [];
   let rowScrollOffset = 0;
   let scrollLeft = 0;
@@ -355,6 +357,9 @@
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
   bind:this={containerRefElement}
+  bind:clientWidth={containerWidth}
+  class:w-full={fillWidth}
+  class:w-fit={!fillWidth}
   onscroll={() => handleScroll(containerRefElement)}
 >
   {#if isFlat}
@@ -379,6 +384,8 @@
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
+      {fillWidth}
+      {containerWidth}
       onCellCopy={handleClick}
     />
   {:else}
@@ -408,6 +415,8 @@
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
+      {fillWidth}
+      {containerWidth}
       onCellCopy={handleClick}
     />
   {/if}
@@ -425,7 +434,7 @@
 
 <style lang="postcss">
   .table-wrapper {
-    @apply overflow-auto h-fit max-h-full w-fit max-w-full;
+    @apply overflow-auto h-fit max-h-full max-w-full;
     @apply z-40 select-none;
   }
 </style>

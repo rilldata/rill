@@ -10,6 +10,7 @@
     calculateColumnWidth,
     calculateMeasureWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
+    distributeColumnWidthsToFillContainer,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
@@ -40,6 +41,8 @@
   export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
   export let config: PivotDataStoreConfig | undefined = undefined;
+  export let fillWidth = false;
+  export let containerWidth = 0;
 
   // Table props
   export let headerGroups: HeaderGroup<PivotDataRow>[];
@@ -85,10 +88,21 @@
     }
   });
 
-  $: totalLength = headers.reduce((acc, header) => {
-    return (
-      acc + ($columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH)
-    );
+  $: baseColumnWidths = headers.map(
+    (header) =>
+      $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH,
+  );
+  $: displayColumnWidths = fillWidth
+    ? distributeColumnWidthsToFillContainer(
+        headers.map((header, i) => ({
+          width: baseColumnWidths[i],
+          role: getMeasureColumn(header.column) ? "measure" : "dimension",
+        })),
+        containerWidth,
+      )
+    : baseColumnWidths;
+  $: totalLength = displayColumnWidths.reduce((acc, width) => {
+    return acc + width;
   }, 0);
 
   function getMeasureColumn(headerColumn: Column<PivotDataRow>) {
@@ -117,8 +131,9 @@
   style:height="{totalRowSize + HEADER_HEIGHT + headerGroups.length}px"
 >
   {#each headers as header, i (header.id)}
-    {@const length =
+    {@const baseLength =
       $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+    {@const length = displayColumnWidths[i] ?? baseLength}
     {@const last = i === headers.length - 1}
     <div style:width="{length}px" class="h-full relative">
       <Resizer
@@ -126,10 +141,10 @@
         direction="EW"
         min={WIDTHS.MIN_MEASURE_WIDTH}
         max={WIDTHS.MAX_MEASURE_WIDTH}
-        dimension={length}
+        dimension={baseLength}
         justify={last ? "end" : "center"}
         hang={!last}
-        onUpdate={(d) =>
+        onUpdate={(d: number) =>
           columnLengths.update((lengths) => {
             return lengths.set(header.column.id, d);
           })}
@@ -149,9 +164,10 @@
   onmouseleave={onTableLeave}
 >
   <colgroup>
-    {#each headers as header (header.id)}
-      {@const length =
+    {#each headers as header, i (header.id)}
+      {@const baseLength =
         $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+      {@const length = displayColumnWidths[i] ?? baseLength}
       <col style:width="{length}px" style:max-width="{length}px" />
     {/each}
   </colgroup>
