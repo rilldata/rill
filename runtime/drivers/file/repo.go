@@ -414,7 +414,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, changedFil
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
-		ChangedFiles:  gitutil.ToRepoFileChanges(files),
+		ChangedFiles:  repoFileChanges(files),
 	}, nil
 }
 
@@ -692,4 +692,34 @@ func restoreToCommit(path, subpath, commithash string) error {
 		return fmt.Errorf("failed to restore to commit: %s, %w", string(output), err)
 	}
 	return nil
+}
+
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }

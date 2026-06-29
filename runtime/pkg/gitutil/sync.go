@@ -10,8 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type GitStatus struct {
@@ -39,37 +37,6 @@ type ChangedFile struct {
 	// OldPath is the previous path; only set when Status is ChangedFileStatusRenamed.
 	OldPath string
 	Status  ChangedFileStatus
-}
-
-// ToRepoFileChanges converts a slice of ChangedFile to the drivers.RepoFileChange representation.
-func ToRepoFileChanges(files []ChangedFile) []drivers.RepoFileChange {
-	if len(files) == 0 {
-		return nil
-	}
-	out := make([]drivers.RepoFileChange, len(files))
-	for i, f := range files {
-		out[i] = drivers.RepoFileChange{
-			Path:    f.Path,
-			OldPath: f.OldPath,
-			Status:  toRepoFileStatus(f.Status),
-		}
-	}
-	return out
-}
-
-func toRepoFileStatus(s ChangedFileStatus) drivers.RepoFileStatus {
-	switch s {
-	case ChangedFileStatusAdded:
-		return drivers.RepoFileStatusAdded
-	case ChangedFileStatusModified:
-		return drivers.RepoFileStatusModified
-	case ChangedFileStatusDeleted:
-		return drivers.RepoFileStatusDeleted
-	case ChangedFileStatusRenamed:
-		return drivers.RepoFileStatusRenamed
-	default:
-		return drivers.RepoFileStatusUnspecified
-	}
 }
 
 // Status returns the status of the git repo at path.

@@ -71,14 +71,13 @@
     {#if expanded}
       <ul class="file-list">
         {#each changedFiles as file (file.path)}
-          {@const badge =
-            badges[file.status as unknown as string] ??
-            badges["GIT_FILE_STATUS_MODIFIED"]}
+          {@const status = file.status as unknown as string}
+          {@const badge = badges[status] ?? badges["GIT_FILE_STATUS_MODIFIED"]}
           <li class="file-row">
             <span class="badge {badge.class}" title={badge.label}
               >{badge.letter}</span
             >
-            {#if (file.status as unknown as string) === "GIT_FILE_STATUS_RENAMED"}
+            {#if status === "GIT_FILE_STATUS_RENAMED"}
               <span class="file-path" title="{file.oldPath} → {file.path}">
                 <span class="old-path">{file.oldPath}</span>
                 <span class="arrow">→</span>{file.path}
