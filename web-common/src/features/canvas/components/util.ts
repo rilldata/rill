@@ -40,36 +40,50 @@ import { readable } from "svelte/store";
 import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
 import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
 
-export const commonOptions: Record<
+import * as m from "@rilldata/web-common/paraglide/messages.js";
+
+/**
+ * Returns the common component options.
+ *
+ * This is a factory rather than a module-scope constant because the `label` and
+ * `placeholder` strings come from `m.*()`, which resolve against the active
+ * locale at call time. Evaluating them once at module load would freeze the
+ * labels in whatever locale was active when this module was first imported and
+ * leave them stale after a locale switch. Each call site already spreads the
+ * result inside its `inputParams()` getter, so resolution stays lazy.
+ */
+export function getCommonOptions(): Record<
   keyof ComponentCommonProperties,
   ComponentInputParam
-> = {
-  title: {
-    type: "text",
-    optional: true,
-    showInUI: true,
-    label: "Title",
-    meta: { placeholder: "Add a title to describe this component" },
-  },
-  description: {
-    type: "text",
-    optional: true,
-    showInUI: true,
-    label: "Description",
-    meta: {
-      placeholder: "Add additional context for this component",
+> {
+  return {
+    title: {
+      type: "text",
+      optional: true,
+      showInUI: true,
+      label: m.canvas_title_label(),
+      meta: { placeholder: m.canvas_title_placeholder() },
     },
-  },
-  show_description_as_tooltip: {
-    type: "boolean",
-    optional: true,
-    showInUI: true,
-    label: "Show description as tooltip",
-    meta: {
-      layout: "grouped",
+    description: {
+      type: "text",
+      optional: true,
+      showInUI: true,
+      label: m.canvas_description_label(),
+      meta: {
+        placeholder: m.canvas_description_placeholder(),
+      },
     },
-  },
-};
+    show_description_as_tooltip: {
+      type: "boolean",
+      optional: true,
+      showInUI: true,
+      label: m.canvas_show_description_as_tooltip_label(),
+      meta: {
+        layout: "grouped",
+      },
+    },
+  };
+}
 
 export function getFilterOptions(
   hasComparison = true,

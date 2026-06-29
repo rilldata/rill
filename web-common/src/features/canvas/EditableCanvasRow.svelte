@@ -1,6 +1,7 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { get, type Unsubscriber, type Writable } from "svelte/store";
   import CanvasComponent from "./CanvasComponent.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
@@ -244,7 +245,7 @@
           }}
         />
       {:else}
-        <ComponentError error="No valid component {id} in project" />
+        <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}
     </ItemWrapper>
   {/each}

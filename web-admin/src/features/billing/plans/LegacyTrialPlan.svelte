@@ -6,6 +6,7 @@
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
   import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let {
     organization,
@@ -45,33 +46,31 @@
 </script>
 
 <PlanContainer
-  badge="Free Trial"
+  badge={m.billing_plan_badge_free_trial()}
   description={isTrialExpired
-    ? "Trial expired · Projects hibernated"
-    : "30 day free trial"}
+    ? m.billing_trial_expired_hibernated()
+    : m.billing_30_day_free_trial()}
 >
   {#snippet info()}
     {#if !isTrialExpired}
-      free trial · 30 days, no credit card required. Projects hibernate when
-      trial ends.
+      {m.billing_free_trial_info()}
     {/if}
   {/snippet}
 
   {#snippet action()}
-    <button class="subscribe-btn" onclick={upgrade}>Upgrade to Team plan</button
-    >
+    <button class="subscribe-btn" onclick={upgrade}>{m.billing_upgrade_to_team()}</button>
   {/snippet}
 
   <div class="trial-section">
     <div class="flex justify-between mb-1">
       <div>
-        <span class="trial-label">Days used</span>
+        <span class="trial-label">{m.billing_days_used()}</span>
         <p class="trial-number-used">
           {trialDaysUsed}
         </p>
       </div>
       <div class="text-right">
-        <span class="trial-label">Days remaining</span>
+        <span class="trial-label">{m.billing_days_remaining()}</span>
         <p
           class="trial-number"
           class:text-green-600={trialDaysRemaining > 7}
@@ -86,9 +85,9 @@
     </div>
     <div class="flex justify-between mt-1">
       <span class="text-xs text-fg-tertiary">
-        {trialPercent}% of trial used, projects will hibernate when trial ends
+        {m.billing_trial_percent_used({ percent: String(trialPercent) })}
       </span>
-      <span class="text-xs text-fg-tertiary">30 days</span>
+      <span class="text-xs text-fg-tertiary">{m.billing_30_days()}</span>
     </div>
 
     <PricingLink />

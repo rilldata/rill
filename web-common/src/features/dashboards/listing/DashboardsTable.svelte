@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
@@ -128,7 +129,7 @@
         <slot name="empty">
           <ResourceListEmptyState
             icon={ExploreIcon}
-            message="You don't have any dashboards yet"
+            message={m.dashboard_no_dashboards_yet()}
           >
             <span slot="action">
               <a
@@ -136,8 +137,8 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Create a dashboard</a
-              > to get started
+                {m.dashboard_create_a_dashboard()}</a
+              > {m.dashboard_to_get_started()}
             </span>
           </ResourceListEmptyState>
         </slot>
@@ -149,7 +150,7 @@
           href={seeAllHref}
           class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
         >
-          See all dashboards &rarr;
+          {m.dashboard_see_all()}
         </a>
       </div>
     {/if}

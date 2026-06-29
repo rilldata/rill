@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
@@ -140,7 +141,7 @@
   <!-- {/if} -->
   {#if exceedsCap}
     <div class="text-red-500 text-xs px-1" role="alert">
-      Range exceeds the {capLabel} query limit.
+      {m.calendar_range_exceeds_limit({ capLabel: capLabel ?? "" })}
     </div>
   {/if}
   <div class="flex justify-end w-full">
@@ -155,7 +156,7 @@
         closeMenu();
       }}
     >
-      <span class="px-2 w-fit">Apply</span>
+      <span class="px-2 w-fit">{m.calendar_apply()}</span>
     </Button>
   </div>
 </div>

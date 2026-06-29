@@ -9,6 +9,7 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let open = false;
   export let id: string;
@@ -32,10 +33,10 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this public URL?</AlertDialogTitle>
+      <AlertDialogTitle>{m.public_url_delete_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          Recipients of this URL will no longer be able to access it.
+          {m.public_url_delete_description()}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -44,9 +45,9 @@
         type="tertiary"
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.public_url_cancel_button()}</Button
       >
-      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
+      <Button type="destructive" onClick={handleDelete}>{m.public_url_yes_delete_button()}</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

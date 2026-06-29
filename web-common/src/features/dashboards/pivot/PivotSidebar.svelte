@@ -19,6 +19,7 @@
   import { timePillActions, timePillSelectors } from "./time-pill-store";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let pivotState: PivotState;
   export let measures: PivotChipData[];
@@ -162,9 +163,11 @@
           onUpdate={(d) => pivotTagColumnWidth.set(d === 0 ? null : d)}
         />
         <div class="tags-scroll">
-          <h3 class="column-header">Tags</h3>
+          <h3 class="column-header">{m.dashboard_tags()}</h3>
           {#if filteredTags.length === 0}
-            <p class="text-fg-secondary my-1 px-2 text-xs">No matching tags</p>
+            <p class="text-fg-secondary my-1 px-2 text-xs">
+              {m.dashboard_no_matching_tags()}
+            </p>
           {:else}
             {#each filteredTags as tag (tag.name)}
               {@const items = tagItemsFor(tag.name)}
@@ -190,9 +193,23 @@
         <TagFilterBanner tagName={selectedTag} onClear={clearTagFilter} />
       {/if}
 
-      <PivotDrag title="Time" items={timeGrainOptions} {tableMode} />
-      <PivotDrag title="Measures" items={filteredMeasures} />
-      <PivotDrag title="Dimensions" items={filteredDimensions} {tableMode} />
+      <PivotDrag
+        title="Time"
+        label={m.dashboard_time()}
+        items={timeGrainOptions}
+        {tableMode}
+      />
+      <PivotDrag
+        title="Measures"
+        label={m.dashboard_measures()}
+        items={filteredMeasures}
+      />
+      <PivotDrag
+        title="Dimensions"
+        label={m.dashboard_dimensions()}
+        items={filteredDimensions}
+        {tableMode}
+      />
     </div>
   </div>
 </div>

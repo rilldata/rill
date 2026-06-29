@@ -11,6 +11,8 @@ import Markdown from "./Markdown.svelte";
 
 export { default as Markdown } from "./Markdown.svelte";
 
+import * as m from "@rilldata/web-common/paraglide/messages.js";
+
 export const defaultMarkdownAlignment: ComponentAlignment = {
   vertical: "middle",
   horizontal: "left",
@@ -49,12 +51,12 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
       options: {
         content: {
           type: "textarea",
-          label: "Markdown",
+          label: m.canvas_markdown_label(),
           description: "Write text using the markdown syntax",
         },
         alignment: {
           type: "alignment",
-          label: "Alignment",
+          label: m.canvas_alignment_label(),
           meta: {
             defaultAlignment: defaultMarkdownAlignment,
           },
@@ -63,7 +65,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           type: "boolean",
           optional: true,
           showInUI: true,
-          label: "Apply measure value formatting",
+          label: m.canvas_apply_measure_formatting_label(),
           description:
             "Format measure values according to their format settings",
         },

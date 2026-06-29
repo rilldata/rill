@@ -11,6 +11,7 @@
     getSanitizedCanvasStateUrl,
     hasCanvasFilters,
   } from "./canvas-form-utils";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   const runtimeClient = useRuntimeClient();
 
@@ -84,7 +85,7 @@
 
   <div class="flex flex-col gap-y-1">
     <p class="text-xs text-fg-primary font-normal">
-      The following filters will be locked and hidden:
+      {m.public_url_filters_locked_hidden()}
     </p>
     {#if canvasAppliedFiltersStore}
       <div class="flex flex-col gap-2 my-2">

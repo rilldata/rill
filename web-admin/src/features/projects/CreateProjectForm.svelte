@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import {
     createAdminServiceCreateDeployment,
     createAdminServiceCreateManagedGitRepo,
@@ -43,13 +44,13 @@
   const schema = yup(
     object({
       name: string()
-        .required("Name is required")
+        .required(m.project_name_required())
         .matches(
           /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/,
-          "Name must start with a letter or number and may only contain letters, numbers, hyphens, and underscores",
+          m.project_name_format_error(),
         )
-        .min(1, "Name must be at least 1 character")
-        .max(40, "Name must be at most 40 characters"),
+        .min(1, m.project_name_min_length())
+        .max(40, m.project_name_max_length()),
     }),
   );
 
@@ -162,7 +163,7 @@
     bind:value={$form.name}
     errors={$errors?.name}
     id="name"
-    label="Name"
+    label={m.common_name()}
     textClass="text-sm"
     alwaysShowError
     width="500px"
@@ -177,7 +178,7 @@
       disabled={$submitting}
       onClick={submit}
     >
-      Create project
+      {m.project_create_project()}
     </Button>
   </div>
 </form>

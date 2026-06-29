@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { Button } from "@rilldata/web-common/components/button";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
@@ -21,7 +22,9 @@
   } from "./utils";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
-  export let placeholder: string = "Search or invite by email";
+  export let placeholder: string | undefined = undefined;
+
+  $: resolvedPlaceholder = placeholder ?? m.project_search_or_invite();
   export let validators: ((value: string) => boolean | string)[] = [];
   export let roleSelect: boolean = false;
   export let initialRole: string = ProjectUserRoles.Viewer;
@@ -199,7 +202,7 @@
         error = "";
       })
       .catch((err) => {
-        error = err.message || "Failed to invite.";
+        error = err.message || m.project_share_failed_to_invite();
       });
   }
 
@@ -370,7 +373,7 @@
           type="text"
           bind:value={input}
           bind:this={inputElement}
-          placeholder={selected.length === 0 ? placeholder : ""}
+          placeholder={selected.length === 0 ? resolvedPlaceholder : ""}
           oninput={handleInput}
           onkeydown={handleInputKeydown}
           onfocus={handleFocus}
@@ -396,7 +399,7 @@
       disabled={selected.length === 0 && !input.trim()}
       forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
     >
-      Invite
+      {m.users_invite()}
     </Button>
   </div>
 
@@ -416,7 +419,7 @@
       }}
     >
       {#if categorizedResults.groups.length > 0}
-        <div class="section-header">GROUPS</div>
+        <div class="section-header">{m.users_section_groups()}</div>
         {#each categorizedResults.groups as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
@@ -442,7 +445,7 @@
       {/if}
 
       {#if categorizedResults.members.length > 0}
-        <div class="section-header">MEMBERS</div>
+        <div class="section-header">{m.users_section_members()}</div>
         {#each categorizedResults.members as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
@@ -468,7 +471,7 @@
       {/if}
 
       {#if categorizedResults.guests.length > 0}
-        <div class="section-header">GUESTS</div>
+        <div class="section-header">{m.users_section_guests()}</div>
         {#each categorizedResults.guests as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
@@ -495,7 +498,7 @@
       style="width: {dropdownPosition.width}px; top: {dropdownPosition.top}px; left: {dropdownPosition.left}px;"
     >
       <div class="loading-spinner"></div>
-      <span>Searching...</span>
+      <span>{m.users_searching()}</span>
     </div>
   {/if}
 </div>

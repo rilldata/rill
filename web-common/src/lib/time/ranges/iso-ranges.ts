@@ -1,4 +1,5 @@
 import { PeriodAndUnits } from "@rilldata/web-common/lib/time/config";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges/index";
 import {
   subtractFromPeriod,
@@ -113,7 +114,7 @@ export function isoDurationToTimeRangeMeta(
   defaultComparison: TimeComparisonOption,
 ): TimeRangeMeta {
   return {
-    label: `Last ${humaniseISODuration(isoDuration)}`,
+    label: m.time_last_duration({ duration: humaniseISODuration(isoDuration) }),
     defaultComparison,
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     start: {

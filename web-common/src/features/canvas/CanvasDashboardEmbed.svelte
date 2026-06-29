@@ -3,6 +3,7 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
   import { derived } from "svelte/store";
@@ -65,7 +66,9 @@
         {#if $firstLoad}
           <Spinner status={EntityStatus.Running} size="32px" />
         {:else}
-          <p class="text-lg text-fg-secondary">No components added</p>
+          <p class="text-lg text-fg-secondary">
+            {m.canvas_no_components_added()}
+          </p>
         {/if}
       </div>
     {/each}

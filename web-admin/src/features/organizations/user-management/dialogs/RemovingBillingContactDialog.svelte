@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import * as Alert from "@rilldata/web-common/components/alert-dialog";
   import Button from "web-common/src/components/button/Button.svelte";
 
@@ -15,12 +16,11 @@
   <Alert.Content noCancel>
     <Alert.Header>
       <Alert.Title>
-        Assign a new billing contact first to remove this user
+        {m.users_billing_remove_title()}
       </Alert.Title>
       <Alert.Description>
         <div class="mt-1">
-          This user is the current billing contact and can’t be removed. To
-          proceed, assign another admin as the billing contact.
+          {m.users_billing_remove_desc()}
         </div>
       </Alert.Description>
     </Alert.Header>
@@ -31,7 +31,7 @@
           open = false;
         }}
       >
-        Cancel
+        {m.users_cancel()}
       </Button>
       <Button
         type="primary"
@@ -40,7 +40,7 @@
           onChange();
         }}
       >
-        Change billing contact
+        {m.users_change_billing_contact()}
       </Button>
     </Alert.Footer>
   </Alert.Content>

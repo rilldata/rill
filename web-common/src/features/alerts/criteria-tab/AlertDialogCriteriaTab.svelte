@@ -1,5 +1,6 @@
 <script lang="ts">
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import AlertPreview from "@rilldata/web-common/features/alerts/criteria-tab/AlertPreview.svelte";
   import CriteriaGroup from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaGroup.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
@@ -16,12 +17,12 @@
 
 <div class="flex flex-col gap-y-3">
   <FormSection
-    description="Trigger alert when these conditions are met"
-    title="Criteria"
+    description={m.alert_form_criteria_description()}
+    title={m.alert_form_criteria_title()}
   >
     <CriteriaGroup {superFormInstance} {timeControls} />
   </FormSection>
-  <FormSection title="Alert Preview">
+  <FormSection title={m.alert_form_criteria_preview_title()}>
     <AlertPreview formValues={$form} {filters} {timeControls} />
   </FormSection>
 </div>

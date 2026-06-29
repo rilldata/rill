@@ -5,6 +5,7 @@
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
   import { PricingDetailsCompact } from "@rilldata/web-common/features/billing/pricing-details.ts";
   import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let {
     organization,
@@ -23,21 +24,21 @@
   let { usedCredit, availableCredit, creditPercent } = $derived($planCredits);
 </script>
 
-<PlanContainer badge="Pro Trial" description="$250 free credit">
+<PlanContainer badge={m.billing_plan_badge_pro_trial()} description={m.billing_free_credit_desc()}>
   {#snippet info()}
-    No time limit, use it until it's gone.<br />
+    {m.billing_no_time_limit()}<br />
     {PricingDetailsCompact}<br />
-    1 unit = 4GiB RAM, 1vGPU
+    {m.billing_unit_spec()}
   {/snippet}
 
   {#snippet action()}
-    <button class="subscribe-btn" onclick={upgrade}>Upgrade to Pro</button>
+    <button class="subscribe-btn" onclick={upgrade}>{m.billing_upgrade_to_pro()}</button>
   {/snippet}
 
   <div class="credit-section">
     <div class="flex justify-between">
-      <span class="credit-label">Used credit</span>
-      <span class="credit-label">Available credit</span>
+      <span class="credit-label">{m.billing_used_credit()}</span>
+      <span class="credit-label">{m.billing_available_credit()}</span>
     </div>
     <div class="flex justify-between items-end">
       <span class="credit-used">{formatCredit(usedCredit)}</span>
@@ -47,7 +48,7 @@
       <div class="credit-bar-fill" style:width="{creditPercent}%"></div>
     </div>
     <span class="text-xs text-fg-tertiary font-medium">
-      {creditPercent}% used, projects will hibernate when credits run out.
+      {m.billing_credit_percent_used({ percent: String(creditPercent) })}
     </span>
 
     <PricingLink />

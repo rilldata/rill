@@ -1,4 +1,5 @@
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { DateTimeUnit, Interval } from "luxon";
 
@@ -397,4 +398,70 @@ export function allowedGrainsForInterval(
   } else {
     return [minTimeGrain];
   }
+}
+
+/**
+ * Translate a Luxon DateTimeUnit grain name (singular) to a localized display string.
+ * Must be called from within a function, reactive block, or template — never at module scope.
+ */
+export function translateGrainName(grain: string): string {
+  switch (grain) {
+    case "minute":
+      return m.time_grain_minute();
+    case "hour":
+      return m.time_grain_hour();
+    case "day":
+      return m.time_grain_day();
+    case "week":
+      return m.time_grain_week();
+    case "month":
+      return m.time_grain_month();
+    case "quarter":
+      return m.time_grain_quarter();
+    case "year":
+      return m.time_grain_year();
+    default:
+      return grain;
+  }
+}
+
+/**
+ * Translate a Luxon DateTimeUnit grain name (plural) to a localized display string.
+ * Must be called from within a function, reactive block, or template — never at module scope.
+ */
+export function translateGrainNamePlural(grain: string): string {
+  switch (grain) {
+    case "minute":
+    case "minutes":
+      return m.time_grain_minutes();
+    case "hour":
+    case "hours":
+      return m.time_grain_hours();
+    case "day":
+    case "days":
+      return m.time_grain_days();
+    case "week":
+    case "weeks":
+      return m.time_grain_weeks();
+    case "month":
+    case "months":
+      return m.time_grain_months();
+    case "quarter":
+    case "quarters":
+      return m.time_grain_quarters();
+    case "year":
+    case "years":
+      return m.time_grain_years();
+    default:
+      return grain;
+  }
+}
+
+/**
+ * Translate a V1TimeGrain enum value to a localized display string.
+ * Must be called from within a function, reactive block, or template — never at module scope.
+ */
+export function translateV1TimeGrain(grain: V1TimeGrain): string {
+  const unit = V1TimeGrainToDateTimeUnit[grain];
+  return translateGrainName(unit);
 }

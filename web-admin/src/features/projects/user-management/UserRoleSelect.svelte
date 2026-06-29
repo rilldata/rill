@@ -7,7 +7,8 @@
   } from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { PROJECT_ROLES_OPTIONS } from "./constants";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
+  import { getProjectRolesOptions } from "./constants";
 
   export let value: string;
   export let width = "w-18";
@@ -18,7 +19,8 @@
     value = val;
   }
 
-  $: selected = PROJECT_ROLES_OPTIONS.find((o) => o.value === value);
+  $: projectRolesOptions = getProjectRolesOptions();
+  $: selected = projectRolesOptions.find((o) => o.value === value);
 </script>
 
 <DropdownMenu bind:open>
@@ -40,7 +42,7 @@
     class="w-[240px]"
     strategy="fixed"
   >
-    {#each PROJECT_ROLES_OPTIONS as { value, label, description } (value)}
+    {#each projectRolesOptions as { value, label, description } (value)}
       <DropdownMenuItem
         onclick={() => onSelect(value)}
         class="text-xs hover:bg-surface-hover {selected?.value === value

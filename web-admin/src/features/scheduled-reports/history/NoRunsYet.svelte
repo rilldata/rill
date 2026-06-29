@@ -1,5 +1,6 @@
 <script lang="ts">
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 </script>
 
 <div
@@ -14,7 +15,7 @@
     class="flex flex-col gap-y-2 justify-center items-center text-center text-sm"
   >
     <div class="text-fg-secondary font-semibold">
-      This report has not run yet
+      {m.report_has_not_run_yet()}
     </div>
     <!-- <div>
       <span style="text-fg-secondary font-normal"

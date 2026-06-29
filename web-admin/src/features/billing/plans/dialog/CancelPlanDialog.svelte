@@ -16,6 +16,7 @@
   } from "@rilldata/web-admin/client";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations.ts";
 
   let {
@@ -48,9 +49,10 @@
   });
   async function handleCancelPlan() {
     await $planCanceller.mutateAsync({ org: organization });
+    const planDisplayName = currentPlan === "pro" ? m.billing_plan_badge_pro() : m.billing_plan_badge_team();
     eventBus.emit("notification", {
       type: "success",
-      message: `Your ${currentPlan === "pro" ? "Pro" : "Team"} plan was cancelled`,
+      message: m.billing_plan_was_cancelled({ planName: planDisplayName }),
     });
     void invalidateBillingInfo(organization, [
       V1BillingIssueType.BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED,
@@ -70,12 +72,10 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>
-        Cancel your {currentPlan === "pro" ? "Pro" : "Team"} plan?
+        {m.billing_cancel_plan_title({ planName: currentPlan === "pro" ? m.billing_plan_badge_pro() : m.billing_plan_badge_team() })}
       </AlertDialogTitle>
       <AlertDialogDescription>
-        If you cancel your plan, you'll still be able to access your account
-        through
-        <span class="font-semibold">{cycleEndFormatted}.</span>
+        {m.billing_cancel_plan_desc({ date: cycleEndFormatted })}
       </AlertDialogDescription>
       {#if cancelError}
         <p class="text-red-500 text-sm">{cancelError}</p>
@@ -87,9 +87,9 @@
         onClick={handleCancelPlan}
         loading={$planCanceller.isPending}
       >
-        Cancel plan
+        {m.billing_cancel_plan()}
       </Button>
-      <Button type="primary" onClick={() => (open = false)}>Keep plan</Button>
+      <Button type="primary" onClick={() => (open = false)}>{m.billing_keep_plan()}</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

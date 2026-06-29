@@ -5,6 +5,7 @@
     width,
     position,
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let organization: string;
   export let organizationPermissions: V1OrganizationPermissions;
@@ -13,17 +14,17 @@
   $: tabs = [
     {
       route: `/${organization}`,
-      label: "Projects",
+      label: m.org_tab_projects(),
       hasPermission: true,
     },
     {
       route: `/${organization}/-/users`,
-      label: "Users",
+      label: m.org_tab_users(),
       hasPermission: organizationPermissions.manageOrgMembers,
     },
     {
       route: `/${organization}/-/settings`,
-      label: "Settings",
+      label: m.org_tab_settings(),
       hasPermission: organizationPermissions.manageOrg,
     },
   ];

@@ -5,6 +5,7 @@
   import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
   import { formatUsageVsQuota } from "@rilldata/web-admin/features/billing/plans/utils.ts";
   import { Progress } from "@rilldata/web-common/components/progress";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let organization: string;
 
@@ -23,7 +24,7 @@
     $organizationQuotas.data?.projects !== undefined &&
     $organizationQuotas.data?.projects !== -1
       ? $organizationQuotas.data?.projects
-      : "Unlimited";
+      : m.billing_unlimited();
 
   $: usageMetrics = getOrganizationUsageMetrics(organization);
   $: totalOrgUsage = $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0;
@@ -35,16 +36,16 @@
 
 <div class="quotas">
   <div class="quota-entry">
-    <div class="quota-entry-title">Projects</div>
+    <div class="quota-entry-title">{m.billing_projects()}</div>
     <div class="quota-entry-body">
-      {$projects.data?.projects?.length} of {projectQuota}
+      {m.billing_x_of_y({ current: String($projects.data?.projects?.length ?? 0), total: String(projectQuota) })}
     </div>
   </div>
 
   {#if $usageMetrics?.data}
     {#if singleProjectLimit && storageLimitBytesPerDeployment && storageLimitBytesPerDeployment !== "-1"}
       <div class="quota-entry">
-        <div class="quota-entry-title">Data Size</div>
+        <div class="quota-entry-title">{m.billing_data_size()}</div>
         <div>
           <Progress
             value={totalOrgUsage}

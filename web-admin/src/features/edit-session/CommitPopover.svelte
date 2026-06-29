@@ -13,6 +13,7 @@
     type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let commitMessage = "";
   let isCommitting = false;
@@ -38,7 +39,7 @@
       });
       eventBus.emit("notification", {
         type: "success",
-        message: "Changes committed and pushed",
+        message: m.edit_changes_committed_pushed(),
       });
       commitMessage = "";
       open = false;
@@ -46,7 +47,7 @@
       const message = getRpcErrorMessage(err as RpcStatus);
       eventBus.emit("notification", {
         type: "error",
-        message: message ?? "Failed to commit and push changes",
+        message: message ?? m.edit_failed_to_commit(),
       });
     } finally {
       isCommitting = false;
@@ -80,7 +81,7 @@
           class="commit-input"
           bind:value={commitMessage}
           onkeydown={handleKeydown}
-          placeholder="Describe your changes..."
+          placeholder={m.edit_describe_changes()}
           rows="3"
         ></textarea>
         <Button
@@ -88,7 +89,7 @@
           small
           disabled={!commitMessage.trim() || isCommitting}
           loading={isCommitting}
-          loadingCopy="Pushing..."
+          loadingCopy={m.edit_pushing()}
           onClick={handleCommit}
         >
           Commit & push

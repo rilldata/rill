@@ -16,6 +16,7 @@
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme.ts";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let open = false;
   export let measure: MetricsViewSpecMeasure;
@@ -96,7 +97,7 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="max-w-3xl flex flex-col gap-y-4">
     <Dialog.Header>
-      <Dialog.Title>Export chart</Dialog.Title>
+      <Dialog.Title>{m.dashboard_export_chart()}</Dialog.Title>
     </Dialog.Header>
 
     <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
@@ -116,7 +117,7 @@
           <div class="grow"></div>
           <div>
             {formattedTimeRange}
-            {#if formattedComparisonRange}vs {formattedComparisonRange}{/if}
+            {#if formattedComparisonRange}{m.kpi_vs_comparison({ comparison: formattedComparisonRange })}{/if}
           </div>
         </header>
 
@@ -172,19 +173,21 @@
 
         <footer class="flex items-center justify-between text-xs text-fg-muted">
           <span>Rill</span>
-          <span>Generated {generatedTime}</span>
+          <span>{m.dashboard_generated({ time: generatedTime })}</span>
         </footer>
       </div>
     </ThemeProvider>
 
     <Dialog.Footer>
-      <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="secondary" onClick={() => (open = false)}
+        >{m.dashboard_cancel()}</Button
+      >
       <Button
         type="primary"
         disabled={downloading}
         onClick={downloadScreenshot}
       >
-        {downloading ? "Generating…" : "Download PNG"}
+        {downloading ? m.dashboard_generating() : m.dashboard_download_png()}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

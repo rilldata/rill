@@ -11,6 +11,7 @@
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { BellPlusIcon } from "lucide-svelte";
 
   const {
@@ -32,10 +33,10 @@
 
 {#if hasTimeDimension && $dashboardStore}
   <GuardedDialog
-    title="Close without saving?"
-    description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
-    confirmLabel="Close"
-    cancelLabel="Keep editing"
+    title={m.dialog_close_without_saving_title()}
+    description={m.dialog_close_without_saving_alert_desc()}
+    confirmLabel={m.dialog_close_without_saving_confirm()}
+    cancelLabel={m.dialog_close_without_saving_cancel()}
     bind:open
     let:onCancel
     let:onClose
@@ -49,12 +50,12 @@
             compact
             disabled={$isCustomTimeRange}
             type="secondary"
-            label="Create alert"
+            label={m.alert_create_alert()}
           >
             <BellPlusIcon class="inline-flex" size="16px" />
           </Button>
           <TooltipContent slot="tooltip-content">
-            To create an alert, set a non-custom time range.
+            {m.alert_set_non_custom_time_range()}
           </TooltipContent>
         </Tooltip>
       {/snippet}

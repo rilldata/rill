@@ -3,6 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { createQuery } from "@tanstack/svelte-query";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let {
     organization,
@@ -21,10 +22,10 @@
   <span
     class="flex flex-row items-center text-fg-secondary text-base font-normal leading-normal"
   >
-    <span class="grow">Check out your projects below.</span>
+    <span class="grow">{m.org_check_out_projects()}</span>
     {#if showNewProject}
       <Button type="secondary" href="/{organization}/-/create-project">
-        + New project
+        {m.org_new_project()}
       </Button>
     {/if}
   </span>

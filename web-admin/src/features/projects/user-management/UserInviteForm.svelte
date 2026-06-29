@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import {
     createAdminServiceAddProjectMemberUser,
     getAdminServiceListOrganizationMemberUsersQueryKey,
@@ -35,7 +36,7 @@
       emails: array(
         string().matches(RFC5322EmailRegex, {
           excludeEmptyString: true,
-          message: "Invalid email",
+          message: m.project_share_invalid_email(),
         }),
       ), // yup's email regex is too simple
       role: string().required(),
@@ -95,7 +96,7 @@
 
         eventBus.emit("notification", {
           type: "success",
-          message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${values.role}`,
+          message: m.users_invited_success({ count: succeeded.length, role: values.role }),
         });
         onInvite();
         if (errored) {
@@ -123,7 +124,7 @@
 >
   <MultiInput
     id="emails"
-    placeholder="Add emails, separated by commas"
+    placeholder={m.users_email_placeholder()}
     contentClassName="relative"
     bind:values={$form.emails}
     errors={$errors.emails}
@@ -143,7 +144,7 @@
         disabled={hasInvalidEmails || !hasSomeValue}
         forcedStyle="height: 32px !important; padding-left: 20px; padding-right: 20px;"
       >
-        Invite
+        {m.users_invite()}
       </Button>
     </svelte:fragment>
   </MultiInput>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import type { PivotCanvasComponent } from "../components/pivot";
 
   export let component: PivotCanvasComponent;
@@ -11,17 +12,17 @@
 </script>
 
 <div class="section">
-  <InputLabel small label="Table type" id="table-type-selector" />
+  <InputLabel small label={m.canvas_table_type()} id="table-type-selector" />
   <FieldSwitcher
     small
     expand
-    fields={["Flat", "Pivot"]}
+    fields={[m.dashboard_flat(), m.dashboard_pivot()]}
     {selected}
-    onClick={(_, field) => {
-      if (field === "Flat") {
+    onClick={(index) => {
+      if (index === 0) {
         selected = 0;
         component.updateTableType("table");
-      } else if (field === "Pivot") {
+      } else if (index === 1) {
         selected = 1;
         component.updateTableType("pivot");
       }

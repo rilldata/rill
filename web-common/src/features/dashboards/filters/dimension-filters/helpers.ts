@@ -1,15 +1,16 @@
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import { DimensionFilterMode } from "./constants";
 
 export function getSearchPlaceholder(mode: DimensionFilterMode): string {
   switch (mode) {
     case DimensionFilterMode.Select:
-      return "Enter search term";
+      return m.filter_enter_search_term();
     case DimensionFilterMode.InList:
-      return "Paste a list separated by commas or \\n";
+      return m.filter_paste_list_hint();
     case DimensionFilterMode.Contains:
-      return "Enter a search term";
+      return m.filter_enter_search_term();
     default:
-      return "Enter search term";
+      return m.filter_enter_search_term();
   }
 }
 

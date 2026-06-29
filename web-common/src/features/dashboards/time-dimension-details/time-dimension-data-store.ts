@@ -18,6 +18,7 @@ import {
   TIME_COMPARISON,
 } from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import { derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
@@ -430,12 +431,12 @@ export function createTimeDimensionDataStore(
         comparing = timeControls.showTimeComparison ? "time" : "none";
         const currentRange = timeControls?.selectedTimeRange?.name;
 
-        let currentLabel = "Custom Range";
+        let currentLabel = m.time_custom_range();
         if (currentRange && currentRange in DEFAULT_TIME_RANGES)
           currentLabel = DEFAULT_TIME_RANGES[currentRange].label;
 
         const comparisonRange = timeControls?.selectedComparisonTimeRange?.name;
-        let comparisonLabel = "Custom Range";
+        let comparisonLabel = m.time_custom_range();
 
         if (comparisonRange && comparisonRange in TIME_COMPARISON)
           comparisonLabel = TIME_COMPARISON[comparisonRange].label;

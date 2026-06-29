@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createAdminServiceIssueUserAuthToken } from "@rilldata/web-admin/client";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let issuedToken: string | null = null;
 
@@ -25,7 +26,7 @@
       });
       issuedToken = resp.token;
     } catch (e) {
-      error = e?.message || "Failed to issue token. Please try again.";
+      error = e?.message || m.mcp_token_failed();
     } finally {
       issuing = false;
     }
@@ -34,23 +35,26 @@
 
 <div class="flex flex-col gap-y-3">
   <h4 class="text-sm font-medium text-fg-primary">
-    Create a personal access token
+    {m.mcp_create_token_title()}
   </h4>
   <p class="text-sm text-fg-secondary">
-    Because this project is <span class="font-medium">private</span>, you need a
-    <span class="font-medium">personal access token</span> to use in your MCP configuration.
-    This token authenticates your requests.
+    {@html m.mcp_create_token_desc({
+      privateLabel: '<span class="font-medium">' + m.mcp_private() + "</span>",
+      tokenLabel:
+        '<span class="font-medium">' +
+        m.mcp_personal_access_token() +
+        "</span>",
+    })}
   </p>
   <div>
     <Button type="primary" onClick={issueToken} disabled={issuing}>
-      {issuing ? "Issuing..." : "Create token"}
+      {issuing ? m.mcp_issuing() : m.mcp_create_token()}
     </Button>
   </div>
 
   {#if issuedToken}
     <div class="text-green-700 text-sm font-semibold">
-      Token created! Your new token is now included in the configuration snippet
-      below.
+      {m.mcp_token_created()}
     </div>
   {/if}
 

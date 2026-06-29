@@ -58,6 +58,7 @@
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { X } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
@@ -145,9 +146,9 @@
     superFormInstance;
 
   const formId = isCreateForm ? "create-alert-form" : "edit-alert-form";
-  const dialogTitle = isCreateForm ? "Create Alert" : "Edit Alert";
+  $: dialogTitle = isCreateForm ? m.alert_form_create_title() : m.alert_form_edit_title();
 
-  const tabs = ["Data", "Criteria", "Delivery"];
+  $: tabs = [m.alert_form_tab_data(), m.alert_form_tab_criteria(), m.alert_form_tab_delivery()];
 
   /**
    * Because this form's fields are spread over multiple tabs, we implement our own `isValid` logic for each tab.
@@ -221,15 +222,15 @@
     onClose();
     if (isCreateForm) {
       eventBus.emit("notification", {
-        message: "Alert created",
+        message: m.alert_form_created(),
         link: {
           href: `/${organization}/${project}/-/alerts`,
-          text: "Go to alerts",
+          text: m.alert_form_go_to_alerts(),
         },
       });
     } else {
       eventBus.emit("notification", {
-        message: "Alert edited",
+        message: m.alert_form_edited(),
         type: "success",
       });
     }
@@ -317,15 +318,21 @@
   <div class="px-6 py-3 flex items-center gap-x-2">
     <div class="grow"></div>
     {#if currentTabIndex === 0}
-      <Button onClick={handleCancel} type="secondary">Cancel</Button>
+      <Button onClick={handleCancel} type="secondary"
+        >{m.alert_form_cancel()}</Button
+      >
     {:else}
-      <Button onClick={handleBack} type="secondary">Back</Button>
+      <Button onClick={handleBack} type="secondary"
+        >{m.alert_form_back()}</Button
+      >
     {/if}
     {#if currentTabIndex !== 2}
-      <Button type="primary" onClick={handleNextTab}>Next</Button>
+      <Button type="primary" onClick={handleNextTab}
+        >{m.alert_form_next()}</Button
+      >
     {:else}
       <Button type="primary" disabled={$submitting} form={formId} submitForm>
-        {isCreateForm ? "Create" : "Update"}
+        {isCreateForm ? m.alert_form_create() : m.alert_form_update()}
       </Button>
     {/if}
   </div>

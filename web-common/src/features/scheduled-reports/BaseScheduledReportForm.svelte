@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
@@ -35,14 +36,13 @@
   const RUN_AS_OPTIONS = [
     {
       value: ReportRunAs.Creator,
-      label: "Creator",
-      description:
-        "Works for any recipient, including external recipient. It does NOT grant access beyond the report’s filters and dashboard.",
+      label: m.report_form_run_as_creator(),
+      description: m.report_form_run_as_creator_desc(),
     },
     {
       value: ReportRunAs.Recipient,
-      label: "Recipient",
-      description: "Does NOT work for non-project members.",
+      label: m.report_form_run_as_recipient(),
+      description: m.report_form_run_as_recipient_desc(),
     },
   ];
   const runtimeClient = useRuntimeClient();
@@ -64,19 +64,19 @@
   }}
   use:enhance
 >
-  <span>Email recurring exports to recipients.</span>
+  <span>{m.report_form_email_recurring()}</span>
   <div class="flex flex-col gap-y-3 w-full h-[600px] overflow-y-scroll">
     <Input
       bind:value={$data["title"]}
       errors={$errors["title"]}
       id="title"
-      label="Report title"
-      placeholder="My report"
+      label={m.report_form_title_label()}
+      placeholder={m.report_form_title_placeholder()}
     />
     <Select
       bind:value={$data["webOpenMode"]}
       id="webOpenMode"
-      label="Run as"
+      label={m.report_form_run_as()}
       options={RUN_AS_OPTIONS}
       dropdownWidth="w-[400px]"
     />
@@ -89,20 +89,29 @@
     <Select
       bind:value={$data["exportFormat"]}
       id="exportFormat"
-      label="Format"
+      label={m.report_form_format()}
       options={[
-        { value: V1ExportFormat.EXPORT_FORMAT_CSV, label: "CSV" },
-        { value: V1ExportFormat.EXPORT_FORMAT_PARQUET, label: "Parquet" },
-        { value: V1ExportFormat.EXPORT_FORMAT_XLSX, label: "XLSX" },
+        {
+          value: V1ExportFormat.EXPORT_FORMAT_CSV,
+          label: m.report_form_format_csv(),
+        },
+        {
+          value: V1ExportFormat.EXPORT_FORMAT_PARQUET,
+          label: m.report_form_format_parquet(),
+        },
+        {
+          value: V1ExportFormat.EXPORT_FORMAT_XLSX,
+          label: m.report_form_format_xlsx(),
+        },
       ]}
     />
     <Input
       bind:value={$data["exportLimit"]}
       errors={$errors["exportLimit"]}
       id="exportLimit"
-      label="Row limit"
+      label={m.report_form_row_limit()}
       optional
-      placeholder="1000"
+      placeholder={m.report_form_row_limit_placeholder()}
     />
     <div class="flex items-center gap-x-1">
       <Checkbox
@@ -114,21 +123,24 @@
         inverse
         disabled={$data["exportFormat"] ===
           V1ExportFormat.EXPORT_FORMAT_PARQUET}
-        label="Include metadata"
+        label={m.report_form_include_metadata()}
       />
       <Tooltip location="right" alignment="middle" distance={8}>
         <div class="text-fg-secondary" style="transform:translateY(-.5px)">
           <InfoCircle size="13px" />
         </div>
         <TooltipContent maxWidth="400px" slot="tooltip-content">
-          Adds a header to the file that includes filters, time range, and other
-          metadata.
+          {m.report_form_metadata_tooltip()}
         </TooltipContent>
       </Tooltip>
     </div>
 
     <div class="flex flex-col gap-y-3">
-      <InputLabel label="Filters" id="filters" capitalize={false} />
+      <InputLabel
+        label={m.report_form_filters()}
+        id="filters"
+        capitalize={false}
+      />
       <FiltersForm {filters} {timeControls} side="top" />
     </div>
 
@@ -141,53 +153,49 @@
 
     <MultiInput
       id="emailRecipients"
-      label="Email Recipients"
-      hint="Recipients will receive different views based on their security policy.
-        Recipients without project access can only download the report."
+      label={m.report_form_email_recipients()}
+      hint={m.report_form_email_hint()}
       bind:values={$data["emailRecipients"]}
       errors={$errors["emailRecipients"]}
       singular="email"
       plural="emails"
-      placeholder="Enter an email address"
+      placeholder={m.report_form_email_placeholder()}
     />
     {#if $hasSlackNotifier.data}
       <FormSection
         bind:enabled={$data["enableSlackNotification"]}
         showSectionToggle
-        title="Slack notifications"
+        title={m.report_form_slack_title()}
         padding=""
       >
         <MultiInput
           id="slackChannels"
-          label="Channels"
-          hint="We’ll send alerts directly to these channels."
+          label={m.report_form_channels()}
+          hint={m.report_form_slack_channels_hint()}
           bind:values={$data["slackChannels"]}
           errors={$errors["slackChannels"]}
           singular="channel"
           plural="channels"
-          placeholder="# Enter a Slack channel name"
+          placeholder={m.alert_form_slack_placeholder()}
         />
         <MultiInput
           id="slackUsers"
-          label="Users"
-          hint="We’ll alert them with direct messages in Slack."
+          label={m.report_form_slack_users()}
+          hint={m.report_form_slack_users_hint()}
           bind:values={$data["slackUsers"]}
           errors={$errors["slackUsers"]}
           singular="user"
           plural="users"
-          placeholder="Enter an email address"
+          placeholder={m.report_form_email_placeholder()}
         />
       </FormSection>
     {:else}
-      <FormSection title="Slack notifications" padding="">
+      <FormSection title={m.report_form_slack_title()} padding="">
         <svelte:fragment slot="description">
           <span class="text-sm text-fg-secondary">
-            Slack has not been configured for this project. Read the <a
-              href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets"
-              target="_blank"
-            >
-              docs
-            </a> to learn more.
+            {@html m.report_form_slack_not_configured({
+              link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${m.report_form_docs()}</a>`,
+            })}
           </span>
         </svelte:fragment>
       </FormSection>

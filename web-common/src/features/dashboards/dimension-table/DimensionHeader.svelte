@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -130,7 +131,7 @@
       onClick={() => goBackToLeaderboard()}
     >
       <Back size="16px" />
-      <span>All Dimensions</span>
+      <span>{m.dashboard_menu_all_dimensions()}</span>
     </Button>
 
     <div class="shrink-0 flex items-center gap-x-1">
@@ -150,7 +151,7 @@
 
       {#if $exports}
         <ExportMenu
-          label="Export dimension table data"
+          label={m.dashboard_export_dimension_table_data()}
           includeScheduledReport={$adminServer && exploreHasTimeDimension}
           getQuery={(isScheduled) =>
             getDimensionTableExportQuery(stateManagers, isScheduled)}

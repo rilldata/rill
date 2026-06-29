@@ -5,6 +5,7 @@
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { onMount } from "svelte";
 
   onMount(() => {
@@ -17,13 +18,13 @@
 </script>
 
 <svelte:head>
-  <title>GitHub connected successfully</title>
+  <title>{m.github_connected_successfully()}</title>
 </svelte:head>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <GithubSuccess />
-    <CtaHeader>GitHub connected successfully</CtaHeader>
-    <CtaMessage>Close this page and continue setup in the Rill CLI.</CtaMessage>
+    <CtaHeader>{m.github_connected_successfully()}</CtaHeader>
+    <CtaMessage>{m.github_close_and_continue_cli()}</CtaMessage>
   </CtaContentContainer>
 </CtaLayoutContainer>

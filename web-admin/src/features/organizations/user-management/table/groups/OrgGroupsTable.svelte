@@ -5,6 +5,7 @@
   import GroupActionsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupActionsCell.svelte";
   import GroupCompositeCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupCompositeCell.svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
@@ -22,7 +23,7 @@
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
       accessorKey: "groupName",
-      header: "Group",
+      header: m.groups_table_header_group(),
       enableSorting: true,
       sortDescFirst: true,
       cell: ({ row }) =>
@@ -76,5 +77,5 @@
   {isFetchingNextPage}
   {onLoadMore}
   maxHeight={dynamicTableMaxHeight}
-  emptyStateMessage="No groups found"
+  emptyStateMessage={m.groups_table_empty()}
 />

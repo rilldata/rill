@@ -4,6 +4,7 @@
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let dashboard: string;
 
@@ -28,7 +29,7 @@
 {#if data}
   <Tooltip distance={8}>
     <div class="text-[11px] text-fg-secondary">
-      Last refreshed {timeAgo(data)}
+      {m.dashboard_last_refreshed_ago({ time: timeAgo(data) })}
     </div>
     <TooltipContent slot="tooltip-content">
       {data.toLocaleString()}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
@@ -318,7 +319,7 @@
 
 <div class="flex flex-col p-4">
   <div class="flex flex-row items-center mb-4">
-    <div class="text-sm font-medium">Share project: {project}</div>
+    <div class="text-sm font-medium">{m.project_share_heading({ project })}</div>
     <div class="grow"></div>
   </div>
   <UserAndGroupInviteForm {organization} {project} {searchList} />
@@ -369,14 +370,14 @@
     </div>
     {#if ($projectMembersInfiniteQuery?.isFetchingNextPage ?? false) || ($projectInvitesInfiniteQuery?.isFetchingNextPage ?? false)}
       <div class="flex items-center justify-center py-2">
-        <span class="text-xs text-fg-secondary">Loading more…</span>
+        <span class="text-xs text-fg-secondary">{m.users_loading_more()}</span>
       </div>
     {/if}
     <div class="h-px" bind:this={loadMoreTrigger}></div>
   </div>
   <div class="mt-2 general-access-container bg-popover pt-2">
     <div class="text-xs text-fg-secondary font-semibold uppercase">
-      General Access
+      {m.users_general_access()}
     </div>
     <Tooltip
       location="right"
@@ -420,7 +421,7 @@
             </div>
           {/each}
           {#if autogroupMembersTotalCount > 6}
-            <li>and {autogroupMembersTotalCount - 6} more</li>
+            <li>{m.users_and_more({ count: autogroupMembersTotalCount - 6 })}</li>
           {/if}
         </ul>
       </TooltipContent>
@@ -432,7 +433,7 @@
     href="https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions#project-level-permissions"
     target="_blank"
     class="text-xs text-primary-600 hover:text-primary-700"
-    >Learn more about sharing</a
+    >{m.users_learn_more_sharing()}</a
   >
   <div class="grow"></div>
   <CopyInviteLinkButton {copyLink} />

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { page } from "$app/stores";
   import type { V1OrganizationInvite } from "@rilldata/web-admin/client";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
@@ -133,14 +134,13 @@
     />
   {:else if $orgMemberUsersInfiniteQuery.isError || $orgInvitesInfiniteQuery.isError}
     <div class="text-red-500">
-      Error loading organization members: {$orgMemberUsersInfiniteQuery.error ??
+      {m.users_error_loading_members()} {$orgMemberUsersInfiniteQuery.error ??
         $orgInvitesInfiniteQuery.error}
     </div>
   {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
     <div class="flex flex-col">
       <div class="flex flex-row gap-x-4">
         <Search
-          placeholder="Search"
           bind:value={searchText}
           large
           autofocus={false}
@@ -153,7 +153,7 @@
           onClick={() => (isAddUserDialogOpen = true)}
         >
           <Plus size="16px" />
-          <span>Add users</span>
+          <span>{m.users_add_users()}</span>
         </Button>
       </div>
       <div class="mt-6">

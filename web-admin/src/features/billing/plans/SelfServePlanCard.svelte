@@ -3,6 +3,9 @@
   import {
     resolvePlanHighlights,
     SELF_SERVE_PLANS,
+    getTranslatedPlanDisplayName,
+    getTranslatedPlanTagline,
+    getTranslatedPlanPriceUnit,
   } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
   import DetailedUsageLink from "@rilldata/web-admin/features/billing/plans/modules/DetailedUsageLink.svelte";
   import type { V1BillingPlan } from "@rilldata/web-admin/client";
@@ -25,11 +28,11 @@
 
 {#if planDetails}
   <PlanContainer
-    badge={planDetails.displayName}
-    description={`${planDetails.price} ${planDetails.priceUnit}`}
+    badge={getTranslatedPlanDisplayName(planDetails.name)}
+    description={`${planDetails.price} ${getTranslatedPlanPriceUnit()}`}
   >
     {#snippet info()}
-      {planDetails.tagline}
+      {getTranslatedPlanTagline(planDetails.name)}
     {/snippet}
 
     {#snippet action()}

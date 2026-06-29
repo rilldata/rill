@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -6,6 +7,7 @@
     getAllowedTimeGrains,
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
+  import { translateGrainName } from "@rilldata/web-common/lib/time/new-grains";
   import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
 
@@ -28,18 +30,18 @@
     activeTimeGrain && TIME_GRAIN[activeTimeGrain as AvailableTimeGrain]?.label;
 
   $: capitalizedLabel = activeTimeGrainLabel
-    ?.split(" ")
-    .map((word) => {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(" ");
+    ? translateGrainName(activeTimeGrainLabel)
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    : undefined;
 
   $: timeGrains = minTimeGrain
     ? timeGrainOptions
         .filter((timeGrain) => !isGrainBigger(minTimeGrain, timeGrain.grain))
         .map((timeGrain) => {
           return {
-            main: timeGrain.label,
+            main: translateGrainName(timeGrain.label),
             key: timeGrain.grain,
           };
         })
@@ -53,13 +55,13 @@
         <button
           {...props}
           class:tdd
-          aria-label="Select a time grain"
+          aria-label={m.dashboard_select_time_grain()}
           class="flex items-center gap-x-1"
         >
           <div class="items-center flex gap-x-1">
             <span>
               <svelte:element this={tdd ? "b" : "span"}>
-                {tdd ? "Time" : "by"}
+                {tdd ? m.time_grain_time() : m.time_grain_by()}
               </svelte:element>
 
               <svelte:element this={tdd ? "span" : "b"}>
@@ -67,7 +69,7 @@
               </svelte:element>
 
               {#if complete}
-                <i class="ml-0.5">complete</i>
+                <i class="ml-0.5">{m.time_grain_complete()}</i>
               {/if}
             </span>
             <span

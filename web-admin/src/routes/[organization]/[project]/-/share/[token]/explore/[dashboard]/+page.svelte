@@ -10,6 +10,7 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
@@ -26,7 +27,9 @@
       priority: TokenBannerPriority,
       message: {
         type: "default",
-        message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/explore/${exploreName}'>original dashboard</a>.`,
+        message: m.share_limited_view({
+          link: `<a href='/${organization}/${project}/explore/${exploreName}'>${m.share_original_dashboard()}</a>`,
+        }),
         includesHtml: true,
         iconType: "alert",
       },

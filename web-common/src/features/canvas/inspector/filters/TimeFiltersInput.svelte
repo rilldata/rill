@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
@@ -77,7 +78,7 @@
     <InputLabel
       capitalize={false}
       small
-      label="Local time range"
+      label={m.canvas_local_time_range()}
       {id}
       faint={!localFiltersEnabled}
     />

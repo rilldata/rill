@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import DimensionFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterReadOnlyChip.svelte";
@@ -58,7 +59,7 @@
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label="Alert filters">
-  <MetadataLabel>Filters ({filtersLength})</MetadataLabel>
+  <MetadataLabel>{m.alert_filters_label({ count: String(filtersLength) })}</MetadataLabel>
   <div class="flex flex-wrap gap-2">
     {#if filtersLength}
       {#if hasTimeRange}
@@ -99,7 +100,7 @@
         class="text-fg-muted grid items-center"
         style:min-height="26px"
       >
-        No filters selected
+        {m.alert_no_filters_heading()}
       </div>
     {/if}
   </div>

@@ -11,6 +11,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const runtimeClient = useRuntimeClient();
@@ -95,10 +96,10 @@
         ),
       });
 
-      eventBus.emit("notification", { message: "Public URL deleted" });
+      eventBus.emit("notification", { message: m.public_url_deleted_notification() });
     } catch {
       eventBus.emit("notification", {
-        message: "Error deleting public URL",
+        message: m.public_url_delete_error_notification(),
         type: "error",
       });
     }
@@ -114,18 +115,18 @@
       />
     </div>
   {:else if $magicAuthTokensInfiniteQuery.isError}
-    <p class="text-red-500">Error loading public URLs</p>
+    <p class="text-red-500">{m.public_url_error_loading()}</p>
   {:else}
     <div class="flex flex-col gap-3 w-full overflow-hidden">
       <div class="flex flex-col">
-        <RadixLarge>Public URLs</RadixLarge>
+        <RadixLarge>{m.public_url_page_title()}</RadixLarge>
         <p class="text-sm text-fg-tertiary font-medium">
-          Manage shared public URLs for your dashboards. <a
+          {m.public_url_page_description()} <a
             href="https://docs.rilldata.com/guide/dashboards/public-urls"
             target="_blank"
             class="text-primary-600 hover:text-primary-700 active:text-primary-800"
           >
-            Learn more ->
+            {m.public_url_learn_more()}
           </a>
         </p>
       </div>

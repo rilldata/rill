@@ -1,5 +1,6 @@
 <script lang="ts">
   import { DateTime } from "luxon";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import SyntaxElement from "./SyntaxElement.svelte";
   import Timestamp from "./Timestamp.svelte";
 
@@ -15,7 +16,7 @@
 >
   {#if timeStart}
     <div class="flex justify-between gap-x-3">
-      <SyntaxElement range="earliest" />
+      <SyntaxElement range={m.time_ref_earliest()} />
       <Timestamp
         date={DateTime.fromJSDate(timeStart)}
         zone={timeZone}
@@ -25,7 +26,7 @@
   {/if}
   {#if timeEnd}
     <div class="flex justify-between gap-x-3">
-      <SyntaxElement range="latest" />
+      <SyntaxElement range={m.time_ref_latest()} />
       <Timestamp
         date={DateTime.fromJSDate(timeEnd)}
         zone={timeZone}
@@ -34,7 +35,7 @@
     </div>
   {/if}
   <div class="flex justify-between gap-x-3">
-    <SyntaxElement range="now" />
+    <SyntaxElement range={m.time_ref_now()} />
     <Timestamp date={now} zone={timeZone} id="now" />
   </div>
 </div>

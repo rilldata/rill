@@ -49,6 +49,7 @@
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   const { rillTime } = featureFlags;
 
@@ -492,7 +493,8 @@
         <Tooltip.Root delayDuration={0}>
           <Tooltip.Trigger>
             <span class="text-fg-secondary italic">
-              as of <Timestamp
+              {m.dashboard_as_of()}
+              <Timestamp
                 id="filter-bar-as-of"
                 italic
                 suppress
@@ -527,7 +529,7 @@
           class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
-          No filters selected
+          {m.dashboard_no_filters_selected()}
         </div>
       {:else}
         {#each allDimensionFilters as filterData (filterData.name)}
@@ -588,7 +590,9 @@
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasFilters}
-          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}
+            >{m.dashboard_clear_filters()}</Button
+          >
         {/if}
       {/if}
     </div>

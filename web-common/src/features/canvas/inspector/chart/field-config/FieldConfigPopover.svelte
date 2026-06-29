@@ -4,6 +4,7 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import type {
@@ -28,13 +29,13 @@
     fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
 
-  const legendOptions: { label: string; value: ChartLegend }[] = [
-    { label: "Top", value: "top" },
-    { label: "Right", value: "right" },
-    { label: "Bottom", value: "bottom" },
-    { label: "Left", value: "left" },
-    { label: "None", value: "none" },
-  ];
+  $: legendOptions = [
+    { label: m.canvas_legend_top(), value: "top" },
+    { label: m.canvas_legend_right(), value: "right" },
+    { label: m.canvas_legend_bottom(), value: "bottom" },
+    { label: m.canvas_legend_left(), value: "left" },
+    { label: m.canvas_legend_none(), value: "none" },
+  ] as { label: string; value: ChartLegend }[];
 
   $: showAxisTitle = chartFieldInput?.axisTitleSelector ?? false;
   $: showOrigin = chartFieldInput?.originSelector ?? false;
@@ -55,12 +56,14 @@
   </Popover.Trigger>
   <Popover.Content align="start" class="w-[280px] p-0 overflow-visible">
     <div class="px-3.5 py-2 border-b border-gray-200">
-      <span class="text-xs font-medium">{label} Configuration</span>
+      <span class="text-xs font-medium"
+        >{m.canvas_configuration({ label })}</span
+      >
     </div>
     <div class="px-3.5 pb-1.5">
       {#if showLegend}
         <div class="py-1 flex items-center justify-between">
-          <span class="text-xs">Legend orientation</span>
+          <span class="text-xs">{m.canvas_legend_orientation()}</span>
           <Select
             size="sm"
             id="legend-orientation-select"
@@ -74,7 +77,7 @@
       {/if}
       {#if showAxisTitle}
         <div class="py-1.5 flex items-center justify-between">
-          <span class="text-xs">Show axis title</span>
+          <span class="text-xs">{m.canvas_show_axis_title()}</span>
           <Switch
             small
             checked={fieldConfig?.showAxisTitle}
@@ -87,7 +90,7 @@
       {#if isDimension}
         {#if showNull}
           <div class="py-1.5 flex items-center justify-between">
-            <span class="text-xs">Show null values</span>
+            <span class="text-xs">{m.canvas_show_null_values()}</span>
             <Switch
               small
               checked={fieldConfig?.showNull}
@@ -100,7 +103,7 @@
         <SortConfig {fieldConfig} {onChange} {sortConfig} />
         {#if showLimit}
           <div class="py-1 flex items-center justify-between">
-            <span class="text-xs">Limit</span>
+            <span class="text-xs">{m.canvas_limit()}</span>
             <Input
               size="sm"
               width="72px"
@@ -120,7 +123,7 @@
       {#if isMeasure}
         {#if showOrigin}
           <div class="py-1.5 flex items-center justify-between">
-            <span class="text-xs">Zero based origin</span>
+            <span class="text-xs">{m.canvas_zero_based_origin()}</span>
             <Switch
               small
               checked={fieldConfig?.zeroBasedOrigin}
@@ -132,7 +135,7 @@
         {/if}
         {#if showTotal}
           <div class="py-1.5 flex items-center justify-between">
-            <span class="text-xs">Show totals value</span>
+            <span class="text-xs">{m.canvas_show_totals_value()}</span>
             <Switch
               small
               checked={fieldConfig?.showTotal}
@@ -144,13 +147,13 @@
         {/if}
         {#if showAxisRange}
           <div class="py-1.5 flex items-center justify-between">
-            <span class="text-xs">Min</span>
+            <span class="text-xs">{m.canvas_min()}</span>
             <Input
               size="sm"
               width="120px"
               id="axis-min-value-select"
               inputType="number"
-              placeholder="Enter a number"
+              placeholder={m.canvas_enter_a_number()}
               bind:value={min}
               onBlur={() => {
                 onChange("min", min);
@@ -161,13 +164,13 @@
             />
           </div>
           <div class="py-1.5 flex items-center justify-between">
-            <span class="text-xs">Max</span>
+            <span class="text-xs">{m.canvas_max()}</span>
             <Input
               size="sm"
               width="120px"
               id="axis-min-value-select"
               inputType="number"
-              placeholder="Enter a number"
+              placeholder={m.canvas_enter_a_number()}
               bind:value={max}
               onBlur={() => {
                 onChange("max", max);
@@ -181,7 +184,7 @@
       {/if}
       {#if showLabelAngle && fieldConfig?.type !== "temporal"}
         <div class="py-1 flex items-center justify-between">
-          <span class="text-xs">Label angle</span>
+          <span class="text-xs">{m.canvas_label_angle()}</span>
           <Input
             size="sm"
             width="72px"

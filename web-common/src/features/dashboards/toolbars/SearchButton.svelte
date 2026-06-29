@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { Button } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
@@ -23,7 +24,7 @@
     onClick={() => (isSearchElementOpen = !isSearchElementOpen)}
   >
     <SearchIcon size="16px" />
-    <span>Search</span>
+    <span>{m.common_search()}</span>
   </Button>
 {:else}
   <div transition:slideRight={{}} class="flex items-center gap-x-1">

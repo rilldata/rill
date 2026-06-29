@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -87,7 +88,7 @@
     <InputLabel
       capitalize={false}
       small
-      label="Local filters"
+      label={m.canvas_local_filters()}
       {id}
       faint={!localFiltersEnabled}
     />
@@ -113,7 +114,7 @@
   </div>
   {#if localFiltersEnabled}
     <div class="flex justify-between gap-x-2">
-      <InputLabel small label="Filters" {id} />
+      <InputLabel small label={m.canvas_filters()} {id} />
 
       <CanvasFilterButton
         allDimensions={remappedDimensions}

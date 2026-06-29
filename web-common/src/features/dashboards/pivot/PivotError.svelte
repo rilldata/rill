@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { PivotQueryError } from "./types";
@@ -68,8 +69,8 @@
       <button
         class="flex-shrink-0 p-1 hover:bg-surface-hover rounded transition-colors cursor-pointer"
         onclick={() => handleCopyError(error)}
-        title="Copy full error message"
-        aria-label="Copy error message to clipboard"
+        title={m.dashboard_copy_error()}
+        aria-label={m.dashboard_copy_error_to_clipboard_aria()}
       >
         <CopyIcon size="16px" color="#6B7280" />
       </button>

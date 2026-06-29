@@ -5,6 +5,7 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -244,7 +245,7 @@
   <div
     class="h-full flex flex-col w-full"
     style:min-width="365px"
-    aria-label="Dimension Display"
+    aria-label={m.dashboard_dimension_display_aria()}
   >
     <DimensionHeader
       {dimensionName}

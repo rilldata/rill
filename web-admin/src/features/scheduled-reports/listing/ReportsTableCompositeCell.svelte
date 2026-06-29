@@ -6,6 +6,7 @@
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import { formatRunDate } from "../tableUtils";
   import ReportOwnerBullet from "./ReportOwnerBullet.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let organization: string;
   export let project: string;
@@ -43,9 +44,9 @@
     class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
   >
     {#if !lastRun}
-      <span class="shrink-0">Hasn't run yet</span>
+      <span class="shrink-0">{m.report_hasnt_run_yet()}</span>
     {:else}
-      <span class="shrink-0">Last run {formatRunDate(lastRun, timeZone)}</span>
+      <span class="shrink-0">{m.report_last_run({ time: formatRunDate(lastRun, timeZone) })}</span>
     {/if}
     <span class="shrink-0">•</span>
     <span class="shrink-0 truncate">{humanReadableFrequency}</span>

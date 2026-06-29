@@ -1,26 +1,31 @@
 import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 
-export const PROJECT_ROLES_OPTIONS = [
-  {
-    value: ProjectUserRoles.Admin,
-    label: "Admin",
-    description: "Full control of project settings and members",
-  },
-  {
-    value: ProjectUserRoles.Editor,
-    label: "Editor",
-    description: "Can create and edit dashboards; manage non-admin access",
-  },
-  {
-    value: ProjectUserRoles.Viewer,
-    label: "Viewer",
-    description: "Read-only access to all project resources",
-  },
-];
+export function getProjectRolesOptions() {
+  return [
+    {
+      value: ProjectUserRoles.Admin,
+      label: m.project_share_role_admin(),
+      description: m.project_share_role_admin_description(),
+    },
+    {
+      value: ProjectUserRoles.Editor,
+      label: m.project_share_role_editor(),
+      description: m.project_share_role_editor_description(),
+    },
+    {
+      value: ProjectUserRoles.Viewer,
+      label: m.project_share_role_viewer(),
+      description: m.project_share_role_viewer_description(),
+    },
+  ];
+}
 
-export const PROJECT_ROLES_DESCRIPTION_MAP = {
-  admin: "Full control of project settings and members",
-  editor: "Can create and edit dashboards; manage non-admin access",
-  viewer: "Read-only access to all project resources",
-  guest: "Access to invited projects only",
-};
+export function getProjectRolesDescriptionMap() {
+  return {
+    admin: m.project_share_role_admin_description(),
+    editor: m.project_share_role_editor_description(),
+    viewer: m.project_share_role_viewer_description(),
+    guest: m.project_role_guest_description(),
+  };
+}

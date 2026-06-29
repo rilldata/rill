@@ -1,11 +1,13 @@
 <script lang="ts">
   import { HistoryIcon } from "lucide-svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import * as DropdownMenu from "../../../../components/dropdown-menu";
   import type { V1Conversation } from "../../../../runtime-client";
   import ConversationHistoryItem from "./ConversationHistoryItem.svelte";
   import {
     GROUP_ORDER,
+    getGroupLabel,
     groupConversationsByDate,
   } from "./conversation-grouping";
 
@@ -30,14 +32,14 @@
 <DropdownMenu.Root onOpenChange={handleOpenChange}>
   <DropdownMenu.Trigger>
     <IconButton
-      ariaLabel="Conversation history"
+      ariaLabel={m.chat_conversation_history()}
       bgGray
       active={isOpen}
       disableTooltip={isOpen}
     >
       <HistoryIcon size="16px" class="text-fg-muted" />
       <svelte:fragment slot="tooltip-content"
-        >Conversation history</svelte:fragment
+        >{m.chat_conversation_history()}</svelte:fragment
       >
     </IconButton>
   </DropdownMenu.Trigger>
@@ -48,14 +50,14 @@
   >
     {#if conversations.length === 0}
       <div class="px-3 py-4 text-center text-fg-secondary text-sm">
-        No conversations yet.
+        {m.chat_no_conversations()}
       </div>
     {:else}
       {#each GROUP_ORDER as groupKey}
         {#if groupedConversations[groupKey] && groupedConversations[groupKey].length > 0}
           <DropdownMenu.Group>
             <DropdownMenu.Label class="px-1 text-xs text-fg-secondary">
-              {groupKey}
+              {getGroupLabel(groupKey)}
             </DropdownMenu.Label>
             {#each groupedConversations[groupKey] as conv}
               <ConversationHistoryItem

@@ -21,6 +21,8 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
+import * as m from "@rilldata/web-common/paraglide/messages.js";
+
 export type ScatterPlotCanvasChartSpec = BaseChartConfig &
   ScatterPlotChartSpecBase;
 
@@ -29,65 +31,70 @@ const DEFAULT_SPLIT_LIMIT = 10;
 export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartSpec> {
   private provider: ScatterPlotChartProvider;
 
-  static chartInputParams: Record<string, ComponentInputParam> = {
-    x: {
-      type: "positional",
-      label: "X-axis",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          axisTitleSelector: true,
-          axisRangeSelector: true,
+  // Static getter (not a static field) so the localized labels inside resolve
+  // in the active locale at access time (render) rather than freezing to the
+  // locale active when this class was defined at module load.
+  static get chartInputParams(): Record<string, ComponentInputParam> {
+    return {
+      x: {
+        type: "positional",
+        label: m.canvas_x_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            axisTitleSelector: true,
+            axisRangeSelector: true,
+          },
         },
       },
-    },
-    y: {
-      type: "positional",
-      label: "Y-axis",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          axisTitleSelector: true,
-          axisRangeSelector: true,
+      y: {
+        type: "positional",
+        label: m.canvas_y_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            axisTitleSelector: true,
+            axisRangeSelector: true,
+          },
         },
       },
-    },
-    dimension: {
-      type: "positional",
-      label: "Dimension",
-      meta: {
-        chartFieldInput: {
-          type: "dimension",
-          nullSelector: true,
+      dimension: {
+        type: "positional",
+        label: m.canvas_dimension_label(),
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            nullSelector: true,
+          },
         },
       },
-    },
-    size: {
-      type: "positional",
-      label: "Size",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          isRemovable: true,
+      size: {
+        type: "positional",
+        label: m.canvas_size_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            isRemovable: true,
+          },
         },
       },
-    },
-    color: {
-      type: "mark",
-      label: "Color",
-      showInUI: true,
-      meta: {
-        type: "color",
-        chartFieldInput: {
-          type: "dimension",
-          defaultLegendOrientation: "top",
-          limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
-          colorMappingSelector: { enable: true },
-          nullSelector: true,
+      color: {
+        type: "mark",
+        label: m.canvas_color_label(),
+        showInUI: true,
+        meta: {
+          type: "color",
+          chartFieldInput: {
+            type: "dimension",
+            defaultLegendOrientation: "top",
+            limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
+            colorMappingSelector: { enable: true },
+            nullSelector: true,
+          },
         },
       },
-    },
-  };
+    };
+  }
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);

@@ -1,6 +1,6 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
-  commonOptions,
+  getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -22,6 +22,8 @@ import type {
 import KPIGrid from "./KPIGrid.svelte";
 
 export { default as KPIGrid } from "./KPIGrid.svelte";
+
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 
 export const defaultComparisonOptions: ComponentComparisonOptions[] = [
   "delta",
@@ -77,25 +79,32 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
     );
 
     const timeSeriesOptions: InputParams<KPIGridSpec>["options"] = {
-      sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
+      sparkline: {
+        type: "sparkline",
+        optional: true,
+        label: m.canvas_sparkline_label(),
+      },
       hide_time_range: {
         type: "boolean",
         optional: true,
-        label: "Time range display",
+        label: m.canvas_time_range_display_label(),
         meta: { invertBoolean: true },
       },
-      comparison: { type: "comparison_options", label: "Comparison values" },
+      comparison: {
+        type: "comparison_options",
+        label: m.canvas_comparison_values_label(),
+      },
     };
     const inputParams: InputParams<KPIGridSpec> = {
       options: {
-        metrics_view: { type: "metrics", label: "Metrics view" },
+        metrics_view: { type: "metrics", label: m.canvas_metrics_view_label() },
         measures: {
           type: "multi_fields",
           meta: { allowedTypes: ["measure"] },
-          label: "Measures",
+          label: m.canvas_measures_label(),
         },
         ...(hasTimeSeries ? timeSeriesOptions : {}),
-        ...commonOptions,
+        ...getCommonOptions(),
       },
       filter: getFilterOptions(),
     };

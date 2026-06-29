@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
@@ -74,7 +75,10 @@
         : 0);
 </script>
 
-<div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
+<div
+  class="flex flex-col overflow-hidden size-full"
+  aria-label={m.dashboard_leaderboards_aria()}
+>
   <div class="pl-2.5 pb-3">
     <LeaderboardControls exploreName={$exploreName} />
   </div>

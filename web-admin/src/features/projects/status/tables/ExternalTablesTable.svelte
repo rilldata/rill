@@ -6,6 +6,7 @@
   import ModelSizeCell from "@rilldata/web-common/features/projects/status/tables/ModelSizeCell.svelte";
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import MaterializationCell from "@rilldata/web-common/features/projects/status/tables/MaterializationCell.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let tables: V1OlapTableInfo[] = [];
   export let isView: Map<string, boolean> = new Map();
@@ -14,7 +15,7 @@
     {
       id: "materialization",
       accessorFn: (row) => isView.get(row.name ?? ""),
-      header: "Type",
+      header: m.common_type(),
       cell: ({ row, getValue }) =>
         renderComponent(MaterializationCell, {
           isView: getValue() as boolean | undefined,
@@ -23,7 +24,7 @@
     },
     {
       accessorFn: (row) => row.name,
-      header: "Name",
+      header: m.common_name(),
       cell: ({ getValue }) =>
         renderComponent(NameCell, {
           name: getValue() as string,
@@ -33,7 +34,7 @@
     {
       id: "size",
       accessorFn: (row) => row.physicalSizeBytes,
-      header: "Database Size",
+      header: m.status_database_size(),
       sortDescFirst: true,
       sortingFn: (rowA, rowB) => {
         const sizeA = rowA.getValue("size") as string | number | undefined;

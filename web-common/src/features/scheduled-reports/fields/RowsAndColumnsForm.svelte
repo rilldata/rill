@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import FieldList from "@rilldata/web-common/features/scheduled-reports/fields/FieldList.svelte";
   import { getFieldsForExplore } from "@rilldata/web-common/features/scheduled-reports/fields/selectors.ts";
   import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
@@ -46,17 +47,19 @@
     bind:fields={rows}
     allowedFields={allowedRows.filter((r) => !selectedFields.has(r))}
     {displayMap}
-    label="Rows"
+    label={m.report_form_rows()}
     onUpdate={(newRows) => (rows = newRows)}
   >
-    <div slot="empty-fields" class="text-fg-secondary">No rows selected</div>
+    <div slot="empty-fields" class="text-fg-secondary">
+      {m.report_form_no_rows_selected()}
+    </div>
   </FieldList>
 
   <FieldList
     bind:fields={columns}
     allowedFields={allowedColumns.filter((r) => !selectedFields.has(r))}
     {displayMap}
-    label="Columns"
+    label={m.report_form_columns()}
     disableDragDrop={disableColumnDragDrop}
     onUpdate={handleColumnUpdate}
   >

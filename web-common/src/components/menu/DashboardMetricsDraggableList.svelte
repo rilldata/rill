@@ -11,6 +11,7 @@
   } from "@rilldata/web-common/runtime-client";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import { Button } from "../button";
   import Search from "../search/Search.svelte";
   import DashboardMetricsTagRow from "./DashboardMetricsTagRow.svelte";
@@ -48,10 +49,24 @@
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
   $: numShown = selectedItems?.filter((x) => x).length ?? 0;
-  $: numShownString =
-    numAvailable === numShown ? "All" : `${numShown} of ${numAvailable}`;
-  $: tooltipText = `Choose ${type === "measure" ? "measures" : "dimensions"} to display`;
-  $: pluralLabel = type === "measure" ? "measures" : "dimensions";
+  $: buttonLabel =
+    numAvailable === numShown
+      ? type === "measure"
+        ? m.explore_all_measures()
+        : m.explore_all_dimensions()
+      : type === "measure"
+        ? m.explore_measures_count({
+            count: String(numShown),
+            total: String(numAvailable),
+          })
+        : m.explore_dimensions_count({
+            count: String(numShown),
+            total: String(numAvailable),
+          });
+  $: tooltipText =
+    type === "measure"
+      ? m.explore_choose_measures()
+      : m.explore_choose_dimensions();
 
   $: tags = tagIndex.tags;
 
@@ -135,7 +150,7 @@
       <Button {...props} type="text" theme label={tooltipText}>
         <div class="flex items-center gap-x-0.5 px-1">
           <strong
-            >{`${numShownString} ${type === "measure" ? "Measures" : "Dimensions"}`}</strong
+            >{buttonLabel}</strong
           >
           <span class="transition-transform" class:-rotate-180={active}>
             <CaretDownIcon />
@@ -158,10 +173,14 @@
       <div class="px-3 pt-3 pb-2 border-b border-border">
         <Search
           bind:value={searchText}
-          label="Search list"
+          label={m.explore_search_list()}
           placeholder={hasTags
-            ? `Search ${pluralLabel} or tags`
-            : `Search ${pluralLabel}`}
+            ? type === "measure"
+              ? m.explore_search_measures_or_tags()
+              : m.explore_search_dimensions_or_tags()
+            : type === "measure"
+              ? m.explore_search_measures()
+              : m.explore_search_dimensions()}
           showBorderOnFocus={false}
         />
       </div>
@@ -193,11 +212,11 @@
             <h3
               class="uppercase font-semibold text-[11px] text-fg-secondary px-2 pt-1 pb-1"
             >
-              Tags
+              {m.explore_tags()}
             </h3>
             {#if filteredTags.length === 0}
               <div class="px-2 py-2 text-xs text-fg-secondary">
-                No matching tags
+                {m.explore_no_matching_tags()}
               </div>
             {:else}
               {#each filteredTags as tag (tag.name)}
@@ -265,14 +284,16 @@
                     <h3
                       class="uppercase font-semibold text-[11px] text-fg-secondary"
                     >
-                      Shown {pluralLabel}
+                      {type === "measure"
+                        ? m.explore_shown_measures()
+                        : m.explore_shown_dimensions()}
                     </h3>
                     {#if shownFiltered.length > 1 && !filterActive}
                       <button
                         class="text-theme-500 pointer-events-auto hover:text-theme-600 font-medium text-xs"
                         onclick={hideAllItems}
                       >
-                        Hide all
+                        {m.explore_hide_all()}
                       </button>
                     {/if}
                   </div>
@@ -280,19 +301,29 @@
 
                 {#snippet empty()}
                   {searchActive && hasTags && filteredTags.length === 0
-                    ? `No ${pluralLabel} or tags found`
+                    ? type === "measure"
+                      ? m.explore_no_measures_or_tags()
+                      : m.explore_no_dimensions_or_tags()
                     : filterActive
-                      ? `No ${pluralLabel} from this tag are shown`
+                      ? type === "measure"
+                        ? m.explore_no_measures_from_tag()
+                        : m.explore_no_dimensions_from_tag()
                       : searchActive
-                        ? `No matching ${pluralLabel} shown`
-                        : `No ${pluralLabel} shown`}
+                        ? type === "measure"
+                          ? m.explore_no_matching_measures_shown()
+                          : m.explore_no_matching_dimensions_shown()
+                        : type === "measure"
+                          ? m.explore_no_measures_shown()
+                          : m.explore_no_dimensions_shown()}
                 {/snippet}
 
                 {#snippet item({ item })}
                   {@const itemData = allItemsMap.get(item.id)}
                   {@const displayName =
                     itemData?.displayName ??
-                    `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                    (type === "measure"
+                      ? m.explore_unknown_measure()
+                      : m.explore_unknown_dimension())}
                   <div class="w-full flex gap-x-1 items-center py-1">
                     {#if itemData?.description || selectedItems.length === 1}
                       <Tooltip.Root delayDuration={200}>
@@ -321,7 +352,7 @@
                             class:pointer-events-none={selectedItems.length ===
                               1}
                             class:opacity-50={selectedItems.length === 1}
-                            aria-label="Hide {displayName}"
+                            aria-label={m.explore_hide_item({ name: displayName })}
                             data-testid="toggle-visibility-button"
                             type="button"
                           >
@@ -334,9 +365,9 @@
                           class="bg-popover text-fg-primary z-popover"
                         >
                           {#if selectedItems.length === 1}
-                            Must show at least one {type === "measure"
-                              ? "measure"
-                              : "dimension"}
+                            {type === "measure"
+                              ? m.explore_must_show_one_measure()
+                              : m.explore_must_show_one_dimension()}
                           {:else}
                             {itemData?.description}
                           {/if}
@@ -364,7 +395,7 @@
                         disabled={selectedItems.length === 1}
                         class:pointer-events-none={selectedItems.length === 1}
                         class:opacity-50={selectedItems.length === 1}
-                        aria-label={`Hide ${displayName}`}
+                        aria-label={m.explore_hide_item({ name: displayName })}
                         type="button"
                       >
                         <EyeIcon size="18px" color="currentColor" />
@@ -393,21 +424,23 @@
                       <h3
                         class="uppercase text-[11px] font-semibold text-fg-secondary"
                       >
-                        Hidden {pluralLabel}
+                        {type === "measure"
+                          ? m.explore_hidden_measures()
+                          : m.explore_hidden_dimensions()}
                       </h3>
                       {#if !filterActive}
                         <button
                           class="pointer-events-auto text-theme-500 text-xs font-medium hover:text-theme-600"
                           onclick={showAllItems}
                         >
-                          Show all
+                          {m.explore_show_all()}
                         </button>
                       {:else}
                         <button
                           class="pointer-events-auto text-theme-500 text-xs font-medium hover:text-theme-600"
                           onclick={() => showAllInTag(selectedTag!)}
                         >
-                          Show all in tag
+                          {m.explore_show_all_in_tag()}
                         </button>
                       {/if}
                     </div>
@@ -415,15 +448,21 @@
 
                   {#snippet empty()}
                     {searchActive
-                      ? `No matching hidden ${pluralLabel}`
-                      : `No hidden ${pluralLabel}`}
+                      ? type === "measure"
+                        ? m.explore_no_matching_hidden_measures()
+                        : m.explore_no_matching_hidden_dimensions()
+                      : type === "measure"
+                        ? m.explore_no_hidden_measures()
+                        : m.explore_no_hidden_dimensions()}
                   {/snippet}
 
                   {#snippet item({ item })}
                     {@const itemData = allItemsMap.get(item.id)}
                     {@const displayName =
                       itemData?.displayName ??
-                      `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                      (type === "measure"
+                        ? m.explore_unknown_measure()
+                        : m.explore_unknown_dimension())}
                     <div
                       class="w-full flex gap-x-1 justify-between items-center py-1"
                     >
@@ -443,7 +482,7 @@
                                 e.stopPropagation();
                                 handleHiddenItemClick({ item });
                               }}
-                              aria-label={`Show ${displayName}`}
+                              aria-label={m.explore_show_item({ name: displayName })}
                               data-testid="toggle-visibility-button"
                               type="button"
                             >
@@ -470,7 +509,7 @@
                             e.stopPropagation();
                             handleHiddenItemClick({ item });
                           }}
-                          aria-label={`Show ${displayName}`}
+                          aria-label={m.explore_show_item({ name: displayName })}
                           data-testid="toggle-visibility-button"
                           type="button"
                         >
@@ -490,13 +529,17 @@
         <div
           class="px-3 py-1.5 text-xs text-fg-secondary border-t border-border"
         >
-          Clear the tag filter to reorder {pluralLabel}.
+          {type === "measure"
+            ? m.explore_clear_tag_filter_to_reorder_measures()
+            : m.explore_clear_tag_filter_to_reorder_dimensions()}
         </div>
       {:else if searchActive && !filterActive}
         <div
           class="px-3 py-1.5 text-xs text-fg-secondary border-t border-border"
         >
-          Clear search to reorder {pluralLabel}.
+          {type === "measure"
+            ? m.explore_clear_search_to_reorder_measures()
+            : m.explore_clear_search_to_reorder_dimensions()}
         </div>
       {/if}
     </div>

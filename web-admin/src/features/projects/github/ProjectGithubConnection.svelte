@@ -8,6 +8,7 @@
     getGitUrlFromRemote,
   } from "@rilldata/web-common/features/project/deploy/github-utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let organization: string;
   export let project: string;
@@ -49,14 +50,14 @@
           </a>
         </div>
         <div class="flex flex-col text-[12px]">
-          <span class="font-mono">branch: {primaryBranch}</span>
+          <span class="font-mono">{m.github_branch()}: {primaryBranch}</span>
           {#if subpath}
-            <span class="font-mono">subpath: /{subpath}</span>
+            <span class="font-mono">{m.github_subpath()}: /{subpath}</span>
           {/if}
         </div>
         {#if lastUpdated}
           <span class="text-fg-secondary text-[11px] leading-4">
-            Synced {lastUpdated.toLocaleString(undefined, {
+            {m.github_synced()} {lastUpdated.toLocaleString(undefined, {
               month: "short",
               day: "numeric",
               hour: "numeric",
@@ -67,15 +68,14 @@
       </div>
     {:else}
       <span class="my-1 text-fg-tertiary">
-        Unlock the power of BI-as-code with GitHub-backed collaboration, version
-        control, and approval workflows.
+        {m.github_unlock_bi_as_code()}
         <span class="whitespace-nowrap">
           <a
             href="https://docs.rilldata.com/developers/deploy/deploy-dashboard/github-101"
             target="_blank"
             class="text-primary-600"
           >
-            Learn more ->
+            {m.common_learn_more()} ->
           </a>
         </span>
       </span>

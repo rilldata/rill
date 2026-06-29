@@ -16,6 +16,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import type { AxiosError } from "axios";
 
   $: organization = $page.params.organization;
@@ -27,7 +28,7 @@
   $: isPublicDomain = userDomainIsPublic();
   const addToAllowlist = createAdminServiceCreateProjectWhitelistedDomain();
 
-  $: buttonText = invited || allowDomain ? "Continue" : "Skip for now";
+  $: buttonText = invited || allowDomain ? m.auth_continue() : m.auth_skip_for_now();
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
@@ -64,10 +65,10 @@
 </script>
 
 <div class="flex flex-col gap-5 w-[600px] my-16 sm:my-32 md:my-64 mx-auto">
-  <div class="text-xl text-center w-full">Invite teammates to your project</div>
+  <div class="text-xl text-center w-full">{m.auth_invite_teammates()}</div>
   <div class="flex flex-col gap-y-1">
     <div class="flex flex-row items-center">
-      <div class="text-sm font-medium">Invite by email</div>
+      <div class="text-sm font-medium">{m.auth_invite_by_email()}</div>
       <div class="grow"></div>
       <CopyInviteLinkButton {copyLink} />
     </div>
@@ -79,7 +80,7 @@
   </div>
   {#if $userDomain.data && !$isPublicDomain.data}
     <div class="flex flex-col gap-y-1">
-      <div class="text-sm font-medium">Allow domain access</div>
+      <div class="text-sm font-medium">{m.auth_allow_domain_access()}</div>
       <div class="flex flex-row gap-x-2">
         <Switch
           small
@@ -88,13 +89,15 @@
           class="mt-1"
         />
         <Label for="allow-domain" class="font-normal text-fg-primary text-sm">
-          Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
-          email address to join this project as a <b>Viewer</b>.
+          {@html m.common_allow_domain_join_project({
+            domain: `<b>@${$userDomain.data}</b>`,
+            role: `<b>Viewer</b>`,
+          })}
           <a
             target="_blank"
             href="https://docs.rilldata.com/reference/cli/user/whitelist"
           >
-            Learn more
+            {m.common_learn_more()}
           </a>
         </Label>
       </div>

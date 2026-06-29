@@ -1,5 +1,6 @@
 <script lang="ts">
   import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
   import BookmarkFilled from "@rilldata/web-common/components/icons/BookmarkFilled.svelte";
@@ -119,7 +120,7 @@
             </Tooltip.Trigger>
             {#if showDeleteTooltip}
               <Tooltip.Content side="bottom">
-                Delete {bookmark.resource.default ? "Home " : ""}bookmark
+                {bookmark.resource.default ? m.bookmark_delete_home_bookmark() : m.bookmark_delete_bookmark()}
               </Tooltip.Content>
             {/if}
           </Tooltip.Root>

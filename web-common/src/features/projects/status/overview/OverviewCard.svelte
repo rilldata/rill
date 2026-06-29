@@ -1,4 +1,6 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
+
   export let title: string;
   export let viewAllHref: string | undefined = undefined;
 </script>
@@ -9,7 +11,7 @@
       <slot name="title">{title}</slot>
     </h3>
     {#if viewAllHref}
-      <a href={viewAllHref} class="view-all">View all</a>
+      <a href={viewAllHref} class="view-all">{m.status_view_all()}</a>
     {:else}
       <slot name="header-right" />
     {/if}

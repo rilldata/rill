@@ -8,6 +8,7 @@
     AlertDialogTitle,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let open = false;
   export let name: string;
@@ -42,7 +43,7 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>
-        {refreshType === "full" ? "Full Refresh" : "Incremental Refresh"}
+        {refreshType === "full" ? m.status_full_refresh() : m.status_incremental_refresh()}
         <span class="font-semibold" title={name}>{truncateName(name)}</span>?
       </AlertDialogTitle>
       <AlertDialogDescription>
@@ -64,13 +65,13 @@
         disabled={isRefreshing}
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.common_cancel()}</Button
       >
       <Button
         type="primary"
         onClick={handleRefresh}
         disabled={isRefreshing}
-        loading={isRefreshing}>Yes, refresh</Button
+        loading={isRefreshing}>{m.status_yes_refresh()}</Button
       >
     </AlertDialogFooter>
   </AlertDialogContent>

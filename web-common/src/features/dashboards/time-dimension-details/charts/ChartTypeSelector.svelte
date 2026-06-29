@@ -11,6 +11,7 @@
     isAdaptiveChartType,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import type { ComponentType, SvelteComponent } from "svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let exploreName: string;
   export let chartType: TDDChart;
@@ -53,33 +54,32 @@
     Icon: ComponentType<SvelteComponent>;
   }[] = [
     {
-      label: "Line",
-      tooltip: "Line",
+      label: m.chart_line(),
+      tooltip: m.chart_line(),
       id: TDDChart.LINE,
       Icon: LineChart,
     },
     {
-      label: "Bar",
-      tooltip: "Bar",
+      label: m.chart_bar(),
+      tooltip: m.chart_bar(),
       id: TDDChart.GROUPED_BAR,
       Icon: BarChart,
     },
     {
-      label: "Stacked area",
-      tooltip: "Stacked area",
+      label: m.chart_stacked_area(),
+      tooltip: m.chart_stacked_area(),
       id: TDDChart.STACKED_AREA,
       Icon: StackedArea,
     },
     {
-      label: "Stacked bar",
-      tooltip: "Stacked bar",
+      label: m.chart_stacked_bar(),
+      tooltip: m.chart_stacked_bar(),
       id: TDDChart.STACKED_BAR,
       Icon: StackedBar,
     },
     {
-      label: "Adaptive",
-      tooltip:
-        "Adaptive: Line chart by default. Switches to bar when there are few data points, and stacked bar when comparing dimension",
+      label: m.chart_adaptive(),
+      tooltip: m.chart_adaptive_tooltip(),
       id: TDDChart.DEFAULT,
       Icon: AdaptiveChart,
     },
@@ -140,7 +140,9 @@
           size="16px"
         />
         <svelte:fragment slot="tooltip-content">
-          {disabled ? `Add comparison values to use ${label} chart` : tooltip}
+          {disabled
+            ? m.chart_add_comparison_to_use({ chartType: label })
+            : tooltip}
         </svelte:fragment>
       </IconButton>
     </div>

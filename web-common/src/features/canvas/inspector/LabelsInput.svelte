@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
@@ -64,7 +65,7 @@
   {#if show}
     <div class="flex flex-col gap-y-2 pl-2">
       <div class="flex justify-between items-center gap-x-2">
-        <InputLabel small label="Format" id="{key}-format" />
+        <InputLabel small label={m.canvas_format()} id="{key}-format" />
         <div class="control">
           <Select
             id="{key}-format"
@@ -80,7 +81,11 @@
         </div>
       </div>
       <div class="flex justify-between items-center gap-x-2">
-        <InputLabel small label="Hide labels below (%)" id="{key}-threshold" />
+        <InputLabel
+          small
+          label={m.canvas_hide_labels_below()}
+          id="{key}-threshold"
+        />
         <div class="control">
           <Input
             id="{key}-threshold"

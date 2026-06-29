@@ -4,19 +4,25 @@ import {
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
+import * as m from "@rilldata/web-common/paraglide/messages.js";
 
 export const PaymentBillingIssueTypes: Partial<
-  Record<V1BillingIssueType, { long: string; short: string }>
+  Record<V1BillingIssueType, true>
 > = {
-  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD]: {
-    long: "Input a valid payment to maintain access.",
-    short: "payment method",
-  },
-  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]: {
-    long: "Input a valid billing address to maintain access.",
-    short: "billing address",
-  },
+  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD]: true,
+  [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]: true,
 };
+
+function getPaymentIssueShortText(type: V1BillingIssueType | undefined): string {
+  switch (type) {
+    case V1BillingIssueType.BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD:
+      return m.billing_payment_method_short();
+    case V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS:
+      return m.billing_billing_address_short();
+    default:
+      return "";
+  }
+}
 
 export function needsPaymentSetup(issues: V1BillingIssue[]): boolean {
   const hasNoPaymentMethodIssue = issues.find(
@@ -39,10 +45,13 @@ export function getPaymentIssues(issues: V1BillingIssue[]) {
 
 export function getPaymentIssueErrorText(paymentIssues: V1BillingIssue[]) {
   const issueTexts = paymentIssues
-    .map((i) => PaymentBillingIssueTypes[i.type ?? ""]?.short)
+    .map((i) => getPaymentIssueShortText(i.type))
     .filter(Boolean) as string[];
 
-  return `No valid ${issueTexts.length ? issueTexts.join(" or ") : "payment method"} on file.`;
+  const methods = issueTexts.length
+    ? issueTexts.join(` ${m.billing_or()} `)
+    : m.billing_payment_method_short();
+  return m.billing_no_valid_on_file({ methods });
 }
 
 export function getMessageForPaymentIssues(
@@ -65,7 +74,7 @@ export function getMessageForPaymentIssues(
   const overdue = invoiceIsOverdue(oldestInvoice);
 
   const issueTexts = issues
-    .map((i) => PaymentBillingIssueTypes[i.type ?? ""]?.short)
+    .map((i) => getPaymentIssueShortText(i.type))
     .filter(Boolean) as string[];
 
   const message: BillingIssueMessage = {
@@ -75,27 +84,28 @@ export function getMessageForPaymentIssues(
     iconType: "alert",
   };
   const overdueTitleSuffix = overdue
-    ? " and this org’s projects are now hibernating"
+    ? m.billing_projects_hibernating()
     : "";
   if (isCustomPlan) {
-    message.title = `Your invoice is past due${overdueTitleSuffix}.`;
+    message.title = m.billing_invoice_past_due({ suffix: overdueTitleSuffix });
     message.description = overdue
-      ? "Contact us to regain access."
-      : "To maintain access, please contact us.";
+      ? m.billing_contact_us_to_regain()
+      : m.billing_contact_us_to_maintain();
     message.cta = {
       type: "contact",
-      text: "Contact us",
+      text: m.billing_contact_us_cta(),
     };
   } else {
-    message.title = `Your subscription is past due${overdueTitleSuffix}.`;
-    message.description =
-      `Input a valid ${issueTexts.length ? issueTexts.join(" or ") : "payment method"} ` +
-      (overdue
-        ? "to wake projects and regain full access."
-        : "to maintain access.");
+    message.title = m.billing_subscription_past_due({ suffix: overdueTitleSuffix });
+    const methods = issueTexts.length
+      ? issueTexts.join(` ${m.billing_or()} `)
+      : m.billing_payment_method_short();
+    message.description = overdue
+      ? m.billing_input_valid_to_wake({ methods })
+      : m.billing_input_valid_to_maintain({ methods });
     message.cta = {
       type: "payment",
-      text: "Update payment methods",
+      text: m.billing_update_payment_methods(),
     };
   }
 

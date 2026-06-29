@@ -1,6 +1,7 @@
 <script lang="ts">
   import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let headline: string;
   export let error: string | null | undefined = undefined;
@@ -23,7 +24,7 @@
         <div class="transition-transform group-open:rotate-90">
           <ChevronRight size="12px" />
         </div>
-        <span>Show details</span>
+        <span>{m.chat_show_details()}</span>
       </summary>
       <div
         class="mt-2 rounded border border-gray-200 bg-surface-background p-2 font-mono text-xs text-fg-primary"

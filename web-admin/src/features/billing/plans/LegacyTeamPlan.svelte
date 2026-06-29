@@ -1,6 +1,7 @@
 <script lang="ts">
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
   import DetailedUsageLink from "@rilldata/web-admin/features/billing/plans/modules/DetailedUsageLink.svelte";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let {
     billingPortalUrl,
@@ -9,10 +10,9 @@
   } = $props();
 </script>
 
-<PlanContainer badge="Team" description="$250/mo flat + storage">
+<PlanContainer badge={m.billing_plan_badge_team()} description={m.billing_team_price_desc()}>
   {#snippet info()}
-    $250/mo flat rate + storage overages. 10 GB included · $25/GB over. Up to 8
-    slots.
+    {m.billing_team_info()}
   {/snippet}
 
   {#snippet action()}
@@ -20,7 +20,6 @@
   {/snippet}
 
   <p class="text-sm text-fg-tertiary mt-4 pb-4">
-    Flat-rate plan. $250/mo includes up to 8 slots and 10 GB storage, with
-    $25/GB for overages.
+    {m.billing_team_details()}
   </p>
 </PlanContainer>

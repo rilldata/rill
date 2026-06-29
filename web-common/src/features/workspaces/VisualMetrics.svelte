@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -742,7 +743,7 @@
         <Input
           full
           textClass="text-sm"
-          placeholder="Search"
+          placeholder={m.common_search()}
           bind:value={searchValue}
           onInput={(value) => {
             searchValue = value;

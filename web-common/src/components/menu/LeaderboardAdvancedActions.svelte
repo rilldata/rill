@@ -10,6 +10,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   const ctx = getStateManagers();
   const {
@@ -44,7 +45,7 @@
     side="bottom"
     class="flex flex-row items-center justify-between gap-x-2 w-[286px] px-3.5 py-2.5"
   >
-    <span>Show context for all measures</span>
+    <span>{m.explore_show_context_for_all_measures()}</span>
     <Switch
       theme
       checked={$leaderboardShowContextForAllMeasures}

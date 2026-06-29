@@ -3,6 +3,7 @@
   import CopyableCodeBlock from "@rilldata/web-common/components/calls-to-action/CopyableCodeBlock.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   let open = false;
 
@@ -23,21 +24,21 @@
 <Popover.Root bind:open>
   <Popover.Trigger>
     {#snippet child({ props })}
-      <Button {...props} type="secondary" {disabled}>Download Project</Button>
+      <Button {...props} type="secondary" {disabled}>{m.status_download_project()}</Button>
     {/snippet}
   </Popover.Trigger>
 
   <Popover.Content class="w-[380px]" align="end" sideOffset={8}>
     <div class="flex flex-col gap-y-3">
       <span class="text-sm text-fg-secondary">
-        Clone this project to develop locally.
+        {m.status_clone_description()}
         <a
           href="https://docs.rilldata.com/developers/tutorials/clone-a-project"
           target="_blank"
           rel="noopener noreferrer"
           class="text-primary-600"
         >
-          Learn more ->
+          {m.status_learn_more()}
         </a>
       </span>
 

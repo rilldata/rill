@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -172,8 +173,8 @@
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
-  $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
+  $: copyValue = measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
+  $: tooltipValue = measureValueFormatterTooltip(value) ?? m.kpi_no_data();
 
   $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
@@ -262,22 +263,22 @@
                   : isComparisonPositive}
                 onmouseenter={() => {
                   tooltipValue =
-                    measureValueFormatterTooltip(diff) ?? "no data";
+                    measureValueFormatterTooltip(diff) ?? m.kpi_no_data();
                   copyValue =
-                    measureValueFormatterUnabridged(diff) ?? "no data";
+                    measureValueFormatterUnabridged(diff) ?? m.kpi_no_data();
                 }}
                 onmouseleave={() => {
                   tooltipValue =
-                    measureValueFormatterTooltip(value) ?? "no data";
+                    measureValueFormatterTooltip(value) ?? m.kpi_no_data();
                   copyValue =
-                    measureValueFormatterUnabridged(value) ?? "no data";
+                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
                 }}
               >
                 {#if !noChange}
                   {formattedDiff}
                 {:else}
                   <span class="text-fg-muted italic" style:font-size=".9em"
-                    >no change</span
+                    >{m.kpi_no_change()}</span
                   >
                 {/if}
               </div>
@@ -297,9 +298,9 @@
                 }}
                 onmouseleave={() => {
                   tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? "no data";
+                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
                   copyValue =
-                    measureValueFormatterUnabridged(value) ?? "no data";
+                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
                 }}
                 class="w-fit {comparisonDeltaColorClass}"
                 class:font-semibold={lowerIsBetter
@@ -338,9 +339,9 @@
           />
         </div>
       {:else if value === null}
-        <span class="text-fg-muted italic text-sm">no data</span>
+        <span class="text-fg-muted italic text-sm">{m.kpi_no_data()}</span>
       {:else if value === undefined}
-        <span class="text-fg-muted italic text-sm">n/a</span>
+        <span class="text-fg-muted italic text-sm">{m.kpi_not_available()}</span>
       {/if}
     </div>
   </svelte:element>

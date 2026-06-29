@@ -10,6 +10,7 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
   import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
@@ -57,9 +58,9 @@
     size="40px"
     className={requested ? "text-fg-secondary" : "text-primary-600"}
   />
-  <h2 class="text-lg font-normal">Request access to this project</h2>
+  <h2 class="text-lg font-normal">{m.auth_request_access_title()}</h2>
   <div class="text-fg-secondary text-base">
-    You can view <b>{project}</b> once your request is approved.
+    {m.auth_request_access_description({ project })}
   </div>
   <Button
     type="primary"
@@ -68,15 +69,14 @@
     loading={isPending}
     disabled={requested}
   >
-    {#if requested}<Check />Access requested{:else}Request access{/if}
+    {#if requested}<Check />{m.auth_access_requested()}{:else}{m.auth_request_access()}{/if}
   </Button>
   {#if requested && !isPending}
     {#if errorMessage}
       <div>{errorMessage}</div>
     {:else}
       <div class="text-fg-secondary">
-        Your request has been sent to the project admin. You’ll get an email
-        when it’s approved.
+        {m.auth_request_sent()}
       </div>
     {/if}
   {/if}

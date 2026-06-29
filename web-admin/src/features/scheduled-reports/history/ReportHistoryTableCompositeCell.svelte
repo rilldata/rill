@@ -3,6 +3,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { formatRunDate } from "../tableUtils";
+  import * as m from "@rilldata/web-common/paraglide/messages.js";
 
   export let reportTime: string;
   export let timeZone: string;
@@ -15,10 +16,10 @@
     {formatRunDate(reportTime, timeZone)}
   </div>
   {#if errorMessage === ""}
-    <Tag color="blue">Report sent</Tag>
+    <Tag color="blue">{m.report_status_sent()}</Tag>
   {:else}
     <Tooltip distance={8}>
-      <Tag color="red">Failed</Tag>
+      <Tag color="red">{m.report_status_failed()}</Tag>
       <TooltipContent slot="tooltip-content">
         {errorMessage}
       </TooltipContent>
@@ -26,9 +27,9 @@
   {/if}
   {#if adhoc}
     <Tooltip distance={8}>
-      <Tag>Ad-hoc</Tag>
+      <Tag>{m.report_adhoc()}</Tag>
       <TooltipContent slot="tooltip-content">
-        This report was run manually off-schedule.
+        {m.report_adhoc_tooltip()}
       </TooltipContent>
     </Tooltip>
   {/if}
