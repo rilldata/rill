@@ -2383,7 +2383,7 @@ definitions:
                 items:
                   type: array
                   description: List of components to display in the row
-                  items:
+                  items: &canvasRowItem
                     type: object
                     properties:
                       component:
@@ -2427,6 +2427,17 @@ definitions:
                       rows:
                         type: array
                         description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.
+                        items:
+                          type: object
+                          properties:
+                            height:
+                              type: string
+                              description: Height of the row in px
+                            items:
+                              type: array
+                              description: List of components to display in the row
+                              items: *canvasRowItem
+                          additionalProperties: false
                     additionalProperties: false
               additionalProperties: false
           max_width:

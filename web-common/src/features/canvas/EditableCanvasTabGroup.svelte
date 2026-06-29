@@ -95,7 +95,9 @@
   $: activeTab = $tabs[$activeTabIndex];
   $: grid = activeTab?.grid;
   $: target = { blockIndex, tabIndex: $activeTabIndex } satisfies EditTarget;
-  $: idPrefix = `${group.name}-${activeTab?.name ?? ""}-`;
+  // Build row DOM ids from indices, not user-controlled group/tab names: names allow spaces
+  // and punctuation, which break the `#${id}` querySelector used for height resizing.
+  $: idPrefix = `${blockIndex}-${$activeTabIndex}-`;
   $: tabZoneScope = `tab:${group.name}:${activeTab?.name ?? $activeTabIndex}`;
 </script>
 

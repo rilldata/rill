@@ -62,7 +62,11 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
     - **`name`** - _[string]_ - Stable identifier used as the tab's deep-link URL key. Defaults to a slug of the label if omitted. 
 
-    - **`rows`** - _[array]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`. 
+    - **`rows`** - _[array of object]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`. 
+
+      - **`height`** - _[string]_ - Height of the row in px 
+
+      - **`items`** - _[array]_ - List of components to display in the row 
 
 ### `max_width`
 
