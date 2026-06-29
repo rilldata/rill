@@ -68,6 +68,9 @@ export async function waitForProjectParser(instanceId: string) {
   throw new Error("Project parser version not found after 5 retries");
 }
 
+const WaitForResourceReconciliationPollInterval = 2_000;
+const WaitForResourceReconciliationRetryCount = 5;
+
 // Resource-level reconciliation
 export async function waitForResourceReconciliation(
   client: RuntimeClient,
@@ -76,7 +79,6 @@ export async function waitForResourceReconciliation(
   resourceKind: ResourceKind,
   prevStateVersion?: string,
 ) {
-  const pollInterval = 2_000; // 2 seconds
   let attempt = 0;
 
   while (true) {
@@ -110,11 +112,30 @@ export async function waitForResourceReconciliation(
       }
 
       // Still reconciling, continue polling
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) =>
+        setTimeout(resolve, WaitForResourceReconciliationPollInterval),
+      );
     } catch (error) {
+      // Controller closed error could mean the controller is being restarted because there was env change
+      // Check this 1st since resource not found will be true.
+      if (
+        isControllerClosedError(error) &&
+        attempt <= WaitForResourceReconciliationRetryCount
+      ) {
+        // Wait and try again if the controller is closed
+        await new Promise((resolve) =>
+          setTimeout(
+            resolve,
+            // Wait longer for controller to restart
+            WaitForResourceReconciliationPollInterval * attempt,
+          ),
+        );
+        continue;
+      }
+
       // Resource not found could mean it was deleted due to reconcile failure
       if (isNotFoundError(error)) {
-        if (attempt >= 3) {
+        if (attempt >= WaitForResourceReconciliationRetryCount) {
           // After 6 seconds, assume reconcile failure
           throw new Error(
             `Resource configuration failed to reconcile and was automatically deleted. This usually indicates a connection or configuration error.`,
@@ -122,13 +143,9 @@ export async function waitForResourceReconciliation(
         }
 
         // Wait and try again
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
-        continue;
-      }
-      // Controller closed error could mean the controller is being restarted because there was env change
-      if (isControllerClosedError(error) && attempt <= 3) {
-        // Wait and try again if the controller is closed
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) =>
+          setTimeout(resolve, WaitForResourceReconciliationPollInterval),
+        );
         continue;
       }
 
