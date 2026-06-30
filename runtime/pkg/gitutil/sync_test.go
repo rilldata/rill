@@ -547,6 +547,40 @@ func TestChangedFiles_Monorepo(t *testing.T) {
 	require.Equal(t, []ChangedFile{{Path: "file2.txt", Status: ChangedFileStatusModified}}, files)
 }
 
+// TestChangedFiles_RemoteDiverged verifies that files added on the remote but not pulled locally
+// do not appear as spurious inverse changes in the result.
+func TestChangedFiles_RemoteDiverged(t *testing.T) {
+	tempDir, remoteDir := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Add a file to the remote that the local repo has not pulled.
+	createRemoteCommit(t, remoteDir, "remote_only.txt", "content", "add remote-only file")
+
+	// Fetch so the remote-tracking ref advances, but do NOT pull (local HEAD stays behind).
+	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	st, err := Status(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err)
+	require.Equal(t, int32(0), st.LocalCommits, "expected no local commits")
+	require.Equal(t, int32(1), st.RemoteCommits, "expected remote to be 1 ahead")
+
+	// Make a local (uncommitted) edit so there is something local to show.
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test1.txt"), []byte("edited"), 0644))
+
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed")
+
+	got := map[string]ChangedFileStatus{}
+	for _, f := range files {
+		got[f.Path] = f.Status
+	}
+
+	// Only the local edit should be reported; remote_only.txt must NOT appear as deleted.
+	require.Equal(t, map[string]ChangedFileStatus{
+		"test1.txt": ChangedFileStatusModified,
+	}, got)
+}
+
 // Helper: compare canonicalized paths
 func assertPathsEqual(t *testing.T, p1, p2 string) {
 	t.Helper()

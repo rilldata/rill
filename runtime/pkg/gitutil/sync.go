@@ -104,6 +104,10 @@ func Status(ctx context.Context, path, subpath, remoteName, remoteBranch string)
 // ChangedFiles returns the files that differ between the working tree at path and the comparison
 // ref, i.e. the changes that would land on the ref if merged.
 //
+// The diff is computed from the merge base of HEAD and the remote ref, not directly against the
+// remote ref. This ensures that commits on the remote that have not been pulled locally do not
+// appear as spurious inverse changes in the result.
+//
 // Paths are returned relative to subpath (with the subpath prefix stripped). Uncommitted and
 // untracked changes are included, since those are committed before a merge.
 // Renames are reported with status Renamed and the old path, but only when git can detect them (a
@@ -121,7 +125,13 @@ func ChangedFiles(ctx context.Context, path, subpath, remoteName, remoteBranch s
 	}
 	ref := fmt.Sprintf("%s/%s", remoteName, compareBranch)
 
-	diffArgs := []string{"diff", "--name-status", "-M", ref}
+	mergeBase, err := Run(ctx, path, "merge-base", "HEAD", ref)
+	if err != nil {
+		return nil, err
+	}
+	mergeBase = strings.TrimSpace(mergeBase)
+
+	diffArgs := []string{"diff", "--name-status", "-M", mergeBase}
 	if subpath != "" {
 		diffArgs = append(diffArgs, "--", subpath)
 	}
