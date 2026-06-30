@@ -149,15 +149,12 @@ export function buildVisualizationOptions(args: {
   sortedVisualizations: V1Resource[];
   dashboardsByTag: Map<string, V1Resource[]>;
   activeTag: string | undefined;
-  tagAsFolders: boolean;
 }): Map<string, PathOption> {
-  const { sortedVisualizations, dashboardsByTag, activeTag, tagAsFolders } =
-    args;
+  const { sortedVisualizations, dashboardsByTag, activeTag } = args;
   const map = new Map<string, PathOption>();
-  const scopedResources =
-    tagAsFolders && activeTag
-      ? (dashboardsByTag.get(activeTag) ?? [])
-      : sortedVisualizations;
+  const scopedResources = activeTag
+    ? (dashboardsByTag.get(activeTag) ?? [])
+    : sortedVisualizations;
   for (const resource of scopedResources) {
     map.set(
       resource.meta.name.name.toLowerCase(),

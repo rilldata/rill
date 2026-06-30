@@ -6,7 +6,6 @@
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { renderComponent } from "tanstack-table-8-svelte-5";
@@ -25,7 +24,6 @@
   export let previewLimit = 5;
 
   const TAGS_PARAM = "tags";
-  const { tagAsFolders } = featureFlags;
 
   $: selectedTags = ($page.url.searchParams.get(TAGS_PARAM) ?? "")
     .split(",")
@@ -216,14 +214,14 @@
   <div class="flex flex-col w-full gap-y-3">
     {#if !isPreview}
       <DashboardsFilterToolbar
-        availableTags={$tagAsFolders ? [] : availableTags}
+        {availableTags}
         {selectedTags}
         onTagsChange={setSelectedTags}
         bind:searchText
       />
     {/if}
 
-    {#if $tagAsFolders && !isPreview}
+    {#if !isPreview && availableTags.length}
       <!-- Folder mode: grouped by tag, all inside one bordered container -->
       <div class="w-full border rounded-lg overflow-hidden divide-y">
         {#each tagGroups as { tag, resources } (tag)}

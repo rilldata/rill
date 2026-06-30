@@ -81,7 +81,6 @@
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
-    tagAsFolders,
   } = featureFlags;
 
   $: ({
@@ -130,7 +129,6 @@
   //    declared tag, or UNTAGGED_KEY when the dashboard has no tags.
   //  - On the project home without a filter, no tag breadcrumb is rendered.
   $: activeTag = (() => {
-    if (!$tagAsFolders) return undefined;
     if (paramTag) return paramTag;
     if (onDashboardPage && currentDashboardResource)
       return getPrimaryTag(currentDashboardResource);
@@ -165,7 +163,6 @@
       sortedVisualizations,
       dashboardsByTag,
       activeTag,
-      tagAsFolders: $tagAsFolders,
     }),
     carryOverSearchParams: $stickyDashboardState,
   };
@@ -191,9 +188,7 @@
   };
 
   $: tagPathsSegment =
-    $tagAsFolders && activeTag && tagPathsOptions.size > 0
-      ? { options: tagPathsOptions }
-      : null;
+    activeTag && tagPathsOptions.size > 0 ? { options: tagPathsOptions } : null;
 
   $: pathParts = [
     { options: $orgPathsQuery.data ?? new Map() },
