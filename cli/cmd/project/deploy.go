@@ -38,6 +38,7 @@ type DeployOpts struct {
 	Slots         int
 	DevSlots      int
 	PushEnv       bool
+	ForcePush     bool
 
 	ArchiveUpload bool
 	// Managed indicates if the project should be deployed using Rill Managed Git.
@@ -90,6 +91,9 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			return err
 		}
 		if exists {
+			if p.ManagedGitId == "" && p.ArchiveAssetId == "" && o.ForcePush {
+				return fmt.Errorf("project %q/%q is connected to a GitHub repository. Cannot use --force-push flag", ch.Org, o.Name)
+			}
 			if ch.Interactive {
 				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), true); err != nil {
 					return err
@@ -128,9 +132,14 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 
 	// if there is a project already connected to this repo+subpath offer to push changes to it
 	if o.pushToProject != nil {
-		if o.pushToProject.ManagedGitId == "" && o.Managed {
-			ch.PrintfError("Project %s/%s is already connected to this GitHub repository. Cannot use --managed flag.\n", o.pushToProject.OrgName, o.pushToProject.Name)
-			return fmt.Errorf("aborting deploy")
+		if o.pushToProject.ManagedGitId == "" {
+			if o.Managed {
+				ch.PrintfError("Project %s/%s is already connected to this GitHub repository. Cannot use --managed flag.\n", o.pushToProject.OrgName, o.pushToProject.Name)
+				return fmt.Errorf("aborting deploy")
+			}
+			if o.ForcePush {
+				return fmt.Errorf("project %s/%s is connected to a GitHub repository. Cannot use --force-push flag", o.pushToProject.OrgName, o.pushToProject.Name)
+			}
 		}
 		if o.pushToProject.ManagedGitId != "" && o.Github {
 			ch.Printf("Found another rill managed project %s/%s connected to this folder\n", o.pushToProject.OrgName, o.pushToProject.Name)
@@ -464,7 +473,7 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 	}
 	proj := opts.pushToProject
 	if proj.ManagedGitId != "" {
-		err := ch.GitHelper(ch.Org, proj.Name, opts.LocalProjectPath()).PushToManagedRepo(ctx)
+		err := ch.GitHelper(ch.Org, proj.Name, opts.LocalProjectPath()).PushToManagedRepo(ctx, opts.ForcePush)
 		if err != nil {
 			return err
 		}

@@ -117,7 +117,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context, primaryBranch stri
 	return gitRepo, nil
 }
 
-func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
+func (g *GitHelper) PushToManagedRepo(ctx context.Context, forcePush bool) error {
 	gitConfig, err := g.GitConfig(ctx)
 	if err != nil {
 		return err
@@ -126,6 +126,9 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 	author, err := g.h.GitSignature(ctx, g.localPath)
 	if err != nil {
 		return err
+	}
+	if forcePush {
+		return gitutil.CommitAndForcePush(ctx, g.localPath, gitConfig, "", author)
 	}
 	err = g.h.CommitAndSafePush(ctx, g.localPath, gitConfig, "", author, "1")
 	if err != nil {
