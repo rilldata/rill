@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -29,6 +31,28 @@
 
   let showScheduledReportDialog = false;
   let open = false;
+
+  // Auto-open the scheduled-report dialog when arriving from the dashboards
+  // listing's "Create report" action. The dialog needs the dashboard query,
+  // so we compute it directly here rather than going through the export menu.
+  $: if (
+    !showScheduledReportDialog &&
+    includeScheduledReport &&
+    ScheduledReportDialog &&
+    exploreName &&
+    $page.url.searchParams.get("action") === "create-report"
+  ) {
+    scheduledReportQuery = getQuery(true);
+    if (scheduledReportQuery) {
+      showScheduledReportDialog = true;
+      const url = new URL($page.url);
+      url.searchParams.delete("action");
+      void goto(url.pathname + url.search, {
+        replaceState: true,
+        noScroll: true,
+      });
+    }
+  }
 
   let exportQuery: V1Query | undefined;
   let scheduledReportQuery: V1Query | undefined;
@@ -72,7 +96,7 @@
 
   // Only import the Scheduled Report dialog if in the Cloud context.
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
-  let ScheduledReportDialog: typeof TScheduledReportDialog;
+  let ScheduledReportDialog: typeof TScheduledReportDialog | undefined;
   onMount(async () => {
     if (includeScheduledReport) {
       ({ default: ScheduledReportDialog } = await import(

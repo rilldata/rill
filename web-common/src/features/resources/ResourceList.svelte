@@ -14,7 +14,6 @@
   } from "tanstack-table-8-svelte-5";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
-  import ResourceListToolbar from "./ResourceListToolbar.svelte";
 
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
@@ -23,6 +22,13 @@
   export let toolbar: boolean = true;
   export let fixedRowHeight: boolean = true;
   export let initialSorting: SortingState = [];
+  /**
+   * Whether the caller has applied search/filters to `data` before passing it in.
+   * When true and `data` is empty, the "No {kind}s match your search" empty state
+   * is shown. When false (or undefined), falls back to the table's own globalFilter
+   * state for backwards compatibility.
+   */
+  export let isFiltered: boolean | undefined = undefined;
 
   let sorting: SortingState = initialSorting;
   function setSorting(updater: Updater<SortingState>) {
@@ -72,15 +78,16 @@
   // Whenever the input data changes, rerender the table
   $: data && rerender();
 
-  // Check if we're in a filtered state (search is active)
-  $: isFiltered = $table.getState().globalFilter?.length > 0;
+  // Check if we're in a filtered state. Prefer the caller-provided value (since
+  // most callers now pre-filter `data` externally); otherwise fall back to the
+  // table's own globalFilter state.
+  $: isFilteredEffective =
+    isFiltered ?? ($table.getState().globalFilter?.length ?? 0) > 0;
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
   {#if toolbar}
-    <slot name="toolbar">
-      <ResourceListToolbar />
-    </slot>
+    <slot name="toolbar" />
   {/if}
 
   <div class="w-full">
@@ -97,7 +104,7 @@
       {:else}
         <li class="resource-list-item-empty">
           <div class="text-center py-16">
-            {#if isFiltered}
+            {#if isFilteredEffective}
               <!-- Filtered empty state: no results match search -->
               <div class="flex flex-col gap-y-2 items-center text-sm">
                 <div class="text-fg-secondary font-semibold">
@@ -127,33 +134,19 @@
     @apply list-none p-0 m-0 w-full;
   }
 
-  .resource-list-item,
+  .resource-list-item {
+    @apply block w-full border-b border-x-0 border-t-0;
+  }
+
+  .resource-list-item:first-child {
+    @apply border-t;
+  }
+
   .resource-list-item-empty {
-    @apply block w-full border bg-surface-background;
+    @apply block w-full;
   }
 
   .resource-list-item.fixed-height {
     @apply h-[60px];
-  }
-
-  /* Remove top border on non-first items to avoid double borders */
-  .resource-list-item + .resource-list-item {
-    @apply border-t-0;
-  }
-
-  /* Rounded corners on first and last items */
-  .resource-list-item:first-child,
-  .resource-list-item-empty:first-child {
-    @apply rounded-t-lg;
-  }
-
-  .resource-list-item:last-child,
-  .resource-list-item-empty:last-child {
-    @apply rounded-b-lg;
-  }
-
-  /* Hover effect on list items */
-  .resource-list-item:hover {
-    @apply bg-surface-hover;
   }
 </style>

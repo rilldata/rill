@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
   import {
@@ -28,6 +30,24 @@
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
   let open = false;
+
+  // Auto-open when arriving from the dashboards listing's "Create alert" item.
+  // Strip the query param afterwards so a refresh doesn't reopen the dialog.
+  $: if (
+    !open &&
+    $page.url.searchParams.get("action") === "create-alert" &&
+    hasTimeDimension &&
+    $dashboardStore &&
+    !$isCustomTimeRange
+  ) {
+    open = true;
+    const url = new URL($page.url);
+    url.searchParams.delete("action");
+    void goto(url.pathname + url.search, {
+      replaceState: true,
+      noScroll: true,
+    });
+  }
 </script>
 
 {#if hasTimeDimension && $dashboardStore}

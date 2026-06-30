@@ -8,7 +8,7 @@
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
   import OrgGroupsTable from "@rilldata/web-admin/features/organizations/user-management/table/groups/OrgGroupsTable.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { Search } from "@rilldata/web-common/components/search";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
 
@@ -75,23 +75,15 @@
     </div>
   {:else if $listOrganizationMemberUsergroups.isSuccess}
     <div class="flex flex-col">
-      <div class="flex flex-row gap-x-4">
-        <Search
-          placeholder="Search"
-          bind:value={searchText}
-          large
-          autofocus={false}
-          showBorderOnFocus={false}
-        />
+      <TableToolbar bind:searchText showSort={false}>
         <Button
           type="primary"
-          large
           onClick={() => (isCreateUserGroupDialogOpen = true)}
         >
           <Plus size="16px" />
           <span>Create group</span>
         </Button>
-      </div>
+      </TableToolbar>
       <div class="mt-6">
         <OrgGroupsTable
           data={filteredGroups}

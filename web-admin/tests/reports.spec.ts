@@ -116,18 +116,16 @@ test.describe.serial("Reports", () => {
     );
   });
 
-  test("Should run a report and receive an email", async ({ adminPage }) => {
-    // Open the report
+  test("Should run a report from the listing row menu and receive an email", async ({
+    adminPage,
+  }) => {
     await adminPage.goto("/e2e/openrtb/-/reports");
-    await adminPage
-      .getByRole("link", {
-        name: "Report for last 14 days",
-      })
-      .click();
 
-    // Store time before clicking run to ensure latest email is fetched.
+    // Trigger the run from the listing-row actions menu (the new wired-up action).
     const time = new Date();
-    await adminPage.getByRole("button", { name: "Run now" }).click();
+    await adminPage.getByLabel("Actions for Report for last 14 days").click();
+    await adminPage.getByRole("menuitem", { name: "Run" }).click();
+
     // Notification is shown
     await expect(adminPage.getByLabel("Notification")).toHaveText(
       "Triggered an ad-hoc run of this report.",
@@ -233,20 +231,18 @@ test.describe.serial("Reports", () => {
     );
   });
 
-  test("Should delete report", async ({ adminPage }) => {
+  test("Should delete report from the listing row menu", async ({
+    adminPage,
+  }) => {
     await adminPage.goto("/e2e/openrtb/-/reports");
 
-    await adminPage
-      .getByRole("link", {
-        name: "Report for last 14 days",
-      })
-      .click();
+    // Open the row's actions menu and click Delete (covers the new listing-page action wired up in the row).
+    await adminPage.getByLabel("Actions for Report for last 14 days").click();
+    await adminPage.getByRole("menuitem", { name: "Delete" }).click();
+    await adminPage.getByRole("button", { name: "Yes, delete" }).click();
 
-    // Delete the report
-    await adminPage.getByLabel("Report context menu").click();
-    await adminPage.getByRole("menuitem", { name: "Delete Report" }).click();
-
-    // Back to listing page without any reports
+    // Stay on the listing page; no reports remain.
+    await expect(adminPage).toHaveURL(/\/-\/reports$/);
     await expect(
       adminPage.getByText("You don't have any reports yet"),
     ).toBeVisible();

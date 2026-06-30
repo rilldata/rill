@@ -6,9 +6,11 @@
   let {
     filterGroups = [],
     onFilterChange,
+    disabled = false,
   }: {
     filterGroups: FilterGroup[];
     onFilterChange?: (key: string, selected: string | string[]) => void;
+    disabled?: boolean;
   } = $props();
 
   function handleClick(group: FilterGroup, value: string) {
@@ -27,8 +29,9 @@
 {#if filterGroups.length > 0}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger
-      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer"
+      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
       aria-label="Filter options"
+      {disabled}
     >
       <FilterOutlined size="14" />
       <span>Filter</span>

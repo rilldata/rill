@@ -21,6 +21,8 @@
   import { formatRefreshSchedule } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import DeleteConfirmDialog from "@rilldata/web-common/features/resources/DeleteConfirmDialog.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -103,19 +105,27 @@
   const queryClient = useQueryClient();
   const deleteAlert = createAdminServiceDeleteAlert();
 
+  let isDeleteConfirmOpen = false;
+
   async function handleDeleteAlert() {
-    await $deleteAlert.mutateAsync({
-      org: organization,
-      project,
-      name: $alertQuery.data.resource.meta.name.name,
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(
-        runtimeClient.instanceId,
-      ),
-    });
-    // goto only after invalidate is complete
-    goto(`/${organization}/${project}/-/alerts`);
+    try {
+      await $deleteAlert.mutateAsync({
+        org: organization,
+        project,
+        name: $alertQuery.data.resource.meta.name.name,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+        ),
+      });
+      goto(`/${organization}/${project}/-/alerts`);
+    } catch {
+      eventBus.emit("notification", {
+        message: "Failed to delete alert",
+        type: "error",
+      });
+    }
   }
 </script>
 
@@ -151,7 +161,12 @@
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <DropdownMenu.Item onclick={handleDeleteAlert}>
+              <DropdownMenu.Item
+                type="destructive"
+                onclick={() => {
+                  isDeleteConfirmOpen = true;
+                }}
+              >
                 Delete Alert
               </DropdownMenu.Item>
             </DropdownMenu.Content>
@@ -245,3 +260,12 @@
     {/if}
   </div>
 {/if}
+
+<DeleteConfirmDialog
+  bind:open={isDeleteConfirmOpen}
+  title="Delete this alert?"
+  onDelete={handleDeleteAlert}
+>
+  The alert "<strong>{alertSpec?.displayName ?? ""}</strong>" will be
+  permanently deleted and will no longer trigger notifications.
+</DeleteConfirmDialog>
