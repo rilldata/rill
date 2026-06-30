@@ -423,10 +423,122 @@ describe("DimensionFilter", () => {
     // Close the dropdown so bits-ui's body-scroll-lock cleanup fires while
     // jsdom is still alive (otherwise the deferred cleanup fires after teardown
     // and produces an unhandled "document is not defined" error).
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+  });
+
+  it("rerenders the chip when only the include/exclude operator changes", async () => {
+    const props = {
+      filterData: {
+        name: "device_type",
+        label: "Device Type",
+        mode: DimensionFilterMode.Select,
+        dimensions: new Map([[AD_BIDS_METRICS_NAME, {}]]),
+        selectedValues: ["ConnectedTV"],
+        isInclude: false,
+      },
+      expressionMap: new Map(),
+      openOnMount: false,
+      timeStart: undefined,
+      timeEnd: undefined,
+      timeDimension: undefined,
+      timeControlsReady: false,
+      removeDimensionFilter: vi.fn(),
+      applyDimensionInListMode: vi.fn(),
+      toggleDimensionValueSelections: vi.fn(),
+      applyDimensionContainsMode: vi.fn(),
+      toggleDimensionFilterMode: vi.fn(),
+    };
+
+    const { rerender } = render(DimensionFilter, {
+      props,
+      context: new Map<string | symbol, unknown>([
+        [
+          RUNTIME_CONTEXT_KEY,
+          new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+        ],
+      ]),
+    });
+
+    const chip = screen.getByLabelText("device_type filter");
+    expect(screen.getByLabelText("Open device_type filter")).toHaveTextContent(
+      "Exclude Device Type ConnectedTV",
+    );
+    expect(chip).toHaveClass("exclude");
+
+    await rerender({
+      ...props,
+      filterData: {
+        ...props.filterData,
+        isInclude: true,
+      },
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("Open device_type filter"),
+      ).toHaveTextContent("Device Type ConnectedTV"),
+    );
+    expect(
+      screen.getByLabelText("Open device_type filter"),
+    ).not.toHaveTextContent("Exclude");
+    expect(chip).not.toHaveClass("exclude");
+  });
+
+  it("applies a pending include/exclude toggle when select mode closes", async () => {
+    const toggleDimensionFilterMode = vi.fn().mockResolvedValue(undefined);
+    const toggleDimensionValueSelections = vi.fn().mockResolvedValue(undefined);
+    const props = {
+      filterData: {
+        name: AD_BIDS_PUBLISHER_DIMENSION,
+        label: "Publisher",
+        mode: DimensionFilterMode.Select,
+        dimensions: new Map([[AD_BIDS_METRICS_NAME, {}]]),
+        selectedValues: ["Facebook"],
+        isInclude: true,
+      },
+      expressionMap: new Map(),
+      openOnMount: false,
+      timeStart: undefined,
+      timeEnd: undefined,
+      timeDimension: undefined,
+      timeControlsReady: false,
+      removeDimensionFilter: vi.fn(),
+      applyDimensionInListMode: vi.fn(),
+      toggleDimensionValueSelections,
+      applyDimensionContainsMode: vi.fn(),
+      toggleDimensionFilterMode,
+    };
+
+    render(DimensionFilter, {
+      props,
+      context: new Map<string | symbol, unknown>([
+        [
+          RUNTIME_CONTEXT_KEY,
+          new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+        ],
+      ]),
+    });
+
+    await act(() => screen.getByLabelText("Open publisher filter").click());
     await act(() =>
-      fireEvent.keyDown(screen.getByLabelText("publisher search list"), {
-        key: "Escape",
-      }),
+      fireEvent.click(screen.getByLabelText("Include exclude toggle")),
+    );
+    expect(screen.getByLabelText("Include exclude toggle")).toHaveAttribute(
+      "data-state",
+      "checked",
+    );
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+
+    await waitFor(() =>
+      expect(toggleDimensionFilterMode).toHaveBeenCalledWith(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        [AD_BIDS_METRICS_NAME],
+      ),
+    );
+    expect(toggleDimensionValueSelections).toHaveBeenCalledWith(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      [],
+      [AD_BIDS_METRICS_NAME],
     );
   });
 });

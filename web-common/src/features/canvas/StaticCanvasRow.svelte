@@ -15,6 +15,7 @@
   export let heightUnit: string = "px";
   export let navigationEnabled: boolean = true;
   export let activeComponentId: string | null = null;
+  export let idPrefix: string = "";
 
   $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
@@ -22,7 +23,7 @@
 
   $: itemIds = $_itemIds;
 
-  $: id = `canvas-row-${rowIndex}`;
+  $: id = `canvas-row-${idPrefix}${rowIndex}`;
 </script>
 
 <RowWrapper

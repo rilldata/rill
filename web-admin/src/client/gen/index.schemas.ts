@@ -1261,6 +1261,7 @@ export interface V1Quotas {
   storageLimitBytesPerDeployment?: string;
   apiCallsPerSeat?: string;
   seats?: string;
+  tokensPerSeat?: string;
 }
 
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };

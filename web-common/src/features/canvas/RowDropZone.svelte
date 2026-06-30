@@ -2,26 +2,31 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
   import Divider from "./Divider.svelte";
-  import { dropZone, activeDivider } from "./stores/ui-stores";
+  import { activeDivider, dropZone } from "./stores/ui-stores";
 
   export let allowDrop: boolean;
   export let resizeIndex = -1;
   export let dropIndex: number;
+  export let zoneScope = "canvas";
+  export let position: "top" | "bottom" | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void = () => {};
   export let addItem: (type: CanvasComponentType) => void;
+  // When provided, the add menu offers inserting a tab group at this position.
+  export let onAddTabGroup: (() => void) | undefined = undefined;
 
   let menuOpen = false;
 
-  $: dividerId = `row:${resizeIndex}::column:null`;
-  $: dropId = `row:${dropIndex}::column:null`;
+  $: notResizable = resizeIndex === -1;
+  $: resolvedPosition = position ?? (notResizable ? "top" : "bottom");
+
+  $: dividerId = `${zoneScope}::resize-row:${resizeIndex}::drop-row:${dropIndex}::column:null::position:${resolvedPosition}`;
+  $: dropId = `${zoneScope}::row:${dropIndex}::column:null`;
 
   $: isDropZone = $dropZone === dropId;
   $: isActiveDivider = $activeDivider === dividerId;
 
   $: notActiveDivider = !isActiveDivider && !!$activeDivider;
-
-  $: notResizable = resizeIndex === -1;
 
   $: forceShowDivider = menuOpen || isActiveDivider || isDropZone;
 </script>
@@ -29,8 +34,8 @@
 <div
   role="presentation"
   style:pointer-events={allowDrop ? "auto" : "none"}
-  class:top={notResizable}
-  class:bottom={!notResizable}
+  class:top={resolvedPosition === "top"}
+  class:bottom={resolvedPosition === "bottom"}
   class="absolute z-10 w-full h-12 flex items-center justify-center px-2"
   onmouseenter={() => {
     if (!allowDrop) return;
@@ -88,6 +93,7 @@
           }
         }}
         onItemClick={addItem}
+        {onAddTabGroup}
       />
     </span>
   </div>
@@ -99,7 +105,7 @@
   } */
 
   .top {
-    @apply top-0  -translate-y-1/2;
+    @apply top-0 -translate-y-1/2;
   }
 
   .bottom {

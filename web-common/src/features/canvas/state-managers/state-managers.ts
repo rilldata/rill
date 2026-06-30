@@ -21,10 +21,22 @@ function makeCanvasId(canvasName: string, instanceId: string): CanvasId {
 export function getCanvasStoreUnguarded(
   canvasName: string,
   instanceId: string,
+  allowUnvalidatedSpec?: boolean,
 ): CanvasStore | undefined {
   const id = makeCanvasId(canvasName, instanceId);
+  const store = canvasRegistry.get(id);
 
-  return canvasRegistry.get(id);
+  if (
+    store &&
+    allowUnvalidatedSpec !== undefined &&
+    store.canvasEntity.allowUnvalidatedSpec !== allowUnvalidatedSpec
+  ) {
+    store.canvasEntity.unsubscribe();
+    canvasRegistry.delete(id);
+    return undefined;
+  }
+
+  return store;
 }
 
 export function getCanvasStore(
@@ -65,11 +77,18 @@ export function setCanvasStore(
 ): CanvasStore {
   const id = makeCanvasId(canvasName, instanceId);
 
-  if (canvasRegistry.has(id)) {
+  const existingStore = canvasRegistry.get(id);
+  if (
+    existingStore &&
+    existingStore.canvasEntity.allowUnvalidatedSpec !== allowUnvalidatedSpec
+  ) {
+    existingStore.canvasEntity.unsubscribe();
+    canvasRegistry.delete(id);
+  } else if (existingStore) {
     console.warn(
       `Canvas store for ID ${id} already exists. Returning existing store.`,
     );
-    return canvasRegistry.get(id)!;
+    return existingStore;
   }
 
   const canvasEntity = new CanvasEntity(

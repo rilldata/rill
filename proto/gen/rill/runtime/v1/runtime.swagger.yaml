@@ -4416,7 +4416,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CanvasItem'
-        description: Items to render in the row.
+        description: Items to render in the row. Empty when the row is a tab group.
+      tabGroup:
+        $ref: '#/definitions/v1CanvasTabGroup'
+        description: |-
+          If set, this row renders a tab group instead of items.
+          A row has either items or a tab_group, never both.
   v1CanvasSpec:
     type: object
     properties:
@@ -4517,6 +4522,37 @@ definitions:
         description: |-
           The last time any underlying metrics view(s)'s data was refreshed.
           This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  v1CanvasTab:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Stable identifier for the tab, used for URL state. Derived from the label.
+      displayName:
+        type: string
+        description: User-facing label for the tab.
+      rows:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasRow'
+        description: |-
+          Rows to render when the tab is active. These are always plain rows;
+          a tab's rows never contain a nested tab_group.
+  v1CanvasTabGroup:
+    type: object
+    properties:
+      name:
+        type: string
+        description: |-
+          Stable identifier for the tab group, used for URL state.
+          Defaults to "group-<index>" if not provided in the canvas YAML.
+      tabs:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasTab'
+        description: Tabs in the group. A group always has at least one tab.
   v1CategoricalSummary:
     type: object
     properties:
@@ -7514,6 +7550,9 @@ definitions:
       allErroredPartitions:
         type: boolean
         description: If true, it will refresh all partitions that errored on their last execution.
+      allSkippedPartitions:
+        type: boolean
+        description: If true, it will refresh all partitions that are currently marked as skipped.
   v1RefreshTrigger:
     type: object
     properties:

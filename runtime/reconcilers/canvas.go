@@ -187,13 +187,9 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		return nil, fmt.Errorf("failed to get controller: %w", err)
 	}
 
-	// Collect all component names referenced by the canvas
+	// Collect all component names referenced by the canvas (including those nested in tab groups)
 	componentNames := make(map[string]bool)
-	for _, row := range spec.Rows {
-		for _, item := range row.Items {
-			componentNames[item.Component] = true
-		}
-	}
+	runtime.CollectCanvasComponentNames(spec.Rows, componentNames)
 
 	// Process each component
 	for componentName := range componentNames {

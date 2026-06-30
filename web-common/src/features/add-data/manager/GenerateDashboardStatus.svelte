@@ -19,7 +19,6 @@
   import { onMount } from "svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
     getFileHref,
     withEditorPrefix,
@@ -68,6 +67,8 @@
   let error: string | null = null;
   $: hasErrored = !!error;
 
+  let skipped = false;
+
   async function runImport() {
     importStep = ImportDataStep.Init;
     error = null;
@@ -100,6 +101,7 @@
         },
       );
       onDone();
+      if (skipped) return; // Do not auto-navigate to the file if skipped
       return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
@@ -113,13 +115,15 @@
   }
 
   async function cleanupAndBack() {
-    await cleanupImportStep(
-      runtimeClient,
-      queryClient,
-      importAddDataStep.config,
-    );
+    await cleanupImportStep(runtimeClient, importAddDataStep.config);
 
     onBack();
+  }
+
+  function skipAndViewProject() {
+    skipped = true;
+    onDone();
+    void goto(currentFileRoute);
   }
 
   onMount(runImport);
@@ -186,8 +190,7 @@
     <Button
       disabled={!currentFileRoute}
       type="tertiary"
-      href={currentFileRoute}
-      onClick={onDone}
+      onClick={skipAndViewProject}
       large
     >
       Skip and view project

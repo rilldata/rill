@@ -48973,6 +48973,8 @@ func (m *Quotas) validate(all bool) error {
 
 	// no validation rules for Seats
 
+	// no validation rules for TokensPerSeat
+
 	if len(errors) > 0 {
 		return QuotasMultiError(errors)
 	}
