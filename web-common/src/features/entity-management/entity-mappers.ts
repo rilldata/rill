@@ -1,5 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+import { RESOURCE_FILE_EXTENSIONS } from "./file-path-utils";
 
 export function getFilePathFromPagePath(path: string): string {
   const pathSplits = path.split("/");
@@ -69,7 +70,7 @@ export function getNameFromFile(fileName: string): string {
 
   // Rill resource names are inferred by removing only the final resource file
   // extension, so dotted names like `dashboard.canvas.yaml` stay intact.
-  for (const extension of [".yaml", ".yml", ".sql"]) {
+  for (const extension of RESOURCE_FILE_EXTENSIONS) {
     if (basename.endsWith(extension)) {
       return basename.slice(0, -extension.length);
     }
