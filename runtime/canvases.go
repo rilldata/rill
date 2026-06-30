@@ -10,6 +10,21 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 )
 
+// CollectCanvasComponentNames collects the names of all components referenced by the given rows,
+// descending into tab groups (one level deep, since tabs cannot be nested).
+func CollectCanvasComponentNames(rows []*runtimev1.CanvasRow, out map[string]bool) {
+	for _, row := range rows {
+		for _, item := range row.Items {
+			out[item.Component] = true
+		}
+		if tg := row.GetTabGroup(); tg != nil {
+			for _, tab := range tg.Tabs {
+				CollectCanvasComponentNames(tab.Rows, out)
+			}
+		}
+	}
+}
+
 type ResolveCanvasResult struct {
 	Canvas                 *runtimev1.Resource
 	ResolvedComponents     map[string]*runtimev1.Resource
@@ -51,25 +66,22 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 
 	components := make(map[string]*runtimev1.Resource)
 
-	for _, row := range spec.Rows {
-		for _, item := range row.Items {
-			// Skip if already resolved.
-			if _, ok := components[item.Component]; ok {
-				continue
-			}
+	// Collect all referenced component names, descending into tab groups.
+	componentNames := make(map[string]bool)
+	CollectCanvasComponentNames(spec.Rows, componentNames)
 
-			// Get component resource.
-			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: item.Component}, false)
-			if err != nil {
-				if errors.Is(err, drivers.ErrResourceNotFound) {
-					return nil, fmt.Errorf("component %q in valid spec not found", item.Component)
-				}
-				return nil, err
+	for componentName := range componentNames {
+		// Get component resource.
+		cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: componentName}, false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				return nil, fmt.Errorf("component %q in valid spec not found", componentName)
 			}
-
-			// Add to map without resolving templates. Use ResolveTemplatedString RPC for template resolution.
-			components[item.Component] = cmp
+			return nil, err
 		}
+
+		// Add to map without resolving templates. Use ResolveTemplatedString RPC for template resolution.
+		components[componentName] = cmp
 	}
 
 	// Extract metrics view names from components

@@ -134,7 +134,6 @@ function getRillDefaultExploreViewState(
     leaderboardShowContextForAllMeasures: false,
 
     dynamicYAxisScale: false,
-    forceLineChart: false,
 
     selectedDimensionName: "",
   };
@@ -288,6 +287,8 @@ function getRillDefaultPivotViewState() {
       rowPage: 1,
       enableComparison: true,
       activeCell: null,
+      showTotalsColumn: true,
+      showTotalsRow: true,
       tableMode: "nest",
     },
   };

@@ -83,7 +83,7 @@
     const target = e.target as HTMLInputElement;
     const { name, value } = target;
 
-    clearSubmitErrors();
+    clearAllErrors();
 
     if (name === "path" || name === "sql") inferModelName(name, value);
   }
@@ -113,13 +113,19 @@
     );
   }
 
-  function clearSubmitErrors() {
-    errors.update(($errors) => {
-      if (!$errors?.submitError) return $errors;
-      const next = { ...$errors };
-      delete next.submitError;
-      return next;
-    });
+  // Wipe all field-level errors (including the submitError banner) on any
+  // text input. `force: true` bypasses superForm's merge, which would
+  // otherwise keep the previous errors around in its internal tree and
+  // leave the red inline message + disabled submit button stuck.
+  function clearAllErrors() {
+    (
+      errors as unknown as {
+        set: (
+          value: Record<string, unknown>,
+          options?: { force?: boolean },
+        ) => void;
+      }
+    ).set({}, { force: true });
   }
 
   async function handleFileUpload(

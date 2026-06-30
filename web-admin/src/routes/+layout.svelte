@@ -1,16 +1,17 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
-  import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
-  import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
+  import {
+    handleAdminServerNetworkError,
+    handleAdminServerQuerySuccess,
+    registerAdminNetworkRecoveryListeners,
+  } from "@rilldata/web-admin/components/errors/admin-network-errors";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import RepresentingBanner from "@rilldata/web-admin/features/superuser/users/RepresentingBanner.svelte";
   import {
     isBillingUpgradePage,
-    isProjectInvitePage,
+    isOnboardingPage,
     isPublicReportPage,
-    isWelcomePage,
     withinOrganization,
     withinProject,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -65,13 +66,14 @@
     // Add TanStack Query errors to telemetry
     errorEventHandler?.requestErrorEventHandler(error, query);
 
-    // Handle network errors
-    // Note: ideally, we'd throw this in the root `+layout.ts` file, but we're blocked by
-    // https://github.com/sveltejs/kit/issues/10201
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (isAdminServerQuery(query) && errorMessage === "Network Error") {
-      errorStore.set(createUserFacingError(null, errorMessage));
-    }
+    handleAdminServerNetworkError(error, query, queryClient);
+  };
+
+  queryClient.getQueryCache().config.onSuccess = (
+    _data: unknown,
+    query: Query,
+  ) => {
+    handleAdminServerQuerySuccess(query);
   };
 
   // The admin server enables some dashboard features like scheduled reports and alerts
@@ -89,25 +91,29 @@
   initPylonWidget();
 
   onMount(() => {
-    return () => removeJavascriptListeners?.();
+    const removeNetworkRecoveryListeners =
+      registerAdminNetworkRecoveryListeners(queryClient);
+
+    return () => {
+      removeJavascriptListeners?.();
+      removeNetworkRecoveryListeners();
+    };
   });
 
   $: isEmbed = isEmbedPage($page);
 
+  // Onboarding pages like the project invite page, org/project welcome page, and project create page should hide the top bar and billing manager
+  $: onOnboardingPage = isOnboardingPage($page);
+
   $: hideTopBar =
-    // invite page shouldn't show the top bar because it is considered an onboard step
-    isProjectInvitePage($page) ||
     // upgrade callback landing page shouldn't show any rill identifications
     isBillingUpgradePage($page) ||
     // public reports are shared to external users who shouldn't be shown any rill related stuff
     isPublicReportPage($page) ||
-    // Welcome page should be a full screen experience
-    isWelcomePage($page);
+    onOnboardingPage;
   $: hideBillingManager =
     // billing manager needs organization
-    !organization ||
-    // invite page shouldn't show the banner since the illusion is that the user is not on cloud yet.
-    isProjectInvitePage($page);
+    !organization || onOnboardingPage;
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 

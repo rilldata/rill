@@ -5,15 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -39,11 +35,11 @@ type gitRepo struct {
 }
 
 // pull clones or pulls from the remote Git repository.
-func (r *gitRepo) pull(ctx context.Context, force bool) error {
+func (r *gitRepo) pull(ctx context.Context, userTriggered, force bool) error {
 	// Call pullInner with retries
 	var err error
 	for i := 0; i < gitRetryN; i++ {
-		err = r.pullInner(ctx, force)
+		err = r.pullInner(ctx, userTriggered, force)
 		if err == nil {
 			break
 		}
@@ -60,66 +56,69 @@ func (r *gitRepo) pull(ctx context.Context, force bool) error {
 }
 
 // pullInner contains the actual logic of r.pull without retries.
-func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
+func (r *gitRepo) pullInner(ctx context.Context, userTriggered, force bool) error {
 	// If the repository is not editable, there shouldn't be any local changes, but just to be safe, we always force pull.
 	if !r.editable() {
 		force = true
 	}
 
 	// Check if repoDir exists and is a valid Git repository
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
+	if !isRepoRoot(r.repoDir) {
 		// Repository doesn't exist or is invalid, remove and clone fresh
 		if err := os.RemoveAll(r.repoDir); err != nil {
 			return err
 		}
-
-		cloneOptions := &git.CloneOptions{
-			URL:           r.remoteURL,
-			SingleBranch:  r.primaryBranch == r.defaultBranch,
-			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.primaryBranch), // primary branch must exist, default branch may not exist yet in editable mode.
-		}
-
-		repo, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
+		// for non editable make the clone faster by only cloning the primary branch with no history
+		// for editable deployments, we need the full history and all branches to support editing and merging
+		err := gitutil.Clone(ctx, r.repoDir, r.remoteURL, r.primaryBranch, !r.editableDepl, !r.editableDepl)
 		if err != nil {
 			return err
+		}
+
+		if r.editableDepl {
+			// set git config in the repo dir to ensure git commits/git merge etc pass on cloud
+			err = setGitConfig(r.repoDir, "user.name", "Rill")
+			if err != nil {
+				return err
+			}
+			err = setGitConfig(r.repoDir, "user.email", "noreply@rilldata.com")
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		// Repository exists, pull latest changes
 
 		// Ensure the remote URL is correct
-		_ = repo.DeleteRemote("origin")
-		remote, err := repo.CreateRemote(&config.RemoteConfig{
-			Name: "origin",
-			URLs: []string{r.remoteURL},
-		})
+		err := setRemoteURL(r.repoDir, r.remoteURL)
 		if err != nil {
-			return fmt.Errorf("failed to set remote URL: %w", err)
+			return err
+		}
+
+		if !r.editableDepl {
+			// For non-editable repos, we only care about the primary branch, so set the fetch refspec to only fetch the primary branch.
+			err := setFetchBranch(r.repoDir, r.primaryBranch)
+			if err != nil {
+				return err
+			}
 		}
 
 		// Fetch the remote changes.
-		// We fetch each branch individually because a NoMatchingRefSpecError for one branch (e.g., an edit branch
-		// that doesn't exist on the remote yet) would cause a combined fetch to skip all branches.
-		branches := []string{r.defaultBranch}
-		if r.primaryBranch != r.defaultBranch {
-			branches = append(branches, r.primaryBranch)
+		branchesToFetch := []string{r.primaryBranch}
+		if r.editableDepl && r.primaryBranch != r.defaultBranch {
+			branchesToFetch = append(branchesToFetch, r.defaultBranch)
 		}
-		for _, branch := range branches {
-			refSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))
-			err = remote.Fetch(&git.FetchOptions{
-				RefSpecs: []config.RefSpec{refSpec},
-				Force:    true,
-			})
-			if err != nil && !(errors.Is(err, git.NoErrAlreadyUpToDate) || git.NoMatchingRefSpecError{}.Is(err)) {
-				return fmt.Errorf("failed to fetch from remote: %w", err)
-			}
+		err = gitutil.FetchBranches(ctx, r.repoDir, branchesToFetch...)
+		if err != nil {
+			return err
 		}
 	}
 
-	// Checkout the default branch.
-	err = gitForceCheckout(r.repoDir, r.defaultBranch, false, "")
+	// Checkout the default branch
+	var createDefault bool
+	err := gitutil.Checkout(r.repoDir, r.defaultBranch, force, false, "")
 	if err != nil {
-		if !errors.Is(err, errRefNotFound) {
+		if !errors.Is(err, gitutil.ErrRefNotFound) {
 			return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
 		}
 
@@ -127,17 +126,16 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		// a. when branch is created remotely after the last pull
 		// b. primary branch was edited
 		// c. in editable mode when the default branch may not exist at all.
-		push := false
-		remoteHash, err := repo.Reference(plumbing.ReferenceName("refs/remotes/origin/"+r.defaultBranch), true)
+		remoteHash, err := gitutil.Hash(ctx, r.repoDir, "refs/remotes/origin/"+r.defaultBranch)
 		if err != nil {
-			if errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable() {
+			if errors.Is(err, gitutil.ErrRefNotFound) && r.editable() {
 				// In editable mode, the default branch may not exist yet on remote. We will create it based on the primary branch.
 				r.h.logger.Info("Default branch does not exist on remote, will create it based on primary branch", zap.String("defaultBranch", r.defaultBranch), zap.String("primaryBranch", r.primaryBranch))
-				remoteHash, err = repo.Reference(plumbing.ReferenceName("refs/remotes/origin/"+r.primaryBranch), true)
+				remoteHash, err = gitutil.Hash(ctx, r.repoDir, "refs/remotes/origin/"+r.primaryBranch)
 				if err != nil {
 					return fmt.Errorf("failed to get reference for primary branch %q: %w", r.primaryBranch, err)
 				}
-				push = true
+				createDefault = true
 			} else {
 				// In non-editable mode, the default branch must exist on remote, if not found, return error.
 				return fmt.Errorf("failed to get remote tracking branch %q: %w", r.defaultBranch, err)
@@ -145,35 +143,46 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		}
 
 		// Create the default branch at the resolved remote hash
-		err = gitForceCheckout(r.repoDir, r.defaultBranch, true, remoteHash.Hash().String())
+		err = gitutil.Checkout(r.repoDir, r.defaultBranch, true, true, remoteHash)
 		if err != nil {
 			return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
 		}
 
-		if push {
+		if createDefault {
 			// Also push the newly created branch to remote so other operations like git status pass without error.
-			err = repo.PushContext(ctx, &git.PushOptions{
-				RemoteName: "origin",
-				RemoteURL:  r.remoteURL,
-				RefSpecs: []config.RefSpec{
-					config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
-				},
-			})
+			err = r.pushBranch(ctx, r.defaultBranch)
 			if err != nil {
 				return fmt.Errorf("failed to push changes to remote default branch: %w", err)
 			}
 		}
 	}
 
-	// Hard reset to remote branch
-	err = resetToRemoteTrackingBranch(r.repoDir, r.defaultBranch)
-	if err != nil {
-		if !(errors.Is(err, errRefNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
-			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
+	if force {
+		// Hard reset to remote branch
+		err = resetToRemoteTrackingBranch(r.repoDir, r.defaultBranch)
+		if err != nil {
+			if !(errors.Is(err, gitutil.ErrRefNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
+				return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
+			}
+		}
+	} else if !createDefault { // If we just created the default branch, there's no need to merge
+		merged, err := gitutil.MergeWithBailOnConflict(r.repoDir, fmt.Sprintf("%s/%s", "origin", r.defaultBranch))
+		if err != nil {
+			return err
+		}
+		if !merged { // Only user triggered pulls should fail on conflicts
+			if userTriggered {
+				return &drivers.MergeFailedError{
+					Output:       "local is behind remote and failed to sync with remote due to conflicts, use force pull to discard local changes and sync with remote",
+					MergedBranch: r.defaultBranch,
+					Conflict:     true,
+				}
+			}
+			r.h.logger.Warn("Merge aborted due to conflicts, local changes not synced with remote", zap.String("branch", r.defaultBranch))
 		}
 	}
 
-	if !r.editable() {
+	if !r.editable() || r.primaryBranch == r.defaultBranch {
 		return nil
 	}
 
@@ -183,12 +192,23 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	// merge primary branch into edit branch
 	mergeBranch := "origin/" + r.primaryBranch
 	if force {
-		err = gitutil.MergeWithTheirsStrategy(r.repoDir, mergeBranch)
+		err = gitutil.MergeWithStrategy(r.repoDir, mergeBranch, "theirs")
 	} else {
-		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, mergeBranch)
+		var merged bool
+		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, mergeBranch)
+		if !merged && userTriggered { // only user triggered pulls should fail on conflicts
+			return &drivers.MergeFailedError{
+				Output:       "failed to merge primary branch, use force pull to discard local changes and sync with primary branch",
+				MergedBranch: r.primaryBranch,
+				Conflict:     true,
+			}
+		}
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge primary branch %q into default branch %q: %w", r.primaryBranch, r.defaultBranch, err)
+		return &drivers.MergeFailedError{
+			Output:       fmt.Sprintf("failed to merge primary branch %q into default branch %q: %v", r.primaryBranch, r.defaultBranch, err),
+			MergedBranch: r.primaryBranch,
+		}
 	}
 	return nil
 }
@@ -209,250 +229,206 @@ func (r *gitRepo) root() string {
 
 // commitToDefaultBranch auto-commits any current changes to the default branch of the repository. This is only allowed if editable is true.
 // This is done to checkpoint progress when the handle is closed.
-// If there are conflicts, it should drop any local changes.
-func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string) (string, error) {
+func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string, force bool) error {
 	if !r.editable() {
-		return "", fmt.Errorf("cannot commit to the default branch because it is not configured")
+		return fmt.Errorf("cannot commit to the default branch because it is not configured")
 	}
 
 	r.h.logger.Info("commitToDefaultBranch", observability.ZapCtx(ctx))
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
-		return "", err
-	}
 
-	hash, err := r.commitAll(repo, message)
+	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, message, gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 	if err != nil {
-		if errors.Is(err, git.ErrEmptyCommit) {
-			return "", nil // No changes to commit
+		if !errors.Is(err, gitutil.ErrEmptyCommit) {
+			return fmt.Errorf("failed to commit changes to edit branch: %w", err)
 		}
-		return "", fmt.Errorf("failed to commit changes to edit branch: %w", err)
+		// continue to push existing commits, if any
 	}
 
-	// Push the changes to the remote edit branch
-	err = repo.PushContext(ctx, &git.PushOptions{
-		RemoteName: "origin",
-		RemoteURL:  r.remoteURL,
-		RefSpecs: []config.RefSpec{
-			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
-		},
-	})
+	err = r.fetchCurrentBranch(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to push changes to remote default branch: %w", err)
+		return fmt.Errorf("failed to fetch default branch: %w", err)
 	}
-	return hash, nil
+
+	if !force {
+		err = gitutil.MergeWithStrategy(r.repoDir, fmt.Sprintf("%s/%s", "origin", r.defaultBranch), "")
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		err = r.pushBranch(ctx, r.defaultBranch)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Instead of a force push, we do a merge with 'ours' strategy to ensure we don't lose history.
+	// This is not equivalent to a force push but is safer for users.
+	if r.subpath != "" {
+		// force pushing in a monorepo can overwrite other subpaths so just try with normal push
+		// we can check for changes in other subpaths but it is tricky and error prone
+		// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
+		err = r.pushBranch(ctx, r.defaultBranch)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	err = gitutil.MergeWithStrategy(r.repoDir, fmt.Sprintf("%s/%s", "origin", r.defaultBranch), "ours")
+	if err != nil {
+		return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+	}
+	err = r.pushBranch(ctx, r.defaultBranch)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-// commitAndPush commits changes to the repository and pushes them to the remote.
-func (r *gitRepo) commitAndPushToPrimaryBranch(ctx context.Context, message string, force bool) (resErr error) {
+// mergeToBranch commits changes to the repository and merges them into the specified branch.
+func (r *gitRepo) mergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
 	if !r.editable() {
 		return fmt.Errorf("cannot commit to this repository because it is not marked editable")
 	}
 
-	r.h.logger.Info("commitAndPushToPrimaryBranch", zap.String("message", message), zap.Bool("force", force), observability.ZapCtx(ctx))
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
-		return fmt.Errorf("failed to open repository: %w", err)
-	}
-	_, err = r.commitAll(repo, message)
-	if err != nil {
-		if errors.Is(err, git.ErrEmptyCommit) {
-			return nil // No changes to commit
-		}
+	r.h.logger.Info("mergeToBranch", zap.String("branch", branch), zap.Bool("force", force), observability.ZapCtx(ctx))
+	_, err := gitutil.CommitAll(ctx, r.repoDir, r.subpath, "Auto commit before merging to "+branch, gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"})
+	if err != nil && !errors.Is(err, gitutil.ErrEmptyCommit) {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
-	// Fetch the primary branch to ensure we are up-to-date
-	err = repo.FetchContext(ctx, &git.FetchOptions{
-		RemoteURL: r.remoteURL,
-		RefSpecs:  []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.primaryBranch, r.primaryBranch))},
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return fmt.Errorf("failed to fetch primary branch %q: %w", r.primaryBranch, err)
+	// Fetch the branch to ensure we are up-to-date
+	err = gitutil.FetchBranches(ctx, r.repoDir, branch)
+	if err != nil {
+		return err
 	}
 
-	// Switch to the primary branch.
-	defer func() {
-		err := gitForceCheckout(r.repoDir, r.defaultBranch, false, "")
+	if r.defaultBranch != branch {
+		defer func() {
+			err := gitutil.Checkout(r.repoDir, r.defaultBranch, true, false, "")
+			if err != nil {
+				resErr = errors.Join(resErr, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
+				return
+			}
+		}()
+
+		// Switch to the requested branch, then hard-reset it to the remote tracking ref.
+		// Hard reset is safe here because local changes were already committed above.
+		err = gitutil.Checkout(r.repoDir, branch, true, false, "")
 		if err != nil {
-			resErr = errors.Join(resErr, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
-			return
+			return fmt.Errorf("failed to checkout branch %q: %w", branch, err)
 		}
-	}()
-
-	err = gitForceCheckout(r.repoDir, r.primaryBranch, false, "")
-	if err != nil {
-		return fmt.Errorf("failed to checkout primary branch %q: %w", r.primaryBranch, err)
-	}
-	err = resetToRemoteTrackingBranch(r.repoDir, r.primaryBranch)
-	if err != nil {
-		return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.primaryBranch, err)
+		err = resetToRemoteTrackingBranch(r.repoDir, branch)
+		if err != nil {
+			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", branch, err)
+		}
 	}
 
-	// Merge the default branch into the primary branch
+	// Merge the default branch into the current branch
 	merged := true
 	if force {
-		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.defaultBranch)
+		err = gitutil.MergeWithStrategy(r.repoDir, r.defaultBranch, "theirs")
 	} else {
 		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge default branch %q into primary branch %q: %w", r.defaultBranch, r.primaryBranch, err)
+		// wrap with drivers.ErrMergeFailed
+		return &drivers.MergeFailedError{
+			Output:       fmt.Sprintf("failed to merge default branch %q into branch %q: %v", r.defaultBranch, branch, err),
+			MergedBranch: r.defaultBranch,
+		}
 	}
 
 	if !merged {
-		// If the merge was aborted no need to push the changes
-		r.h.logger.Warn("Merge aborted due to conflicts, not pushing changes", zap.String("primaryBranch", r.primaryBranch), zap.String("defaultBranch", r.defaultBranch))
-		return nil
+		return &drivers.MergeFailedError{
+			Output:       "merge failed due to conflicts, use force merge to favour current changes",
+			MergedBranch: r.defaultBranch,
+			Conflict:     true,
+		}
 	}
 
-	// Push the changes to the remote default branch
-	err = repo.PushContext(ctx, &git.PushOptions{
-		RemoteName: "origin",
-		RemoteURL:  r.remoteURL,
-		RefSpecs: []config.RefSpec{
-			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
-			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.primaryBranch, r.primaryBranch)),
-		},
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return fmt.Errorf("failed to push changes to remote default branch %q: %w", r.defaultBranch, err)
+	// Push the changes
+	branches := []string{branch}
+	if r.defaultBranch != branch {
+		branches = append(branches, r.defaultBranch)
 	}
-
-	return nil
+	return r.pushBranch(ctx, branches...)
 }
 
 // commitHash returns the current commit hash of the repository.
-func (r *gitRepo) commitHash() (string, error) {
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
-		return "", err
-	}
-
-	ref, err := repo.Head()
-	if err != nil {
-		return "", err
-	}
-
-	if ref.Hash().IsZero() {
+// It returns an empty string (without error) when HEAD points to an unborn branch.
+func (r *gitRepo) commitHash(ctx context.Context) (string, error) {
+	hash, err := gitutil.Hash(ctx, r.repoDir, "HEAD")
+	if errors.Is(err, gitutil.ErrRefNotFound) {
 		return "", nil
 	}
-
-	return ref.Hash().String(), nil
+	return hash, err
 }
 
 // commitTimestamp returns the timestamp of the latest commit on the current branch.
-func (r *gitRepo) commitTimestamp() (time.Time, error) {
-	repo, err := git.PlainOpen(r.repoDir)
+func (r *gitRepo) commitTimestamp(ctx context.Context) (time.Time, error) {
+	out, err := gitutil.Run(ctx, r.repoDir, "log", "-1", "--format=%aI", "HEAD")
 	if err != nil {
 		return time.Time{}, err
 	}
-
-	ref, err := repo.Head()
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	commit, err := repo.CommitObject(ref.Hash())
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	return commit.Author.When, nil
-}
-
-func (r *gitRepo) commitAll(repo *git.Repository, message string) (string, error) {
-	worktree, err := repo.Worktree()
-	if err != nil {
-		return "", err
-	}
-
-	err = worktree.AddWithOptions(&git.AddOptions{
-		All: true, // Add all changes
-	})
-	if err != nil {
-		return "", err
-	}
-
-	hash, err := worktree.Commit(message, &git.CommitOptions{
-		All: true, // Commit all changes
-		Author: &object.Signature{
-			Name:  "Rill Runtime",
-			Email: "runtime@rilldata.com", // Use a generic author for the commit
-			When:  time.Now(),
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-	return hash.String(), nil
+	return time.Parse(time.RFC3339, out)
 }
 
 func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
-	repo, err := git.PlainOpen(r.repoDir)
+	branch, err := currentBranch(r.repoDir)
 	if err != nil {
 		return err
 	}
-	head, err := repo.Head()
-	if err != nil {
-		return err
-	}
-	err = repo.FetchContext(ctx, &git.FetchOptions{
-		RemoteURL: r.remoteURL,
-		RefSpecs:  []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return err
-	}
-	return nil
+	return gitutil.FetchBranches(ctx, r.repoDir, branch)
 }
 
-var errRefNotFound = errors.New("reference not found")
-
-// gitForceCheckout checks out a branch using the git command.
-// If create is true, it creates the branch (using -B) at the given startPoint.
-// go-git wipes out git-ignored changes during checkout so must use the git command.
-func gitForceCheckout(repoDir, branch string, create bool, startPoint string) error {
-	args := []string{"-C", repoDir, "checkout", "--force"}
-	if create {
-		args = append(args, "-B", branch)
-		if startPoint != "" {
-			args = append(args, startPoint)
-		}
-	} else {
-		args = append(args, branch)
+// pushBranch pushes the specified branches to the remote repository.
+func (r *gitRepo) pushBranch(ctx context.Context, branches ...string) error {
+	if len(branches) == 0 {
+		return errors.New("at least one branch must be specified to push")
 	}
-	cmd := exec.Command("git", args...)
-	_, err := cmd.Output()
-	if err != nil {
-		var execErr *exec.ExitError
-		if !errors.As(err, &execErr) {
-			return err
-		}
-		stderr := string(execErr.Stderr)
-		if strings.Contains(stderr, "did not match") {
-			return errRefNotFound
-		}
-		return fmt.Errorf("git checkout failed: %s", stderr)
-	}
-	return nil
+	args := append([]string{"push", "origin"}, branches...)
+	_, err := gitutil.Run(ctx, r.repoDir, args...)
+	return err
 }
 
 // resetToRemoteTrackingBranch resets to the commit pointed by the remote tracking branch.
 // This is used to reset the local branch to the state of the remote branch so it is expected that the latest changes have been fetched.
 // go-git wipes out git-ignored changes so must use the git command.
 func resetToRemoteTrackingBranch(repoDir, branch string) error {
-	cmd := exec.Command("git", "-C", repoDir, "reset", "--hard", "origin/"+branch)
-	_, err := cmd.Output()
+	_, err := gitutil.Run(context.Background(), repoDir, "reset", "--hard", "origin/"+branch)
 	if err != nil {
-		var execErr *exec.ExitError
-		if !errors.As(err, &execErr) {
-			return err
+		if strings.Contains(err.Error(), "unknown revision") {
+			return gitutil.ErrRefNotFound
 		}
-		if strings.Contains(string(execErr.Stderr), "unknown revision") {
-			return errRefNotFound
-		}
-		return fmt.Errorf("git reset failed: %s", string(execErr.Stderr))
+		return err
 	}
 	return nil
+}
+
+// setGitConfig sets the git config key locally in the repo.
+func setGitConfig(repoDir, key, value string) error {
+	_, err := gitutil.Run(context.Background(), repoDir, "config", "--local", key, value)
+	return err
+}
+
+func isRepoRoot(path string) bool {
+	out, err := gitutil.Run(context.Background(), path, "rev-parse", "--show-cdup")
+	if err != nil {
+		return false
+	}
+	return out == ""
+}
+
+func setRemoteURL(path, remoteURL string) error {
+	_, err := gitutil.Run(context.Background(), path, "remote", "set-url", "origin", remoteURL)
+	return err
+}
+
+func setFetchBranch(path, branch string) error {
+	_, err := gitutil.Run(context.Background(), path, "remote", "set-branches", "origin", branch)
+	return err
+}
+
+func currentBranch(path string) (string, error) {
+	return gitutil.Run(context.Background(), path, "rev-parse", "--abbrev-ref", "HEAD")
 }

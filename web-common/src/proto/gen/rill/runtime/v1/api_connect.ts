@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
+import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -337,6 +337,18 @@ export const RuntimeService = {
       kind: MethodKind.Unary,
     },
     /**
+     * SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+     * Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.SkipModelPartitions
+     */
+    skipModelPartitions: {
+      name: "SkipModelPartitions",
+      I: SkipModelPartitionsRequest,
+      O: SkipModelPartitionsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
      * Triggers are ephemeral resources that will be cleaned up by the controller.
      *
@@ -516,6 +528,17 @@ export const RuntimeService = {
       kind: MethodKind.Unary,
     },
     /**
+     * GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.GitDiff
+     */
+    gitDiff: {
+      name: "GitDiff",
+      I: GitDiffRequest,
+      O: GitDiffResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * @generated from rpc rill.runtime.v1.RuntimeService.ListGitBranches
      */
     listGitBranches: {
@@ -592,6 +615,17 @@ export const RuntimeService = {
       name: "GitPush",
       I: GitPushRequest,
       O: GitPushResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * PushEnv pushes local environment variables to admin service
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.PushEnv
+     */
+    pushEnv: {
+      name: "PushEnv",
+      I: PushEnvRequest,
+      O: PushEnvResponse,
       kind: MethodKind.Unary,
     },
   }

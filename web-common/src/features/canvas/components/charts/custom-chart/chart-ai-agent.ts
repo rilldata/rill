@@ -1,10 +1,27 @@
 import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
-import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+import { developerChatActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, get, type Readable } from "svelte/store";
 import type { CustomChartComponent } from "./index";
+
+/**
+ * Format a component's YAML path (minus the trailing renderer-type segment) into a string
+ * the dev agent can locate unambiguously, e.g. "rows[1].tabs[0].rows[2].items[0]" for a
+ * tabbed component or "rows[3].items[1]" for a top-level one.
+ */
+function formatYamlPath(path: (string | number)[]): string {
+  return path
+    .map((segment, i) =>
+      typeof segment === "number"
+        ? `[${segment}]`
+        : i === 0
+          ? segment
+          : `.${segment}`,
+    )
+    .join("");
+}
 
 const componentConversations = new Map<string, Conversation>();
 
@@ -21,9 +38,11 @@ function buildPrompt(
 ): string {
   const canvasName = component.parent.name;
   const canvasFilePath = `/dashboards/${canvasName}.yaml`;
-  const [, rowIdx, , colIdx] = component.pathInYAML;
+  // Drop the trailing renderer-type segment; the remainder is the item's YAML path. Reading
+  // from the end (rather than fixed indices) keeps this correct for components nested in tabs.
+  const yamlPath = formatYamlPath(component.pathInYAML.slice(0, -1));
 
-  return `In the canvas dashboard file ${canvasFilePath}, update the custom_chart component at row ${rowIdx}, item ${colIdx}. Write the metrics_sql and vega_spec for this chart: ${userPrompt}`;
+  return `In the canvas dashboard file ${canvasFilePath}, update the custom_chart component at YAML path ${yamlPath}. Write the metrics_sql and vega_spec for this chart: ${userPrompt}`;
 }
 
 /**
@@ -39,6 +58,7 @@ export function sendToDevAgent(
   const conversationManager = getConversationManager(client, {
     conversationState: "browserStorage",
     agent: ToolName.DEVELOPER_AGENT,
+    surface: "developer",
   });
 
   const existing = componentConversations.get(component.id);
@@ -51,7 +71,7 @@ export function sendToDevAgent(
   }
 
   const fullPrompt = buildPrompt(component, userPrompt);
-  sidebarActions.startChat(fullPrompt);
+  developerChatActions.startChat(fullPrompt);
 
   // Track the conversation for this component so subsequent calls continue it
   const conversation = get(conversationManager.getCurrentConversation());
@@ -69,6 +89,7 @@ export function getAgentStreamingStore(
   const conversationManager = getConversationManager(client, {
     conversationState: "browserStorage",
     agent: ToolName.DEVELOPER_AGENT,
+    surface: "developer",
   });
 
   return derived(

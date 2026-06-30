@@ -29,9 +29,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-22.04
             platform: linux_amd64
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             platform: linux_arm64
           - os: macos-14
             platform: darwin_arm64
@@ -58,7 +58,6 @@ jobs:
         env:
           RILL_UI_PUBLIC_INTAKE_USER: "data-modeler"
           RILL_UI_PUBLIC_INTAKE_PASSWORD: ${{ secrets.RILL_INTAKE_PASSWORD }}
-          RILL_UI_PUBLIC_POSTHOG_API_KEY: "phc_4qnfUotXUuevk2zJN8ei8HgKXMynddEMI0wPI9XwzlS"
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
           NODE_OPTIONS: --max-old-space-size=4096
 
@@ -103,7 +102,7 @@ jobs:
 
   release:
     name: Release rill
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: build
 
     steps:

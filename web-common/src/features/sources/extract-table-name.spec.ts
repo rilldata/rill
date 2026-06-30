@@ -36,6 +36,9 @@ const TestCases = [
     "table_v1_parquet",
     ".v1.parquet.gz",
   ),
+  ...generateTestCases("dashboard.canvas.yaml", "dashboard_canvas", ".yaml"),
+  ...generateTestCases("dashboard.canvas.yml", "dashboard_canvas", ".yml"),
+  ...generateTestCases("orders.latest.sql", "orders_latest", ".sql"),
 ];
 
 describe("extract-table-name", () => {

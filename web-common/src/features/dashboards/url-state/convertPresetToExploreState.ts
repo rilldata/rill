@@ -106,7 +106,6 @@ export function convertPresetToExploreState(
   errors.push(...pivotErrors);
 
   partialExploreState.dynamicYAxisScale = preset.chartDynamicYAxis ?? false;
-  partialExploreState.forceLineChart = preset.chartForceLine ?? false;
 
   return { partialExploreState, errors };
 }
@@ -352,7 +351,10 @@ function fromTimeDimensionUrlParams(
       partialExploreState: {
         tdd: {
           expandedMeasureName: "",
-          chartType: TDDChart.DEFAULT,
+          chartType: preset.timeDimensionChartType
+            ? (FromURLParamTDDChartMap[preset.timeDimensionChartType] ??
+              TDDChart.DEFAULT)
+            : TDDChart.DEFAULT,
           pinIndex: -1,
         },
       },
@@ -451,6 +453,8 @@ function fromPivotUrlParams(
   }
 
   const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+  const showTotalsColumn = preset.pivotShowTotalsColumn ?? true;
+  const showTotalsRow = preset.pivotShowTotalsRow ?? true;
 
   if (!hasSomePivotFields && !showPivot) {
     return {
@@ -464,6 +468,8 @@ function fromPivotUrlParams(
           rowPage: 1,
           enableComparison: true,
           activeCell: null,
+          showTotalsColumn,
+          showTotalsRow,
           tableMode: "nest",
         },
       },
@@ -520,6 +526,8 @@ function fromPivotUrlParams(
         rowPage: 1,
         enableComparison: true,
         activeCell: null,
+        showTotalsColumn,
+        showTotalsRow,
         tableMode,
         rowLimit,
       },

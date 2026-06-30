@@ -47,6 +47,7 @@ definitions:
 
       ### _OLAP Engines_
       - [**ClickHouse**](#clickhouse) - ClickHouse analytical database
+      - [**Databricks**](#databricks) - Databricks SQL warehouse
       - [**Druid**](#druid) - Apache Druid
       - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
       - [**External DuckDB**](#external-duckdb) - External DuckDB database
@@ -57,6 +58,7 @@ definitions:
       ### _Data Warehouses_
       - [**Athena**](#athena) - Amazon Athena
       - [**BigQuery**](#bigquery) - Google BigQuery
+      - [**Databricks**](#databricks) - Databricks SQL warehouse
       - [**Redshift**](#redshift) - Amazon Redshift
       - [**Snowflake**](#snowflake) - Snowflake data warehouse
 
@@ -214,6 +216,9 @@ definitions:
             max_bytes_billed:
               type: integer
               description: Maximum number of bytes billed for a query. Queries that exceed this limit will fail with an error. This can help prevent unexpectedly high costs from large queries. It is highly recommended to set this when running on `on-demand pricing` model. The default value is 0 i.e. no limits are enforced in Rill.
+            allow_standard_api:
+              type: boolean
+              description: Allow querying BigQuery using the standard API instead of the Storage Read API. This is less efficient and may lead to higher latency, but can be used as a fallback if the Storage Read API is not available due to insufficient permissions or other issues.
           examples:
             - # Example: BigQuery connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -261,6 +266,9 @@ definitions:
             cluster:
               type: string
               description: Cluster name, required for running distributed queries
+            sync_replicas:
+              type: boolean
+              description: "Controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster, ensuring all inserted parts are visible across replicas before the partition swap. Defaults to true"
             write_dsn:
               type: string
               description: Separate connection string for write operations
@@ -313,6 +321,53 @@ definitions:
               cluster: "mycluster"                             # Cluster name
           required:
             - driver
+        - type: object
+          title: databricks
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `databricks`
+              const: databricks
+            host:
+              type: string
+              description: Host where the Databricks instance is running
+            http_path:
+              type: string
+              description: HTTP path sets up the endpoint to the warehouse
+            token:
+              type: string
+              description: Token sets up the Personal Access Token
+            catalog: 
+              type: string
+              description: Default catalog name. Optional.
+            schema:
+              type: string
+              description: Default schema name. Optional.
+            dsn:
+              type: string
+              description: |
+                DSN (Data Source Name) for the Databricks connection.
+
+                This is intended for **advanced configuration** where you want to specify
+                properties that are not explicitly defined above.  
+                It can only be used when the other connection fields (host, http_path, token, catalog, schema) are **not used**.
+                Refer to https://github.com/databricks/databricks-sql-go for the full list of supported DSN parameters and their formats.
+            log_queries:
+              type: boolean
+              description: Controls whether to log raw SQL queries
+          examples:
+            - # Example: Databricks connector configuration
+              type: connector                                  # Must be `connector` (required)
+              driver: databricks                               # Must be `databricks` _(required)_
+
+              host: "my-databricks-instance.cloud.databricks.com"  # Hostname of the Databricks instance
+              http_path: "/sql/1.0/endpoints/1234567890abcdef"    # HTTP path for the Databricks SQL warehouse endpoint
+              token: "{{ .env.DATABRICKS_TOKEN }}"                 # Personal Access Token for authentication
+              catalog: "my_catalog"                                # Default catalog name (optional)
+              schema: "my_schema"                                  # Default schema name (optional)
+          required:
+            - driver
+            - type
         # Note: Delta is not a standalone connector. It uses DuckDB's delta_scan() function.
         # See /developers/build/connectors/data-source/delta for configuration details.
         - type: object
@@ -899,6 +954,12 @@ definitions:
             sslmode:
               type: string
               description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            max_open_conns:
+              type: integer
+              description: Maximum number of open connections to the database (defaults to 1)
+            conn_max_lifetime:
+              type: string
+              description: Maximum time a connection may be reused, as a Go duration string (defaults to 1m)
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
@@ -953,6 +1014,12 @@ definitions:
             sslmode:
               type: string
               description: "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+            max_open_conns:
+              type: integer
+              description: Maximum number of open connections to the database (defaults to 1)
+            conn_max_lifetime:
+              type: string
+              description: Maximum time a connection may be reused, as a Go duration string (defaults to 1m)
             log_queries:
               type: boolean
               description: Controls whether to log raw SQL queries
@@ -1222,6 +1289,7 @@ definitions:
               - snowflake
               - bigquery
               - duckdb
+              - databricks
           uri:
             type: string
             description: |
@@ -1333,12 +1401,12 @@ definitions:
             description: Raw SQL query to run against source
           pre_exec:
             type: string
-            description: Refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+            description: SQL queries to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
             examples:
               - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
           post_exec:
             type: string
-            description: Refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+            description: SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
             examples:
               - post_exec: DETACH DATABASE IF EXISTS postgres_db
           create_secrets_from_connectors:
@@ -1494,6 +1562,28 @@ definitions:
               partition_by:
                 type: string
                 description: Column or expression to partition the table by
+              pre_exec:
+                type: string
+                description: SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
+                examples:
+                  - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
+              post_exec:
+                type: string
+                description: SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
+                examples:
+                  - post_exec: DETACH DATABASE IF EXISTS postgres_db
+              create_secrets_from_connectors:
+                type:
+                  - string
+                  - array
+                items:
+                  type: string
+                description: List of connector names for which temporary secrets should be created on the output OLAP engine before executing the SQL. Only applies when the output connector is DuckDB. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors.
+                examples:
+                  - create_secrets_from_connectors: my_s3_connector
+                  - create_secrets_from_connectors:
+                      - my_s3_connector
+                      - my_other_s3_connector
             allOf:
               - if:
                   title: Additional properties for `output` when `connector` is `clickhouse`
@@ -1758,21 +1848,6 @@ definitions:
           format:
             type: string
             description: 'Format of the data source (e.g., csv, json, parquet).'
-          pre_exec:
-            type: string
-            description: 'refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable.'
-          post_exec:
-            type: string
-            description: 'refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable.'
-            examples:
-            - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
-              sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
-              post_exec: DETACH DATABASE IF EXISTS postgres_db 
-          create_secrets_from_connectors:
-            type:
-              - string
-              - array
-            description: List of connector names for which temporary secrets should be created before executing the SQL.
       gcs:
         type: object
         properties:
@@ -2004,6 +2079,9 @@ definitions:
           watermark:
             type: string
             description: A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten
+          data_time_range:
+            type: string
+            description: 'Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table''s time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.'
           smallest_time_grain:
             type: string
             description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
@@ -2013,6 +2091,9 @@ definitions:
           first_month_of_year:
             type: integer
             description: Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12
+          max_query_time_range:
+            type: string
+            description: 'The maximum time span any single query against this metrics view may cover, expressed as an ISO 8601 duration with day-or-larger granularity (e.g. `P90D`, `P3M`, `P1Y`). Sub-day durations such as `PT12H` are not supported. Applies independently to the primary and comparison time ranges. If unset, no limit is enforced.'
           dimensions:
             type: array
             description: Relates to exploring segments or dimensions of your data and filtering the dashboard
@@ -2164,7 +2245,10 @@ definitions:
                 treat_nulls_as:
                   type: string
                   description: used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
-                
+                lower_is_better:
+                  type: boolean
+                  description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+
               required:
                 - name
 
@@ -2228,12 +2312,34 @@ definitions:
                 measures:
                   $ref: '#/definitions/field_selector_properties'
                   description: Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included.
+                data_time_range:
+                  type: string
+                  description: 'Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup''s time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.'
               required:
                 - model
                 - time_grain
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard
+          cache:
+            type: object
+            description: |
+              Enable caching of query results for metrics views backed by externally-managed tables (e.g. in Snowflake, BigQuery). These settings have no effect for metrics views backed by Rill models (where queries are automatically cached and invalidated when the model is refreshed).
+              Each cache entry is keyed by a hash of the query combined with the latest result of `key_sql`. Cached results stay valid as long as `key_sql` returns the same value; when its result changes, prior results become unreachable. `key_sql` itself runs at most once per `key_ttl`, decoupling freshness checks from query traffic.
+              Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` checks for new data every 5 minutes but only invalidates cached results when new data has actually landed.
+            properties:
+              enabled:
+                type: boolean
+                description: Whether to cache query results for this metrics view. Defaults to false for metrics views backed by externally-managed tables and to true for metrics views backed by a Rill model.
+              key_sql:
+                type: string
+                description: SQL returning a single value used in the cache key, typically a max timestamp, version, or row count. Cached results are invalidated when this value changes. Optional; defaults to the metrics view's watermark expression (which itself defaults to `MAX(<time dimension>)`).
+              key_ttl:
+                type: string
+                description: 'How often `key_sql` is re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). The previous result is reused between evaluations. Defaults to `60s`.'
+              timestamps_ttl:
+                type: string
+                description: 'TTL for caching the min/max timestamp queries used to populate a metrics view''s rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`.'
           explore:
             $ref: '#/definitions/explore_properties'
             description: Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
@@ -2270,7 +2376,7 @@ definitions:
             description: Refers to the custom banner displayed at the header of an Canvas dashboard
           rows:
             type: array
-            description: Refers to all of the rows displayed on the Canvas
+            description: Refers to all of the rows displayed on the Canvas. Each entry is either a plain row (with `items`) or a tab group (with `tabs`), but not both.
             items:
               type: object
               properties:
@@ -2280,7 +2386,7 @@ definitions:
                 items:
                   type: array
                   description: List of components to display in the row
-                  items:
+                  items: &canvasRowItem
                     type: object
                     properties:
                       component:
@@ -2288,7 +2394,7 @@ definitions:
                         description: |
                           Name of the component to display. Each component type has its own set of properties.
                           Available component types:
-                          
+
                               - **markdown** - Text component, uses markdown formatting
                               - **kpi_grid** - KPI component, similar to TDD in Rill Explore, display quick KPI charts
                               - **stacked_bar_normalized** - Bar chart normalized to 100% values
@@ -2306,6 +2412,36 @@ definitions:
                           - integer
                         description: Width of the component (can be a number or string with unit)
                     additionalProperties: true
+                name:
+                  type: string
+                  description: Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries.
+                tabs:
+                  type: array
+                  description: Makes this entry a tab group instead of a plain row. Only the active tab's rows render; tabs cannot be nested.
+                  items:
+                    type: object
+                    properties:
+                      label:
+                        type: string
+                        description: User-facing tab label shown on the tab.
+                      name:
+                        type: string
+                        description: Stable identifier used as the tab's deep-link URL key. Defaults to a slug of the label if omitted.
+                      rows:
+                        type: array
+                        description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.
+                        items:
+                          type: object
+                          properties:
+                            height:
+                              type: string
+                              description: Height of the row in px
+                            items:
+                              type: array
+                              description: List of components to display in the row
+                              items: *canvasRowItem
+                          additionalProperties: false
+                    additionalProperties: false
               additionalProperties: false
           max_width:
             type: integer
@@ -3165,6 +3301,12 @@ definitions:
         items:
           type: string
         description: Dimensions for table columns
+      hide_totals_row:
+        type: boolean
+        description: Whether to hide the totals row. Defaults to false.
+      hide_totals_col:
+        type: boolean
+        description: Whether to hide the totals column. Defaults to false.
       comparison_range:
         type: string
         description: Comparison time range

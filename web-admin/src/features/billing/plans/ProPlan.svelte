@@ -1,37 +1,28 @@
 <script lang="ts">
-  import type {
-    V1BillingPlan,
-    V1Subscription,
-  } from "@rilldata/web-admin/client";
-  import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
-  import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
-  import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
+  import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
+  import {
+    PricingDetails,
+    PricingDetailsCompact,
+  } from "@rilldata/web-common/features/billing/pricing-details.ts";
+  import DetailedUsageLink from "@rilldata/web-admin/features/billing/plans/modules/DetailedUsageLink.svelte";
 
   let {
-    organization,
-    subscription,
-    plan,
+    billingPortalUrl,
   }: {
-    organization: string;
-    subscription: V1Subscription;
-    plan: V1BillingPlan;
+    billingPortalUrl: string | undefined;
   } = $props();
 </script>
 
-<SettingsContainer title={plan?.displayName ?? "Pro"}>
-  <div slot="body">
-    Next billing cycle will start on
-    <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
-    <a
-      href="https://www.rilldata.com/pricing"
-      target="_blank"
-      rel="noreferrer noopener">See pricing details -></a
-    >
-    <PlanQuotas {organization} />
+<PlanContainer badge="Pro" description="Usage based pricing">
+  {#snippet action()}
+    <DetailedUsageLink {billingPortalUrl} />
+  {/snippet}
+
+  {#snippet info()}
+    {PricingDetailsCompact} Cancel anytime.
+  {/snippet}
+
+  <div class="text-sm text-fg-tertiary mt-4 pb-4">
+    {PricingDetails}
   </div>
-  <svelte:fragment slot="contact">
-    <span>For any questions,</span>
-    <ContactUs />
-  </svelte:fragment>
-</SettingsContainer>
+</PlanContainer>

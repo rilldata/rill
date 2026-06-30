@@ -1,6 +1,7 @@
 <script lang="ts">
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
+  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import {
     getDimensionColumnProps,
     getMeasureColumnProps,
@@ -10,11 +11,19 @@
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import type { PivotRowSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import {
+    createVirtualizer,
+    defaultRangeExtractor,
+  } from "@tanstack/svelte-virtual";
+  import { onMount } from "svelte";
+  import type { Readable } from "svelte/store";
+  import { derived } from "svelte/store";
   import {
     type ExpandedState,
     type SortingState,
@@ -23,13 +32,6 @@
     getCoreRowModel,
     getExpandedRowModel,
   } from "tanstack-table-8-svelte-5";
-  import {
-    createVirtualizer,
-    defaultRangeExtractor,
-  } from "@tanstack/svelte-virtual";
-  import { onMount } from "svelte";
-  import type { Readable } from "svelte/store";
-  import { derived } from "svelte/store";
   import NestedTable from "./NestedTable.svelte";
   import type {
     PivotDataRow,
@@ -44,12 +46,14 @@
   const HEADER_HEIGHT = 30;
 
   export let pivotDataStore: PivotDataStore;
+  export let widthScopeKey: string;
   export let config: Readable<PivotDataStoreConfig>;
   export let pivotState: Readable<PivotState>;
   export let canShowDataViewer = false;
   export let border = true;
   export let overscan = 20;
   export let rounded = true;
+  export let fillWidth = false;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -61,6 +65,20 @@
   export let setPivotRowLimitForExpanded:
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
+  export let onCellClickToFilter:
+    | ((
+        rowId: string,
+        columnId: string,
+        isRowHeader: boolean,
+        rowData: PivotDataRow,
+      ) => void)
+    | undefined = undefined;
+  export let onColumnHeaderClick:
+    | ((dimensionPath: Record<string, string>) => void)
+    | undefined = undefined;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
@@ -98,7 +116,8 @@
   $: table = createSvelteTable(options);
 
   let containerRefElement: HTMLDivElement;
-  let stickyRows = [0];
+  let containerWidth = 0;
+  let stickyRows: number[] = [];
   let rowScrollOffset = 0;
   let scrollLeft = 0;
   let timeout: ReturnType<typeof setTimeout>;
@@ -112,6 +131,7 @@
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
   $: totalsRow = $pivotDataStore.totalsRowData;
+  $: stickyRows = totalsRow ? [0] : [];
   $: isFlat = $config.isFlat;
   $: hasMeasureContextColumns = $config.enableComparison;
 
@@ -152,11 +172,17 @@
       ]
     : [0, 0];
 
-  let customShortcuts: { description: string; shortcut: string }[] = [];
-  $: if (canShowDataViewer) {
-    customShortcuts = [
-      { description: "View raw data for aggregated cell", shortcut: "Click" },
-    ];
+  $: clickToFilterEnabled = enableClickToFilter && !!onCellClickToFilter;
+  function getCustomShortcuts(rowHeader: boolean) {
+    if (clickToFilterEnabled) {
+      return [{ description: "Filter by this value", shortcut: "Click" }];
+    }
+    if (canShowDataViewer && !rowHeader) {
+      return [
+        { description: "View raw data for aggregated cell", shortcut: "Click" },
+      ];
+    }
+    return [];
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -189,6 +215,7 @@
 
   type HoveringData = {
     value: string | number | null;
+    rowHeader: boolean;
   };
 
   function onCellClick(e: MouseEvent) {
@@ -236,10 +263,27 @@
       return;
     }
 
-    if (rowHeader) {
+    if (rowHeader && !onCellClickToFilter) {
+      // Legacy expand behavior: when no filter callback, row headers expand/collapse.
+      // When onCellClickToFilter is present, expand is handled by the chevron icon
+      // in PivotExpandableCell (stopPropagation), so row header clicks filter instead.
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
-    } else if (setPivotActiveCell && canShowDataViewer) {
-      setPivotActiveCell(rowId, columnId);
+    } else {
+      // Skip totals row for filtering
+      const isTotalsRow = totalsRow && rowId === "0";
+      if (isTotalsRow && onCellClickToFilter) {
+        return;
+      }
+
+      // Set active cell for Explore data viewer (if enabled)
+      if (setPivotActiveCell && canShowDataViewer) {
+        setPivotActiveCell(rowId, columnId);
+      }
+
+      // Apply click-to-filter (Canvas or future Explore)
+      if (onCellClickToFilter) {
+        onCellClickToFilter(rowId, columnId, rowHeader, row.original);
+      }
     }
   }
 
@@ -253,7 +297,10 @@
   function handleClick(e: MouseEvent) {
     if (!isElement(e.target)) return;
 
-    const value = e.target.dataset.value;
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
     if (value === undefined) return;
 
     copyToClipboard(value);
@@ -280,13 +327,15 @@
     // Element is not a cell or we haven't left the cell for the current tooltip
     if (!leftCell || !(e.target instanceof HTMLElement)) return;
 
-    const value = e.target.dataset.value;
-    const rowHeader = e.target.dataset.rowheader === "true";
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
 
-    if (value === undefined || rowHeader) return;
+    if (!td || value === undefined) return;
 
     leftCell = false;
-    e.target.addEventListener("mouseleave", () => (leftCell = true), {
+    td.addEventListener("mouseleave", () => (leftCell = true), {
       once: true,
     });
 
@@ -294,8 +343,9 @@
 
     hovering = {
       value,
+      rowHeader: td.dataset.rowheader === "true",
     };
-    hoverPosition = e.target.getBoundingClientRect();
+    hoverPosition = td.getBoundingClientRect();
   }
 </script>
 
@@ -307,6 +357,9 @@
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
   bind:this={containerRefElement}
+  bind:clientWidth={containerWidth}
+  class:w-full={fillWidth}
+  class:w-fit={!fillWidth}
   onscroll={() => handleScroll(containerRefElement)}
 >
   {#if isFlat}
@@ -321,12 +374,18 @@
       {after}
       {totalRowSize}
       {canShowDataViewer}
+      {enableClickToFilter}
       {hasMeasureContextColumns}
+      {rowSelectionState}
+      {clickSelection}
+      config={$config}
       activeCell={$pivotState.activeCell}
       {assembled}
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
+      {fillWidth}
+      {containerWidth}
       onCellCopy={handleClick}
     />
   {:else}
@@ -334,6 +393,7 @@
       {headerGroups}
       {rows}
       {virtualRows}
+      {widthScopeKey}
       {before}
       {after}
       {timeDimension}
@@ -344,6 +404,10 @@
       {dataRows}
       {measures}
       {canShowDataViewer}
+      {enableClickToFilter}
+      {rowSelectionState}
+      {clickSelection}
+      {onColumnHeaderClick}
       activeCell={$pivotState.activeCell}
       {assembled}
       {scrollLeft}
@@ -351,6 +415,8 @@
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
+      {fillWidth}
+      {containerWidth}
       onCellCopy={handleClick}
     />
   {/if}
@@ -362,13 +428,13 @@
     {hovering}
     {hoverPosition}
     pinned={false}
-    {customShortcuts}
+    customShortcuts={getCustomShortcuts(hovering.rowHeader)}
   />
 {/if}
 
 <style lang="postcss">
   .table-wrapper {
-    @apply overflow-auto h-fit max-h-full w-fit max-w-full;
+    @apply overflow-auto h-fit max-h-full max-w-full;
     @apply z-40 select-none;
   }
 </style>

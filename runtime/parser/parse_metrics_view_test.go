@@ -814,6 +814,101 @@ rollups:
 `,
 			wantErr: `invalid "time_zone"`,
 		},
+		{
+			name: "invalid rollup data_time_range",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "not a rilltime"
+`,
+			wantErr: `invalid "data_time_range"`,
+		},
+		{
+			name: "invalid metrics view data_time_range",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "garbage"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `invalid "data_time_range"`,
+		},
+		{
+			name: "unbounded metrics view data_time_range (inf)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "inf"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `must have a bounded start`,
+		},
+		{
+			name: "unbounded metrics view data_time_range (earliest to now)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "earliest to now"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `must have a bounded start`,
+		},
+		{
+			name: "unbounded rollup data_time_range (inf)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "inf"
+`,
+			wantErr: `must have a bounded start`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -831,4 +926,146 @@ rollups:
 			require.Contains(t, p.Errors[0].Message, tt.wantErr)
 		})
 	}
+}
+
+func TestMetricsViewDataTimeRangeBounded(t *testing.T) {
+	// Bounded ranges (relative and absolute) must pass validation; only an unbounded start is rejected.
+	for _, expr := range []string{"-90d to now", "-1Y to now", "2020-01-01 to now", "-3M to -1M"} {
+		t.Run(expr, func(t *testing.T) {
+			yaml := `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "` + expr + `"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "` + expr + `"
+`
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id`,
+				`models/r1.sql`:          `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: yaml,
+			}
+			p, err := Parse(context.Background(), makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Empty(t, p.Errors)
+		})
+	}
+}
+
+func TestMetricsViewMaxQueryTimeRange(t *testing.T) {
+	mvBody := func(maxRange string) string {
+		s := `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: foo
+  column: id
+measures:
+- name: count
+  expression: COUNT(*)
+`
+		if maxRange != "" {
+			s += "max_query_time_range: " + maxRange + "\n"
+		}
+		return s
+	}
+
+	t.Run("valid", func(t *testing.T) {
+		files := map[string]string{
+			`rill.yaml`:              ``,
+			`models/m1.sql`:          `SELECT 1 AS id`,
+			`metrics_views/mv1.yaml`: mvBody("P90D"),
+		}
+		ctx := context.Background()
+		repo := makeRepo(t, files)
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors)
+
+		var mv *runtimev1.MetricsViewSpec
+		for _, r := range p.Resources {
+			if r.MetricsViewSpec != nil {
+				mv = r.MetricsViewSpec
+				break
+			}
+		}
+		require.NotNil(t, mv)
+		require.Equal(t, "P90D", mv.MaxQueryTimeRange)
+	})
+
+	for _, bad := range []string{"garbage", "rill-PM", "inf", "PT12H", "PT1H30M", "P1DT6H"} {
+		t.Run("invalid_"+bad, func(t *testing.T) {
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: mvBody(bad),
+			}
+			ctx := context.Background()
+			repo := makeRepo(t, files)
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.NotEmpty(t, p.Errors)
+			require.Contains(t, p.Errors[0].Message, "max_query_time_range")
+		})
+	}
+}
+
+func TestMetricsViewDataTimeRange(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:               ``,
+		`models/m1.sql`:           `SELECT 1 AS id, 'a' AS publisher`,
+		`models/rollup_daily.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: -5Y to now
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: total_impressions
+  expression: "SUM(impressions)"
+rollups:
+  - model: rollup_daily
+    time_grain: day
+    data_time_range: -1Y to now
+    dimensions:
+      - publisher
+    measures:
+      - total_impressions
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	var mvSpec *runtimev1.MetricsViewSpec
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindMetricsView && r.Name.Name == "mv1" {
+			mvSpec = r.MetricsViewSpec
+			break
+		}
+	}
+	require.NotNil(t, mvSpec)
+	require.Equal(t, "-5Y to now", mvSpec.DataTimeRange)
+	require.Len(t, mvSpec.Rollups, 1)
+	require.Equal(t, "-1Y to now", mvSpec.Rollups[0].DataTimeRange)
 }

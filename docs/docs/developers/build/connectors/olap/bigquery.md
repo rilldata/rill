@@ -1,8 +1,8 @@
 ---
-title: BigQuery
+title: Google BigQuery
 description: Power Rill dashboards using BigQuery
-sidebar_label: BigQuery
-sidebar_position: -5
+sidebar_label: Google BigQuery
+sidebar_position: 13
 ---
 
 [Google BigQuery](https://cloud.google.com/bigquery/docs) is a fully managed, serverless data warehouse that enables scalable and cost-effective analysis of large datasets. Rill supports connecting to BigQuery as a live connector, allowing you to build metrics views and dashboards directly on top of existing BigQuery tables — no data movement required.
@@ -101,3 +101,5 @@ In BigQuery terminology, `database` maps to the **project**, `database_schema` m
 :::note
 Rill supports metrics views directly on BigQuery as a live connector. Incremental models and partitioned ingestion are not supported in live connector mode.
 :::
+
+To reduce bytes scanned on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors. Caching pairs well with [`max_bytes_billed`](#controlling-query-costs) — use both to cap per-query cost and reduce overall query volume.

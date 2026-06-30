@@ -11,6 +11,40 @@ import (
 	"go.uber.org/zap"
 )
 
+// counterMetrics are billable metrics whose period total is sum(value) rather than max(value).
+// Generic usage events ("query", "request_time_ms", "tool_call") carry a "source" attribute (and request_time_ms also
+// carries embed/user_id); the metrics project applies the billing-specific filtering and distinct counting downstream.
+var counterMetrics = map[string]bool{
+	"slot_seconds_spend":  true,
+	"query":               true,
+	"tool_call":           true,
+	"input_tokens":        true,
+	"cached_input_tokens": true,
+	"output_tokens":       true,
+}
+
+// orgUsageMetric computes a billable usage value for an organization from the admin database.
+// Add entries here to report additional admin-derived billable metrics; they are reported by the billing
+// reporter alongside the runtime-derived metrics for every org that reported usage (see Work).
+type orgUsageMetric struct {
+	name    string
+	collect func(ctx context.Context, adm *admin.Service, orgID string) (float64, error)
+}
+
+var orgUsageMetrics = []orgUsageMetric{
+	{
+		name: "seats",
+		collect: func(ctx context.Context, adm *admin.Service, orgID string) (float64, error) {
+			// Exclude internal Rill users from billable seat counts.
+			n, err := adm.DB.CountOrganizationMemberUsers(ctx, orgID, "", "%@"+billing.InternalEmailDomain, true)
+			if err != nil {
+				return 0, err
+			}
+			return float64(n), nil
+		},
+	},
+}
+
 type BillingReporterArgs struct{}
 
 func (BillingReporterArgs) Kind() string { return "billing_reporter" }
@@ -71,19 +105,21 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 		return nil
 	}
 
-	reportedOrgs := make(map[string]struct{})
+	reportedOrgs := make(map[string]string) // org ID -> billing customer ID
 	stop := false
 	limit := 10000
 	afterTime := time.Time{}
 	afterOrgID := ""
 	afterProjectID := ""
+	afterInstanceID := ""
+	afterBillingService := ""
 	afterEventName := ""
 
 	checkPoint := startTime
 	maxEndTime := time.Time{}
 	// loop until all the usage data is reported
 	for !stop {
-		u, err := client.GetUsageMetrics(ctx, startTime, endTime, afterTime, afterOrgID, afterProjectID, afterEventName, sqlGrainIdentifier, limit)
+		u, err := client.GetUsageMetrics(ctx, startTime, endTime, afterTime, afterOrgID, afterProjectID, afterInstanceID, afterBillingService, afterEventName, sqlGrainIdentifier, limit)
 		if err != nil {
 			return fmt.Errorf("failed to get usage metrics: %w", err)
 		}
@@ -98,6 +134,8 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 			afterTime = u[len(u)-1].StartTime
 			afterOrgID = u[len(u)-1].OrgID
 			afterProjectID = u[len(u)-1].ProjectID
+			afterInstanceID = u[len(u)-1].InstanceID
+			afterBillingService = u[len(u)-1].BillingService
 			afterEventName = u[len(u)-1].EventName
 		}
 		// since the usage data is ordered by start time first and end time is just (start time + grain), we can directly get the max end time
@@ -105,23 +143,26 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 
 		var usage []*billing.Usage
 		for _, m := range u {
-			reportedOrgs[m.OrgID] = struct{}{}
-
 			customerID := m.OrgID
 			if m.BillingCustomerID != nil && *m.BillingCustomerID != "" {
 				// org might have been deleted or recently created in both cases billing customer id will be null. If billing not initialized for the org, then it will be empty string
 				// in all cases just use org ID to report in hope that org ID will be set as billing customer id in the future if not reported values will be ignored
 				customerID = *m.BillingCustomerID
 			}
+			reportedOrgs[m.OrgID] = customerID
 
+			value := m.MaxValue
+			if counterMetrics[m.EventName] {
+				value = m.SumValue
+			}
 			usage = append(usage, &billing.Usage{
 				CustomerID:     customerID,
 				MetricName:     m.EventName,
-				Value:          m.MaxValue,
+				Value:          value,
 				ReportingGrain: w.admin.Biller.GetReportingGranularity(),
 				StartTime:      m.StartTime,
 				EndTime:        m.EndTime,
-				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID, "project_name": m.ProjectName, "billing_service": m.BillingService},
+				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID, "project_name": m.ProjectName, "instance_id": m.InstanceID, "billing_service": m.BillingService},
 			})
 		}
 
@@ -154,6 +195,10 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 		return fmt.Errorf("failed to update last usage reporting time: %w", err)
 	}
 
+	// Report admin-database-derived billable metrics (e.g. seats) for every org that reported usage in this run.
+	// These are current gauges, so we report them for the last completed grain period; the biller aggregates over the billing period.
+	w.reportOrgUsageMetrics(ctx, reportedOrgs, endTime.Add(-granularity), endTime)
+
 	// TODO move the validation to background job
 	// get orgs which have billing customer id
 	orgs, err := w.admin.DB.FindOrganizationIDsWithBilling(ctx)
@@ -176,4 +221,35 @@ func (w *BillingReporterWorker) Work(ctx context.Context, job *river.Job[Billing
 		}
 	}
 	return nil
+}
+
+// reportOrgUsageMetrics reports the admin-database-derived billable metrics (orgUsageMetrics) for the given orgs.
+// It is best-effort: a failure for one org or metric is logged and skipped so the rest still get reported.
+func (w *BillingReporterWorker) reportOrgUsageMetrics(ctx context.Context, reportedOrgs map[string]string, startTime, endTime time.Time) {
+	grain := w.admin.Biller.GetReportingGranularity()
+	for orgID, customerID := range reportedOrgs {
+		var usage []*billing.Usage
+		for _, m := range orgUsageMetrics {
+			val, err := m.collect(ctx, w.admin, orgID)
+			if err != nil {
+				w.logger.Error("failed to collect admin usage metric", zap.String("metric", m.name), zap.String("org_id", orgID), zap.Error(err))
+				continue
+			}
+			usage = append(usage, &billing.Usage{
+				CustomerID:     customerID,
+				MetricName:     m.name,
+				Value:          val,
+				ReportingGrain: grain,
+				StartTime:      startTime,
+				EndTime:        endTime,
+				Metadata:       map[string]interface{}{"org_id": orgID},
+			})
+		}
+		if len(usage) == 0 {
+			continue
+		}
+		if err := w.admin.Biller.ReportUsage(ctx, usage); err != nil {
+			w.logger.Error("failed to report admin usage metrics", zap.String("org_id", orgID), zap.Error(err))
+		}
+	}
 }

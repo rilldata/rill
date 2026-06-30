@@ -790,6 +790,19 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
+  // CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+  rpc CreateGithubPullRequest(CreateGithubPullRequestRequest) returns (CreateGithubPullRequestResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/github/pr",
+      body: "*"
+    };
+  }
+
+  // GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+  rpc GetGithubPullRequest(GetGithubPullRequestRequest) returns (GetGithubPullRequestResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/github/pr/{branch}"};
+  }
+
   // Connects a rill managed project to github.
   // Replaces the contents of the remote repo with the contents of the project.
   rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
@@ -907,6 +920,22 @@ service AdminService {
     };
   }
 
+  // SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+  rpc SudoGrantTrialCredits(SudoGrantTrialCreditsRequest) returns (SudoGrantTrialCreditsResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/trial/grant-credits",
+      body: "*"
+    };
+  }
+
+  // SudoReportUsage reports a mock usage event for an organization.
+  rpc SudoReportUsage(SudoReportUsageRequest) returns (SudoReportUsageResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/billing/report-usage",
+      body: "*"
+    };
+  }
+
   // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
   // It only updates the custom domain in the database, which is used to ensure correct redirects.
   // The DNS records and ingress TLS must be configured separately.
@@ -938,6 +967,21 @@ service AdminService {
   rpc SudoDeleteOrganizationBillingIssue(SudoDeleteOrganizationBillingIssueRequest) returns (SudoDeleteOrganizationBillingIssueResponse) {
     option (google.api.http) = {
       delete: "/v1/superuser/organizations/{org}/billing/issues/{type}"
+    };
+  }
+
+  // SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+  rpc SudoUpdateOrganizationBillingMessage(SudoUpdateOrganizationBillingMessageRequest) returns (SudoUpdateOrganizationBillingMessageResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organizations/{org}/billing/message",
+      body: "*"
+    };
+  }
+
+  // SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+  rpc SudoDeleteOrganizationBillingMessage(SudoDeleteOrganizationBillingMessageRequest) returns (SudoDeleteOrganizationBillingMessageResponse) {
+    option (google.api.http) = {
+      delete: "/v1/superuser/organizations/{org}/billing/message"
     };
   }
 
@@ -1234,6 +1278,39 @@ service AdminService {
     };
   }
 
+  // ListPersonalFiles lists the calling user's personal files.
+  rpc ListPersonalFiles(ListPersonalFilesRequest) returns (ListPersonalFilesResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/personal-files"};
+  }
+
+  // CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+  rpc CreatePersonalFile(CreatePersonalFileRequest) returns (CreatePersonalFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-files",
+      body: "*"
+    };
+  }
+
+  // GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+  rpc GetPersonalFile(GetPersonalFileRequest) returns (GetPersonalFileResponse) {
+    option (google.api.http) = {
+      get: "/v1/orgs/{org}/projects/{project}/personal-files/{name}"
+    };
+  }
+
+  // EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+  rpc EditPersonalFile(EditPersonalFileRequest) returns (EditPersonalFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/personal-files/{name}",
+      body: "*"
+    };
+  }
+
+  // DeletePersonalFile deletes a personal virtual file the caller owns.
+  rpc DeletePersonalFile(DeletePersonalFileRequest) returns (DeletePersonalFileResponse) {
+    option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/personal-files/{name}"};
+  }
+
   // GetBillingSubscription lists the subscription for the organization
   rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/subscriptions"};
@@ -1265,6 +1342,11 @@ service AdminService {
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/payments/portal-url"};
+  }
+
+  // GetBillingCreditBalance returns the organization's remaining trial credit balance
+  rpc GetBillingCreditBalance(GetBillingCreditBalanceRequest) returns (GetBillingCreditBalanceResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/billing/credits"};
   }
 
   // ListPublicBillingPlans lists all public billing plans
@@ -1848,7 +1930,9 @@ message UpdateProjectRequest {
   optional int64 prod_ttl_seconds = 10;
   optional string prod_version = 11;
   optional int64 dev_slots = 16;
+  optional int64 dev_ttl_seconds = 18;
   bool superuser_force_access = 14;
+  optional int64 override_disk_gb = 17;
 }
 
 message UpdateProjectResponse {
@@ -1931,8 +2015,10 @@ message GetDeploymentConfigRequest {
 }
 
 message GetDeploymentConfigResponse {
-  // Variables for the deployment (connector credentials, etc.)
-  map<string, string> variables = 1;
+  // Variables for the deployment.
+  repeated ProjectVariable variables = 7;
+  // Deprecated: Variables for the deployment. Use `variables` instead.
+  map<string, string> variables_legacy = 1;
   // Annotations for the deployment (org/project metadata, etc.)
   map<string, string> annotations = 2;
   // Frontend URL for the deployment.
@@ -1943,6 +2029,10 @@ message GetDeploymentConfigResponse {
   bool uses_archive = 5;
   // Duckdb connector config for the deployment
   google.protobuf.Struct duckdb_connector_config = 6;
+  // Whether the deployment is editable (dev environment with changes persisted to git repo).
+  bool editable = 8;
+  // System variables set by the admin service that should not be overridden by user input.
+  map<string, string> system_variables = 9;
 }
 
 message ListRolesRequest {}
@@ -2091,6 +2181,7 @@ message SudoUpdateOrganizationQuotasRequest {
   optional int32 slots_per_deployment = 5;
   optional int32 outstanding_invites = 6;
   optional int64 storage_limit_bytes_per_deployment = 7;
+  optional int32 seats = 8;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -2115,6 +2206,37 @@ message SudoExtendTrialRequest {
 
 message SudoExtendTrialResponse {
   google.protobuf.Timestamp trial_end = 1;
+}
+
+message SudoGrantTrialCreditsRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  // Amount of trial credits to grant in USD.
+  double amount_usd = 2 [(validate.rules).double = {gt: 0}];
+  // Optional human-readable reason for the grant.
+  string description = 3;
+}
+
+message SudoGrantTrialCreditsResponse {
+  // The grant amount actually applied, in USD.
+  double granted_usd = 1;
+}
+
+message SudoReportUsageRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string event_name = 2 [(validate.rules).string.min_len = 1];
+  double value = 3 [(validate.rules).double = {gt: 0}];
+  // Optional end time of the reporting window. Defaults to the current server time.
+  google.protobuf.Timestamp end_time = 4;
+  // Optional project name attribution for the mock event. If not set, a placeholder is used.
+  string project_name = 5;
+}
+
+message SudoReportUsageResponse {
+  string customer_id = 1;
+  string event_name = 2;
+  double value = 3;
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
@@ -2160,6 +2282,20 @@ message SudoDeleteOrganizationBillingIssueRequest {
 }
 
 message SudoDeleteOrganizationBillingIssueResponse {}
+
+message SudoUpdateOrganizationBillingMessageRequest {
+  string org = 1;
+  BillingIssueLevel level = 2;
+  string message = 3;
+}
+
+message SudoUpdateOrganizationBillingMessageResponse {}
+
+message SudoDeleteOrganizationBillingMessageRequest {
+  string org = 1;
+}
+
+message SudoDeleteOrganizationBillingMessageResponse {}
 
 message SudoTriggerBillingRepairRequest {}
 
@@ -2686,6 +2822,38 @@ message ListGithubUserReposResponse {
   repeated Repo repos = 1;
 }
 
+message CreateGithubPullRequestRequest {
+  string org = 1;
+  string project = 2;
+  // The head branch for the PR
+  string branch = 3;
+  // Optional title of the PR. If not set, a default title will be used
+  string title = 5;
+  /// Optional body of the PR
+  string body = 6;
+}
+
+message CreateGithubPullRequestResponse {
+  string pr_url = 1;
+}
+
+message GetGithubPullRequestRequest {
+  string org = 1;
+  string project = 2;
+  string branch = 3;
+}
+
+message GetGithubPullRequestResponse {
+  string pr_url = 1;
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_OPEN = 1;
+    STATE_CLOSED_UNMERGED = 2;
+    STATE_MERGED = 3;
+  }
+  State pr_state = 2;
+}
+
 message ConnectProjectToGithubRequest {
   string org = 1;
   string project = 2;
@@ -2699,6 +2867,8 @@ message CreateManagedGitRepoRequest {
   // name of the repo to create. 
   // Note: The final name will be suffixed with a random string to ensure uniqueness.
   string name = 2;
+  // whether to auto initialize the repo with a commit after creation
+  bool auto_init = 3;
 }
 
 message CreateManagedGitRepoResponse {
@@ -3034,6 +3204,59 @@ message GetAlertYAMLResponse {
   string yaml = 1;
 }
 
+message ListPersonalFilesRequest {
+  string org = 1;
+  string project = 2;
+}
+
+message ListPersonalFilesResponse {
+  repeated string files = 1;
+}
+
+message CreatePersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string display_name = 3 [(validate.rules).string.min_len = 1];
+  string kind = 4;
+  // Optional: initial YAML body. If empty, the server generates a blank template for the given type.
+  string yaml = 5;
+}
+
+message CreatePersonalFileResponse {
+  string name = 1;
+}
+
+message GetPersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message GetPersonalFileResponse {
+  string path = 1;
+  string yaml = 2;
+}
+
+message EditPersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+  string kind = 4;
+  string yaml = 5;
+}
+
+message EditPersonalFileResponse {
+}
+
+message DeletePersonalFileRequest {
+  string org = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message DeletePersonalFileResponse {
+}
+
 message GetBillingSubscriptionRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   bool superuser_force_access = 2;
@@ -3083,6 +3306,15 @@ message GetPaymentsPortalURLRequest {
 
 message GetPaymentsPortalURLResponse {
   string url = 1;
+}
+
+message GetBillingCreditBalanceRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 2;
+}
+
+message GetBillingCreditBalanceResponse {
+  double balance = 1;
 }
 
 message ListPublicBillingPlansRequest {}
@@ -3241,6 +3473,7 @@ message OrganizationQuotas {
   int32 slots_per_deployment = 4;
   int32 outstanding_invites = 5;
   int64 storage_limit_bytes_per_deployment = 6;
+  int32 seats = 7;
 }
 
 message Project {
@@ -3264,6 +3497,8 @@ message Project {
   int64 dev_slots = 25;
   string frontend_url = 16; // Note: Does NOT incorporate the parent org's custom domain.
   int64 prod_ttl_seconds = 18;
+  int64 dev_ttl_seconds = 27;
+  int64 override_disk_gb = 28;
   map<string, string> annotations = 20;
   string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
@@ -3297,6 +3532,7 @@ message Deployment {
   string status_message = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
+  google.protobuf.Timestamp used_on = 14;
 }
 
 message ProvisionerResource {
@@ -3537,6 +3773,8 @@ enum BillingPlanType {
   BILLING_PLAN_TYPE_ENTERPRISE = 4;
   BILLING_PLAN_TYPE_FREE = 5;
   BILLING_PLAN_TYPE_PRO = 6;
+  BILLING_PLAN_TYPE_STARTER = 7;
+  BILLING_PLAN_TYPE_GROWTH = 8;
 }
 
 message BillingPlan {
@@ -3559,6 +3797,9 @@ message Quotas {
   string slots_per_deployment = 4;
   string outstanding_invites = 5;
   string storage_limit_bytes_per_deployment = 6;
+  string api_calls_per_seat = 7;
+  string seats = 8;
+  string tokens_per_seat = 9;
 }
 
 message Usergroup {
@@ -3591,6 +3832,9 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
+  BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL = 8;
+  BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED = 9;
+  BILLING_ISSUE_TYPE_MESSAGE = 10;
 }
 
 enum BillingIssueLevel {
@@ -3617,6 +3861,9 @@ message BillingIssueMetadata {
     BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
     BillingIssueMetadataNeverSubscribed never_subscribed = 7;
+    BillingIssueMetadataOnCreditTrial on_credit_trial = 8;
+    BillingIssueMetadataTrialCreditsDepleted trial_credits_depleted = 9;
+    BillingIssueMetadataMessage message = 10;
   }
 }
 
@@ -3654,3 +3901,20 @@ message BillingIssueMetadataSubscriptionCancelled {
 }
 
 message BillingIssueMetadataNeverSubscribed {}
+
+message BillingIssueMetadataOnCreditTrial {
+  string subscription_id = 1;
+  string plan_id = 2;
+  double credit_allocation = 3;
+  bool low_credit = 4;
+}
+
+message BillingIssueMetadataTrialCreditsDepleted {
+  string subscription_id = 1;
+  string plan_id = 2;
+  google.protobuf.Timestamp depleted_on = 3;
+}
+
+message BillingIssueMetadataMessage {
+  string message = 1;
+}

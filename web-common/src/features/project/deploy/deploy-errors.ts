@@ -5,6 +5,7 @@ const ProjectQuotaErrorMatcher =
 const OrgQuotaErrorMatcher =
   /(quota exceeded: you can only create .* single-user orgs|trial orgs quota exceeded)/;
 const TrialEndedMatcher = /trial has ended/;
+const TrialCreditsDepleted = /trial credits depleted/;
 const SubEndedMatcher = /subscription cancelled/;
 export const GithubRepoNoAccessError = "GitNoAccessError";
 
@@ -20,18 +21,18 @@ export enum DeployErrorType {
 }
 const ErrorMessageVariants = {
   [DeployErrorType.OrgLimitHit]: {
-    title: "To deploy to more organizations, start a Team plan",
-    message: "",
+    title: "To deploy to another organization, choose a plan",
+    message:
+      "Your trial plan supports a single organization. Choose a plan to deploy to more.",
   },
   [DeployErrorType.TrialEnded]: {
-    title: "To deploy this project, start a Team plan",
-    message:
-      "Your trial has ended. In order to deploy this project, start a Team plan.",
+    title: "To deploy this project, choose a plan",
+    message: "Your trial has ended. Choose a plan to deploy this project.",
   },
   [DeployErrorType.SubscriptionEnded]: {
-    title: "To deploy this project, start a Team plan",
+    title: "To deploy this project, renew your plan",
     message:
-      "Your subscription has ended. In order to deploy this project, renew Team plan.",
+      "Your subscription has ended. Renew your plan to deploy this project.",
   },
 };
 
@@ -52,7 +53,7 @@ export function getPrettyDeployError(
       message: "",
     };
   }
-  let title = "Oops! An error occurred";
+  const title = "Oops! An error occurred";
 
   if (error.message === GithubRepoNoAccessError) {
     return {
@@ -64,55 +65,67 @@ export function getPrettyDeployError(
 
   const match = RPCErrorExtractor.exec(error.message);
   if (!match) {
-    if (error.message.includes("EntityTooLarge")) {
-      return {
-        type: DeployErrorType.LargeProject,
-        title,
-        message:
-          "It looks like you have more than 10GB. Contact us to finish deployment.",
-      };
-    }
-    return {
-      type: DeployErrorType.Unknown,
-      title,
-      message: error.message,
-    };
+    return parseDeployErrorMessage(error.message, orgOnTrial);
   }
   const [, code, desc] = match;
-  let message = desc;
 
   if (code === "PermissionDenied") {
     return {
       type: DeployErrorType.PermissionDenied,
       title,
-      message,
+      message: desc,
     };
   }
 
-  const projectQuotaMatch = ProjectQuotaErrorMatcher.exec(desc);
+  return parseDeployErrorMessage(desc, orgOnTrial);
+}
+
+export function isQuotaDeployError(deployError: DeployError) {
+  return (
+    deployError.type === DeployErrorType.ProjectLimitHit ||
+    deployError.type === DeployErrorType.OrgLimitHit ||
+    deployError.type === DeployErrorType.TrialEnded ||
+    deployError.type === DeployErrorType.SubscriptionEnded
+  );
+}
+
+function parseDeployErrorMessage(message: string, orgOnTrial: boolean) {
+  let title = "Oops! An error occurred";
+
+  if (message.includes("EntityTooLarge")) {
+    return {
+      type: DeployErrorType.LargeProject,
+      title,
+      message:
+        "It looks like you have more than 10GB. Contact us to finish deployment.",
+    };
+  }
+
+  const projectQuotaMatch = ProjectQuotaErrorMatcher.exec(message);
   if (projectQuotaMatch?.length) {
     const projectQuota = Number(projectQuotaMatch[1]);
-    const planLabel = orgOnTrial ? "current plan" : "trial plan";
+    const planLabel = orgOnTrial ? "trial plan" : "current plan";
 
     return {
       type: DeployErrorType.ProjectLimitHit,
-      title: "To deploy this project, start a Team plan",
-      message: `Your ${planLabel} is limited to ${projectQuota} project${projectQuota > 1 ? "s" : ""}. To have unlimited projects, upgrade to a Team plan.`,
+      title: "To deploy more projects, upgrade your plan",
+      message: `Your ${planLabel} is limited to ${projectQuota} project${projectQuota > 1 ? "s" : ""}. Upgrade your plan to deploy more, or contact us about unlimited projects.`,
     };
   }
 
   let type = DeployErrorType.Unknown;
 
   switch (true) {
-    case OrgQuotaErrorMatcher.test(desc):
+    case OrgQuotaErrorMatcher.test(message):
       type = DeployErrorType.OrgLimitHit;
       break;
 
-    case TrialEndedMatcher.test(desc):
+    case TrialEndedMatcher.test(message):
+    case TrialCreditsDepleted.test(message):
       type = DeployErrorType.TrialEnded;
       break;
 
-    case SubEndedMatcher.test(desc):
+    case SubEndedMatcher.test(message):
       type = DeployErrorType.SubscriptionEnded;
       break;
   }

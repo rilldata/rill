@@ -38,6 +38,7 @@
   $: metricsViewSpec = $_metricViewSpec.metricsView;
 
   $: schema = validateTableSchema(metricsViewSpec, tableSpec);
+  $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
   $: if ("columns" in tableSpec && schema.isValid) {
     const columns = tableSpec?.columns || [];
@@ -45,9 +46,14 @@
       ...state,
       sorting: [],
       expanded: {},
+      activeCell: null,
+      columnPage: 1,
+      rowPage: 1,
       columns: tableFieldMapper(columns, metricsViewSpec),
+      showTotalsColumn: tableSpec.hide_totals_col !== true,
+      showTotalsRow: tableSpec.hide_totals_row !== true,
     }));
-  } else if ("col_dimensions" in tableSpec && schema.isValid) {
+  } else if (!("columns" in tableSpec) && schema.isValid) {
     const measures = tableSpec.measures || [];
     const colDimensions = tableSpec.col_dimensions || [];
     const rowDimensions = tableSpec.row_dimensions || [];
@@ -55,11 +61,16 @@
       ...state,
       sorting: [],
       expanded: {},
+      activeCell: null,
+      columnPage: 1,
+      rowPage: 1,
       columns: [
         ...tableFieldMapper(colDimensions, metricsViewSpec),
         ...tableFieldMapper(measures, metricsViewSpec),
       ],
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
+      showTotalsColumn: tableSpec.hide_totals_col !== true,
+      showTotalsRow: tableSpec.hide_totals_row !== true,
     }));
   }
 </script>
@@ -78,4 +89,6 @@
   {pivotDataStore}
   pivotConfig={config}
   {pivotState}
+  {component}
+  {widthScopeKey}
 />

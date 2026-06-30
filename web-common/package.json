@@ -52,6 +52,7 @@
     "@types/dompurify": "^3.0.5",
     "@types/luxon": "^3.4.2",
     "@types/memoizee": "^0.4.11",
+    "@types/picomatch": "^4.0.3",
     "@xyflow/svelte": "^0.1.39",
     "autoprefixer": "^10.4.20",
     "bits-ui": "~2.14.4",
@@ -72,6 +73,7 @@
     "fflate": "^0.8.2",
     "globals": "^16.0.0",
     "gridstack": "^11.3.0",
+    "html-to-image": "^1.11.13",
     "jsdom": "^26.0.0",
     "json-schema": "^0.4.0",
     "lucide-svelte": "^0.298.0",
@@ -80,7 +82,6 @@
     "match-sorter": "^6.3.1",
     "memoizee": "^0.4.17",
     "nearley": "^2.20.1",
-    "posthog-js": "^1.188.0",
     "prismjs": "^1.30.0",
     "regular-table": "^0.5.9",
     "svelte": "^5.0.0",
@@ -108,6 +109,7 @@
   "dependencies": {
     "@internationalized/date": "^3.10.1",
     "@tiptap/suggestion": "^3.20.1",
+    "picomatch": "^4.0.3",
     "vega-embed": "^7.1.0"
   }
 }

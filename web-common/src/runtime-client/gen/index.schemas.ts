@@ -110,6 +110,7 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  lowerIsBetter?: boolean;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -439,13 +440,32 @@ If not found in `time_ranges`, it should be added to the list. */
   filterExpr?: V1CanvasPresetFilterExpr;
 }
 
+export interface V1CanvasTab {
+  /** Stable identifier for the tab, used for URL state. Derived from the label. */
+  name?: string;
+  /** User-facing label for the tab. */
+  displayName?: string;
+  /** Rows to render when the tab is active. These are always plain rows;
+a tab's rows never contain a nested tab_group. */
+  rows?: V1CanvasRow[];
+}
+
+export interface V1CanvasTabGroup {
+  /** Stable identifier for the tab group, used for URL state.
+Defaults to "group-<index>" if not provided in the canvas YAML. */
+  name?: string;
+  /** Tabs in the group. A group always has at least one tab. */
+  tabs?: V1CanvasTab[];
+}
+
 export interface V1CanvasRow {
   /** Height of the row. The unit is given in height_unit. */
   height?: number;
   /** Unit of the height. Current possible values: "px", empty string. */
   heightUnit?: string;
-  /** Items to render in the row. */
+  /** Items to render in the row. Empty when the row is a tab group. */
   items?: V1CanvasItem[];
+  tabGroup?: V1CanvasTabGroup;
 }
 
 export interface V1CanvasSpec {
@@ -480,6 +500,8 @@ The values should be valid IANA location identifiers. */
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
+  requiredFilters?: string[];
+  annotations?: Record<string, string>;
 }
 
 export interface V1CanvasState {
@@ -923,10 +945,10 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
   pivotRowLimit?: number;
+  pivotShowTotalsColumn?: boolean;
+  pivotShowTotalsRow?: boolean;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
-  /** When true, time-series charts always render as line charts. */
-  chartForceLine?: boolean;
 }
 
 export type V1ExploreSortType =
@@ -1102,6 +1124,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetAIMessageResponse {
   message?: V1Message;
+  result?: V1Message;
 }
 
 export interface V1GetConversationResponse {
@@ -1164,11 +1187,13 @@ export interface V1GitCommitResponse {
 export interface V1GitMergeToBranchResponse {
   /** The output of the git merge command. Only set for unsuccessful merges. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPushResponse {
@@ -1180,6 +1205,8 @@ export interface V1GitStatusResponse {
   branch?: string;
   /** The remote url of the git repo. */
   githubUrl?: string;
+  /** The subpath of the git repo. */
+  subpath?: string;
   /** If the repo is managed by Rill. */
   managedGit?: boolean;
   /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
@@ -1702,6 +1729,10 @@ export interface V1MetricsViewSpec {
   /** Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
 Keys and values are stored as templates and will be resolved at query time. */
   queryAttributes?: V1MetricsViewSpecQueryAttributes;
+  /** Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger
+   * granularity (e.g. "P90D", "P3M", "P1Y"). Sub-day durations are not supported. Applies to queries that take a time
+   * range, including the comparison time range. Time-range introspection RPCs are exempt. If unset, no limit is enforced. */
+  maxQueryTimeRange?: string;
 }
 
 /**
@@ -1739,6 +1770,9 @@ This may be empty if the metrics view is based on an externally managed table. *
 
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
+  /** The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+   * Zero (or absent) if the metrics view does not configure max_query_time_range. */
+  maxQueryTimeRangeMillis?: string;
   trace?: V1Trace;
 }
 
@@ -1749,6 +1783,9 @@ export interface V1MetricsViewTimeRangesResponse {
   /** The same values as resolved_time_ranges for backwards compatibility.
 Deprecated: use resolved_time_ranges instead. */
   timeRanges?: V1TimeRange[];
+  /** The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+   * Zero (or absent) if the metrics view does not configure max_query_time_range. */
+  maxQueryTimeRangeMillis?: string;
   trace?: V1Trace;
 }
 
@@ -1871,6 +1908,7 @@ export interface V1ModelPartition {
   executedOn?: string;
   error?: string;
   elapsedMs?: number;
+  skipped?: boolean;
 }
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
@@ -2189,6 +2227,8 @@ For non-incremental models, this is equivalent to a normal refresh. */
   partitions?: string[];
   /** If true, it will refresh all partitions that errored on their last execution. */
   allErroredPartitions?: boolean;
+  /** If true, it will refresh all partitions that are currently marked as skipped. */
+  allSkippedPartitions?: boolean;
 }
 
 export interface V1RefreshTrigger {

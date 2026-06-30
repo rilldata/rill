@@ -36,6 +36,8 @@ type Dialect interface {
 	CanPivot() bool
 	EscapeIdentifier(ident string) string
 	EscapeAlias(alias string) string
+	// SanitizeDisplayName returns a sanitized version of the given name so that it conforms to the dialect's identifier rules.
+	SanitizeDisplayName(name string) string
 	EscapeQualifiedIdentifier(name string) string
 	EscapeTable(db, schema, table string) string
 	EscapeMember(tbl, name string) string
@@ -50,6 +52,8 @@ type Dialect interface {
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
 	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
 	UnnestSQLSuffix(tbl string) string
+	// AutoUnnest wraps an expression so the dialect unnests it automatically (used when LateralUnnest reports auto == true).
+	AutoUnnest(expr string) string
 	MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error)
 	AnyValueExpression(expr string) string
 	MinDimensionExpression(expr string) string
@@ -99,6 +103,10 @@ func (b *BaseDialect) EscapeIdentifier(ident string) string {
 
 func (b *BaseDialect) EscapeAlias(alias string) string {
 	return b.escapeAlias(alias)
+}
+
+func (b *BaseDialect) SanitizeDisplayName(name string) string {
+	return name
 }
 
 // EscapeQualifiedIdentifier escapes a dot-separated qualified name (e.g. "schema.table") by escaping each part individually.
@@ -212,6 +220,10 @@ func (b *BaseDialect) LateralUnnest(expr, tableAlias, colName string) (tbl strin
 
 func (b *BaseDialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(", %s", tbl)
+}
+
+func (b *BaseDialect) AutoUnnest(expr string) string {
+	return expr
 }
 
 func (b *BaseDialect) RequiresArrayContainsForInOperator() bool {
@@ -342,7 +354,9 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 				return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
 			}
 			prefix += fmt.Sprintf("%s AS %s", argExpr, b.escapeAlias(result.Schema.Fields[i].Name))
-			args = append(args, argVal)
+			if argVal != nil {
+				args = append(args, argVal)
+			}
 		}
 	}
 	if err := result.Err(); err != nil {
@@ -410,6 +424,9 @@ func DoubleQuotesEscapeIdentifier(ident string) string {
 }
 
 func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	if val == nil {
+		return "NULL", nil, nil
+	}
 	// handle bigquery non-timestamp time types separately
 	switch v := val.(type) {
 	case civil.Date:

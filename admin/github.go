@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/gitutil"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -26,6 +26,7 @@ import (
 var (
 	ErrUserIsNotCollaborator      = fmt.Errorf("user is not a collaborator for the repository")
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
+	ErrBranchNotFound             = fmt.Errorf("branch does not exist in the repository")
 )
 
 type GithubToken struct {
@@ -42,7 +43,9 @@ type Github interface {
 	InstallationToken(ctx context.Context, installationID, repoID int64) (token string, expiresAt time.Time, err error)
 	InstallationTokenForOrg(ctx context.Context, org string) (token string, expiresAt time.Time, err error)
 
-	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
+	DeleteBranch(ctx context.Context, installationID, repoID int64, remote, branch string) error
+
+	CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error)
 	// DeleteManagedRepo deletes the given repo from the managed org. For test cleanup only.
 	DeleteManagedRepo(ctx context.Context, repo string) error
 	ManagedOrgInstallationID() (int64, error)
@@ -153,7 +156,24 @@ func (g *githubClient) InstallationTokenForOrg(ctx context.Context, org string) 
 	return g.token(ctx, client)
 }
 
-func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {
+func (g *githubClient) DeleteBranch(ctx context.Context, installationID, repoID int64, remote, branch string) error {
+	client := g.InstallationClient(installationID, &repoID)
+	org, repo, ok := gitutil.SplitGithubRemote(remote)
+	if !ok {
+		return fmt.Errorf("invalid Github remote %q", remote)
+	}
+	_, err := client.Git.DeleteRef(ctx, org, repo, "heads/"+branch)
+	if err != nil {
+		var ghErr *github.ErrorResponse
+		if errors.As(err, &ghErr) && (ghErr.Response.StatusCode == http.StatusNotFound || ghErr.Response.StatusCode == http.StatusUnprocessableEntity) {
+			return ErrBranchNotFound
+		}
+		return fmt.Errorf("failed to delete branch %q: %w", branch, err)
+	}
+	return nil
+}
+
+func (g *githubClient) CreateManagedRepo(ctx context.Context, name string, autoInit bool) (*github.Repository, error) {
 	repoName := fmt.Sprintf("%s-%v", name, uuid.New().String()[0:8])
 
 	// get managed org client
@@ -165,8 +185,9 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 
 	// create the repo
 	repo, _, err := client.Repositories.Create(ctx, g.managedAcct, &github.Repository{
-		Name:    github.Ptr(repoName),
-		Private: github.Ptr(true),
+		Name:     github.Ptr(repoName),
+		Private:  github.Ptr(true),
+		AutoInit: github.Ptr(autoInit),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create managed repo: %w", err)
@@ -226,7 +247,7 @@ func (g *githubClient) token(ctx context.Context, client *github.Client) (string
 	return t, expiry, nil
 }
 
-func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string) (*github.Repository, error) {
+func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string, autoInit bool) (*github.Repository, error) {
 	if org.QuotaProjects >= 0 {
 		count, err := s.DB.CountManagedGitRepos(ctx, org.ID)
 		if err != nil {
@@ -239,7 +260,7 @@ func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organi
 		}
 	}
 
-	repo, err := s.Github.CreateManagedRepo(ctx, fmt.Sprintf("%s-%s", org.Name, name))
+	repo, err := s.Github.CreateManagedRepo(ctx, fmt.Sprintf("%s-%s", org.Name, name), autoInit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create managed repo: %w", err)
 	}

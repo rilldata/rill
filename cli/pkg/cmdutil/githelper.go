@@ -3,17 +3,14 @@ package cmdutil
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"golang.org/x/sync/semaphore"
 )
-
-var gitignoreHasDotenvRegexp = regexp.MustCompile(`(?m)^\.env$`)
 
 // GitHelper manages git operations for a project.
 // It also caches the git credentials for the project.
@@ -177,32 +174,4 @@ func SetupGitIgnore(ctx context.Context, repo drivers.RepoStore) error {
 		return nil // nothing to add
 	}
 	return repo.Put(ctx, ".gitignore", strings.NewReader(gitIgnoreContent))
-}
-
-func EnsureGitignoreHasDotenv(ctx context.Context, repo drivers.RepoStore) (bool, error) {
-	return ensureGitignoreHas(ctx, repo, gitignoreHasDotenvRegexp, ".env")
-}
-
-func ensureGitignoreHas(ctx context.Context, repo drivers.RepoStore, regexp *regexp.Regexp, line string) (bool, error) {
-	// Read .gitignore
-	gitignore, _ := repo.Get(ctx, ".gitignore")
-
-	// If .gitignore already has .env, do nothing
-	if regexp.MatchString(gitignore) {
-		return false, nil
-	}
-
-	// Add .env to the end of .gitignore
-	if gitignore != "" {
-		gitignore += "\n"
-	}
-	gitignore += line + "\n"
-
-	// Write .gitignore
-	err := repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
 }

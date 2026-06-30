@@ -97,6 +97,8 @@ const (
 	AdminService_GetGithubRepoStatus_FullMethodName                    = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName                    = "/rill.admin.v1.AdminService/GetGithubUserStatus"
 	AdminService_ListGithubUserRepos_FullMethodName                    = "/rill.admin.v1.AdminService/ListGithubUserRepos"
+	AdminService_CreateGithubPullRequest_FullMethodName                = "/rill.admin.v1.AdminService/CreateGithubPullRequest"
+	AdminService_GetGithubPullRequest_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubPullRequest"
 	AdminService_ConnectProjectToGithub_FullMethodName                 = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
 	AdminService_CreateManagedGitRepo_FullMethodName                   = "/rill.admin.v1.AdminService/CreateManagedGitRepo"
 	AdminService_GetCloneCredentials_FullMethodName                    = "/rill.admin.v1.AdminService/GetCloneCredentials"
@@ -114,10 +116,14 @@ const (
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName           = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName  = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
 	AdminService_SudoExtendTrial_FullMethodName                        = "/rill.admin.v1.AdminService/SudoExtendTrial"
+	AdminService_SudoGrantTrialCredits_FullMethodName                  = "/rill.admin.v1.AdminService/SudoGrantTrialCredits"
+	AdminService_SudoReportUsage_FullMethodName                        = "/rill.admin.v1.AdminService/SudoReportUsage"
 	AdminService_SudoUpdateOrganizationCustomDomain_FullMethodName     = "/rill.admin.v1.AdminService/SudoUpdateOrganizationCustomDomain"
 	AdminService_SudoUpdateAnnotations_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_SudoIssueRuntimeManagerToken_FullMethodName           = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
 	AdminService_SudoDeleteOrganizationBillingIssue_FullMethodName     = "/rill.admin.v1.AdminService/SudoDeleteOrganizationBillingIssue"
+	AdminService_SudoUpdateOrganizationBillingMessage_FullMethodName   = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingMessage"
+	AdminService_SudoDeleteOrganizationBillingMessage_FullMethodName   = "/rill.admin.v1.AdminService/SudoDeleteOrganizationBillingMessage"
 	AdminService_SudoTriggerBillingRepair_FullMethodName               = "/rill.admin.v1.AdminService/SudoTriggerBillingRepair"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName         = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName         = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
@@ -163,11 +169,17 @@ const (
 	AdminService_DeleteAlert_FullMethodName                            = "/rill.admin.v1.AdminService/DeleteAlert"
 	AdminService_GenerateAlertYAML_FullMethodName                      = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                           = "/rill.admin.v1.AdminService/GetAlertYAML"
+	AdminService_ListPersonalFiles_FullMethodName                      = "/rill.admin.v1.AdminService/ListPersonalFiles"
+	AdminService_CreatePersonalFile_FullMethodName                     = "/rill.admin.v1.AdminService/CreatePersonalFile"
+	AdminService_GetPersonalFile_FullMethodName                        = "/rill.admin.v1.AdminService/GetPersonalFile"
+	AdminService_EditPersonalFile_FullMethodName                       = "/rill.admin.v1.AdminService/EditPersonalFile"
+	AdminService_DeletePersonalFile_FullMethodName                     = "/rill.admin.v1.AdminService/DeletePersonalFile"
 	AdminService_GetBillingSubscription_FullMethodName                 = "/rill.admin.v1.AdminService/GetBillingSubscription"
 	AdminService_UpdateBillingSubscription_FullMethodName              = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
 	AdminService_CancelBillingSubscription_FullMethodName              = "/rill.admin.v1.AdminService/CancelBillingSubscription"
 	AdminService_RenewBillingSubscription_FullMethodName               = "/rill.admin.v1.AdminService/RenewBillingSubscription"
 	AdminService_GetPaymentsPortalURL_FullMethodName                   = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
+	AdminService_GetBillingCreditBalance_FullMethodName                = "/rill.admin.v1.AdminService/GetBillingCreditBalance"
 	AdminService_ListPublicBillingPlans_FullMethodName                 = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
 	AdminService_GetBillingProjectCredentials_FullMethodName           = "/rill.admin.v1.AdminService/GetBillingProjectCredentials"
 	AdminService_RequestProjectAccess_FullMethodName                   = "/rill.admin.v1.AdminService/RequestProjectAccess"
@@ -356,6 +368,10 @@ type AdminServiceClient interface {
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
 	ListGithubUserRepos(ctx context.Context, in *ListGithubUserReposRequest, opts ...grpc.CallOption) (*ListGithubUserReposResponse, error)
+	// CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+	CreateGithubPullRequest(ctx context.Context, in *CreateGithubPullRequestRequest, opts ...grpc.CallOption) (*CreateGithubPullRequestResponse, error)
+	// GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+	GetGithubPullRequest(ctx context.Context, in *GetGithubPullRequestRequest, opts ...grpc.CallOption) (*GetGithubPullRequestResponse, error)
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
@@ -392,6 +408,10 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoExtendTrial extends the trial period for an organization
 	SudoExtendTrial(ctx context.Context, in *SudoExtendTrialRequest, opts ...grpc.CallOption) (*SudoExtendTrialResponse, error)
+	// SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+	SudoGrantTrialCredits(ctx context.Context, in *SudoGrantTrialCreditsRequest, opts ...grpc.CallOption) (*SudoGrantTrialCreditsResponse, error)
+	// SudoReportUsage reports a mock usage event for an organization.
+	SudoReportUsage(ctx context.Context, in *SudoReportUsageRequest, opts ...grpc.CallOption) (*SudoReportUsageResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
@@ -402,6 +422,10 @@ type AdminServiceClient interface {
 	SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
 	SudoDeleteOrganizationBillingIssue(ctx context.Context, in *SudoDeleteOrganizationBillingIssueRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingIssueResponse, error)
+	// SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+	SudoUpdateOrganizationBillingMessage(ctx context.Context, in *SudoUpdateOrganizationBillingMessageRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingMessageResponse, error)
+	// SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+	SudoDeleteOrganizationBillingMessage(ctx context.Context, in *SudoDeleteOrganizationBillingMessageRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingMessageResponse, error)
 	// SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
 	SudoTriggerBillingRepair(ctx context.Context, in *SudoTriggerBillingRepairRequest, opts ...grpc.CallOption) (*SudoTriggerBillingRepairResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
@@ -492,6 +516,16 @@ type AdminServiceClient interface {
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
+	// ListPersonalFiles lists the calling user's personal files.
+	ListPersonalFiles(ctx context.Context, in *ListPersonalFilesRequest, opts ...grpc.CallOption) (*ListPersonalFilesResponse, error)
+	// CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+	CreatePersonalFile(ctx context.Context, in *CreatePersonalFileRequest, opts ...grpc.CallOption) (*CreatePersonalFileResponse, error)
+	// GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+	GetPersonalFile(ctx context.Context, in *GetPersonalFileRequest, opts ...grpc.CallOption) (*GetPersonalFileResponse, error)
+	// EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+	EditPersonalFile(ctx context.Context, in *EditPersonalFileRequest, opts ...grpc.CallOption) (*EditPersonalFileResponse, error)
+	// DeletePersonalFile deletes a personal virtual file the caller owns.
+	DeletePersonalFile(ctx context.Context, in *DeletePersonalFileRequest, opts ...grpc.CallOption) (*DeletePersonalFileResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -502,6 +536,8 @@ type AdminServiceClient interface {
 	RenewBillingSubscription(ctx context.Context, in *RenewBillingSubscriptionRequest, opts ...grpc.CallOption) (*RenewBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error)
+	// GetBillingCreditBalance returns the organization's remaining trial credit balance
+	GetBillingCreditBalance(ctx context.Context, in *GetBillingCreditBalanceRequest, opts ...grpc.CallOption) (*GetBillingCreditBalanceResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -1302,6 +1338,26 @@ func (c *adminServiceClient) ListGithubUserRepos(ctx context.Context, in *ListGi
 	return out, nil
 }
 
+func (c *adminServiceClient) CreateGithubPullRequest(ctx context.Context, in *CreateGithubPullRequestRequest, opts ...grpc.CallOption) (*CreateGithubPullRequestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGithubPullRequestResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateGithubPullRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetGithubPullRequest(ctx context.Context, in *GetGithubPullRequestRequest, opts ...grpc.CallOption) (*GetGithubPullRequestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGithubPullRequestResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetGithubPullRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConnectProjectToGithubResponse)
@@ -1472,6 +1528,26 @@ func (c *adminServiceClient) SudoExtendTrial(ctx context.Context, in *SudoExtend
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoGrantTrialCredits(ctx context.Context, in *SudoGrantTrialCreditsRequest, opts ...grpc.CallOption) (*SudoGrantTrialCreditsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoGrantTrialCreditsResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoGrantTrialCredits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoReportUsage(ctx context.Context, in *SudoReportUsageRequest, opts ...grpc.CallOption) (*SudoReportUsageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoReportUsageResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoReportUsage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoUpdateOrganizationCustomDomainResponse)
@@ -1506,6 +1582,26 @@ func (c *adminServiceClient) SudoDeleteOrganizationBillingIssue(ctx context.Cont
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoDeleteOrganizationBillingIssueResponse)
 	err := c.cc.Invoke(ctx, AdminService_SudoDeleteOrganizationBillingIssue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoUpdateOrganizationBillingMessage(ctx context.Context, in *SudoUpdateOrganizationBillingMessageRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoUpdateOrganizationBillingMessageResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationBillingMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoDeleteOrganizationBillingMessage(ctx context.Context, in *SudoDeleteOrganizationBillingMessageRequest, opts ...grpc.CallOption) (*SudoDeleteOrganizationBillingMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoDeleteOrganizationBillingMessageResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoDeleteOrganizationBillingMessage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1962,6 +2058,56 @@ func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLR
 	return out, nil
 }
 
+func (c *adminServiceClient) ListPersonalFiles(ctx context.Context, in *ListPersonalFilesRequest, opts ...grpc.CallOption) (*ListPersonalFilesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPersonalFilesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListPersonalFiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreatePersonalFile(ctx context.Context, in *CreatePersonalFileRequest, opts ...grpc.CallOption) (*CreatePersonalFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatePersonalFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreatePersonalFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetPersonalFile(ctx context.Context, in *GetPersonalFileRequest, opts ...grpc.CallOption) (*GetPersonalFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPersonalFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetPersonalFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) EditPersonalFile(ctx context.Context, in *EditPersonalFileRequest, opts ...grpc.CallOption) (*EditPersonalFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EditPersonalFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_EditPersonalFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeletePersonalFile(ctx context.Context, in *DeletePersonalFileRequest, opts ...grpc.CallOption) (*DeletePersonalFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeletePersonalFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeletePersonalFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetBillingSubscriptionResponse)
@@ -2006,6 +2152,16 @@ func (c *adminServiceClient) GetPaymentsPortalURL(ctx context.Context, in *GetPa
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetPaymentsPortalURLResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetPaymentsPortalURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetBillingCreditBalance(ctx context.Context, in *GetBillingCreditBalanceRequest, opts ...grpc.CallOption) (*GetBillingCreditBalanceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBillingCreditBalanceResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetBillingCreditBalance_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2261,6 +2417,10 @@ type AdminServiceServer interface {
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
 	ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error)
+	// CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+	CreateGithubPullRequest(context.Context, *CreateGithubPullRequestRequest) (*CreateGithubPullRequestResponse, error)
+	// GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+	GetGithubPullRequest(context.Context, *GetGithubPullRequestRequest) (*GetGithubPullRequestResponse, error)
 	// Connects a rill managed project to github.
 	// Replaces the contents of the remote repo with the contents of the project.
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
@@ -2297,6 +2457,10 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoExtendTrial extends the trial period for an organization
 	SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error)
+	// SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+	SudoGrantTrialCredits(context.Context, *SudoGrantTrialCreditsRequest) (*SudoGrantTrialCreditsResponse, error)
+	// SudoReportUsage reports a mock usage event for an organization.
+	SudoReportUsage(context.Context, *SudoReportUsageRequest) (*SudoReportUsageResponse, error)
 	// SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
 	// It only updates the custom domain in the database, which is used to ensure correct redirects.
 	// The DNS records and ingress TLS must be configured separately.
@@ -2307,6 +2471,10 @@ type AdminServiceServer interface {
 	SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
 	SudoDeleteOrganizationBillingIssue(context.Context, *SudoDeleteOrganizationBillingIssueRequest) (*SudoDeleteOrganizationBillingIssueResponse, error)
+	// SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+	SudoUpdateOrganizationBillingMessage(context.Context, *SudoUpdateOrganizationBillingMessageRequest) (*SudoUpdateOrganizationBillingMessageResponse, error)
+	// SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+	SudoDeleteOrganizationBillingMessage(context.Context, *SudoDeleteOrganizationBillingMessageRequest) (*SudoDeleteOrganizationBillingMessageResponse, error)
 	// SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
 	SudoTriggerBillingRepair(context.Context, *SudoTriggerBillingRepairRequest) (*SudoTriggerBillingRepairResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
@@ -2397,6 +2565,16 @@ type AdminServiceServer interface {
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
+	// ListPersonalFiles lists the calling user's personal files.
+	ListPersonalFiles(context.Context, *ListPersonalFilesRequest) (*ListPersonalFilesResponse, error)
+	// CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+	CreatePersonalFile(context.Context, *CreatePersonalFileRequest) (*CreatePersonalFileResponse, error)
+	// GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+	GetPersonalFile(context.Context, *GetPersonalFileRequest) (*GetPersonalFileResponse, error)
+	// EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+	EditPersonalFile(context.Context, *EditPersonalFileRequest) (*EditPersonalFileResponse, error)
+	// DeletePersonalFile deletes a personal virtual file the caller owns.
+	DeletePersonalFile(context.Context, *DeletePersonalFileRequest) (*DeletePersonalFileResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -2407,6 +2585,8 @@ type AdminServiceServer interface {
 	RenewBillingSubscription(context.Context, *RenewBillingSubscriptionRequest) (*RenewBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error)
+	// GetBillingCreditBalance returns the organization's remaining trial credit balance
+	GetBillingCreditBalance(context.Context, *GetBillingCreditBalanceRequest) (*GetBillingCreditBalanceResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -2661,6 +2841,12 @@ func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *Get
 func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGithubUserRepos not implemented")
 }
+func (UnimplementedAdminServiceServer) CreateGithubPullRequest(context.Context, *CreateGithubPullRequestRequest) (*CreateGithubPullRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGithubPullRequest not implemented")
+}
+func (UnimplementedAdminServiceServer) GetGithubPullRequest(context.Context, *GetGithubPullRequestRequest) (*GetGithubPullRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGithubPullRequest not implemented")
+}
 func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConnectProjectToGithub not implemented")
 }
@@ -2712,6 +2898,12 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(con
 func (UnimplementedAdminServiceServer) SudoExtendTrial(context.Context, *SudoExtendTrialRequest) (*SudoExtendTrialResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoExtendTrial not implemented")
 }
+func (UnimplementedAdminServiceServer) SudoGrantTrialCredits(context.Context, *SudoGrantTrialCreditsRequest) (*SudoGrantTrialCreditsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoGrantTrialCredits not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoReportUsage(context.Context, *SudoReportUsageRequest) (*SudoReportUsageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoReportUsage not implemented")
+}
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationCustomDomain not implemented")
 }
@@ -2723,6 +2915,12 @@ func (UnimplementedAdminServiceServer) SudoIssueRuntimeManagerToken(context.Cont
 }
 func (UnimplementedAdminServiceServer) SudoDeleteOrganizationBillingIssue(context.Context, *SudoDeleteOrganizationBillingIssueRequest) (*SudoDeleteOrganizationBillingIssueResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoDeleteOrganizationBillingIssue not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingMessage(context.Context, *SudoUpdateOrganizationBillingMessageRequest) (*SudoUpdateOrganizationBillingMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationBillingMessage not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoDeleteOrganizationBillingMessage(context.Context, *SudoDeleteOrganizationBillingMessageRequest) (*SudoDeleteOrganizationBillingMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoDeleteOrganizationBillingMessage not implemented")
 }
 func (UnimplementedAdminServiceServer) SudoTriggerBillingRepair(context.Context, *SudoTriggerBillingRepairRequest) (*SudoTriggerBillingRepairResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoTriggerBillingRepair not implemented")
@@ -2859,6 +3057,21 @@ func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *Gener
 func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
 }
+func (UnimplementedAdminServiceServer) ListPersonalFiles(context.Context, *ListPersonalFilesRequest) (*ListPersonalFilesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPersonalFiles not implemented")
+}
+func (UnimplementedAdminServiceServer) CreatePersonalFile(context.Context, *CreatePersonalFileRequest) (*CreatePersonalFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePersonalFile not implemented")
+}
+func (UnimplementedAdminServiceServer) GetPersonalFile(context.Context, *GetPersonalFileRequest) (*GetPersonalFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPersonalFile not implemented")
+}
+func (UnimplementedAdminServiceServer) EditPersonalFile(context.Context, *EditPersonalFileRequest) (*EditPersonalFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditPersonalFile not implemented")
+}
+func (UnimplementedAdminServiceServer) DeletePersonalFile(context.Context, *DeletePersonalFileRequest) (*DeletePersonalFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePersonalFile not implemented")
+}
 func (UnimplementedAdminServiceServer) GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBillingSubscription not implemented")
 }
@@ -2873,6 +3086,9 @@ func (UnimplementedAdminServiceServer) RenewBillingSubscription(context.Context,
 }
 func (UnimplementedAdminServiceServer) GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPaymentsPortalURL not implemented")
+}
+func (UnimplementedAdminServiceServer) GetBillingCreditBalance(context.Context, *GetBillingCreditBalanceRequest) (*GetBillingCreditBalanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBillingCreditBalance not implemented")
 }
 func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPublicBillingPlans not implemented")
@@ -4320,6 +4536,42 @@ func _AdminService_ListGithubUserRepos_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CreateGithubPullRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGithubPullRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateGithubPullRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateGithubPullRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateGithubPullRequest(ctx, req.(*CreateGithubPullRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetGithubPullRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGithubPullRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetGithubPullRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetGithubPullRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetGithubPullRequest(ctx, req.(*GetGithubPullRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ConnectProjectToGithub_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConnectProjectToGithubRequest)
 	if err := dec(in); err != nil {
@@ -4626,6 +4878,42 @@ func _AdminService_SudoExtendTrial_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoGrantTrialCredits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoGrantTrialCreditsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoGrantTrialCredits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoGrantTrialCredits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoGrantTrialCredits(ctx, req.(*SudoGrantTrialCreditsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoReportUsage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoReportUsageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoReportUsage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoReportUsage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoReportUsage(ctx, req.(*SudoReportUsageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SudoUpdateOrganizationCustomDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoUpdateOrganizationCustomDomainRequest)
 	if err := dec(in); err != nil {
@@ -4694,6 +4982,42 @@ func _AdminService_SudoDeleteOrganizationBillingIssue_Handler(srv interface{}, c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingIssue(ctx, req.(*SudoDeleteOrganizationBillingIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoUpdateOrganizationBillingMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateOrganizationBillingMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationBillingMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateOrganizationBillingMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationBillingMessage(ctx, req.(*SudoUpdateOrganizationBillingMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoDeleteOrganizationBillingMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoDeleteOrganizationBillingMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoDeleteOrganizationBillingMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoDeleteOrganizationBillingMessage(ctx, req.(*SudoDeleteOrganizationBillingMessageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5508,6 +5832,96 @@ func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListPersonalFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPersonalFilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListPersonalFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListPersonalFiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListPersonalFiles(ctx, req.(*ListPersonalFilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreatePersonalFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePersonalFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreatePersonalFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreatePersonalFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreatePersonalFile(ctx, req.(*CreatePersonalFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetPersonalFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPersonalFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetPersonalFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetPersonalFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetPersonalFile(ctx, req.(*GetPersonalFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_EditPersonalFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditPersonalFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).EditPersonalFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_EditPersonalFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).EditPersonalFile(ctx, req.(*EditPersonalFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeletePersonalFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePersonalFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeletePersonalFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeletePersonalFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeletePersonalFile(ctx, req.(*DeletePersonalFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetBillingSubscriptionRequest)
 	if err := dec(in); err != nil {
@@ -5594,6 +6008,24 @@ func _AdminService_GetPaymentsPortalURL_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetPaymentsPortalURL(ctx, req.(*GetPaymentsPortalURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetBillingCreditBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBillingCreditBalanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetBillingCreditBalance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetBillingCreditBalance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetBillingCreditBalance(ctx, req.(*GetBillingCreditBalanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6044,6 +6476,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListGithubUserRepos_Handler,
 		},
 		{
+			MethodName: "CreateGithubPullRequest",
+			Handler:    _AdminService_CreateGithubPullRequest_Handler,
+		},
+		{
+			MethodName: "GetGithubPullRequest",
+			Handler:    _AdminService_GetGithubPullRequest_Handler,
+		},
+		{
 			MethodName: "ConnectProjectToGithub",
 			Handler:    _AdminService_ConnectProjectToGithub_Handler,
 		},
@@ -6112,6 +6552,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SudoExtendTrial_Handler,
 		},
 		{
+			MethodName: "SudoGrantTrialCredits",
+			Handler:    _AdminService_SudoGrantTrialCredits_Handler,
+		},
+		{
+			MethodName: "SudoReportUsage",
+			Handler:    _AdminService_SudoReportUsage_Handler,
+		},
+		{
 			MethodName: "SudoUpdateOrganizationCustomDomain",
 			Handler:    _AdminService_SudoUpdateOrganizationCustomDomain_Handler,
 		},
@@ -6126,6 +6574,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoDeleteOrganizationBillingIssue",
 			Handler:    _AdminService_SudoDeleteOrganizationBillingIssue_Handler,
+		},
+		{
+			MethodName: "SudoUpdateOrganizationBillingMessage",
+			Handler:    _AdminService_SudoUpdateOrganizationBillingMessage_Handler,
+		},
+		{
+			MethodName: "SudoDeleteOrganizationBillingMessage",
+			Handler:    _AdminService_SudoDeleteOrganizationBillingMessage_Handler,
 		},
 		{
 			MethodName: "SudoTriggerBillingRepair",
@@ -6308,6 +6764,26 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetAlertYAML_Handler,
 		},
 		{
+			MethodName: "ListPersonalFiles",
+			Handler:    _AdminService_ListPersonalFiles_Handler,
+		},
+		{
+			MethodName: "CreatePersonalFile",
+			Handler:    _AdminService_CreatePersonalFile_Handler,
+		},
+		{
+			MethodName: "GetPersonalFile",
+			Handler:    _AdminService_GetPersonalFile_Handler,
+		},
+		{
+			MethodName: "EditPersonalFile",
+			Handler:    _AdminService_EditPersonalFile_Handler,
+		},
+		{
+			MethodName: "DeletePersonalFile",
+			Handler:    _AdminService_DeletePersonalFile_Handler,
+		},
+		{
 			MethodName: "GetBillingSubscription",
 			Handler:    _AdminService_GetBillingSubscription_Handler,
 		},
@@ -6326,6 +6802,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPaymentsPortalURL",
 			Handler:    _AdminService_GetPaymentsPortalURL_Handler,
+		},
+		{
+			MethodName: "GetBillingCreditBalance",
+			Handler:    _AdminService_GetBillingCreditBalance_Handler,
 		},
 		{
 			MethodName: "ListPublicBillingPlans",

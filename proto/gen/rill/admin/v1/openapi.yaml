@@ -9,6 +9,14 @@ components:
                 unsubscribeUrl:
                     type: string
             type: object
+        GetGithubPullRequestResponseState:
+            default: STATE_UNSPECIFIED
+            enum:
+                - STATE_UNSPECIFIED
+                - STATE_OPEN
+                - STATE_CLOSED_UNMERGED
+                - STATE_MERGED
+            type: string
         GetReportMetaResponseDeliveryMeta:
             properties:
                 editUrl:
@@ -180,26 +188,49 @@ components:
             type: string
         v1BillingIssueMetadata:
             properties:
+                message:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataMessage'
                 neverSubscribed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNeverSubscribed'
                 noBillableAddress:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoBillableAddress'
                 noPaymentMethod:
                     $ref: '#/components/schemas/v1BillingIssueMetadataNoPaymentMethod'
+                onCreditTrial:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataOnCreditTrial'
                 onTrial:
                     $ref: '#/components/schemas/v1BillingIssueMetadataOnTrial'
                 paymentFailed:
                     $ref: '#/components/schemas/v1BillingIssueMetadataPaymentFailed'
                 subscriptionCancelled:
                     $ref: '#/components/schemas/v1BillingIssueMetadataSubscriptionCancelled'
+                trialCreditsDepleted:
+                    $ref: '#/components/schemas/v1BillingIssueMetadataTrialCreditsDepleted'
                 trialEnded:
                     $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
+            type: object
+        v1BillingIssueMetadataMessage:
+            properties:
+                message:
+                    type: string
             type: object
         v1BillingIssueMetadataNeverSubscribed:
             type: object
         v1BillingIssueMetadataNoBillableAddress:
             type: object
         v1BillingIssueMetadataNoPaymentMethod:
+            type: object
+        v1BillingIssueMetadataOnCreditTrial:
+            properties:
+                creditAllocation:
+                    format: double
+                    type: number
+                lowCredit:
+                    type: boolean
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
             type: object
         v1BillingIssueMetadataOnTrial:
             properties:
@@ -245,6 +276,16 @@ components:
                     format: date-time
                     type: string
             type: object
+        v1BillingIssueMetadataTrialCreditsDepleted:
+            properties:
+                depletedOn:
+                    format: date-time
+                    type: string
+                planId:
+                    type: string
+                subscriptionId:
+                    type: string
+            type: object
         v1BillingIssueMetadataTrialEnded:
             properties:
                 endDate:
@@ -265,6 +306,9 @@ components:
                 - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                 - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+                - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+                - BILLING_ISSUE_TYPE_MESSAGE
             type: string
         v1BillingPlan:
             properties:
@@ -299,6 +343,8 @@ components:
                 - BILLING_PLAN_TYPE_ENTERPRISE
                 - BILLING_PLAN_TYPE_FREE
                 - BILLING_PLAN_TYPE_PRO
+                - BILLING_PLAN_TYPE_STARTER
+                - BILLING_PLAN_TYPE_GROWTH
             type: string
         v1Bookmark:
             properties:
@@ -352,8 +398,12 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cachedInputTokens:
+                    description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+                    format: int64
+                    type: integer
                 inputTokens:
-                    description: Number of tokens in the input.
+                    description: Number of full-rate (non-cached) tokens in the input.
                     format: int64
                     type: integer
                 message:
@@ -362,6 +412,9 @@ components:
                     description: Number of tokens in the output.
                     format: int64
                     type: integer
+                provider:
+                    description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
+                    type: string
             type: object
         v1CompletionMessage:
             properties:
@@ -442,6 +495,11 @@ components:
                 deployment:
                     $ref: '#/components/schemas/v1Deployment'
             type: object
+        v1CreateGithubPullRequestResponse:
+            properties:
+                prUrl:
+                    type: string
+            type: object
         v1CreateManagedGitRepoResponse:
             properties:
                 defaultBranch:
@@ -469,6 +527,11 @@ components:
             properties:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
+            type: object
+        v1CreatePersonalFileResponse:
+            properties:
+                name:
+                    type: string
             type: object
         v1CreateProjectResponse:
             properties:
@@ -502,6 +565,8 @@ components:
                     type: string
             type: object
         v1DeleteOrganizationResponse:
+            type: object
+        v1DeletePersonalFileResponse:
             type: object
         v1DeleteProjectResponse:
             properties:
@@ -551,6 +616,9 @@ components:
                 updatedOn:
                     format: date-time
                     type: string
+                usedOn:
+                    format: date-time
+                    type: string
             type: object
         v1DeploymentStatus:
             default: DEPLOYMENT_STATUS_UNSPECIFIED
@@ -566,6 +634,8 @@ components:
                 - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
+            type: object
+        v1EditPersonalFileResponse:
             type: object
         v1EditReportResponse:
             type: object
@@ -610,6 +680,12 @@ components:
             properties:
                 yaml:
                     type: string
+            type: object
+        v1GetBillingCreditBalanceResponse:
+            properties:
+                balance:
+                    format: double
+                    type: number
             type: object
         v1GetBillingProjectCredentialsRequest:
             properties:
@@ -687,9 +763,17 @@ components:
                 duckdbConnectorConfig:
                     title: Duckdb connector config for the deployment
                     type: object
+                editable:
+                    description: Whether the deployment is editable (dev environment with changes persisted to git repo).
+                    type: boolean
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
+                systemVariables:
+                    additionalProperties:
+                        type: string
+                    description: System variables set by the admin service that should not be overridden by user input.
+                    type: object
                 updatedOn:
                     description: Timestamp when the deployment was last updated.
                     format: date-time
@@ -698,9 +782,14 @@ components:
                     description: Whether the deployment is git based or archive based.
                     type: boolean
                 variables:
+                    description: Variables for the deployment.
+                    items:
+                        $ref: '#/components/schemas/v1ProjectVariable'
+                    type: array
+                variablesLegacy:
                     additionalProperties:
                         type: string
-                    title: Variables for the deployment (connector credentials, etc.)
+                    description: 'Deprecated: Variables for the deployment. Use `variables` instead.'
                     type: object
             type: object
         v1GetDeploymentCredentialsResponse:
@@ -726,6 +815,13 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetGithubPullRequestResponse:
+            properties:
+                prState:
+                    $ref: '#/components/schemas/GetGithubPullRequestResponseState'
+                prUrl:
+                    type: string
             type: object
         v1GetGithubRepoStatusResponse:
             properties:
@@ -792,6 +888,13 @@ components:
         v1GetPaymentsPortalURLResponse:
             properties:
                 url:
+                    type: string
+            type: object
+        v1GetPersonalFileResponse:
+            properties:
+                path:
+                    type: string
+                yaml:
                     type: string
             type: object
         v1GetProjectAccessRequestResponse:
@@ -1030,6 +1133,13 @@ components:
                 organizations:
                     items:
                         $ref: '#/components/schemas/v1Organization'
+                    type: array
+            type: object
+        v1ListPersonalFilesResponse:
+            properties:
+                files:
+                    items:
+                        type: string
                     type: array
             type: object
         v1ListProjectInvitesResponse:
@@ -1403,6 +1513,9 @@ components:
                 projects:
                     format: int32
                     type: integer
+                seats:
+                    format: int32
+                    type: integer
                 slotsPerDeployment:
                     format: int32
                     type: integer
@@ -1448,6 +1561,9 @@ components:
                 devSlots:
                     format: int64
                     type: string
+                devTtlSeconds:
+                    format: int64
+                    type: string
                 directoryName:
                     type: string
                 frontendUrl:
@@ -1466,6 +1582,9 @@ components:
                 orgId:
                     type: string
                 orgName:
+                    type: string
+                overrideDiskGb:
+                    format: int64
                     type: string
                 primaryBranch:
                     type: string
@@ -1677,17 +1796,23 @@ components:
             type: object
         v1Quotas:
             properties:
+                apiCallsPerSeat:
+                    type: string
                 deployments:
                     type: string
                 outstandingInvites:
                     type: string
                 projects:
                     type: string
+                seats:
+                    type: string
                 slotsPerDeployment:
                     type: string
                 slotsTotal:
                     type: string
                 storageLimitBytesPerDeployment:
+                    type: string
+                tokensPerSeat:
                     type: string
             type: object
         v1RecordEventsRequest:
@@ -1943,6 +2068,8 @@ components:
             type: object
         v1SudoDeleteOrganizationBillingIssueResponse:
             type: object
+        v1SudoDeleteOrganizationBillingMessageResponse:
+            type: object
         v1SudoExtendTrialRequest:
             properties:
                 days:
@@ -1970,6 +2097,25 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1SudoGrantTrialCreditsRequest:
+            properties:
+                amountUsd:
+                    description: Amount of trial credits to grant in USD.
+                    format: double
+                    type: number
+                description:
+                    description: Optional human-readable reason for the grant.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoGrantTrialCreditsResponse:
+            properties:
+                grantedUsd:
+                    description: The grant amount actually applied, in USD.
+                    format: double
+                    type: number
+            type: object
         v1SudoIssueRuntimeManagerTokenRequest:
             properties:
                 host:
@@ -1979,6 +2125,39 @@ components:
             properties:
                 token:
                     type: string
+            type: object
+        v1SudoReportUsageRequest:
+            properties:
+                endTime:
+                    description: Optional end time of the reporting window. Defaults to the current server time.
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                org:
+                    type: string
+                projectName:
+                    description: Optional project name attribution for the mock event. If not set, a placeholder is used.
+                    type: string
+                value:
+                    format: double
+                    type: number
+            type: object
+        v1SudoReportUsageResponse:
+            properties:
+                customerId:
+                    type: string
+                endTime:
+                    format: date-time
+                    type: string
+                eventName:
+                    type: string
+                startTime:
+                    format: date-time
+                    type: string
+                value:
+                    format: double
+                    type: number
             type: object
         v1SudoTriggerBillingRepairRequest:
             type: object
@@ -2016,6 +2195,8 @@ components:
                 subscription:
                     $ref: '#/components/schemas/v1Subscription'
             type: object
+        v1SudoUpdateOrganizationBillingMessageResponse:
+            type: object
         v1SudoUpdateOrganizationCustomDomainRequest:
             properties:
                 customDomain:
@@ -2039,6 +2220,9 @@ components:
                     format: int32
                     type: integer
                 projects:
+                    format: int32
+                    type: integer
+                seats:
                     format: int32
                     type: integer
                 slotsPerDeployment:
@@ -2951,6 +3135,33 @@ paths:
                     description: An unexpected error response.
             summary: UpdateOrganization updates an organization
             x-visibility: public
+    /v1/orgs/{org}/billing/credits:
+        get:
+            operationId: AdminService_GetBillingCreditBalance
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetBillingCreditBalanceResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetBillingCreditBalance returns the organization's remaining trial credit balance
     /v1/orgs/{org}/billing/issues:
         get:
             operationId: AdminService_ListOrganizationBillingIssues
@@ -3150,6 +3361,9 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                autoInit:
+                                    title: whether to auto initialize the repo with a commit after creation
+                                    type: boolean
                                 name:
                                     description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
                                     type: string
@@ -3740,11 +3954,17 @@ paths:
                                 devSlots:
                                     format: int64
                                     type: string
+                                devTtlSeconds:
+                                    format: int64
+                                    type: string
                                 directoryName:
                                     type: string
                                 gitRemote:
                                     type: string
                                 newName:
+                                    type: string
+                                overrideDiskGb:
+                                    format: int64
                                     type: string
                                 primaryBranch:
                                     type: string
@@ -4232,6 +4452,84 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateDeployment creates a new deployment for a project.
+    /v1/orgs/{org}/projects/{project}/github/pr:
+        post:
+            operationId: AdminService_CreateGithubPullRequest
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                body:
+                                    title: / Optional body of the PR
+                                    type: string
+                                branch:
+                                    title: The head branch for the PR
+                                    type: string
+                                title:
+                                    title: Optional title of the PR. If not set, a default title will be used
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreateGithubPullRequestResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+    /v1/orgs/{org}/projects/{project}/github/pr/{branch}:
+        get:
+            operationId: AdminService_GetGithubPullRequest
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: branch
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetGithubPullRequestResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
     /v1/orgs/{org}/projects/{project}/hibernate:
         post:
             operationId: AdminService_HibernateProject
@@ -4633,6 +4931,185 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+    /v1/orgs/{org}/projects/{project}/personal-files:
+        get:
+            operationId: AdminService_ListPersonalFiles
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListPersonalFilesResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListPersonalFiles lists the calling user's personal files.
+        post:
+            operationId: AdminService_CreatePersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                displayName:
+                                    type: string
+                                kind:
+                                    type: string
+                                yaml:
+                                    description: 'Optional: initial YAML body. If empty, the server generates a blank template for the given type.'
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreatePersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+    /v1/orgs/{org}/projects/{project}/personal-files/{name}:
+        delete:
+            operationId: AdminService_DeletePersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeletePersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: DeletePersonalFile deletes a personal virtual file the caller owns.
+        get:
+            operationId: AdminService_GetPersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetPersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+        post:
+            operationId: AdminService_EditPersonalFile
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: name
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                kind:
+                                    type: string
+                                yaml:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1EditPersonalFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
     /v1/orgs/{org}/projects/{project}/redeploy:
         post:
             operationId: AdminService_RedeployProject
@@ -6994,6 +7471,30 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+    /v1/superuser/organization/billing/report-usage:
+        post:
+            operationId: AdminService_SudoReportUsage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoReportUsageRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoReportUsageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoReportUsage reports a mock usage event for an organization.
     /v1/superuser/organization/custom-domain:
         patch:
             operationId: AdminService_SudoUpdateOrganizationCustomDomain
@@ -7045,6 +7546,30 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoExtendTrial extends the trial period for an organization
+    /v1/superuser/organization/trial/grant-credits:
+        post:
+            operationId: AdminService_SudoGrantTrialCredits
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoGrantTrialCreditsRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoGrantTrialCreditsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
     /v1/superuser/organizations/{org}/billing/issues/{type}:
         delete:
             operationId: AdminService_SudoDeleteOrganizationBillingIssue
@@ -7067,6 +7592,9 @@ paths:
                         - BILLING_ISSUE_TYPE_PAYMENT_FAILED
                         - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                         - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+                        - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+                        - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+                        - BILLING_ISSUE_TYPE_MESSAGE
                     type: string
             responses:
                 "200":
@@ -7082,6 +7610,63 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
+    /v1/superuser/organizations/{org}/billing/message:
+        delete:
+            operationId: AdminService_SudoDeleteOrganizationBillingMessage
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoDeleteOrganizationBillingMessageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+        post:
+            operationId: AdminService_SudoUpdateOrganizationBillingMessage
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                level:
+                                    $ref: '#/components/schemas/v1BillingIssueLevel'
+                                message:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoUpdateOrganizationBillingMessageResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
     /v1/superuser/projects/annotations:
         patch:
             operationId: AdminService_SudoUpdateAnnotations

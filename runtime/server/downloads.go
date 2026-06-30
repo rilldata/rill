@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,20 +52,20 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRequest) (*runtimev1.ExportReportResponse, error) {
 	c, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get controller: %s", err.Error())
+		return nil, err
 	}
 
 	res, err := c.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: req.Report}, false)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get report: %s", err.Error())
+		return nil, err
 	}
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx, req.InstanceId), res)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "resource not found")
+		return nil, ErrForbidden
 	}
 
 	if r.GetReport() == nil {
@@ -318,6 +319,11 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
 		return
 	}
+
+	// Exports execute the query directly via q.Export (bypassing runtime.Query/Resolve), so emit the billable query
+	// metric here. The request source ("ui") is already set on the context by ActivityHTTPMiddleware on the /v1/download route.
+	queryAttrs := append(s.runtime.GetInstanceAttributes(req.Context(), request.InstanceId), attribute.String("source", string(runtime.RequestSourceFromContext(req.Context()))))
+	s.activity.RecordMetric(req.Context(), "query", 1, queryAttrs...)
 
 	err = q.Export(req.Context(), s.runtime, request.InstanceId, w, &runtime.ExportOptions{
 		Format: request.Format,

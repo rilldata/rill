@@ -20,6 +20,7 @@
     type ImportFromConfig,
   } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import { generateImportToConfig } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
@@ -29,6 +30,9 @@
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import DatabaseExplorer from "@rilldata/web-common/features/connectors/explorer/DatabaseExplorer.svelte";
   import { ConnectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store.ts";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
+  import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+  import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
 
   export let config: AddDataConfig;
   export let step: ExploreConnectorStep;
@@ -39,6 +43,13 @@
 
   const runtimeClient = useRuntimeClient();
 
+  const envStore = getEnvFileStore();
+  const envEditSession = new EnvEditSession(
+    envStore,
+    step.connector,
+    getConnectorSchema(step.schema),
+  );
+
   $: connectorDriverQuery = getAnalyzedConnectorByName(
     runtimeClient,
     step.connector,
@@ -47,8 +58,13 @@
     $connectorDriverQuery.data?.driver ??
     getConnectorDriverForSchema(step.schema);
 
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+    sensitive: true,
+  });
+  $: projectOlapConnector = $instanceQuery.data?.instance?.olapConnector ?? "";
+
   $: importSteps = connectorDriver
-    ? getImportStepsForConnector(config, connectorDriver)
+    ? getImportStepsForConnector(config, connectorDriver, projectOlapConnector)
     : [];
   $: supportsModeling = importSteps[0] === ImportDataStep.CreateModel;
 
@@ -118,7 +134,7 @@
           connector: step.connector,
           importFrom,
           importTo: generateImportToConfig(importFrom),
-          envBlob: null,
+          envEditSession,
         } satisfies ImportStepConfig);
       },
       validationMethod: "onsubmit",

@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { generateExploreLink } from "@rilldata/web-common/features/explore-mappers/generate-explore-link";
@@ -27,6 +29,8 @@
   let isNavigating = false;
   let navigationError: ExploreLinkError | null = null;
 
+  $: onEditPage = $page.route?.id?.includes("/edit/(viz)/canvas");
+
   async function gotoExplorePage() {
     if (!exploreName || !exploreState || disabled) return;
 
@@ -38,8 +42,8 @@
         runtimeClient,
         exploreState,
         exploreName,
-        organization,
-        project,
+        onEditPage ? undefined : organization,
+        onEditPage ? undefined : project,
       );
       await goto(exploreURL);
     } catch (error) {
@@ -108,7 +112,5 @@
     <p class="text-xs">{getErrorMessage(navigationError)}</p>
   </div>
 {:else if isNavigating && mode === "inline"}
-  <div class="h-36">
-    <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
-  </div>
+  <LoadingSpinner />
 {/if}

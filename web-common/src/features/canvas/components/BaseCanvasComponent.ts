@@ -15,6 +15,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { ComponentType, SvelteComponent } from "svelte";
+import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
@@ -26,14 +27,14 @@ import type {
   TimeAndFilterStore,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   CanvasEntity,
   ComponentPath,
   SearchParamsStore,
 } from "../stores/canvas-entity";
-import { TimeState } from "../stores/time-state";
 import type { FilterState } from "../stores/filter-state";
-import type { Readable } from "svelte/store";
+import { TimeState } from "../stores/time-state";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -49,6 +50,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   localTimeControls: TimeState;
 
   visible = writable(false);
+
+  // Tears down the spec subscription opened in the constructor. Without this,
+  // a component replaced in CanvasEntity.processRows keeps reacting to spec
+  // emissions and mutates the shared filter/time state of a deleted widget.
+  private unsubscribeSpec: Unsubscriber;
 
   abstract type: CanvasComponentType;
   // Component responsible for DOM rendering
@@ -136,7 +142,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.metricsViewName,
     );
 
-    this.specStore.subscribe((spec) => {
+    this.unsubscribeSpec = this.specStore.subscribe((spec) => {
       this.localFilters.onFilterStringChange(
         spec["dimension_filters"] as string,
       );
@@ -145,6 +151,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         new URLSearchParams(spec?.["time_filters"] ?? ""),
       );
     });
+  }
+
+  destroy() {
+    this.unsubscribeSpec?.();
   }
 
   update(resource: V1Resource, path: ComponentPath) {
@@ -168,11 +178,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.parent.timeManager.state.comparisonRangeStore,
         this.parent.timeManager.state.comparisonIntervalStore,
         this.parent.timeManager.state.timeZoneStore,
+        this.parent.timeManager.state.rangeStore,
         this.localTimeControls.interval,
         this.localTimeControls.comparisonIntervalStore,
         this.localTimeControls.showTimeComparisonStore,
         this.localTimeControls.grainStore,
         this.localTimeControls.comparisonRangeStore,
+        this.localTimeControls.rangeStore,
         this.parent.filterManager.metricsViewFilters,
         this.parent.specStore,
         this.parent.timeManager.hasTimeSeriesMap,
@@ -186,11 +198,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           globalComparisonRange,
           globalComparisonInterval,
           timeZone,
+          globalRange,
           localInterval,
           localComparisonInterval,
           localShowTimeComparison,
           localGrainStore,
           localComparisonRange,
+          localRange,
           metricsViewFilters,
           canvasData,
           hasTimeSeriesMap,
@@ -198,8 +212,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         ],
         set,
       ) => {
-        const hasTimeSeries =
-          hasTimeSeriesMap.get(this.metricsViewName) ?? false;
+        const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
 
         const mvFilters = metricsViewFilters.get(this.metricsViewName);
 
@@ -212,6 +225,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         };
 
         let timeRangeState: TimeRangeState | undefined = {
+          selectedTimeRange: globalInterval
+            ? {
+                name: globalRange ?? TimeRangePreset.CUSTOM,
+                start: globalInterval.start.toJSDate(),
+                end: globalInterval.end.toJSDate(),
+                interval: globalGrainStore,
+              }
+            : undefined,
           timeStart: globalInterval?.start.toISO(),
           timeEnd: globalInterval?.end.toISO(),
         };
@@ -273,6 +294,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             timeGrain = localGrainStore ?? globalGrainStore;
 
             const localTimeRangeState: TimeRangeState = {
+              selectedTimeRange: localInterval
+                ? {
+                    name: localRange ?? TimeRangePreset.CUSTOM,
+                    start: localInterval.start.toJSDate(),
+                    end: localInterval.end.toJSDate(),
+                    interval: localGrainStore ?? globalGrainStore,
+                  }
+                : undefined,
               timeStart: localInterval?.start.toISO(),
               timeEnd: localInterval?.end.toISO(),
             };

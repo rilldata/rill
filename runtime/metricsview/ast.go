@@ -260,7 +260,10 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 				return nil, fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
 			}
 
-			if !auto {
+			if auto {
+				// The dialect unnests automatically, so we just wrap the expression.
+				f.Expr = ast.Dialect.AutoUnnest(f.Expr)
+			} else {
 				ast.unnests = append(ast.unnests, tblWithAlias)
 				if tupleStyle {
 					f.Expr = ast.Dialect.EscapeMember(unnestAlias, f.Name)

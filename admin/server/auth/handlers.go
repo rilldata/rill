@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -30,6 +31,11 @@ const (
 	cookieFieldRedirect         = "redirect"
 	cookieFieldCustomDomainFlow = "custom_domain_flow"
 	cookieFieldAccessToken      = "access_token"
+)
+
+var (
+	browserSessionTTL                 = 14 * 24 * time.Hour
+	browserSessionTTLRefreshThreshold = browserSessionTTL - 24*time.Hour
 )
 
 // RegisterEndpoints adds HTTP endpoints for auth.
@@ -174,14 +180,19 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	}
 
 	// If this is part of the custom domain login flow, save that info in the cookie since we need that info when handling the auth callback.
-	customDomainFlow := r.URL.Query().Get("custom_domain_flow")
-	if b, err := strconv.ParseBool(customDomainFlow); err == nil && b {
-		sess.Values[cookieFieldCustomDomainFlow] = true
+	if b, err := strconv.ParseBool(r.URL.Query().Get("custom_domain_flow")); err == nil && b {
+		sess.Values[cookieFieldCustomDomainFlow] = b
 	}
 
 	// Save cookie
 	if err := sess.Save(r, w); err != nil {
 		http.Error(w, fmt.Sprintf("failed to save session: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	err := a.validateRedirectURL(r.Context(), redirect)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -343,7 +354,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, &browserSessionTTL, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -406,7 +417,7 @@ func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, &browserSessionTTL, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -588,9 +599,15 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 // This is separated from authLogout to support orgs with custom domains where the auth token cookie must be cleared from the custom domain,
 // but the redirect destination must be set in a cookie on the primary domain because the auth provider will redirect to authLogoutCallback on the primary domain.
 func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Request) {
-	// Set custom redirect destination in cookie for when the logout flow is over (if any)
+	// Validate and set custom redirect destination in cookie for when the logout flow is over (if any)
 	redirect := r.URL.Query().Get("redirect")
 	if redirect != "" {
+		err := a.validateRedirectURL(r.Context(), redirect)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		// Update cookie
 		sess := a.cookies.Get(r, cookieName)
 		sess.Values[cookieFieldRedirect] = redirect
@@ -715,6 +732,23 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unexpected grant_type: %q", grantType), http.StatusBadRequest)
 		return
 	}
+}
+
+func (a *Authenticator) validateRedirectURL(ctx context.Context, redirect string) error {
+	if a.admin.URLs.IsSafeRedirectURL(redirect) {
+		return nil
+	}
+
+	parsed, err := url.Parse(redirect)
+	if err != nil {
+		return fmt.Errorf("fail to parse redirect URL: %w", err)
+	}
+
+	_, err = a.admin.DB.FindOrganizationByCustomDomain(ctx, parsed.Host)
+	if errors.Is(err, database.ErrNotFound) {
+		return fmt.Errorf("redirect to %q is not allowed", redirect)
+	}
+	return err
 }
 
 func originalHost(r *http.Request) string {

@@ -10,11 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
-	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 )
 
 // runtimeProxyAccessTokenTTL is the TTL for tokens minted by the runtime proxy.
@@ -30,20 +28,36 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	// Get args from URL path components
 	org := r.PathValue("org")
 	project := r.PathValue("project")
+	branch := r.PathValue("branch") // Empty for the non-branch routes
 	proxyPath := r.PathValue("path")
 	proxyRawQuery := r.URL.RawQuery
 
-	// Find the production deployment for the project we're proxying to
+	// Find the project we're proxying to
 	proj, err := s.admin.DB.FindProjectByName(r.Context(), org, project)
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
 	}
-	if proj.PrimaryDeploymentID == nil {
-		return httputil.Errorf(http.StatusBadRequest, "no prod deployment for project")
-	}
-	depl, err := s.admin.DB.FindDeployment(r.Context(), *proj.PrimaryDeploymentID)
-	if err != nil {
-		return httputil.Error(http.StatusBadRequest, err)
+
+	// Find the deployment to proxy to.
+	// If a branch was specified, use the deployment for that branch; otherwise use the project's primary deployment.
+	var depl *database.Deployment
+	if branch == "" {
+		if proj.PrimaryDeploymentID == nil {
+			return httputil.Errorf(http.StatusBadRequest, "no prod deployment for project")
+		}
+		depl, err = s.admin.DB.FindDeployment(r.Context(), *proj.PrimaryDeploymentID)
+		if err != nil {
+			return httputil.Error(http.StatusBadRequest, err)
+		}
+	} else {
+		depls, err := s.admin.DB.FindDeploymentsForProject(r.Context(), proj.ID, "", branch)
+		if err != nil {
+			return httputil.Error(http.StatusBadRequest, err)
+		}
+		if len(depls) == 0 {
+			return httputil.Errorf(http.StatusBadRequest, "no deployment for branch %q", branch)
+		}
+		depl = depls[0] // At most one deployment per branch is allowed
 	}
 
 	// Prepare a JWT to use for the proxied request.
@@ -62,8 +76,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			jwt = strings.TrimSpace(authorizationHeader[6:])
 		}
 	}
-	// If a direct JWT was not provided, we rely on admin service auth to issue a new ephemeral runtime JWT for the proxied request.
-	// TODO: This mirrors logic in GetProject. Consider refactoring to avoid duplication.
+	// If a direct JWT was not provided, issue a new ephemeral runtime JWT for the proxied request.
 	if jwt == "" {
 		permissions := claims.ProjectPermissions(r.Context(), proj.OrganizationID, depl.ProjectID)
 		if proj.Public {
@@ -79,51 +92,12 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			return httputil.Errorf(http.StatusUnauthorized, "does not have permission to access the production deployment")
 		}
 
-		var attr map[string]any
-		var rules []*runtimev1.SecurityRule
-		switch claims.OwnerType() {
-		case auth.OwnerTypeAnon:
-			// No attributes
-		case auth.OwnerTypeUser:
-			attr, err = s.jwtAttributesForUser(r.Context(), claims.OwnerID(), proj.OrganizationID, permissions)
-			if err != nil {
-				return httputil.Error(http.StatusInternalServerError, err)
-			}
-			restrictResources, resources, err := s.getResourceRestrictionsForUser(r.Context(), proj.ID, claims.OwnerID())
-			if err != nil {
-				return httputil.Error(http.StatusInternalServerError, err)
-			}
-
-			// ignore resource level security rules if the user has a full role
-			rules = securityRulesFromResources(restrictResources, resources)
-		case auth.OwnerTypeService:
-			attr, err = s.jwtAttributesForService(r.Context(), claims.OwnerID(), permissions)
-			if err != nil {
-				return httputil.Error(http.StatusInternalServerError, err)
-			}
-		default:
-			return httputil.Errorf(http.StatusBadRequest, "runtime proxy not available for owner type %q", claims.OwnerType())
-		}
-
-		instancePermissions := []runtime.Permission{
-			runtime.ReadObjects,
-			runtime.ReadMetrics,
-			runtime.ReadAPI,
-			runtime.UseAI,
-		}
-		if permissions.ManageProject {
-			instancePermissions = append(instancePermissions, runtime.EditTrigger)
-		}
-
-		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{
-			AudienceURL: depl.RuntimeAudience,
-			Subject:     claims.OwnerID(),
-			TTL:         runtimeProxyAccessTokenTTL,
-			InstancePermissions: map[string][]runtime.Permission{
-				depl.RuntimeInstanceID: instancePermissions,
-			},
-			Attributes:    attr,
-			SecurityRules: rules,
+		jwt, err = s.issueRuntimeToken(r.Context(), &issueRuntimeTokenOptions{
+			project:            proj,
+			deployment:         depl,
+			projectPermissions: permissions,
+			forOwner:           true,
+			ttl:                runtimeProxyAccessTokenTTL,
 		})
 		if err != nil {
 			return httputil.Error(http.StatusInternalServerError, err)

@@ -15,11 +15,11 @@
   import { onDestroy } from "svelte";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
+  import { useTimeDimensionDataStore } from "./time-dimension-data-store";
   import {
-    tableInteractionStore,
-    useTimeDimensionDataStore,
-  } from "./time-dimension-data-store";
-  import { hoverIndex } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
+    chartHoverStore,
+    hoverIndex,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
   import type { TDDComparison, TableData } from "./types";
 
   export let exploreName: string;
@@ -104,7 +104,7 @@
   function highlightCell(x: number | undefined, y: number | undefined) {
     if (x === undefined || y === undefined) {
       hoverIndex.clear("table");
-      tableInteractionStore.set({
+      chartHoverStore.set({
         dimensionValue: undefined,
         time: undefined,
       });
@@ -118,7 +118,7 @@
     }
 
     hoverIndex.set(x, "table");
-    tableInteractionStore.set({
+    chartHoverStore.set({
       dimensionValue,
       time: time,
     });
@@ -186,7 +186,7 @@
 
   onDestroy(() => {
     hoverIndex.clear("table");
-    tableInteractionStore.set({
+    chartHoverStore.set({
       dimensionValue: undefined,
       time: undefined,
     });
@@ -196,7 +196,7 @@
 <svelte:window onkeydown={handleKeyDown} />
 
 <div
-  class="h-full w-full flex flex-col border-t bg-surface-base"
+  class="h-full w-full flex flex-col bg-surface-base"
   aria-label="{expandedMeasureName} Time Dimension Display"
 >
   <TDDHeader

@@ -1,5 +1,6 @@
 import {
   sanitizeFieldName,
+  sanitizeTitleForVegaTooltip,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
 import { createBrushParam } from "@rilldata/web-common/features/components/charts/brush-builder";
@@ -40,6 +41,7 @@ import type {
   ColorDef,
   Field,
   MarkPropDef,
+  OrderFieldDef,
   PositionFieldDef,
 } from "vega-lite/types_unstable/channeldef.js";
 import type { Encoding } from "vega-lite/types_unstable/encoding.js";
@@ -81,6 +83,10 @@ export function createPositionEncoding(
 ): PositionFieldDef<Field> {
   if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
+  const temporalAxisLabelExpr =
+    field.type === "temporal" && metaData && "format" in metaData
+      ? getTemporalAxisLabelExpr(metaData.format)
+      : undefined;
   return {
     field: sanitizeValueForVega(field.field),
     title: metaData?.displayName || field.field,
@@ -98,16 +104,37 @@ export function createPositionEncoding(
         ...(field.max !== undefined && { domainMax: field.max }),
       },
     }),
-    axis: {
-      ...(field.labelAngle !== undefined && { labelAngle: field.labelAngle }),
-      ...(field.axisOrient && { orient: field.axisOrient }),
-      ...(field.type === "quantitative" && {
-        formatType: sanitizeFieldName(field.field),
-      }),
-      ...(metaData && "format" in metaData && { format: metaData.format }),
-      ...(!field.showAxisTitle && { title: null }),
-    },
+    axis:
+      field.axisOrient === "none"
+        ? null
+        : {
+            ...(field.labelAngle !== undefined && {
+              labelAngle: field.labelAngle,
+            }),
+            ...(field.axisOrient && { orient: field.axisOrient }),
+            ...(field.type === "quantitative" && {
+              formatType: sanitizeFieldName(field.field),
+            }),
+            ...(metaData &&
+              "format" in metaData && {
+                format: metaData.format,
+              }),
+            ...(temporalAxisLabelExpr && {
+              labelExpr: temporalAxisLabelExpr,
+            }),
+            ...(!field.showAxisTitle && { title: null }),
+          },
   };
+}
+
+export function getTemporalAxisLabelExpr(format: string | undefined) {
+  if (format !== "%H:%M") return undefined;
+
+  return [
+    "timeFormat(datum.value, '%H:%M') === '00:00'",
+    "? timeFormat(datum.value, '%b %d')",
+    ": timeFormat(datum.value, '%H:%M')",
+  ].join(" ");
 }
 
 export function createSizeEncoding(
@@ -224,12 +251,14 @@ export function createOpacityEncoding(paramName: string) {
   };
 }
 
-export function createOrderEncoding(field: FieldConfig | undefined) {
+export function createOrderEncoding(
+  field: FieldConfig | undefined,
+): OrderFieldDef<Field> {
   if (!field || field.type === "value") return {};
   return {
     field: sanitizeValueForVega(field.field),
     type: field.type,
-    order: "descending",
+    sort: "descending",
   };
 }
 
@@ -387,9 +416,11 @@ export function createCartesianMultiValueTooltipChannel(
 
     if (domainValues) {
       for (const value of domainValues) {
+        const title = sanitizeTitleForVegaTooltip(value);
         // Add current period value
         tooltipFields.push({
           field: sanitizeValueForVega(value),
+          title,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -397,6 +428,7 @@ export function createCartesianMultiValueTooltipChannel(
         // Add previous period value
         tooltipFields.push({
           field: sanitizeValueForVega(value) + ComparisonDeltaPreviousSuffix,
+          title: title + ComparisonDeltaPreviousSuffix,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -425,6 +457,7 @@ export function createCartesianMultiValueTooltipChannel(
     multiValueTooltipChannel = data.domainValues?.[colorField]?.map(
       (value) => ({
         field: sanitizeValueForVega(value as string),
+        title: sanitizeTitleForVegaTooltip(value),
         type: "quantitative" as const,
         formatType: yFormatType,
       }),

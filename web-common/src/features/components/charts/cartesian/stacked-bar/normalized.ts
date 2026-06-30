@@ -35,15 +35,14 @@ export function generateVLStackedBarNormalizedSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
-  const yField = sanitizeValueForVega(config.y?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
+  const yField = config.y?.field;
+  const sanitizedYField = sanitizeValueForVega(yField);
 
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
 
-  if (baseEncoding.y && config.y?.field) {
-    const yFieldRaw = config.y.field;
-
+  if (baseEncoding.y && yField) {
     baseEncoding.y = {
       ...baseEncoding.y,
       stack: "normalize",
@@ -53,7 +52,7 @@ export function generateVLStackedBarNormalizedSpec(
         domainMax: 1.1,
       },
       axis: {
-        ...(!config.y.showAxisTitle && { title: null }),
+        ...(!config.y?.showAxisTitle && { title: null }),
         format: ".0%",
       },
     };
@@ -71,14 +70,14 @@ export function generateVLStackedBarNormalizedSpec(
         joinaggregate: [
           {
             op: "sum",
-            field: yFieldRaw,
+            field: yField,
             as: "total",
           },
         ],
         groupby: groupbyFields,
       },
       {
-        calculate: `datum['${yFieldRaw}'] / datum.total`,
+        calculate: `datum['${yField}'] / datum.total`,
         as: "percentage",
       },
     ];
@@ -108,7 +107,7 @@ export function generateVLStackedBarNormalizedSpec(
     );
     baseEncoding.tooltip = tooltipValues
       .map((t: TooltipValue) => {
-        if (t.field === yField) {
+        if (t.field === sanitizedYField) {
           return [
             {
               ...t,
@@ -137,7 +136,7 @@ export function generateVLStackedBarNormalizedSpec(
   };
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: sanitizedXField,
     domainValues: data.domainValues,
     isBarMark: true,
     defaultTooltip: baseEncoding.tooltip as TooltipValue[],
@@ -146,8 +145,8 @@ export function generateVLStackedBarNormalizedSpec(
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
     pivot: createVegaTransformPivotConfig(
-      xField,
-      yField,
+      sanitizedXField,
+      sanitizedYField,
       colorField,
       !!hasComparison,
       !!multiValueTooltipChannel?.length,

@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 )
 
 const (
@@ -174,7 +175,7 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 		timeDim = e.metricsView.TimeDimension
 	}
 
-	if res, ok := e.timestamps[timeDim]; ok && !res.Min.IsZero() {
+	if res, ok := e.timestamps[timeDim]; ok {
 		return res, nil
 	}
 
@@ -187,17 +188,35 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 	}
 
 	mv := e.metricsView
-	res, err := e.resolveTimestampsForTable(ctx, mv.Database, mv.DatabaseSchema, mv.Table, timeExpr, mv.WatermarkExpression)
-	if err != nil {
-		return metricsview.TimestampsResult{}, err
+
+	var res metricsview.TimestampsResult
+	if timeDim == mv.TimeDimension && mv.DataTimeRange != "" {
+		// Use the declared base data_time_range and skip the OLAP probe.
+		res, err = e.resolveDeclaredTimestamps(mv.DataTimeRange)
+		if err != nil {
+			return metricsview.TimestampsResult{}, fmt.Errorf(`failed to resolve "data_time_range": %w`, err)
+		}
+	} else {
+		res, err = e.resolveTimestampsForTable(ctx, mv.Database, mv.DatabaseSchema, mv.Table, timeExpr, mv.WatermarkExpression)
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
 	}
 
 	res.Now = time.Now()
 
-	// For the primary time dimension, also resolve rollup table timestamps
+	// For the primary time dimension, also resolve rollup table timestamps.
 	if timeDim == mv.TimeDimension && len(mv.Rollups) > 0 {
 		res.Rollups = make(map[string]metricsview.TimestampsResult, len(mv.Rollups))
 		for _, rollup := range mv.Rollups {
+			if rollup.DataTimeRange != "" {
+				rts, err := e.resolveDeclaredTimestamps(rollup.DataTimeRange)
+				if err != nil {
+					return metricsview.TimestampsResult{}, fmt.Errorf(`failed to resolve "data_time_range" for rollup %q: %w`, rollup.Table, err)
+				}
+				res.Rollups[rollup.Table] = rts
+				continue
+			}
 			rts, err := e.resolveTimestampsForTable(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table, timeExpr, "")
 			if err != nil {
 				return metricsview.TimestampsResult{}, fmt.Errorf("failed to resolve timestamps for rollup %q: %w", rollup.Table, err)
@@ -209,6 +228,30 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 	e.timestamps[timeDim] = res
 
 	return res, nil
+}
+
+// resolveDeclaredTimestamps evaluates a rilltime expression against synthetic
+// anchors (now=time.Now(), earliest=zero, latest/watermark=time.Now()) so that
+// a declared data_time_range can supply table bounds without probing the OLAP.
+func (e *Executor) resolveDeclaredTimestamps(expr string) (metricsview.TimestampsResult, error) {
+	rt, err := rilltime.Parse(expr, rilltime.ParseOptions{})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	now := time.Now()
+	start, end, _ := rt.Eval(rilltime.EvalOptions{
+		Now:        now,
+		MinTime:    time.Time{},
+		MaxTime:    now,
+		Watermark:  now,
+		FirstDay:   int(e.metricsView.FirstDayOfWeek),
+		FirstMonth: int(e.metricsView.FirstMonthOfYear),
+	})
+	return metricsview.TimestampsResult{
+		Min:       start,
+		Max:       end,
+		Watermark: end,
+	}, nil
 }
 
 // BindQuery allows to set min, max and watermark from a cache.

@@ -12,13 +12,25 @@ export function getTrialIssue(issues: V1BillingIssue[]) {
   return issues.find(
     (i) =>
       i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_TRIAL ||
-      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED,
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED ||
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL ||
+      i.type === V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED,
   );
 }
 
 export function getMessageForTrialPlan(
   trialIssue: V1BillingIssue,
 ): BillingIssueMessage {
+  if (trialIssue.type === V1BillingIssueType.BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL)
+    return getMessageForCreditsTrial(trialIssue);
+  else if (
+    trialIssue.type ===
+    V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+  )
+    return getMessageForCreditsDepletedIssue();
+
+  // Legacy time-based trial handling
+
   const endDateStr =
     trialIssue.metadata?.onTrial?.endDate ??
     trialIssue.metadata?.trialEnded?.gracePeriodEndDate ??
@@ -27,11 +39,11 @@ export function getMessageForTrialPlan(
   const message: BillingIssueMessage = {
     type: "default",
     title: "Your trial has expired.",
-    description: "Upgrade to maintain access.",
+    description: "Choose a plan to maintain access.",
     iconType: "alert",
     cta: {
-      text: "Upgrade",
-      type: "upgrade",
+      text: "Choose a plan",
+      type: "show-upgrade",
       teamPlanDialogType: "base",
     },
   };
@@ -66,11 +78,61 @@ export function getMessageForTrialPlan(
         "Your trial has expired and this org’s projects are now hibernating.";
       message.description = "Upgrade to wake projects and regain full access.";
       message.type = "error";
-      message.cta.teamPlanDialogType = "trial-expired";
+      if (message.cta) message.cta.teamPlanDialogType = "trial-expired";
     }
   }
 
   return message;
+}
+
+function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
+  const message: BillingIssueMessage = {
+    type: "default",
+    title: `Your trial has expired.`,
+    description: "Choose a plan to maintain access.",
+    iconType: "alert",
+    cta: {
+      text: "Choose a plan",
+      type: "show-upgrade",
+    },
+  };
+  const onCreditTrial = trialIssue.metadata?.onCreditTrial;
+  if (!onCreditTrial?.creditAllocation) return message;
+
+  if (onCreditTrial.lowCredit) {
+    message.type = "warning";
+    message.title = "Your trial credit is running low.";
+    message.description = "";
+    message.dismissible = {
+      key: trialIssue.org ?? "",
+      id: `${trialIssue.type ?? ""}-low-credits`,
+      ttl: 24 * 60 * 60, // 24 hrs
+    };
+  } else {
+    message.type = "default";
+    message.title = `Welcome to rill.`;
+    message.description = `You are on a free trial with ${onCreditTrial.creditAllocation ?? 0}$ in credits.`;
+    message.dismissible = {
+      key: trialIssue.org ?? "",
+      id: `${trialIssue.type ?? ""}`,
+      ttl: 0, // Doesnt appear again once dismissed
+    };
+  }
+  return message;
+}
+
+function getMessageForCreditsDepletedIssue() {
+  return {
+    type: "error",
+    title:
+      "Trial credit is used up. Projects are hibernated and dashboards are offline.",
+    description: "",
+    iconType: "alert",
+    cta: {
+      text: "Choose a plan",
+      type: "show-upgrade",
+    },
+  } satisfies BillingIssueMessage;
 }
 
 export function getTrialMessageForDays(diff: Duration) {

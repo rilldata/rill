@@ -96,41 +96,20 @@ type Usage struct {
 	EndTime           time.Time `json:"end_time"`
 	EventName         string    `json:"event_name"`
 	MaxValue          float64   `json:"max_value"`
+	SumValue          float64   `json:"sum_value"`
 	BillingService    string    `json:"billing_service"`
+	InstanceID        string    `json:"instance_id"`
 }
 
-func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterEventName, grain string, limit int) ([]*Usage, error) {
+func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterInstanceID, afterBillingService, afterEventName, grain string, limit int) ([]*Usage, error) {
 	uri, err := url.Parse(c.RuntimeHost)
 	if err != nil {
 		return nil, err
 	}
 
 	uri.Path = path.Join("/v1/instances", c.InstanceID, "/api/billing-usage")
-	/*  sql api will be like -
-	    SELECT
-	    date_trunc('{{ .args.grain }}', time) as start_time,
-	    date_trunc('{{ .args.grain }}', time) + INTERVAL 1 {{ .args.grain }} as end_time,
-	    org_id,
-	    project_id,
-	    event_name,
-		billing_service,
-	    max(value) as max_value,
-		<sum(value) as sum_value>
-		...
-	  FROM {{ ref "rill-metrics-demo" }}
-	  WHERE time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' AND event_name IN ('data_dir_size_bytes',...)
-	    {{ if hasKey .args "after_time" }}
-	    AND start_time > '{{ .args.after_time }}'
-	    OR (start_time = '{{ .args.after_time }}' AND org_id > '{{ .args.after_org_id }}')
-	    OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id > '{{ .args.after_project_id }}')
-	    OR (start_time = '{{ .args.after_time }}' AND org_id = '{{ .args.after_org_id }}' AND project_id = '{{ .args.after_project_id }}' AND event_name > '{{ .args.after_event_name }}')
-	    {{ end }}
-	  GROUP BY ALL
-	  ORDER BY start_time, org_id, project_id, event_name, billing_service
-	  LIMIT {{ .args.limit }}
-	// time is insertion time here to prevent handling of late arriving data
-	// if we move to syncing raw events then we will not use aggregation function and UNION ALL and just insertion time as event_time instead of using two fields start_time and end_time
-	*/
+	// For the billing-usage API definition (the SQL, the event_name list, and the source-based billing filters), see the
+	// billing-usage API of the rill metrics project opened by the OpenMetricsProject method in admin/jobs/river/billing_reporter.go.
 
 	// Add URL query parameters
 	qry := uri.Query()
@@ -142,6 +121,8 @@ func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterT
 		qry.Add("after_time", afterTime.Format(time.RFC3339))
 		qry.Add("after_org_id", afterOrgID)
 		qry.Add("after_project_id", afterProjectID)
+		qry.Add("after_instance_id", afterInstanceID)
+		qry.Add("after_billing_service", afterBillingService)
 		qry.Add("after_event_name", afterEventName)
 	}
 

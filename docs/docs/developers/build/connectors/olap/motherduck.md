@@ -73,6 +73,10 @@ When deploying a MotherDuck-backed project to Rill Cloud, you have the following
 1. If you have followed the UI to create your MotherDuck connector, the token should already exist in the `.env` file. During the deployment process, this `.env` file is automatically pushed with the deployment.
 2. If `motherduck_token` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 
+## Caching Query Results
+
+To increase performance on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.
+
 ## Additional Notes
 
 - MotherDuck uses the same SQL syntax as DuckDB, so all standard DuckDB functions and features are available

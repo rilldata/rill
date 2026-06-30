@@ -23,6 +23,9 @@
     disabled?: boolean;
     tooltip?: string;
     icon?: ComponentType<SvelteComponent>;
+    /** Optional section heading; a heading is rendered above the first
+     * option of each consecutive group. */
+    group?: string;
   }[];
   export let optionsLoading: boolean = false;
   export let onAddNew: (() => void) | null = null;
@@ -46,6 +49,9 @@
   export let forcedTriggerStyle = "";
   /** When true, shows an X button to clear the selection back to empty */
   export let clearable = false;
+  /** Optional icon rendered inside the trigger, before the label. */
+  export let leadingIcon: ComponentType<SvelteComponent> | undefined =
+    undefined;
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
@@ -133,6 +139,11 @@
           : ''} {forcedTriggerStyle} {outline ? '' : 'border-0'}"
         aria-label={label || ariaLabel}
       >
+        {#if leadingIcon}
+          <span class="flex-none">
+            <svelte:component this={leadingIcon} size="14px" />
+          </span>
+        {/if}
         <span
           class="text-[{fontSize}px] {!selected
             ? 'text-fg-secondary'
@@ -174,7 +185,14 @@
             </div>
           </div>
         {:else}
-          {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon } (value)}
+          {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon, group }, i (value)}
+            {#if group && group !== filteredOptions[i - 1]?.group}
+              <div
+                class="px-2 pt-2 pb-1 text-fg-secondary text-[11px] font-semibold uppercase tracking-wide"
+              >
+                {group}
+              </div>
+            {/if}
             <Select.Item
               {value}
               {label}
@@ -184,7 +202,9 @@
             >
               {#if tooltip}
                 <Tooltip.Root>
-                  <Tooltip.Trigger class="select-tooltip cursor-default">
+                  <Tooltip.Trigger
+                    class="inline-flex items-center gap-x-2 cursor-default text-left"
+                  >
                     {#if icon}
                       <svelte:component this={icon} size="16px" />
                     {:else if type}

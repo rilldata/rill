@@ -1,14 +1,18 @@
 <script lang="ts">
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
-  import { Button } from "../../components/button";
   import { useRuntimeClient } from "../../runtime-client/v2";
   import { featureFlags } from "../feature-flags";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import {
     useDashboardPolicyCheck,
     useRillYamlPolicyCheck,
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
+  import CanvasEditButton from "@rilldata/web-common/features/canvas/CanvasEditButton.svelte";
 
   const client = useRuntimeClient();
 
@@ -41,10 +45,10 @@
       <ViewAsButton />
     {/if}
     {#if $dashboardChat}
-      <ChatToggle />
+      <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
     {/if}
     {#if !$readOnly}
-      <Button type="secondary" href={`/files${canvasFilePath}`}>Edit</Button>
+      <CanvasEditButton {canvasName} />
     {/if}
   </div>
 {/if}

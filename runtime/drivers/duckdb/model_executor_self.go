@@ -73,6 +73,25 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
+	// Merge pre/post exec/ statements and CreateSecretsFromConnectors from output props into input props
+	// Ideally pre_exec and post_exec needs to be set in output but for duckdb -> duckdb models they can be set in input props as well.
+	if outputProps.PreExec != "" {
+		if inputProps.PreExec != "" {
+			inputProps.PreExec += "\n;"
+		}
+		inputProps.PreExec += outputProps.PreExec
+	}
+	if outputProps.PostExec != "" {
+		if inputProps.PostExec != "" {
+			inputProps.PostExec = outputProps.PostExec + "\n;" + inputProps.PostExec
+		} else {
+			inputProps.PostExec = outputProps.PostExec
+		}
+	}
+	if len(outputProps.CreateSecretsFromConnectors) > 0 {
+		inputProps.CreateSecretsFromConnectors = append(inputProps.CreateSecretsFromConnectors, outputProps.CreateSecretsFromConnectors...)
+	}
+
 	usedModelName := false
 	if outputProps.Table == "" {
 		outputProps.Table = opts.ModelName
@@ -253,7 +272,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts *drivers.ModelExecuteOptions, inputProps *ModelInputProperties,
 	outputProps *ModelOutputProperties, tableName string, asView bool,
 ) (time.Duration, error) {
-	var duration time.Duration
 	if !opts.IncrementalRun {
 		// Prepare for ingesting into the staging view/table.
 		// NOTE: This intentionally drops the end table if not staging changes.
@@ -263,6 +281,11 @@ func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts 
 		}
 		_ = e.c.dropTable(ctx, stagingTableName)
 
+		// When the table is staged under a temporary name, the post_exec is deferred until after the rename
+		// so that it runs against the final table name. Otherwise a post_exec referencing the model's own table would fail.
+		deferPostExec := stagingTableName != tableName && inputProps.PostExec != ""
+
+		var duration time.Duration
 		// Create the table
 		if inputProps.Database != "" {
 			// special handling for ingesting from an external database
@@ -288,6 +311,10 @@ func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts 
 				beforeCreate: inputProps.PreExec,
 				afterCreate:  inputProps.PostExec,
 			}
+			if deferPostExec {
+				// Defer post_exec until after the staging table is renamed (see deferPostExec above).
+				createTableOpts.afterCreate = ""
+			}
 			if inputProps.InitQueries != "" {
 				createTableOpts.initQueries = []string{inputProps.InitQueries}
 			}
@@ -306,26 +333,49 @@ func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts 
 				return 0, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
-	} else {
-		// Insert into the table
-		insertTableOpts := &InsertTableOptions{
-			BeforeInsert: inputProps.PreExec,
-			AfterInsert:  inputProps.PostExec,
-			ByName:       false,
-			Strategy:     outputProps.IncrementalStrategy,
-			UniqueKey:    outputProps.UniqueKey,
-			PartitionBy:  outputProps.PartitionBy,
+
+		// Run the deferred post_exec against the final table name (see deferPostExec above).
+		if deferPostExec {
+			if !asView {
+				if err := e.c.mutateTable(ctx, tableName, inputProps.PreExec, inputProps.PostExec); err != nil {
+					return 0, fmt.Errorf("failed to execute post_exec: %w", err)
+				}
+				return duration, nil
+			}
+
+			// A view holds no data to mutate, so re-create it under its final name with the post_exec applied.
+			createTableOpts := &createTableOptions{
+				view:         asView,
+				beforeCreate: inputProps.PreExec, // okay to run pre_exec again since it should be idempotent and may contain important setup statements like attaches
+				afterCreate:  inputProps.PostExec,
+			}
+			if inputProps.InitQueries != "" {
+				createTableOpts.initQueries = []string{inputProps.InitQueries}
+			}
+			_, err := e.c.createTableAsSelect(ctx, tableName, inputProps.SQL, createTableOpts)
+			if err != nil {
+				return 0, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
 		}
-		if inputProps.InitQueries != "" {
-			insertTableOpts.InitQueries = []string{inputProps.InitQueries}
-		}
-		res, err := e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
-		if err != nil {
-			return 0, fmt.Errorf("failed to incrementally insert into table: %w", err)
-		}
-		duration = res.duration
+		return duration, nil
 	}
-	return duration, nil
+	// Insert into the table
+	insertTableOpts := &InsertTableOptions{
+		BeforeInsert: inputProps.PreExec,
+		AfterInsert:  inputProps.PostExec,
+		ByName:       false,
+		Strategy:     outputProps.IncrementalStrategy,
+		UniqueKey:    outputProps.UniqueKey,
+		PartitionBy:  outputProps.PartitionBy,
+	}
+	if inputProps.InitQueries != "" {
+		insertTableOpts.InitQueries = []string{inputProps.InitQueries}
+	}
+	res, err := e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
+	if err != nil {
+		return 0, fmt.Errorf("failed to incrementally insert into table: %w", err)
+	}
+	return res.duration, nil
 }
 
 func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, inputProps *ModelInputProperties, tbl string) (*rduckdb.TableWriteMetrics, error) {

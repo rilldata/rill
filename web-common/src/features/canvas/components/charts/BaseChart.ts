@@ -34,7 +34,12 @@ import type {
   CommonChartProperties,
   FieldConfig,
 } from "../../../components/charts/types";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import {
+  rowColFromPath,
+  type CanvasEntity,
+  type ComponentPath,
+} from "../../stores/canvas-entity";
+import { namePrefixFromPath } from "../../layout-util";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
@@ -129,10 +134,18 @@ export abstract class BaseChart<
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
     const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);
 
+    const comparisonChartTypes: ChartType[] = [
+      "bar_chart",
+      "line_chart",
+      "stacked_bar",
+      "stacked_bar_normalized",
+    ];
+    const passComparison = comparisonChartTypes.includes(this.type);
+
     return {
       whereFilter: dimensionFilters,
       dimensionThresholdFilters,
-      showTimeComparison: false,
+      ...(passComparison ? {} : { showTimeComparison: false }),
       activePage: tddLink.canLink
         ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
         : DashboardState_ActivePage.PIVOT,
@@ -179,13 +192,15 @@ export abstract class BaseChart<
       ...commonProps,
     };
 
+    const { row, col } = rowColFromPath(this.pathInYAML);
     const newResource = this.parent.createOptimisticResource({
       type: key,
-      row: this.pathInYAML[1],
-      column: this.pathInYAML[3],
+      row,
+      column: col,
       metricsViewName: currentSpec.metrics_view,
       metricsViewSpec,
       spec: mergedSpec,
+      namePrefix: namePrefixFromPath(this.pathInYAML),
     });
 
     const newComponent = createComponent(
@@ -195,7 +210,7 @@ export abstract class BaseChart<
     );
 
     this.parent.componentsStore.set(newComponent.id, newComponent);
-    this.parent.selectedComponent.set(newComponent.id);
+    this.parent.setSelectedComponent(newComponent.id);
     this.parent._rows.refresh();
 
     // Preserve the width from the current chart

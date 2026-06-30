@@ -90,6 +90,10 @@ When deploying a Druid-backed project to Rill Cloud, you have the following opti
 
 Rill supports connecting to Druid v28.0 or newer versions.
 
+## Caching Query Results
+
+To reduce broker load on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.
+
 ## Additional Notes
 
 - At the moment, we do not support modeling with Druid. If this is something you're interested in, please [contact us](/contact).

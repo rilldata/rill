@@ -131,7 +131,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	// Get table info
 	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "table not found: %s", err)
+		return nil, mapGRPCErrorWithFallback(err, codes.NotFound)
 	}
 
 	// Try to generate the YAML with AI
@@ -534,11 +534,12 @@ type metricsViewDimensionYAML struct {
 }
 
 type metricsViewMeasureYAML struct {
-	Name         string `yaml:"name"`
-	DisplayName  string `yaml:"display_name"`
-	Expression   string `yaml:"expression"`
-	Description  string `yaml:"description"`
-	FormatPreset string `yaml:"format_preset,omitempty"`
+	Name          string `yaml:"name"`
+	DisplayName   string `yaml:"display_name"`
+	Expression    string `yaml:"expression"`
+	Description   string `yaml:"description"`
+	FormatPreset  string `yaml:"format_preset,omitempty"`
+	LowerIsBetter bool   `yaml:"lower_is_better,omitempty"`
 }
 
 func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error) {

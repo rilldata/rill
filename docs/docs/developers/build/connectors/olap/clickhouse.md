@@ -121,16 +121,6 @@ You can configure your ClickHouse connector to operate in read-only mode by addi
 mode: read # readwrite
 ```
 
-## Advanced Configuration Options
-
-### Optimize Temporary Tables Before Partition Replace
-
-When using incremental models with partition overwrite strategies, you can enable automatic optimization of temporary tables before partition replacement operations. This can improve query performance by reducing the number of parts in each partition, but may increase processing time during model refreshes.
-
-```yaml
-optimize_temporary_tables_before_partition_replace: true # default: false
-```
-
 ## Configuring Rill Cloud
 
 When deploying a ClickHouse-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
@@ -161,6 +151,10 @@ Please see our [Using Multiple OLAP Engines](/developers/build/connectors/olap/m
 ## Reading from Multiple Schemas
 
 Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer, and all accessible tables (given the permission set of the underlying user) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/developers/build/dashboards).
+
+## Caching Query Results
+
+To reduce load on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results).
 
 ## Additional Notes
 

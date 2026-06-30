@@ -16,9 +16,6 @@ var ErrNotFound = errors.New("driver: not found")
 // ErrNotImplemented indicates the driver doesn't support the requested operation.
 var ErrNotImplemented = errors.New("driver: not implemented")
 
-// ErrStorageLimitExceeded indicates the driver's storage limit was exceeded.
-var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
-
 // ErrNotNotifier indicates the driver cannot be used as a Notifier.
 var ErrNotNotifier = errors.New("driver: not a notifier")
 

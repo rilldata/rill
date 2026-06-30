@@ -15,6 +15,14 @@
   import { EXAMPLES } from "./constants";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-metadata.ts";
   import ProjectCard from "@rilldata/web-common/features/welcome/ProjectCard.svelte";
+  import { goto } from "$app/navigation";
+  import {
+    getFileHref,
+    navigateToHome,
+  } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
+
+  export let isLocal = false;
+  export let onSelect: () => void = () => {};
 
   const runtimeClient = useRuntimeClient();
 
@@ -49,9 +57,22 @@
         force: true,
       });
 
-      setTimeout(() => {
-        window.location.assign("/?redirect=true");
-      }, 5000);
+      onSelect();
+
+      // Legacy fix for rill dev for race conditions.
+      // TODO: find a better fix that the redirect here.
+      if (isLocal) {
+        setTimeout(() => {
+          window.location.assign("/?redirect=true");
+        }, 5000);
+      } else {
+        const dashboard = example?.firstFile;
+        if (dashboard) {
+          void goto(getFileHref(dashboard));
+        } else {
+          void navigateToHome();
+        }
+      }
     } catch {
       selectedProjectName = null;
     }
@@ -64,9 +85,7 @@
       {@const icon = connectorIconMapping[example.connector]}
       {@const loading = selectedProjectName === example.name}
       <ProjectCard
-        onclick={async () => {
-          await unpackProject(example);
-        }}
+        onclick={() => void unpackProject(example)}
         {loading}
         disabled={!!selectedProjectName}
         label={example.title}

@@ -45,6 +45,7 @@
     }
   }
   export let selected = false;
+  export let active = false;
   export let ghost = false;
   export let allowPointerEvents = true;
   export let editable = false;
@@ -52,6 +53,7 @@
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
+  export let onConvertToTabGroup: (() => void) | undefined = undefined;
 
   let open = false;
   let container: HTMLElement;
@@ -66,6 +68,7 @@
   role="presentation"
   id={componentName}
   class:selected
+  class:active
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
@@ -77,6 +80,7 @@
     {component}
     {onDelete}
     {onDuplicate}
+    {onConvertToTabGroup}
     {editable}
     bind:dropdownOpen={open}
     {navigationEnabled}
@@ -107,6 +111,12 @@
   }
 
   .selected {
+    @apply shadow-md outline-primary-400 outline-[1.5px];
+
+    outline-style: solid !important;
+  }
+
+  .active {
     @apply shadow-md outline-primary-400 outline-[1.5px];
 
     outline-style: solid !important;

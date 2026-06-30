@@ -3,7 +3,7 @@ import { DimensionFilterMode } from "./constants";
 export function getSearchPlaceholder(mode: DimensionFilterMode): string {
   switch (mode) {
     case DimensionFilterMode.Select:
-      return "Enter search term or paste list of values";
+      return "Enter search term";
     case DimensionFilterMode.InList:
       return "Paste a list separated by commas or \\n";
     case DimensionFilterMode.Contains:

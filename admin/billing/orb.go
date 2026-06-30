@@ -22,6 +22,7 @@ const (
 	eventIngestBatchSize = 500
 	requestTimeout       = 10 * time.Second
 
+	anrokTaxProvider   = "anrok"
 	avalaraTaxProvider = "avalara"
 	taxJarTaxProvider  = "taxjar"
 	noneTaxProvider    = "none"
@@ -58,6 +59,9 @@ func (o *Orb) DefaultQuotas() Quotas {
 		NumSlotsTotal:                  toPtr(40),
 		NumSlotsPerDeployment:          toPtr(8),
 		NumOutstandingInvites:          toPtr(200),
+		NumSeats:                       toPtr(10),
+		NumAPICallsPerSeat:             toPtr(2500),
+		NumTokensPerSeat:               toPtr(1000000),
 	}
 }
 
@@ -122,6 +126,19 @@ func (o *Orb) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	}
 	for _, p := range plans {
 		if p.Name == name {
+			return p, nil
+		}
+	}
+	return nil, ErrNotFound
+}
+
+func (o *Orb) GetPlanByType(ctx context.Context, planType PlanType) (*Plan, error) {
+	plans, err := o.getAllPlans(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range plans {
+		if p.PlanType == planType {
 			return p, nil
 		}
 	}
@@ -208,6 +225,97 @@ func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
 	return nil
 }
 
+// CreateCustomerCreditAlerts registers a credit_balance_dropped alert at the given threshold and a credit_balance_depleted alert for the customer in Orb. Required for Orb to deliver the corresponding webhook events.
+// Idempotent: if the alerts already exist for the customer/currency they are not re-created (Orb throws an error if the alert already exits).
+func (o *Orb) CreateCustomerCreditAlerts(ctx context.Context, customerID, currency string, lowThreshold float64) error {
+	existing := make(map[orb.AlertType]bool)
+	iter := o.client.Alerts.ListAutoPaging(ctx, orb.AlertListParams{
+		ExternalCustomerID: orb.String(customerID),
+	})
+	for iter.Next() {
+		a := iter.Current()
+		if a.Currency == currency {
+			existing[a.Type] = true
+		}
+	}
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("listing customer alerts: %w", err)
+	}
+
+	if !existing[orb.AlertTypeCreditBalanceDropped] {
+		_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
+			Currency: orb.String(currency),
+			Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDropped),
+			Thresholds: orb.F([]orb.ThresholdParam{
+				{Value: orb.F(lowThreshold)},
+			}),
+		})
+		if err != nil {
+			return fmt.Errorf("creating credit_balance_dropped alert: %w", err)
+		}
+	}
+
+	if !existing[orb.AlertTypeCreditBalanceDepleted] {
+		_, err := o.client.Alerts.NewForExternalCustomer(ctx, customerID, orb.AlertNewForExternalCustomerParams{
+			Currency: orb.String(currency),
+			Type:     orb.F(orb.AlertNewForExternalCustomerParamsTypeCreditBalanceDepleted),
+		})
+		if err != nil {
+			return fmt.Errorf("creating credit_balance_depleted alert: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// GrantCustomerCredits adds an `increment` ledger entry to the customer's credit balance in Orb in the given currency. per_unit_cost_basis is set to "0.00" so the grant itself does not produce an invoice line item.
+func (o *Orb) GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error {
+	params := orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
+		Amount:           orb.F(amount),
+		Currency:         orb.String(currency),
+		EntryType:        orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParamsEntryTypeIncrement),
+		Description:      orb.String(description),
+		PerUnitCostBasis: orb.String("0.00"),
+	}
+	if expiryDate != nil {
+		params.ExpiryDate = orb.F(*expiryDate)
+	}
+	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, params)
+	if err != nil {
+		return fmt.Errorf("creating credit ledger increment entry: %w", err)
+	}
+	return nil
+}
+
+// DebitCustomerCredits posts a `decrement` ledger entry against the customer's credit balance in Orb in the given currency. Used to expire/zero out a credit pool, e.g., to roll trial credits over to a different currency on upgrade.
+func (o *Orb) DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error {
+	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddDecrementCreditLedgerEntryRequestParams{
+		Amount:      orb.F(amount),
+		Currency:    orb.String(currency),
+		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddDecrementCreditLedgerEntryRequestParamsEntryTypeDecrement),
+		Description: orb.String(description),
+	})
+	if err != nil {
+		return fmt.Errorf("creating credit ledger decrement entry: %w", err)
+	}
+	return nil
+}
+
+// GetCustomerCreditBalance returns the customer's current credit balance in the given currency. Sums active (unexpired) blocks only.
+func (o *Orb) GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error) {
+	page, err := o.client.Customers.Credits.ListByExternalID(ctx, customerID, orb.CustomerCreditListByExternalIDParams{
+		Currency: orb.String(currency),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("fetching customer credit balance: %w", err)
+	}
+	var total float64
+	for i := range page.Data {
+		total += page.Data[i].Balance
+	}
+	return total, nil
+}
+
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
 	return o.createSubscription(ctx, customerID, plan)
 }
@@ -256,7 +364,21 @@ func (o *Orb) UnscheduleCancellation(ctx context.Context, subscriptionID string)
 	if err != nil {
 		return nil, err
 	}
-	return o.getBillingSubscriptionFromOrbSubscription(ctx, sub)
+	plan, err := o.getBillingPlanFromOrbPlan(ctx, &sub.Plan)
+	if err != nil {
+		return nil, err
+	}
+	return &Subscription{
+		ID:                           sub.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&sub.Customer),
+		Plan:                         plan,
+		StartDate:                    sub.StartDate,
+		EndDate:                      sub.EndDate,
+		CurrentBillingCycleStartDate: sub.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   sub.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 sub.TrialInfo.EndDate,
+		Metadata:                     sub.Metadata,
+	}, nil
 }
 
 func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
@@ -324,11 +446,21 @@ func (o *Orb) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
 
 func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) error {
 	switch o.taxProvider {
+	case anrokTaxProvider:
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAnrokConfiguration{
+				TaxExempt:   orb.F(true),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAnrokConfigurationTaxProviderAnrok),
+			}),
+		})
+		if err != nil {
+			return err
+		}
 	case avalaraTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.NewAvalaraTaxConfigurationParam{
 				TaxExempt:        orb.F(true),
-				TaxProvider:      orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+				TaxProvider:      orb.F(orb.NewAvalaraTaxConfigurationTaxProviderAvalara),
 				TaxExemptionCode: orb.F(avalaraTaxExemptionCode), // code for NON-RESIDENT
 			}),
 		})
@@ -337,9 +469,9 @@ func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) erro
 		}
 	case taxJarTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.NewTaxJarConfigurationParam{
 				TaxExempt:   orb.F(true),
-				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfigurationTaxProviderTaxjar),
+				TaxProvider: orb.F(orb.NewTaxJarConfigurationTaxProviderTaxjar),
 				// category option not available in TaxJar config
 			}),
 		})
@@ -357,11 +489,21 @@ func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) erro
 
 func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error {
 	switch o.taxProvider {
+	case anrokTaxProvider:
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAnrokConfiguration{
+				TaxExempt:   orb.F(false),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAnrokConfigurationTaxProviderAnrok),
+			}),
+		})
+		if err != nil {
+			return err
+		}
 	case avalaraTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.NewAvalaraTaxConfigurationParam{
 				TaxExempt:   orb.F(false),
-				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+				TaxProvider: orb.F(orb.NewAvalaraTaxConfigurationTaxProviderAvalara),
 			}),
 		})
 		if err != nil {
@@ -369,9 +511,9 @@ func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) er
 		}
 	case taxJarTaxProvider:
 		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
-			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.NewTaxJarConfigurationParam{
 				TaxExempt:   orb.F(false),
-				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfigurationTaxProviderTaxjar),
+				TaxProvider: orb.F(orb.NewTaxJarConfigurationTaxProviderTaxjar),
 			}),
 		})
 		if err != nil {
@@ -407,7 +549,7 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 			EventName:          orb.String(eventName),
 			IdempotencyKey:     orb.String(idempotencyKey),
 			Timestamp:          orb.F(eventTime),
-			Properties:         orb.F[any](props),
+			Properties:         orb.F(props),
 		})
 
 		if len(orbUsage) == eventIngestBatchSize {
@@ -473,7 +615,7 @@ func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status or
 	}
 
 	sub, err := o.client.Subscriptions.List(ctx, orb.SubscriptionListParams{
-		ExternalCustomerID: orb.String(customerID),
+		ExternalCustomerID: orb.F([]string{customerID}),
 		Status:             orb.F(status),
 	})
 	if err != nil {
@@ -576,6 +718,9 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 		NumSlotsTotal:                  metadata.NumSlotsTotal,
 		NumSlotsPerDeployment:          metadata.NumSlotsPerDeployment,
 		NumOutstandingInvites:          metadata.NumOutstandingInvites,
+		NumSeats:                       metadata.NumSeats,
+		NumAPICallsPerSeat:             metadata.NumAPICallsPerSeat,
+		NumTokensPerSeat:               metadata.NumTokensPerSeat,
 	}
 
 	trialPeriodDays := 0
@@ -655,6 +800,10 @@ func getPlanType(externalID string) PlanType {
 		return FreePlanType
 	case "pro_plan":
 		return ProPlanType
+	case "starter":
+		return StarterPlanType
+	case "growth":
+		return GrowthPlanType
 	default:
 		return EnterprisePlanType
 	}
@@ -672,6 +821,10 @@ func getPlanDisplayName(externalID string) string {
 		return "Free"
 	case "pro_plan":
 		return "Pro"
+	case "starter":
+		return "Starter"
+	case "growth":
+		return "Growth"
 	default:
 		return "Enterprise"
 	}

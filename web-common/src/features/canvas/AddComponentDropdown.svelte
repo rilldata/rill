@@ -5,7 +5,7 @@
     VISIBLE_CHART_TYPES,
   } from "@rilldata/web-common/features/components/charts/config";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { Plus, PlusCircle } from "lucide-svelte";
+  import { Layers, Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
   import type { ChartType } from "../components/charts/types";
   import type { CanvasComponentType } from "./components/types";
@@ -33,12 +33,17 @@
   export let disabled = false;
   export let componentForm = false;
   export let floatingForm = false;
+  // Label shown on the large (componentForm) add button.
+  export let label = "Add widget";
   export let open = false;
   export let rowIndex: number | undefined = undefined;
   export let columnIndex: number | undefined = undefined;
   export let onItemClick: (type: CanvasComponentType) => void;
   export let onMouseEnter: () => void = () => {};
   export let onOpenChange: (isOpen: boolean) => void = () => {};
+  // When provided, the menu offers "Tab group" as a final item. Only passed at the
+  // top level (tab groups cannot be nested inside a tab or a column).
+  export let onAddTabGroup: (() => void) | undefined = undefined;
 
   const { customCharts } = featureFlags;
 
@@ -59,14 +64,16 @@
       {#if componentForm}
         <button
           {...props}
+          {disabled}
           class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
         >
           <PlusCircle class="w-6 h-6 text-fg-secondary" />
-          <span class="text-sm font-medium text-fg-secondary">Add widget</span>
+          <span class="text-sm font-medium text-fg-secondary">{label}</span>
         </button>
       {:else if floatingForm}
         <button
           {...props}
+          {disabled}
           class:pr-3.5={open}
           aria-label="Add widget"
           class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
@@ -143,6 +150,17 @@
           </DropdownMenu.Item>
         {/if}
       {/each}
+
+      {#if onAddTabGroup}
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item
+          class="flex flex-row gap-x-2 text-fg-primary"
+          onclick={() => onAddTabGroup?.()}
+        >
+          <Layers size="16px" />
+          Tab group
+        </DropdownMenu.Item>
+      {/if}
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

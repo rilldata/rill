@@ -32,6 +32,7 @@ describe("classifyMethod", () => {
       ["watchLogs", "skip"],
       ["watchResources", "skip"],
       ["completeStreaming", "skip"],
+      ["gitDiff", "query"],
       ["issueDevJWT", "query"],
       ["analyzeConnectors", "query"],
       ["analyzeVariables", "query"],

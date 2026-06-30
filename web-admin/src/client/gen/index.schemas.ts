@@ -11,6 +11,17 @@ export interface GetAlertMetaResponseURLs {
   unsubscribeUrl?: string;
 }
 
+export type GetGithubPullRequestResponseState =
+  (typeof GetGithubPullRequestResponseState)[keyof typeof GetGithubPullRequestResponseState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetGithubPullRequestResponseState = {
+  STATE_UNSPECIFIED: "STATE_UNSPECIFIED",
+  STATE_OPEN: "STATE_OPEN",
+  STATE_CLOSED_UNMERGED: "STATE_CLOSED_UNMERGED",
+  STATE_MERGED: "STATE_MERGED",
+} as const;
+
 export type GetReportMetaResponseDeliveryMetaUserAttrs = {
   [key: string]: unknown;
 };
@@ -157,6 +168,13 @@ export interface V1BillingIssueMetadata {
   paymentFailed?: V1BillingIssueMetadataPaymentFailed;
   subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
   neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
+  onCreditTrial?: V1BillingIssueMetadataOnCreditTrial;
+  trialCreditsDepleted?: V1BillingIssueMetadataTrialCreditsDepleted;
+  message?: V1BillingIssueMetadataMessage;
+}
+
+export interface V1BillingIssueMetadataMessage {
+  message?: string;
 }
 
 export interface V1BillingIssueMetadataNeverSubscribed {
@@ -169,6 +187,13 @@ export interface V1BillingIssueMetadataNoBillableAddress {
 
 export interface V1BillingIssueMetadataNoPaymentMethod {
   [key: string]: unknown;
+}
+
+export interface V1BillingIssueMetadataOnCreditTrial {
+  subscriptionId?: string;
+  planId?: string;
+  creditAllocation?: number;
+  lowCredit?: boolean;
 }
 
 export interface V1BillingIssueMetadataOnTrial {
@@ -195,6 +220,12 @@ export interface V1BillingIssueMetadataSubscriptionCancelled {
   endDate?: string;
 }
 
+export interface V1BillingIssueMetadataTrialCreditsDepleted {
+  subscriptionId?: string;
+  planId?: string;
+  depletedOn?: string;
+}
+
 export interface V1BillingIssueMetadataTrialEnded {
   endDate?: string;
   gracePeriodEndDate?: string;
@@ -215,6 +246,10 @@ export const V1BillingIssueType = {
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
     "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
   BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+  BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL: "BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL",
+  BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED:
+    "BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED",
+  BILLING_ISSUE_TYPE_MESSAGE: "BILLING_ISSUE_TYPE_MESSAGE",
 } as const;
 
 export interface V1BillingPlan {
@@ -241,6 +276,8 @@ export const V1BillingPlanType = {
   BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
   BILLING_PLAN_TYPE_FREE: "BILLING_PLAN_TYPE_FREE",
   BILLING_PLAN_TYPE_PRO: "BILLING_PLAN_TYPE_PRO",
+  BILLING_PLAN_TYPE_STARTER: "BILLING_PLAN_TYPE_STARTER",
+  BILLING_PLAN_TYPE_GROWTH: "BILLING_PLAN_TYPE_GROWTH",
 } as const;
 
 export interface V1Bookmark {
@@ -272,10 +309,14 @@ export interface V1CompleteRequest {
 
 export interface V1CompleteResponse {
   message?: V1CompletionMessage;
-  /** Number of tokens in the input. */
+  /** Number of full-rate (non-cached) tokens in the input. */
   inputTokens?: number;
   /** Number of tokens in the output. */
   outputTokens?: number;
+  /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
+  cachedInputTokens?: number;
+  /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
+  provider?: string;
 }
 
 export interface V1CompletionMessage {
@@ -330,6 +371,10 @@ export interface V1CreateDeploymentResponse {
   deployment?: V1Deployment;
 }
 
+export interface V1CreateGithubPullRequestResponse {
+  prUrl?: string;
+}
+
 export interface V1CreateManagedGitRepoResponse {
   remote?: string;
   username?: string;
@@ -346,6 +391,10 @@ export interface V1CreateOrganizationRequest {
 
 export interface V1CreateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1CreatePersonalFileResponse {
+  name?: string;
 }
 
 export interface V1CreateProjectResponse {
@@ -381,6 +430,10 @@ export interface V1DeleteDeploymentResponse {
 }
 
 export interface V1DeleteOrganizationResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeletePersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -425,6 +478,7 @@ export interface V1Deployment {
   statusMessage?: string;
   createdOn?: string;
   updatedOn?: string;
+  usedOn?: string;
 }
 
 export type V1DeploymentStatus =
@@ -444,6 +498,10 @@ export const V1DeploymentStatus = {
 } as const;
 
 export interface V1EditAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1EditPersonalFileResponse {
   [key: string]: unknown;
 }
 
@@ -494,6 +552,10 @@ export interface V1GetAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1GetBillingCreditBalanceResponse {
+  balance?: number;
+}
+
 export interface V1GetBillingProjectCredentialsRequest {
   org?: string;
 }
@@ -536,7 +598,12 @@ export interface V1GetCurrentUserResponse {
   superuser?: boolean;
 }
 
-export type V1GetDeploymentConfigResponseVariables = { [key: string]: string };
+/**
+ * Deprecated: Variables for the deployment. Use `variables` instead.
+ */
+export type V1GetDeploymentConfigResponseVariablesLegacy = {
+  [key: string]: string;
+};
 
 export type V1GetDeploymentConfigResponseAnnotations = {
   [key: string]: string;
@@ -546,8 +613,18 @@ export type V1GetDeploymentConfigResponseDuckdbConnectorConfig = {
   [key: string]: unknown;
 };
 
+/**
+ * System variables set by the admin service that should not be overridden by user input.
+ */
+export type V1GetDeploymentConfigResponseSystemVariables = {
+  [key: string]: string;
+};
+
 export interface V1GetDeploymentConfigResponse {
-  variables?: V1GetDeploymentConfigResponseVariables;
+  /** Variables for the deployment. */
+  variables?: V1ProjectVariable[];
+  /** Deprecated: Variables for the deployment. Use `variables` instead. */
+  variablesLegacy?: V1GetDeploymentConfigResponseVariablesLegacy;
   annotations?: V1GetDeploymentConfigResponseAnnotations;
   /** Frontend URL for the deployment. */
   frontendUrl?: string;
@@ -556,6 +633,10 @@ export interface V1GetDeploymentConfigResponse {
   /** Whether the deployment is git based or archive based. */
   usesArchive?: boolean;
   duckdbConnectorConfig?: V1GetDeploymentConfigResponseDuckdbConnectorConfig;
+  /** Whether the deployment is editable (dev environment with changes persisted to git repo). */
+  editable?: boolean;
+  /** System variables set by the admin service that should not be overridden by user input. */
+  systemVariables?: V1GetDeploymentConfigResponseSystemVariables;
 }
 
 export interface V1GetDeploymentCredentialsResponse {
@@ -570,6 +651,11 @@ export interface V1GetDeploymentResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetGithubPullRequestResponse {
+  prUrl?: string;
+  prState?: GetGithubPullRequestResponseState;
 }
 
 export interface V1GetGithubRepoStatusResponse {
@@ -616,6 +702,11 @@ export interface V1GetOrganizationResponse {
 
 export interface V1GetPaymentsPortalURLResponse {
   url?: string;
+}
+
+export interface V1GetPersonalFileResponse {
+  path?: string;
+  yaml?: string;
 }
 
 export interface V1GetProjectAccessRequestResponse {
@@ -786,6 +877,10 @@ export interface V1ListOrganizationMemberUsersResponse {
 export interface V1ListOrganizationsResponse {
   organizations?: V1Organization[];
   nextPageToken?: string;
+}
+
+export interface V1ListPersonalFilesResponse {
+  files?: string[];
 }
 
 export interface V1ListProjectInvitesResponse {
@@ -1001,6 +1096,7 @@ export interface V1OrganizationQuotas {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1OrganizationRole {
@@ -1038,6 +1134,8 @@ export interface V1Project {
   /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
+  devTtlSeconds?: string;
+  overrideDiskGb?: string;
   annotations?: V1ProjectAnnotations;
   prodVersion?: string;
   createdOn?: string;
@@ -1162,6 +1260,9 @@ export interface V1Quotas {
   slotsPerDeployment?: string;
   outstandingInvites?: string;
   storageLimitBytesPerDeployment?: string;
+  apiCallsPerSeat?: string;
+  seats?: string;
+  tokensPerSeat?: string;
 }
 
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
@@ -1380,6 +1481,10 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: unknown;
 }
 
+export interface V1SudoDeleteOrganizationBillingMessageResponse {
+  [key: string]: unknown;
+}
+
 export interface V1SudoExtendTrialRequest {
   org?: string;
   days?: number;
@@ -1397,12 +1502,43 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
+export interface V1SudoGrantTrialCreditsRequest {
+  org?: string;
+  /** Amount of trial credits to grant in USD. */
+  amountUsd?: number;
+  /** Optional human-readable reason for the grant. */
+  description?: string;
+}
+
+export interface V1SudoGrantTrialCreditsResponse {
+  /** The grant amount actually applied, in USD. */
+  grantedUsd?: number;
+}
+
 export interface V1SudoIssueRuntimeManagerTokenRequest {
   host?: string;
 }
 
 export interface V1SudoIssueRuntimeManagerTokenResponse {
   token?: string;
+}
+
+export interface V1SudoReportUsageRequest {
+  org?: string;
+  eventName?: string;
+  value?: number;
+  /** Optional end time of the reporting window. Defaults to the current server time. */
+  endTime?: string;
+  /** Optional project name attribution for the mock event. If not set, a placeholder is used. */
+  projectName?: string;
+}
+
+export interface V1SudoReportUsageResponse {
+  customerId?: string;
+  eventName?: string;
+  value?: number;
+  startTime?: string;
+  endTime?: string;
 }
 
 export interface V1SudoTriggerBillingRepairRequest {
@@ -1438,6 +1574,10 @@ export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   subscription?: V1Subscription;
 }
 
+export interface V1SudoUpdateOrganizationBillingMessageResponse {
+  [key: string]: unknown;
+}
+
 export interface V1SudoUpdateOrganizationCustomDomainRequest {
   name?: string;
   customDomain?: string;
@@ -1455,6 +1595,7 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsPerDeployment?: number;
   outstandingInvites?: number;
   storageLimitBytesPerDeployment?: string;
+  seats?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
@@ -1749,6 +1890,10 @@ export type AdminServiceUpdateOrganizationBody = {
   billingEmail?: string;
 };
 
+export type AdminServiceGetBillingCreditBalanceParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceListOrganizationBillingIssuesParams = {
   superuserForceAccess?: boolean;
 };
@@ -1774,6 +1919,7 @@ export type AdminServiceCreateManagedGitRepoBody = {
   /** name of the repo to create. 
 Note: The final name will be suffixed with a random string to ensure uniqueness. */
   name?: string;
+  autoInit?: boolean;
 };
 
 export type AdminServiceCreateAssetBody = {
@@ -1891,7 +2037,9 @@ export type AdminServiceUpdateProjectBody = {
   prodTtlSeconds?: string;
   prodVersion?: string;
   devSlots?: string;
+  devTtlSeconds?: string;
   superuserForceAccess?: boolean;
+  overrideDiskGb?: string;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {
@@ -1942,6 +2090,12 @@ Optional for `dev` deployments. */
   /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
 Can't be set for `prod` deployments. */
   editable?: boolean;
+};
+
+export type AdminServiceCreateGithubPullRequestBody = {
+  branch?: string;
+  title?: string;
+  body?: string;
 };
 
 export type AdminServiceHibernateProjectParams = {
@@ -2015,6 +2169,18 @@ export type AdminServiceAddProjectMemberUserBody = {
   role?: string;
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+};
+
+export type AdminServiceCreatePersonalFileBody = {
+  displayName?: string;
+  kind?: string;
+  /** Optional: initial YAML body. If empty, the server generates a blank template for the given type. */
+  yaml?: string;
+};
+
+export type AdminServiceEditPersonalFileBody = {
+  kind?: string;
+  yaml?: string;
 };
 
 export type AdminServiceRedeployProjectParams = {
@@ -2250,6 +2416,11 @@ export type AdminServiceGetReportMetaBody = {
   webOpenMode?: string;
   whereFilterJson?: string;
   accessibleFields?: string[];
+};
+
+export type AdminServiceSudoUpdateOrganizationBillingMessageBody = {
+  level?: V1BillingIssueLevel;
+  message?: string;
 };
 
 export type AdminServiceSearchProjectNamesParams = {

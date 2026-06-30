@@ -21,10 +21,22 @@ function makeCanvasId(canvasName: string, instanceId: string): CanvasId {
 export function getCanvasStoreUnguarded(
   canvasName: string,
   instanceId: string,
+  allowUnvalidatedSpec?: boolean,
 ): CanvasStore | undefined {
   const id = makeCanvasId(canvasName, instanceId);
+  const store = canvasRegistry.get(id);
 
-  return canvasRegistry.get(id);
+  if (
+    store &&
+    allowUnvalidatedSpec !== undefined &&
+    store.canvasEntity.allowUnvalidatedSpec !== allowUnvalidatedSpec
+  ) {
+    store.canvasEntity.dispose();
+    canvasRegistry.delete(id);
+    return undefined;
+  }
+
+  return store;
 }
 
 export function getCanvasStore(
@@ -49,9 +61,16 @@ export function removeCanvasStore(
   instanceId: string,
 ): void {
   const id = makeCanvasId(canvasName, instanceId);
+  // Tear down the entity's subscriptions before dropping it from the registry,
+  // otherwise the orphaned entity keeps reacting to spec emissions and races
+  // the entity created on the next visit.
+  canvasRegistry.get(id)?.canvasEntity.dispose();
   canvasRegistry.delete(id);
 }
 
+// The returned entity does not subscribe to its spec store until a consumer
+// calls `canvasEntity.acquire()`; callers are responsible for acquiring and
+// releasing their reference (see CanvasInitialization).
 export function setCanvasStore(
   canvasName: string,
   instanceId: string,
@@ -61,11 +80,18 @@ export function setCanvasStore(
 ): CanvasStore {
   const id = makeCanvasId(canvasName, instanceId);
 
-  if (canvasRegistry.has(id)) {
+  const existingStore = canvasRegistry.get(id);
+  if (
+    existingStore &&
+    existingStore.canvasEntity.allowUnvalidatedSpec !== allowUnvalidatedSpec
+  ) {
+    existingStore.canvasEntity.dispose();
+    canvasRegistry.delete(id);
+  } else if (existingStore) {
     console.warn(
       `Canvas store for ID ${id} already exists. Returning existing store.`,
     );
-    return canvasRegistry.get(id)!;
+    return existingStore;
   }
 
   const canvasEntity = new CanvasEntity(

@@ -445,6 +445,9 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 
 // executeSingle runs the report query and sends notifications for a single execution time.
 func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, error) {
+	// Tag as report execution so the metrics queries it runs (e.g. via the AI resolver) are attributed to the "report" source for billing.
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceReport)
+
 	// Create new execution and save in State.CurrentExecution
 	rep.State.CurrentExecution = &runtimev1.ReportExecution{
 		Adhoc:      adhocTrigger,
@@ -499,10 +502,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
-		if errors.Is(err, runtime.ErrAdminNotConfigured) {
-			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
-			return false, nil, nil
-		}
 		return false, nil, fmt.Errorf("failed to get admin client: %w", err)
 	}
 	defer release()
@@ -530,6 +529,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
+		if errors.Is(err, drivers.ErrNotImplemented) {
+			r.C.Logger.Info("Skipped sending report: admin service does not support reports", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			return false, nil, nil
+		}
 		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 

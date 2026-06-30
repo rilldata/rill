@@ -23,11 +23,13 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { PlusIcon } from "lucide-svelte";
+  import { Clock, PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
+  import { connectorIconMapping } from "../connectors/connector-metadata";
+  import { getConnectorIconKey } from "../connectors/connectors-utils";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../connectors/selectors";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
@@ -170,6 +172,14 @@
   );
   $: hasNonDuckDBOLAPConnector = $hasNonDuckDBOLAPConnectorQuery.data;
 
+  $: analyzedConnectorsQuery = createRuntimeServiceAnalyzeConnectors(
+    runtimeClient,
+    {},
+  );
+  $: analyzedConnector = $analyzedConnectorsQuery.data?.connectors?.find(
+    (c) => c.name === connector,
+  );
+
   $: resourceKind = hasSourceSelected
     ? ResourceKind.Source
     : hasModelSelected
@@ -206,9 +216,7 @@
 
   $: columns = columnsResponse?.profileColumns ?? [];
 
-  $: timeOptions = columns
-    .filter(({ type }) => type && TIMESTAMPS.has(type))
-    .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
+  $: timeColumns = columns.filter(({ type }) => type && TIMESTAMPS.has(type));
 
   $: typeOfSelectedTimeDimension = columns.find(
     ({ name }) => name === timeDimension,
@@ -239,6 +247,39 @@
         : [],
   };
 
+  // Time dimensions defined in the metrics view can be selected as the primary
+  // time dimension in addition to raw timestamp columns.
+  $: timeDimensionOptions = itemGroups.dimensions
+    .filter((d) => d.type === "time")
+    .map((d) => {
+      const value = d.name || d.resourceName;
+      return {
+        value,
+        label: d.display_name || value,
+        tooltip: d.description || undefined,
+        icon: Clock,
+        group: "Time dimensions",
+      };
+    })
+    .filter(({ value }) => value);
+
+  $: timeDimensionValues = new Set(
+    timeDimensionOptions.map(({ value }) => value),
+  );
+
+  $: timeOptions = [
+    ...timeDimensionOptions,
+    ...timeColumns
+      .filter(({ name }) => !timeDimensionValues.has(name ?? ""))
+      .map(({ name, type }) => ({
+        value: name ?? "",
+        label: name ?? "",
+        type,
+        // Only label the columns section when time dimensions are also listed.
+        group: timeDimensionOptions.length ? "Columns" : undefined,
+      })),
+  ];
+
   $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
     (acc, { name, display_name, resourceName }) => {
       acc.name = Math.max(acc.name, name.length || resourceName?.length || 0);
@@ -266,6 +307,13 @@
     measureNamesAndLabels.label,
   );
 
+  // When the metrics view YAML already specifies a live connector, trust the
+  // YAML fields (connector/database/database_schema/table) directly rather than
+  // walking every dataset via OLAPListTables. For warehouses like BigQuery, that
+  // enumeration issues an INFORMATION_SCHEMA.TABLES query per dataset and often
+  // never completes in projects with many datasets.
+  $: hasLiveConnectorYAML = Boolean(yamlConnector && modelOrSourceOrTableName);
+
   $: tablesQuery = createConnectorServiceOLAPListTables(
     runtimeClient,
     { connector },
@@ -274,7 +322,8 @@
         enabled:
           !!runtimeClient.instanceId &&
           !!connector &&
-          !hasValidModelOrSourceSelection,
+          !hasValidModelOrSourceSelection &&
+          !hasLiveConnectorYAML,
       },
     },
   );
@@ -284,12 +333,13 @@
   $: hasValidOLAPTableSelected =
     !hasValidModelOrSourceSelection &&
     modelOrSourceOrTableName &&
-    tables.find(
-      (table) =>
-        table.name === modelOrSourceOrTableName &&
-        (!database || table.database === database) &&
-        (!databaseSchema || table.databaseSchema === databaseSchema),
-    );
+    (hasLiveConnectorYAML ||
+      tables.find(
+        (table) =>
+          table.name === modelOrSourceOrTableName &&
+          (!database || table.database === database) &&
+          (!databaseSchema || table.databaseSchema === databaseSchema),
+      ));
 
   $: tableMode = Boolean(hasValidOLAPTableSelected);
 
@@ -552,7 +602,7 @@
         <div class="flex flex-col gap-y-1 w-full">
           <InputLabel label="Table" id="table">
             <svelte:fragment slot="mode-switch">
-              {#if isModelingSupported}
+              {#if isModelingSupported && !yamlConnector}
                 <button
                   onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
@@ -574,6 +624,16 @@
                   {#if !hasValidOLAPTableSelected}
                     <span class="text-fg-muted truncate">Select table</span>
                   {:else}
+                    {#if analyzedConnector}
+                      <span class="flex-none">
+                        <svelte:component
+                          this={connectorIconMapping[
+                            getConnectorIconKey(analyzedConnector)
+                          ]}
+                          size="14px"
+                        />
+                      </span>
+                    {/if}
                     <span class="text-fg-secondary truncate">
                       {modelOrSourceOrTableName}
                     </span>
@@ -610,6 +670,9 @@
             options={modelAndSourceOptions}
             placeholder="Select a model"
             label="Model"
+            leadingIcon={analyzedConnector
+              ? connectorIconMapping[getConnectorIconKey(analyzedConnector)]
+              : undefined}
             onChange={async (newModelOrSourceName) => {
               if (modelOrSourceOrTableName === newModelOrSourceName) return;
               if (!modelOrSourceOrTableName) {
@@ -653,7 +716,7 @@
         disabledMessage={!hasValidModelOrSourceSelection
           ? "No model selected"
           : "No timestamp columns in model"}
-        hint="Column from model that will be used as primary time dimension in dashboards"
+        hint="Time dimension or timestamp column used as the primary time dimension in dashboards"
         onChange={async (value) => {
           await updateProperties({ timeseries: value });
         }}

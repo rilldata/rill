@@ -793,6 +793,31 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/env/push:
+    post:
+      summary: PushEnv pushes local environment variables to admin service
+      operationId: RuntimeService_PushEnv
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PushEnvResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files:
     get:
       summary: |-
@@ -1269,6 +1294,33 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/git/diff:
+    get:
+      summary: GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+      operationId: RuntimeService_GitDiff
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitDiffResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: remoteBranch
+          description: |-
+            remote_branch is the branch to compare against. Same semantics as GitStatusRequest:
+            if empty, the upstream of the current local branch is used.
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/git/merge:
     post:
       summary: |-
@@ -1416,6 +1468,13 @@ paths:
           in: path
           required: true
           type: string
+        - name: remoteBranch
+          description: |-
+            remote_branch is the remote branch to compare the current local branch against.
+            If empty, the upstream of the current local branch is used.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:
@@ -1536,6 +1595,10 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: skipped
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -1545,6 +1608,49 @@ paths:
           in: query
           required: false
           type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/models/{model}/partitions/skip:
+    post:
+      summary: |-
+        SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+        Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+      operationId: RuntimeService_SkipModelPartitions
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SkipModelPartitionsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: model
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              partitions:
+                type: array
+                items:
+                  type: string
+                description: Specific partition keys to skip.
+              pending:
+                type: boolean
+                description: Skip all pending partitions.
+              errored:
+                type: boolean
+                description: Skip all errored partitions, clearing them from the model's error state.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/canvases/{canvas}/resolve:
@@ -3656,6 +3762,25 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type of the property
+  GitDiffResponseGitFileChange:
+    type: object
+    properties:
+      path:
+        type: string
+      status:
+        $ref: '#/definitions/GitDiffResponseGitFileStatus'
+      oldPath:
+        type: string
+        description: old_path is the previous path; only set when status is GIT_FILE_STATUS_RENAMED.
+  GitDiffResponseGitFileStatus:
+    type: string
+    enum:
+      - GIT_FILE_STATUS_UNSPECIFIED
+      - GIT_FILE_STATUS_ADDED
+      - GIT_FILE_STATUS_MODIFIED
+      - GIT_FILE_STATUS_DELETED
+      - GIT_FILE_STATUS_RENAMED
+    default: GIT_FILE_STATUS_UNSPECIFIED
   MetricsViewFilterCond:
     type: object
     properties:
@@ -3780,6 +3905,9 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the measure. Only populated in ValidSpec.
+      lowerIsBetter:
+        type: boolean
+        description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -3817,6 +3945,11 @@ definitions:
         type: string
       model:
         type: string
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the rollup.
+          When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
         description: Time grain of the rollup.
@@ -3977,6 +4110,9 @@ definitions:
       mapType:
         $ref: '#/definitions/v1MapType'
         title: If code is CODE_MAP, map_type specifies the map's key and value types
+      rawType:
+        type: string
+        title: raw_type is the original database-specific type (e.g. "VARCHAR(255)")
     title: Type represents a data type in a schema
   v1API:
     type: object
@@ -4326,7 +4462,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CanvasItem'
-        description: Items to render in the row.
+        description: Items to render in the row. Empty when the row is a tab group.
+      tabGroup:
+        $ref: '#/definitions/v1CanvasTabGroup'
+        description: |-
+          If set, this row renders a tab group instead of items.
+          A row has either items or a tab_group, never both.
   v1CanvasSpec:
     type: object
     properties:
@@ -4403,6 +4544,18 @@ definitions:
         items:
           type: string
         title: Array of dimension or measure names
+      requiredFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Array of dimension or measure names that must have a value before the canvas can render.
+          Required filters are implicitly pinned.
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        description: Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
   v1CanvasState:
     type: object
     properties:
@@ -4415,6 +4568,37 @@ definitions:
         description: |-
           The last time any underlying metrics view(s)'s data was refreshed.
           This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
+  v1CanvasTab:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Stable identifier for the tab, used for URL state. Derived from the label.
+      displayName:
+        type: string
+        description: User-facing label for the tab.
+      rows:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasRow'
+        description: |-
+          Rows to render when the tab is active. These are always plain rows;
+          a tab's rows never contain a nested tab_group.
+  v1CanvasTabGroup:
+    type: object
+    properties:
+      name:
+        type: string
+        description: |-
+          Stable identifier for the tab group, used for URL state.
+          Defaults to "group-<index>" if not provided in the canvas YAML.
+      tabs:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1CanvasTab'
+        description: Tabs in the group. A group always has at least one tab.
   v1CategoricalSummary:
     type: object
     properties:
@@ -4973,6 +5157,12 @@ definitions:
         type: object
         additionalProperties:
           type: string
+        description: 'Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.'
+      systemVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: system_variables are variables that are set by admin service and should not be overridden by user input
       annotations:
         type: object
         additionalProperties:
@@ -5162,11 +5352,13 @@ definitions:
       pivotRowLimit:
         type: integer
         format: int32
+      pivotShowTotalsColumn:
+        type: boolean
+      pivotShowTotalsRow:
+        type: boolean
       chartDynamicYAxis:
         type: boolean
         title: Chart display settings (frontend-only; persisted in URL state)
-      chartForceLine:
-        type: boolean
   v1ExploreSortType:
     type: string
     enum:
@@ -5390,6 +5582,8 @@ definitions:
     properties:
       message:
         $ref: '#/definitions/v1Message'
+      result:
+        $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.GetAIMessage
   v1GetConversationResponse:
     type: object
@@ -5485,18 +5679,39 @@ definitions:
     properties:
       commitSha:
         type: string
+  v1GitDiffResponse:
+    type: object
+    properties:
+      changedFiles:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/GitDiffResponseGitFileChange'
+        description: |-
+          changed_files lists the files that would land on the target branch, relative to the project subpath.
+          The comparison ref is the requested remote_branch, or the upstream of the current branch when
+          remote_branch is empty.
   v1GitMergeToBranchResponse:
     type: object
     properties:
       output:
         type: string
         description: The output of the git merge command. Only set for unsuccessful merges.
+      conflict:
+        type: boolean
+        description: Conflict is true if the merge failed due to conflicts.
   v1GitPullResponse:
     type: object
     properties:
       output:
         type: string
         description: The output of the git pull command. Only set for unsuccessful pulls.
+      mergedBranch:
+        type: string
+        description: The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
+      conflict:
+        type: boolean
+        description: Conflict is true if the pull failed due to merge conflicts.
   v1GitPushResponse:
     type: object
   v1GitStatusResponse:
@@ -5508,6 +5723,9 @@ definitions:
       githubUrl:
         type: string
         description: The remote url of the git repo.
+      subpath:
+        type: string
+        description: Subpath from the git repo.
       managedGit:
         type: boolean
         description: If the repo is managed by Rill.
@@ -6407,6 +6625,11 @@ definitions:
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+      dataTimeRange:
+        type: string
+        description: |-
+          Optional rilltime expression describing the time range covered by the base table.
+          When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
       dimensions:
         type: array
         items:
@@ -6474,6 +6697,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecRollup'
+      maxQueryTimeRange:
+        type: string
+        description: |-
+          Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
+          Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
+          Time-range introspection RPCs are exempt. If unset, no limit is enforced.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -6536,6 +6765,12 @@ definitions:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
         title: Not optional, not null
+      maxQueryTimeRangeMillis:
+        type: string
+        format: int64
+        description: |-
+          The metrics view's max_query_time_range property resolved into milliseconds against the current time.
+          Zero if the metrics view does not configure max_query_time_range.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
@@ -6559,6 +6794,12 @@ definitions:
         description: |-
           The same values as resolved_time_ranges for backwards compatibility.
           Deprecated: use resolved_time_ranges instead.
+      maxQueryTimeRangeMillis:
+        type: string
+        format: int64
+        description: |-
+          The metrics view's max_query_time_range property resolved into milliseconds against the request's reference time.
+          Zero if the metrics view does not configure max_query_time_range.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
@@ -6802,6 +7043,8 @@ definitions:
       elapsedMs:
         type: integer
         format: int64
+      skipped:
+        type: boolean
   v1ModelSpec:
     type: object
     properties:
@@ -7204,6 +7447,17 @@ definitions:
           Storage usage by the default OLAP connector in the project.
           If it is -1, it means the value is unknown.
           This is a convenience field derived from the entries.
+  v1PushEnvResponse:
+    type: object
+    properties:
+      addedCount:
+        type: integer
+        format: int32
+        title: Number of variables added
+      changedCount:
+        type: integer
+        format: int32
+        title: Number of variables changed
   v1PutFileResponse:
     type: object
     properties:
@@ -7354,6 +7608,9 @@ definitions:
       allErroredPartitions:
         type: boolean
         description: If true, it will refresh all partitions that errored on their last execution.
+      allSkippedPartitions:
+        type: boolean
+        description: If true, it will refresh all partitions that are currently marked as skipped.
   v1RefreshTrigger:
     type: object
     properties:
@@ -7382,6 +7639,14 @@ definitions:
     type: object
   v1ReloadConfigResponse:
     type: object
+    properties:
+      variablesCount:
+        type: integer
+        format: int32
+        title: Number of variables pulled from admin service
+      modified:
+        type: boolean
+        title: Whether the .env file(s) were modified
     title: Response message for RuntimeService.ReloadConfig
   v1RenameFileResponse:
     type: object
@@ -7756,6 +8021,8 @@ definitions:
   v1ShareConversationResponse:
     type: object
     title: Response message for RuntimeService.ShareConversation
+  v1SkipModelPartitionsResponse:
+    type: object
   v1Source:
     type: object
     properties:

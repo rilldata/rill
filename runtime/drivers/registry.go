@@ -57,6 +57,8 @@ type Instance struct {
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
+	// SystemVariables contains variables set by the system (e.g. "rill.watch_repo") that should not be overridden by user.
+	SystemVariables map[string]string `db:"system_variables"`
 	// FeatureFlags contains feature flags configured in rill.yaml
 	FeatureFlags map[string]string `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
@@ -108,6 +110,11 @@ type InstanceConfig struct {
 	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
 	// Can be "", "none", "new", "pushdown".
 	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
+	// MetricsPivotExportColumnLimit caps the number of columns a pivot export may produce.
+	// Pivots are executed in DuckDB and produces one column per combination of the pivoted dimension values, times the number of measures.
+	// so a pivot producing too many columns fails with an opaque error. This is a conservative safety cap
+	// that lets us return a clear error first. If set to 0, there is no limit.
+	MetricsPivotExportColumnLimit int64 `mapstructure:"rill.metrics.pivot_export_column_limit"`
 	// AlertsDefaultStreamingRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
@@ -115,6 +122,11 @@ type InstanceConfig struct {
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
+	// AICompletionTimeoutSeconds is the maximum duration of a full AI completion request, which may include multiple LLM requests and tool calls.
+	AICompletionTimeoutSeconds uint32 `mapstructure:"rill.ai.completion_timeout_seconds"`
+	// AILLMTimeoutSeconds is the maximum duration of a single LLM completion request.
+	// Note: when using Rill's hosted AI service (i.e. not a self-configured LLM), the admin server enforces a hard upper bound of 10 minutes, so values above that have no effect.
+	AILLMTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_timeout_seconds"`
 	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
 	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
@@ -131,6 +143,8 @@ type InstanceConfig struct {
 	ModelPartitionsWarnOnFailure bool `mapstructure:"rill.model.partitions_warn_on_failure"`
 	// ModelTestsWarnOnFailure: when true, model test failures are surfaced as non-blocking warnings instead of errors.
 	ModelTestsWarnOnFailure bool `mapstructure:"rill.model.tests_warn_on_failure"`
+	// DisableModels: when true, model execution is disabled. Useful for stopping any ingestion in Rill temporarily.
+	DisableModels bool `mapstructure:"rill.models.disable"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -154,7 +168,7 @@ func (i *Instance) ResolveAIConnector() string {
 
 // ResolveVariables returns the final resolved variables
 func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
-	r := make(map[string]string, len(i.ProjectVariables)+len(i.Variables))
+	r := make(map[string]string, len(i.ProjectVariables)+len(i.Variables)+len(i.SystemVariables))
 
 	// set ProjectVariables first i.e. Project defaults
 	for k, v := range i.ProjectVariables {
@@ -166,6 +180,14 @@ func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
 
 	// override with instance Variables
 	for k, v := range i.Variables {
+		if withLowerKeys {
+			k = strings.ToLower(k)
+		}
+		r[k] = v
+	}
+
+	// override with system variables
+	for k, v := range i.SystemVariables {
 		if withLowerKeys {
 			k = strings.ToLower(k)
 		}
@@ -190,8 +212,11 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
 		MetricsNullFillingImplementation:     "pushdown",
+		MetricsPivotExportColumnLimit:        15000,
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
+		AICompletionTimeoutSeconds:           60 * 10,        // 10 minutes
+		AILLMTimeoutSeconds:                  60 * 4,         // 4 minutes
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,

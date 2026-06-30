@@ -6,13 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -47,7 +45,7 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	var attr map[string]any
@@ -99,7 +97,7 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 		// Create magic tokens for all recipients
 		emailTokens, err := s.createMagicTokensAlert(ctx, proj.ID, req.Alert, req.OwnerId, recipients, attr)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to issue magic auth tokens: %s", err.Error())
+			return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 		}
 
 		for email, token := range emailTokens {
@@ -152,12 +150,15 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
-	name, err := s.generateAlertName(ctx, depl, req.Options.DisplayName)
+	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+		_, err := s.admin.LookupAlert(ctx, depl, name)
+		return err
+	})
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	data, err := s.yamlForManagedAlert(req.Options, claims.OwnerID())
@@ -170,9 +171,10 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		Environment: "prod",
 		Path:        virtualFilePathForManagedAlert(name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to insert virtual file: %s", err.Error())
+		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindAlert)
@@ -180,7 +182,7 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be created")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile alert: %s", err.Error())
+		return nil, fmt.Errorf("failed to reconcile alert: %w", err)
 	}
 
 	return &adminv1.CreateAlertResponse{
@@ -212,12 +214,12 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupAlert(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get alert: %s", err.Error())
+		return nil, fmt.Errorf("could not get alert: %w", err)
 	}
 	annotations := parseAlertAnnotations(spec.Annotations)
 
@@ -240,9 +242,10 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		Environment: "prod",
 		Path:        virtualFilePathForManagedAlert(req.Name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
+		return nil, fmt.Errorf("failed to update virtual file: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
@@ -250,7 +253,7 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be updated")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile alert: %s", err.Error())
+		return nil, fmt.Errorf("failed to reconcile alert: %w", err)
 	}
 
 	return &adminv1.EditAlertResponse{}, nil
@@ -262,6 +265,9 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
+	if req.Email != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -280,12 +286,12 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupAlert(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get alert: %s", err.Error())
+		return nil, fmt.Errorf("could not get alert: %w", err)
 	}
 	annotations := parseAlertAnnotations(spec.Annotations)
 
@@ -310,11 +316,11 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		alertTkn, err := s.admin.DB.FindNotificationTokenForMagicAuthToken(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to find notification token: %s", err.Error())
+			return nil, fmt.Errorf("failed to find notification token: %w", err)
 		}
 
 		if alertTkn.ResourceKind != runtime.ResourceKindAlert || alertTkn.ResourceName != req.Name {
-			return nil, status.Error(codes.InvalidArgument, "token is not valid for this alert")
+			return nil, status.Error(codes.PermissionDenied, "token is not valid for this alert")
 		}
 
 		if alertTkn.RecipientEmail == "" {
@@ -365,13 +371,13 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 	}
 
 	if !found {
-		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to alert")
+		return nil, status.Error(codes.FailedPrecondition, "user is not subscribed to alert")
 	}
 
 	if len(alert.Notify.Email.Recipients) == 0 && len(alert.Notify.Slack.Users) == 0 && len(alert.Notify.Slack.Channels) == 0 && len(alert.Notify.Slack.Webhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
+			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
 	} else {
 		data, err := yaml.Marshal(alert)
@@ -384,9 +390,10 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 			Environment: "prod",
 			Path:        virtualFilePathForManagedAlert(req.Name),
 			Data:        data,
+			OwnerID:     nil,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
+			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
 	}
 
@@ -395,7 +402,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be updated")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile alert: %s", err.Error())
+		return nil, fmt.Errorf("failed to reconcile alert: %w", err)
 	}
 
 	return &adminv1.UnsubscribeAlertResponse{}, nil
@@ -425,12 +432,12 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupAlert(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get alert: %s", err.Error())
+		return nil, fmt.Errorf("could not get alert: %w", err)
 	}
 	annotations := parseAlertAnnotations(spec.Annotations)
 
@@ -445,7 +452,7 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 
 	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
+		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
@@ -453,7 +460,7 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be deleted")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile alert: %s", err.Error())
+		return nil, fmt.Errorf("failed to reconcile alert: %w", err)
 	}
 
 	return &adminv1.DeleteAlertResponse{}, nil
@@ -499,7 +506,7 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 
 	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	if vf == nil {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("failed to find file for alert %s", req.Name))
@@ -585,44 +592,6 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
-}
-
-// generateAlertName generates a random alert name with the display name as a seed.
-// Example: "My alert!" -> "my-alert-5b3f7e1a".
-// It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateAlertName(ctx context.Context, depl *database.Deployment, displayName string) (string, error) {
-	for i := 0; i < 5; i++ {
-		name := randomAlertName(displayName)
-
-		_, err := s.admin.LookupAlert(ctx, depl, name)
-		if err != nil {
-			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-				// Success! Name isn't taken
-				return name, nil
-			}
-			return "", fmt.Errorf("failed to check alert name: %w", err)
-		}
-	}
-
-	// Fail-safe in case all names we tried were taken
-	return uuid.New().String(), nil
-}
-
-var alertNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
-
-var alertNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
-
-func randomAlertName(displayName string) string {
-	name := alertNameToDashCharsRegexp.ReplaceAllString(displayName, "-")
-	name = alertNameExcludeCharsRegexp.ReplaceAllString(name, "")
-	name = strings.ToLower(name)
-	name = strings.Trim(name, "-")
-	if name == "" {
-		name = uuid.New().String()
-	} else {
-		name = name + "-" + uuid.New().String()[0:8]
-	}
-	return name
 }
 
 // alertYAML is derived from runtime/parser.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.

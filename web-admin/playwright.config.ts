@@ -8,8 +8,11 @@ const config: PlaywrightTestConfig = {
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
-  retries: 0,
-  reporter: "html",
+  /* Retry on CI so genuine infra noise is absorbed and surfaced as "flaky" rather than failing the run. */
+  retries: process.env.CI ? 2 : 0,
+  reporter: process.env.CI
+    ? [["github"], ["blob"], ["html", { open: "never" }]]
+    : [["html"]],
   use: {
     baseURL: "http://localhost:3000",
     ...devices["Desktop Chrome"],

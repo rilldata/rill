@@ -1,27 +1,30 @@
-<script lang="ts" context="module">
-  import { writable } from "svelte/store";
-  const columnLengths = writable(new Map<string, number>());
-</script>
-
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import type { MeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import {
+    COLUMN_WIDTH_CONSTANTS as WIDTHS,
     calculateColumnWidth,
     calculateMeasureWidth,
-    COLUMN_WIDTH_CONSTANTS as WIDTHS,
+    distributeColumnWidthsToFillContainer,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import type {
-    Cell,
-    Column,
-    HeaderGroup,
-    Row,
-  } from "tanstack-table-8-svelte-5";
+  import { writable } from "svelte/store";
+  import type { Column, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
-  import type { PivotDataRow } from "./types";
+  import {
+    computeEffectiveDimIdx,
+    flatCellState,
+    flatRowState,
+  } from "./pivot-cell-classes";
+  import {
+    type PivotClickSelectionState,
+    dimKeyFromRow,
+  } from "./pivot-click-selection";
+  import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
+  import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
   // State props
   export let assembled: boolean;
@@ -29,7 +32,13 @@
   export let dataRows: PivotDataRow[];
   export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
+  export let enableClickToFilter = false;
+  export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
+  export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
+  export let config: PivotDataStoreConfig | undefined = undefined;
+  export let fillWidth = false;
+  export let containerWidth = 0;
 
   // Table props
   export let headerGroups: HeaderGroup<PivotDataRow>[];
@@ -45,6 +54,8 @@
   export let onMouseMove: (e: MouseEvent) => void;
   export let onTableLeave: () => void;
   export let onCellCopy: (e: MouseEvent) => void;
+
+  const columnLengths = writable(new Map<string, number>());
 
   const HEADER_HEIGHT = 30;
 
@@ -75,10 +86,21 @@
     }
   });
 
-  $: totalLength = headers.reduce((acc, header) => {
-    return (
-      acc + ($columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH)
-    );
+  $: baseColumnWidths = headers.map(
+    (header) =>
+      $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH,
+  );
+  $: displayColumnWidths = fillWidth
+    ? distributeColumnWidthsToFillContainer(
+        headers.map((header, i) => ({
+          width: baseColumnWidths[i],
+          role: getMeasureColumn(header.column) ? "measure" : "dimension",
+        })),
+        containerWidth,
+      )
+    : baseColumnWidths;
+  $: totalLength = displayColumnWidths.reduce((acc, width) => {
+    return acc + width;
   }, 0);
 
   function getMeasureColumn(headerColumn: Column<PivotDataRow>) {
@@ -86,12 +108,11 @@
     return measures.find((m) => m.name === columnId);
   }
 
-  function isCellActive(cell: Cell<PivotDataRow, unknown>) {
-    return (
-      cell.row.id === activeCell?.rowId &&
-      cell.column.id === activeCell?.columnId
-    );
+  function isCellActive(rowId: string, columnId: string) {
+    return rowId === activeCell?.rowId && columnId === activeCell?.columnId;
   }
+
+  $: lastDimIdx = (config?.rowDimensionNames.length ?? 0) - 1;
 
   function hasBorderRight(columnId: string): boolean {
     if (!hasMeasureContextColumns) return true;
@@ -108,8 +129,9 @@
   style:height="{totalRowSize + HEADER_HEIGHT + headerGroups.length}px"
 >
   {#each headers as header, i (header.id)}
-    {@const length =
+    {@const baseLength =
       $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+    {@const length = displayColumnWidths[i] ?? baseLength}
     {@const last = i === headers.length - 1}
     <div style:width="{length}px" class="h-full relative">
       <Resizer
@@ -117,10 +139,10 @@
         direction="EW"
         min={WIDTHS.MIN_MEASURE_WIDTH}
         max={WIDTHS.MAX_MEASURE_WIDTH}
-        dimension={length}
+        dimension={baseLength}
         justify={last ? "end" : "center"}
         hang={!last}
-        onUpdate={(d) =>
+        onUpdate={(d: number) =>
           columnLengths.update((lengths) => {
             return lengths.set(header.column.id, d);
           })}
@@ -134,15 +156,16 @@
 <table
   role="presentation"
   style:width="{totalLength}px"
-  class:with-measure={measures.length > 0}
+  class:with-totals-row={!!totalsRow && measures.length > 0}
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
   onmouseleave={onTableLeave}
 >
   <colgroup>
-    {#each headers as header (header.id)}
-      {@const length =
+    {#each headers as header, i (header.id)}
+      {@const baseLength =
         $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH}
+      {@const length = displayColumnWidths[i] ?? baseLength}
       <col style:width="{length}px" style:max-width="{length}px" />
     {/each}
   </colgroup>
@@ -166,9 +189,10 @@
                 {#if icon}
                   <svelte:component this={icon} />
                 {:else}
-                  <p class="truncate">
-                    {header.column.columnDef.header}
-                  </p>
+                  <PivotHeaderLabel
+                    label={String(header.column.columnDef.header)}
+                    description={header.column.columnDef.meta?.description}
+                  />
                 {/if}
                 {#if sortDirection}
                   <span
@@ -189,21 +213,54 @@
     <tr style:height="{before}px"></tr>
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
-      <tr>
+      {@const rowId = rows[row.index].id}
+      {@const rowData = rows[row.index].original}
+      {@const dk = dimKeyFromRow(rowData, config?.rowDimensionNames ?? [])}
+      {@const isTotalsRow = !!totalsRow && rowId === "0"}
+      {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
+      {@const hasClickedCell =
+        clickSelection?.hasSelectedCellInRow(dk) ?? false}
+      {@const effectiveDimIdx = computeEffectiveDimIdx(
+        hasClickedCell,
+        clickSelection?.getClickedDimensionIndex(dk) ?? -1,
+        lastDimIdx,
+        isSelected,
+        rowSelectionState?.maxFilteredDimensionIndex ?? -1,
+      )}
+      {@const rs = flatRowState({
+        isSelected,
+        hasSelection: rowSelectionState?.hasActiveSelection ?? false,
+        hasClickedCell,
+        effectiveDimIdx,
+      })}
+      <tr class:selected-row={rs.selectedRow} class:dimmed-row={rs.dimmedRow}>
         {#each cells as cell (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
               ? cell.column.columnDef.cell(cell.getContext())
               : cell.column.columnDef.cell}
-          {@const isActive = isCellActive(cell)}
+          {@const cs = flatCellState({
+            isActive: isCellActive(cell.row.id, cell.column.id),
+            isClicked:
+              clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
+            colDimIdx: config?.rowDimensionNames.indexOf(cell.column.id) ?? -1,
+            effectiveDimIdx,
+            lastDimIdx,
+            isTotalsRow,
+            canShowDataViewer,
+            enableClickToFilter,
+            hasValue: cell.getValue() !== undefined,
+          })}
           {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
             ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
             : cell.getValue()}
           <td
             class="ui-copy-number cell truncate"
-            class:active-cell={isActive}
-            class:interactive-cell={canShowDataViewer &&
-              cell.getValue() !== undefined}
+            class:active-cell={cs.activeCell}
+            class:selected-cell={cs.selectedCell}
+            class:selected-context-cell={cs.selectedContextCell}
+            class:muted-cell={cs.mutedCell}
+            class:interactive-cell={cs.interactiveCell}
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
             class:total-label={cell.getValue() === "Total"}
@@ -247,7 +304,7 @@
 
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
-    @apply font-normal;
+    @apply font-normal cursor-default;
     @apply bg-surface-background table-fixed;
   }
 
@@ -296,7 +353,7 @@
   }
 
   /* The totals row */
-  .with-measure tbody > tr:nth-of-type(2) {
+  .with-totals-row tbody > tr:nth-of-type(2) {
     @apply bg-surface-background sticky z-20;
     top: var(--total-header-height);
   }
@@ -323,5 +380,43 @@
   }
   .active-cell.cell {
     @apply bg-primary-50;
+  }
+
+  td.selected-cell.cell {
+    @apply bg-primary-50 relative z-[1];
+    box-shadow: 0 0 0 1px theme(colors.primary.400);
+  }
+  /* The totals row is z-20 and covers the outset top shadow; use an inset top border instead */
+  .with-totals-row tbody > tr:nth-of-type(3) > td.selected-cell.cell {
+    box-shadow:
+      0 0 0 1px theme(colors.primary.400),
+      inset 0 1px 0 0 theme(colors.primary.400);
+  }
+  td.selected-cell.cell:hover {
+    @apply bg-primary-100;
+  }
+
+  .selected-row .cell {
+    @apply bg-primary-50;
+  }
+  .selected-row:hover .cell {
+    @apply bg-primary-100;
+  }
+
+  .dimmed-row .cell {
+    @apply opacity-50;
+  }
+
+  /* Dimension cells to the left of the clicked cell: same primary background, no ring */
+  .selected-context-cell.cell {
+    @apply bg-primary-50;
+  }
+  .selected-context-cell.cell:hover {
+    @apply bg-primary-100;
+  }
+
+  /* Dimension cells to the right of the clicked cell: muted background */
+  .muted-cell.cell {
+    @apply bg-surface-muted;
   }
 </style>

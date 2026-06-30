@@ -44,6 +44,8 @@
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { ScrubController } from "./measure-chart/ScrubController";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import ScreenshotContainer from "@rilldata/web-common/features/dashboards/time-series/ScreenshotContainer.svelte";
 
   const { rillTime } = featureFlags;
 
@@ -52,6 +54,9 @@
 
   export let exploreName: string;
   export let hideStartPivotButton = false;
+  // Height of the expanded chart in the Time Dimension Detail view, controlled
+  // by the resizable divider between the timeseries and the detail table.
+  export let tddChartHeight = 245;
 
   const StateManagers = getStateManagers();
 
@@ -62,6 +67,7 @@
       measures: { allMeasures, visibleMeasures, getMeasureByName },
       dimensionFilters: { includedDimensionValues },
       charts: { canPanLeft, canPanRight, getNewPanRange },
+      tags: { measureTagIndex },
     },
     actions: {
       measures: { setMeasureVisibility },
@@ -126,7 +132,6 @@
   $: comparisonDimension = $exploreState?.selectedComparisonDimension;
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
-  $: forceLineChart = $exploreState?.forceLineChart ?? false;
   $: dynamicYAxisScale = $exploreState?.dynamicYAxisScale ?? false;
 
   $: activeTimeGrain = selectedTimeRange?.interval;
@@ -179,6 +184,9 @@
   $: exploreValidSpec = useExploreValidSpec(client, exploreName);
   $: annotationsEnabled =
     !!$exploreValidSpec.data?.metricsView?.annotations?.length;
+
+  let screenshotDialogOpen = false;
+  let screenshotDialogMeasure: MetricsViewSpecMeasure | undefined = undefined;
 
   // Pan handler
   function handlePan(direction: "left" | "right") {
@@ -254,33 +262,30 @@
       measureSelection.clear();
     }
   }
+
+  function openScreenshotDialog(measure: MetricsViewSpecMeasure) {
+    screenshotDialogMeasure = measure;
+    screenshotDialogOpen = true;
+  }
 </script>
 
 <svelte:window onclick={maybeClearMeasureSelection} />
 
 <div class="max-w-full h-fit flex flex-col max-h-full pr-2">
-  <div
-    class:mb-6={tddChartType !== TDDChart.DEFAULT}
-    class="flex items-center gap-x-1 px-2.5"
-  >
+  <div class="flex items-center gap-x-1 px-2.5">
     {#if showTimeDimensionDetail}
       <div class="flex justify-between w-full items-center py-2">
         <BackToExplore />
         <div class="flex items-center mr-4 gap-x-1">
           <ChartTypeSelector
-            hasComparison={Boolean(
-              showComparison || includedValuesForDimension.length,
-            )}
+            hasComparison={Boolean(includedValuesForDimension.length)}
             {exploreName}
             chartType={tddChartType}
           />
           <ChartSettingsMenu
             bind:connectNulls
-            {forceLineChart}
             {dynamicYAxisScale}
-            showForceLineChart={false}
-            onForceLineChartChange={(v) =>
-              metricsExplorerStore.setForceLineChart(exploreName, v)}
+            showChartTypeSelector={false}
             onDynamicYAxisScaleChange={(v) =>
               metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
           />
@@ -292,6 +297,7 @@
         onSelectedChange={(items) =>
           setMeasureVisibility(items, allMeasureNames)}
         allItems={$allMeasures}
+        tagIndex={$measureTagIndex}
         selectedItems={visibleMeasureNames}
       />
 
@@ -336,10 +342,12 @@
 
       <ChartSettingsMenu
         bind:connectNulls
-        {forceLineChart}
         {dynamicYAxisScale}
-        onForceLineChartChange={(v) =>
-          metricsExplorerStore.setForceLineChart(exploreName, v)}
+        {exploreName}
+        chartType={tddChartType}
+        hasComparison={Boolean(includedValuesForDimension.length)}
+        onChartTypeChange={(type) =>
+          metricsExplorerStore.setTDDChartType(exploreName, type)}
         onDynamicYAxisScaleChange={(v) =>
           metricsExplorerStore.setDynamicYAxisScale(exploreName, v)}
       />
@@ -399,42 +407,55 @@
         />
 
         {#if activeTimeGrain}
-          <MeasureChart
-            {measure}
-            {scrubController}
-            {connectNulls}
-            tddChartType={showTimeDimensionDetail
-              ? (tddChartType ?? TDDChart.DEFAULT)
-              : TDDChart.DEFAULT}
-            metricsViewName={chartMetricsViewName}
-            where={chartWhere}
-            {timeDimension}
-            interval={chartInterval}
-            comparisonInterval={chartComparisonInterval}
-            timeGranularity={activeTimeGrain}
-            timeZone={selectedTimezone}
-            ready={chartReady}
-            {chartScrubInterval}
-            {comparisonDimension}
-            dimensionValues={chartDimensionValues}
-            dimensionWhere={whereFilter}
-            {annotationsEnabled}
-            canPanLeft={$canPanLeft}
-            canPanRight={$canPanRight}
-            onPanLeft={() => handlePan("left")}
-            onPanRight={() => handlePan("right")}
-            {showComparison}
-            {showTimeDimensionDetail}
-            {forceLineChart}
-            dynamicYAxis={dynamicYAxisScale}
-            onScrub={handleScrub}
-            onScrubClear={() => {
-              metricsExplorerStore.setSelectedScrubRange(
-                exploreName,
-                undefined,
-              );
-            }}
-          />
+          <div class="relative">
+            <MeasureChart
+              {measure}
+              {scrubController}
+              {connectNulls}
+              tddChartType={tddChartType ?? TDDChart.DEFAULT}
+              metricsViewName={chartMetricsViewName}
+              where={chartWhere}
+              {timeDimension}
+              interval={chartInterval}
+              comparisonInterval={chartComparisonInterval}
+              timeGranularity={activeTimeGrain}
+              timeZone={selectedTimezone}
+              ready={chartReady}
+              {chartScrubInterval}
+              {comparisonDimension}
+              dimensionValues={chartDimensionValues}
+              dimensionWhere={whereFilter}
+              {annotationsEnabled}
+              canPanLeft={$canPanLeft}
+              canPanRight={$canPanRight}
+              onPanLeft={() => handlePan("left")}
+              onPanRight={() => handlePan("right")}
+              {showComparison}
+              {showTimeDimensionDetail}
+              {tddChartHeight}
+              dynamicYAxis={dynamicYAxisScale}
+              onScrub={handleScrub}
+              onScrubClear={() => {
+                metricsExplorerStore.setSelectedScrubRange(
+                  exploreName,
+                  undefined,
+                );
+              }}
+            />
+
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger class="absolute right-2 -top-2">
+                <ThreeDot />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end">
+                <DropdownMenu.Item
+                  onclick={() => openScreenshotDialog(measure)}
+                >
+                  Download as PNG
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
         {:else}
           <div class="flex items-center justify-center w-24">
             <Spinner status={EntityStatus.Running} />
@@ -452,3 +473,30 @@
   }}
   onReplace={createPivot}
 />
+
+{#if screenshotDialogMeasure}
+  <ScreenshotContainer
+    bind:open={screenshotDialogOpen}
+    measure={screenshotDialogMeasure}
+    metricsViewName={chartMetricsViewName}
+    tddChartType={tddChartType ?? TDDChart.DEFAULT}
+    where={chartWhere}
+    {timeDimension}
+    {timeStart}
+    {timeEnd}
+    {comparisonTimeStart}
+    {comparisonTimeEnd}
+    interval={chartInterval}
+    comparisonInterval={chartComparisonInterval}
+    {comparisonDimension}
+    timeGranularity={activeTimeGrain}
+    timeZone={selectedTimezone}
+    dimensionValues={chartDimensionValues}
+    dimensionWhere={whereFilter}
+    {showComparison}
+    {showTimeDimensionDetail}
+    dynamicYAxis={dynamicYAxisScale}
+    {connectNulls}
+    ready={chartReady}
+  />
+{/if}

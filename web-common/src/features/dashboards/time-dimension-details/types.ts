@@ -1,8 +1,14 @@
 export enum TDDChart {
   DEFAULT = "default",
+  LINE = "line",
   STACKED_BAR = "stacked_bar",
   GROUPED_BAR = "grouped_bar",
   STACKED_AREA = "stacked_area",
+}
+
+/** Returns true when the chart type is the adaptive/auto-switching mode. */
+export function isAdaptiveChartType(type: TDDChart): boolean {
+  return type === TDDChart.DEFAULT;
 }
 
 export interface TDDState {
@@ -23,6 +29,8 @@ export interface TDDState {
 export interface HeaderData<T> {
   value: T | null | undefined;
   spark?: string;
+  // Resolved URL for URI dimensions, used to render the value as a link.
+  uri?: string | null;
 }
 
 export type TDDCellData = string | number | null | undefined;

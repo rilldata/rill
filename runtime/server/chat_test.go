@@ -57,7 +57,7 @@ measures:
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
 	// Create test server
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// Create test context with claims (to test conversation listings, which filter by user ID)
@@ -143,7 +143,7 @@ measures:
 		ConversationId: "doesntexist",
 		MessageId:      "doesntexist",
 	})
-	require.ErrorContains(t, err, "failed to find the conversation")
+	require.ErrorContains(t, err, "failed to find session")
 	// Check that getting a non-existent message on a existing conversation returns an error.
 	_, err = srv.GetAIMessage(fooCtx, &runtimev1.GetAIMessageRequest{
 		InstanceId:     instanceID,
@@ -159,6 +159,7 @@ measures:
 	})
 	require.NoError(t, err)
 	require.Equal(t, res1.Messages[0], msgRes.Message)
+	require.Equal(t, res1.Messages[5], msgRes.Result)
 
 	// Check it errors if completing a conversation that doesn't exist
 	_, err = srv.Complete(fooCtx, &runtimev1.CompleteRequest{
@@ -321,7 +322,7 @@ measures:
 
 func TestAnonymousSessionAccess(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// Claims for an anonymous and authenticated user.
@@ -395,7 +396,7 @@ func TestAgentChoiceAndContext(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AIConnector: "openai",
 	})
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// Ask a question for the analyst agent

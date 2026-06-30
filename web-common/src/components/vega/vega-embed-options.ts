@@ -5,6 +5,7 @@ import type { EmbedOptions } from "svelte-vega";
 import { expressionInterpreter } from "vega-interpreter";
 import type { Config } from "vega-lite";
 import type { ExpressionFunction } from "./types";
+import { sanitizeTitleForVegaTooltip } from "./util";
 import { getRillTheme } from "./vega-config";
 
 export interface CreateEmbedOptionsParams {
@@ -67,9 +68,14 @@ export function createEmbedOptions({
 }
 
 export function getTooltipFormatter(colorMapping: ColorMapping) {
-  const colorMap = new Map<string, string>(
-    (colorMapping ?? []).map((m) => [m.value, m.color]),
-  );
+  const colorMap = new Map<string, string>();
+  for (const mapping of colorMapping ?? []) {
+    colorMap.set(mapping.value, mapping.color);
+    const tooltipTitle = sanitizeTitleForVegaTooltip(mapping.value);
+    if (!colorMap.has(tooltipTitle)) {
+      colorMap.set(tooltipTitle, mapping.color);
+    }
+  }
 
   return (
     items: Record<string, unknown>,

@@ -13,7 +13,19 @@ import (
 const (
 	SupportEmail    = "support@rilldata.com"
 	DefaultTimeZone = "UTC"
+	// InternalEmailDomain is excluded from billable seat counts so internal Rill users don't count against an org's seats.
+	InternalEmailDomain = "rilldata.com"
 )
+
+// CreditsCurrency is the pricing-unit used for trial credit balance/alerts/grants. Its a non-monetary custom pricing unit, so trial usage never produces USD invoice line items.
+// 1 credit is equivalent to 1 USD
+const CreditsCurrency = "credits"
+
+// USDCurrency is the standard real-world currency used for paid-plan billing and the USD ledger (e.g., where trial `credits` get rolled over on upgrade).
+const USDCurrency = "USD"
+
+// CreditTrialLowBalanceThreshold is the credit balance at which we trigger a warning email.
+const CreditTrialLowBalanceThreshold = 50
 
 var ErrNotFound = errors.New("not found")
 
@@ -33,6 +45,8 @@ type Biller interface {
 	GetPlan(ctx context.Context, id string) (*Plan, error)
 	// GetPlanByName returns the plan with the given Rill plan name.
 	GetPlanByName(ctx context.Context, name string) (*Plan, error)
+	// GetPlanByType returns the plan with the given PlanType. Returns ErrNotFound if no plan matches.
+	GetPlanByType(ctx context.Context, planType PlanType) (*Plan, error)
 
 	// CreateCustomer creates a customer for the given organization in the billing system and returns the external customer ID.
 	CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error)
@@ -40,6 +54,18 @@ type Biller interface {
 	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
 	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
 	DeleteCustomer(ctx context.Context, customerID string) error
+
+	// CreateCustomerCreditAlerts registers credit-balance alerts for the customer in the given currency.
+	CreateCustomerCreditAlerts(ctx context.Context, customerID, currency string, lowThreshold float64) error
+
+	// GrantCustomerCredits increments credit ledger entry to the customer's balance in the given currency. Description is recorded on the ledger entry; expiryDate may be nil for credits that never expire.
+	GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error
+
+	// DebitCustomerCredits posts a `decrement` ledger entry against the customer's balance in the given currency.
+	DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error
+
+	// GetCustomerCreditBalance returns the customer's current credit balance in the given currency.
+	GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error)
 
 	// CreateSubscription creates a subscription for the given organization. Subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
@@ -83,6 +109,8 @@ const (
 	EnterprisePlanType
 	FreePlanType
 	ProPlanType
+	StarterPlanType
+	GrowthPlanType
 )
 
 type Plan struct {
@@ -105,6 +133,9 @@ type Quotas struct {
 	NumSlotsTotal                  *int
 	NumSlotsPerDeployment          *int
 	NumOutstandingInvites          *int
+	NumSeats                       *int
+	NumAPICallsPerSeat             *int
+	NumTokensPerSeat               *int
 }
 
 type planMetadata struct {
@@ -116,6 +147,9 @@ type planMetadata struct {
 	NumSlotsTotal                  *int   `mapstructure:"num_slots_total"`
 	NumSlotsPerDeployment          *int   `mapstructure:"num_slots_per_deployment"`
 	NumOutstandingInvites          *int   `mapstructure:"num_outstanding_invites"`
+	NumSeats                       *int   `mapstructure:"num_seats"`
+	NumAPICallsPerSeat             *int   `mapstructure:"num_api_calls_per_seat"`
+	NumTokensPerSeat               *int   `mapstructure:"num_tokens_per_seat"`
 }
 
 type Subscription struct {

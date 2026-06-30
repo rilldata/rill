@@ -15,6 +15,7 @@
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
+  import ErrorMessage from "@rilldata/web-common/features/chat/core/messages/error/ErrorMessage.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -129,14 +130,18 @@
     </div>
   {:else}
     {#each blocks as block (block.id)}
-      {#if block.type === "text" && block.message.role === "user"}
-        <UserMessage message={block.message} />
-      {:else if block.type === "text" && block.message.role === "assistant"}
-        <AssistantMessage
-          {block}
-          conversation={currentConversation}
-          onDownvote={handleDownvote}
-        />
+      {#if block.type === "text"}
+        {#if block.isError}
+          <ErrorMessage message={block.message} />
+        {:else if block.message.role === "user"}
+          <UserMessage message={block.message} />
+        {:else if block.message.role === "assistant"}
+          <AssistantMessage
+            {block}
+            conversation={currentConversation}
+            onDownvote={handleDownvote}
+          />
+        {/if}
       {:else if block.type === "thinking"}
         <ThinkingBlock {block} {tools} />
       {:else if block.type === "working"}

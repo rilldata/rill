@@ -16,10 +16,19 @@ import (
 
 // QueryResolver enables superusers and project admins to query a resolver within a project
 func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolverRequest) (*runtimev1.QueryResolverResponse, error) {
-	// Validate the caller has the ReadResolvers permission
+	// Validate permissions
 	claims := auth.GetClaims(ctx, req.InstanceId)
-	if !claims.Can(runtime.ReadResolvers) {
-		return nil, status.Error(codes.PermissionDenied, "only project admins can query resolvers")
+	switch req.Resolver {
+	case "metrics", "metrics_sql":
+		// As a special case, we allow metrics resolvers for users with ReadMetrics permission (i.e. all users)
+		if !claims.Can(runtime.ReadMetrics) {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to query metrics")
+		}
+	default:
+		// Other resolvers require ReadResolvers permission (i.e. project admin)
+		if !claims.Can(runtime.ReadResolvers) {
+			return nil, status.Error(codes.PermissionDenied, "only project admins can query resolvers")
+		}
 	}
 
 	// Resolver should exist
@@ -46,14 +55,14 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		ForExport:  false,
 	})
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	defer resolver.Close()
 
 	// Query the resolver
 	res, err := resolver.ResolveInteractive(ctx)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	defer res.Close()
 
@@ -75,7 +84,7 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		}
 		rowStruct, err := pbutil.ToStruct(row, res.Schema())
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		data = append(data, rowStruct)
 		count++

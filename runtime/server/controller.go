@@ -41,12 +41,12 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	rs, err := ctrl.List(ctx, req.Kind, req.Path, false)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
@@ -62,7 +62,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	})
 
 	if req.SkipSecurityChecks {
-		if !claims.Admin() {
+		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
 		}
 		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
@@ -73,7 +73,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		r := rs[i]
 		r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 		}
 		if !access {
 			// Remove from the slice
@@ -103,19 +103,19 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 
 	ctrl, err := s.runtime.Controller(ss.Context(), req.InstanceId)
 	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return err
 	}
 
 	if req.Replay {
 		rs, err := ctrl.List(ss.Context(), req.Kind, "", false)
 		if err != nil {
-			return status.Error(codes.InvalidArgument, err.Error())
+			return err
 		}
 
 		for _, r := range rs {
 			r, access, err := s.runtime.ApplySecurityPolicy(ss.Context(), req.InstanceId, claims, r)
 			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
+				return mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 			}
 			if !access {
 				continue
@@ -126,7 +126,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 				Resource: r,
 			})
 			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
+				return err
 			}
 		}
 	}
@@ -173,19 +173,16 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	r, err := ctrl.Get(ctx, req.Name, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Error(codes.NotFound, "resource not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if req.SkipSecurityChecks {
-		if !claims.Admin() {
+		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
 		}
 		return &runtimev1.GetResourceResponse{Resource: r}, nil
@@ -193,10 +190,10 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "resource not found")
+		return nil, ErrForbidden
 	}
 
 	return &runtimev1.GetResourceResponse{Resource: r}, nil
@@ -217,24 +214,21 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: req.Name}
 	e, err := ctrl.Get(ctx, n, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Error(codes.NotFound, "resource not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	e, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, e)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "resource not found")
+		return nil, ErrForbidden
 	}
 
 	validSpec := e.GetExplore().State.ValidSpec
@@ -250,15 +244,15 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return nil, status.Error(codes.NotFound, "metrics view not found")
 		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	m, access, err = s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, m)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "metrics view not found")
+		return nil, ErrForbidden
 	}
 
 	return &runtimev1.GetExploreResponse{
@@ -282,24 +276,21 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: req.Model}
 	r, err := ctrl.Get(ctx, n, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Error(codes.NotFound, "resource not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
 	}
 	if !access {
-		return nil, status.Error(codes.NotFound, "resource not found")
+		return nil, ErrForbidden
 	}
 
 	partitionsModelID := r.GetModel().State.PartitionsModelId
@@ -318,7 +309,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	defer release()
 
@@ -327,6 +318,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		ModelID:          partitionsModelID,
 		WherePending:     req.Pending,
 		WhereErrored:     req.Errored,
+		WhereSkipped:     req.Skipped,
 		BeforeExecutedOn: beforeExecutedOn,
 		AfterKey:         afterKey,
 		Limit:            pagination.ValidPageSize(req.PageSize, defaultPageSize),
@@ -334,7 +326,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 
 	partitions, err := catalog.FindModelPartitions(ctx, opts)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	var nextPageToken string
@@ -349,11 +341,81 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	}, nil
 }
 
-// CreateTrigger implements runtimev1.RuntimeServiceServer
-func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
+// SkipModelPartitions implements runtimev1.RuntimeServiceServer
+func (s *Server) SkipModelPartitions(ctx context.Context, req *runtimev1.SkipModelPartitionsRequest) (*runtimev1.SkipModelPartitionsResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.model", req.Model),
+		attribute.StringSlice("args.partitions", req.Partitions),
+		attribute.Bool("args.pending", req.Pending),
+		attribute.Bool("args.errored", req.Errored),
+	)
+
+	// Skipping mutates partition state, so it requires edit permissions.
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditTrigger) {
+		return nil, ErrForbidden
+	}
+
+	if len(req.Partitions) == 0 && !req.Pending && !req.Errored {
+		return nil, status.Error(codes.InvalidArgument, "must specify partitions, pending, or errored")
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: req.Model}
+	r, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		return nil, err
+	}
+
+	partitionsModelID := r.GetModel().State.PartitionsModelId
+	if partitionsModelID == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "model %q has no partitions", req.Model)
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	err = catalog.UpdateModelPartitionsSkipped(ctx, partitionsModelID, req.Partitions, req.Pending, req.Errored)
+	if err != nil {
+		return nil, err
+	}
+
+	// Re-reconcile the model so it recomputes its partition error state (and cancels any in-flight run, which will
+	// re-query pending partitions and observe the newly skipped ones).
+	err = ctrl.Reconcile(ctx, n)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.SkipModelPartitionsResponse{}, nil
+}
+
+// CreateTrigger implements runtimev1.RuntimeServiceServer
+func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	resourceNames := make([]string, len(req.Resources))
+	for i, r := range req.Resources {
+		resourceNames[i] = r.Kind + "/" + r.Name
+	}
+	modelNames := make([]string, len(req.Models))
+	for i, m := range req.Models {
+		modelNames[i] = m.Model
+	}
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.StringSlice("args.resources", resourceNames),
+		attribute.StringSlice("args.models", modelNames),
+		attribute.Bool("args.parser", req.Parser),
+		attribute.Bool("args.all", req.All),
+		attribute.Bool("args.all_full", req.AllFull),
 	)
 
 	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditTrigger) {
@@ -362,7 +424,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Build refresh trigger spec
@@ -392,7 +454,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		for _, kind := range kinds {
 			rs, err := ctrl.List(ctx, kind, "", false)
 			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list resources of kind %q: %w", kind, err).Error())
+				return nil, fmt.Errorf("failed to list resources of kind %q: %w", kind, err)
 			}
 			for _, r := range rs {
 				if kind == runtime.ResourceKindModel {
@@ -413,7 +475,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
 	err = ctrl.Create(ctx, n, nil, nil, nil, false, r)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to create trigger: %w", err).Error())
+		return nil, fmt.Errorf("failed to create trigger: %w", err)
 	}
 
 	return &runtimev1.CreateTriggerResponse{}, nil
@@ -450,6 +512,7 @@ func modelPartitionToPB(partition drivers.ModelPartition) *runtimev1.ModelPartit
 		ExecutedOn: executedOn,
 		Error:      partition.Error,
 		ElapsedMs:  uint32(partition.Elapsed.Milliseconds()),
+		Skipped:    partition.Skipped,
 	}
 }
 

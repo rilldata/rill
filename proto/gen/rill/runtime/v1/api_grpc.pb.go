@@ -48,6 +48,7 @@ const (
 	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
 	RuntimeService_GetExplore_FullMethodName              = "/rill.runtime.v1.RuntimeService/GetExplore"
 	RuntimeService_GetModelPartitions_FullMethodName      = "/rill.runtime.v1.RuntimeService/GetModelPartitions"
+	RuntimeService_SkipModelPartitions_FullMethodName     = "/rill.runtime.v1.RuntimeService/SkipModelPartitions"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
@@ -64,6 +65,7 @@ const (
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
 	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
+	RuntimeService_GitDiff_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitDiff"
 	RuntimeService_ListGitBranches_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListGitBranches"
 	RuntimeService_GitCommit_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitCommit"
 	RuntimeService_RestoreGitCommit_FullMethodName        = "/rill.runtime.v1.RuntimeService/RestoreGitCommit"
@@ -71,6 +73,7 @@ const (
 	RuntimeService_GitSwitchBranch_FullMethodName         = "/rill.runtime.v1.RuntimeService/GitSwitchBranch"
 	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
 	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
+	RuntimeService_PushEnv_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PushEnv"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -140,6 +143,9 @@ type RuntimeServiceClient interface {
 	GetExplore(ctx context.Context, in *GetExploreRequest, opts ...grpc.CallOption) (*GetExploreResponse, error)
 	// GetModelPartitions returns the partitions of a model
 	GetModelPartitions(ctx context.Context, in *GetModelPartitionsRequest, opts ...grpc.CallOption) (*GetModelPartitionsResponse, error)
+	// SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+	// Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+	SkipModelPartitions(ctx context.Context, in *SkipModelPartitionsRequest, opts ...grpc.CallOption) (*SkipModelPartitionsResponse, error)
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
@@ -176,6 +182,8 @@ type RuntimeServiceClient interface {
 	ListGitCommits(ctx context.Context, in *ListGitCommitsRequest, opts ...grpc.CallOption) (*ListGitCommitsResponse, error)
 	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	// GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+	GitDiff(ctx context.Context, in *GitDiffRequest, opts ...grpc.CallOption) (*GitDiffResponse, error)
 	ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
@@ -194,6 +202,8 @@ type RuntimeServiceClient interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
+	// PushEnv pushes local environment variables to admin service
+	PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -521,6 +531,16 @@ func (c *runtimeServiceClient) GetModelPartitions(ctx context.Context, in *GetMo
 	return out, nil
 }
 
+func (c *runtimeServiceClient) SkipModelPartitions(ctx context.Context, in *SkipModelPartitionsRequest, opts ...grpc.CallOption) (*SkipModelPartitionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkipModelPartitionsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_SkipModelPartitions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateTriggerResponse)
@@ -690,6 +710,16 @@ func (c *runtimeServiceClient) GitStatus(ctx context.Context, in *GitStatusReque
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GitDiff(ctx context.Context, in *GitDiffRequest, opts ...grpc.CallOption) (*GitDiffResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitDiffResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitDiff_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListGitBranchesResponse)
@@ -754,6 +784,16 @@ func (c *runtimeServiceClient) GitPush(ctx context.Context, in *GitPushRequest, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GitPushResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GitPush_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PushEnvResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_PushEnv_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -827,6 +867,9 @@ type RuntimeServiceServer interface {
 	GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error)
 	// GetModelPartitions returns the partitions of a model
 	GetModelPartitions(context.Context, *GetModelPartitionsRequest) (*GetModelPartitionsResponse, error)
+	// SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+	// Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+	SkipModelPartitions(context.Context, *SkipModelPartitionsRequest) (*SkipModelPartitionsResponse, error)
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
@@ -863,6 +906,8 @@ type RuntimeServiceServer interface {
 	ListGitCommits(context.Context, *ListGitCommitsRequest) (*ListGitCommitsResponse, error)
 	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	// GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+	GitDiff(context.Context, *GitDiffRequest) (*GitDiffResponse, error)
 	ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
@@ -881,6 +926,8 @@ type RuntimeServiceServer interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
+	// PushEnv pushes local environment variables to admin service
+	PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -978,6 +1025,9 @@ func (UnimplementedRuntimeServiceServer) GetExplore(context.Context, *GetExplore
 func (UnimplementedRuntimeServiceServer) GetModelPartitions(context.Context, *GetModelPartitionsRequest) (*GetModelPartitionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetModelPartitions not implemented")
 }
+func (UnimplementedRuntimeServiceServer) SkipModelPartitions(context.Context, *SkipModelPartitionsRequest) (*SkipModelPartitionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SkipModelPartitions not implemented")
+}
 func (UnimplementedRuntimeServiceServer) CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTrigger not implemented")
 }
@@ -1026,6 +1076,9 @@ func (UnimplementedRuntimeServiceServer) ListGitCommits(context.Context, *ListGi
 func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
 }
+func (UnimplementedRuntimeServiceServer) GitDiff(context.Context, *GitDiffRequest) (*GitDiffResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitDiff not implemented")
+}
 func (UnimplementedRuntimeServiceServer) ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGitBranches not implemented")
 }
@@ -1046,6 +1099,9 @@ func (UnimplementedRuntimeServiceServer) GitPull(context.Context, *GitPullReques
 }
 func (UnimplementedRuntimeServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
+}
+func (UnimplementedRuntimeServiceServer) PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushEnv not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 func (UnimplementedRuntimeServiceServer) testEmbeddedByValue()                        {}
@@ -1569,6 +1625,24 @@ func _RuntimeService_GetModelPartitions_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_SkipModelPartitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkipModelPartitionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).SkipModelPartitions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_SkipModelPartitions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).SkipModelPartitions(ctx, req.(*SkipModelPartitionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_CreateTrigger_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateTriggerRequest)
 	if err := dec(in); err != nil {
@@ -1850,6 +1924,24 @@ func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GitDiff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitDiffRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitDiff(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitDiff_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitDiff(ctx, req.(*GitDiffRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListGitBranches_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListGitBranchesRequest)
 	if err := dec(in); err != nil {
@@ -1976,6 +2068,24 @@ func _RuntimeService_GitPush_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_PushEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushEnvRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).PushEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_PushEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).PushEnv(ctx, req.(*PushEnvRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2088,6 +2198,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_GetModelPartitions_Handler,
 		},
 		{
+			MethodName: "SkipModelPartitions",
+			Handler:    _RuntimeService_SkipModelPartitions_Handler,
+		},
+		{
 			MethodName: "CreateTrigger",
 			Handler:    _RuntimeService_CreateTrigger_Handler,
 		},
@@ -2148,6 +2262,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_GitStatus_Handler,
 		},
 		{
+			MethodName: "GitDiff",
+			Handler:    _RuntimeService_GitDiff_Handler,
+		},
+		{
 			MethodName: "ListGitBranches",
 			Handler:    _RuntimeService_ListGitBranches_Handler,
 		},
@@ -2174,6 +2292,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitPush",
 			Handler:    _RuntimeService_GitPush_Handler,
+		},
+		{
+			MethodName: "PushEnv",
+			Handler:    _RuntimeService_PushEnv_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

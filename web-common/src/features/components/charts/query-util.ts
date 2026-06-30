@@ -13,7 +13,21 @@ import { createInExpression } from "@rilldata/web-common/features/dashboards/sto
 import type {
   V1Expression,
   V1MetricsViewAggregationSort,
+  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
+
+export function canQueryWithTimeRange(
+  hasTimeSeries: boolean | undefined,
+  timeRange: V1TimeRange | undefined,
+  requiresTimeRange = false,
+): boolean {
+  const hasTimeRange = !!timeRange?.start && !!timeRange?.end;
+  if (requiresTimeRange) return hasTimeRange;
+  if (hasTimeSeries === false) return true;
+  if (hasTimeSeries === true) return hasTimeRange;
+  // hasTimeSeries === undefined: metrics view spec not yet resolved, block the query.
+  return false;
+}
 
 export function getFilterWithNullHandling(
   where: V1Expression | undefined,

@@ -1,5 +1,7 @@
 const FILE_PATH_SPLIT_REGEX = /\//;
 
+export const RESOURCE_FILE_EXTENSIONS = [".yaml", ".yml", ".sql"] as const;
+
 export function extractFileName(filePath: string): string {
   let fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
   const lastIndexOfDot = fileName.lastIndexOf(".");
@@ -17,8 +19,14 @@ export function extractFileName(filePath: string): string {
 
 export function extractFileExtension(filePath: string): string {
   const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
-  const lastIndexOfDot = fileName.indexOf(".");
-  return lastIndexOfDot >= 0 ? fileName.substring(lastIndexOfDot) : "";
+
+  const resourceExtension = RESOURCE_FILE_EXTENSIONS.find((extension) =>
+    fileName.endsWith(extension),
+  );
+  if (resourceExtension) return resourceExtension;
+
+  const firstIndexOfDot = fileName.indexOf(".");
+  return firstIndexOfDot >= 0 ? fileName.substring(firstIndexOfDot) : "";
 }
 
 export function splitFolderAndFileName(

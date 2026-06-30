@@ -2,12 +2,21 @@
   import { page } from "$app/stores";
   import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
+  import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
+  import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+    developerChatActions,
+    developerChatOpen,
+  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -18,27 +27,29 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { V1ProjectPermissions } from "../../client";
   import { createAdminServiceGetCurrentUser } from "../../client";
-  import {
-    useBreadcrumbOrgPaths,
-    useBreadcrumbProjectPaths,
-  } from "../navigation/breadcrumb-selectors";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
-  import BranchSelector from "../branches/BranchSelector.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { useDashboards } from "../dashboards/listing/selectors";
   import {
+    useBreadcrumbOrgPaths,
+    useBreadcrumbProjectPaths,
+  } from "../navigation/breadcrumb-selectors";
+  import {
     isCanvasDashboardPage,
+    isEditDashboardPreviewPage,
     isMetricsExplorerPage,
+    isPersonalFilePage,
     isProjectPage,
     isPublicURLPage,
   } from "../navigation/nav-utils";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
+  import SharePersonalFile from "@rilldata/web-admin/features/personal-files/SharePersonalFile.svelte";
 
   export let organization: string;
   export let project: string;
@@ -49,18 +60,21 @@
   export let primaryBranch: string | undefined = undefined;
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
+  export let editContext: boolean = false;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
   const {
     alerts: alertsFlag,
+    cloudEditing,
+    developerChat,
     dimensionSearch,
     dashboardChat,
     stickyDashboardState,
   } = featureFlags;
 
   $: ({
-    params: { dashboard, alert, report },
+    params: { dashboard, alert, report, name },
   } = $page);
 
   $: onAlertPage = !!alert;
@@ -68,7 +82,12 @@
   $: onProjectPage = isProjectPage($page);
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
+  $: onPersonalFilePage = isPersonalFilePage($page);
   $: onPublicURLPage = isPublicURLPage($page);
+
+  $: onEditDashboardPreview = isEditDashboardPreviewPage($page);
+
+  $: activeBranch = extractBranchFromPath($page.url.pathname);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -172,25 +191,45 @@
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <svelte:fragment slot="after-project">
-        {#if !onPublicURLPage && projectPermissions?.readDev}
-          <BranchSelector {organization} {project} {primaryBranch} />
+        {#if editContext && activeBranch}
+          <li class="flex items-center mr-2">
+            <span
+              class="inline-block truncate max-w-[200px] px-2 py-0 rounded-2xl border bg-primary-50 border-primary-200 text-primary-800"
+              title={activeBranch}
+            >
+              {activeBranch}
+            </span>
+          </li>
         {/if}
       </svelte:fragment>
     </Breadcrumbs>
   {/if}
 
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if $viewAsUserStore}
-      <ViewAsUserChip />
-    {/if}
-    {#if onProjectPage && projectPermissions.manageProjectMembers}
-      <ShareProjectPopover
-        {organization}
-        {project}
-        manageProjectAdmins={projectPermissions.manageProjectAdmins}
-        {manageOrgAdmins}
-        {manageOrgMembers}
-      />
+    {#if editContext}
+      {#if $developerChat && !onEditDashboardPreview}
+        <ChatToggle open={developerChatOpen} actions={developerChatActions} />
+      {/if}
+      {#if $dashboardChat && onEditDashboardPreview}
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
+      {/if}
+      <EditActions {organization} {project} {primaryBranch} />
+    {:else}
+      {#if $viewAsUserStore}
+        <ViewAsUserChip />
+      {/if}
+      {#if $cloudEditing && onProjectPage && projectPermissions.manageDev}
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
+      {/if}
+      {#if onProjectPage && projectPermissions.manageProjectMembers && !onPersonalFilePage}
+        <ShareProjectPopover
+          {organization}
+          {project}
+          manageProjectAdmins={projectPermissions.manageProjectAdmins}
+          {manageOrgAdmins}
+          {manageOrgMembers}
+        />
+      {/if}
     {/if}
 
     {#if onMetricsExplorerPage && isDashboardValid}
@@ -202,11 +241,22 @@
             let:ready
           >
             <LastRefreshedDate {dashboard} />
+            {#if $cloudEditing && (onMetricsExplorerPage || onCanvasDashboardPage) && projectPermissions.manageDev}
+              <EditButton
+                {organization}
+                {project}
+                {activeBranch}
+                {primaryBranch}
+              />
+            {/if}
             {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
-            {#if $dashboardChat && !onPublicURLPage}
-              <ChatToggle />
+            {#if $dashboardChat && !onPublicURLPage && !editContext}
+              <ChatToggle
+                open={dashboardChatOpen}
+                actions={dashboardChatActions}
+              />
             {/if}
             {#if hasUserAccess}
               <ExploreBookmarks
@@ -228,8 +278,11 @@
     {/if}
 
     {#if onCanvasDashboardPage}
-      {#if $dashboardChat && !onPublicURLPage}
-        <ChatToggle />
+      {#if $cloudEditing && projectPermissions.manageDev}
+        <EditButton {organization} {project} {activeBranch} {primaryBranch} />
+      {/if}
+      {#if $dashboardChat && !onPublicURLPage && !editContext}
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       {/if}
       {#if hasUserAccess}
         <CanvasBookmarks {organization} {project} canvasName={dashboard} />
@@ -237,6 +290,10 @@
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
         />
       {/if}
+    {/if}
+
+    {#if onPersonalFilePage}
+      <SharePersonalFile {organization} {project} {name} />
     {/if}
 
     {#if $user.isSuccess}

@@ -9,7 +9,7 @@ import type {
 import { writable } from "svelte/store";
 import { YAMLMap, YAMLSeq } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
-import type { CanvasComponentType } from "./components/types";
+import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
 
 // TODO: Move this individual component class
@@ -56,8 +56,12 @@ type YAMLItem = Record<string, unknown> & {
 };
 
 export type YAMLRow = {
-  items: YAMLItem[];
+  items?: YAMLItem[];
   height?: string;
+  // A top-level entry may instead be a tab group (carries `tabs` and an optional `name`).
+  // These are passed through row transactions untouched so their content is preserved.
+  tabs?: unknown;
+  name?: string;
 };
 
 export type DragItem = {
@@ -76,7 +80,14 @@ export function rowsGuard(value: unknown): unknown[] {
 export function mapGuard(value: unknown[]): Array<YAMLRow> {
   return value.map((el) => {
     if (el instanceof YAMLMap) {
-      const jsonObject = el.toJSON() as Partial<YAMLRow>;
+      const jsonObject = el.toJSON() as YAMLRow;
+
+      // Preserve tab group rows verbatim. Coercing them to `items: []` would strip their
+      // tabs and the empty-items cleanup would then delete the row, destroying the group
+      // whenever an unrelated top-level row transaction runs.
+      if (jsonObject?.tabs !== undefined) {
+        return jsonObject;
+      }
 
       return {
         items: jsonObject?.items ?? [],
@@ -94,6 +105,36 @@ export function mapGuard(value: unknown[]): Array<YAMLRow> {
 interface Position {
   row: number;
   col: number;
+}
+
+// Identifies an editable rows container. undefined targets the top-level rows; a tab target
+// scopes editing to one tab's rows (at YAML path rows[blockIndex].tabs[tabIndex].rows).
+export type EditTarget = { blockIndex: number; tabIndex: number };
+
+/** YAML path to a tab's rows sequence. */
+export function tabRowsPath(blockIndex: number, tabIndex: number) {
+  return ["rows", blockIndex, "tabs", tabIndex, "rows"];
+}
+
+/** Component name prefix for a tab, matching the parser's position key (see parse_canvas.go). */
+export function tabNamePrefix(blockIndex: number, tabIndex: number) {
+  return `g${blockIndex}-t${tabIndex}-`;
+}
+
+/** Derive the tab target a component path lives in, or undefined for a top-level component. */
+export function tabTargetFromPath(
+  path: (string | number)[],
+): EditTarget | undefined {
+  if (path.length >= 5 && path[0] === "rows" && path[2] === "tabs") {
+    return { blockIndex: Number(path[1]), tabIndex: Number(path[3]) };
+  }
+  return undefined;
+}
+
+/** Component name prefix for the tab a path lives in, or "" for a top-level component. */
+export function namePrefixFromPath(path: (string | number)[]): string {
+  const target = tabTargetFromPath(path);
+  return target ? tabNamePrefix(target.blockIndex, target.tabIndex) : "";
 }
 
 interface BaseTransaction {
@@ -137,7 +178,11 @@ export interface Transaction {
 export function generateArrayRearrangeFunction(transaction: Transaction) {
   return <I, R extends { items?: I[] }>(
     array: R[],
-    newItemGenerator: (pos: Position, type: CanvasComponentType) => I,
+    newItemGenerator: (
+      pos: Position,
+      type: CanvasComponentType,
+      operationIndex: number,
+    ) => I,
     rowUpdater: (row: R, index: number, touched: boolean) => R,
   ) => {
     const newArray = structuredClone(array);
@@ -146,7 +191,7 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
       () => false,
     );
 
-    for (const op of transaction.operations) {
+    for (const [operationIndex, op] of transaction.operations.entries()) {
       switch (op.type) {
         case "delete": {
           const { row, col } = op.target;
@@ -241,7 +286,11 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
             throw new Error("Maximum number of items reached");
           }
 
-          const newItem = newItemGenerator(destination, componentType);
+          const newItem = newItemGenerator(
+            destination,
+            componentType,
+            operationIndex,
+          );
           row.items?.splice(destination.col, 0, newItem);
           touchedRows[rowIndex] = true;
           break;
@@ -264,12 +313,16 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
   };
 }
 
-function generateId(
+// Generates the resource name for a component at a position. namePrefix disambiguates
+// components nested in tabs (e.g. "g2-t0-") so they don't collide with top-level ones;
+// it mirrors the position key used by the parser (see parse_canvas.go).
+export function generateId(
   row: number | undefined,
   column: number | undefined,
   canvasName: string,
+  namePrefix = "",
 ) {
-  return `${canvasName}--component-${row ?? 0}-${column ?? 0}`;
+  return `${canvasName}--component-${namePrefix}${row ?? 0}-${column ?? 0}`;
 }
 
 export function generateNewAssets(params: {
@@ -278,6 +331,8 @@ export function generateNewAssets(params: {
   specRows: V1CanvasRow[];
   resolvedComponents: V1ResolveCanvasResponseResolvedComponents | undefined;
   canvasName: string;
+  // Prefix for generated component names, to keep tab components unique. Default "" (top level).
+  namePrefix?: string;
   defaultMetrics: {
     metricsViewName: string;
     metricsViewSpec: V1MetricsViewSpec | undefined;
@@ -288,34 +343,54 @@ export function generateNewAssets(params: {
     specRows,
     defaultMetrics,
     canvasName,
+    namePrefix = "",
     resolvedComponents,
     transaction,
   } = params;
 
   const mover = generateArrayRearrangeFunction(transaction);
+  const addedComponentSpecs = transaction.operations.map((op) => {
+    if (op.type !== "add") return undefined;
+
+    return {
+      type: op.componentType,
+      spec: createComponentSpec(op.componentType, defaultMetrics),
+    };
+  });
 
   const resolvedComponentsArray = specRows.map((row) => {
-    const items =
-      row.items?.map((item) => {
-        return resolvedComponents?.[item?.component ?? ""];
-      }) ?? [];
+    // Preserve tab group rows (no items) so this array stays index-aligned with the spec
+    // and YAML arrays through the cleanup step; their tab components remain resolvable via
+    // the existing resolvedComponents map that updateAssets merges in.
+    if (!row.items)
+      return { ...row, items: undefined as V1Resource[] | undefined };
+    const items = row.items.map((item) => {
+      return resolvedComponents?.[item?.component ?? ""];
+    });
     return { ...row, items: items.filter(itemExists) };
   });
 
   const updatedYamlRows = mover<YAMLItem, YAMLRow>(
     yamlRows,
-    (_, type) => {
+    (_, type, operationIndex) => {
+      const spec = getAddedComponentSpec(
+        addedComponentSpecs,
+        operationIndex,
+        type,
+        defaultMetrics,
+      );
       return {
-        ...initComponentSpec(type, defaultMetrics),
+        [type]: spec,
         width: 0,
       };
     },
     (row, _, touched) => {
-      if (!touched) return row;
-      const updatedItems = row.items.map((item) => {
+      if (!touched || !row.items) return row;
+      const items = row.items;
+      const updatedItems = items.map((item) => {
         return {
           ...item,
-          width: touched ? COLUMN_COUNT / row.items.length : item.width,
+          width: touched ? COLUMN_COUNT / items.length : item.width,
         };
       });
 
@@ -338,7 +413,7 @@ export function generateNewAssets(params: {
     },
     (row, index, touched) => {
       const updatedItems = row.items?.map((item, col) => {
-        item.component = generateId(index, col, canvasName);
+        item.component = generateId(index, col, canvasName, namePrefix);
 
         return {
           ...item,
@@ -353,18 +428,25 @@ export function generateNewAssets(params: {
     },
   );
 
-  const updatedResolvedComponents = mover<V1Resource, { items: V1Resource[] }>(
+  const updatedResolvedComponents = mover<V1Resource, { items?: V1Resource[] }>(
     resolvedComponentsArray,
-    (pos, type) => {
+    (pos, type, operationIndex) => {
+      const spec = getAddedComponentSpec(
+        addedComponentSpecs,
+        operationIndex,
+        type,
+        defaultMetrics,
+      );
       return createOptimisticResource({
         type,
+        spec,
         ...defaultMetrics,
       });
     },
     (row, index) => {
-      const updatedItems = row.items.map((item, col) => {
+      const updatedItems = row.items?.map((item, col) => {
         if (!item?.meta?.name) return item;
-        item.meta.name.name = generateId(index, col, canvasName);
+        item.meta.name.name = generateId(index, col, canvasName, namePrefix);
         return item;
       });
       return {
@@ -377,7 +459,7 @@ export function generateNewAssets(params: {
   const resolvedComponentsMap: Record<string, V1Resource> = {};
 
   updatedResolvedComponents.forEach((row) => {
-    row.items.forEach((item) => {
+    row.items?.forEach((item) => {
       if (item?.meta?.name?.name) {
         resolvedComponentsMap[item?.meta?.name?.name] = item;
       }
@@ -392,17 +474,57 @@ export function generateNewAssets(params: {
   };
 }
 
+function createComponentSpec(
+  componentType: CanvasComponentType,
+  defaultMetrics: {
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
+  },
+) {
+  return COMPONENT_CLASS_MAP[componentType].newComponentSpec(
+    defaultMetrics.metricsViewName,
+    defaultMetrics.metricsViewSpec,
+  );
+}
+
+function getAddedComponentSpec(
+  addedComponentSpecs: Array<
+    | {
+        type: CanvasComponentType;
+        spec: ComponentSpec;
+      }
+    | undefined
+  >,
+  index: number,
+  type: CanvasComponentType,
+  defaultMetrics: {
+    metricsViewName: string;
+    metricsViewSpec: V1MetricsViewSpec | undefined;
+  },
+) {
+  const addedComponentSpec = addedComponentSpecs[index];
+  const spec =
+    addedComponentSpec?.type === type
+      ? addedComponentSpec.spec
+      : createComponentSpec(type, defaultMetrics);
+
+  return structuredClone(spec);
+}
+
 function createOptimisticResource(options: {
   type: CanvasComponentType;
   metricsViewName: string;
   metricsViewSpec: V1MetricsViewSpec | undefined;
+  spec?: ComponentSpec;
 }): V1Resource {
   const { type, metricsViewName, metricsViewSpec } = options;
 
-  const spec = COMPONENT_CLASS_MAP[type].newComponentSpec(
-    metricsViewName,
-    metricsViewSpec,
-  );
+  const spec =
+    options.spec ??
+    COMPONENT_CLASS_MAP[type].newComponentSpec(
+      metricsViewName,
+      metricsViewSpec,
+    );
 
   return {
     meta: {
@@ -443,10 +565,7 @@ export function initComponentSpec(
     metricsViewSpec: V1MetricsViewSpec | undefined;
   },
 ) {
-  const newSpec = COMPONENT_CLASS_MAP[componentType].newComponentSpec(
-    defaultMetrics.metricsViewName,
-    defaultMetrics.metricsViewSpec,
-  );
+  const newSpec = createComponentSpec(componentType, defaultMetrics);
 
   return {
     [componentType]: newSpec,

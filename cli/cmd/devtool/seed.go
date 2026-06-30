@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/spf13/cobra"
 )
 
@@ -28,9 +28,7 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			defer os.RemoveAll(temp)
-			_, err = git.PlainClone(temp, false, &git.CloneOptions{
-				URL: "https://github.com/rilldata/rill-examples.git",
-			})
+			err = gitutil.Clone(cmd.Context(), temp, "https://github.com/rilldata/rill-examples.git", "", false, false)
 			if err != nil {
 				return err
 			}
@@ -48,7 +46,6 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 			}
-			ch.Interactive = false // disable interactive prompts for seeding
 			return project.ConnectGithubFlow(cmd.Context(), ch, &project.DeployOpts{
 				GitPath:     temp,
 				SubPath:     "rill-openrtb-prog-ads",

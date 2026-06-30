@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -9,7 +10,7 @@
     resourceIsLoading,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import {
     WorkspaceContainer,
     WorkspaceHeader,
@@ -99,21 +100,25 @@
         onTitleChange={onChangeCallback}
         resourceKind={ResourceKind.Canvas}
       >
-        <div class="flex gap-x-2" slot="cta">
-          {#if ready}
-            <SaveDefaultsButton
-              {canvasName}
-              instanceId={runtimeClient.instanceId}
-              saving={$saving}
-            />
-          {/if}
+        {#snippet cta()}
+          <div class="flex gap-x-2">
+            {#if ready}
+              <SaveDefaultsButton
+                {canvasName}
+                instanceId={runtimeClient.instanceId}
+                saving={$saving}
+              />
+            {/if}
 
-          <PreviewButton
-            href="/canvas/{canvasName}"
-            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
-        </div>
+            <PreviewButton
+              href={withEditorPrefix(`/canvas/${canvasName}`)}
+              disabled={!!parseError ||
+                !!reconcileError ||
+                resourceIsReconciling}
+              reconciling={resourceIsReconciling}
+            />
+          </div>
+        {/snippet}
       </WorkspaceHeader>
 
       <svelte:fragment slot="body">
@@ -124,6 +129,7 @@
               {parseError}
               remoteContent={$remoteContent}
               {filePath}
+              showError={selectedView === "code" || ready}
             >
               {#if selectedView === "code"}
                 <CanvasEditor
@@ -137,7 +143,7 @@
                   {ready}
                   {isReconciling}
                   {isLoading}
-                  errorMessage={rootCauseReconcileError}
+                  errorMessage={rootCauseReconcileError ?? parseError?.message}
                   {filePath}
                 >
                   <CanvasBuilder

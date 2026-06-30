@@ -10,28 +10,31 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const devDeplTTL = 6 * time.Hour
+const devDeplTTL = time.Hour
 
 const prodDeplTTL = 14 * 24 * time.Hour
+
+// defaultProdSlots and defaultDevSlots are the slot counts applied when a CreateProject
+// request omits them (e.g. the UI, or older CLIs that don't pass these fields).
+const defaultProdSlots = 4
+
+const defaultDevSlots = 4
 
 // runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
 // This TTL is not used for tokens created for internal communication between the admin and runtime services.
@@ -70,7 +73,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Val, pageSize)
 	}
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// If no projects are public, and user is not an outside member of any projects, the projsMap is empty.
@@ -272,7 +275,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
@@ -303,29 +306,18 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	var depl *database.Deployment
 	if req.Branch != "" {
-		if !permissions.ReadDev {
-			return &adminv1.GetProjectResponse{
-				Project:            s.projToDTO(proj, org.Name),
-				ProjectPermissions: permissions,
-			}, nil
-		}
-
 		depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", req.Branch)
 		if err != nil {
 			return nil, err
 		}
 		if len(depls) == 0 {
-			return nil, status.Errorf(codes.InvalidArgument, "no deployment found for branch %q", req.Branch)
+			return nil, status.Errorf(codes.NotFound, "no deployment found for branch %q", req.Branch)
 		} else if len(depls) > 1 {
-			return nil, status.Errorf(codes.InvalidArgument, "multiple deployments found for branch %q. Recreate deployments to resolve", req.Branch)
+			return nil, status.Errorf(codes.FailedPrecondition, "multiple deployments found for branch %q. Recreate deployments to resolve", req.Branch)
 		}
 		depl = depls[0]
-
-		if !permissions.ReadDevStatus {
-			depl.StatusMessage = ""
-		}
 	} else {
-		if proj.PrimaryDeploymentID == nil || !permissions.ReadProd {
+		if proj.PrimaryDeploymentID == nil {
 			return &adminv1.GetProjectResponse{
 				Project:            s.projToDTO(proj, org.Name),
 				ProjectPermissions: permissions,
@@ -336,102 +328,21 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		if err != nil {
 			return nil, err
 		}
-
-		if !permissions.ReadProdStatus {
-			depl.StatusMessage = ""
-		}
 	}
 
-	var attr map[string]any
-	var rules []*runtimev1.SecurityRule
-	if claims.OwnerType() == auth.OwnerTypeUser {
-		a, restrictResources, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, claims.OwnerID(), "")
-		if err != nil {
-			return nil, err
+	if depl.Environment == "dev" {
+		if !permissions.ReadDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
 		}
-		attr = a
-		userRules := securityRulesFromResources(restrictResources, resources)
-		rules = append(rules, userRules...)
-	} else if claims.OwnerType() == auth.OwnerTypeService {
-		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
-		if err != nil {
-			return nil, err
+		if !permissions.ReadDevStatus {
+			depl.StatusMessage = ""
 		}
-	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
+	} else {
+		if !permissions.ReadProd {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
 		}
-
-		for _, r := range mdl.Resources {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_TransitiveAccess{
-					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-						Resource: &runtimev1.ResourceName{
-							Kind: r.Type,
-							Name: r.Name,
-						},
-					},
-				},
-			})
-		}
-
-		if len(mdl.Resources) == 0 {
-			// If no resources are specified, deny all access.
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Allow: false,
-					},
-				},
-			})
-		}
-
-		attr = mdl.Attributes
-		for mv, filter := range mdl.MetricsViewFilterJSONs {
-			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(filter), expr)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view %q filter: %s", mv, err.Error())
-			}
-			if mv == "" {
-				return nil, status.Errorf(codes.Internal, "empty metrics view name in metrics view filter")
-			}
-			if mv == "*" { // backwards compatibility: apply to all MVs
-				rules = append(rules, &runtimev1.SecurityRule{
-					Rule: &runtimev1.SecurityRule_RowFilter{
-						RowFilter: &runtimev1.SecurityRuleRowFilter{
-							Expression: expr,
-						},
-					},
-				})
-				continue
-			}
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_RowFilter{
-					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						ConditionResources: []*runtimev1.ResourceName{
-							{
-								Kind: runtime.ResourceKindMetricsView,
-								Name: mv,
-							},
-						},
-						Expression: expr,
-					},
-				},
-			})
-		}
-
-		if len(mdl.Fields) > 0 {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_FieldAccess{
-					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Fields:    mdl.Fields,
-						Allow:     true,
-						Exclusive: true,
-					},
-				},
-			})
+		if !permissions.ReadProdStatus {
+			depl.StatusMessage = ""
 		}
 	}
 
@@ -440,43 +351,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
-	instancePermissions := []runtime.Permission{
-		runtime.ReadObjects,
-		runtime.ReadMetrics,
-		runtime.ReadAPI,
-		runtime.UseAI,
-	}
-	if permissions.ManageProject {
-		instancePermissions = append(
-			instancePermissions,
-			runtime.ReadInstance,
-			runtime.ReadResolvers,
-			runtime.EditTrigger,
-		)
-	}
-
-	var systemPermissions []runtime.Permission
-	if req.IssueSuperuserToken {
-		if !claims.Superuser(ctx) {
-			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
-		}
-		// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
-		systemPermissions = append(systemPermissions, runtime.ManageInstances)
-	}
-
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL:       depl.RuntimeAudience,
-		Subject:           claims.OwnerID(),
-		TTL:               ttlDuration,
-		SystemPermissions: systemPermissions,
-		InstancePermissions: map[string][]runtime.Permission{
-			depl.RuntimeInstanceID: instancePermissions,
-		},
-		Attributes:    attr,
-		SecurityRules: rules,
+	jwt, err := s.issueRuntimeToken(ctx, &issueRuntimeTokenOptions{
+		project:            proj,
+		deployment:         depl,
+		projectPermissions: permissions,
+		forOwner:           true,
+		grantManageAll:     req.IssueSuperuserToken,
+		ttl:                ttlDuration,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, err
 	}
 
 	s.admin.Used.Deployment(depl.ID)
@@ -496,12 +380,12 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 
 	proj, err := s.admin.DB.FindProject(ctx, req.Id)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -586,7 +470,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Check permissions
@@ -598,10 +482,20 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// check if org has any blocking billing errors
 	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
-		if errors.Is(err, ctx.Err()) {
-			return nil, err
+		if errors.Is(err, admin.ErrBlockingBillingIssue) {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
+	}
+
+	// Apply defaults when slots are omitted (e.g. the UI, or older CLIs that don't pass these fields).
+	prodSlots := int(req.ProdSlots)
+	if prodSlots == 0 {
+		prodSlots = defaultProdSlots
+	}
+	devSlots := int(req.DevSlots)
+	if devSlots == 0 {
+		devSlots = defaultDevSlots
 	}
 
 	// Check projects quota
@@ -612,13 +506,13 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	if org.QuotaProjects >= 0 && usage.Projects >= org.QuotaProjects {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d projects", org.Name, org.QuotaProjects)
 	}
-	if org.QuotaSlotsPerDeployment >= 0 && int(req.ProdSlots) > org.QuotaSlotsPerDeployment {
+	if org.QuotaSlotsPerDeployment >= 0 && prodSlots > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
 	}
-	if org.QuotaSlotsPerDeployment >= 0 && int(req.DevSlots) > org.QuotaSlotsPerDeployment {
+	if org.QuotaSlotsPerDeployment >= 0 && devSlots > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment; contact support for larger deployments", org.QuotaSlotsPerDeployment)
 	}
-	if org.QuotaSlotsTotal >= 0 && usage.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
+	if org.QuotaSlotsTotal >= 0 && usage.Slots+prodSlots > org.QuotaSlotsTotal {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
 	}
 	if org.QuotaDeployments >= 0 && usage.Deployments >= org.QuotaDeployments {
@@ -664,10 +558,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		PrimaryBranch:        "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
-		ProdSlots:            int(req.ProdSlots),
+		ProdSlots:            prodSlots,
 		ProdTTLSeconds:       prodTTL,
-		DevSlots:             int(req.DevSlots),
+		DevSlots:             devSlots,
 		DevTTLSeconds:        devTTL,
+		OverrideDiskGB:       nil, // default to no override; can be set later by superusers
 	}
 
 	// Check and validate the project file source.
@@ -705,9 +600,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 				return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota exceeded for user %s", u.Email)
 			}
 		}
-		_, err = s.admin.Jobs.StartOrgTrial(ctx, org.ID)
-		if err != nil {
-			s.logger.Named("billing").Error("failed to submit job to start trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
+		if _, err = s.admin.Jobs.StartOrgCreditTrial(ctx, org.ID); err != nil {
+			s.logger.Named("billing").Error("failed to submit job to start credit trial for org, please do it manually", zap.String("org_id", org.ID), zap.Error(err))
 			// continue creating the project
 		}
 	}
@@ -715,7 +609,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, org, opts, !req.SkipDeploy)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.CreateProjectResponse{
@@ -731,7 +625,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -741,7 +635,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 
 	err = s.admin.TeardownProject(ctx, proj)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.DeleteProjectResponse{
@@ -796,6 +690,12 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.ProdTtlSeconds != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
 	}
+	if req.DevTtlSeconds != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.dev_ttl_seconds", *req.DevTtlSeconds))
+	}
+	if req.OverrideDiskGb != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.override_disk_gb", *req.OverrideDiskGb))
+	}
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
 	}
@@ -808,7 +708,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -821,7 +721,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if (req.ProdSlots != nil || req.DevSlots != nil) && !forceAccess {
 		org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 		if req.ProdSlots != nil {
 			if org.QuotaSlotsPerDeployment >= 0 && int(*req.ProdSlots) > org.QuotaSlotsPerDeployment {
@@ -880,7 +780,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 				if err != nil {
 					return nil, err
 				}
-				return nil, status.Errorf(codes.FailedPrecondition, "another project %q in org %q is already using the same git remote and subpath", p.Name, org.Name)
+				return nil, status.Errorf(codes.AlreadyExists, "another project %q in org %q is already using the same git remote and subpath", p.Name, org.Name)
 			}
 		}
 
@@ -930,6 +830,30 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
+	devTTLSeconds := proj.DevTTLSeconds
+	if req.DevTtlSeconds != nil {
+		if *req.DevTtlSeconds <= 0 {
+			return nil, status.Error(codes.InvalidArgument, "dev_ttl_seconds must be greater than 0")
+		}
+		devTTLSeconds = *req.DevTtlSeconds
+	}
+
+	// override_disk_gb is a sudo-only field. Only allow changes when the caller is a superuser using force access.
+	overrideDiskGB := proj.OverrideDiskGB
+	if req.OverrideDiskGb != nil {
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can set override_disk_gb")
+		}
+		if *req.OverrideDiskGb == 0 {
+			overrideDiskGB = nil
+		} else if *req.OverrideDiskGb < 0 {
+			return nil, status.Error(codes.InvalidArgument, "override_disk_gb must be >= 0")
+		} else {
+			v := *req.OverrideDiskGb
+			overrideDiskGB = &v
+		}
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -947,7 +871,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             int(valOrDefault(req.DevSlots, int64(proj.DevSlots))),
-		DevTTLSeconds:        proj.DevTTLSeconds,
+		DevTTLSeconds:        devTTLSeconds,
+		OverrideDiskGB:       overrideDiskGB,
 		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
 		Annotations:          proj.Annotations,
 	}
@@ -983,9 +908,18 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	excludeProd := false
+	if !perms.ReadDevStatus && !perms.ReadProdStatus {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read variables")
 	}
+	if !perms.ReadProdStatus {
+		if req.Environment == "prod" {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read variables for the prod environment")
+		}
+		excludeProd = true
+	}
+	// NOTE: Not explicitly checking ReadDevStatus for non-prod environments for simplicity; if you have ReadProdStatus, you're good to read variables for non-prod envs as well.
 
 	var vars []*database.ProjectVariable
 	if req.ForAllEnvironments {
@@ -1002,6 +936,9 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		VariablesMap: make(map[string]string, len(vars)),
 	}
 	for _, v := range vars {
+		if excludeProd && v.Environment == "prod" {
+			continue
+		}
 		resp.Variables = append(resp.Variables, projectVariableToDTO(v))
 		// nolint:staticcheck // We still need to set it
 		resp.VariablesMap[v.Name] = v.Value
@@ -1023,12 +960,14 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.PermissionDenied, "only users can update project variables")
+	perms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !perms.ManageDev && !perms.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update variables")
 	}
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	if req.Environment == "prod" && !perms.ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update variables for the prod environment")
 	}
+	// NOTE: Not explicitly checking ManageDev for non-prod environments for simplicity; if you have ManageProd, you're good to manage variables for non-prod envs as well.
 
 	var validationErr error
 	for k := range req.Variables {
@@ -1040,7 +979,12 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, validationErr.Error())
 	}
 
-	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())
+	var userID string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		userID = claims.OwnerID()
+	}
+
+	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, userID)
 	if err != nil {
 		return nil, fmt.Errorf("variables updated failed with error %w", err)
 	}
@@ -1065,7 +1009,7 @@ func (s *Server) GetProjectMemberUser(ctx context.Context, req *adminv1.GetProje
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if !auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
@@ -1152,7 +1096,7 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1204,7 +1148,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1227,7 +1171,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
@@ -1237,7 +1181,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 		if user != nil {
 			invitedByUserID = user.ID
@@ -1320,7 +1264,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 			InvitedByName: invitedByName,
 		})
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		return &adminv1.AddProjectMemberUserResponse{
@@ -1357,7 +1301,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		InvitedByName: invitedByName,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.AddProjectMemberUserResponse{
@@ -1369,11 +1313,12 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
+		attribute.String("args.email", req.Email),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -1449,7 +1394,7 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1477,7 +1422,7 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 		} else {
 			role, err = s.admin.DB.FindProjectRole(ctx, *req.Role)
 			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+				return nil, err
 			}
 			if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 				return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
@@ -1516,7 +1461,7 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	} else {
 		role, err = s.admin.DB.FindProjectRole(ctx, *req.Role)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 		if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
 			return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
@@ -1554,7 +1499,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1587,7 +1532,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 
 	token, expiresAt, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID, repoID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.GetCloneCredentialsResponse{
@@ -1609,18 +1554,18 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
 	projectPermissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if (req.Role != database.ProjectRoleNameAdmin && projectPermissions.ReadProject) ||
 		(req.Role == database.ProjectRoleNameAdmin && projectPermissions.ManageProject) {
-		return nil, status.Error(codes.InvalidArgument, "already have access to project")
+		return nil, status.Error(codes.FailedPrecondition, "already have access to project")
 	}
 
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.InvalidArgument, "only users can request access")
+		return nil, status.Error(codes.PermissionDenied, "only users can request access")
 	}
 
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
@@ -1680,12 +1625,12 @@ func (s *Server) GetProjectAccessRequest(ctx context.Context, req *adminv1.GetPr
 
 	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1696,7 +1641,7 @@ func (s *Server) GetProjectAccessRequest(ctx context.Context, req *adminv1.GetPr
 
 	user, err := s.admin.DB.FindUser(ctx, accessReq.UserID)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.GetProjectAccessRequestResponse{Email: user.Email}, nil
@@ -1709,12 +1654,12 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 
 	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1791,12 +1736,12 @@ func (s *Server) DenyProjectAccess(ctx context.Context, req *adminv1.DenyProject
 
 	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1885,7 +1830,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	proj, err = s.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
@@ -1906,6 +1851,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
+		OverrideDiskGB:       proj.OverrideDiskGB,
 		Provisioner:          proj.Provisioner,
 		Annotations:          req.Annotations,
 	})
@@ -2083,7 +2029,7 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -2094,26 +2040,29 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// check if org has blocking billing errors
 	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		if errors.Is(err, admin.ErrBlockingBillingIssue) {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		}
+		return nil, err
 	}
 
 	var depl *database.Deployment
 	if proj.PrimaryDeploymentID != nil {
 		depl, err = s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 	}
 
 	_, err = s.admin.RedeployProject(ctx, proj, depl)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RedeployProjectResponse{}, nil
@@ -2154,13 +2103,16 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// check if org has blocking billing errors
 	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		if errors.Is(err, admin.ErrBlockingBillingIssue) {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		}
+		return nil, err
 	}
 
 	// For backwards compatibility, this RPC supports passing either DeploymentId or Organization+Project names
@@ -2170,24 +2122,24 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		var err error
 		depl, err = s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 
 		proj, err = s.admin.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 	} else {
 		var err error
 		proj, err = s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 
 		if proj.PrimaryDeploymentID != nil {
 			depl, err = s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 			if err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+				return nil, err
 			}
 		}
 	}
@@ -2199,7 +2151,7 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 
 	_, err = s.admin.RedeployProject(ctx, proj, depl)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.TriggerRedeployResponse{}, nil
@@ -2226,6 +2178,8 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ArchiveAssetId:      safeStr(p.ArchiveAssetID),
 		PrimaryDeploymentId: safeStr(p.PrimaryDeploymentID),
 		ProdTtlSeconds:      safeInt64(p.ProdTTLSeconds),
+		DevTtlSeconds:       p.DevTTLSeconds,
+		OverrideDiskGb:      safeInt64(p.OverrideDiskGB),
 		FrontendUrl:         s.admin.URLs.Project(orgName, p.Name),
 		Annotations:         p.Annotations,
 		CreatedOn:           timestamppb.New(p.CreatedOn),
@@ -2269,7 +2223,7 @@ func (s *Server) githubOptsForRemote(ctx context.Context, orgID, branch string, 
 		}
 		ghRepo, _, err := c.Repositories.Get(ctx, account, repo)
 		if err != nil {
-			return nil, nil, nil, "", status.Error(codes.InvalidArgument, "failed to get github repo")
+			return nil, nil, nil, "", fmt.Errorf("failed to get github repo: %w", err)
 		}
 
 		if branch == "" {
@@ -2306,12 +2260,12 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 	client := s.admin.Github.InstallationClient(*p.GithubInstallationID, nil)
 	account, repo, ok := gitutil.SplitGithubRemote(*p.GitRemote)
 	if !ok {
-		return 0, status.Error(codes.InvalidArgument, "invalid github url")
+		return 0, status.Errorf(codes.Internal, "invalid github url %q stored for project", *p.GitRemote)
 	}
 
 	ghRepo, _, err := client.Repositories.Get(ctx, account, repo)
 	if err != nil {
-		return 0, status.Error(codes.InvalidArgument, "failed to get github repo")
+		return 0, fmt.Errorf("failed to get github repo: %w", err)
 	}
 	id := ghRepo.GetID()
 	_, err = s.admin.DB.UpdateProject(ctx, p.ID, &database.UpdateProjectOptions{
@@ -2332,11 +2286,12 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		ProdTTLSeconds:       p.ProdTTLSeconds,
 		DevSlots:             p.DevSlots,
 		DevTTLSeconds:        p.DevTTLSeconds,
+		OverrideDiskGB:       p.OverrideDiskGB,
 		Provisioner:          p.Provisioner,
 		Annotations:          p.Annotations,
 	})
 	if err != nil {
-		return 0, status.Error(codes.Internal, "failed to update project with github repo id")
+		return 0, fmt.Errorf("failed to update project with github repo id: %w", err)
 	}
 	return id, nil
 }
@@ -2379,6 +2334,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		StatusMessage:     d.StatusMessage,
 		CreatedOn:         timestamppb.New(d.CreatedOn),
 		UpdatedOn:         timestamppb.New(d.UpdatedOn),
+		UsedOn:            timestamppb.New(d.UsedOn),
 	}
 }
 

@@ -4,6 +4,7 @@ import {
   CircularChartProvider,
   type CircularChartSpec as CircularChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/circular/CircularChartProvider";
+import { DEFAULT_LABELS_THRESHOLD } from "@rilldata/web-common/features/components/charts/circular/constants";
 import {
   ChartSortType,
   type ChartFieldsMap,
@@ -29,6 +30,7 @@ export type CircularCanvasChartSpec = BaseChartConfig & CircularChartSpecBase;
 
 export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
   private provider: CircularChartProvider;
+  private isTruncated = false;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
     measure: {
@@ -44,6 +46,14 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     innerRadius: {
       type: "number",
       label: "Inner Radius (%)",
+    },
+    show_other: {
+      type: "boolean",
+      label: 'Show "Other" bucket',
+    },
+    labels: {
+      type: "labels",
+      label: "Data labels",
     },
     color: {
       type: "positional",
@@ -84,6 +94,10 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     this.provider.combinedWhere.subscribe((where) => {
       this.componentFilters = where;
     });
+
+    this.provider.isTruncated.subscribe((value) => {
+      this.isTruncated = value;
+    });
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
@@ -93,6 +107,9 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     if (colorMappingSelector) {
       colorMappingSelector.values = this.provider.customColorValues;
     }
+
+    inputParams.show_other.showInUI = this.isTruncated;
+
     return inputParams;
   }
 
@@ -120,13 +137,18 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): CircularCanvasChartSpec {
-    // Randomly select a measure and dimension if available
     const measures = metricsViewSpec?.measures || [];
     const dimensions = [...(metricsViewSpec?.dimensions || [])].filter(
       (d) => d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
     );
-    const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
-      ?.name as string;
+
+    // Prefer summable measures since percentage-style measures don't make
+    // sense as slices of a whole.
+    const summableMeasures = measures.filter((m) => m.validPercentOfTotal);
+    const measurePool = summableMeasures.length ? summableMeasures : measures;
+    const randomMeasure = measurePool[
+      Math.floor(Math.random() * measurePool.length)
+    ]?.name as string;
 
     const randomDimension = dimensions[
       Math.floor(Math.random() * dimensions.length)
@@ -135,6 +157,12 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     return {
       metrics_view: metricsViewName,
       innerRadius: 50,
+      show_other: true,
+      labels: {
+        show: true,
+        format: "percent",
+        threshold: DEFAULT_LABELS_THRESHOLD,
+      },
       color: {
         type: "nominal",
         field: randomDimension,

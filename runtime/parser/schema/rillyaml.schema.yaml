@@ -111,11 +111,88 @@ allOf:
     properties:
       env:
         type: object
-        description: "To define a variable in `rill.yaml`, pass in the appropriate key-value pair for the variable under the `env` key"
+        description: |
+          A map of key-value pairs for setting variables on your project. It accepts both user-defined variables (for use with templating) and reserved `rill.*` keys that configure project-wide settings. The full set of reserved keys is listed below.
         examples:
         - env:
-            numeric_var: 10
-            string_var: "string_value"
+            foo: bar
+            rill.interactive_sql_row_limit: 5000
+        properties:
+          rill.download_limit_bytes:
+            type: integer
+            description: "Limit on the size of an exported file, in bytes. Default: 134217728 (128 MB)."
+          rill.interactive_sql_row_limit:
+            type: integer
+            description: "Row limit for interactive SQL queries; does not apply to SQL exports. Default: 10000."
+          rill.models.default_materialize:
+            type: boolean
+            description: "Materialize models as tables by default instead of views. Default: false."
+          rill.models.materialize_delay_seconds:
+            type: integer
+            description: "Delay before materializing models, in seconds. Default: 0."
+          rill.models.concurrent_execution_limit:
+            type: integer
+            description: "Maximum number of concurrent model executions. Default: 5."
+          rill.model.timeout_override:
+            type: integer
+            description: "Timeout for model reconciliation in seconds, used in validation mode. Default: 0 (no override)."
+          rill.model.partitions_warn_on_failure:
+            type: boolean
+            description: "When true, partition execution failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise."
+          rill.model.tests_warn_on_failure:
+            type: boolean
+            description: "When true, model test failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise."
+          rill.models.disable:
+            type: boolean
+            description: "When true, model execution is disabled. Useful for stopping any ingestion in Rill temporarily. Default: false."
+          rill.metrics.approximate_comparisons:
+            type: boolean
+            description: "Rewrite metrics comparison queries to use an approximate, faster form. Approximate comparisons may not return data points for all values. Default: true."
+          rill.metrics.approximate_comparisons_cte:
+            type: boolean
+            description: "Rewrite metrics comparison queries to use a CTE for the base query. Default: false."
+          rill.metrics.approximate_comparisons_two_phase_limit:
+            type: integer
+            description: "Row-limit threshold under which metrics comparison queries use a two-phase strategy (base values first, comparison values second). Default: 250."
+          rill.metrics.exactify_druid_topn:
+            type: boolean
+            description: "Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false."
+          rill.metrics.timeseries_null_filling_implementation:
+            type: string
+            description: "Null-filling implementation for timeseries queries. One of `none`, `new`, or `pushdown`. Default: `pushdown`."
+          rill.alerts.default_streaming_refresh_cron:
+            type: string
+            description: "Default cron expression for refreshing alerts that depend on streaming refs (for example, external tables in Druid where new data may arrive at any time). Default: `0 0 * * *` (every 24 hours)."
+          rill.alerts.fast_streaming_refresh_cron:
+            type: string
+            description: "Cron expression for refreshing streaming alerts on always-on OLAP connectors. Default: `*/10 * * * *` (every 10 minutes)."
+          rill.parser.skip_updates_if_parse_errors:
+            type: boolean
+            description: "Short-circuit project parser reconciliation when parse errors exist. Default: false."
+          rill.ai.completion_timeout_seconds:
+            type: integer
+            description: "Maximum duration of a full AI completion request (which may include multiple LLM calls and tool uses), in seconds. Default: 300."
+          rill.ai.llm_timeout_seconds:
+            type: integer
+            description: "Maximum duration of a single LLM completion request, in seconds. Default: 180. Note: when using Rill's hosted AI service (i.e. not a self-configured LLM), the admin server enforces a hard upper bound of 10 minutes, so values above that have no effect."
+          rill.ai.default_query_limit:
+            type: integer
+            description: "Default row limit applied to AI tool queries when no limit is specified. Default: 25."
+          rill.ai.max_query_limit:
+            type: integer
+            description: "Maximum row limit allowed for AI tool queries. Default: 250."
+          rill.ai.require_time_range:
+            type: boolean
+            description: "Require AI tool queries to include a time range filter; reject queries without one. Default: true."
+          rill.ai.max_time_range_days:
+            type: integer
+            description: "Maximum time range allowed for AI tool queries, in days. Set to 0 for no limit. Default: 0."
+          rill.strict_resolver_properties:
+            type: boolean
+            description: "Return an error when a resolver contains properties not recognized by its implementation. Default: false."
+          rill.strict_model_properties:
+            type: boolean
+            description: "Return an error when a model contains unmapped properties. Default: false."
   - title: Managing Paths in Rill
     description: | 
       The public_paths and ignore_paths properties in the rill.yaml file provide control over which files and directories are processed or exposed by Rill. The public_paths property defines a list of file or directory paths to expose over HTTP. By default, it includes ['./public']. The ignore_paths property specifies a list of files or directories that Rill excludes during ingestion and parsing. This prevents unnecessary or incompatible content from affecting the project.

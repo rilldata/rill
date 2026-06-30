@@ -14,6 +14,7 @@
   export let resource: V1Resource;
   export let whereErrored: boolean;
   export let wherePending: boolean;
+  export let whereSkipped = false;
   export let searchText = "";
 
   const runtimeClient = useRuntimeClient();
@@ -24,6 +25,7 @@
   $: baseParams = {
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
+    ...(whereSkipped ? { skipped: true } : {}),
   };
   $: query = createRuntimeServiceGetModelPartitionsInfinite(
     runtimeClient,
@@ -78,7 +80,10 @@
     {
       accessorKey: "executedOn",
       header: "Executed on",
-      cell: ({ row }) => formatTimestamp(row.original.executedOn),
+      cell: ({ row }) =>
+        row.original.skipped
+          ? "Skipped"
+          : formatTimestamp(row.original.executedOn),
       sortDescFirst: true,
     },
     {

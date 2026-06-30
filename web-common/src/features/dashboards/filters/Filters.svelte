@@ -22,7 +22,7 @@
     type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Duration, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -109,6 +109,14 @@
 
   $: watermark = timeRangeSummary?.watermark;
 
+  $: maxQueryTimeRangeMillis = Number(
+    $timeRangeQuery.data?.maxQueryTimeRangeMillis ?? 0,
+  );
+  $: maxQueryTimeRange =
+    maxQueryTimeRangeMillis > 0
+      ? Duration.fromMillis(maxQueryTimeRangeMillis)
+      : undefined;
+
   $: ({
     selectedTimeRange,
     allTimeRange,
@@ -192,7 +200,8 @@
   $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
     return {
       value: timeDim.name!,
-      label: timeDim.name!,
+      label: timeDim.displayName || timeDim.name!,
+      description: timeDim.description,
     };
   });
 
@@ -453,6 +462,7 @@
           {timeEnd}
           lockTimeZone={exploreSpec.lockTimeZone}
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
+          {maxQueryTimeRange}
           {activeTimeGrain}
           {activeTimeZone}
           canPanLeft={$canPanLeft}

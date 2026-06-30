@@ -7,6 +7,7 @@
   } from "@rilldata/web-admin/client";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import PublicURLsResourceTable from "@rilldata/web-admin/features/public-urls/PublicURLsResourceTable.svelte";
+  import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -115,9 +116,23 @@
   {:else if $magicAuthTokensInfiniteQuery.isError}
     <p class="text-red-500">Error loading public URLs</p>
   {:else}
-    <PublicURLsResourceTable
-      data={sortedAllRowsWithDashboardTitle}
-      onDelete={handleDelete}
-    />
+    <div class="flex flex-col gap-3 w-full overflow-hidden">
+      <div class="flex flex-col">
+        <RadixLarge>Public URLs</RadixLarge>
+        <p class="text-sm text-fg-tertiary font-medium">
+          Manage shared public URLs for your dashboards. <a
+            href="https://docs.rilldata.com/guide/dashboards/public-urls"
+            target="_blank"
+            class="text-primary-600 hover:text-primary-700 active:text-primary-800"
+          >
+            Learn more ->
+          </a>
+        </p>
+      </div>
+      <PublicURLsResourceTable
+        data={sortedAllRowsWithDashboardTitle}
+        onDelete={handleDelete}
+      />
+    </div>
   {/if}
 </div>
