@@ -52,10 +52,13 @@ export function removeCanvasStore(
   // Tear down the entity's subscriptions before dropping it from the registry,
   // otherwise the orphaned entity keeps reacting to spec emissions and races
   // the entity created on the next visit.
-  canvasRegistry.get(id)?.canvasEntity.unsubscribe();
+  canvasRegistry.get(id)?.canvasEntity.dispose();
   canvasRegistry.delete(id);
 }
 
+// The returned entity does not subscribe to its spec store until a consumer
+// calls `canvasEntity.acquire()`; callers are responsible for acquiring and
+// releasing their reference (see CanvasInitialization).
 export function setCanvasStore(
   canvasName: string,
   instanceId: string,

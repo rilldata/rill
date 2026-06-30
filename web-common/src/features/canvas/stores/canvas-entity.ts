@@ -88,7 +88,7 @@ export class CanvasEntity {
   firstLoad = writable(true);
   themeName = writable<string | undefined>(undefined);
   theme: Readable<Theme | undefined>;
-  unsubscriber: Unsubscriber;
+  unsubscriber: Unsubscriber | undefined;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
   // This may sometimes be false due to discrepancy between two different ways
   // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
@@ -104,6 +104,8 @@ export class CanvasEntity {
   // This is to skip processing the spec the first time the store updates with a value
   // We've already called it as part of the constructor
   firstTimeLoad = true;
+
+  private subscribers = 0;
 
   constructor(
     public name: string,
@@ -177,8 +179,6 @@ export class CanvasEntity {
       this.client,
       this._metricsViews,
     );
-
-    this.resubscribe();
 
     this.viewingDefaultsStore = derived(
       [
@@ -512,9 +512,15 @@ export class CanvasEntity {
     this.timeManager.state.onUrlChange(searchParams);
   };
 
-  // Resubscribes to the spec store. Internal call to processSpec will recreate the components.
-  // This ensures that cached canvas entities are not left in an error state.
-  resubscribe = () => {
+  // Acquires a reference to the entity. The cached entity is shared across
+  // consumers (e.g. an unmounting editor and a mounting preview overlap during
+  // navigation), so its spec subscription must survive as long as any consumer
+  // needs it. Subscribes on the first consumer; idempotent thereafter. The
+  // subscription's processSpec call recreates the components, ensuring a cached
+  // entity that was previously disposed is not left in an error state.
+  acquire = () => {
+    this.subscribers++;
+    if (this.unsubscriber) return; // already subscribed
     this.unsubscriber = this.specStore.subscribe(({ data }) => {
       if (this.firstTimeLoad) {
         this.firstTimeLoad = false;
@@ -526,12 +532,25 @@ export class CanvasEntity {
     });
   };
 
-  // Tears down the spec subscription opened in the constructor and disposes
-  // every child component. Without this, a stale entity left over from a
-  // "reset to defaults" save keeps reacting to spec emissions and races the
-  // live entity over URL and YAML writes.
-  unsubscribe = () => {
-    this.unsubscriber();
+  // Releases a consumer's reference. Tears down only once the last consumer
+  // releases; balanced against acquire. Without this, a stale entity left over
+  // from a "reset to defaults" save keeps reacting to spec emissions and races
+  // the live entity over URL and YAML writes.
+  release = () => {
+    if (this.subscribers === 0) return; // guard against unbalanced release
+    this.subscribers--;
+    if (this.subscribers > 0) return;
+    this.dispose();
+  };
+
+  // Unconditionally tears down the spec subscription and disposes every child
+  // component, regardless of the reference count. Used when the entity is
+  // evicted from the registry (mode switch or removeCanvasStore) and is being
+  // discarded; a subsequent release on the disposed entity is a safe no-op.
+  dispose = () => {
+    this.subscribers = 0;
+    this.unsubscriber?.();
+    this.unsubscriber = undefined; // so a later acquire re-subscribes
     this.componentsStore.read().forEach((component) => component.destroy());
     this.componentsStore.reset();
   };
