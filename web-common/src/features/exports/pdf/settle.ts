@@ -72,7 +72,10 @@ export function isCanvasExportQuery(
   const [service] = queryKey;
   if (service === "metrics_sql") return true;
   if (service !== "QueryService") return false;
-  return queryKey.includes(instanceId);
+  // QueryService keys follow [ServiceName, methodName, instanceId, request]
+  // (see runtime-client/invalidation.ts); match the instance at its fixed index
+  // rather than scanning the whole key.
+  return queryKey[2] === instanceId;
 }
 
 // Forces every canvas component to render (bypassing the IntersectionObserver
