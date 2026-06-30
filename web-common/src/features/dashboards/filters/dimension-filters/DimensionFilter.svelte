@@ -70,6 +70,7 @@
       : [];
   let curPinned = filterData.pinned;
   let curRequired = filterData.required;
+  let excludeModeDirty = false;
 
   const client = useRuntimeClient();
 
@@ -86,7 +87,19 @@
     missingRequired,
   } = filterData);
 
-  $: if (!open && filterData.mode !== curMode) {
+  $: if (
+    !open &&
+    excludeModeDirty &&
+    (isInclude === false) === curExcludeMode
+  ) {
+    excludeModeDirty = false;
+  }
+
+  $: if (
+    !open &&
+    (mode !== curMode ||
+      (!excludeModeDirty && (isInclude === false) !== curExcludeMode))
+  ) {
     resyncFilterData(filterData);
   }
 
@@ -292,6 +305,7 @@
 
   function handleToggleExcludeMode(checked: boolean) {
     curExcludeMode = checked;
+    excludeModeDirty = true;
   }
 
   function onToggleSelectAll() {
@@ -396,6 +410,7 @@
     curMode = filterData.mode;
     curSearchText = filterData.inputText ?? "";
     curExcludeMode = filterData.isInclude === false;
+    excludeModeDirty = false;
     selectedValuesProxy = filterData.selectedValues ?? [];
     searchedBulkValues =
       filterData.mode === DimensionFilterMode.InList
