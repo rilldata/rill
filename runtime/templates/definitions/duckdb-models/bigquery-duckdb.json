@@ -1,0 +1,81 @@
+{
+  "name": "bigquery-duckdb",
+  "display_name": "BigQuery",
+  "description": "Query Google BigQuery and ingest into DuckDB",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/bigquery",
+  "driver": "bigquery",
+  "olap": "duckdb",
+  "icon": "GoogleBigQuery",
+  "small_icon": "GoogleBigQueryIcon",
+  "tags": [
+    "bigquery",
+    "google",
+    "warehouse",
+    "duckdb",
+    "source",
+    "connector"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "warehouse",
+    "properties": {
+      "google_application_credentials": {
+        "type": "string",
+        "title": "GCP credentials",
+        "description": "Service account JSON (uploaded or pasted)",
+        "format": "file",
+        "x-display": "file",
+        "x-file-accept": ".json",
+        "x-file-encoding": "json",
+        "x-file-extract": {
+          "project_id": "project_id"
+        },
+        "x-secret": true,
+        "x-env-var": "GOOGLE_APPLICATION_CREDENTIALS",
+        "x-step": "connector"
+      },
+      "project_id": {
+        "type": "string",
+        "title": "Project ID",
+        "description": "Google Cloud project ID to use for queries",
+        "x-placeholder": "my-project",
+        "x-hint": "If empty, Rill will use the project ID from your credentials when available.",
+        "x-step": "connector"
+      },
+      "sql": {
+        "type": "string",
+        "title": "SQL",
+        "description": "SQL query to run against your warehouse",
+        "x-placeholder": "Input SQL",
+        "x-step": "explorer"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model",
+        "x-step": "explorer"
+      }
+    },
+    "required": [
+      "google_application_credentials",
+      "project_id",
+      "sql",
+      "name"
+    ]
+  },
+  "files": [
+    {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: bigquery\n[[ renderProps .config_props ]]\n"
+    },
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/bigquery\ntype: model\n[[ if .connector_name -]]\nconnector: \"[[ .connector_name ]]\"\n[[ end -]]\nmaterialize: true\n[[ if .sql -]]\nsql: |\n  [[ .sql | indent 2 ]]\n\ndev:\n  sql: |\n    [[ .sql ]] limit 10000\n[[ end -]]\n"
+    }
+  ]
+}

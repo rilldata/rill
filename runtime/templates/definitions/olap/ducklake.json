@@ -1,0 +1,60 @@
+{
+  "name": "ducklake",
+  "display_name": "DuckLake",
+  "description": "Connect to a DuckLake catalog as your OLAP engine",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/ducklake",
+  "driver": "duckdb",
+  "icon": "DuckLake",
+  "small_icon": "DuckLakeIcon",
+  "tags": [
+    "ducklake",
+    "duckdb",
+    "lakehouse",
+    "olap",
+    "connector"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "olap",
+    "x-form-width": "wide",
+    "properties": {
+      "attach": {
+        "type": "string",
+        "title": "Attach clause",
+        "description": "DuckDB ATTACH clause that points at your DuckLake catalog. Include the metadata backend and DATA_PATH.",
+        "x-placeholder": "'ducklake:metadata.ducklake' AS my_ducklake (DATA_PATH 'data/')",
+        "x-monospace": true,
+        "x-hint": "Supported metadata backends: DuckDB file, SQLite, Postgres, MySQL. Data path can be local or object storage (s3://, gs://, azure://).",
+        "x-step": "connector"
+      },
+      "mode": {
+        "type": "string",
+        "title": "Mode",
+        "description": "Set to 'readwrite' to allow Rill to create and modify tables. Defaults to 'read' (read-only).",
+        "enum": [
+          "read",
+          "readwrite"
+        ],
+        "default": "read",
+        "x-display": "select",
+        "x-enum-labels": [
+          "Read only",
+          "Read / write"
+        ],
+        "x-omit-if-default": true,
+        "x-step": "connector"
+      }
+    },
+    "required": [
+      "attach"
+    ]
+  },
+  "files": [
+    {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: duckdb\n[[ renderProps .props ]]\n"
+    }
+  ]
+}

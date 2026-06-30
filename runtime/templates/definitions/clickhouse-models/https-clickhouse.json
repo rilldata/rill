@@ -1,0 +1,62 @@
+{
+  "name": "https-clickhouse",
+  "display_name": "HTTP(S) Endpoint",
+  "description": "Read files from HTTP/HTTPS URLs into ClickHouse",
+  "docs_url": "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
+  "driver": "https",
+  "olap": "clickhouse",
+  "icon": "HTTPS",
+  "small_icon": "HTTPSIcon",
+  "tags": [
+    "https",
+    "http",
+    "url",
+    "clickhouse",
+    "source"
+  ],
+
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "sourceOnly",
+
+    "properties": {
+      "headers": {
+        "title": "Headers",
+        "description": "HTTP headers to include in the request",
+        "x-display": "key-value",
+        "x-placeholder": "Header name",
+        "x-hint": "e.g. Authorization: Bearer <token>"
+      },
+
+      "path": {
+        "type": "string",
+        "title": "URL",
+        "description": "HTTP(S) URL to the file",
+        "pattern": "^https?://.+",
+        "errorMessage": {
+          "pattern": "Must be a valid HTTP(S) URL"
+        },
+        "x-placeholder": "https://example.com/data.csv"
+      },
+
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model"
+      }
+    },
+
+    "required": ["path", "name"]
+  },
+
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\n\ntype: model\nmaterialize: true\n\nconnector: clickhouse\n\nsql: |\n  SELECT * FROM url('[[ .path ]]'[[ clickhouseURLSuffix .path .props ]])\n"
+    }
+  ]
+}

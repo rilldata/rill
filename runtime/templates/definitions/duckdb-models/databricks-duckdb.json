@@ -1,0 +1,180 @@
+{
+  "name": "databricks-duckdb",
+  "display_name": "Databricks",
+  "description": "Query a Databricks SQL warehouse and ingest into DuckDB",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/databricks",
+  "driver": "databricks",
+  "olap": "duckdb",
+  "icon": "Databricks",
+  "small_icon": "DatabricksIcon",
+  "tags": [
+    "databricks",
+    "warehouse",
+    "lakehouse",
+    "duckdb",
+    "source",
+    "connector"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "warehouse",
+    "properties": {
+      "auth_method": {
+        "type": "string",
+        "title": "Authentication method",
+        "enum": [
+          "parameters",
+          "dsn"
+        ],
+        "default": "parameters",
+        "x-display": "tabs",
+        "x-enum-labels": [
+          "Workspace details",
+          "Connection String"
+        ],
+        "x-ui-only": true,
+        "x-tab-group": {
+          "parameters": [
+            "host",
+            "http_path",
+            "token",
+            "catalog",
+            "schema"
+          ],
+          "dsn": [
+            "dsn"
+          ]
+        },
+        "x-step": "connector"
+      },
+      "host": {
+        "type": "string",
+        "title": "Host",
+        "description": "Databricks SQL warehouse hostname",
+        "x-placeholder": "dbc-xxxxxxxx-xxxx.cloud.databricks.com",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "http_path": {
+        "type": "string",
+        "title": "HTTP path",
+        "description": "HTTP path for the SQL warehouse",
+        "x-placeholder": "/sql/1.0/warehouses/xxxxxxxxxxxxxxxx",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "token": {
+        "type": "string",
+        "title": "Access token",
+        "description": "Databricks personal access token",
+        "x-placeholder": "dapi...",
+        "x-secret": true,
+        "x-env-var": "DATABRICKS_TOKEN",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "catalog": {
+        "type": "string",
+        "title": "Catalog",
+        "description": "Unity Catalog name (optional)",
+        "x-placeholder": "main",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "schema": {
+        "type": "string",
+        "title": "Schema",
+        "description": "Schema within the catalog (optional)",
+        "x-placeholder": "default",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "dsn": {
+        "type": "string",
+        "title": "Connection string",
+        "description": "Full Databricks DSN.",
+        "x-placeholder": "token:<token>@<host>:443/<http_path>?catalog=<catalog>&schema=<schema>",
+        "x-secret": true,
+        "x-env-var": "DATABRICKS_DSN",
+        "x-visible-if": {
+          "auth_method": "dsn"
+        },
+        "x-step": "connector"
+      },
+      "sql": {
+        "type": "string",
+        "title": "SQL",
+        "description": "SQL query to run against your warehouse",
+        "x-placeholder": "Input SQL",
+        "x-step": "explorer"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model",
+        "x-step": "explorer"
+      }
+    },
+    "required": [
+      "sql",
+      "name"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "parameters"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "host",
+            "http_path",
+            "token"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "dsn"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "dsn"
+          ]
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: databricks\n[[ renderProps .config_props ]]\n"
+    },
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/databricks\ntype: model\n[[ if .connector_name -]]\nconnector: \"[[ .connector_name ]]\"\n[[ end -]]\nmaterialize: true\n[[ if .sql -]]\nsql: |\n  [[ .sql | indent 2 ]]\n\ndev:\n  sql: |\n    [[ .sql ]] limit 10000\n[[ end -]]\n"
+    }
+  ]
+}
