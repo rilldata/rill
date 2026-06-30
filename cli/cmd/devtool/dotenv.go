@@ -110,7 +110,7 @@ func checkDotenv() error {
 func downloadDotenv(ctx context.Context, preset string) error {
 	logInfo.Printf("Downloading .env file from %s\n", dotenvURLs[preset])
 
-	err := exec.CommandContext(ctx, "gcloud", "storage", "cp", dotenvURLs[preset], ".env").Run()
+	err := exec.CommandContext(ctx, "gcloud", "storage", "cp", dotenvURLs[preset], ".env").Run() //nolint:gosec // dotenvURLs values are hardcoded GCS paths, not user input
 	if err != nil {
 		return fmt.Errorf("error syncing '.env' file from GCS (you must be a Rill team member and have authenticated `gcloud`): %w", err)
 	}
@@ -118,5 +118,5 @@ func downloadDotenv(ctx context.Context, preset string) error {
 }
 
 func uploadDotenv(ctx context.Context, preset string) error {
-	return exec.CommandContext(ctx, "gcloud", "storage", "cp", ".env", dotenvURLs[preset]).Run()
+	return exec.CommandContext(ctx, "gcloud", "storage", "cp", ".env", dotenvURLs[preset]).Run() //nolint:gosec // dotenvURLs values are hardcoded GCS paths, not user input
 }

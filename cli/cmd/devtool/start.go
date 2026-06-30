@@ -822,7 +822,7 @@ func awaitClose(ctx context.Context, chs ...<-chan struct{}) error {
 
 // newCmd initializes an exec.Cmd that sends SIGINT instead of SIGKILL when the ctx is canceled.
 func newCmd(ctx context.Context, name string, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, name, args...)
+	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // name is always a known binary ("node", "docker", "go", "npm") hardcoded by devtool callers
 	cmd.Cancel = func() error {
 		return cmd.Process.Signal(os.Interrupt)
 	}

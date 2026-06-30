@@ -165,7 +165,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 }
 
 func (e *embedClickHouse) startClickhouse(binPath, configPath string) (io.ReadCloser, error) {
-	e.cmd = exec.Command(binPath, "server", "--config-file", configPath)
+	e.cmd = exec.Command(binPath, "server", "--config-file", configPath) //nolint:gosec // binPath is the path of the extracted embedded ClickHouse binary, not user input
 	e.cmd.Stdout = io.Discard
 
 	stderr, err := e.cmd.StderrPipe()

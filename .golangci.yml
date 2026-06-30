@@ -60,12 +60,14 @@ linters:
         - opinionated
     gosec:
       excludes:
+        # G107: URL from variable. Rill is a connector platform that makes outbound requests to
+        # user-configured endpoints by design. Blanket suppression is intentional; SSRF is
+        # addressed at the input-validation layer, not the linter layer.
         - G107
         - G108
         - G112
         - G115
         - G203
-        - G204
         - G306
         - G401
         - G501
