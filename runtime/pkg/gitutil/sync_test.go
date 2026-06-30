@@ -531,6 +531,44 @@ func TestChangedFiles_Rename(t *testing.T) {
 	require.Equal(t, ChangedFileStatusAdded, got["renamed2.txt"].Status, "uncommitted rename should show new path as added")
 }
 
+func TestDiff(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// origin/<mainBranch> stays at the initial commit (test1-3.txt). Build a committed modify, a
+	// working-tree delete, and an untracked add on top; the diff is taken against origin/<mainBranch>.
+	createCommit(t, tempDir, "test1.txt", "modified content", "modify test1")
+	require.NoError(t, os.Remove(filepath.Join(tempDir, "test2.txt")), "failed to delete")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "untracked.txt"), []byte("brand new line"), 0644), "failed to create untracked")
+
+	diff, err := Diff(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "Diff failed")
+
+	require.Contains(t, diff, "diff --git", "expected a unified diff")
+	require.Contains(t, diff, "+modified content", "modified file's added line should appear")
+	require.Contains(t, diff, "-content of file 1", "modified file's removed line should appear")
+	require.Contains(t, diff, "-content of file 2", "deleted file's removed lines should appear")
+	require.Contains(t, diff, "+brand new line", "untracked file's content should appear")
+}
+
+func TestDiff_LargeFileElided(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// An untracked file whose diff exceeds maxFileDiffBytes must be elided to a placeholder so one
+	// huge file cannot bloat the response.
+	large := strings.Repeat("some long line of text\n", (maxFileDiffBytes/22)+1000)
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "big.txt"), []byte(large), 0644), "failed to create big file")
+
+	diff, err := Diff(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "Diff failed")
+
+	require.Contains(t, diff, "big.txt", "large file should still be present in the diff")
+	require.Contains(t, diff, "Binary files", "large file diff should be elided to a placeholder")
+	require.NotContains(t, diff, "some long line of text", "large file content must not be included")
+	require.Less(t, len(diff), maxFileDiffBytes, "elided diff should be well under the cap")
+}
+
 func TestChangedFiles_Monorepo(t *testing.T) {
 	tempDir, _ := setupMonorepoTestRepository(t)
 	mainBranch := getCurrentBranch(t, tempDir)

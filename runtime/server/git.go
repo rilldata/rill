@@ -98,7 +98,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx, req.RemoteBranch, false)
+	gs, err := repo.Status(ctx, req.RemoteBranch, drivers.RepoStatusOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
@@ -128,7 +128,7 @@ func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*r
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx, req.RemoteBranch, true)
+	gs, err := repo.Status(ctx, req.RemoteBranch, drivers.RepoStatusOptions{ChangedFiles: true, Diff: req.IncludeDiff})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git diff: %w", err)
 	}
@@ -147,6 +147,7 @@ func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*r
 
 	return &runtimev1.GitDiffResponse{
 		ChangedFiles: changedFiles,
+		Diff:         gs.Diff,
 	}, nil
 }
 

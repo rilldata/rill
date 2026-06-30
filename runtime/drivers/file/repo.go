@@ -354,7 +354,7 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 	return commits, nextPageToken, nil
 }
 
-func (c *connection) Status(ctx context.Context, remoteBranch string, changedFiles bool) (*drivers.RepoStatus, error) {
+func (c *connection) Status(ctx context.Context, remoteBranch string, opts drivers.RepoStatusOptions) (*drivers.RepoStatus, error) {
 	if !gitutil.IsGitRepo(c.root) {
 		return &drivers.RepoStatus{}, nil
 	}
@@ -396,14 +396,23 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, changedFil
 	if err != nil {
 		return nil, err
 	}
-	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed separately
+	// Listing changed files (and the diff) is extra git work most callers do not need, so it is opt-in
+	// and computed separately.
 	var files []gitutil.ChangedFile
-	if changedFiles {
+	if opts.ChangedFiles || opts.Diff {
 		f, err := gitutil.ChangedFiles(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
 		if err != nil {
 			return nil, err
 		}
 		files = f
+	}
+	var diff string
+	if opts.Diff {
+		d, err := gitutil.Diff(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
+		if err != nil {
+			return nil, err
+		}
+		diff = d
 	}
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
@@ -415,6 +424,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, changedFil
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
 		ChangedFiles:  repoFileChanges(files),
+		Diff:          diff,
 	}, nil
 }
 

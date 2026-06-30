@@ -60,8 +60,8 @@ type RepoStore interface {
 	// Status returns the current status of the repository.
 	// If remoteBranch is non-empty and the repo is git-backed, ahead/behind counts compare
 	// against `<remote>/<remoteBranch>` instead of the upstream of the current local branch.
-	// If changedFiles is true, the returned status lists the files that differ from the comparison branch.
-	Status(ctx context.Context, remoteBranch string, changedFiles bool) (*RepoStatus, error)
+	// opts selects optional, more expensive parts of the status (the changed-files list and diff).
+	Status(ctx context.Context, remoteBranch string, opts RepoStatusOptions) (*RepoStatus, error)
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
@@ -136,6 +136,14 @@ func IsIgnored(path string, additionalIgnoredPaths []string) bool {
 	return false
 }
 
+// RepoStatusOptions selects optional, more expensive parts of the repository status.
+type RepoStatusOptions struct {
+	// ChangedFiles includes the list of files that differ from the comparison branch.
+	ChangedFiles bool
+	// Diff includes the combined unified diff of those files; implies ChangedFiles.
+	Diff bool
+}
+
 type RepoStatus struct {
 	// IsGitRepo indicates if the repo is backed by a Git repository.
 	IsGitRepo     bool
@@ -147,8 +155,11 @@ type RepoStatus struct {
 	LocalCommits  int32
 	RemoteCommits int32
 	// ChangedFiles lists the files that would land on the comparison branch.
-	// Only populated when Status is called with changedFiles set to true.
+	// Only populated when Status is called with RepoStatusOptions.ChangedFiles (or Diff) set.
 	ChangedFiles []RepoFileChange
+	// Diff is the combined unified patch for ChangedFiles.
+	// Only populated when Status is called with RepoStatusOptions.Diff set.
+	Diff string
 }
 
 type RepoFileStatus int

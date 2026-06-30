@@ -441,7 +441,7 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles bool) (*drivers.RepoStatus, error) {
+func (r *repo) Status(ctx context.Context, remoteBranch string, opts drivers.RepoStatusOptions) (*drivers.RepoStatus, error) {
 	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
@@ -474,12 +474,19 @@ func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles boo
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
-	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed
-	// separately. Best-effort: a failure here must not break the status the merge flow depends on.
+	// Listing changed files (and the diff) is extra git work most callers do not need, so it is opt-in
+	// and computed separately. Best-effort: a failure here must not break the status the merge flow
+	// depends on.
 	var fileChanges []drivers.RepoFileChange
-	if changedFiles {
+	if opts.ChangedFiles || opts.Diff {
 		if files, err := gitutil.ChangedFiles(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch); err == nil {
 			fileChanges = repoFileChanges(files)
+		}
+	}
+	var diff string
+	if opts.Diff {
+		if d, err := gitutil.Diff(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch); err == nil {
+			diff = d
 		}
 	}
 
@@ -493,6 +500,7 @@ func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles boo
 		LocalCommits:  st.LocalCommits,
 		RemoteCommits: st.RemoteCommits,
 		ChangedFiles:  fileChanges,
+		Diff:          diff,
 	}, nil
 }
 

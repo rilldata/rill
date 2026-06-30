@@ -1335,6 +1335,9 @@ message GitDiffRequest {
   // remote_branch is the branch to compare against. Same semantics as GitStatusRequest:
   // if empty, the upstream of the current local branch is used.
   string remote_branch = 2;
+  // include_diff also computes and returns the combined unified patch in addition to the
+  // changed_files list. It is opt-in because computing the diff is more expensive.
+  bool include_diff = 3;
 }
 
 message GitDiffResponse {
@@ -1357,6 +1360,9 @@ message GitDiffResponse {
   // The comparison ref is the requested remote_branch, or the upstream of the current branch when
   // remote_branch is empty.
   repeated GitFileChange changed_files = 1;
+  // diff is the combined unified patch across all changed_files; only set when include_diff is true.
+  // Individual files whose diff is very large are elided to a "Binary files differ" placeholder.
+  string diff = 2;
 }
 
 message ListGitBranchesRequest {

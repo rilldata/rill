@@ -1,6 +1,7 @@
 package gitutil
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -189,6 +190,134 @@ func ChangedFiles(ctx context.Context, path, subpath, remoteName, remoteBranch s
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Path < result[j].Path })
 	return result, nil
+}
+
+// maxFileDiffBytes caps the size of a single file's diff in the combined patch returned by Diff.
+// A file whose diff exceeds this (e.g. a large generated or accidentally committed data file) is
+// elided to a "Binary files differ" placeholder so one huge file cannot bloat the response.
+const maxFileDiffBytes = 100 * 1024
+
+// Diff returns the combined unified patch between the working tree at path and the comparison ref,
+// i.e. the changes that would land on the ref if merged. It mirrors ChangedFiles: committed, staged,
+// and untracked changes are all included.
+//
+// The result is git's standard unified diff format, ready for rendering. Per-file sections larger
+// than maxFileDiffBytes are replaced with a "Binary files differ" placeholder. (git already emits
+// that form for genuinely binary files, so e.g. an added database file stays small.)
+func Diff(ctx context.Context, path, subpath, remoteName, remoteBranch string) (string, error) {
+	compareBranch := remoteBranch
+	if compareBranch == "" {
+		branch, err := Run(ctx, path, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return "", err
+		}
+		compareBranch = branch
+	}
+	ref := fmt.Sprintf("%s/%s", remoteName, compareBranch)
+
+	// Committed and staged changes, with rename detection (-M).
+	diffArgs := []string{"diff", "-M", "--no-color", ref}
+	if subpath != "" {
+		diffArgs = append(diffArgs, "--", subpath)
+	}
+	tracked, err := Run(ctx, path, diffArgs...)
+	if err != nil {
+		return "", err
+	}
+
+	var b strings.Builder
+	if tracked != "" {
+		b.WriteString(tracked)
+		b.WriteByte('\n')
+	}
+
+	// `git diff` omits untracked files; append each one's patch (mirrors the untracked pass in
+	// ChangedFiles so the diff covers the same files as the list).
+	statusArgs := []string{"status", "--porcelain", "--untracked-files=all"}
+	if subpath != "" {
+		statusArgs = append(statusArgs, "--", subpath)
+	}
+	statusOut, err := Run(ctx, path, statusArgs...)
+	if err != nil {
+		return "", err
+	}
+	for line := range strings.SplitSeq(statusOut, "\n") {
+		file, ok := strings.CutPrefix(line, "?? ")
+		if !ok {
+			continue
+		}
+		untracked, err := diffNoIndex(ctx, path, file)
+		if err != nil {
+			return "", err
+		}
+		if untracked != "" {
+			b.WriteString(untracked)
+			b.WriteByte('\n')
+		}
+	}
+
+	return capLargeFileDiffs(b.String()), nil
+}
+
+// diffNoIndex runs `git diff --no-index` to produce a patch for an untracked file. `--no-index`
+// exits with code 1 when the files differ, which is the expected case here, so it is not an error.
+func diffNoIndex(ctx context.Context, path, file string) (string, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "diff", "--no-index", "--no-color", os.DevNull, file)
+	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return stdout.String(), nil
+		}
+		return "", fmt.Errorf("git diff --no-index %s: %s (%w)", file, strings.TrimSpace(stderr.String()), err)
+	}
+	return stdout.String(), nil
+}
+
+// capLargeFileDiffs replaces any per-file section in a unified diff larger than maxFileDiffBytes with
+// a "Binary files differ" placeholder, keeping every file present but bounding the total size.
+func capLargeFileDiffs(diff string) string {
+	if diff == "" {
+		return ""
+	}
+	var out strings.Builder
+	var section []string
+	flush := func() {
+		if len(section) == 0 {
+			return
+		}
+		joined := strings.Join(section, "\n")
+		if len(joined) > maxFileDiffBytes {
+			out.WriteString(section[0]) // the "diff --git a/X b/Y" header line
+			out.WriteByte('\n')
+			out.WriteString(binaryDiffPlaceholder(section[0]))
+		} else {
+			out.WriteString(joined)
+		}
+		out.WriteByte('\n')
+		section = section[:0]
+	}
+	for line := range strings.SplitSeq(diff, "\n") {
+		if strings.HasPrefix(line, "diff --git ") {
+			flush()
+		}
+		section = append(section, line)
+	}
+	flush()
+	return out.String()
+}
+
+// binaryDiffPlaceholder turns a "diff --git a/<p1> b/<p2>" header into the "Binary files … differ"
+// line git itself emits for binary files, which renderers display as an elided change.
+func binaryDiffPlaceholder(diffGitLine string) string {
+	rest := strings.TrimPrefix(diffGitLine, "diff --git ")
+	if a, b, ok := strings.Cut(rest, " b/"); ok {
+		return fmt.Sprintf("Binary files %s and b/%s differ", a, b)
+	}
+	return "Binary files differ"
 }
 
 // Fetch fetches the latest changes from the remote described by config, updating the

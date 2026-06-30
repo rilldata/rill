@@ -13,6 +13,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
+  import ChangedFilesDialog from "@rilldata/web-common/features/project/ChangedFilesDialog.svelte";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -48,6 +49,9 @@
   let open = false;
   let isPublishing = false;
   let publishMergeConflictDialog = false;
+  // The diff dialog is hosted here (not inside the popover) so it survives the popover closing.
+  let diffDialogOpen = false;
+  let diffInitialPath: string | undefined = undefined;
   // Captured at click time so the publish flow can resume after a force
   // merge without re-reading state that may have changed. `preCommitSha` is
   // refreshed before completing the flow because prod's parser may have
@@ -304,7 +308,15 @@
             so you can watch updates reconcile.
           {/if}
         </p>
-        <ChangedFilesList remoteBranch={primaryBranch} {open} />
+        <ChangedFilesList
+          remoteBranch={primaryBranch}
+          {open}
+          onViewDiff={(path) => {
+            diffInitialPath = path;
+            open = false;
+            diffDialogOpen = true;
+          }}
+        />
         <Button
           type="primary"
           small
@@ -340,4 +352,10 @@
   loading={isPublishing}
   error={errorFromGitCommand}
   onUseLatestVersion={handleForcePublishMerge}
+/>
+
+<ChangedFilesDialog
+  bind:open={diffDialogOpen}
+  remoteBranch={primaryBranch}
+  initialPath={diffInitialPath}
 />
