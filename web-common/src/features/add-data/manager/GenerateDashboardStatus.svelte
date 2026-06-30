@@ -67,6 +67,8 @@
   let error: string | null = null;
   $: hasErrored = !!error;
 
+  let skipped = false;
+
   async function runImport() {
     importStep = ImportDataStep.Init;
     error = null;
@@ -99,6 +101,7 @@
         },
       );
       onDone();
+      if (skipped) return; // Do not auto-navigate to the file if skipped
       return goto(currentFileRoute);
     } catch (e) {
       error = e?.response?.data?.message ?? e?.message ?? "Unknown error";
@@ -115,6 +118,12 @@
     await cleanupImportStep(runtimeClient, importAddDataStep.config);
 
     onBack();
+  }
+
+  function skipAndViewProject() {
+    skipped = true;
+    onDone();
+    void goto(currentFileRoute);
   }
 
   onMount(runImport);
@@ -181,8 +190,7 @@
     <Button
       disabled={!currentFileRoute}
       type="tertiary"
-      href={currentFileRoute}
-      onClick={onDone}
+      onClick={skipAndViewProject}
       large
     >
       Skip and view project
