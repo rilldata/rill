@@ -166,10 +166,9 @@ func CommitAndPush(ctx context.Context, path string, config *Config, commitMsg s
 	return Push(ctx, path, remote, config.DefaultBranch)
 }
 
-// CommitAndForcePush stages and commits all changes at path (scoped to config.Subpath if set) and
-// force-pushes HEAD to config.DefaultBranch on the remote described by config.
+// CommitAndForcePush is similar to CommitAndPush but force pushes the local changes to the remote.
 // Unlike CommitAndPush, the current local branch need not match config.DefaultBranch, and HEAD may
-// be detached. If there is nothing new to commit, it still attempts the push.
+// be detached.
 func CommitAndForcePush(ctx context.Context, path string, config *Config, commitMsg string, author Signature) error {
 	err := EnsureInit(ctx, path, config.DefaultBranch)
 	if err != nil {
