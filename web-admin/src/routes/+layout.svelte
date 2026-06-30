@@ -7,6 +7,7 @@
   } from "@rilldata/web-admin/components/errors/admin-network-errors";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
+  import RepresentingBanner from "@rilldata/web-admin/features/superuser/users/RepresentingBanner.svelte";
   import {
     isBillingUpgradePage,
     isOnboardingPage,
@@ -155,6 +156,7 @@
       use:pageContentSizeHandler
     >
       <BannerCenter />
+      <RepresentingBanner />
       {#if !hideBillingManager}
         <BillingBannerManager {organization} {organizationPermissions} />
       {/if}

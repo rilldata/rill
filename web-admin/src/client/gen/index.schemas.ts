@@ -595,6 +595,7 @@ export interface V1GetCurrentMagicAuthTokenResponse {
 export interface V1GetCurrentUserResponse {
   user?: V1User;
   preferences?: V1UserPreferences;
+  superuser?: boolean;
 }
 
 /**
@@ -1870,6 +1871,10 @@ export type AdminServiceListOrganizationsParams = {
 };
 
 export type AdminServiceGetOrganizationParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceDeleteOrganizationParams = {
   superuserForceAccess?: boolean;
 };
 

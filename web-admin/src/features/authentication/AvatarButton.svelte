@@ -31,6 +31,7 @@
   export let projectPermissions: V1ProjectPermissions | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
+  $: isSuperuser = $user.data?.superuser ?? false;
 
   let imgContainer: HTMLElement;
   let primaryMenuOpen = false;
@@ -85,6 +86,13 @@
     <div bind:this={imgContainer} class="h-7 w-7"></div>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end">
+    {#if isSuperuser}
+      <DropdownMenu.Item href="/-/superuser"
+        >Superuser Console</DropdownMenu.Item
+      >
+      <DropdownMenu.Separator />
+    {/if}
+
     {#if params.organization && params.project && projectPermissions}
       {#if projectPermissions.manageProject}
         <DropdownMenu.Sub bind:open={subMenuOpen}>

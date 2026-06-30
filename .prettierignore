@@ -1,5 +1,6 @@
 .claude/
 .github/
+.husky/
 .ranger/
 .svelte-kit/
 .vscode/

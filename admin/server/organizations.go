@@ -154,7 +154,8 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !forceAccess && !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org")
 	}
 
