@@ -904,8 +904,29 @@ message CanvasRow {
   optional uint32 height = 1;
   // Unit of the height. Current possible values: "px", empty string.
   string height_unit = 2;
-  // Items to render in the row.
+  // Items to render in the row. Empty when the row is a tab group.
   repeated CanvasItem items = 3;
+  // If set, this row renders a tab group instead of items.
+  // A row has either items or a tab_group, never both.
+  CanvasTabGroup tab_group = 4;
+}
+
+message CanvasTabGroup {
+  // Stable identifier for the tab group, used for URL state.
+  // Defaults to "group-<index>" if not provided in the canvas YAML.
+  string name = 1;
+  // Tabs in the group. A group always has at least one tab.
+  repeated CanvasTab tabs = 2;
+}
+
+message CanvasTab {
+  // Stable identifier for the tab, used for URL state. Derived from the label.
+  string name = 1;
+  // User-facing label for the tab.
+  string display_name = 2;
+  // Rows to render when the tab is active. These are always plain rows;
+  // a tab's rows never contain a nested tab_group.
+  repeated CanvasRow rows = 3;
 }
 
 message CanvasItem {

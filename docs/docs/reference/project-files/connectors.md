@@ -59,11 +59,11 @@ _[string]_ - Refers to the resource type and must be `connector` _(required)_
 
 ### `name`
 
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
 
 ### `refs`
 
-_[array of string]_ - List of resource references 
+_[array of string]_ - List of resource references
 
 ### `tags`
 
@@ -71,11 +71,11 @@ _[array of string]_ - Tags for organizing and filtering the resource (e.g. on th
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.
 
 ## Athena
 
@@ -85,43 +85,43 @@ _[string]_ - Refers to the driver type and must be driver `athena` _(required)_
 
 ### `aws_access_key_id`
 
-_[string]_ - AWS Access Key ID used for authentication. Required when using static credentials directly or as base credentials for assuming a role. 
+_[string]_ - AWS Access Key ID used for authentication. Required when using static credentials directly or as base credentials for assuming a role.
 
 ### `aws_secret_access_key`
 
-_[string]_ - AWS Secret Access Key paired with the Access Key ID. Required when using static credentials directly or as base credentials for assuming a role. 
+_[string]_ - AWS Secret Access Key paired with the Access Key ID. Required when using static credentials directly or as base credentials for assuming a role.
 
 ### `aws_access_token`
 
-_[string]_ - AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of a temporary session credentials. 
+_[string]_ - AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of a temporary session credentials.
 
 ### `role_arn`
 
-_[string]_ - ARN of the IAM role to assume. When specified, the SDK uses the base credentials to call STS AssumeRole and obtain temporary credentials scoped to this role. 
+_[string]_ - ARN of the IAM role to assume. When specified, the SDK uses the base credentials to call STS AssumeRole and obtain temporary credentials scoped to this role.
 
 ### `role_session_name`
 
-_[string]_ - Session name to associate with the STS AssumeRole session. Used only if 'role_arn' is specified. Useful for identifying and auditing the session. 
+_[string]_ - Session name to associate with the STS AssumeRole session. Used only if 'role_arn' is specified. Useful for identifying and auditing the session.
 
 ### `external_id`
 
-_[string]_ - External ID required by some roles when assuming them, typically for cross-account access. Used only if 'role_arn' is specified and the role's trust policy requires it. 
+_[string]_ - External ID required by some roles when assuming them, typically for cross-account access. Used only if 'role_arn' is specified and the role's trust policy requires it.
 
 ### `workgroup`
 
-_[string]_ - Athena workgroup to use for query execution. Defaults to 'primary' if not specified. 
+_[string]_ - Athena workgroup to use for query execution. Defaults to 'primary' if not specified.
 
 ### `output_location`
 
-_[string]_ - S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration. 
+_[string]_ - S3 URI where Athena query results should be stored (e.g., s3://your-bucket/athena/results/). Optional if the selected workgroup has a default result configuration.
 
 ### `region`
 
-_[string]_ - AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified. 
+_[string]_ - AWS region where Athena and the result S3 bucket are located (e.g., us-east-1). Defaults to 'us-east-1' if not specified.
 
 ### `allow_host_access`
 
-_[boolean]_ - Allow the Athena client to access host environment configurations such as environment variables or local AWS credential files. Defaults to true, enabling use of credentials and settings from the host environment unless explicitly disabled. 
+_[boolean]_ - Allow the Athena client to access host environment configurations such as environment variables or local AWS credential files. Defaults to true, enabling use of credentials and settings from the host environment unless explicitly disabled.
 
 ```yaml
 # Example: Athena connector configuration
@@ -155,11 +155,11 @@ _[string]_ - Azure storage access key _(required)_
 
 ### `azure_storage_sas_token`
 
-_[string]_ - Optional azure SAS token for authentication 
+_[string]_ - Optional azure SAS token for authentication
 
 ### `azure_storage_connection_string`
 
-_[string]_ - Optional azure connection string for storage account 
+_[string]_ - Optional azure connection string for storage account
 
 ### `path_prefixes`
 
@@ -167,11 +167,11 @@ _[string, array]_ - A list of container or virtual directory prefixes that this 
 Useful when different containers or paths use different credentials, allowing the system
 to route access through the appropriate connector based on the blob path.
 Example: `azure://my-bucket/`, ` azure://my-bucket/path/` ,`azure://my-bucket/path/prefix`
- 
+
 
 ### `allow_host_access`
 
-_[boolean]_ - Allow access to host environment configuration 
+_[boolean]_ - Allow access to host environment configuration
 
 ```yaml
 # Example: Azure connector configuration
@@ -189,27 +189,27 @@ _[string]_ - Refers to the driver type and must be driver `bigquery` _(required)
 
 ### `google_application_credentials`
 
-_[string]_ - Raw contents of the Google Cloud service account key (in JSON format) used for authentication. 
+_[string]_ - Raw contents of the Google Cloud service account key (in JSON format) used for authentication.
 
 ### `project_id`
 
-_[string]_ - Google Cloud project ID 
+_[string]_ - Google Cloud project ID
 
 ### `allow_host_access`
 
-_[boolean]_ - Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments. 
+_[boolean]_ - Enable the BigQuery client to use credentials from the host environment when no service account JSON is provided. This includes Application Default Credentials from environment variables, local credential files, or the Google Compute Engine metadata server. Defaults to true, allowing seamless authentication in GCP environments.
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ### `max_bytes_billed`
 
-_[integer]_ - Maximum number of bytes billed for a query. Queries that exceed this limit will fail with an error. This can help prevent unexpectedly high costs from large queries. It is highly recommended to set this when running on `on-demand pricing` model. The default value is 0 i.e. no limits are enforced in Rill. 
+_[integer]_ - Maximum number of bytes billed for a query. Queries that exceed this limit will fail with an error. This can help prevent unexpectedly high costs from large queries. It is highly recommended to set this when running on `on-demand pricing` model. The default value is 0 i.e. no limits are enforced in Rill.
 
 ### `allow_standard_api`
 
-_[boolean]_ - Allow querying BigQuery using the standard API instead of the Storage Read API. This is less efficient and may lead to higher latency, but can be used as a fallback if the Storage Read API is not available due to insufficient permissions or other issues. 
+_[boolean]_ - Allow querying BigQuery using the standard API instead of the Storage Read API. This is less efficient and may lead to higher latency, but can be used as a fallback if the Storage Read API is not available due to insufficient permissions or other issues.
 
 ```yaml
 # Example: BigQuery connector configuration
@@ -228,95 +228,95 @@ _[string]_ - Refers to the driver type and must be driver `clickhouse` _(require
 
 ### `managed`
 
-_[boolean]_ - `true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning. 
+_[boolean]_ - `true` means Rill will provision the connector using the default provisioner. `false` disables automatic provisioning.
 
 ### `mode`
 
-_[string]_ - `read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'. 
+_[string]_ - `read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'.
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the ClickHouse connection 
+_[string]_ - DSN(Data Source Name) for the ClickHouse connection
 
 ### `username`
 
-_[string]_ - Username for authentication 
+_[string]_ - Username for authentication
 
 ### `password`
 
-_[string]_ - Password for authentication 
+_[string]_ - Password for authentication
 
 ### `host`
 
-_[string]_ - Host where the ClickHouse instance is running 
+_[string]_ - Host where the ClickHouse instance is running
 
 ### `port`
 
-_[integer]_ - Port where the ClickHouse instance is accessible 
+_[integer]_ - Port where the ClickHouse instance is accessible
 
 ### `database`
 
-_[string]_ - Name of the ClickHouse database within the cluster 
+_[string]_ - Name of the ClickHouse database within the cluster
 
 ### `ssl`
 
-_[boolean]_ - Indicates whether a secured SSL connection is required 
+_[boolean]_ - Indicates whether a secured SSL connection is required
 
 ### `cluster`
 
-_[string]_ - Cluster name, required for running distributed queries 
+_[string]_ - Cluster name, required for running distributed queries
 
 ### `sync_replicas`
 
-_[boolean]_ - Controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster, ensuring all inserted parts are visible across replicas before the partition swap. Defaults to true 
+_[boolean]_ - Controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster, ensuring all inserted parts are visible across replicas before the partition swap. Defaults to true
 
 ### `write_dsn`
 
-_[string]_ - Separate connection string for write operations 
+_[string]_ - Separate connection string for write operations
 
 ### `database_whitelist`
 
-_[string]_ - Comma-separated list of databases to show 
+_[string]_ - Comma-separated list of databases to show
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ### `query_settings_override`
 
-_[string]_ - override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, use `query_settings` 
+_[string]_ - override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, use `query_settings`
 
 ### `query_settings`
 
-_[string]_ - query settings to be set on dashboard queries. `query_settings_override` takes precedence over these settings and if set these are ignored. Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000` 
+_[string]_ - query settings to be set on dashboard queries. `query_settings_override` takes precedence over these settings and if set these are ignored. Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000`
 
 ### `embed_port`
 
-_[integer]_ - Port to run ClickHouse locally (0 for random port) 
+_[integer]_ - Port to run ClickHouse locally (0 for random port)
 
 ### `can_scale_to_zero`
 
-_[boolean]_ - Indicates if the database can scale to zero 
+_[boolean]_ - Indicates if the database can scale to zero
 
 ### `max_open_conns`
 
-_[integer]_ - Maximum number of open connections to the database 
+_[integer]_ - Maximum number of open connections to the database
 
 ### `max_idle_conns`
 
-_[integer]_ - Maximum number of idle connections in the pool 
+_[integer]_ - Maximum number of idle connections in the pool
 
 ### `dial_timeout`
 
-_[string]_ - Timeout for dialing the ClickHouse server 
+_[string]_ - Timeout for dialing the ClickHouse server
 
 ### `conn_max_lifetime`
 
-_[string]_ - Maximum time a connection may be reused 
+_[string]_ - Maximum time a connection may be reused
 
 ### `read_timeout`
 
-_[string]_ - Maximum time for a connection to read data 
+_[string]_ - Maximum time for a connection to read data
 
 ```yaml
 # Example: ClickHouse connector configuration
@@ -341,23 +341,23 @@ _[string]_ - Refers to the driver type and must be driver `databricks` _(require
 
 ### `host`
 
-_[string]_ - Host where the Databricks instance is running 
+_[string]_ - Host where the Databricks instance is running
 
 ### `http_path`
 
-_[string]_ - HTTP path sets up the endpoint to the warehouse 
+_[string]_ - HTTP path sets up the endpoint to the warehouse
 
 ### `token`
 
-_[string]_ - Token sets up the Personal Access Token 
+_[string]_ - Token sets up the Personal Access Token
 
 ### `catalog`
 
-_[string]_ - Default catalog name. Optional. 
+_[string]_ - Default catalog name. Optional.
 
 ### `schema`
 
-_[string]_ - Default schema name. Optional. 
+_[string]_ - Default schema name. Optional.
 
 ### `dsn`
 
@@ -367,11 +367,11 @@ This is intended for **advanced configuration** where you want to specify
 properties that are not explicitly defined above.  
 It can only be used when the other connection fields (host, http_path, token, catalog, schema) are **not used**.
 Refer to https://github.com/databricks/databricks-sql-go for the full list of supported DSN parameters and their formats.
- 
+
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ```yaml
 # Example: Databricks connector configuration
@@ -392,39 +392,39 @@ _[string]_ - Refers to the driver type and must be driver `druid` _(required)_
 
 ### `dsn`
 
-_[string]_ - Data Source Name (DSN) for connecting to Druid 
+_[string]_ - Data Source Name (DSN) for connecting to Druid
 
 ### `username`
 
-_[string]_ - Username for authenticating with Druid 
+_[string]_ - Username for authenticating with Druid
 
 ### `password`
 
-_[string]_ - Password for authenticating with Druid 
+_[string]_ - Password for authenticating with Druid
 
 ### `host`
 
-_[string]_ - Hostname of the Druid coordinator or broker 
+_[string]_ - Hostname of the Druid coordinator or broker
 
 ### `port`
 
-_[integer]_ - Port number of the Druid service 
+_[integer]_ - Port number of the Druid service
 
 ### `ssl`
 
-_[boolean]_ - Enable SSL for secure connection 
+_[boolean]_ - Enable SSL for secure connection
 
 ### `log_queries`
 
-_[boolean]_ - Log raw SQL queries sent to Druid 
+_[boolean]_ - Log raw SQL queries sent to Druid
 
 ### `max_open_conns`
 
-_[integer]_ - Maximum number of open database connections (0 = default, -1 = unlimited) 
+_[integer]_ - Maximum number of open database connections (0 = default, -1 = unlimited)
 
 ### `skip_version_check`
 
-_[boolean]_ - Skip checking Druid version compatibility 
+_[boolean]_ - Skip checking Druid version compatibility
 
 ```yaml
 # Example: Druid connector configuration
@@ -445,63 +445,63 @@ _[string]_ - Must be "duckdb" _(required)_
 
 ### `mode`
 
-_[string]_ - Set the mode for the DuckDB connection. 
+_[string]_ - Set the mode for the DuckDB connection.
 
 ### `path`
 
-_[string]_ - Path to external DuckDB database 
+_[string]_ - Path to external DuckDB database
 
 ### `attach`
 
-_[string]_ - Full ATTACH statement to attach a DuckDB database 
+_[string]_ - Full ATTACH statement to attach a DuckDB database
 
 ### `pool_size`
 
-_[integer]_ - Number of concurrent connections and queries allowed 
+_[integer]_ - Number of concurrent connections and queries allowed
 
 ### `cpu`
 
-_[integer]_ - Number of CPU cores available to the database 
+_[integer]_ - Number of CPU cores available to the database
 
 ### `memory_limit_gb`
 
-_[integer]_ - Amount of memory in GB available to the database 
+_[integer]_ - Amount of memory in GB available to the database
 
 ### `read_write_ratio`
 
-_[number]_ - Ratio of resources allocated to read vs write operations 
+_[number]_ - Ratio of resources allocated to read vs write operations
 
 ### `allow_host_access`
 
-_[boolean]_ - Whether access to local environment and file system is allowed 
+_[boolean]_ - Whether access to local environment and file system is allowed
 
 ### `init_sql`
 
-_[string]_ - SQL executed during database initialization 
+_[string]_ - SQL executed during database initialization
 
 ### `conn_init_sql`
 
-_[string]_ - SQL executed when a new connection is initialized 
+_[string]_ - SQL executed when a new connection is initialized
 
 ### `boot_queries`
 
-_[string]_ - Deprecated - Use init_sql instead 
+_[string]_ - Deprecated - Use init_sql instead
 
 ### `log_queries`
 
-_[boolean]_ - Whether to log raw SQL queries executed through OLAP 
+_[boolean]_ - Whether to log raw SQL queries executed through OLAP
 
 ### `create_secrets_from_connectors`
 
-_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL.
 
 ### `database_name`
 
-_[string]_ - Name of the attached DuckDB database (auto-detected if not set) 
+_[string]_ - Name of the attached DuckDB database (auto-detected if not set)
 
 ### `schema_name`
 
-_[string]_ - Default schema used by the DuckDB database 
+_[string]_ - Default schema used by the DuckDB database
 
 ```yaml
 # Example: DuckDB connector configuration
@@ -525,11 +525,11 @@ _[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
 
 ### `path`
 
-_[string]_ - Path to the DuckDB database 
+_[string]_ - Path to the DuckDB database
 
 ### `mode`
 
-_[string]_ - Set the mode for the DuckDB connection. 
+_[string]_ - Set the mode for the DuckDB connection.
 
 ```yaml
 # Example: DuckDB as a source connector configuration
@@ -547,15 +547,15 @@ _[string]_ - Refers to the driver type and must be driver `gcs` _(required)_
 
 ### `google_application_credentials`
 
-_[string]_ - Google Cloud credentials JSON string 
+_[string]_ - Google Cloud credentials JSON string
 
 ### `key_id`
 
-_[string]_ - Optional S3-compatible Key ID when used in compatibility mode 
+_[string]_ - Optional S3-compatible Key ID when used in compatibility mode
 
 ### `secret`
 
-_[string]_ - Optional S3-compatible Secret when used in compatibility mode 
+_[string]_ - Optional S3-compatible Secret when used in compatibility mode
 
 ### `path_prefixes`
 
@@ -563,11 +563,11 @@ _[string, array]_ - A list of bucket path prefixes that this connector is allowe
 Useful when different buckets or bucket prefixes use different credentials, 
 allowing the system to select the appropriate connector based on the bucket path.
 Example: `gs://my-bucket/`, ` gs://my-bucket/path/` ,`gs://my-bucket/path/prefix`
- 
+
 
 ### `allow_host_access`
 
-_[boolean]_ - Allow access to host environment configuration 
+_[boolean]_ - Allow access to host environment configuration
 
 ```yaml
 # Example: GCS connector configuration
@@ -584,7 +584,7 @@ _[string]_ - Refers to the driver type and must be driver `https` _(required)_
 
 ### `headers`
 
-_[object]_ - HTTP headers to include in the request 
+_[object]_ - HTTP headers to include in the request
 
 ### `path_prefixes`
 
@@ -592,7 +592,7 @@ _[string, array]_ - A list of HTTP/HTTPS URL prefixes that this connector is all
 Useful when different URL namespaces use different credentials, enabling the
 system to choose the appropriate connector based on the URL path.
 Example: `https://example.com/`, ` https://example.com/path/` ,`https://example.com/path/prefix`
- 
+
 
 ```yaml
 # Example: HTTPS connector configuration
@@ -614,7 +614,7 @@ _[string]_ - Path to your MD database _(required)_
 
 ### `schema_name`
 
-_[string]_ - Define your schema if not main, uses main by default 
+_[string]_ - Define your schema if not main, uses main by default
 
 ### `token`
 
@@ -622,15 +622,15 @@ _[string]_ - MotherDuck token _(required)_
 
 ### `init_sql`
 
-_[string]_ - SQL executed during database initialization. 
+_[string]_ - SQL executed during database initialization.
 
 ### `mode`
 
-_[string]_ - Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations. 
+_[string]_ - Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.
 
 ### `create_secrets_from_connectors`
 
-_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL.
 
 ```yaml
 # Example: MotherDuck connector configuration
@@ -661,35 +661,35 @@ Rules for special characters in password:
 mysql://user:pa%40ss@localhost:3306/my-db   # password contains '@'
 mysql://user:pa%3Ass@localhost:3306/my-db   # password contains ':'
 ```
- 
+
 
 ### `host`
 
-_[string]_ - Hostname of the MySQL server 
+_[string]_ - Hostname of the MySQL server
 
 ### `port`
 
-_[integer]_ - Port number for the MySQL server 
+_[integer]_ - Port number for the MySQL server
 
 ### `database`
 
-_[string]_ - Name of the MySQL database 
+_[string]_ - Name of the MySQL database
 
 ### `user`
 
-_[string]_ - Username for authentication 
+_[string]_ - Username for authentication
 
 ### `password`
 
-_[string]_ - Password for authentication 
+_[string]_ - Password for authentication
 
 ### `ssl-mode`
 
-_[string]_ - ssl mode options: `disabled`, `preferred`, or `required`. 
+_[string]_ - ssl mode options: `disabled`, `preferred`, or `required`.
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ```yaml
 # Example: MySQL connector configured using individual properties
@@ -714,7 +714,7 @@ dsn: "{{ .env.MYSQL_DSN }}" # Define DSN in .env file
 
 ### `driver`
 
-_[string]_ - The driver type, must be set to "openai" 
+_[string]_ - The driver type, must be set to "openai"
 
 ### `api_key`
 
@@ -722,27 +722,27 @@ _[string]_ - API key for connecting to OpenAI _(required)_
 
 ### `model`
 
-_[string]_ - The OpenAI model to use (e.g., 'gpt-4o') 
+_[string]_ - The OpenAI model to use (e.g., 'gpt-4o')
 
 ### `max_output_tokens`
 
-_[number]_ - Maximum number of tokens to generate in the completion (default: 8192) 
+_[number]_ - Maximum number of tokens to generate in the completion (default: 8192)
 
 ### `reasoning_effort`
 
-_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high') 
+_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
 
 ### `base_url`
 
-_[string]_ - The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1') 
+_[string]_ - The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
 
 ### `api_type`
 
-_[string]_ - The type of OpenAI API to use 
+_[string]_ - The type of OpenAI API to use
 
 ### `api_version`
 
-_[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
+_[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
 
 ```yaml
 # Example: OpenAI connector configuration
@@ -761,7 +761,7 @@ api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05
 
 ### `driver`
 
-_[string]_ - The driver type, must be set to "claude" 
+_[string]_ - The driver type, must be set to "claude"
 
 ### `api_key`
 
@@ -769,19 +769,19 @@ _[string]_ - API key for connecting to Claude _(required)_
 
 ### `model`
 
-_[string]_ - The Claude model to use (e.g., 'claude-opus-4-5') 
+_[string]_ - The Claude model to use (e.g., 'claude-opus-4-5')
 
 ### `max_tokens`
 
-_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+_[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (e.g., 0.0) 
+_[number]_ - Sampling temperature to use (e.g., 0.0)
 
 ### `base_url`
 
-_[string]_ - The base URL for the Claude API 
+_[string]_ - The base URL for the Claude API
 
 ```yaml
 # Example: Claude connector configuration
@@ -795,7 +795,7 @@ model: claude-opus-4-5
 
 ### `driver`
 
-_[string]_ - The driver type, must be set to "gemini" 
+_[string]_ - The driver type, must be set to "gemini"
 
 ### `api_key`
 
@@ -803,31 +803,31 @@ _[string]_ - API key for connecting to Gemini _(required)_
 
 ### `model`
 
-_[string]_ - The Gemini model to use (e.g., 'gemini-2.5-pro-preview-05-06') 
+_[string]_ - The Gemini model to use (e.g., 'gemini-2.5-pro-preview-05-06')
 
 ### `include_thoughts`
 
-_[boolean]_ - Whether to include thinking/reasoning in the response 
+_[boolean]_ - Whether to include thinking/reasoning in the response
 
 ### `thinking_level`
 
-_[string]_ - Level of 'thinking' for the model's response (e.g., 'MINIMAL', 'LOW', 'MEDIUM', 'HIGH'). Default is 'LOW'. 
+_[string]_ - Level of 'thinking' for the model's response (e.g., 'MINIMAL', 'LOW', 'MEDIUM', 'HIGH'). Default is 'LOW'.
 
 ### `max_output_tokens`
 
-_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+_[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (0.0-2.0) 
+_[number]_ - Sampling temperature to use (0.0-2.0)
 
 ### `top_p`
 
-_[number]_ - Nucleus sampling parameter 
+_[number]_ - Nucleus sampling parameter
 
 ### `top_k`
 
-_[number]_ - Top-K sampling parameter 
+_[number]_ - Top-K sampling parameter
 
 ```yaml
 # Example: Gemini connector configuration
@@ -845,47 +845,47 @@ _[string]_ - Refers to the driver type and must be driver `pinot` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the Pinot connection 
+_[string]_ - DSN(Data Source Name) for the Pinot connection
 
 ### `username`
 
-_[string]_ - Username for authenticating with Pinot 
+_[string]_ - Username for authenticating with Pinot
 
 ### `password`
 
-_[string]_ - Password for authenticating with Pinot 
+_[string]_ - Password for authenticating with Pinot
 
 ### `broker_host`
 
-_[string]_ - Hostname of the Pinot broker 
+_[string]_ - Hostname of the Pinot broker
 
 ### `broker_port`
 
-_[integer]_ - Port number for the Pinot broker 
+_[integer]_ - Port number for the Pinot broker
 
 ### `controller_host`
 
-_[string]_ - Hostname of the Pinot controller 
+_[string]_ - Hostname of the Pinot controller
 
 ### `controller_port`
 
-_[integer]_ - Port number for the Pinot controller 
+_[integer]_ - Port number for the Pinot controller
 
 ### `ssl`
 
-_[boolean]_ - Enable SSL connection to Pinot 
+_[boolean]_ - Enable SSL connection to Pinot
 
 ### `log_queries`
 
-_[boolean]_ - Log raw SQL queries executed through Pinot 
+_[boolean]_ - Log raw SQL queries executed through Pinot
 
 ### `max_open_conns`
 
-_[integer]_ - Maximum number of open connections to the Pinot database 
+_[integer]_ - Maximum number of open connections to the Pinot database
 
 ### `timeout_ms`
 
-_[integer]_ - Query timeout in milliseconds 
+_[integer]_ - Query timeout in milliseconds
 
 ```yaml
 # Example: Pinot connector configuration
@@ -911,39 +911,39 @@ _[string]_ - Refers to the driver type and must be driver `starrocks` _(required
 
 ### `dsn`
 
-_[string]_ - DSN (Data Source Name) for the StarRocks connection. Follows MySQL protocol format. 
+_[string]_ - DSN (Data Source Name) for the StarRocks connection. Follows MySQL protocol format.
 
 ### `host`
 
-_[string]_ - StarRocks FE (Frontend) server hostname 
+_[string]_ - StarRocks FE (Frontend) server hostname
 
 ### `port`
 
-_[integer]_ - MySQL protocol port of StarRocks FE 
+_[integer]_ - MySQL protocol port of StarRocks FE
 
 ### `username`
 
-_[string]_ - Username for authentication 
+_[string]_ - Username for authentication
 
 ### `password`
 
-_[string]_ - Password for authentication 
+_[string]_ - Password for authentication
 
 ### `catalog`
 
-_[string]_ - StarRocks catalog name (for external catalogs like Iceberg, Hive) 
+_[string]_ - StarRocks catalog name (for external catalogs like Iceberg, Hive)
 
 ### `database`
 
-_[string]_ - StarRocks database name 
+_[string]_ - StarRocks database name
 
 ### `ssl`
 
-_[boolean]_ - Enable SSL/TLS encryption 
+_[boolean]_ - Enable SSL/TLS encryption
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ```yaml
 # Example: StarRocks connector configuration
@@ -992,43 +992,43 @@ Examples (URI format with encoded characters):
 postgres://user:pa%40ss@localhost:5432/my-db   # '@' is encoded as %40
 postgres://user:pa%3Ass@localhost:5432/my-db   # ':' is encoded as %3A
 ```
- 
+
 
 ### `host`
 
-_[string]_ - Hostname of the Postgres server 
+_[string]_ - Hostname of the Postgres server
 
 ### `port`
 
-_[string]_ - Port number for the Postgres server 
+_[string]_ - Port number for the Postgres server
 
 ### `dbname`
 
-_[string]_ - Name of the Postgres database 
+_[string]_ - Name of the Postgres database
 
 ### `user`
 
-_[string]_ - Username for authentication 
+_[string]_ - Username for authentication
 
 ### `password`
 
-_[string]_ - Password for authentication 
+_[string]_ - Password for authentication
 
 ### `sslmode`
 
-_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
+_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`.
 
 ### `max_open_conns`
 
-_[integer]_ - Maximum number of open connections to the database (defaults to 1) 
+_[integer]_ - Maximum number of open connections to the database (defaults to 1)
 
 ### `conn_max_lifetime`
 
-_[string]_ - Maximum time a connection may be reused, as a Go duration string (defaults to 1m) 
+_[string]_ - Maximum time a connection may be reused, as a Go duration string (defaults to 1m)
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ```yaml
 # Example: Postgres connector configured using individual properties
@@ -1065,43 +1065,43 @@ URI format example:
 ```text
 postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
 ```
- 
+
 
 ### `host`
 
-_[string]_ - Hostname of the Supabase database (e.g. aws-0-us-east-1.pooler.supabase.com) 
+_[string]_ - Hostname of the Supabase database (e.g. aws-0-us-east-1.pooler.supabase.com)
 
 ### `port`
 
-_[string]_ - Port number for the Supabase database 
+_[string]_ - Port number for the Supabase database
 
 ### `dbname`
 
-_[string]_ - Name of the Supabase database 
+_[string]_ - Name of the Supabase database
 
 ### `user`
 
-_[string]_ - Username for authentication (e.g. postgres.[your-project-ref]) 
+_[string]_ - Username for authentication (e.g. postgres.[your-project-ref])
 
 ### `password`
 
-_[string]_ - Password for authentication 
+_[string]_ - Password for authentication
 
 ### `sslmode`
 
-_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
+_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`.
 
 ### `max_open_conns`
 
-_[integer]_ - Maximum number of open connections to the database (defaults to 1) 
+_[integer]_ - Maximum number of open connections to the database (defaults to 1)
 
 ### `conn_max_lifetime`
 
-_[string]_ - Maximum time a connection may be reused, as a Go duration string (defaults to 1m) 
+_[string]_ - Maximum time a connection may be reused, as a Go duration string (defaults to 1m)
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ```yaml
 # Example: Supabase connector configured using individual properties
@@ -1138,11 +1138,11 @@ _[string]_ - AWS Secret Access Key used for authenticating with Redshift. _(requ
 
 ### `aws_access_token`
 
-_[string]_ - AWS Session Token for temporary credentials (optional). 
+_[string]_ - AWS Session Token for temporary credentials (optional).
 
 ### `region`
 
-_[string]_ - AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1'). 
+_[string]_ - AWS region where the Redshift cluster or workgroup is hosted (e.g., 'us-east-1').
 
 ### `database`
 
@@ -1150,19 +1150,19 @@ _[string]_ - Name of the Redshift database to query. _(required)_
 
 ### `workgroup`
 
-_[string]_ - Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'. 
+_[string]_ - Workgroup name for Redshift Serverless, in case of provisioned Redshift clusters use 'cluster_identifier'.
 
 ### `cluster_identifier`
 
-_[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' . 
+_[string]_ - Cluster identifier for provisioned Redshift clusters, in case of Redshift Serverless use 'workgroup' .
 
 ### `allow_host_access`
 
-_[boolean]_ - Allow access to host environment configuration 
+_[boolean]_ - Allow access to host environment configuration
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ```yaml
 # Example: Redshift connector configuration
@@ -1185,35 +1185,35 @@ _[string]_ - Refers to the driver type and must be driver `s3` _(required)_
 
 ### `aws_access_key_id`
 
-_[string]_ - AWS Access Key ID used for authentication 
+_[string]_ - AWS Access Key ID used for authentication
 
 ### `aws_secret_access_key`
 
-_[string]_ - AWS Secret Access Key used for authentication 
+_[string]_ - AWS Secret Access Key used for authentication
 
 ### `aws_access_token`
 
-_[string]_ - Optional AWS session token for temporary credentials 
+_[string]_ - Optional AWS session token for temporary credentials
 
 ### `endpoint`
 
-_[string]_ - Optional custom endpoint URL for S3-compatible storage 
+_[string]_ - Optional custom endpoint URL for S3-compatible storage
 
 ### `region`
 
-_[string]_ - AWS region of the S3 bucket 
+_[string]_ - AWS region of the S3 bucket
 
 ### `aws_role_arn`
 
-_[string]_ - ARN of the IAM role to assume for accessing S3 resources 
+_[string]_ - ARN of the IAM role to assume for accessing S3 resources
 
 ### `aws_role_session_name`
 
-_[string]_ - Session name to use when assuming the IAM role 
+_[string]_ - Session name to use when assuming the IAM role
 
 ### `aws_external_id`
 
-_[string]_ - External ID for cross-account role assumption 
+_[string]_ - External ID for cross-account role assumption
 
 ### `path_prefixes`
 
@@ -1221,11 +1221,11 @@ _[string, array]_ - A list of bucket path prefixes that this connector is allowe
 Useful when different buckets or bucket prefixes use different credentials,
 allowing the system to select the appropriate connector based on the bucket path.
 Example: `s3://my-bucket/`, ` s3://my-bucket/path/` ,`s3://my-bucket/path/prefix`
- 
+
 
 ### `allow_host_access`
 
-_[boolean]_ - Allow access to host environment configuration 
+_[boolean]_ - Allow access to host environment configuration
 
 ```yaml
 # Example: S3 connector configuration
@@ -1263,15 +1263,15 @@ _[string]_ - Refers to the driver type and must be driver `snowflake` _(required
 
 ### `account`
 
-_[string]_ - Snowflake account identifier. To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com 
+_[string]_ - Snowflake account identifier. To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com
 
 ### `user`
 
-_[string]_ - Username for the Snowflake connection. 
+_[string]_ - Username for the Snowflake connection.
 
 ### `password`
 
-_[string]_ - Password for the Snowflake connection. _(deprecated, use privateKey instead)_ 
+_[string]_ - Password for the Snowflake connection. _(deprecated, use privateKey instead)_
 
 ### `privateKey`
 
@@ -1291,27 +1291,27 @@ cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
 ```
 See: https://docs.snowflake.com/en/guide/key-pair-auth
 :::
- 
+
 
 ### `authenticator`
 
-_[string]_ - Optional authenticator type (e.g., SNOWFLAKE_JWT). 
+_[string]_ - Optional authenticator type (e.g., SNOWFLAKE_JWT).
 
 ### `database`
 
-_[string]_ - Name of the Snowflake database. 
+_[string]_ - Name of the Snowflake database.
 
 ### `schema`
 
-_[string]_ - Schema within the database to use. 
+_[string]_ - Schema within the database to use.
 
 ### `warehouse`
 
-_[string]_ - Compute warehouse to use for queries. 
+_[string]_ - Compute warehouse to use for queries.
 
 ### `role`
 
-_[string]_ - Snowflake role to use. 
+_[string]_ - Snowflake role to use.
 
 ### `dsn`
 
@@ -1323,15 +1323,15 @@ It can only be used when the other connection fields (account, user, password,
 database, schema, warehouse, role, authenticator, privateKey) are **not used**.
 
 For details on private key generation and encoding, see the `privateKey` property.
- 
+
 
 ### `parallel_fetch_limit`
 
-_[integer]_ - Maximum number of concurrent fetches during query execution. 
+_[integer]_ - Maximum number of concurrent fetches during query execution.
 
 ### `log_queries`
 
-_[boolean]_ - Controls whether to log raw SQL queries 
+_[boolean]_ - Controls whether to log raw SQL queries
 
 ```yaml
 # Example: Snowflake connector basic configuration

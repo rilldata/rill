@@ -10,133 +10,133 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 
 ### `version`
 
-_[string]_ - The version of the metrics view schema 
+_[string]_ - The version of the metrics view schema
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `metrics_view` 
+_[string]_ - Refers to the resource type and must be `metrics_view`
 
 ### `connector`
 
-_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/developers/build/connectors/olap) for more information 
+_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/developers/build/connectors/olap) for more information
 
 ### `display_name`
 
-_[string]_ - Refers to the display name for the metrics view 
+_[string]_ - Refers to the display name for the metrics view
 
 ### `description`
 
-_[string]_ - Refers to the description for the metrics view 
+_[string]_ - Refers to the description for the metrics view
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for [AI agents](/guide/ai/mcp). Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for [AI agents](/guide/ai/mcp). Used to guide natural language question answering and routing.
 
 ### `parent`
 
-_[string]_ - Refers to the parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view 
+_[string]_ - Refers to the parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view
 
 ### `model`
 
-_[string]_ - Refers to the model powering the dashboard (either model or table is required) 
+_[string]_ - Refers to the model powering the dashboard (either model or table is required)
 
 ### `database`
 
-_[string]_ - Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
+_[string]_ - Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
 
 ### `database_schema`
 
-_[string]_ - Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
+_[string]_ - Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
 
 ### `table`
 
-_[string]_ - Refers to the table powering the dashboard, should be used instead of model for dashboards create from external OLAP tables (either table or model is required) 
+_[string]_ - Refers to the table powering the dashboard, should be used instead of model for dashboards create from external OLAP tables (either table or model is required)
 
 ### `timeseries`
 
-_[string]_ - Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear 
+_[string]_ - Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear
 
 ### `watermark`
 
-_[string]_ - A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten 
+_[string]_ - A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten
 
 ### `data_time_range`
 
-_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table. 
+_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
 
 ### `smallest_time_grain`
 
-_[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year 
+_[string]_ - Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year
 
 ### `first_day_of_week`
 
-_[integer]_ - Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7 
+_[integer]_ - Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7
 
 ### `first_month_of_year`
 
-_[integer]_ - Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12 
+_[integer]_ - Refers to the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12
 
 ### `max_query_time_range`
 
-_[string]_ - The maximum time span any single query against this metrics view may cover, expressed as an ISO 8601 duration with day-or-larger granularity (e.g. `P90D`, `P3M`, `P1Y`). Sub-day durations such as `PT12H` are not supported. Applies independently to the primary and comparison time ranges. If unset, no limit is enforced. 
+_[string]_ - The maximum time span any single query against this metrics view may cover, expressed as an ISO 8601 duration with day-or-larger granularity (e.g. `P90D`, `P3M`, `P1Y`). Sub-day durations such as `PT12H` are not supported. Applies independently to the primary and comparison time ranges. If unset, no limit is enforced.
 
 ### `dimensions`
 
-_[array of object]_ - Relates to exploring segments or dimensions of your data and filtering the dashboard 
+_[array of object]_ - Relates to exploring segments or dimensions of your data and filtering the dashboard
 
-  - **`name`** - _[string]_ - a stable identifier for the dimension 
+  - **`name`** - _[string]_ - a stable identifier for the dimension
 
-  - **`display_name`** - _[string]_ - a display name for your dimension 
+  - **`display_name`** - _[string]_ - a display name for your dimension
 
-  - **`description`** - _[string]_ - a freeform text description of the dimension 
+  - **`description`** - _[string]_ - a freeform text description of the dimension
 
-  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the dimension (defaults to empty) 
+  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the dimension (defaults to empty)
 
-  - **`type`** - _[string]_ - Dimension type: "geo" for geospatial dimensions, "time" for time dimensions or "categorical" for categorial dimensions. Default is undefined and the type will be inferred instead 
+  - **`type`** - _[string]_ - Dimension type: "geo" for geospatial dimensions, "time" for time dimensions or "categorical" for categorial dimensions. Default is undefined and the type will be inferred instead
 
-  - **`column`** - _[string]_ - a categorical column 
+  - **`column`** - _[string]_ - a categorical column
 
-  - **`expression`** - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time 
+  - **`expression`** - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time
 
-  - **`unnest`** - _[boolean]_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match 
+  - **`unnest`** - _[boolean]_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match
 
-  - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression) 
+  - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)
 
-  - **`lookup_table`** - _[string]_ - the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details 
+  - **`lookup_table`** - _[string]_ - the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details
 
-  - **`lookup_key_column`** - _[string]_ - the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table 
+  - **`lookup_key_column`** - _[string]_ - the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table
 
-  - **`lookup_value_column`** - _[string]_ - the attribute column in the lookup dictionary whose values will be displayed for this dimension 
+  - **`lookup_value_column`** - _[string]_ - the attribute column in the lookup dictionary whose values will be displayed for this dimension
 
-  - **`lookup_default_expression`** - _[string]_ - an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`) 
+  - **`lookup_default_expression`** - _[string]_ - an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
 
 ### `measures`
 
-_[array of object]_ - Used to define the numeric aggregates of columns from your data model 
+_[array of object]_ - Used to define the numeric aggregates of columns from your data model
 
   - **`name`** - _[string]_ - a stable identifier for the measure _(required)_
 
-  - **`display_name`** - _[string]_ - the display name of your measure. 
+  - **`display_name`** - _[string]_ - the display name of your measure.
 
-  - **`label`** - _[string]_ - a label for your measure, deprecated use display_name 
+  - **`label`** - _[string]_ - a label for your measure, deprecated use display_name
 
-  - **`description`** - _[string]_ - a freeform text description of the measure 
+  - **`description`** - _[string]_ - a freeform text description of the measure
 
-  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the measure (defaults to empty) 
+  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the measure (defaults to empty)
 
-  - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist. 
+  - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist.
 
-  - **`expression`** - _[string]_ - a combination of operators and functions for aggregations 
+  - **`expression`** - _[string]_ - a combination of operators and functions for aggregations
 
-  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation. 
+  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation.
 
     - **option 1** - _[string]_ - Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.
 
     - **option 2** - _[object]_ - Detailed window configuration for measure calculations, allowing control over partitioning, ordering, and frame definition.
 
-      - **`partition`** - _[boolean]_ - Controls whether the window is partitioned. When true, calculations are performed within each partition separately. 
+      - **`partition`** - _[boolean]_ - Controls whether the window is partitioned. When true, calculations are performed within each partition separately.
 
-      - **`order`** - _[string]_ - Specifies the fields to order the window by, determining the sequence of rows within each partition. 
+      - **`order`** - _[string]_ - Specifies the fields to order the window by, determining the sequence of rows within each partition.
 
         - **option 1** - _[string]_ - Simple field name as a string.
 
@@ -148,25 +148,11 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
             - **`name`** - _[string]_ - Name of the field to select. _(required)_
 
-            - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+            - **`time_grain`** - _[string]_ - Time grain for time-based dimensions.
 
-      - **`frame`** - _[string]_ - Defines the window frame boundaries for calculations, specifying which rows are included in the window relative to the current row. 
+      - **`frame`** - _[string]_ - Defines the window frame boundaries for calculations, specifying which rows are included in the window relative to the current row.
 
-  - **`per`** - _[oneOf]_ - for per dimensions 
-
-    - **option 1** - _[string]_ - Simple field name as a string.
-
-    - **option 2** - _[array of oneOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
-
-      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
-
-      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
-
-        - **`name`** - _[string]_ - Name of the field to select. _(required)_
-
-        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
-
-  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/developers/build/metrics-view/measures/referencing) for more information. 
+  - **`per`** - _[oneOf]_ - for per dimensions
 
     - **option 1** - _[string]_ - Simple field name as a string.
 
@@ -178,9 +164,23 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
         - **`name`** - _[string]_ - Name of the field to select. _(required)_
 
-        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
+        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions.
 
-  - **`valid_percent_of_total`** - _[boolean]_ - a boolean indicating whether percent-of-total values should be rendered for this measure 
+  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/developers/build/metrics-view/measures/referencing) for more information.
+
+    - **option 1** - _[string]_ - Simple field name as a string.
+
+    - **option 2** - _[array of oneOf]_ - List of field selectors, each can be a string or an object with detailed configuration.
+
+      - **option 1** - _[string]_ - Shorthand field selector, interpreted as the name.
+
+      - **option 2** - _[object]_ - Detailed field selector configuration with name and optional time grain.
+
+        - **`name`** - _[string]_ - Name of the field to select. _(required)_
+
+        - **`time_grain`** - _[string]_ - Time grain for time-based dimensions.
+
+  - **`valid_percent_of_total`** - _[boolean]_ - a boolean indicating whether percent-of-total values should be rendered for this measure
 
   - **`format_preset`** - _[string]_ - Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default.
   
@@ -191,9 +191,9 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
     - `currency_eur`: Round to 2 decimal points with a euro sign (€).
     - `percentage`: Convert a rate into a percentage with a % sign.
     - `interval_ms`: Convert milliseconds into human-readable durations like hours (h), days (d), years (y), etc. (optional)
- 
 
-  - **`format_d3`** - _[string]_ - Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional) 
+
+  - **`format_d3`** - _[string]_ - Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional)
 
   - **`format_d3_locale`** - _[object]_ - locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's formatLocale.
     ```yaml
@@ -202,19 +202,19 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
       grouping: [3, 2]
       currency: ["₹", ""]
     ```
- 
 
-    - **`grouping`** - _[array]_ - the grouping of the currency symbol 
 
-    - **`currency`** - _[array]_ - the currency symbol 
+    - **`grouping`** - _[array]_ - the grouping of the currency symbol
 
-  - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
+    - **`currency`** - _[array]_ - the currency symbol
 
-  - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly. 
+  - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
+
+  - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
 
 ### `parent_dimensions`
 
-_[oneOf]_ - Optional field selectors for dimensions to inherit from the parent metrics view. 
+_[oneOf]_ - Optional field selectors for dimensions to inherit from the parent metrics view.
 
   - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -222,15 +222,15 @@ _[oneOf]_ - Optional field selectors for dimensions to inherit from the parent m
 
   - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **`regex`** - _[string]_ - Select fields using a regular expression 
+    - **`regex`** - _[string]_ - Select fields using a regular expression
 
-    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
 
-    - **`exclude`** - _[object]_ - Select all fields except those listed here 
+    - **`exclude`** - _[object]_ - Select all fields except those listed here
 
 ### `parent_measures`
 
-_[oneOf]_ - Optional field selectors for measures to inherit from the parent metrics view. 
+_[oneOf]_ - Optional field selectors for measures to inherit from the parent metrics view.
 
   - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -238,29 +238,29 @@ _[oneOf]_ - Optional field selectors for measures to inherit from the parent met
 
   - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **`regex`** - _[string]_ - Select fields using a regular expression 
+    - **`regex`** - _[string]_ - Select fields using a regular expression
 
-    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
 
-    - **`exclude`** - _[object]_ - Select all fields except those listed here 
+    - **`exclude`** - _[object]_ - Select all fields except those listed here
 
 ### `annotations`
 
-_[array of object]_ - Used to define annotations that can be displayed on charts 
+_[array of object]_ - Used to define annotations that can be displayed on charts
 
-  - **`name`** - _[string]_ - A stable identifier for the annotation. Defaults to model or table names when not specified 
+  - **`name`** - _[string]_ - A stable identifier for the annotation. Defaults to model or table names when not specified
 
-  - **`model`** - _[string]_ - Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'grain' to specify when the annotation should appear based on dashboard grain level. 
+  - **`model`** - _[string]_ - Refers to the model powering the annotation (either table or model is required). The model must have 'time' and 'description' columns. Optional columns include 'time_end' for range annotations and 'grain' to specify when the annotation should appear based on dashboard grain level.
 
-  - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
+  - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
 
-  - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified 
+  - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine (to be used in conjunction with table). Otherwise, will use the default database or schema if not specified
 
-  - **`table`** - _[string]_ - Refers to the table powering the annotation, should be used instead of model for annotations from external OLAP tables (either table or model is required) 
+  - **`table`** - _[string]_ - Refers to the table powering the annotation, should be used instead of model for annotations from external OLAP tables (either table or model is required)
 
-  - **`connector`** - _[string]_ - Refers to the connector to use for the annotation 
+  - **`connector`** - _[string]_ - Refers to the connector to use for the annotation
 
-  - **`measures`** - _[oneOf]_ - Specifies which measures to apply the annotation to. Applies to all measures if not specified 
+  - **`measures`** - _[oneOf]_ - Specifies which measures to apply the annotation to. Applies to all measures if not specified
 
     - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -268,41 +268,27 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
     - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-      - **`regex`** - _[string]_ - Select fields using a regular expression 
+      - **`regex`** - _[string]_ - Select fields using a regular expression
 
-      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
 
-      - **`exclude`** - _[object]_ - Select all fields except those listed here 
+      - **`exclude`** - _[object]_ - Select all fields except those listed here
 
 ### `rollups`
 
-_[array of object]_ - Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table. 
+_[array of object]_ - Pre-aggregated rollup tables that can be used to accelerate queries. When a query's dimensions, measures, time grain, and time range match a rollup, the query is automatically routed to the rollup table instead of the base table.
 
   - **`model`** - _[string]_ - Refers to the model or table powering the rollup (required) _(required)_
 
-  - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine 
+  - **`database`** - _[string]_ - Refers to the database to use in the OLAP engine
 
-  - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine 
+  - **`database_schema`** - _[string]_ - Refers to the schema to use in the OLAP engine
 
   - **`time_grain`** - _[string]_ - The time grain of the rollup (required). Valid values are: millisecond, second, minute, hour, day, week, month, quarter, year _(required)_
 
-  - **`time_zone`** - _[string]_ - IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches. 
+  - **`time_zone`** - _[string]_ - IANA timezone of the rollup table (e.g. America/New_York). For day+ grains, queries are only routed to the rollup if the query timezone matches.
 
-  - **`dimensions`** - _[oneOf]_ - Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included. 
-
-    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
-
-    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
-
-    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
-
-      - **`regex`** - _[string]_ - Select fields using a regular expression 
-
-      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
-
-      - **`exclude`** - _[object]_ - Select all fields except those listed here 
-
-  - **`measures`** - _[oneOf]_ - Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included. 
+  - **`dimensions`** - _[oneOf]_ - Optional field selectors for dimensions to include in the rollup from the base metrics view. If not specified, all dimensions are included.
 
     - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -310,27 +296,41 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
     - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-      - **`regex`** - _[string]_ - Select fields using a regular expression 
+      - **`regex`** - _[string]_ - Select fields using a regular expression
 
-      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
 
-      - **`exclude`** - _[object]_ - Select all fields except those listed here 
+      - **`exclude`** - _[object]_ - Select all fields except those listed here
 
-  - **`data_time_range`** - _[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table. 
+  - **`measures`** - _[oneOf]_ - Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included.
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here
+
+  - **`data_time_range`** - _[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources 
+_[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources
 
-  - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+  - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean.
 
     - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
 
     - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
-  - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
+  - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause
 
-  - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
+  - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded
 
     - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
@@ -340,7 +340,7 @@ _[object]_ - Defines [security rules and access control policies](/developers/bu
 
       - **option 2** - _[string]_ - Wildcard '*' to include all fields
 
-  - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
+  - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included
 
     - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
@@ -350,86 +350,86 @@ _[object]_ - Defines [security rules and access control policies](/developers/bu
 
       - **option 2** - _[string]_ - Wildcard '*' to exclude all fields
 
-  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies 
+  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies
 
     - **`type`** - _[string]_ - Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering) _(required)_
 
-    - **`action`** - _[string]_ - Whether to allow or deny access for this rule 
+    - **`action`** - _[string]_ - Whether to allow or deny access for this rule
 
-    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean 
+    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean
 
-    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules) 
+    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules)
 
-    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
+    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules)
 
-    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
+    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules)
 
 ### `cache`
 
 _[object]_ - Enable caching of query results for metrics views backed by externally-managed tables (e.g. in Snowflake, BigQuery). These settings have no effect for metrics views backed by Rill models (where queries are automatically cached and invalidated when the model is refreshed).
 Each cache entry is keyed by a hash of the query combined with the latest result of `key_sql`. Cached results stay valid as long as `key_sql` returns the same value; when its result changes, prior results become unreachable. `key_sql` itself runs at most once per `key_ttl`, decoupling freshness checks from query traffic.
 Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` checks for new data every 5 minutes but only invalidates cached results when new data has actually landed.
- 
 
-  - **`enabled`** - _[boolean]_ - Whether to cache query results for this metrics view. Defaults to false for metrics views backed by externally-managed tables and to true for metrics views backed by a Rill model. 
 
-  - **`key_sql`** - _[string]_ - SQL returning a single value used in the cache key, typically a max timestamp, version, or row count. Cached results are invalidated when this value changes. Optional; defaults to the metrics view's watermark expression (which itself defaults to `MAX(<time dimension>)`). 
+  - **`enabled`** - _[boolean]_ - Whether to cache query results for this metrics view. Defaults to false for metrics views backed by externally-managed tables and to true for metrics views backed by a Rill model.
 
-  - **`key_ttl`** - _[string]_ - How often `key_sql` is re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). The previous result is reused between evaluations. Defaults to `60s`. 
+  - **`key_sql`** - _[string]_ - SQL returning a single value used in the cache key, typically a max timestamp, version, or row count. Cached results are invalidated when this value changes. Optional; defaults to the metrics view's watermark expression (which itself defaults to `MAX(<time dimension>)`).
 
-  - **`timestamps_ttl`** - _[string]_ - TTL for caching the min/max timestamp queries used to populate a metrics view's rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`. 
+  - **`key_ttl`** - _[string]_ - How often `key_sql` is re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). The previous result is reused between evaluations. Defaults to `60s`.
+
+  - **`timestamps_ttl`** - _[string]_ - TTL for caching the min/max timestamp queries used to populate a metrics view's rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`.
 
 ### `explore`
 
-_[object]_ - Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true. 
+_[object]_ - Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
 
-  - **`skip`** - _[boolean]_ - If true, disables the explore view for this metrics view. 
+  - **`skip`** - _[boolean]_ - If true, disables the explore view for this metrics view.
 
-  - **`name`** - _[string]_ - Name of the explore view. 
+  - **`name`** - _[string]_ - Name of the explore view.
 
-  - **`display_name`** - _[string]_ - Display name for the explore view. 
+  - **`display_name`** - _[string]_ - Display name for the explore view.
 
-  - **`description`** - _[string]_ - Description for the explore view. 
+  - **`description`** - _[string]_ - Description for the explore view.
 
-  - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view. 
+  - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view.
 
-  - **`theme`** - _[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set. 
+  - **`theme`** - _[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set.
 
     - **option 1** - _[string]_ - Name of an existing theme to apply to the explore view.
 
     - **option 2** - _[object]_ - Inline theme configuration.
 
-      - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
+      - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided.
 
-        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
+        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
 
-        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-      - **`light`** - _[object]_ - Light theme color configuration 
+      - **`light`** - _[object]_ - Light theme color configuration
 
-        - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+        - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-        - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+        - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-        - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray). 
+        - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray).
 
-        - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red. 
+        - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red.
 
-        - **`variables`** - _[object]_ - Custom CSS variables for light theme 
+        - **`variables`** - _[object]_ - Custom CSS variables for light theme
 
-      - **`dark`** - _[object]_ - Dark theme color configuration 
+      - **`dark`** - _[object]_ - Dark theme color configuration
 
-        - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+        - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-        - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+        - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-        - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray). 
+        - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray).
 
-        - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red. 
+        - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red.
 
-        - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
+        - **`variables`** - _[object]_ - Custom CSS variables for dark theme
 
-  - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'. 
+  - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'.
 
     - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
 
@@ -437,39 +437,25 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
       - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
-      - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+      - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
 
         - **option 1** - _[string]_ - Offset string only (range is inferred)
 
         - **option 2** - _[object]_ - Object containing offset and range configuration for time comparison
 
-          - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
+          - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago)
 
-          - **`range`** - _[string]_ - Custom time range for comparison period 
+          - **`range`** - _[string]_ - Custom time range for comparison period
 
-  - **`time_zones`** - _[array of string]_ - List of time zones to pin to the top of the time zone selector. Should be a list of IANA time zone identifiers. 
+  - **`time_zones`** - _[array of string]_ - List of time zones to pin to the top of the time zone selector. Should be a list of IANA time zone identifiers.
 
-  - **`lock_time_zone`** - _[boolean]_ - When true, the explore view will be locked to the first time zone provided in the time_zones list. If no time_zones are provided, it will be locked to UTC. 
+  - **`lock_time_zone`** - _[boolean]_ - When true, the explore view will be locked to the first time zone provided in the time_zones list. If no time_zones are provided, it will be locked to UTC.
 
-  - **`allow_custom_time_range`** - _[boolean]_ - Defaults to true. When set to false, hides the ability to set a custom time range for the user. 
+  - **`allow_custom_time_range`** - _[boolean]_ - Defaults to true. When set to false, hides the ability to set a custom time range for the user.
 
-  - **`defaults`** - _[object]_ - Preset UI state to show by default. 
+  - **`defaults`** - _[object]_ - Preset UI state to show by default.
 
-    - **`dimensions`** - _[oneOf]_ - Default dimensions to load on viewing the explore view. 
-
-      - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
-
-      - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
-
-      - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
-
-        - **`regex`** - _[string]_ - Select fields using a regular expression 
-
-        - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
-
-        - **`exclude`** - _[object]_ - Select all fields except those listed here 
-
-    - **`measures`** - _[oneOf]_ - Default measures to load on viewing the explore view. 
+    - **`dimensions`** - _[oneOf]_ - Default dimensions to load on viewing the explore view.
 
       - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
@@ -477,31 +463,45 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
       - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-        - **`regex`** - _[string]_ - Select fields using a regular expression 
+        - **`regex`** - _[string]_ - Select fields using a regular expression
 
-        - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+        - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
 
-        - **`exclude`** - _[object]_ - Select all fields except those listed here 
+        - **`exclude`** - _[object]_ - Select all fields except those listed here
 
-    - **`time_range`** - _[string]_ - Default time range to display when the explore view loads. 
+    - **`measures`** - _[oneOf]_ - Default measures to load on viewing the explore view.
 
-    - **`comparison_mode`** - _[string]_ - Default comparison mode for metrics (none, time, or dimension). 
+      - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
 
-    - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension'. 
+      - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
 
-  - **`embeds`** - _[object]_ - Configuration options for embedded explore views. 
+      - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
 
-    - **`hide_pivot`** - _[boolean]_ - When true, hides the pivot table view in embedded mode. 
+        - **`regex`** - _[string]_ - Select fields using a regular expression
+
+        - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
+
+        - **`exclude`** - _[object]_ - Select all fields except those listed here
+
+    - **`time_range`** - _[string]_ - Default time range to display when the explore view loads.
+
+    - **`comparison_mode`** - _[string]_ - Default comparison mode for metrics (none, time, or dimension).
+
+    - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension'.
+
+  - **`embeds`** - _[object]_ - Configuration options for embedded explore views.
+
+    - **`hide_pivot`** - _[boolean]_ - When true, hides the pivot table view in embedded mode.
 
 ## Common Properties
 
 ### `name`
 
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
 
 ### `refs`
 
-_[array of string]_ - List of resource references 
+_[array of string]_ - List of resource references
 
 ### `tags`
 
@@ -509,8 +509,8 @@ _[array of string]_ - Tags for organizing and filtering the resource (e.g. on th
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.

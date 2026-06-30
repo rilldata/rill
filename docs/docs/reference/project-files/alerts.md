@@ -22,41 +22,41 @@ _[object]_ - Refresh schedule for the alert
   ```
  _(required)_
 
-  - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
+  - **`cron`** - _[string]_ - A cron expression that defines the execution schedule
 
-  - **`time_zone`** - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles'). 
+  - **`time_zone`** - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles').
 
-  - **`disable`** - _[boolean]_ - If true, disables the resource without deleting it. 
+  - **`disable`** - _[boolean]_ - If true, disables the resource without deleting it.
 
-  - **`ref_update`** - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
+  - **`ref_update`** - _[boolean]_ - If true, allows the resource to run when a dependency updates.
 
-  - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
+  - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode.
 
 ### `display_name`
 
-_[string]_ - Display name for the alert 
+_[string]_ - Display name for the alert
 
 ### `description`
 
-_[string]_ - Description for the alert 
+_[string]_ - Description for the alert
 
 ### `intervals`
 
-_[object]_ - define the interval of the alert to check 
+_[object]_ - define the interval of the alert to check
 
-  - **`duration`** - _[string]_ - a valid ISO8601 duration to define the interval duration 
+  - **`duration`** - _[string]_ - a valid ISO8601 duration to define the interval duration
 
-  - **`limit`** - _[integer]_ - maximum number of intervals to check for on invocation 
+  - **`limit`** - _[integer]_ - maximum number of intervals to check for on invocation
 
-  - **`check_unclosed`** - _[boolean]_ - boolean, whether unclosed intervals should be checked 
+  - **`check_unclosed`** - _[boolean]_ - boolean, whether unclosed intervals should be checked
 
 ### `watermark`
 
-_[string]_ - Specifies how the watermark is determined for incremental processing. Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
+_[string]_ - Specifies how the watermark is determined for incremental processing. Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark.
 
 ### `timeout`
 
-_[string]_ - define the timeout of the alert in seconds (optional). 
+_[string]_ - define the timeout of the alert in seconds (optional).
 
 ### `data`
 
@@ -66,7 +66,7 @@ _[oneOf]_ - Data source for the alert _(required)_
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -76,7 +76,7 @@ _[oneOf]_ - Data source for the alert _(required)_
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
-    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+    - **`args`** - _[object]_ - Arguments to pass to the custom API.
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
@@ -86,28 +86,28 @@ _[oneOf]_ - Data source for the alert _(required)_
 
       - **option 2** - _[object]_ - Configuration for specifying a file path/glob pattern with advanced options.
 
-        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path. 
+        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
 
         - **`path`** - _[string]_ - Glob pattern used to match files or directories in the object store. _(required)_
 
-        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered. 
+        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
 
-        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered. 
+        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
 
-        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included. 
+        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
 
         - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
- 
 
-        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning. 
 
-        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`. 
+        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+
+        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
 
   - **option 5** - _[object]_ - Uses the status of a resource as data.
 
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state.
 
   - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
 
@@ -117,43 +117,43 @@ _[oneOf]_ - Data source for the alert _(required)_
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 
-      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. 
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
 
-      - **`time_range`** - _[object]_ - Time range for the analysis period 
+      - **`time_range`** - _[object]_ - Time range for the analysis period
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month) 
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
 
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday) 
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday)
 
-        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
-        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month') 
+        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month')
 
-      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis 
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period 
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period
 
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week) 
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
 
-        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
-        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression for comparison period 
+        - **`expression`** - _[string]_ - Rill time expression for comparison period
 
-      - **`context`** - _[object]_ - Context to constrain the AI analysis 
+      - **`context`** - _[object]_ - Context to constrain the AI analysis
 
-        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze 
+        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze
 
-        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis 
+        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis
 
-        - **`measures`** - _[array of string]_ - List of measures to include in analysis 
+        - **`measures`** - _[array of string]_ - List of measures to include in analysis
 
 ### `for`
 
-_[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
+_[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement.
 
   - **option 1** - _[object]_ - Specifies a unique user identifier for applying security policies.
 
@@ -169,53 +169,53 @@ _[oneOf]_ - Specifies how user identity or attributes should be evaluated for se
 
 ### `on_recover`
 
-_[boolean]_ - Send an alert when a previously failing alert recovers. Defaults to false. 
+_[boolean]_ - Send an alert when a previously failing alert recovers. Defaults to false.
 
 ### `on_fail`
 
-_[boolean]_ - Send an alert when a failure occurs. Defaults to true. 
+_[boolean]_ - Send an alert when a failure occurs. Defaults to true.
 
 ### `on_error`
 
-_[boolean]_ - Send an alert when an error occurs during evaluation. Defaults to false. 
+_[boolean]_ - Send an alert when an error occurs during evaluation. Defaults to false.
 
 ### `renotify`
 
-_[boolean]_ - Enable repeated notifications for unresolved alerts. Defaults to false. 
+_[boolean]_ - Enable repeated notifications for unresolved alerts. Defaults to false.
 
 ### `renotify_after`
 
-_[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off' 
+_[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off'
 
 ### `notify`
 
 _[object]_ - Notification configuration for email and Slack delivery _(required)_
 
-  - **`email`** - _[object]_ - Send notifications via email. 
+  - **`email`** - _[object]_ - Send notifications via email.
 
     - **`recipients`** - _[array of string]_ - An array of email addresses to notify. _(required)_
 
-  - **`slack`** - _[object]_ - Send notifications via Slack. 
+  - **`slack`** - _[object]_ - Send notifications via Slack.
 
-    - **`users`** - _[array of string]_ - An array of Slack user IDs to notify. 
+    - **`users`** - _[array of string]_ - An array of Slack user IDs to notify.
 
-    - **`channels`** - _[array of string]_ - An array of Slack channel names to notify. 
+    - **`channels`** - _[array of string]_ - An array of Slack channel names to notify.
 
-    - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to. 
+    - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to.
 
 ### `annotations`
 
-_[object]_ - Key value pair used for annotations 
+_[object]_ - Key value pair used for annotations
 
 ## Common Properties
 
 ### `name`
 
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
 
 ### `refs`
 
-_[array of string]_ - List of resource references 
+_[array of string]_ - List of resource references
 
 ### `tags`
 
@@ -223,11 +223,11 @@ _[array of string]_ - Tags for organizing and filtering the resource (e.g. on th
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.
 
 ## Examples
 

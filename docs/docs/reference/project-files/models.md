@@ -30,17 +30,17 @@ _[string]_ - Refers to the resource type and must be `model` _(required)_
 
 ### `refresh`
 
-_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data 
+_[object]_ - Specifies the refresh schedule that Rill should follow to re-ingest and update the underlying model data
 
-  - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
+  - **`cron`** - _[string]_ - A cron expression that defines the execution schedule
 
-  - **`time_zone`** - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles'). 
+  - **`time_zone`** - _[string]_ - Time zone to interpret the schedule in (e.g., 'UTC', 'America/Los_Angeles').
 
-  - **`disable`** - _[boolean]_ - If true, disables the resource without deleting it. 
+  - **`disable`** - _[boolean]_ - If true, disables the resource without deleting it.
 
-  - **`ref_update`** - _[boolean]_ - If true, allows the resource to run when a dependency updates. 
+  - **`ref_update`** - _[boolean]_ - If true, allows the resource to run when a dependency updates.
 
-  - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
+  - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode.
 
 ```yaml
 refresh:
@@ -49,7 +49,7 @@ refresh:
 
 ### `connector`
 
-_[string]_ - Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse` 
+_[string]_ - Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse`
 
 ### `sql`
 
@@ -57,7 +57,7 @@ _[string]_ - Raw SQL query to run against source _(required)_
 
 ### `pre_exec`
 
-_[string]_ - SQL queries to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+_[string]_ - SQL queries to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
@@ -65,7 +65,7 @@ pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=po
 
 ### `post_exec`
 
-_[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+_[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
 
 ```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
@@ -73,7 +73,7 @@ post_exec: DETACH DATABASE IF EXISTS postgres_db
 
 ### `create_secrets_from_connectors`
 
-_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors. 
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors.
 
 ```yaml
 create_secrets_from_connectors: my_s3_connector
@@ -87,15 +87,15 @@ create_secrets_from_connectors:
 
 ### `retry`
 
-_[object]_ - Refers to the retry configuration for the model. (optional) 
+_[object]_ - Refers to the retry configuration for the model. (optional)
 
-  - **`attempts`** - _[integer]_ - The number of attempts to retry the model. 
+  - **`attempts`** - _[integer]_ - The number of attempts to retry the model.
 
-  - **`delay`** - _[string]_ - The delay between attempts. 
+  - **`delay`** - _[string]_ - The delay between attempts.
 
-  - **`exponential_backoff`** - _[boolean]_ - Whether to use exponential backoff. 
+  - **`exponential_backoff`** - _[boolean]_ - Whether to use exponential backoff.
 
-  - **`if_error_matches`** - _[array of string]_ - The error messages to match. 
+  - **`if_error_matches`** - _[array of string]_ - The error messages to match.
 
 ```yaml
 retry:
@@ -111,25 +111,25 @@ retry:
 
 ### `timeout`
 
-_[string]_ - The maximum time to wait for model ingestion 
+_[string]_ - The maximum time to wait for model ingestion
 
 ### `incremental`
 
-_[boolean]_ - whether incremental modeling is required (optional) 
+_[boolean]_ - whether incremental modeling is required (optional)
 
 ### `change_mode`
 
-_[string]_ - Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models). 
+_[string]_ - Configure how changes to the model specifications are applied (optional). 'reset' will drop and recreate the model automatically, 'manual' will require a manual full or incremental refresh to apply changes, and 'patch' will switch to the new logic without re-processing historical data (only applies for incremental models).
 
 ### `state`
 
-_[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional) 
+_[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used with partitions (optional)
 
   - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -139,7 +139,7 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
-    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+    - **`args`** - _[object]_ - Arguments to pass to the custom API.
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
@@ -149,28 +149,28 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
       - **option 2** - _[object]_ - Configuration for specifying a file path/glob pattern with advanced options.
 
-        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path. 
+        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
 
         - **`path`** - _[string]_ - Glob pattern used to match files or directories in the object store. _(required)_
 
-        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered. 
+        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
 
-        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered. 
+        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
 
-        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included. 
+        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
 
         - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
- 
 
-        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning. 
 
-        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`. 
+        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+
+        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
 
   - **option 5** - _[object]_ - Uses the status of a resource as data.
 
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state.
 
   - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
 
@@ -180,39 +180,39 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 
-      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. 
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
 
-      - **`time_range`** - _[object]_ - Time range for the analysis period 
+      - **`time_range`** - _[object]_ - Time range for the analysis period
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month) 
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
 
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday) 
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday)
 
-        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
-        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month') 
+        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month')
 
-      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis 
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period 
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period
 
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week) 
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
 
-        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
-        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression for comparison period 
+        - **`expression`** - _[string]_ - Rill time expression for comparison period
 
-      - **`context`** - _[object]_ - Context to constrain the AI analysis 
+      - **`context`** - _[object]_ - Context to constrain the AI analysis
 
-        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze 
+        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze
 
-        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis 
+        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis
 
-        - **`measures`** - _[array of string]_ - List of measures to include in analysis 
+        - **`measures`** - _[array of string]_ - List of measures to include in analysis
 
 ```yaml
 state:
@@ -221,13 +221,13 @@ state:
 
 ### `partitions`
 
-_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional) 
+_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional)
 
   - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries. 
+    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -237,7 +237,7 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
     - **`api`** - _[string]_ - Name of a custom API defined in the project. _(required)_
 
-    - **`args`** - _[object]_ - Arguments to pass to the custom API. 
+    - **`args`** - _[object]_ - Arguments to pass to the custom API.
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
@@ -247,28 +247,28 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
       - **option 2** - _[object]_ - Configuration for specifying a file path/glob pattern with advanced options.
 
-        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path. 
+        - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
 
         - **`path`** - _[string]_ - Glob pattern used to match files or directories in the object store. _(required)_
 
-        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered. 
+        - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
 
-        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered. 
+        - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
 
-        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included. 
+        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
 
         - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
- 
 
-        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning. 
 
-        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`. 
+        - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+
+        - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
 
   - **option 5** - _[object]_ - Uses the status of a resource as data.
 
     - **`resource_status`** - _[object]_ - Based on resource status _(required)_
 
-      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+      - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state.
 
   - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
 
@@ -278,39 +278,39 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
     - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
 
-      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. 
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
 
-      - **`time_range`** - _[object]_ - Time range for the analysis period 
+      - **`time_range`** - _[object]_ - Time range for the analysis period
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month) 
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
 
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday) 
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday)
 
-        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
-        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month') 
+        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month')
 
-      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis 
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period 
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period
 
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week) 
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
 
-        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
-        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression for comparison period 
+        - **`expression`** - _[string]_ - Rill time expression for comparison period
 
-      - **`context`** - _[object]_ - Context to constrain the AI analysis 
+      - **`context`** - _[object]_ - Context to constrain the AI analysis
 
-        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze 
+        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze
 
-        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis 
+        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis
 
-        - **`measures`** - _[array of string]_ - List of measures to include in analysis 
+        - **`measures`** - _[array of string]_ - List of measures to include in analysis
 
 ```yaml
 partitions:
@@ -325,15 +325,15 @@ partitions:
 
 ### `tests`
 
-_[array of object]_ - Define data quality tests for the model. Each test must have a `name` and either an `assert` expression or a `sql` query. An `assert` test passes when no rows violate the condition. A `sql` test passes when the query returns zero rows. 
+_[array of object]_ - Define data quality tests for the model. Each test must have a `name` and either an `assert` expression or a `sql` query. An `assert` test passes when no rows violate the condition. A `sql` test passes when the query returns zero rows.
 
   - **`name`** - _[string]_ - A unique name for the test. _(required)_
 
-  - **`assert`** - _[string]_ - A SQL boolean expression applied to each row of the model. The test passes if no rows violate the condition (i.e., all rows satisfy `assert`). Cannot be combined with `sql`. 
+  - **`assert`** - _[string]_ - A SQL boolean expression applied to each row of the model. The test passes if no rows violate the condition (i.e., all rows satisfy `assert`). Cannot be combined with `sql`.
 
-  - **`sql`** - _[string]_ - A SQL query that returns rows representing test failures. The test passes if the query returns zero rows. Cannot be combined with `assert`. 
+  - **`sql`** - _[string]_ - A SQL query that returns rows representing test failures. The test passes if the query returns zero rows. Cannot be combined with `assert`.
 
-  - **`connector`** - _[string]_ - The connector to use when executing the test query. Defaults to the model's connector. 
+  - **`connector`** - _[string]_ - The connector to use when executing the test query. Defaults to the model's connector.
 
 ```yaml
 tests:
@@ -351,23 +351,23 @@ tests:
 
 ### `materialize`
 
-_[boolean]_ - models will be materialized in olap 
+_[boolean]_ - models will be materialized in olap
 
 ### `partitions_watermark`
 
-_[string]_ - Refers to a customizable timestamp that can be set to check if an object has been updated (optional). 
+_[string]_ - Refers to a customizable timestamp that can be set to check if an object has been updated (optional).
 
 ### `partitions_concurrency`
 
-_[integer]_ - Refers to the number of concurrent partitions that can be read at the same time (optional). 
+_[integer]_ - Refers to the number of concurrent partitions that can be read at the same time (optional).
 
 ### `stage`
 
-_[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required 
+_[object]_ - in the case of staging models, where an input source does not support direct write to the output and a staging table is required
 
   - **`connector`** - _[string]_ - Refers to the connector type for the staging table _(required)_
 
-  - **`path`** - _[string]_ - Refers to the path to the staging table 
+  - **`path`** - _[string]_ - Refers to the path to the staging table
 
 ```yaml
 stage:
@@ -377,33 +377,33 @@ stage:
 
 ### `output`
 
-_[object]_ - to define the properties of output 
+_[object]_ - to define the properties of output
 
-  - **`table`** - _[string]_ - Name of the output table. If not specified, the model name is used. 
+  - **`table`** - _[string]_ - Name of the output table. If not specified, the model name is used.
 
-  - **`materialize`** - _[boolean]_ - Whether to materialize the model as a table or view 
+  - **`materialize`** - _[boolean]_ - Whether to materialize the model as a table or view
 
-  - **`connector`** - _[string]_ - Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector 
+  - **`connector`** - _[string]_ - Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector
 
-  - **`incremental_strategy`** - _[string]_ - Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite' 
+  - **`incremental_strategy`** - _[string]_ - Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite'
 
-  - **`unique_key`** - _[array of string]_ - List of columns that uniquely identify a row for merge strategy 
+  - **`unique_key`** - _[array of string]_ - List of columns that uniquely identify a row for merge strategy
 
-  - **`partition_by`** - _[string]_ - Column or expression to partition the table by 
+  - **`partition_by`** - _[string]_ - Column or expression to partition the table by
 
-  - **`pre_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+  - **`pre_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
 ```
 
-  - **`post_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+  - **`post_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) after the main query. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
 
 ```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
-  - **`create_secrets_from_connectors`** - _[string, array]_ - List of connector names for which temporary secrets should be created on the output OLAP engine before executing the SQL. Only applies when the output connector is DuckDB. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors. 
+  - **`create_secrets_from_connectors`** - _[string, array]_ - List of connector names for which temporary secrets should be created on the output OLAP engine before executing the SQL. Only applies when the output connector is DuckDB. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors.
 
 ```yaml
 create_secrets_from_connectors: my_s3_connector
@@ -417,45 +417,45 @@ create_secrets_from_connectors:
 
   **Additional properties for `output` when `connector` is `clickhouse`**
 
-  - **`type`** - _[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY' 
+  - **`type`** - _[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY'
 
-  - **`columns`** - _[string]_ - Column names and types. Can also include indexes. If unspecified, detected from the query. 
+  - **`columns`** - _[string]_ - Column names and types. Can also include indexes. If unspecified, detected from the query.
 
-  - **`engine_full`** - _[string]_ - Full engine definition in SQL format. Can include partition keys, order, TTL, etc. 
+  - **`engine_full`** - _[string]_ - Full engine definition in SQL format. Can include partition keys, order, TTL, etc.
 
-  - **`engine`** - _[string]_ - Table engine to use. Default is MergeTree 
+  - **`engine`** - _[string]_ - Table engine to use. Default is MergeTree
 
-  - **`order_by`** - _[string]_ - ORDER BY clause. 
+  - **`order_by`** - _[string]_ - ORDER BY clause.
 
-  - **`partition_by`** - _[string]_ - Partition BY clause. 
+  - **`partition_by`** - _[string]_ - Partition BY clause.
 
-  - **`primary_key`** - _[string]_ - PRIMARY KEY clause. 
+  - **`primary_key`** - _[string]_ - PRIMARY KEY clause.
 
-  - **`sample_by`** - _[string]_ - SAMPLE BY clause. 
+  - **`sample_by`** - _[string]_ - SAMPLE BY clause.
 
-  - **`ttl`** - _[string]_ - TTL settings for the table or columns. 
+  - **`ttl`** - _[string]_ - TTL settings for the table or columns.
 
-  - **`table_settings`** - _[string]_ - Table-specific settings. 
+  - **`table_settings`** - _[string]_ - Table-specific settings.
 
-  - **`query_settings`** - _[string]_ - Settings used in insert/create table as select queries. 
+  - **`query_settings`** - _[string]_ - Settings used in insert/create table as select queries.
 
-  - **`distributed_settings`** - _[string]_ - Settings for distributed table. 
+  - **`distributed_settings`** - _[string]_ - Settings for distributed table.
 
-  - **`distributed_sharding_key`** - _[string]_ - Sharding key for distributed table. 
+  - **`distributed_sharding_key`** - _[string]_ - Sharding key for distributed table.
 
-  - **`dictionary_source_user`** - _[string]_ - User for accessing the source dictionary table (used if type is DICTIONARY). 
+  - **`dictionary_source_user`** - _[string]_ - User for accessing the source dictionary table (used if type is DICTIONARY).
 
-  - **`dictionary_source_password`** - _[string]_ - Password for the dictionary source user. 
+  - **`dictionary_source_password`** - _[string]_ - Password for the dictionary source user.
 
 ## Common Properties
 
 ### `name`
 
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
 
 ### `refs`
 
-_[array of string]_ - List of resource references 
+_[array of string]_ - List of resource references
 
 ### `tags`
 
@@ -463,83 +463,83 @@ _[array of string]_ - Tags for organizing and filtering the resource (e.g. on th
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.
 
 ## Additional properties for `output` when `connector` is `clickhouse`
 
 ### `type`
 
-_[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY' 
+_[string]_ - Type to materialize the model into. Can be 'TABLE', 'VIEW' or 'DICTIONARY'
 
 ### `columns`
 
-_[string]_ - Column names and types. Can also include indexes. If unspecified, detected from the query. 
+_[string]_ - Column names and types. Can also include indexes. If unspecified, detected from the query.
 
 ### `engine_full`
 
-_[string]_ - Full engine definition in SQL format. Can include partition keys, order, TTL, etc. 
+_[string]_ - Full engine definition in SQL format. Can include partition keys, order, TTL, etc.
 
 ### `engine`
 
-_[string]_ - Table engine to use. Default is MergeTree 
+_[string]_ - Table engine to use. Default is MergeTree
 
 ### `order_by`
 
-_[string]_ - ORDER BY clause. 
+_[string]_ - ORDER BY clause.
 
 ### `partition_by`
 
-_[string]_ - Partition BY clause. 
+_[string]_ - Partition BY clause.
 
 ### `primary_key`
 
-_[string]_ - PRIMARY KEY clause. 
+_[string]_ - PRIMARY KEY clause.
 
 ### `sample_by`
 
-_[string]_ - SAMPLE BY clause. 
+_[string]_ - SAMPLE BY clause.
 
 ### `ttl`
 
-_[string]_ - TTL settings for the table or columns. 
+_[string]_ - TTL settings for the table or columns.
 
 ### `table_settings`
 
-_[string]_ - Table-specific settings. 
+_[string]_ - Table-specific settings.
 
 ### `query_settings`
 
-_[string]_ - Settings used in insert/create table as select queries. 
+_[string]_ - Settings used in insert/create table as select queries.
 
 ### `distributed_settings`
 
-_[string]_ - Settings for distributed table. 
+_[string]_ - Settings for distributed table.
 
 ### `distributed_sharding_key`
 
-_[string]_ - Sharding key for distributed table. 
+_[string]_ - Sharding key for distributed table.
 
 ### `dictionary_source_user`
 
-_[string]_ - User for accessing the source dictionary table (used if type is DICTIONARY). 
+_[string]_ - User for accessing the source dictionary table (used if type is DICTIONARY).
 
 ### `dictionary_source_password`
 
-_[string]_ - Password for the dictionary source user. 
+_[string]_ - Password for the dictionary source user.
 
 ## Common Properties
 
 ### `name`
 
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
 
 ### `refs`
 
-_[array of string]_ - List of resource references 
+_[array of string]_ - List of resource references
 
 ### `tags`
 
@@ -547,183 +547,183 @@ _[array of string]_ - Tags for organizing and filtering the resource (e.g. on th
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.
 
 ## Additional properties when `connector` is `athena` or [named connector](./connectors#athena) for athena
 
 ### `output_location`
 
-_[string]_ - Output location for query results in S3. 
+_[string]_ - Output location for query results in S3.
 
 ### `workgroup`
 
-_[string]_ - AWS Athena workgroup to use for queries. 
+_[string]_ - AWS Athena workgroup to use for queries.
 
 ### `region`
 
-_[string]_ - AWS region to connect to Athena and the output location. 
+_[string]_ - AWS region to connect to Athena and the output location.
 
 ## Additional properties when `connector` is `azure` or [named connector](./connectors#azure) of azure
 
 ### `path`
 
-_[string]_ - Path to the source 
+_[string]_ - Path to the source
 
 ### `account`
 
-_[string]_ - Account identifier 
+_[string]_ - Account identifier
 
 ### `uri`
 
-_[string]_ - Source URI 
+_[string]_ - Source URI
 
 ### `extract`
 
-_[object]_ - Arbitrary key-value pairs for extraction settings 
+_[object]_ - Arbitrary key-value pairs for extraction settings
 
 ### `glob`
 
-_[object]_ - Settings related to glob file matching. 
+_[object]_ - Settings related to glob file matching.
 
-  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
+  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob
 
-  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
+  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob
 
-  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
+  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob
 
-  - **`page_size`** - _[integer]_ - Page size for glob listing 
+  - **`page_size`** - _[integer]_ - Page size for glob listing
 
 ### `batch_size`
 
-_[string]_ - Size of a batch (e.g., '100MB') 
+_[string]_ - Size of a batch (e.g., '100MB')
 
 ## Additional properties when `connector` is `bigquery` or [named connector](./connectors#bigquery) of bigquery
 
 ### `project_id`
 
-_[string]_ - ID of the BigQuery project. 
+_[string]_ - ID of the BigQuery project.
 
 ## Additional properties when `connector` is `duckdb` or [named connector](./connectors#duckdb) of duckdb
 
 ### `path`
 
-_[string]_ - Path to the data source. 
+_[string]_ - Path to the data source.
 
 ### `format`
 
-_[string]_ - Format of the data source (e.g., csv, json, parquet). 
+_[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ## Additional properties when `connector` is `gcs` or [named connector](./connectors#gcs) of gcs
 
 ### `path`
 
-_[string]_ - Path to the source 
+_[string]_ - Path to the source
 
 ### `uri`
 
-_[string]_ - Source URI 
+_[string]_ - Source URI
 
 ### `extract`
 
-_[object]_ - key-value pairs for extraction settings 
+_[object]_ - key-value pairs for extraction settings
 
 ### `glob`
 
-_[object]_ - Settings related to glob file matching. 
+_[object]_ - Settings related to glob file matching.
 
-  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
+  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob
 
-  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
+  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob
 
-  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
+  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob
 
-  - **`page_size`** - _[integer]_ - Page size for glob listing 
+  - **`page_size`** - _[integer]_ - Page size for glob listing
 
 ### `batch_size`
 
-_[string]_ - Size of a batch (e.g., '100MB') 
+_[string]_ - Size of a batch (e.g., '100MB')
 
 ## Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/local-file) of local_file
 
 ### `path`
 
-_[string]_ - Path to the data source. 
+_[string]_ - Path to the data source.
 
 ### `format`
 
-_[string]_ - Format of the data source (e.g., csv, json, parquet). 
+_[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ### `invalidate_on_change`
 
-_[boolean]_ - When true, the model will be invalidated and re-processed if the source file changes. 
+_[boolean]_ - When true, the model will be invalidated and re-processed if the source file changes.
 
 ## Additional properties when `connector` is `redshift` or [named connector](./connectors#redshift) of redshift
 
 ### `output_location`
 
-_[string]_ - S3 location where query results are stored. 
+_[string]_ - S3 location where query results are stored.
 
 ### `workgroup`
 
-_[string]_ - Redshift Serverless workgroup to use. 
+_[string]_ - Redshift Serverless workgroup to use.
 
 ### `database`
 
-_[string]_ - Name of the Redshift database. 
+_[string]_ - Name of the Redshift database.
 
 ### `cluster_identifier`
 
-_[string]_ - Identifier of the Redshift cluster. 
+_[string]_ - Identifier of the Redshift cluster.
 
 ### `role_arn`
 
-_[string]_ - ARN of the IAM role to assume for Redshift access. 
+_[string]_ - ARN of the IAM role to assume for Redshift access.
 
 ### `region`
 
-_[string]_ - AWS region of the Redshift deployment. 
+_[string]_ - AWS region of the Redshift deployment.
 
 ## Additional properties when `connector` is `s3` or [named connector](./connectors#s3) of s3
 
 ### `region`
 
-_[string]_ - AWS region 
+_[string]_ - AWS region
 
 ### `endpoint`
 
-_[string]_ - AWS Endpoint 
+_[string]_ - AWS Endpoint
 
 ### `path`
 
-_[string]_ - Path to the source 
+_[string]_ - Path to the source
 
 ### `uri`
 
-_[string]_ - Source URI 
+_[string]_ - Source URI
 
 ### `extract`
 
-_[object]_ - key-value pairs for extraction settings 
+_[object]_ - key-value pairs for extraction settings
 
 ### `glob`
 
-_[object]_ - Settings related to glob file matching. 
+_[object]_ - Settings related to glob file matching.
 
-  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob 
+  - **`max_total_size`** - _[integer]_ - Maximum total size (in bytes) matched by glob
 
-  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob 
+  - **`max_objects_matched`** - _[integer]_ - Maximum number of objects matched by glob
 
-  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob 
+  - **`max_objects_listed`** - _[integer]_ - Maximum number of objects listed in glob
 
-  - **`page_size`** - _[integer]_ - Page size for glob listing 
+  - **`page_size`** - _[integer]_ - Page size for glob listing
 
 ### `batch_size`
 
-_[string]_ - Size of a batch (e.g., '100MB') 
+_[string]_ - Size of a batch (e.g., '100MB')
 
 ## Examples
 
