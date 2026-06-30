@@ -58,6 +58,7 @@
           </h3>
           <Button
             type="secondary"
+            class="w-full"
             onClick={() => {
               onCopy();
             }}
@@ -66,7 +67,7 @@
               <Check size="16px" />
               Copied URL
             {:else}
-              <Link size="16px" className="text-primary-500" />
+              <Link size="16px" />
               Copy URL for this view
             {/if}
           </Button>
