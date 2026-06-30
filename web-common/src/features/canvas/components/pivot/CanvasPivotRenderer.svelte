@@ -21,6 +21,7 @@
   export let schema: {
     isValid: boolean;
     error?: string;
+    isLoading?: boolean;
   };
   export let pivotDataStore: PivotDataStore | undefined;
   export let pivotConfig: Readable<PivotDataStoreConfig> | undefined;
