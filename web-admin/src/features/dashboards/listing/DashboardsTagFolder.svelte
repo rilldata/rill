@@ -4,12 +4,14 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { UNTAGGED_KEY, UNTAGGED_LABEL } from "./selectors";
+  import { DashboardFavourites } from "./dashboard-favourites.ts";
 
   export let tag: string;
   export let resources: V1Resource[];
   export let organization: string;
   export let project: string;
   export let isEmbedded = false;
+  export let dashboardFavourites: DashboardFavourites | undefined = undefined;
 
   let open = true;
 
@@ -60,6 +62,7 @@
             {organization}
             {project}
             {tag}
+            {dashboardFavourites}
           />
         </li>
       {/each}

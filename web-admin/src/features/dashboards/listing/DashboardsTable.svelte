@@ -18,6 +18,7 @@
     useDashboards,
     useIsInitialBuild,
   } from "./selectors";
+  import { DashboardFavourites } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
 
   export let isEmbedded = false;
   export let isPreview = false;
@@ -46,6 +47,10 @@
   $: ({
     params: { organization, project },
   } = $page);
+
+  const dashboardFavourites = new DashboardFavourites();
+  $: dashboardFavourites.setOrgAndProject(organization, project);
+  $: favourites = dashboardFavourites.favourites;
 
   $: dashboards = useDashboards(runtimeClient);
   $: ({
@@ -124,9 +129,25 @@
     return groups;
   })();
 
-  $: displayData = isPreview
-    ? searchFilteredDashboards.slice(0, previewLimit)
-    : searchFilteredDashboards;
+  $: displayData = (() => {
+    const ranked = searchFilteredDashboards.map((resource) => {
+      const idx = $favourites.indexOf(resource.meta.name.name);
+      return {
+        ...resource,
+        favourite: idx === -1 ? Number.MAX_SAFE_INTEGER : idx,
+      };
+    });
+    // Sort favourites to the top before applying the preview limit, otherwise a
+    // favourite beyond previewLimit gets sliced off before the table can sort
+    // it up. Mirrors the table's sort keys (favourite, then name) so the
+    // previewed top-N matches the full list.
+    ranked.sort(
+      (a, b) =>
+        a.favourite - b.favourite ||
+        a.meta.name.name.localeCompare(b.meta.name.name),
+    );
+    return isPreview ? ranked.slice(0, previewLimit) : ranked;
+  })();
 
   $: hasMoreDashboards =
     isPreview && searchFilteredDashboards.length > previewLimit;
@@ -160,6 +181,7 @@
           organization,
           project,
           tags,
+          dashboardFavourites,
         });
       },
     },
@@ -192,6 +214,10 @@
         return isMetricsExplorer ? row.explore.spec.description : "";
       },
     },
+    {
+      id: "favourite",
+      accessorFn: (row: V1Resource & { favourite: number }) => row.favourite,
+    },
   ];
 
   const columnVisibility = {
@@ -199,9 +225,13 @@
     name: false,
     lastRefreshed: false,
     description: false,
+    favourite: false,
   };
 
-  const initialSorting = [{ id: "name", desc: false }];
+  const initialSorting = [
+    { id: "favourite", desc: false },
+    { id: "name", desc: false },
+  ];
 </script>
 
 {#if isLoading || isBuilding}
@@ -231,6 +261,7 @@
             {organization}
             {project}
             {isEmbedded}
+            {dashboardFavourites}
           />
         {:else}
           <div
