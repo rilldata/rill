@@ -21,9 +21,12 @@ export const resolveThemeObject = (
 ): Record<string, string> | undefined =>
   themeManager.resolveThemeObject(themeSpec, isThemeModeDark);
 
+// Default fallback color - using primary blue instead of red for better UX
+const FALLBACK_COLOR = "#6366f1"; // indigo-500
+
 export function getChroma(colorString: string | undefined): Color {
   if (!colorString) {
-    return chroma("red");
+    return chroma(FALLBACK_COLOR);
   }
 
   try {
@@ -31,6 +34,6 @@ export function getChroma(colorString: string | undefined): Color {
     return chroma(trimmedString);
   } catch (e) {
     console.error("Invalid color string:", colorString, e);
-    return chroma("red");
+    return chroma(FALLBACK_COLOR);
   }
 }
