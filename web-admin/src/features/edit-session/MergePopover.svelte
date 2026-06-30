@@ -30,6 +30,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
+  import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
 
   export let organization: string;
@@ -278,6 +279,7 @@
             to production. We'll open a new tab so you can watch updates reconcile.
           {/if}
         </p>
+        <ChangedFilesList remoteBranch={primaryBranch} {open} />
         {#if branchUrl}
           <a
             class="github-link"

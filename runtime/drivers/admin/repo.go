@@ -441,7 +441,7 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
+func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles bool) (*drivers.RepoStatus, error) {
 	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
@@ -474,6 +474,15 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
+	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed
+	// separately. Best-effort: a failure here must not break the status the merge flow depends on.
+	var fileChanges []drivers.RepoFileChange
+	if changedFiles {
+		if files, err := gitutil.ChangedFiles(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch); err == nil {
+			fileChanges = repoFileChanges(files)
+		}
+	}
+
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
 		Branch:        st.Branch,
@@ -483,7 +492,38 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 		LocalChanges:  st.LocalChanges,
 		LocalCommits:  st.LocalCommits,
 		RemoteCommits: st.RemoteCommits,
+		ChangedFiles:  fileChanges,
 	}, nil
+}
+
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }
 
 func (r *repo) Commit(ctx context.Context, message string) (string, error) {
