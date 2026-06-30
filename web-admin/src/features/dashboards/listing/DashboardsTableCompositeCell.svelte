@@ -5,6 +5,9 @@
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
+  import { DashboardFavourites } from "./dashboard-favourites.ts";
+  import { Star } from "lucide-svelte";
+  import { readable } from "svelte/store";
 
   export let name: string;
   export let title: string;
@@ -18,6 +21,7 @@
   export let tags: string[] = [];
   // When set, appends ?tags=<tag> so back-navigation preserves folder context.
   export let tag: string | undefined = undefined;
+  export let dashboardFavourites: DashboardFavourites | undefined = undefined;
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
@@ -33,9 +37,25 @@
   $: resourceKind = isMetricsExplorer
     ? ResourceKind.Explore
     : ResourceKind.Canvas;
+
+  $: favourites = dashboardFavourites?.favourites ?? readable([]);
+  $: isFavourite = $favourites.includes(name);
+
+  let hovered = false;
+
+  function onDashboardFavouriteToggle(e: MouseEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    dashboardFavourites?.toggleDashboard(name);
+  }
 </script>
 
-<a class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full" {href}>
+<a
+  class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full"
+  {href}
+  onmouseenter={() => (hovered = true)}
+  onmouseleave={() => (hovered = false)}
+>
   <div class="flex gap-x-2 items-center min-h-[20px]">
     <ResourceTypeBadge kind={resourceKind} />
     <span
@@ -49,6 +69,14 @@
     {#each tags as tag (tag)}
       <Tag color="gray">{tag}</Tag>
     {/each}
+    <div class="grow"></div>
+    {#if dashboardFavourites && (hovered || isFavourite)}
+      <Star
+        size="16px"
+        class={isFavourite ? "fill-accent-primary-action" : "none"}
+        onclick={onDashboardFavouriteToggle}
+      />
+    {/if}
   </div>
   <div
     class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"
