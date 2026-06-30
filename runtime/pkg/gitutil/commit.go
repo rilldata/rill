@@ -170,6 +170,10 @@ func CommitAndPush(ctx context.Context, path string, config *Config, commitMsg s
 // Unlike CommitAndPush, the current local branch need not match config.DefaultBranch, and HEAD may
 // be detached.
 func CommitAndForcePush(ctx context.Context, path string, config *Config, commitMsg string, author Signature) error {
+	if config.Subpath != "" {
+		// this is ensured upstream but just to be safe
+		return fmt.Errorf("force push does not support subpath, please commit and push from the root of the repository")
+	}
 	err := EnsureInit(ctx, path, config.DefaultBranch)
 	if err != nil {
 		return fmt.Errorf("failed to init git repo: %w", err)
@@ -178,7 +182,7 @@ func CommitAndForcePush(ctx context.Context, path string, config *Config, commit
 	if commitMsg == "" {
 		commitMsg = "Auto committed by Rill"
 	}
-	_, err = CommitAll(ctx, path, config.Subpath, commitMsg, author)
+	_, err = CommitAll(ctx, path, "", commitMsg, author)
 	if err != nil && !errors.Is(err, ErrEmptyCommit) {
 		return fmt.Errorf("failed to commit files to git: %w", err)
 	}
