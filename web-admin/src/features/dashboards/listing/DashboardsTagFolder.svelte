@@ -59,7 +59,7 @@
             {isEmbedded}
             {organization}
             {project}
-            activeTag={tag}
+            {tag}
           />
         </li>
       {/each}

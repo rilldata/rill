@@ -35,7 +35,9 @@ export function groupDashboardsByTag(
 ): Map<string, V1Resource[]> {
   const map = new Map<string, V1Resource[]>();
   for (const r of sortedVisualizations) {
-    for (const tag of getResourceTags(r)) {
+    const tags = getResourceTags(r);
+    const effectiveTags = tags.length ? tags : [UNTAGGED_KEY];
+    for (const tag of effectiveTags) {
       const bucket = map.get(tag) ?? [];
       bucket.push(r);
       map.set(tag, bucket);
@@ -85,7 +87,14 @@ export function buildDashboardSubOption(
 // Tag breadcrumb options: each tag shows a submenu of the dashboards that
 // carry that tag. UNTAGGED_KEY is included when any dashboard has no tags,
 // or when it's the currently active selection (so the breadcrumb renders).
-export function buildTagPathsOptions(args: {
+export function buildTagPathsOptions({
+  allDashboardTags,
+  dashboardsByTag,
+  hasUntaggedDashboard,
+  activeTag,
+  organization,
+  project,
+}: {
   allDashboardTags: string[];
   dashboardsByTag: Map<string, V1Resource[]>;
   hasUntaggedDashboard: boolean;
@@ -93,14 +102,6 @@ export function buildTagPathsOptions(args: {
   organization: string;
   project: string;
 }): Map<string, PathOption> {
-  const {
-    allDashboardTags,
-    dashboardsByTag,
-    hasUntaggedDashboard,
-    activeTag,
-    organization,
-    project,
-  } = args;
   const map = new Map<string, PathOption>();
   for (const tag of allDashboardTags) {
     const subEntries = (dashboardsByTag.get(tag) ?? []).map((r) =>
@@ -145,12 +146,15 @@ export function buildDashboardPathOption(resource: V1Resource): PathOption {
 
 // Dashboard breadcrumb options. When tagAsFolders is on and a tag folder is
 // active, the dropdown is scoped to just that tag's dashboards.
-export function buildVisualizationOptions(args: {
+export function buildVisualizationOptions({
+  sortedVisualizations,
+  dashboardsByTag,
+  activeTag,
+}: {
   sortedVisualizations: V1Resource[];
   dashboardsByTag: Map<string, V1Resource[]>;
   activeTag: string | undefined;
 }): Map<string, PathOption> {
-  const { sortedVisualizations, dashboardsByTag, activeTag } = args;
   const map = new Map<string, PathOption>();
   const scopedResources = activeTag
     ? (dashboardsByTag.get(activeTag) ?? [])

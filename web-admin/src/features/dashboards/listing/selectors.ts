@@ -13,7 +13,7 @@ import { derived } from "svelte/store";
 // Virtual tag value used for dashboards that have no tags. Used as the
 // ?tags= URL param value, the map key for grouping, and the comparison
 // constant for "show untagged" logic.
-export const UNTAGGED_KEY = "not-tagged";
+export const UNTAGGED_KEY = "__rill_untagged";
 
 // Display label rendered to the user wherever `UNTAGGED_KEY` would otherwise
 // surface (folder header, breadcrumb dropdown). The URL value stays

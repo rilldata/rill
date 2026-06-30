@@ -162,7 +162,7 @@
     options: buildVisualizationOptions({
       sortedVisualizations,
       dashboardsByTag,
-      activeTag,
+      activeTag: allDashboardTags.length ? activeTag : undefined,
     }),
     carryOverSearchParams: $stickyDashboardState,
   };
@@ -188,7 +188,9 @@
   };
 
   $: tagPathsSegment =
-    activeTag && tagPathsOptions.size > 0 ? { options: tagPathsOptions } : null;
+    allDashboardTags.length && activeTag && tagPathsOptions.size > 0
+      ? { options: tagPathsOptions }
+      : null;
 
   $: pathParts = [
     { options: $orgPathsQuery.data ?? new Map() },

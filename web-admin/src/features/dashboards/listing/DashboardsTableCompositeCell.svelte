@@ -16,8 +16,8 @@
   export let organization: string;
   export let project: string;
   export let tags: string[] = [];
-  // When set, appends ?tags=<activeTag> so back-navigation preserves folder context.
-  export let activeTag: string | undefined = undefined;
+  // When set, appends ?tags=<tag> so back-navigation preserves folder context.
+  export let tag: string | undefined = undefined;
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
@@ -25,8 +25,9 @@
   $: basePath = isEmbedded
     ? `/-/embed/${dashboardSlug}/${name}`
     : `/${organization}/${project}/${dashboardSlug}/${name}`;
-  $: href = activeTag
-    ? `${basePath}?tags=${encodeURIComponent(activeTag)}`
+  $: tagForLink = tag ?? tags[0];
+  $: href = tagForLink
+    ? `${basePath}?tags=${encodeURIComponent(tagForLink)}`
     : basePath;
 
   $: resourceKind = isMetricsExplorer
