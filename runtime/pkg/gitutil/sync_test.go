@@ -601,7 +601,7 @@ func TestDiff_LargeFile(t *testing.T) {
 	require.NotContains(t, diff, "some long line of text", "large file content must not be included")
 	require.Less(t, len(diff), maxFileDiffBytes, "elided diff should be well under the cap")
 }
-	
+
 func TestDiff_RemoteDiverged(t *testing.T) {
 	tempDir, remoteDir := setupRepoWithRemote(t)
 	mainBranch := getCurrentBranch(t, tempDir)
