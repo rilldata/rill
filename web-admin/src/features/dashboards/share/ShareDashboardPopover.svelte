@@ -17,7 +17,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import ExportPdfOptions from "@rilldata/web-common/features/exports/pdf/ExportPdfOptions.svelte";
+  import ExportDashboardForm from "@rilldata/web-common/features/exports/pdf/ExportDashboardForm.svelte";
   import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
   import type { PdfExportRunOptions } from "@rilldata/web-common/features/exports/pdf/types";
 
@@ -31,14 +31,15 @@
   let copied = false;
   let runPdfExport: ((o: PdfExportRunOptions) => Promise<void>) | null = null;
 
-  $: runPdfExport = (() => {
-    if (canvasName && instanceId) {
-      const name = canvasName;
-      const id = instanceId;
-      return (o) => exportCanvasPdf({ canvasName: name, instanceId: id, ...o });
-    }
-    return null;
-  })();
+  // Bind the (now-narrowed) identifiers in a helper so the returned closure keeps
+  // them as `string` rather than `string | undefined`.
+  $: runPdfExport =
+    canvasName && instanceId ? makeRunPdfExport(canvasName, instanceId) : null;
+
+  function makeRunPdfExport(name: string, id: string) {
+    return (o: PdfExportRunOptions) =>
+      exportCanvasPdf({ canvasName: name, instanceId: id, ...o });
+  }
 
   function onCopy() {
     navigator.clipboard.writeText(window.location.href).catch(console.error);
@@ -98,15 +99,10 @@
       </TabsContent>
       {#if runPdfExport}
         <TabsContent value="pdf" class="mt-0 p-4">
-          <div class="flex flex-col gap-y-4">
-            <h3 class="text-xs text-fg-primary font-normal">
-              Export this dashboard as a PDF.
-            </h3>
-            <ExportPdfOptions
-              runExport={runPdfExport}
-              onComplete={() => (isOpen = false)}
-            />
-          </div>
+          <ExportDashboardForm
+            runExport={runPdfExport}
+            onComplete={() => (isOpen = false)}
+          />
         </TabsContent>
       {/if}
     </Tabs>

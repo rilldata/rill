@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Readable } from "svelte/store";
-import { isCanvasExportQuery, waitForStore } from "./settle";
+import { isCanvasExportQuery, waitForStoreValue } from "./settle";
 
-describe("waitForStore", () => {
-  it("handles stores that synchronously satisfy the predicate on subscribe", async () => {
+describe("waitForStoreValue", () => {
+  it("handles stores that synchronously reach the target on subscribe", async () => {
     let subscriptions = 0;
     let unsubscriptions = 0;
     const store: Readable<boolean> = {
@@ -16,7 +16,7 @@ describe("waitForStore", () => {
       },
     };
 
-    await expect(waitForStore(store, Boolean, 100)).resolves.toBe(true);
+    await expect(waitForStoreValue(store, true, 100)).resolves.toBe(true);
     expect(subscriptions).toBe(2);
     expect(unsubscriptions).toBe(2);
   });

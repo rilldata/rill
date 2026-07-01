@@ -15,7 +15,7 @@ export interface ExportProgress {
   ratio: number;
 }
 
-// The options collected by the shared ExportPdfOptions form. Surface-specific
+// The options collected by the shared ExportDashboardForm. Surface-specific
 // orchestrators (canvas, explore) receive these plus their own identifiers.
 export interface PdfExportRunOptions {
   includeFilters: boolean;

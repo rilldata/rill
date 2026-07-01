@@ -21,6 +21,22 @@ const TITLE_FONT_SIZE_PT = 13;
 // title text plus a gap before the content. Passed to paginate() as titleReservePt.
 export const TITLE_BAND_PT = 30;
 
+// PDF chrome (title, footer) colors, pulled from the app's theme tokens so the
+// export matches the UI. The RGB fallbacks apply when the variable can't be
+// resolved (e.g. in a non-browser test environment).
+const TITLE_COLOR = {
+  cssVar: "var(--fg-primary)",
+  fallback: { r: 31, g: 35, b: 41 },
+};
+const FOOTER_TEXT_COLOR = {
+  cssVar: "var(--fg-muted)",
+  fallback: { r: 120, g: 120, b: 120 },
+};
+const FOOTER_LINK_COLOR = {
+  cssVar: "var(--color-primary-600)",
+  fallback: { r: 37, g: 99, b: 235 },
+};
+
 // Renders the paginated placements into a PDF and triggers a download.
 export async function assemblePdf(
   result: PaginationResult,
@@ -78,7 +94,7 @@ function drawTitle(
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(TITLE_FONT_SIZE_PT);
-  doc.setTextColor(31, 35, 41);
+  setTextColor(doc, TITLE_COLOR);
 
   const maxWidthPt = result.pageWidthPt - 2 * result.marginPt;
   let title = meta.title;
@@ -105,7 +121,7 @@ function drawFooter(
   const linkText = "View in Rill";
 
   doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
+  setTextColor(doc, FOOTER_TEXT_COLOR);
   doc.text(generatedText, result.marginPt, yPt);
 
   const linkXPt =
@@ -113,10 +129,38 @@ function drawFooter(
     result.marginPt -
     doc.getTextWidth(`${linkPrefix}${linkText}`);
   doc.text(linkPrefix, linkXPt, yPt);
-  doc.setTextColor(37, 99, 235);
+  setTextColor(doc, FOOTER_LINK_COLOR);
   doc.textWithLink(linkText, linkXPt + doc.getTextWidth(linkPrefix), yPt, {
     url: meta.dashboardUrl,
   });
+}
+
+// Resolves a theme color token to RGB and applies it as the document's text
+// color, falling back to a fixed RGB when the token can't be resolved (e.g. in
+// a non-browser test environment).
+function setTextColor(
+  doc: jsPDF,
+  { cssVar, fallback }: { cssVar: string; fallback: RGB },
+): void {
+  const { r, g, b } = parseColor(resolveThemeColor(cssVar)) ?? fallback;
+  doc.setTextColor(r, g, b);
+}
+
+// Reads a CSS custom property off the document root, following up to a couple of
+// levels of var() indirection (e.g. --fg-primary -> var(--color-neutral-950) ->
+// an actual color). Returns the input unchanged outside a browser.
+function resolveThemeColor(cssVar: string): string {
+  if (typeof window === "undefined") return cssVar;
+  let value = cssVar;
+  for (let i = 0; i < 3 && value.startsWith("var("); i++) {
+    const varName = value.slice(4, value.lastIndexOf(")")).split(",")[0].trim();
+    const resolved = getComputedStyle(document.documentElement)
+      .getPropertyValue(varName)
+      .trim();
+    if (!resolved) return value;
+    value = resolved;
+  }
+  return value;
 }
 
 async function drawPlacement(

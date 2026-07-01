@@ -5,19 +5,26 @@ import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/c
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 
 const DEFAULT_TIMEOUT_MS = 60_000;
+// How often waitUntilQueriesIdle polls for in-flight queries. Frame-rate polling
+// is needlessly frequent; a coarser interval is plenty to detect idleness.
+const QUERY_POLL_INTERVAL_MS = 100;
 
-function raf(): Promise<void> {
+function asyncRequestAnimationFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-// Resolves once `predicate` holds for the store's value, or after `timeoutMs`.
-// Returns true if the predicate was satisfied, false on timeout.
-export function waitForStore<T>(
-  store: Readable<T>,
-  predicate: (value: T) => boolean,
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Resolves once the boolean store equals `target`, or after `timeoutMs`.
+// Returns true if the value was reached, false on timeout.
+export function waitForStoreValue(
+  store: Readable<boolean>,
+  target: boolean,
   timeoutMs: number,
 ): Promise<boolean> {
-  if (predicate(get(store))) return Promise.resolve(true);
+  if (get(store) === target) return Promise.resolve(true);
 
   return new Promise((resolve) => {
     let settled = false;
@@ -33,20 +40,22 @@ export function waitForStore<T>(
       resolve(value);
     };
     const timer = setTimeout(() => finish(false), timeoutMs);
+    // subscribe() fires synchronously with the current value; guard against it
+    // resolving (and calling unsub) before unsub is assigned below.
     unsub = store.subscribe((value) => {
-      if (predicate(value)) finish(true);
+      if (value === target) finish(true);
     });
     if (shouldUnsubscribeAfterSubscribe) unsub();
   });
 }
 
-// Resolves once there are no in-flight queries for `stableFrames` consecutive
-// animation frames (debouncing the gaps between dependent queries), or on timeout.
+// Resolves once there are no in-flight queries for `stablePolls` consecutive
+// polls (debouncing the gaps between dependent queries), or on timeout.
 export async function waitUntilQueriesIdle(
   queryClient: QueryClient,
-  opts: { instanceId: string; stableFrames?: number; timeoutMs: number },
+  opts: { instanceId: string; stablePolls?: number; timeoutMs: number },
 ): Promise<boolean> {
-  const stableFrames = opts.stableFrames ?? 2;
+  const stablePolls = opts.stablePolls ?? 2;
   const deadline = Date.now() + opts.timeoutMs;
   let stable = 0;
   while (Date.now() < deadline) {
@@ -56,11 +65,11 @@ export async function waitUntilQueriesIdle(
     });
     if (fetching === 0) {
       stable += 1;
-      if (stable >= stableFrames) return true;
+      if (stable >= stablePolls) return true;
     } else {
       stable = 0;
     }
-    await raf();
+    await sleep(QUERY_POLL_INTERVAL_MS);
   }
   return false;
 }
@@ -105,10 +114,10 @@ export async function prepareCanvasForCapture(
   };
 
   await tick();
-  await raf();
-  await raf();
+  await asyncRequestAnimationFrame();
+  await asyncRequestAnimationFrame();
 
-  await waitForStore(canvasEntity.firstLoad, (v) => v === false, timeoutMs);
+  await waitForStoreValue(canvasEntity.firstLoad, false, timeoutMs);
   await waitUntilQueriesIdle(queryClient, {
     instanceId: opts.instanceId,
     timeoutMs,
@@ -118,8 +127,8 @@ export async function prepareCanvasForCapture(
     await document.fonts.ready;
   }
   // Give Vega/canvas renderers a couple of frames to flush their final paint.
-  await raf();
-  await raf();
+  await asyncRequestAnimationFrame();
+  await asyncRequestAnimationFrame();
 
   return restoreVisibility;
 }

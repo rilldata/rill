@@ -3,7 +3,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { assemblePdf, TITLE_BAND_PT } from "./assemble";
 import { captureCanvasBlocks } from "./capture";
-import { canvasPdfExportActive } from "./export-state";
+import { setCanvasPdfExportActive } from "./export-state";
 import { buildPdfFilename } from "./filename";
 import { paginate } from "./layout";
 import { prepareCanvasForCapture } from "./settle";
@@ -29,7 +29,7 @@ export async function exportCanvasPdf(
 
   // Mount the off-screen capture header (see CanvasPdfExportHeader); the tick()
   // inside prepareCanvasForCapture flushes it into the DOM before we capture.
-  canvasPdfExportActive.set(true);
+  setCanvasPdfExportActive(opts.instanceId, opts.canvasName, true);
   let restoreVisibility: (() => void) | undefined;
 
   try {
@@ -76,7 +76,7 @@ export async function exportCanvasPdf(
     opts.onProgress?.({ phase: "assembling", ratio: 1 });
   } finally {
     restoreVisibility?.();
-    canvasPdfExportActive.set(false);
+    setCanvasPdfExportActive(opts.instanceId, opts.canvasName, false);
     if (scrollContainer) scrollContainer.scrollTop = scrollTop;
   }
 }

@@ -34,6 +34,8 @@
   $: missingRequiredFilters = $missingRequiredFiltersStore;
   $: hasMissingRequired = missingRequiredFilters.length > 0;
 
+  $: exportActive = canvasPdfExportActive(instanceId, canvasName);
+
   $: ({ width: clientWidth } = contentRect);
 </script>
 
@@ -59,7 +61,7 @@
          solely during an active export: Playwright locators and the a11y tree
          match elements regardless of CSS visibility, so an always-mounted header
          would duplicate the live filter bar's text/labels. -->
-    {#if $canvasPdfExportActive}
+    {#if $exportActive}
       <div
         aria-hidden="true"
         class="pointer-events-none absolute"

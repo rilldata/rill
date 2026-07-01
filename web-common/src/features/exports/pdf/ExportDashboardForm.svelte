@@ -5,9 +5,10 @@
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import type { ExportProgress, PdfExportRunOptions } from "./types";
 
-  // Surface-agnostic PDF export options + action. The caller supplies `runExport`
-  // (bound to the canvas or explore orchestrator), so this form is shared across
-  // the cloud share modal today and the Rill Developer UI in the future.
+  // Surface-agnostic PDF export form (title, options, and action). The caller
+  // supplies `runExport` (bound to the canvas or explore orchestrator), so this
+  // form is shared across the cloud share modal today and the Rill Developer UI
+  // in the future.
   export let runExport: (opts: PdfExportRunOptions) => Promise<void>;
   export let onComplete: () => void = () => {};
 
@@ -53,6 +54,10 @@
 </script>
 
 <div class="flex flex-col gap-y-4">
+  <h3 class="text-xs text-fg-primary font-normal">
+    Export this dashboard as a PDF.
+  </h3>
+
   <Checkbox
     id="pdf-include-filters"
     bind:checked={includeFilters}
@@ -68,3 +73,9 @@
     Export PDF
   </Button>
 </div>
+
+<style lang="postcss">
+  h3 {
+    @apply font-semibold;
+  }
+</style>
