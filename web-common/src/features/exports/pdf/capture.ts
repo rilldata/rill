@@ -72,6 +72,8 @@ export interface CaptureResult {
 }
 
 export interface CaptureOptions {
+  instanceId: string;
+  canvasName: string;
   includeFilters: boolean;
   onProgress?: (ratio: number) => void;
 }
@@ -84,8 +86,15 @@ export async function captureCanvasBlocks(
 ): Promise<CaptureResult> {
   // The off-screen export render (see CanvasPdfExportView), mounted only while
   // exporting. Capturing a dedicated tree keeps the live dashboard untouched.
-  const exportView = document.querySelector<HTMLElement>(
-    "#canvas-pdf-export-view",
+  // Scope the lookup to this canvas store (keyed by instance + canvas name) so a
+  // second export view (if another is mounted on the page) can't be captured by
+  // mistake.
+  const exportView = Array.from(
+    document.querySelectorAll<HTMLElement>("#canvas-pdf-export-view"),
+  ).find(
+    (el) =>
+      el.dataset.instanceId === opts.instanceId &&
+      el.dataset.canvasName === opts.canvasName,
   );
   const rowContainer = exportView?.querySelector<HTMLElement>(".row-container");
 

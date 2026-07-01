@@ -32,10 +32,22 @@ describe("isCanvasExportQuery", () => {
     ).toBe(true);
   });
 
-  it("matches custom chart metrics SQL queries", () => {
+  it("matches custom chart metrics SQL queries for the active instance", () => {
     expect(
-      isCanvasExportQuery(["metrics_sql", "chart", 0, "select 1", "{}"], "i"),
+      isCanvasExportQuery(
+        ["metrics_sql", "instance-1", "chart", 0, "select 1", "{}"],
+        "instance-1",
+      ),
     ).toBe(true);
+  });
+
+  it("ignores custom chart metrics SQL queries from another instance", () => {
+    expect(
+      isCanvasExportQuery(
+        ["metrics_sql", "instance-2", "chart", 0, "select 1", "{}"],
+        "instance-1",
+      ),
+    ).toBe(false);
   });
 
   it("ignores unrelated admin and other runtime queries", () => {

@@ -60,7 +60,7 @@
          the DOM otherwise: Playwright locators and the a11y tree match elements
          regardless of CSS visibility, so an always-mounted copy would duplicate
          the live dashboard's text/labels. -->
-    {#if $exportMode}
+    {#if $exportMode && !hasMissingRequired}
       <div
         aria-hidden="true"
         class="pointer-events-none absolute"

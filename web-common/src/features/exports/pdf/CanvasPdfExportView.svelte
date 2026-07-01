@@ -23,6 +23,8 @@
 
 <div
   id="canvas-pdf-export-view"
+  data-canvas-name={canvasName}
+  data-instance-id={instanceId}
   class="flex flex-col items-center bg-surface-background"
   style:width="{width}px"
 >

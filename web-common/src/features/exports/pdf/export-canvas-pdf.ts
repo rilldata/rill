@@ -36,6 +36,8 @@ export async function exportCanvasPdf(
 
     const { blocks, contentWidthPx, backgroundColor } =
       await captureCanvasBlocks({
+        instanceId: opts.instanceId,
+        canvasName: opts.canvasName,
         includeFilters: opts.includeFilters,
         onProgress: (ratio) => opts.onProgress?.({ phase: "capturing", ratio }),
       });
