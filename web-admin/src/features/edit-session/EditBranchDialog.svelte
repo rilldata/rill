@@ -22,6 +22,7 @@
   import { Select as SelectPrimitive } from "bits-ui";
   import { GitBranchIcon, GitBranchPlusIcon } from "lucide-svelte";
   import { useDevDeployments, invalidateDeployments } from "./use-edit-session";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let organization: string;
@@ -135,7 +136,7 @@
       requestSkipBranchInjection();
       await goto(editUrl(resp.deployment?.branch));
     } catch (err) {
-      createError = getRpcErrorMessage(err) ?? "Failed to start edit session.";
+      createError = getRpcErrorMessage(err) ?? m.edit_failed_to_start();
     }
   }
 
@@ -252,7 +253,7 @@
         <TabsContent value="new" class="mt-4">
           <Input
             id="new-branch-name"
-            label="Branch name"
+            label={m.edit_branch_name()}
             placeholder="branch-name"
             size="xl"
             additionalClass="[&_input]:!text-sm"
@@ -270,7 +271,7 @@
     {:else}
       <Input
         id="new-branch-name"
-        label="Branch name"
+        label={m.edit_branch_name()}
         placeholder="branch-name"
         size="xl"
         additionalClass="[&_input]:!text-sm"
@@ -286,7 +287,7 @@
     {/if}
 
     <Dialog.Footer>
-      <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="secondary" onClick={() => (open = false)}>{m.common_cancel()}</Button>
       {#if hasOwnSessions && currentTab === "existing"}
         <Button
           type="primary"
@@ -300,7 +301,7 @@
           type="primary"
           disabled={!branchName.trim() || isStarting}
           loading={isStarting}
-          loadingCopy="Starting..."
+          loadingCopy={m.edit_starting()}
           onClick={handleCreate}
         >
           Create &amp; edit

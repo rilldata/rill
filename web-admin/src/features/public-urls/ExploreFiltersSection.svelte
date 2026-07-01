@@ -11,6 +11,7 @@
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let onFilterStateChange: (hasFilters: boolean) => void;
   export let onProvideFilters: (
@@ -72,7 +73,7 @@
 
   <div class="flex flex-col gap-y-1">
     <p class="text-xs text-fg-primary font-normal">
-      The following filters will be locked and hidden:
+      {m.public_url_filters_locked_hidden()}
     </p>
     <div class="flex flex-row gap-1 mt-2">
       <ExploreFilterChipsReadOnly
@@ -87,6 +88,6 @@
   </div>
 
   <p class="text-xs text-fg-primary font-normal mt-4 mb-4">
-    Measures and dimensions will be limited to current visible set.
+    {m.public_url_measures_dimensions_limited()}
   </p>
 {/if}

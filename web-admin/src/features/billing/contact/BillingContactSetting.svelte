@@ -2,6 +2,7 @@
   import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { organization }: { organization: string } = $props();
 
@@ -13,7 +14,7 @@
 </script>
 
 <section>
-  <h2 class="section-header">Billing Contact</h2>
+  <h2 class="section-header">{m.billing_contact_header()}</h2>
   <div class="section-card">
     <div class="card-content">
       {#if $billingContactUser}
@@ -24,7 +25,7 @@
         />
       {:else}
         <span class="text-sm text-fg-tertiary"
-          >This org has no billing contact.</span
+          >{m.billing_no_billing_contact()}</span
         >
       {/if}
     </div>
@@ -32,7 +33,7 @@
       class="manage-btn"
       onclick={() => (isUpdateBillingContactDialogOpen = true)}
     >
-      Change billing contact
+      {m.billing_change_billing_contact()}
     </button>
   </div>
 </section>

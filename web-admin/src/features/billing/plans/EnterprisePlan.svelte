@@ -1,5 +1,6 @@
 <script lang="ts">
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { managed = false }: { managed?: boolean } = $props();
 
@@ -9,18 +10,17 @@
 </script>
 
 <PlanContainer
-  badge={managed ? "Managed" : "Enterprise"}
-  description="Custom contract{managed ? ' · Fully managed' : ''}"
+  badge={managed ? m.billing_plan_badge_managed() : m.billing_plan_badge_enterprise()}
+  description={managed ? m.billing_enterprise_desc_managed() : m.billing_enterprise_desc()}
 >
   {#snippet action()}
     <button class="contact-us-btn" onclick={handleContactSales}>
-      Contact us
+      {m.billing_contact_us_cta()}
     </button>
   {/snippet}
 
   <p class="text-sm text-fg-tertiary mt-4 pb-4">
-    Fully managed slots, dedicated CSM, white-label capabilities, and custom
-    SLAs. Contact your CSM for contract details or changes.
+    {m.billing_enterprise_details()}
   </p>
 </PlanContainer>
 

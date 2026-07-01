@@ -6,6 +6,7 @@
     themeControl,
     type ThemeMode,
   } from "@rilldata/web-common/features/themes/theme-control.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const { preference } = themeControl;
   $: selectedPreference = $preference;
@@ -66,7 +67,7 @@
     {/each}
   </div>
   <div class="mx-auto pt-12 pb-24">
-    <Button type="primary" onClick={handleContinue} large>Continue</Button>
+    <Button type="primary" onClick={handleContinue} large>{m.common_continue()}</Button>
   </div>
 </div>
 

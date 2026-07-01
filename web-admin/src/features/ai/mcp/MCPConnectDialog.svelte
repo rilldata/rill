@@ -9,6 +9,7 @@
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import ManualSection from "./ManualSection.svelte";
   import OAuthSection from "./OAuthSection.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let organization: string;
@@ -23,10 +24,9 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="max-w-3xl overflow-x-hidden">
     <Dialog.Header>
-      <Dialog.Title>Connect your own AI client</Dialog.Title>
+      <Dialog.Title>{m.mcp_dialog_title()}</Dialog.Title>
       <Dialog.Description>
-        Ask questions of your Rill project using natural language in any AI
-        client that supports the Model Context Protocol (MCP).
+        {m.mcp_dialog_description()}
       </Dialog.Description>
     </Dialog.Header>
 
@@ -37,10 +37,17 @@
     >
       <UnderlineTabsList>
         <UnderlineTabsTrigger value="oauth">
-          OAuth
-          <Tag color="gray" text="Recommended" height={18} class="ml-1.5" />
+          {m.mcp_oauth_tab()}
+          <Tag
+            color="gray"
+            text={m.mcp_recommended()}
+            height={18}
+            class="ml-1.5"
+          />
         </UnderlineTabsTrigger>
-        <UnderlineTabsTrigger value="manual">Manual</UnderlineTabsTrigger>
+        <UnderlineTabsTrigger value="manual"
+          >{m.mcp_manual_tab()}</UnderlineTabsTrigger
+        >
       </UnderlineTabsList>
 
       <div class="pt-4 min-w-0 overflow-x-auto">

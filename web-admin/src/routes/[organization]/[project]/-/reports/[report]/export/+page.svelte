@@ -6,6 +6,7 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
 
@@ -46,16 +47,16 @@
   <CtaContentContainer>
     {#if error}
       <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">Download failed</h2>
+        <h2 class="text-lg font-semibold">{m.report_download_failed()}</h2>
         <CtaMessage>
           {error}
         </CtaMessage>
       </div>
     {:else}
       <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">Downloading report...</h2>
+        <h2 class="text-lg font-semibold">{m.report_downloading()}</h2>
         <CtaMessage>
-          If your download fails, refresh the page to try again.
+          {m.report_download_retry_hint()}
         </CtaMessage>
       </div>
     {/if}
@@ -65,7 +66,7 @@
         variant="secondary"
         href={`/${organization}/${project}/-/reports/${reportId}`}
       >
-        Go to report page
+        {m.report_go_to_page()}
       </CtaButton>
     {/if}
   </CtaContentContainer>

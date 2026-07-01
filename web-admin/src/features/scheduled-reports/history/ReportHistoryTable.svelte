@@ -7,6 +7,7 @@
   import { useReport } from "../selectors";
   import NoRunsYet from "./NoRunsYet.svelte";
   import ReportHistoryTableCompositeCell from "./ReportHistoryTableCompositeCell.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let report: string;
 
@@ -36,15 +37,15 @@
 
 <div class="flex flex-col gap-y-4 w-full">
   <div class="flex flex-col gap-y-1">
-    <h1 class="text-fg-secondary text-lg font-bold">Recent history</h1>
-    <p class="text-fg-secondary text-sm">Showing up to 10 most recent runs</p>
+    <h1 class="text-fg-secondary text-lg font-bold">{m.report_recent_history()}</h1>
+    <p class="text-fg-secondary text-sm">{m.report_showing_recent_runs()}</p>
   </div>
   {#if $reportQuery.error}
     <div class="text-red-500">
       {$reportQuery.error.message}
     </div>
   {:else if $reportQuery.isLoading}
-    <div class="text-fg-secondary">Loading...</div>
+    <div class="text-fg-secondary">{m.report_loading()}</div>
   {:else if !$reportQuery.data?.resource.report.state.executionHistory.length}
     <NoRunsYet />
   {:else}

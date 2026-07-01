@@ -5,6 +5,7 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: V1Resource[];
   export let organization: string;
@@ -70,16 +71,15 @@
   <ResourceListEmptyState
     slot="empty"
     icon={ReportIcon}
-    message="You don't have any reports yet"
+    message={m.reports_empty_message()}
   >
     <span slot="action">
-      Schedule <a
-        href="https://docs.rilldata.com/guide/reports/exports"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        reports</a
-      > from any dashboard
+      {@html m.reports_empty_action({
+        reportsLink:
+          '<a href="https://docs.rilldata.com/guide/reports/exports" target="_blank" rel="noopener noreferrer">' +
+          m.reports_link_text() +
+          "</a>",
+      })}
     </span>
   </ResourceListEmptyState>
 </ResourceList>

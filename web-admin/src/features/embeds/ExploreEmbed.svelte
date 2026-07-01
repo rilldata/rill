@@ -12,6 +12,7 @@
     getEmbedThemeStoreInstance,
     resolveEmbedTheme,
   } from "@rilldata/web-common/features/embeds/embed-theme";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let exploreName: string;
 
@@ -39,15 +40,15 @@
   $: if (isExploreNotFound) {
     errorStore.set({
       statusCode: 404,
-      header: "Explore not found",
-      body: `The Explore dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
+      header: m.embed_explore_not_found(),
+      body: m.embed_explore_not_found_body(),
     });
   }
 </script>
 
 {#if isSuccess}
   {#if isExploreErrored}
-    <br /> Explore Error <br />
+    <br /> {m.embed_explore_error()} <br />
   {:else if data}
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>

@@ -4,6 +4,7 @@
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { onDestroy, onMount } from "svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let status: V1DeploymentStatus | undefined;
   export let href: string;
@@ -16,11 +17,11 @@
   function getHeading(s: V1DeploymentStatus | undefined): string {
     switch (s) {
       case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
-        return "Provisioning your editing environment...";
+        return m.edit_provisioning_env();
       case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
-        return "Updating your editing environment...";
+        return m.edit_updating_env();
       default:
-        return "Starting your editing environment...";
+        return m.edit_starting_env();
     }
   }
 
@@ -40,10 +41,10 @@
     <LoadingSpinner />
     <h2 class="text-lg font-semibold">{getHeading(status)}</h2>
     {#if showSlowNotice}
-      <CtaNeedHelp leading="This is taking longer than usual." />
+      <CtaNeedHelp leading={m.edit_taking_longer()} />
     {/if}
   </div>
-  <Button type="secondary" {href}>Back to projects</Button>
+  <Button type="secondary" {href}>{m.edit_back_to_projects()}</Button>
 </div>
 
 <style lang="postcss">

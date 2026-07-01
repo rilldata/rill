@@ -11,6 +11,8 @@
   import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/CreatePersonalCanvasDialog.svelte";
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n/escape-html";
 
   const { chat, personalCanvases } = featureFlags;
 
@@ -52,27 +54,23 @@
             <div class="h-11 w-96 animate-pulse rounded bg-gray-200"></div>
           </DelayedContent>
         {:else if isErrorDisplayName}
-          <h1
-            class="text-4xl font-semibold text-fg-secondary"
-            aria-label="Project title"
-          >
-            Welcome to <span class="text-accent-primary-action">{project}</span>
+          <h1 class="text-4xl font-semibold text-fg-secondary">
+            {@html m.home_welcome_to({
+              projectName: `<span class="text-accent-primary-action">${escapeHtml(project)}</span>`,
+            })}
           </h1>
         {:else}
-          <h1
-            class="text-4xl font-semibold text-fg-secondary"
-            aria-label="Project title"
-          >
-            Welcome to <span class="text-accent-primary-action"
-              >{projectDisplayName}</span
-            >
+          <h1 class="text-4xl font-semibold text-fg-secondary">
+            {@html m.home_welcome_to({
+              projectName: `<span class="text-accent-primary-action">${escapeHtml(projectDisplayName)}</span>`,
+            })}
           </h1>
         {/if}
         <p class="text-lg text-fg-muted">
           {#if $chat}
-            Ask questions about your data, or explore your dashboards below
+            {m.home_subtitle_with_chat()}
           {:else}
-            Explore your dashboards below
+            {m.home_subtitle_no_chat()}
           {/if}
         </p>
       </div>
@@ -92,7 +90,7 @@
 
     <div class="flex flex-col gap-y-4">
       <h2 class="flex text-xl font-semibold text-fg-secondary justify-between">
-        Dashboards
+        {m.home_dashboards_heading()}
         {#if $personalCanvases && hasNoPersonalCanvases}
           <CreatePersonalCanvasDialog org={organization} {project} />
         {/if}

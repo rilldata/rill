@@ -6,6 +6,7 @@
     V1BillingPlanType,
   } from "@rilldata/web-admin/client";
   import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let organization = $derived($page.params.organization);
   let subscriptionQuery = $derived(
@@ -29,15 +30,14 @@
 </script>
 
 <section class="usage-page">
-  <h1 class="text-xl font-semibold text-fg-primary mb-2">Usage</h1>
+  <h1 class="text-xl font-semibold text-fg-primary mb-2">{m.billing_usage_title()}</h1>
   <p class="text-sm text-fg-secondary mb-6">
-    View slot usage, storage consumption, and billing details for your
-    organization.
+    {m.billing_usage_description()}
   </p>
 
   <div class="coming-soon-card">
     <p class="text-fg-tertiary text-sm">
-      Detailed usage metrics are coming soon.
+      {m.billing_usage_coming_soon()}
     </p>
   </div>
 </section>

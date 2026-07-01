@@ -3,6 +3,7 @@
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     badge,
@@ -24,7 +25,7 @@
 </script>
 
 <section>
-  <h2 class="section-header">Plan</h2>
+  <h2 class="section-header">{m.billing_plan_header()}</h2>
 
   <div class="plan-card">
     <div class="plan-top">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
@@ -33,8 +34,8 @@
 {#if measures.length === 0}
   <ErrorPage
     statusCode={undefined}
-    header="Error fetching dashboard"
-    body="No measures available"
+    header={m.explore_error_fetching()}
+    body={m.explore_no_measures()}
     href={getHomeHref()}
   />
 {:else if metricsViewName}
