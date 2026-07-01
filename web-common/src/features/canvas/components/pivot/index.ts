@@ -25,6 +25,18 @@ import type {
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
 import { createPivotConfig, usePivotForCanvas } from "./util";
 
+/**
+ * Default sort applied when the table first loads. Mirrors how explore
+ * persists pivot sort: `id` is the raw TanStack sort id (measure, dimension,
+ * time grain, or nested leaf accessor), decoded at query time. `label` is
+ * stored purely for human-readable display in the inspector.
+ */
+export interface DefaultSort {
+  id: string;
+  desc: boolean;
+  label: string;
+}
+
 export interface PivotSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
@@ -34,6 +46,7 @@ export interface PivotSpec
   col_dimensions?: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  default_sort?: DefaultSort;
 }
 
 export interface TableSpec
@@ -43,6 +56,7 @@ export interface TableSpec
   columns: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  default_sort?: DefaultSort;
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
@@ -186,6 +200,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
+          default_sort: { type: "default_sort", label: "Default sort" },
           ...commonOptions,
         },
         filter: getFilterOptions(true, false),
@@ -216,6 +231,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
+          default_sort: { type: "default_sort", label: "Default sort" },
           ...commonOptions,
         },
         filter: getFilterOptions(true, false),
@@ -275,16 +291,26 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     let newSpec: PivotSpec | TableSpec;
 
+    // A nested leaf accessor (e.g. "c0v2m0") is meaningless in the other table
+    // mode, so drop the default sort unless it targets a stable field.
+    const defaultSort =
+      currentSpec.default_sort &&
+      /^(c\d+v\d+_?)+m\d+$/.test(currentSpec.default_sort.id)
+        ? undefined
+        : currentSpec.default_sort;
+
     const commonProperties: ComponentCommonProperties &
       ComponentFilterProperties &
-      Pick<PivotSpec, "hide_totals_row" | "hide_totals_col"> = {
-      title: currentSpec.title,
-      description: currentSpec.description,
-      dimension_filters: currentSpec.dimension_filters,
-      time_filters: currentSpec.time_filters,
-      hide_totals_row: currentSpec.hide_totals_row,
-      hide_totals_col: currentSpec.hide_totals_col,
-    };
+      Pick<PivotSpec, "hide_totals_row" | "hide_totals_col" | "default_sort"> =
+      {
+        title: currentSpec.title,
+        description: currentSpec.description,
+        dimension_filters: currentSpec.dimension_filters,
+        time_filters: currentSpec.time_filters,
+        hide_totals_row: currentSpec.hide_totals_row,
+        hide_totals_col: currentSpec.hide_totals_col,
+        default_sort: defaultSort,
+      };
 
     if ("columns" in currentSpec) {
       const row_dimensions =

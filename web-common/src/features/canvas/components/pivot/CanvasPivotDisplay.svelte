@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PivotCanvasComponent } from "@rilldata/web-common/features/canvas/components/pivot";
+  import type { SortingState } from "tanstack-table-8-svelte-5";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
@@ -40,11 +41,16 @@
   $: schema = validateTableSchema(metricsViewSpec, tableSpec);
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
+  let defaultSorting: SortingState;
+  $: defaultSorting = tableSpec.default_sort
+    ? [{ id: tableSpec.default_sort.id, desc: tableSpec.default_sort.desc }]
+    : [];
+
   $: if ("columns" in tableSpec && schema.isValid) {
     const columns = tableSpec?.columns || [];
     pivotState.update((state) => ({
       ...state,
-      sorting: [],
+      sorting: defaultSorting,
       expanded: {},
       activeCell: null,
       columnPage: 1,
@@ -59,7 +65,7 @@
     const rowDimensions = tableSpec.row_dimensions || [];
     pivotState.update((state) => ({
       ...state,
-      sorting: [],
+      sorting: defaultSorting,
       expanded: {},
       activeCell: null,
       columnPage: 1,
