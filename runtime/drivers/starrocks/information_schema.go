@@ -9,20 +9,13 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-// informationSchema implements drivers.OLAPInformationSchema for StarRocks.
-// Uses fully qualified names (catalog.information_schema.tables) instead of SET CATALOG/USE.
-type informationSchema struct {
-	c *connection
-}
-
-var _ drivers.OLAPInformationSchema = (*informationSchema)(nil)
-
+// StarRocks Uses fully qualified names (catalog.information_schema.tables) instead of SET CATALOG/USE
 // All returns metadata about all tables and views.
 // For StarRocks, we query from the configured catalog's information_schema.
-func (i *informationSchema) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	db := i.c.db
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	db := c.db
 
-	catalog := i.c.configProp.Catalog
+	catalog := c.configProp.Catalog
 
 	// Build query using fully qualified information_schema path
 	// Pattern: catalog.information_schema.tables
@@ -95,21 +88,21 @@ func (i *informationSchema) All(ctx context.Context, like string, pageSize uint3
 
 // Lookup returns metadata about a specific table or view.
 // database parameter = catalog, schema parameter = database in StarRocks terms.
-func (i *informationSchema) Lookup(ctx context.Context, database, schema, name string) (*drivers.OlapTable, error) {
-	db := i.c.db
+func (c *connection) Lookup(ctx context.Context, database, schema, name string) (*drivers.OlapTable, error) {
+	db := c.db
 
 	// StarRocks mapping: database parameter = catalog
 	// If database is empty, use connector's configured catalog
 	catalog := database
 	if catalog == "" {
-		catalog = i.c.configProp.Catalog
+		catalog = c.configProp.Catalog
 	}
 
 	// StarRocks mapping: schema parameter = database
 	// If schema is empty, use connector's configured database
 	dbSchema := schema
 	if dbSchema == "" {
-		dbSchema = i.c.configProp.Database
+		dbSchema = c.configProp.Database
 	}
 
 	// Query table metadata using fully qualified information_schema path
@@ -158,7 +151,7 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 			return nil, err
 		}
 
-		runtimeType, err := i.c.databaseTypeToRuntimeType(dataType)
+		runtimeType, err := c.databaseTypeToRuntimeType(dataType)
 		if err != nil {
 			if errors.Is(err, errUnsupportedType) {
 				unsupportedCols[colName] = dataType
@@ -193,7 +186,7 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 
 // LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 // For external catalogs, this may not be available.
-func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	// StarRocks doesn't easily expose physical size for external tables
 	// For internal tables, we could query be_tablets but it's complex
 	// Return without error, leaving PhysicalSizeBytes as 0
@@ -201,16 +194,16 @@ func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*driv
 }
 
 // LoadDDL implements drivers.OLAPInformationSchema.
-func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	db := i.c.db
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db := c.db
 
 	catalog := table.Database
 	if catalog == "" {
-		catalog = i.c.configProp.Catalog
+		catalog = c.configProp.Catalog
 	}
 	schema := table.DatabaseSchema
 	if schema == "" {
-		schema = i.c.configProp.Database
+		schema = c.configProp.Database
 	}
 
 	q := fmt.Sprintf("SHOW CREATE TABLE %s.%s.%s", safeSQLName(catalog), safeSQLName(schema), safeSQLName(table.Name))
@@ -223,22 +216,13 @@ func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.OlapTabl
 	return nil
 }
 
-// InformationSchema interface implementation for drivers.InformationSchema
-
-var _ drivers.InformationSchema = (*informationSchemaImpl)(nil)
-
-// informationSchemaImpl implements drivers.InformationSchema for StarRocks
-type informationSchemaImpl struct {
-	c *connection
-}
-
 // ListDatabaseSchemas returns a list of database schemas in StarRocks.
 // StarRocks structure: Catalog -> Database -> Table
 // We map: Database = catalog, DatabaseSchema = database
-func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	db := i.c.db
+func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	db := c.db
 
-	catalog := i.c.configProp.Catalog
+	catalog := c.configProp.Catalog
 
 	// Query information_schema.schemata using fully qualified path
 	q := fmt.Sprintf(`
@@ -296,8 +280,8 @@ func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSiz
 
 // ListTables returns a list of tables in a specific database schema.
 // database parameter = catalog, databaseSchema parameter = database
-func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	db := i.c.db
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	db := c.db
 
 	// StarRocks mapping: database parameter = catalog
 	catalog := database
@@ -366,8 +350,8 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 }
 
 // GetTable returns metadata about a specific table.
-func (i *informationSchemaImpl) GetTable(ctx context.Context, database, databaseSchema, tableName string) (*drivers.TableMetadata, error) {
-	db := i.c.db
+func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tableName string) (*drivers.TableMetadata, error) {
+	db := c.db
 
 	// StarRocks mapping: database parameter = catalog
 	catalog := database

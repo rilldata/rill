@@ -151,16 +151,9 @@ type RepoStatus struct {
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
 	LocalCommits  int32
 	RemoteCommits int32
-}
-
-// RepoDiff is the set of changes between the local repo and a comparison branch.
-type RepoDiff struct {
-	// IsGitRepo indicates if the repo is backed by a Git repository.
-	IsGitRepo bool
 	// ChangedFiles lists the files that would land on the comparison branch.
+	// Only populated when Status is called with changedFiles set to true.
 	ChangedFiles []RepoFileChange
-	// Diff is the combined unified patch across ChangedFiles; only set when IncludeDiff is true.
-	Diff string
 }
 
 type RepoFileStatus int
@@ -179,6 +172,16 @@ type RepoFileChange struct {
 	// OldPath is the previous path; only set when Status is RepoFileStatusRenamed.
 	OldPath string
 	Status  RepoFileStatus
+}
+
+// RepoDiff is the set of changes between the local repo and a comparison branch.
+type RepoDiff struct {
+	// IsGitRepo indicates if the repo is backed by a Git repository.
+	IsGitRepo bool
+	// ChangedFiles lists the files that would land on the comparison branch.
+	ChangedFiles []RepoFileChange
+	// Diff is the combined unified patch across ChangedFiles; only set when IncludeDiff is true.
+	Diff string
 }
 
 type PullOptions struct {

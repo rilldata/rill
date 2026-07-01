@@ -1,4 +1,7 @@
-import { getNestedRowDimensionWidthKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
+import {
+  distributeColumnWidthsToFillContainer,
+  getNestedRowDimensionWidthKey,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
 import { describe, expect, it } from "vitest";
 
 describe("getNestedRowDimensionWidthKey", () => {
@@ -40,5 +43,46 @@ describe("getNestedRowDimensionWidthKey", () => {
         { name: "country" },
       ]),
     );
+  });
+});
+
+describe("distributeColumnWidthsToFillContainer", () => {
+  it("leaves widths unchanged when the columns already fill the container", () => {
+    expect(
+      distributeColumnWidthsToFillContainer(
+        [
+          { width: 160, role: "dimension" },
+          { width: 100, role: "measure" },
+        ],
+        200,
+      ),
+    ).toEqual([160, 100]);
+  });
+
+  it("gives dimension columns more of the extra width than measure columns", () => {
+    const widths = distributeColumnWidthsToFillContainer(
+      [
+        { width: 160, role: "dimension" },
+        { width: 100, role: "measure" },
+        { width: 100, role: "measure" },
+      ],
+      530,
+    );
+
+    expect(widths.reduce((sum, width) => sum + width, 0)).toBeCloseTo(530);
+    expect(widths[0] - 160).toBeGreaterThan(widths[1] - 100);
+    expect(widths[1]).toBeCloseTo(widths[2]);
+  });
+
+  it("spreads extra width evenly when there are no measure columns", () => {
+    expect(
+      distributeColumnWidthsToFillContainer(
+        [
+          { width: 160, role: "dimension" },
+          { width: 120, role: "dimension" },
+        ],
+        380,
+      ),
+    ).toEqual([210, 170]);
   });
 });
