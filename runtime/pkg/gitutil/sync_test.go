@@ -601,6 +601,25 @@ func TestDiff_LargeFile(t *testing.T) {
 	require.NotContains(t, diff, "some long line of text", "large file content must not be included")
 	require.Less(t, len(diff), maxFileDiffBytes, "elided diff should be well under the cap")
 }
+	
+func TestDiff_RemoteDiverged(t *testing.T) {
+	tempDir, remoteDir := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Add a file to the remote that the local repo has not pulled, then fetch (advancing the
+	// remote-tracking ref) without pulling so local HEAD stays behind.
+	createRemoteCommit(t, remoteDir, "remote_only.txt", "content", "add remote-only file")
+	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	// Make a local (uncommitted) edit so there is something local to show.
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test1.txt"), []byte("edited"), 0644))
+
+	diff, err := Diff(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "Diff failed")
+
+	require.Contains(t, diff, "test1.txt", "the local edit should appear in the diff")
+	require.NotContains(t, diff, "remote_only.txt", "remote-only file must not appear as a deletion")
+}
 
 func TestChangedFiles_Monorepo(t *testing.T) {
 	tempDir, _ := setupMonorepoTestRepository(t)

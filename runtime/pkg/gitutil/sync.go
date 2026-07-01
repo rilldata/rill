@@ -215,8 +215,15 @@ func Diff(ctx context.Context, path, subpath, remoteName, remoteBranch string) (
 	}
 	ref := fmt.Sprintf("%s/%s", remoteName, compareBranch)
 
-	// Committed and staged changes, with rename detection (-M).
-	diffArgs := []string{"diff", "-M", "--no-color", ref}
+	mergeBase, err := Run(ctx, path, "merge-base", "HEAD", ref)
+	if err != nil {
+		return "", err
+	}
+	mergeBase = strings.TrimSpace(mergeBase)
+
+	// Committed and staged changes, with rename detection (-M). Diff from the merge base (like
+	// ChangedFiles) so remote-only commits are not treated as local changes to be reverted.
+	diffArgs := []string{"diff", "-M", "--no-color", mergeBase}
 	if subpath != "" {
 		diffArgs = append(diffArgs, "--", subpath)
 	}
