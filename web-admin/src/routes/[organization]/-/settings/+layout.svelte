@@ -5,8 +5,12 @@
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
+  import type { PageData } from "./$types";
 
-  let { children }: { children: Snippet } = $props();
+  let { children, data }: { children: Snippet; data: PageData } = $props();
+
+  let { billingPortalUrl } = $derived(data);
+  let showUsageSettings = $derived(Boolean(billingPortalUrl));
 
   let organization = $derived($page.params.organization);
   let basePage = $derived(`/${organization}/-/settings`);
@@ -14,10 +18,11 @@
   // The Usage tab is intentionally hidden for all plans until the new usage
   // page is ready. Pro and Team users still get a `View detailed usage` link
   // out to the Orb billing portal from the Plan card.
-  let navItems = [
+  let navItems = $derived([
     { label: "General", route: "", hasPermission: true },
     { label: "Billing", route: "/billing", hasPermission: true },
-  ];
+    { label: "Usage", route: "/usage", hasPermission: showUsageSettings },
+  ]);
 </script>
 
 <ContentContainer title="Organization settings" maxWidth={1100}>
