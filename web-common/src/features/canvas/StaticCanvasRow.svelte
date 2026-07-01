@@ -1,5 +1,6 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import CanvasComponent from "./CanvasComponent.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import RowWrapper from "./RowWrapper.svelte";
@@ -44,7 +45,7 @@
           active={activeComponentId === id}
         />
       {:else}
-        <ComponentError error="No valid component {id} in project" />
+        <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}
     </ItemWrapper>
   {/each}

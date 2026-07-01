@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import LeaderboardIcon from "../icons/LeaderboardIcon.svelte";
   import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
@@ -23,7 +24,7 @@
 </script>
 
 <Button
-  label="Save as default"
+  label={m.canvas_save_as_default()}
   type={!viewingDefaults ? "secondary" : "ghost"}
   preload={false}
   disabled={canvasIsEmpty || viewingDefaults}
@@ -38,20 +39,24 @@
   {#snippet children()}
     {#if saving && justClickedSaveAsDefault}
       <LoadingSpinner size="15px" />
-      <div class="flex gap-x-1 items-center">Saving default filters</div>
+      <div class="flex gap-x-1 items-center">
+        {m.canvas_saving_default_filters()}
+      </div>
     {:else if viewingDefaults}
       {#if justClickedSaveAsDefault}
         <CheckCircleNew size="15px" className="fill-green-600" />
         <div class="flex gap-x-1 items-center text-green-600">
-          Saved default filters
+          {m.canvas_saved_default_filters()}
         </div>
       {:else}
         <LeaderboardIcon size="16px" color="currentColor" />
-        <div class="flex gap-x-1 items-center">Viewing default state</div>
+        <div class="flex gap-x-1 items-center">
+          {m.canvas_viewing_default_state()}
+        </div>
       {/if}
     {:else}
       <LeaderboardIcon size="16px" color="currentColor" />
-      <div class="flex gap-x-1 items-center">Save as default</div>
+      <div class="flex gap-x-1 items-center">{m.canvas_save_as_default()}</div>
     {/if}
   {/snippet}
 </Button>

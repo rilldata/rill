@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import type { ChartDataPoint } from "@rilldata/web-common/components/time-series-chart/types";
@@ -316,7 +317,7 @@
 
             {#if comparisonLabel}
               <p class="text-sm text-fg-secondary break-words">
-                vs {comparisonLabel?.toLowerCase()}
+                {m.kpi_vs_comparison({ comparison: comparisonLabel?.toLowerCase() ?? "" })}
               </p>
             {/if}
           {/if}

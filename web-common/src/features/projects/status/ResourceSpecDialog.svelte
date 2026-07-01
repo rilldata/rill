@@ -2,6 +2,7 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let resourceName = "";
@@ -54,7 +55,7 @@
 
     <div class="spec-container">
       {#if !resource}
-        <p class="text-sm text-fg-secondary">No resource data available</p>
+        <p class="text-sm text-fg-secondary">{m.status_no_resource_data()}</p>
       {:else}
         <pre class="spec-content">{specContent}</pre>
       {/if}

@@ -7,6 +7,7 @@
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import ChipDragList from "@rilldata/web-common/features/canvas/inspector/ChipDragList.svelte";
   import type { FieldType } from "@rilldata/web-common/features/canvas/inspector/types.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { PlusIcon } from "lucide-svelte";
 
   export let fields: string[];
@@ -34,7 +35,7 @@
       ? [
           <SearchableFilterSelectableGroup>{
             name: "measure",
-            label: "MEASURES",
+            label: m.field_list_measures(),
             items: allowedMeasures.map((item) => ({
               name: item,
               label: displayMap[item].label,
@@ -46,7 +47,7 @@
       ? [
           <SearchableFilterSelectableGroup>{
             name: "time",
-            label: "TIME",
+            label: m.field_list_time(),
             items: allowedTimeFields.map((item) => ({
               name: item,
               label: displayMap[item].label,
@@ -58,7 +59,7 @@
       ? [
           <SearchableFilterSelectableGroup>{
             name: "dimension",
-            label: "DIMENSIONS",
+            label: m.field_list_dimensions(),
             items: allowedDimensions.map((item) => ({
               name: item,
               label: displayMap[item].label,
@@ -98,7 +99,7 @@
 
   <div
     class="flex flex-row items-center min-h-7"
-    aria-label="{label} field list"
+    aria-label={m.field_list_aria({ label })}
   >
     {#if !fields.length}
       <slot name="empty-fields" />
@@ -131,7 +132,7 @@
         {#snippet child({ props })}
           <Button
             {...props}
-            label={`Add ${label} fields`}
+            label={m.field_list_add_fields({ label })}
             active={open}
             class="w-[34px] ml-2 border border-dashed border-gray-300"
             compact

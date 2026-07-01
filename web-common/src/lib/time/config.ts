@@ -4,6 +4,7 @@
  * manually define these in the dashboard configuration.
  */
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { Duration, DurationUnit } from "luxon";
 import {
@@ -691,9 +692,21 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
 };
 
 /** The default configurations for time comparisons. */
-export const TIME_COMPARISON = {
+export const TIME_COMPARISON: Record<
+  string,
+  {
+    readonly label: string;
+    shorthand: string;
+    description: string;
+    comparisonType: TimeComparisonOption;
+    offsetIso: string;
+    rillTimeOffset?: string;
+  }
+> = {
   [TimeComparisonOption.CONTIGUOUS]: {
-    label: "Previous period",
+    get label() {
+      return m.time_comparison_previous_period();
+    },
     shorthand: "prev. period",
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,
@@ -701,14 +714,18 @@ export const TIME_COMPARISON = {
     rillTimeOffset: "-1P",
   },
   [TimeComparisonOption.CUSTOM]: {
-    label: "Custom range",
+    get label() {
+      return m.time_custom_range();
+    },
     shorthand: "comparing",
     description: "Compare the current time range to a custom time range",
     comparisonType: TimeComparisonOption.CUSTOM,
     offsetIso: "",
   },
   [TimeComparisonOption.DAY]: {
-    label: "Previous day",
+    get label() {
+      return m.time_comparison_previous_day();
+    },
     shorthand: "prev. day",
     description:
       "Compare the current time range to the same time range the day before",
@@ -717,7 +734,9 @@ export const TIME_COMPARISON = {
     rillTimeOffset: "-1D",
   },
   [TimeComparisonOption.WEEK]: {
-    label: "Previous week",
+    get label() {
+      return m.time_previous_week();
+    },
     shorthand: "prev. wk",
     description:
       "Compare the current time range to the same time range the week before",
@@ -726,7 +745,9 @@ export const TIME_COMPARISON = {
     rillTimeOffset: "-1W",
   },
   [TimeComparisonOption.MONTH]: {
-    label: "Previous month",
+    get label() {
+      return m.time_previous_month();
+    },
     shorthand: "prev. month",
     description:
       "Compare the current time range to the same time range the month before",
@@ -736,7 +757,9 @@ export const TIME_COMPARISON = {
     rillTimeOffset: "-1M",
   },
   [TimeComparisonOption.QUARTER]: {
-    label: "Previous quarter",
+    get label() {
+      return m.time_previous_quarter();
+    },
     shorthand: "prev. qtr",
     description:
       "Compare the current time range to the same time range the quarter before",
@@ -746,7 +769,9 @@ export const TIME_COMPARISON = {
   },
 
   [TimeComparisonOption.YEAR]: {
-    label: "Previous year",
+    get label() {
+      return m.time_previous_year();
+    },
     shorthand: "prev. yr",
     description:
       "Compare the current time range to the same time range the year before",
@@ -756,7 +781,9 @@ export const TIME_COMPARISON = {
   },
 };
 
-export const NO_COMPARISON_LABEL = "No comparison dimension";
+export function getNoComparisonLabel(): string {
+  return m.time_no_comparison_dimension();
+}
 
 export const DEFAULT_TIMEZONES = [
   "UTC",

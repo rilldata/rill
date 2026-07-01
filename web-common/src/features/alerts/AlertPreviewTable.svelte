@@ -1,6 +1,7 @@
 <script lang="ts">
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import type { DimensionTableRow } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-types";
   import {
@@ -85,7 +86,7 @@
   bind:clientWidth={containerWidth}
   style="height: 100%;"
   role="table"
-  aria-label="alert preview table"
+  aria-label={m.alert_form_preview_table_aria()}
 >
   <div
     bind:this={container}
@@ -115,7 +116,7 @@
           {columns}
           {rows}
           activeIndex={-1}
-          cellLabel="Preview cell"
+          cellLabel={m.alert_form_preview_cell()}
         />
       {/if}
     </div>

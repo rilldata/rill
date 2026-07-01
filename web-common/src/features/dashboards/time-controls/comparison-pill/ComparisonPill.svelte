@@ -16,6 +16,7 @@
   import { SortType } from "../../proto-state/derived-types";
   import * as Elements from "../super-pill/components";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -93,7 +94,7 @@
         toggleSort(SortType.VALUE);
       }
     }}
-    aria-label="Toggle time comparison"
+    aria-label={m.dashboard_toggle_time_comparison_aria()}
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
       <Switch
@@ -105,7 +106,7 @@
       />
 
       <Label class="font-normal text-xs cursor-pointer" for="comparing">
-        <span class:opacity-50={disabled}>Comparing</span>
+        <span class:opacity-50={disabled}>{m.time_comparing()}</span>
       </Label>
     </div>
   </button>

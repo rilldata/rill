@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
@@ -235,7 +236,7 @@
 
       {#if $exports}
         <ExportMenu
-          label="Export table data"
+          label={m.dashboard_export_table_data()}
           includeScheduledReport={$adminServer}
           getQuery={(isScheduled) =>
             getTDDExportQuery(stateManagers, isScheduled)}

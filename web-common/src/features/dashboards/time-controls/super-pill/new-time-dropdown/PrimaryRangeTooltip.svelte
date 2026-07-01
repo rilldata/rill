@@ -1,6 +1,7 @@
 <script lang="ts">
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { Interval, DateTime } from "luxon";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
@@ -29,7 +30,7 @@
         second: interval.start.second > 0 ? "numeric" : undefined,
       })}
     </span>
-    <span>to</span>
+    <span>{m.dashboard_to()}</span>
     <span
       >{interval.end.toLocaleString({
         ...DateTime.DATETIME_HUGE_WITH_SECONDS,
@@ -38,6 +39,6 @@
       })}
     </span>
   {:else}
-    <span class="text-fg-secondary">Invalid time range</span>
+    <span class="text-fg-secondary">{m.dashboard_invalid_time_range()}</span>
   {/if}
 </TooltipContent>

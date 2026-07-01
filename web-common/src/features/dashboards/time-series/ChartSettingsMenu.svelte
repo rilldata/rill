@@ -9,6 +9,7 @@
   } from "@rilldata/web-common/components/popover";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let connectNulls: boolean;
   export let dynamicYAxisScale: boolean;
@@ -37,7 +38,7 @@
   >
     {#if showChartTypeSelector}
       <div class="flex flex-col gap-y-2">
-        <span>Always show as</span>
+        <span>{m.dashboard_always_show_as()}</span>
         <ChartTypeSelector
           {exploreName}
           {chartType}
@@ -47,7 +48,7 @@
       </div>
     {/if}
     <div class="popover-item">
-      <span>Connect sparse data</span>
+      <span>{m.dashboard_connect_sparse_data()}</span>
       <Switch
         small
         checked={connectNulls}
@@ -55,7 +56,7 @@
       />
     </div>
     <div class="popover-item">
-      <span>Dynamic Y-axis scale</span>
+      <span>{m.dashboard_dynamic_y_axis()}</span>
       <Switch
         small
         checked={dynamicYAxisScale}

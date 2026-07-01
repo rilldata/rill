@@ -9,6 +9,7 @@
     getDimensionDisplayName,
     getMeasureDisplayName,
   } from "./getDisplayName";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { MetricsViewName } from "../../canvas/stores/filter-manager";
   import type {
     MetricsViewSpecDimension,
@@ -51,11 +52,11 @@
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
-      name: "DIMENSIONS",
+      name: m.filter_dimensions(),
       items: dimensionEntries,
     },
     <SearchableFilterSelectableGroup>{
-      name: "MEASURES",
+      name: m.filter_measures(),
       items: measureEntries,
     },
   ];
@@ -69,11 +70,13 @@
           {...props}
           class:addBorder
           class:active={open}
-          aria-label="Add filter button"
+          aria-label={m.dashboard_add_filter_button()}
         >
           <Add size="17px" />
         </button>
-        <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
+        <TooltipContent slot="tooltip-content"
+          >{m.dashboard_add_filter()}</TooltipContent
+        >
       </Tooltip>
     {/snippet}
   </DropdownMenu.Trigger>
