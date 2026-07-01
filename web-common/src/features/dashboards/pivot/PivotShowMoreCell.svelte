@@ -33,6 +33,6 @@
   }
 
   .show-more-cell span {
-    @apply text-primary-600;
+    @apply text-primary-600 cursor-pointer;
   }
 </style>
