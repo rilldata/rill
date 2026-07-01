@@ -43,10 +43,10 @@
 </svelte:head>
 
 <ContentContainer maxWidth={900}>
-  <div class="flex flex-col gap-y-8 py-12">
+  <div class="flex flex-col gap-y-6 pb-12">
     <!-- Welcome Section with Chat Input -->
-    <div class="flex flex-col gap-y-6">
-      <div class="flex flex-col gap-y-4">
+    <div class="flex flex-col gap-y-4">
+      <div class="flex flex-col gap-y-2">
         {#if isLoadingDisplayName}
           <DelayedContent visible={isLoadingDisplayName}>
             <div class="h-11 w-96 animate-pulse rounded bg-gray-200"></div>
