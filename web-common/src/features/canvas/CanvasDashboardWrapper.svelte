@@ -6,6 +6,8 @@
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
+  import CanvasPdfExportHeader from "../exports/pdf/CanvasPdfExportHeader.svelte";
+  import { canvasPdfExportActive } from "../exports/pdf/export-state";
 
   const client = useRuntimeClient();
 
@@ -32,6 +34,8 @@
   $: missingRequiredFilters = $missingRequiredFiltersStore;
   $: hasMissingRequired = missingRequiredFilters.length > 0;
 
+  $: exportActive = canvasPdfExportActive(instanceId, canvasName);
+
   $: ({ width: clientWidth } = contentRect);
 </script>
 
@@ -51,6 +55,20 @@
       >
         <CanvasFilters {canvasName} {maxWidth} {builder} />
       </header>
+    {/if}
+
+    <!-- Off-screen read-only header used only as the PDF capture target. Mounted
+         solely during an active export: Playwright locators and the a11y tree
+         match elements regardless of CSS visibility, so an always-mounted header
+         would duplicate the live filter bar's text/labels. -->
+    {#if $exportActive}
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute"
+        style="left: -99999px; top: 0;"
+      >
+        <CanvasPdfExportHeader {canvasName} {instanceId} {maxWidth} />
+      </div>
     {/if}
 
     <div
