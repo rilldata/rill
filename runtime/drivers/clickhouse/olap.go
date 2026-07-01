@@ -345,7 +345,7 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 	return schema, nil
 }
 
-func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
+func (c *Connection) InformationSchema() drivers.InformationSchema {
 	return c
 }
 

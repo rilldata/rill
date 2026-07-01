@@ -47,7 +47,7 @@ type OLAPStore interface {
 	// QuerySchema returns the schema of the sql without trying not to run the actual query.
 	QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error)
 	// InformationSchema enables introspecting the tables and views available in the OLAP driver.
-	InformationSchema() OLAPInformationSchema
+	InformationSchema() InformationSchema
 	// EstimateSize returns an estimate of the total data size in bytes.
 	// Returns -1 if size estimation is not supported by the driver.
 	EstimateSize(ctx context.Context) (int64, error)
@@ -163,35 +163,4 @@ func (r *Result) Close() error {
 		r.cleanupFn = nil
 	}
 	return firstErr
-}
-
-// OLAPInformationSchema contains information about existing tables in an OLAP driver.
-// Table lookups should be case insensitive.
-type OLAPInformationSchema interface {
-	// All returns metadata about all tables and views.
-	// The like argument can optionally be passed to filter the tables by name.
-	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*OlapTable, string, error)
-	// Lookup returns metadata about a specific tables and views.
-	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
-	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
-	// It should be called after All or Lookup and not on manually created tables.
-	LoadPhysicalSize(ctx context.Context, tables []*OlapTable) error
-	// LoadDDL populates the DDL field of a single table's metadata.
-	// Drivers that don't support DDL retrieval should return nil (leaving DDL empty).
-	LoadDDL(ctx context.Context, table *OlapTable) error
-}
-
-// OlapTable represents a table in an information schema.
-type OlapTable struct {
-	Database                string
-	DatabaseSchema          string
-	IsDefaultDatabase       bool
-	IsDefaultDatabaseSchema bool
-	Name                    string
-	View                    bool
-	// Schema is the table schema. It is only set when only single table is looked up. It is not set when listing all tables.
-	Schema            *runtimev1.StructType
-	UnsupportedCols   map[string]string
-	PhysicalSizeBytes int64
-	DDL               string
 }
