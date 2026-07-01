@@ -134,6 +134,23 @@
             rowPage: page,
           }));
         }}
+        setPivotOutermostRowLimit={(limit) => {
+          pivotState.update((state) => ({
+            ...state,
+            outermostRowLimit: limit,
+            activeCell: null,
+          }));
+        }}
+        setPivotRowLimitForExpanded={(expandIndex, limit) => {
+          pivotState.update((state) => ({
+            ...state,
+            nestedRowLimits: {
+              ...state.nestedRowLimits,
+              [expandIndex]: limit,
+            },
+            activeCell: null,
+          }));
+        }}
         onCellClickToFilter={clickToFilter?.handleCellClickToFilter}
         onColumnHeaderClick={clickToFilter?.handleColumnHeaderClick}
       />

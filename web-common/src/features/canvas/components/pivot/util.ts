@@ -25,11 +25,11 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import {
-  type Readable,
-  type Writable,
   derived,
   readable,
   writable,
+  type Readable,
+  type Writable,
 } from "svelte/store";
 import type { CanvasEntity } from "../../stores/canvas-entity";
 import type { PivotSpec, TableSpec } from "./";
@@ -55,6 +55,16 @@ function excludeOwnDimensionFilters(
     return !dimSet.has(e.cond?.exprs?.[0]?.ident ?? "");
   });
   return createAndExpression(filtered);
+}
+
+export const ROW_LIMIT_ALL_VALUE = "all";
+
+export function normalizeRowLimit(
+  rowLimit: string | undefined,
+): number | undefined {
+  if (!rowLimit || rowLimit === ROW_LIMIT_ALL_VALUE) return undefined;
+  const parsed = parseInt(rowLimit, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 type CacheEntry = {
