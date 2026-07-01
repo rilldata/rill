@@ -5,6 +5,10 @@
     setLocale,
   } from "@rilldata/web-common/lib/i18n/gen/runtime";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+
+  export let persistLocale: ((code: string) => Promise<void>) | undefined =
+    undefined;
 
   const LOCALES = [
     { code: "en", label: () => m.language_en() },
@@ -15,8 +19,22 @@
 
   type LocaleCode = (typeof LOCALES)[number]["code"];
 
-  function selectLocale(code: LocaleCode) {
+  async function selectLocale(code: LocaleCode) {
     if (code === currentLocale) return;
+
+    if (persistLocale) {
+      try {
+        await persistLocale(code);
+      } catch (e) {
+        console.error("Failed to persist language preference", e);
+        eventBus.emit("notification", {
+          message: m.language_switcher_persist_error(),
+          type: "error",
+        });
+        return;
+      }
+    }
+
     setLocale(code);
   }
 </script>

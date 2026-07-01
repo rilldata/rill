@@ -25434,6 +25434,10 @@ func (m *UserPreferences) validate(all bool) error {
 		// no validation rules for TimeZone
 	}
 
+	if m.PreferredLocale != nil {
+		// no validation rules for PreferredLocale
+	}
+
 	if len(errors) > 0 {
 		return UserPreferencesMultiError(errors)
 	}

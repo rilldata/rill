@@ -308,6 +308,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		http.Error(w, "claim 'picture' not found", http.StatusInternalServerError)
 		return
 	}
+	locale, _ := profile["locale"].(string)
 
 	// Get redirect destination
 	redirect, ok := sess.Values[cookieFieldRedirect].(string)
@@ -324,7 +325,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Create (or update) user in our DB
-	user, err := a.admin.CreateOrUpdateUser(r.Context(), email, name, photoURL)
+	user, err := a.admin.CreateOrUpdateUser(r.Context(), email, name, photoURL, locale)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to update user: %s", err), http.StatusInternalServerError)
 		return

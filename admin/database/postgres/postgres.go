@@ -908,7 +908,7 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_trial_orgs, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaTrialOrgs, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_trial_orgs, quota_singleuser_orgs, superuser, preferred_locale) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaTrialOrgs, opts.QuotaSingleuserOrgs, opts.Superuser, opts.PreferredLocale).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}
@@ -935,7 +935,7 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_token=$5, github_token_expires_on=$6, github_refresh_token=$7, quota_singleuser_orgs=$8, quota_trial_orgs=$9, preference_time_zone=$10, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_token=$5, github_token_expires_on=$6, github_refresh_token=$7, quota_singleuser_orgs=$8, quota_trial_orgs=$9, preference_time_zone=$10, preferred_locale=$11, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
@@ -945,7 +945,8 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 		opts.GithubRefreshToken,
 		opts.QuotaSingleuserOrgs,
 		opts.QuotaTrialOrgs,
-		opts.PreferenceTimeZone).StructScan(res)
+		opts.PreferenceTimeZone,
+		opts.PreferredLocale).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}

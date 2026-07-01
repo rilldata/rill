@@ -1064,6 +1064,7 @@
   "language_en": "English",
   "language_es": "Español",
   "language_switcher_label": "Language",
+  "language_switcher_persist_error": "Couldn't save your language preference. It may revert on reload.",
   "layout_inspector_panel_aria": "Inspector Panel",
   "leaderboard_compare": "Compare",
   "leaderboard_copy_value": "Copy this value to clipboard",
@@ -1732,5 +1733,18 @@
   "users_url_copied": "URL copied",
   "users_user_count": "{count} Users",
   "users_yes_remove": "Yes, remove",
-  "users_yes_upgrade": "Yes, upgrade"
+  "users_yes_upgrade": "Yes, upgrade",
+  "edit_publish": "Publish",
+  "edit_publish_first_deploy": "Publishing sets up your production deployment. We'll open a new tab where you can invite teammates while it reconciles.",
+  "edit_publish_hibernated": "Production is hibernated. Publishing will resume it and apply your changes. We'll open the deployment in a new tab so you can watch updates reconcile.",
+  "edit_publish_push": "Publishing pushes your changes to production. We'll open a new tab so you can watch updates reconcile.",
+  "edit_publish_tooltip_on_primary": "Already on production",
+  "edit_publish_tooltip_loading": "Loading project...",
+  "edit_publish_tooltip_no_changes": "No changes to publish",
+  "edit_publish_tooltip_remote_updates": "Remote has updates not in your session. Click to review.",
+  "edit_publish_tooltip_confirm": "Review and confirm before publishing",
+  "canvas_tab_group": "Tab group",
+  "canvas_add_widget_to_tab": "Add widget to tab",
+  "canvas_add_widget_below_tabs": "Add widget below tabs",
+  "edit_publish_merge_deploy_failed": "Changes merged to production, but starting the production deployment failed"
 }

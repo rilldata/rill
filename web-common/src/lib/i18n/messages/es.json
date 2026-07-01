@@ -1064,6 +1064,7 @@
   "language_en": "English",
   "language_es": "Español",
   "language_switcher_label": "Idioma",
+  "language_switcher_persist_error": "No se pudo guardar tu preferencia de idioma. Puede revertirse al recargar.",
   "layout_inspector_panel_aria": "Panel del inspector",
   "leaderboard_compare": "Comparar",
   "leaderboard_copy_value": "Copiar este valor al portapapeles",
@@ -1732,5 +1733,18 @@
   "users_url_copied": "URL copiada",
   "users_user_count": "{count} Usuarios",
   "users_yes_remove": "Sí, eliminar",
-  "users_yes_upgrade": "Sí, promover"
+  "users_yes_upgrade": "Sí, promover",
+  "edit_publish": "Publicar",
+  "edit_publish_first_deploy": "La publicación configura tu despliegue de producción. Abriremos una nueva pestaña donde puedes invitar a compañeros mientras se reconcilia.",
+  "edit_publish_hibernated": "Producción está hibernado. La publicación lo reanudará y aplicará tus cambios. Abriremos el despliegue en una nueva pestaña para que veas las actualizaciones reconciliarse.",
+  "edit_publish_push": "La publicación envía tus cambios a producción. Abriremos una nueva pestaña para que veas las actualizaciones reconciliarse.",
+  "edit_publish_tooltip_on_primary": "Ya en producción",
+  "edit_publish_tooltip_loading": "Cargando proyecto...",
+  "edit_publish_tooltip_no_changes": "Sin cambios para publicar",
+  "edit_publish_tooltip_remote_updates": "El remoto tiene actualizaciones que no están en tu sesión. Haz clic para revisar.",
+  "edit_publish_tooltip_confirm": "Revisar y confirmar antes de publicar",
+  "canvas_tab_group": "Grupo de pestañas",
+  "canvas_add_widget_to_tab": "Agregar widget a la pestaña",
+  "canvas_add_widget_below_tabs": "Agregar widget debajo de las pestañas",
+  "edit_publish_merge_deploy_failed": "Cambios fusionados a producción, pero el inicio del despliegue de producción falló"
 }

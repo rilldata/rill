@@ -169,7 +169,7 @@
           onclick={() => onAddTabGroup?.()}
         >
           <Layers size="16px" />
-          Tab group
+          {m.canvas_tab_group()}
         </DropdownMenu.Item>
       {/if}
     </div>
