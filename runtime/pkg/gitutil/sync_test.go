@@ -551,7 +551,40 @@ func TestDiff(t *testing.T) {
 	require.Contains(t, diff, "+brand new line", "untracked file's content should appear")
 }
 
-func TestDiff_LargeFileElided(t *testing.T) {
+func TestDiff_OrderMatchesChangedFiles(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Mix tracked and untracked changes whose sorted order interleaves the two. Untracked files
+	// ("aaa.txt", "zzz.txt") are appended after tracked files in the raw diff, so without ordering
+	// the diff would list test1/test2 before aaa, diverging from the sorted ChangedFiles list.
+	createCommit(t, tempDir, "test1.txt", "modified content", "modify test1")
+	require.NoError(t, os.Remove(filepath.Join(tempDir, "test2.txt")), "failed to delete")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "aaa.txt"), []byte("first"), 0644), "failed to create untracked")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "zzz.txt"), []byte("last"), 0644), "failed to create untracked")
+
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed")
+	listOrder := make([]string, len(files))
+	for i, f := range files {
+		listOrder[i] = f.Path
+	}
+
+	diff, err := Diff(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "Diff failed")
+
+	var diffOrder []string
+	for line := range strings.SplitSeq(diff, "\n") {
+		if _, b, ok := strings.Cut(line, " b/"); ok && strings.HasPrefix(line, "diff --git ") {
+			diffOrder = append(diffOrder, b)
+		}
+	}
+
+	require.Equal(t, []string{"aaa.txt", "test1.txt", "test2.txt", "zzz.txt"}, listOrder)
+	require.Equal(t, listOrder, diffOrder, "diff sections should follow the same order as the changed-files list")
+}
+
+func TestDiff_LargeFile(t *testing.T) {
 	tempDir, _ := setupRepoWithRemote(t)
 	mainBranch := getCurrentBranch(t, tempDir)
 

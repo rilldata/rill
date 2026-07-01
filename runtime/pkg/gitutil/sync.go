@@ -256,7 +256,7 @@ func Diff(ctx context.Context, path, subpath, remoteName, remoteBranch string) (
 		}
 	}
 
-	return capLargeFileDiffs(b.String()), nil
+	return orderAndCapDiffSections(b.String()), nil
 }
 
 // Fetch fetches the latest changes from the remote described by config, updating the
@@ -500,34 +500,43 @@ func diffNoIndex(ctx context.Context, path, file string) (string, error) {
 	return stdout.String(), nil
 }
 
-// capLargeFileDiffs replaces any per-file section in a unified diff larger than maxFileDiffBytes with
-// a "diff too large" placeholder, keeping every file present but bounding the total size.
-func capLargeFileDiffs(diff string) string {
+// orderAndCapDiffSections splits a combined unified diff into per-file sections and reassembles them
+// in ascending path order (matching the sorted ChangedFiles list; git emits tracked files sorted but
+// Diff appends untracked files after them). Any section larger than maxFileDiffBytes is replaced
+// with a "diff too large" placeholder, so one huge file cannot bloat the response.
+func orderAndCapDiffSections(diff string) string {
 	if diff == "" {
 		return ""
 	}
-	var out strings.Builder
-	var section []string
-	flush := func() {
-		if len(section) == 0 {
-			return
+
+	// Group lines into per-file sections, each starting with a "diff --git a/<old> b/<new>" line.
+	type section struct {
+		path  string // The new ("b/") path, used as the sort key.
+		lines []string
+	}
+	var sections []section
+	for line := range strings.SplitSeq(diff, "\n") {
+		if strings.HasPrefix(line, "diff --git ") {
+			_, newPath, _ := strings.Cut(line, " b/")
+			sections = append(sections, section{path: newPath})
 		}
-		joined := strings.Join(section, "\n")
+		if len(sections) == 0 {
+			continue // No header seen yet; git output always starts with one.
+		}
+		sections[len(sections)-1].lines = append(sections[len(sections)-1].lines, line)
+	}
+	sort.SliceStable(sections, func(i, j int) bool { return sections[i].path < sections[j].path })
+
+	var out strings.Builder
+	for _, s := range sections {
+		joined := strings.Join(s.lines, "\n")
 		if len(joined) > maxFileDiffBytes {
-			out.WriteString(tooLargePlaceholder(section[0], len(joined)))
+			out.WriteString(tooLargePlaceholder(s.lines[0], len(joined)))
 		} else {
 			out.WriteString(joined)
 		}
 		out.WriteByte('\n')
-		section = section[:0]
 	}
-	for line := range strings.SplitSeq(diff, "\n") {
-		if strings.HasPrefix(line, "diff --git ") {
-			flush()
-		}
-		section = append(section, line)
-	}
-	flush()
 	return out.String()
 }
 
