@@ -17,6 +17,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/text/language"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -123,7 +124,8 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	return &adminv1.GetCurrentUserResponse{
 		User: s.userToPB(u, true),
 		Preferences: &adminv1.UserPreferences{
-			TimeZone: &u.PreferenceTimeZone,
+			TimeZone:        &u.PreferenceTimeZone,
+			PreferredLocale: &u.PreferredLocale,
 		},
 	}, nil
 }
@@ -136,6 +138,10 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
+	if req == nil || req.Preferences == nil {
+		return nil, status.Error(codes.InvalidArgument, "preferences are required")
+	}
+
 	if req.Preferences.TimeZone != nil {
 		_, err := time.LoadLocation(*req.Preferences.TimeZone)
 		if err != nil {
@@ -143,6 +149,14 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		}
 
 		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Preferences.TimeZone))
+	}
+
+	if req.Preferences.PreferredLocale != nil && *req.Preferences.PreferredLocale != "" {
+		_, err := language.Parse(*req.Preferences.PreferredLocale)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid language tag: %s", *req.Preferences.PreferredLocale)
+		}
+		observability.AddRequestAttributes(ctx, attribute.String("preferences_preferred_locale", *req.Preferences.PreferredLocale))
 	}
 
 	// Owner is a user
@@ -162,6 +176,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		QuotaSingleuserOrgs:  user.QuotaSingleuserOrgs,
 		QuotaTrialOrgs:       user.QuotaTrialOrgs,
 		PreferenceTimeZone:   valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
+		PreferredLocale:      valOrDefault(req.Preferences.PreferredLocale, user.PreferredLocale),
 	})
 	if err != nil {
 		return nil, err
@@ -169,7 +184,8 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 
 	return &adminv1.UpdateUserPreferencesResponse{
 		Preferences: &adminv1.UserPreferences{
-			TimeZone: &updatedUser.PreferenceTimeZone,
+			TimeZone:        &updatedUser.PreferenceTimeZone,
+			PreferredLocale: &updatedUser.PreferredLocale,
 		},
 	}, nil
 }

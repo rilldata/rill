@@ -684,6 +684,7 @@ type User struct {
 	QuotaTrialOrgs        int        `db:"quota_trial_orgs"`
 	CurrentTrialOrgsCount int        `db:"current_trial_orgs_count"`
 	PreferenceTimeZone    string     `db:"preference_time_zone"`
+	PreferredLocale       string     `db:"preferred_locale"`
 	Superuser             bool       `db:"superuser"`
 }
 
@@ -695,6 +696,7 @@ type InsertUserOptions struct {
 	QuotaSingleuserOrgs int
 	QuotaTrialOrgs      int
 	Superuser           bool
+	PreferredLocale     string
 }
 
 // UpdateUserOptions defines options for updating an existing user
@@ -708,6 +710,7 @@ type UpdateUserOptions struct {
 	QuotaSingleuserOrgs  int
 	QuotaTrialOrgs       int
 	PreferenceTimeZone   string
+	PreferredLocale      string
 }
 
 // Service represents a service account.

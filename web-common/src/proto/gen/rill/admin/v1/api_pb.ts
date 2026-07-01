@@ -9244,6 +9244,11 @@ export class UserPreferences extends Message<UserPreferences> {
    */
   timeZone?: string;
 
+  /**
+   * @generated from field: optional string preferred_locale = 2;
+   */
+  preferredLocale?: string;
+
   constructor(data?: PartialMessage<UserPreferences>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9253,6 +9258,7 @@ export class UserPreferences extends Message<UserPreferences> {
   static readonly typeName = "rill.admin.v1.UserPreferences";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "preferred_locale", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserPreferences {
