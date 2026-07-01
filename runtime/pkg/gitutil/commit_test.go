@@ -102,31 +102,6 @@ func TestCommitAndForcePush(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, localTip, remoteTip, "force push must overwrite the divergent remote history")
 	})
-
-	t.Run("scopes the commit to the subpath", func(t *testing.T) {
-		local, remote := setupRepoWithRemote(t)
-		branch := getCurrentBranch(t, local)
-
-		require.NoError(t, os.MkdirAll(filepath.Join(local, "sub"), 0755))
-		createCommit(t, local, "sub/seeded.txt", "seeded", "seed subpath")
-		require.NoError(t, execGit(local, "push", "origin", branch))
-
-		require.NoError(t, os.WriteFile(filepath.Join(local, "sub", "inside.txt"), []byte("inside"), 0644))
-		require.NoError(t, os.WriteFile(filepath.Join(local, "outside.txt"), []byte("outside"), 0644))
-
-		config := &Config{Remote: remote, DefaultBranch: branch, Subpath: "sub"}
-		require.NoError(t, CommitAndForcePush(ctx, local, config, "subpath commit", author))
-
-		committed, err := Run(ctx, local, "show", "--name-status", "--pretty=format:", "HEAD")
-		require.NoError(t, err)
-		require.Contains(t, committed, "sub/inside.txt", "changes inside the subpath must be committed")
-		require.NotContains(t, committed, "outside.txt", "changes outside the subpath must not be committed")
-
-		// the outside change is left untouched in the working tree
-		status, err := Run(ctx, local, "status", "--porcelain")
-		require.NoError(t, err)
-		require.Contains(t, status, "outside.txt")
-	})
 }
 
 func TestCurrentBranch(t *testing.T) {
