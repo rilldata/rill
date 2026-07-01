@@ -5,9 +5,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { createRuntimeServiceGitDiff } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { html as diffToHtml } from "diff2html";
-  import "diff2html/bundles/css/diff2html.min.css";
-  import DOMPurify from "dompurify";
+  import Diff2HtmlView from "@rilldata/web-common/components/diff/Diff2HtmlView.svelte";
   import FileChangeBadge from "./FileChangeBadge.svelte";
 
   export let open = false;
@@ -28,17 +26,6 @@
   $: changedFiles = $diffQuery.data?.changedFiles ?? [];
   $: diff = $diffQuery.data?.diff ?? "";
   $: isFetching = $diffQuery.isFetching;
-
-  // Reuse the same diff2html config the AI chat diff view uses.
-  $: diffHtml = diff
-    ? DOMPurify.sanitize(
-        diffToHtml(diff, {
-          drawFileList: false,
-          outputFormat: "line-by-line",
-          matching: "lines",
-        }),
-      )
-    : "";
 
   let diffPane: HTMLElement | undefined;
 
@@ -64,7 +51,7 @@
   }
 
   // Jump to the file the user clicked once the diff has rendered.
-  $: if (open && diffHtml && initialPath) {
+  $: if (open && diff && initialPath) {
     void tick().then(() => scrollToFile(initialPath));
   }
 </script>
@@ -109,13 +96,9 @@
           {/each}
         </ul>
         <div class="diff-pane" bind:this={diffPane}>
-          {#if diffHtml}
-            <div class="diff-view">
-              {@html diffHtml}
-            </div>
-          {:else}
-            <div class="state-message">No diff to display</div>
-          {/if}
+          <Diff2HtmlView {diff} showFileHeaders>
+            <div slot="empty" class="state-message">No diff to display</div>
+          </Diff2HtmlView>
         </div>
       </div>
     {/if}
@@ -150,144 +133,5 @@
 
   .diff-pane {
     @apply flex-1 overflow-auto;
-  }
-
-  /* diff2html styling, adapted from the chat FileDiffBlock; file headers stay visible so each
-     file's section is labeled in the combined diff. */
-  .diff-view :global(.d2h-file-wrapper) {
-    border: none;
-    border-radius: 0;
-    margin: 0;
-  }
-
-  .diff-view :global(.d2h-file-header) {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: 6px 12px;
-    background-color: var(--color-gray-100);
-    border-bottom: 1px solid var(--color-gray-200);
-  }
-
-  .diff-view :global(.d2h-file-name) {
-    font-family:
-      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
-    color: var(--color-gray-900);
-  }
-
-  .diff-view :global(.d2h-diff-table) {
-    width: max-content;
-    min-width: 100%;
-    border-collapse: collapse;
-    font-family:
-      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
-  }
-
-  .diff-view :global(.d2h-diff-tbody tr) {
-    border: none;
-    line-height: 20px;
-  }
-
-  .diff-view :global(.d2h-code-line) {
-    padding: 0;
-    border: none;
-  }
-
-  /* Show only the new line-number column. */
-  .diff-view :global(td.d2h-code-linenumber:first-child) {
-    display: none;
-  }
-
-  .diff-view :global(.d2h-code-linenumber) {
-    position: static;
-    color: var(--color-gray-500);
-    text-align: right;
-    padding: 0 10px;
-    min-width: 40px;
-    width: 40px;
-    background-color: var(--color-gray-100);
-    user-select: none;
-    vertical-align: top;
-    white-space: nowrap;
-    border-right: 1px solid var(--color-gray-300);
-  }
-
-  .diff-view :global(.d2h-code-line-prefix) {
-    position: static;
-    padding: 0 8px;
-    user-select: none;
-    width: 20px;
-    min-width: 20px;
-    text-align: center;
-    vertical-align: top;
-    color: var(--color-gray-500);
-  }
-
-  .diff-view :global(.d2h-code-line-ctn) {
-    position: static;
-    padding: 0 8px 0 0;
-    white-space: pre;
-    word-wrap: normal;
-    vertical-align: top;
-    color: var(--color-gray-900);
-  }
-
-  .diff-view :global(.d2h-ins) {
-    background-color: var(--color-green-100);
-  }
-
-  .diff-view :global(.d2h-ins .d2h-code-linenumber) {
-    background-color: var(--color-green-200);
-  }
-
-  .diff-view :global(.d2h-ins .d2h-code-line-prefix) {
-    color: var(--color-green-700);
-    background-color: var(--color-green-100);
-  }
-
-  .diff-view :global(.d2h-ins .d2h-code-line-ctn) {
-    background-color: var(--color-green-100);
-  }
-
-  .diff-view :global(.d2h-ins ins) {
-    background-color: var(--color-green-400);
-  }
-
-  .diff-view :global(.d2h-del) {
-    background-color: var(--color-red-100);
-  }
-
-  .diff-view :global(.d2h-del .d2h-code-linenumber) {
-    background-color: var(--color-red-200);
-  }
-
-  .diff-view :global(.d2h-del .d2h-code-line-prefix) {
-    color: var(--color-red-600);
-    background-color: var(--color-red-100);
-  }
-
-  .diff-view :global(.d2h-del .d2h-code-line-ctn) {
-    background-color: var(--color-red-100);
-  }
-
-  .diff-view :global(.d2h-del del) {
-    background-color: var(--color-red-400);
-  }
-
-  .diff-view :global(.d2h-cntx .d2h-code-linenumber) {
-    background-color: var(--color-gray-100);
-  }
-
-  /* Hunk header (@@ … @@) */
-  .diff-view :global(.d2h-info) {
-    background-color: var(--color-blue-100);
-    color: var(--color-gray-600);
-    padding: 4px 10px;
-    font-family:
-      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
-    line-height: 20px;
   }
 </style>
