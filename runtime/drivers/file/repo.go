@@ -354,7 +354,7 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 	return commits, nextPageToken, nil
 }
 
-func (c *connection) Status(ctx context.Context, remoteBranch string, opts drivers.RepoStatusOptions) (*drivers.RepoStatus, error) {
+func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
 	if !gitutil.IsGitRepo(c.root) {
 		return &drivers.RepoStatus{}, nil
 	}
@@ -396,24 +396,6 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, opts drive
 	if err != nil {
 		return nil, err
 	}
-	// Listing changed files (and the diff) is extra git work most callers do not need, so it is opt-in
-	// and computed separately.
-	var files []gitutil.ChangedFile
-	if opts.ChangedFiles || opts.Diff {
-		f, err := gitutil.ChangedFiles(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
-		if err != nil {
-			return nil, err
-		}
-		files = f
-	}
-	var diff string
-	if opts.Diff {
-		d, err := gitutil.Diff(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
-		if err != nil {
-			return nil, err
-		}
-		diff = d
-	}
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
 		Branch:        gs.Branch,
@@ -423,8 +405,53 @@ func (c *connection) Status(ctx context.Context, remoteBranch string, opts drive
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
-		ChangedFiles:  repoFileChanges(files),
-		Diff:          diff,
+	}, nil
+}
+
+func (c *connection) Diff(ctx context.Context, remoteBranch string, includeDiff, fetch bool) (*drivers.RepoDiff, error) {
+	if !gitutil.IsGitRepo(c.root) {
+		return &drivers.RepoDiff{}, nil
+	}
+
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
+	gitPath, subPath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		// should not happen because we already checked isGitRepo
+		return nil, err
+	}
+
+	config, err := c.loadGitConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// When requested, fetch so the comparison ref is up to date; otherwise compute the changes
+	// against the already-fetched ref.
+	if fetch {
+		if err := gitutil.Fetch(ctx, gitPath, config); err != nil {
+			return nil, err
+		}
+	}
+
+	remoteName := config.RemoteName()
+	files, err := gitutil.ChangedFiles(ctx, gitPath, subPath, remoteName, remoteBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	var diff string
+	if includeDiff {
+		diff, err = gitutil.Diff(ctx, gitPath, subPath, remoteName, remoteBranch)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &drivers.RepoDiff{
+		IsGitRepo:    true,
+		ChangedFiles: repoFileChanges(files),
+		Diff:         diff,
 	}, nil
 }
 

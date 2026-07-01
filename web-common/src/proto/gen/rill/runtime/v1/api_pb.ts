@@ -6004,6 +6004,15 @@ export class GitDiffRequest extends Message$1<GitDiffRequest> {
    */
   includeDiff = false;
 
+  /**
+   * fetch first updates the remote-tracking ref from the remote before computing the changes.
+   * When false, changes are computed against the already-fetched ref; use that when a recent
+   * GitStatus/GitDiff already fetched, to avoid a redundant fetch.
+   *
+   * @generated from field: bool fetch = 4;
+   */
+  fetch = false;
+
   constructor(data?: PartialMessage<GitDiffRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6015,6 +6024,7 @@ export class GitDiffRequest extends Message$1<GitDiffRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "include_diff", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "fetch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffRequest {

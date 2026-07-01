@@ -1338,6 +1338,10 @@ message GitDiffRequest {
   // include_diff also computes and returns the combined unified patch in addition to the
   // changed_files list. It is opt-in because computing the diff is more expensive.
   bool include_diff = 3;
+  // fetch first updates the remote-tracking ref from the remote before computing the changes.
+  // When false, changes are computed against the already-fetched ref; use that when a recent
+  // GitStatus/GitDiff already fetched, to avoid a redundant fetch.
+  bool fetch = 4;
 }
 
 message GitDiffResponse {

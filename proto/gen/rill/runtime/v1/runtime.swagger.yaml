@@ -1326,6 +1326,14 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: fetch
+          description: |-
+            fetch first updates the remote-tracking ref from the remote before computing the changes.
+            When false, changes are computed against the already-fetched ref; use that when a recent
+            GitStatus/GitDiff already fetched, to avoid a redundant fetch.
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/git/merge:

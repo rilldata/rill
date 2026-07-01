@@ -16,8 +16,10 @@
   export let initialPath: string | undefined = undefined;
 
   const client = useRuntimeClient();
-  // include_diff fetches the combined patch alongside the file list. Gated on `open` and
-  // refetchOnMount "always" so it loads fresh each time the dialog is opened, not on page load.
+  // includeDiff fetches the combined patch alongside the file list. fetch is left false so this
+  // reuses the fetch the changed-files list call already performed when the popover opened, avoiding
+  // a redundant fetch. Gated on `open` and refetchOnMount "always" so it loads fresh each time the
+  // dialog is opened.
   $: diffQuery = createRuntimeServiceGitDiff(
     client,
     { remoteBranch, includeDiff: true },

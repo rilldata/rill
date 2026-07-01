@@ -98,7 +98,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx, req.RemoteBranch, drivers.RepoStatusOptions{})
+	gs, err := repo.Status(ctx, req.RemoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
@@ -128,16 +128,16 @@ func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*r
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx, req.RemoteBranch, drivers.RepoStatusOptions{ChangedFiles: true, Diff: req.IncludeDiff})
+	gd, err := repo.Diff(ctx, req.RemoteBranch, req.IncludeDiff, req.Fetch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git diff: %w", err)
 	}
-	if !gs.IsGitRepo {
+	if !gd.IsGitRepo {
 		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
 	}
 
-	changedFiles := make([]*runtimev1.GitDiffResponse_GitFileChange, len(gs.ChangedFiles))
-	for i, f := range gs.ChangedFiles {
+	changedFiles := make([]*runtimev1.GitDiffResponse_GitFileChange, len(gd.ChangedFiles))
+	for i, f := range gd.ChangedFiles {
 		changedFiles[i] = &runtimev1.GitDiffResponse_GitFileChange{
 			Path:    f.Path,
 			OldPath: f.OldPath,
@@ -147,7 +147,7 @@ func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*r
 
 	return &runtimev1.GitDiffResponse{
 		ChangedFiles: changedFiles,
-		Diff:         gs.Diff,
+		Diff:         gd.Diff,
 	}, nil
 }
 

@@ -14,12 +14,13 @@
   export let onViewDiff: (path?: string) => void = () => {};
 
   const client = useRuntimeClient();
-  // refetchOnMount "always" overrides the global default (false) so the list is
-  // re-fetched every time the popover reopens and this component remounts, rather
-  // than serving a stale cache from a previous session.
+  // fetch: true updates the remote-tracking ref so the list reflects the latest remote; the diff
+  // dialog reuses this fetch. refetchOnMount "always" overrides the global default (false) so the
+  // list is re-fetched every time the popover reopens and this component remounts, rather than
+  // serving a stale cache from a previous session.
   $: changesQuery = createRuntimeServiceGitDiff(
     client,
-    { remoteBranch },
+    { remoteBranch, fetch: true },
     { query: { enabled: open && !!remoteBranch, refetchOnMount: "always" } },
   );
   $: changedFiles = $changesQuery.data?.changedFiles ?? [];

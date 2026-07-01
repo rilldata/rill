@@ -194,7 +194,7 @@ func ChangedFiles(ctx context.Context, path, subpath, remoteName, remoteBranch s
 
 // maxFileDiffBytes caps the size of a single file's diff in the combined patch returned by Diff.
 // A file whose diff exceeds this (e.g. a large generated or accidentally committed data file) is
-// elided to a "Binary files differ" placeholder so one huge file cannot bloat the response.
+// suppressed to a "diff too large" placeholder so one huge file cannot bloat the response.
 const maxFileDiffBytes = 100 * 1024
 
 // Diff returns the combined unified patch between the working tree at path and the comparison ref,
@@ -202,8 +202,8 @@ const maxFileDiffBytes = 100 * 1024
 // and untracked changes are all included.
 //
 // The result is git's standard unified diff format, ready for rendering. Per-file sections larger
-// than maxFileDiffBytes are replaced with a "Binary files differ" placeholder. (git already emits
-// that form for genuinely binary files, so e.g. an added database file stays small.)
+// than maxFileDiffBytes are replaced with a "diff too large" placeholder. (Genuinely binary files
+// stay small because git emits a "Binary files … differ" line for them rather than their content.)
 func Diff(ctx context.Context, path, subpath, remoteName, remoteBranch string) (string, error) {
 	compareBranch := remoteBranch
 	if compareBranch == "" {
@@ -257,67 +257,6 @@ func Diff(ctx context.Context, path, subpath, remoteName, remoteBranch string) (
 	}
 
 	return capLargeFileDiffs(b.String()), nil
-}
-
-// diffNoIndex runs `git diff --no-index` to produce a patch for an untracked file. `--no-index`
-// exits with code 1 when the files differ, which is the expected case here, so it is not an error.
-func diffNoIndex(ctx context.Context, path, file string) (string, error) {
-	var stdout, stderr bytes.Buffer
-	cmd := exec.CommandContext(ctx, "git", "-C", path, "diff", "--no-index", "--no-color", os.DevNull, file)
-	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-			return stdout.String(), nil
-		}
-		return "", fmt.Errorf("git diff --no-index %s: %s (%w)", file, strings.TrimSpace(stderr.String()), err)
-	}
-	return stdout.String(), nil
-}
-
-// capLargeFileDiffs replaces any per-file section in a unified diff larger than maxFileDiffBytes with
-// a "Binary files differ" placeholder, keeping every file present but bounding the total size.
-func capLargeFileDiffs(diff string) string {
-	if diff == "" {
-		return ""
-	}
-	var out strings.Builder
-	var section []string
-	flush := func() {
-		if len(section) == 0 {
-			return
-		}
-		joined := strings.Join(section, "\n")
-		if len(joined) > maxFileDiffBytes {
-			out.WriteString(section[0]) // the "diff --git a/X b/Y" header line
-			out.WriteByte('\n')
-			out.WriteString(binaryDiffPlaceholder(section[0]))
-		} else {
-			out.WriteString(joined)
-		}
-		out.WriteByte('\n')
-		section = section[:0]
-	}
-	for line := range strings.SplitSeq(diff, "\n") {
-		if strings.HasPrefix(line, "diff --git ") {
-			flush()
-		}
-		section = append(section, line)
-	}
-	flush()
-	return out.String()
-}
-
-// binaryDiffPlaceholder turns a "diff --git a/<p1> b/<p2>" header into the "Binary files … differ"
-// line git itself emits for binary files, which renderers display as an elided change.
-func binaryDiffPlaceholder(diffGitLine string) string {
-	rest := strings.TrimPrefix(diffGitLine, "diff --git ")
-	if a, b, ok := strings.Cut(rest, " b/"); ok {
-		return fmt.Sprintf("Binary files %s and b/%s differ", a, b)
-	}
-	return "Binary files differ"
 }
 
 // Fetch fetches the latest changes from the remote described by config, updating the
@@ -537,4 +476,72 @@ func changedFileStatusFromCode(code byte) ChangedFileStatus {
 	default:
 		return ChangedFileStatusUnspecified
 	}
+}
+
+// diffNoIndex runs `git diff --no-index` to produce a patch for an untracked file.
+//
+// It cannot use Run for two reasons: `git diff --no-index` exits with code 1 whenever the files
+// differ (the expected case here, not an error), and Run discards stdout on any non-zero exit, so
+// the patch we want would be lost. So we run the command directly, capture stdout, and treat exit
+// code 1 as success.
+func diffNoIndex(ctx context.Context, path, file string) (string, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "diff", "--no-index", "--no-color", os.DevNull, file)
+	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return stdout.String(), nil
+		}
+		return "", fmt.Errorf("git diff --no-index %s: %s (%w)", file, strings.TrimSpace(stderr.String()), err)
+	}
+	return stdout.String(), nil
+}
+
+// capLargeFileDiffs replaces any per-file section in a unified diff larger than maxFileDiffBytes with
+// a "diff too large" placeholder, keeping every file present but bounding the total size.
+func capLargeFileDiffs(diff string) string {
+	if diff == "" {
+		return ""
+	}
+	var out strings.Builder
+	var section []string
+	flush := func() {
+		if len(section) == 0 {
+			return
+		}
+		joined := strings.Join(section, "\n")
+		if len(joined) > maxFileDiffBytes {
+			out.WriteString(tooLargePlaceholder(section[0], len(joined)))
+		} else {
+			out.WriteString(joined)
+		}
+		out.WriteByte('\n')
+		section = section[:0]
+	}
+	for line := range strings.SplitSeq(diff, "\n") {
+		if strings.HasPrefix(line, "diff --git ") {
+			flush()
+		}
+		section = append(section, line)
+	}
+	flush()
+	return out.String()
+}
+
+// tooLargePlaceholder replaces an over-cap per-file diff section with a minimal unified-diff hunk
+// whose single context line reports that the diff was elided. diff2html renders this as a neutral
+// row; the "Binary files … differ" marker is avoided because diff2html always labels it "Binary
+// file" regardless of the file's actual type, which would be misleading for a large text file.
+// diffGitLine is the section's "diff --git a/X b/Y" header; size is the section size in bytes.
+func tooLargePlaceholder(diffGitLine string, size int) string {
+	a, b := "a/file", "b/file"
+	if rest, ok := strings.CutPrefix(diffGitLine, "diff --git "); ok {
+		if x, y, ok := strings.Cut(rest, " b/"); ok {
+			a, b = x, "b/"+y
+		}
+	}
+	return fmt.Sprintf("%s\n--- %s\n+++ %s\n@@ -1,1 +1,1 @@\n Diff too large to display (%d KB)", diffGitLine, a, b, size/1024)
 }

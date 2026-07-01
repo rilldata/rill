@@ -564,7 +564,7 @@ func TestDiff_LargeFileElided(t *testing.T) {
 	require.NoError(t, err, "Diff failed")
 
 	require.Contains(t, diff, "big.txt", "large file should still be present in the diff")
-	require.Contains(t, diff, "Binary files", "large file diff should be elided to a placeholder")
+	require.Contains(t, diff, "Diff too large to display", "large file diff should be elided to a placeholder")
 	require.NotContains(t, diff, "some long line of text", "large file content must not be included")
 	require.Less(t, len(diff), maxFileDiffBytes, "elided diff should be well under the cap")
 }
