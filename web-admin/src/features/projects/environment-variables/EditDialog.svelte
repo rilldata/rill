@@ -26,6 +26,7 @@
   import { object, string } from "yup";
   import { EnvironmentType, type VariableNames } from "./types";
   import { getCurrentEnvironment, isDuplicateKey } from "./utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let id: string;
@@ -172,12 +173,12 @@
       });
 
       eventBus.emit("notification", {
-        message: "Environment variable updated",
+        message: m.env_variable_updated_notification(),
       });
     } catch (error) {
       console.error("Error updating project variable", error);
       eventBus.emit("notification", {
-        message: "Error updating project variable",
+        message: m.env_variable_update_error_notification(),
         type: "error",
       });
     }
@@ -280,12 +281,12 @@
     onInteractOutside={() => handleReset()}
   >
     <DialogHeader>
-      <DialogTitle>Edit environment variable</DialogTitle>
+      <DialogTitle>{m.env_edit_title()}</DialogTitle>
     </DialogHeader>
     <DialogDescription>
-      For help, see <a
+      {m.env_for_help_see()} <a
         href="https://docs.rilldata.com/guide/administration/project-settings/variables-and-credentials"
-        target="_blank">documentation</a
+        target="_blank">{m.env_documentation_link()}</a
       >
     </DialogDescription>
     <form
@@ -299,31 +300,31 @@
     >
       <div class="flex flex-col gap-y-5">
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-fg-primary">Environment</div>
+          <div class="text-sm font-medium text-fg-primary">{m.env_environment_label()}</div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
               id="development"
-              label="Development"
+              label={m.env_development_label()}
               onCheckedChange={handleEnvironmentChange}
             />
             <Checkbox
               bind:checked={isProduction}
               id="production"
-              label="Production"
+              label={m.env_production_label()}
               onCheckedChange={handleEnvironmentChange}
             />
           </div>
           {#if hasNoEnvironment}
             <div class="mt-1">
               <p class="text-xs text-red-600 font-normal">
-                You must select at least one environment
+                {m.env_must_select_environment()}
               </p>
             </div>
           {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-fg-primary">Variable</div>
+          <div class="text-sm font-medium text-fg-primary">{m.env_variable_label()}</div>
           <div class="flex flex-col w-full">
             <div class="flex flex-row items-center gap-2">
               <Input
@@ -333,14 +334,14 @@
                 textClass={inputErrors[0] || $allErrors[0]
                   ? "error-input-wrapper"
                   : ""}
-                placeholder="Key"
+                placeholder={m.env_key_placeholder()}
                 oninput={(e) => handleKeyChange(e)}
               />
               <Input
                 bind:value={$form.value}
                 label=""
                 id={`edit-${value}`}
-                placeholder="Value"
+                placeholder={m.env_value_placeholder()}
                 oninput={(e) => handleValueChange(e)}
               />
             </div>
@@ -354,7 +355,7 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  This key already exists for your target environment(s)
+                  {m.env_key_exists_error()}
                 </p>
               </div>
             {/if}
@@ -369,7 +370,7 @@
         onClick={() => {
           open = false;
           handleReset();
-        }}>Cancel</Button
+        }}>{m.env_cancel_button()}</Button
       >
       <Button
         type="primary"
@@ -380,7 +381,7 @@
           hasNoEnvironment}
         submitForm
       >
-        Edit
+        {m.env_edit_button()}
       </Button>
     </DialogFooter>
   </DialogContent>

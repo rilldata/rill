@@ -10,6 +10,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { AxiosError } from "axios";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -38,27 +39,25 @@
 
       eventBus.emit("notification", {
         message: newVisibility
-          ? "Project is now public"
-          : "Project is now private",
+          ? m.settings_project_now_public_notification()
+          : m.settings_project_now_private_notification(),
       });
     } catch (err) {
       const axiosError = err as AxiosError<RpcStatus>;
       eventBus.emit("notification", {
         message:
-          axiosError.response?.data?.message ?? "Failed to update visibility",
+          axiosError.response?.data?.message ?? m.settings_visibility_update_failed(),
         type: "error",
       });
     }
   }
 </script>
 
-<SettingsContainer title="Project Visibility">
+<SettingsContainer title={m.settings_project_visibility_title()}>
   {#if isPublic}
-    This project is currently <strong>Public</strong>. Anyone with the URL can
-    view this project.
+    {m.settings_project_visibility_public()}
   {:else}
-    This project is currently <strong>Private</strong>. Only members of the
-    organization can access this project.
+    {m.settings_project_visibility_private()}
   {/if}
 
   {#snippet action()}
@@ -67,7 +66,7 @@
       type="secondary-destructive"
       loading={$updateProjectMutation.isPending}
     >
-      {isPublic ? "Make private" : "Make public"}
+      {isPublic ? m.settings_make_private_button() : m.settings_make_public_button()}
     </Button>
   {/snippet}
 </SettingsContainer>

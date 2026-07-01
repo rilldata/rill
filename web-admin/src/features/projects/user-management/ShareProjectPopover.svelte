@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ShareProjectForm from "@rilldata/web-admin/features/projects/user-management/ShareProjectForm.svelte";
@@ -37,8 +38,8 @@
   <PopoverTrigger>
     {#snippet child({ props })}
       <Tooltip distance={8} suppress={open}>
-        <Button {...props} type="secondary" selected={open}>Share</Button>
-        <TooltipContent slot="tooltip-content">Share project</TooltipContent>
+        <Button {...props} type="secondary" selected={open}>{m.project_share()}</Button>
+        <TooltipContent slot="tooltip-content">{m.project_share_tooltip()}</TooltipContent>
       </Tooltip>
     {/snippet}
   </PopoverTrigger>

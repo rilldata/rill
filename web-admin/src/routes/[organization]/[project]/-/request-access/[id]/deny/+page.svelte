@@ -10,6 +10,7 @@
   import AccessRequestContainer from "@rilldata/web-admin/features/access-request/AccessRequestContainer.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { AxiosError } from "axios";
 
   $: organization = $page.params.organization;
@@ -43,7 +44,7 @@
       });
       eventBus.emit("notification", {
         type: "success",
-        message: `${$requestAccess.data.email} has been denied access to ${project}`,
+        message: m.auth_user_denied_access({ email: $requestAccess.data.email, project }),
       });
     } catch {
       eventBus.emit("notification", {
@@ -74,8 +75,7 @@
   {#if $denyAccess.isPending && $requestAccess.data}
     <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
     <div>
-      Denying <b>{$requestAccess.data.email}</b> access to
-      <b>{project}</b>
+      {m.auth_denying_access({ email: $requestAccess.data.email, project })}
     </div>
   {/if}
 </AccessRequestContainer>

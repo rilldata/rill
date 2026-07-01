@@ -13,6 +13,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -72,18 +73,18 @@
       <div class="h-16">
         <Spinner status={EntityStatus.Running} size="3rem" duration={725} />
       </div>
-      <CtaHeader variant="bold">Hibernating...</CtaHeader>
+      <CtaHeader variant="bold">{m.project_hibernating()}</CtaHeader>
     {:else}
-      <CtaHeader variant="bold">Branch hibernated</CtaHeader>
-      <p class="text-sm text-fg-secondary">This branch is hibernated.</p>
+      <CtaHeader variant="bold">{m.project_branch_hibernated()}</CtaHeader>
+      <p class="text-sm text-fg-secondary">{m.project_branch_is_hibernated()}</p>
       {#if canManage}
         <Button
           type="primary"
           loading={$startMutation.isPending}
-          loadingCopy="Starting..."
+          loadingCopy={m.project_starting()}
           onClick={handleStart}
         >
-          Resume branch
+          {m.project_resume_branch()}
         </Button>
       {/if}
     {/if}

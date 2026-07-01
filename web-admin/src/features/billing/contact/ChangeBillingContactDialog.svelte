@@ -7,6 +7,7 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { getOrgAdminMembers } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
 
@@ -47,13 +48,12 @@
       });
 
       eventBus.emit("notification", {
-        message: `${selectedBillingContactLabel} has been assigned as billing contact.`,
+        message: m.billing_contact_assigned({ name: selectedBillingContactLabel }),
       });
     } catch (error) {
       console.error("Error assigning user as billing contact", error);
       eventBus.emit("notification", {
-        message:
-          "Failed to reassign billing contact. Please try again or contact support.",
+        message: m.billing_contact_reassign_failed(),
         type: "error",
       });
     }
@@ -73,11 +73,11 @@
   </Dialog.Trigger>
   <Dialog.Content class="w-[520px]" noClose>
     <Dialog.Header>
-      <Dialog.Title>Change billing contact</Dialog.Title>
+      <Dialog.Title>{m.billing_change_billing_contact()}</Dialog.Title>
 
       <Dialog.Description>
         <div class="mt-2 my-1">
-          Select another org admin as billing contact.
+          {m.billing_select_admin_as_contact()}
         </div>
         <Select
           id="billingContact"
@@ -90,14 +90,14 @@
       </Dialog.Description>
     </Dialog.Header>
     <Dialog.Footer class="mt-3">
-      <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="secondary" onClick={() => (open = false)}>{m.billing_cancel()}</Button>
       <Button
         type="primary"
         onClick={handleAssignAsBillingContact}
         loading={$updateOrg.isPending}
         disabled={!selectedDifferntBillingContact}
       >
-        Assign as billing contact
+        {m.billing_assign_as_contact()}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

@@ -7,6 +7,7 @@
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import type { PageData } from "./$types";
   import { PaidPlanTypes } from "@rilldata/web-admin/features/billing/plans/utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { children, data }: { children: Snippet; data: PageData } = $props();
 
@@ -25,15 +26,15 @@
   // page is ready. Pro and Team users still get a `View detailed usage` link
   // out to the Orb billing portal from the Plan card.
   let navItems = $derived([
-    { label: "General", route: "", hasPermission: true },
-    { label: "Billing", route: "/billing", hasPermission: true },
+    { label: m.settings_nav_general(), route: "", hasPermission: true },
+    { label: m.settings_nav_billing(), route: "/billing", hasPermission: true },
     ...(isPaidPlan
-      ? [{ label: "Usage", route: "/usage", hasPermission: showUsageSettings }]
+      ? [{ label: m.settings_nav_usage(), route: "/usage", hasPermission: showUsageSettings }]
       : []),
   ]);
 </script>
 
-<ContentContainer title="Organization settings" maxWidth={1100}>
+<ContentContainer title={m.settings_org_page_title()} maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav
       {basePage}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     createAdminServiceCreateBookmark,
     createAdminServiceUpdateBookmark,
@@ -157,14 +158,13 @@
   }
 
   // Adding it here to get a newline in
-  const CategoryTooltip = `Your bookmarks can only be viewed by you.
-Managed bookmarks will be available to all viewers of this dashboard.`;
+  $: CategoryTooltip = m.bookmark_category_tooltip();
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
   const initialValues = {
-    displayName: bookmark?.resource.displayName || "Default Label",
+    displayName: bookmark?.resource.displayName || m.bookmark_default_label(),
     description: bookmark?.resource.description ?? "",
     shared: bookmark?.resource.shared ? "true" : "false",
     filtersOnly: bookmark?.filtersOnly ?? false,
@@ -233,7 +233,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           }),
         });
         eventBus.emit("notification", {
-          message: bookmark ? "Bookmark updated" : "Bookmark created",
+          message: bookmark ? m.bookmark_updated() : m.bookmark_created(),
         });
       },
     },
@@ -253,7 +253,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
   <Dialog.Content>
     <Dialog.Header>
       <Dialog.Title>
-        {bookmark ? "Edit bookmark" : "Bookmark current view"}
+        {bookmark ? m.bookmark_edit() : m.bookmark_current_view()}
       </Dialog.Title>
     </Dialog.Header>
 
@@ -270,20 +270,20 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
         bind:value={$form["displayName"]}
         errors={$errors["displayName"]}
         id="displayName"
-        label="Label"
+        label={m.bookmark_label()}
       />
       <Input
         bind:value={$form["description"]}
         errors={$errors["description"]}
         id="description"
-        label="Description"
+        label={m.bookmark_description()}
         optional
       />
       <div class="flex flex-col gap-y-2">
         <Label class="flex flex-col gap-y-1 text-sm">
-          <div class="text-fg-primary font-medium">Filters</div>
+          <div class="text-fg-primary font-medium">{m.bookmark_filters()}</div>
           <div class="text-fg-secondary">
-            Inherited from underlying dashboard view.
+            {m.bookmark_filters_inherited()}
           </div>
         </Label>
         {#if filterState && "uiFilters" in filterState}
@@ -311,10 +311,10 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
         <Select
           bind:value={$form["shared"]}
           id="shared"
-          label="Category"
+          label={m.bookmark_category()}
           options={[
-            { value: "false", label: "Your bookmarks" },
-            { value: "true", label: "Managed bookmarks" },
+            { value: "false", label: m.bookmark_your_bookmarks() },
+            { value: "true", label: m.bookmark_managed_bookmarks() },
           ]}
           slot="manage-project"
           tooltip={CategoryTooltip}
@@ -325,14 +325,14 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           <Switch
             bind:checked={$form["filtersOnly"]}
             id="filtersOnly"
-            label="Filters only"
+            label={m.bookmark_save_filters_only()}
           />
 
           <Label
             class="font-normal flex gap-x-1 items-center"
             for="filtersOnly"
           >
-            <span>Save filters only</span>
+            <span>{m.bookmark_save_filters_only()}</span>
             <Tooltip distance={8}>
               <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
               <TooltipContent
@@ -340,8 +340,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
                 maxWidth="600px"
                 slot="tooltip-content"
               >
-                Toggling this on will only save the filter set above, not the
-                full dashboard layout and state.
+                {m.bookmark_filters_only_tooltip()}
               </TooltipContent>
             </Tooltip>
           </Label>
@@ -351,11 +350,11 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
         <Switch
           bind:checked={$form["absoluteTimeRange"]}
           id="absoluteTimeRange"
-          label="Absolute time range"
+          label={m.bookmark_absolute_time_range()}
         />
         <Label class="flex flex-col font-normal" for="absoluteTimeRange">
           <div class="text-left text-sm flex gap-x-1 items-center">
-            <span>Absolute time range</span>
+            <span>{m.bookmark_absolute_time_range()}</span>
             <Tooltip distance={8}>
               <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
               <TooltipContent
@@ -363,8 +362,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
                 maxWidth="600px"
                 slot="tooltip-content"
               >
-                The bookmark will use the dashboard's relative time if this
-                toggle is off.
+                {m.bookmark_absolute_time_tooltip()}
               </TooltipContent>
             </Tooltip>
           </div>
@@ -384,8 +382,8 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
 
     <div class="flex flex-row mt-4 gap-2">
       <div class="grow"></div>
-      <Button onClick={onClose} type="secondary">Cancel</Button>
-      <Button onClick={submit} type="primary">Save</Button>
+      <Button onClick={onClose} type="secondary">{m.common_cancel()}</Button>
+      <Button onClick={submit} type="primary">{m.bookmark_save()}</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>
