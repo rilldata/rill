@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getInitialHeight } from "./layout-util";
+  import { getMinHeight } from "./layout-util";
 
   export let zIndex: number;
   export let type: string | undefined = undefined;
@@ -10,7 +10,7 @@
 
   $: expandable =
     type === "kpi_grid" || type === "markdown" || type === "leaderboard";
-  $: minHeight = getInitialHeight(type) + "px";
+  $: minHeight = getMinHeight(type) + "px";
 </script>
 
 <div
