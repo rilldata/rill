@@ -3,7 +3,6 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { assemblePdf, TITLE_BAND_PT } from "./assemble";
 import { captureCanvasBlocks } from "./capture";
-import { setCanvasPdfExportActive } from "./export-state";
 import { buildPdfFilename } from "./filename";
 import { paginate } from "./layout";
 import { prepareCanvasForCapture } from "./settle";
@@ -13,35 +12,26 @@ import {
   type ExportCanvasPdfOptions,
 } from "./types";
 
-// Orchestrates a client-side canvas-to-PDF export: force-render the canvas,
-// rasterize the filter bar + each component, paginate to mirror the on-screen
-// layout, then assemble and download the PDF. Stateless; the caller owns UI
-// state (loading flag, notifications).
+// Orchestrates a client-side canvas-to-PDF export: mount the off-screen export
+// render (via exportMode), rasterize the filter bar + each component, paginate
+// to mirror the on-screen layout, then assemble and download the PDF. Stateless;
+// the caller owns UI state (loading flag, notifications).
 export async function exportCanvasPdf(
   opts: ExportCanvasPdfOptions,
 ): Promise<void> {
   const { canvasEntity } = getCanvasStore(opts.canvasName, opts.instanceId);
 
-  const scrollContainer = document.querySelector<HTMLElement>(
-    "#canvas-scroll-container",
-  );
-  const scrollTop = scrollContainer?.scrollTop ?? 0;
-
-  // Mount the off-screen capture header (see CanvasPdfExportHeader); the tick()
-  // inside prepareCanvasForCapture flushes it into the DOM before we capture.
-  setCanvasPdfExportActive(opts.instanceId, opts.canvasName, true);
-  let restoreVisibility: (() => void) | undefined;
+  // Mount the off-screen export render (see CanvasPdfExportView) and force-enable
+  // every component's data query; the tick() inside prepareCanvasForCapture
+  // flushes it into the DOM before we capture. The live dashboard is untouched.
+  canvasEntity.exportMode.set(true);
 
   try {
     opts.onProgress?.({ phase: "preparing", ratio: 0 });
-    restoreVisibility = await prepareCanvasForCapture(
-      canvasEntity,
-      queryClient,
-      {
-        instanceId: opts.instanceId,
-        timeoutMs: opts.timeoutMs,
-      },
-    );
+    await prepareCanvasForCapture(canvasEntity, queryClient, {
+      instanceId: opts.instanceId,
+      timeoutMs: opts.timeoutMs,
+    });
     opts.onProgress?.({ phase: "preparing", ratio: 1 });
 
     const { blocks, contentWidthPx, backgroundColor } =
@@ -75,8 +65,6 @@ export async function exportCanvasPdf(
     });
     opts.onProgress?.({ phase: "assembling", ratio: 1 });
   } finally {
-    restoreVisibility?.();
-    setCanvasPdfExportActive(opts.instanceId, opts.canvasName, false);
-    if (scrollContainer) scrollContainer.scrollTop = scrollTop;
+    canvasEntity.exportMode.set(false);
   }
 }

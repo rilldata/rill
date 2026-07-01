@@ -39,7 +39,7 @@
     leaderboardState,
     toggleSort,
     parent: { name: canvasName },
-    visible,
+    dataEnabled: visible,
   } = component);
   $: leaderboardProperties = $specStore;
 

@@ -82,13 +82,14 @@ export interface CaptureOptions {
 export async function captureCanvasBlocks(
   opts: CaptureOptions,
 ): Promise<CaptureResult> {
-  const scrollContainer = document.querySelector<HTMLElement>(
-    "#canvas-scroll-container",
+  // The off-screen export render (see CanvasPdfExportView), mounted only while
+  // exporting. Capturing a dedicated tree keeps the live dashboard untouched.
+  const exportView = document.querySelector<HTMLElement>(
+    "#canvas-pdf-export-view",
   );
-  const rowContainer =
-    scrollContainer?.querySelector<HTMLElement>(".row-container");
+  const rowContainer = exportView?.querySelector<HTMLElement>(".row-container");
 
-  if (!rowContainer) {
+  if (!exportView || !rowContainer) {
     throw new Error(
       "Canvas content is not available to export. Make sure all required filters are set.",
     );
@@ -96,9 +97,7 @@ export async function captureCanvasBlocks(
 
   const contentRect = rowContainer.getBoundingClientRect();
   const contentWidthPx = rowContainer.clientWidth;
-  const backgroundColor = scrollContainer
-    ? getComputedStyle(scrollContainer).backgroundColor
-    : "#ffffff";
+  const backgroundColor = getComputedStyle(exportView).backgroundColor;
 
   const articles = Array.from(
     rowContainer.querySelectorAll<HTMLElement>("article.component-card"),
@@ -111,10 +110,9 @@ export async function captureCanvasBlocks(
 
   if (opts.includeFilters) {
     // Read-only summary block (title + exact time range + filter chips),
-    // rendered off-screen specifically for capture; see CanvasPdfExportHeader.
-    // It is mounted only during an active export (canvasPdfExportActive), so by
-    // the time we reach here prepareCanvasForCapture has flushed it into the DOM.
-    const header = document.querySelector<HTMLElement>(
+    // rendered inside the export view specifically for capture; see
+    // CanvasPdfExportHeader.
+    const header = exportView.querySelector<HTMLElement>(
       "#canvas-pdf-export-header",
     );
     if (header) {

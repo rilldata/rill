@@ -100,6 +100,11 @@ export class CanvasEntity {
   bannerStore = writable<string | undefined>(undefined);
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
   titleStore = writable<string>("");
+  // True only while this canvas is capturing a PDF export. Gates the off-screen
+  // export render (see CanvasPdfExportView) and force-enables every component's
+  // data query (see BaseCanvasComponent.dataEnabled) so all components fetch and
+  // render regardless of the lazy-load latch, without mutating that latch.
+  exportMode = writable<boolean>(false);
 
   // This is to skip processing the spec the first time the store updates with a value
   // We've already called it as part of the constructor

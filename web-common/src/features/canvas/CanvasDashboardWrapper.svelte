@@ -6,8 +6,7 @@
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
-  import CanvasPdfExportHeader from "../exports/pdf/CanvasPdfExportHeader.svelte";
-  import { canvasPdfExportActive } from "../exports/pdf/export-state";
+  import CanvasPdfExportView from "../exports/pdf/CanvasPdfExportView.svelte";
 
   const client = useRuntimeClient();
 
@@ -27,14 +26,13 @@
   $: ({
     canvasEntity: {
       theme,
+      exportMode,
       filterManager: { missingRequiredFiltersStore },
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: missingRequiredFilters = $missingRequiredFiltersStore;
   $: hasMissingRequired = missingRequiredFilters.length > 0;
-
-  $: exportActive = canvasPdfExportActive(instanceId, canvasName);
 
   $: ({ width: clientWidth } = contentRect);
 </script>
@@ -57,17 +55,22 @@
       </header>
     {/if}
 
-    <!-- Off-screen read-only header used only as the PDF capture target. Mounted
-         solely during an active export: Playwright locators and the a11y tree
-         match elements regardless of CSS visibility, so an always-mounted header
-         would duplicate the live filter bar's text/labels. -->
-    {#if $exportActive}
+    <!-- Off-screen, read-only full render of the canvas, mounted solely during a
+         PDF export as the capture target (see CanvasPdfExportView). Kept out of
+         the DOM otherwise: Playwright locators and the a11y tree match elements
+         regardless of CSS visibility, so an always-mounted copy would duplicate
+         the live dashboard's text/labels. -->
+    {#if $exportMode}
       <div
         aria-hidden="true"
         class="pointer-events-none absolute"
         style="left: -99999px; top: 0;"
       >
-        <CanvasPdfExportHeader {canvasName} {instanceId} {maxWidth} />
+        <CanvasPdfExportView
+          {canvasName}
+          {instanceId}
+          width={clientWidth || maxWidth}
+        />
       </div>
     {/if}
 

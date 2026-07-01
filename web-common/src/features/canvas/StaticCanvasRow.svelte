@@ -15,6 +15,8 @@
   export let heightUnit: string = "px";
   export let navigationEnabled: boolean = true;
   export let activeComponentId: string | null = null;
+  // When false, components render eagerly without lazy-load (PDF export).
+  export let lazy: boolean = true;
 
   $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
@@ -40,6 +42,7 @@
         <CanvasComponent
           {component}
           {navigationEnabled}
+          {lazy}
           active={activeComponentId === id}
         />
       {:else}
