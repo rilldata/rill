@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import AvatarListItem from "../avatar/AvatarListItem.svelte";
   import { Combobox } from "bits-ui";
   import { Check } from "lucide-svelte";
@@ -12,7 +13,7 @@
 
   export let options: Option[] = [];
   export let searchValue = "";
-  export let placeholder = "Search";
+  export let placeholder: string | undefined = undefined;
   export let disabled = false;
   export let required = false;
   export let error: string | undefined = undefined;
@@ -25,6 +26,8 @@
   export let isLoadingMore: boolean = false;
   export let loadMore: (() => void | Promise<void>) | undefined = undefined;
   export let onSelectedChange: (value: string[]) => void = () => {};
+
+  $: resolvedPlaceholder = placeholder ?? m.common_search();
 
   const LOAD_MORE_THRESHOLD_PX = 24;
 
@@ -104,8 +107,8 @@
 >
   <Combobox.Input
     class="flex justify-center items-center pl-2 w-full border border-gray-300 rounded-[2px] cursor-pointer min-h-8 h-fit focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-100 focus:outline-none"
-    {placeholder}
-    aria-label={placeholder}
+    placeholder={resolvedPlaceholder}
+    aria-label={resolvedPlaceholder}
     aria-invalid={!!error}
     aria-describedby={error ? "combobox-error" : undefined}
     {disabled}
@@ -132,7 +135,7 @@
       onscroll={maybeLoadMoreOnScroll}
     >
       {#if filteredItems.length === 0}
-        <div class="px-4 py-2 text-xs text-fg-secondary">No results found</div>
+        <div class="px-4 py-2 text-xs text-fg-secondary">{m.common_no_results_found()}</div>
       {:else}
         {#each filteredItems as item (item.value)}
           <Combobox.Item

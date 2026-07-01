@@ -2,6 +2,7 @@
 The main feature-set component for dashboard filters
  -->
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
@@ -66,7 +67,7 @@ The main feature-set component for dashboard filters
   class="relative flex flex-row items-center gap-x-2 gap-y-2 w-full max-w-full"
   class:scrollable-chips={chipLayout === "scroll"}
   class:flex-wrap={chipLayout === "wrap"}
-  aria-label="Readonly Filter Chips"
+  aria-label={m.dashboard_readonly_filter_chips_aria()}
   bind:this={scrollContainer}
   onwheel={handleWheel}
 >

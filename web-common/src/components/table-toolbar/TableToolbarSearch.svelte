@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { X } from "lucide-svelte";
   import { tick } from "svelte";
@@ -44,14 +45,14 @@
       bind:value={searchText}
       type="text"
       class="outline-none bg-transparent text-sm text-fg-primary placeholder-fg-secondary flex-1 min-w-0"
-      placeholder="Search..."
+      placeholder={m.common_search()}
       onkeydown={handleKeyDown}
     />
     <button
       type="button"
       class="text-fg-secondary hover:text-fg-primary shrink-0"
       onclick={close}
-      aria-label="Close search"
+      aria-label={m.common_close_search()}
     >
       <X size={14} />
     </button>
@@ -61,7 +62,7 @@
     type="button"
     class="flex items-center justify-center h-9 w-4 text-fg-primary hover:text-fg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
     onclick={open}
-    aria-label="Search"
+    aria-label={m.common_search()}
     {disabled}
   >
     <SearchIcon size="16" className="text-fg-secondary" />

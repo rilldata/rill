@@ -1,6 +1,6 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
-  commonOptions,
+  getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -30,6 +30,8 @@ import type {
 import Leaderboard from "./LeaderboardDisplay.svelte";
 
 export { default as Leaderboard } from "./LeaderboardDisplay.svelte";
+
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export const defaultComparisonOptions: ComponentComparisonOptions[] = [
   "delta",
@@ -99,19 +101,19 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
   inputParams(): InputParams<LeaderboardSpec> {
     return {
       options: {
-        metrics_view: { type: "metrics", label: "Metrics view" },
+        metrics_view: { type: "metrics", label: m.canvas_metrics_view_label() },
         measures: {
           type: "multi_fields",
           meta: { allowedTypes: ["measure"] },
-          label: "Measures",
+          label: m.canvas_measures_label(),
         },
         dimensions: {
           type: "multi_fields",
           meta: { allowedTypes: ["dimension"] },
-          label: "Dimensions",
+          label: m.canvas_dimensions_label(),
         },
-        num_rows: { type: "number", label: "Number of rows" },
-        ...commonOptions,
+        num_rows: { type: "number", label: m.canvas_number_of_rows_label() },
+        ...getCommonOptions(),
       },
       filter: getFilterOptions(),
     };

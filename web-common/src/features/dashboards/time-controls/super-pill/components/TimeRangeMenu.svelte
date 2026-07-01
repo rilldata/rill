@@ -1,6 +1,7 @@
 <script lang="ts">
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type {
     RangeBuckets,
     NamedRange,
@@ -29,7 +30,9 @@
 {#if showDefaultItem && defaultTimeRange}
   <DropdownMenu.Item data-range={defaultTimeRange} onclick={handleClick}>
     <div class:font-bold={selected === defaultTimeRange}>
-      Last {humaniseISODuration(defaultTimeRange)}
+      {m.time_last_duration({
+        duration: humaniseISODuration(defaultTimeRange),
+      })}
     </div>
   </DropdownMenu.Item>
 
@@ -89,6 +92,6 @@
 {#if allowCustomTimeRange}
   <DropdownMenu.Separator />
   <DropdownMenu.Item onclick={onSelectCustomOption} data-range="custom">
-    <span class:font-bold={selected === "CUSTOM"}> Custom </span>
+    <span class:font-bold={selected === "CUSTOM"}> {m.time_custom()} </span>
   </DropdownMenu.Item>
 {/if}

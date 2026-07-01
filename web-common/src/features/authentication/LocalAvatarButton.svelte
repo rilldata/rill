@@ -9,6 +9,7 @@
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import LanguageSwitcher from "@rilldata/web-common/components/i18n/LanguageSwitcher.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
@@ -71,6 +72,7 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="p-1">
       <ThemeToggle />
+      <LanguageSwitcher />
       <DropdownMenu.Separator />
 
       <DropdownMenu.Item

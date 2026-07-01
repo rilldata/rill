@@ -11,6 +11,7 @@
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import ZoneDisplay from "./ZoneDisplay.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const browserIANA = getLocalIANA();
 
@@ -58,8 +59,10 @@
       <button
         {...props}
         class="flex items-center gap-x-1"
-        aria-label="Timezone selector"
-        title={!availableTimeZones.length ? "No timezones configured" : ""}
+        aria-label={m.dashboard_timezone_selector()}
+        title={!availableTimeZones.length
+          ? m.dashboard_no_timezones_configured()
+          : ""}
         disabled={lockTimeZone}
         type="button"
       >
@@ -119,13 +122,14 @@
 
       <DropdownMenu.Group>
         <div class="flex justify-between pr-2">
-          <DropdownMenu.Label>Recent</DropdownMenu.Label>
+          <DropdownMenu.Label>{m.dashboard_recent()}</DropdownMenu.Label>
           {#if recentIANAs.length}
             <button
               onclick={() => {
                 recents.set([]);
               }}
-              class="text-[10px] text-fg-secondary">Clear recents</button
+              class="text-[10px] text-fg-secondary"
+              >{m.dashboard_clear_recents()}</button
             >
           {/if}
         </div>
@@ -158,7 +162,7 @@
         <DropdownMenu.Label
           class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
         >
-          Search Results
+          {m.dashboard_search_results()}
         </DropdownMenu.Label>
 
         {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
@@ -175,7 +179,7 @@
         {:else}
           <DropdownMenu.Group>
             <p class="pt-0 pb-2 text-fg-secondary text-center">
-              No options found
+              {m.dashboard_no_options_found()}
             </p>
           </DropdownMenu.Group>
         {/each}

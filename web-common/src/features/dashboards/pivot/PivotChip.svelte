@@ -9,6 +9,9 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { translateGrainName } from "@rilldata/web-common/lib/time/new-grains";
+
   export let item: PivotChipData;
   export let removable = false;
   export let grab = false;
@@ -23,13 +26,6 @@
     item.type === PivotChipType.Time && item.id
       ? TIME_GRAIN[item.id as AvailableTimeGrain]?.label
       : undefined;
-
-  $: capitalizedLabel = activeTimeGrainLabel
-    ?.split(" ")
-    .map((word) => {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(" ");
 
   // Measure/dimension chips always show a tooltip (display name, plus the
   // description when present). Time chips only have something worth showing
@@ -58,9 +54,9 @@
       class="flex gap-x-1 items-center justify-start text-left truncate"
     >
       {#if item.type === PivotChipType.Time}
-        <b>Time</b>
-        {#if capitalizedLabel}
-          <p class="grain-label truncate">{capitalizedLabel}</p>
+        <b>{m.pivot_time_prefix()}</b>
+        {#if activeTimeGrainLabel}
+          <p class="grain-label truncate">{translateGrainName(activeTimeGrainLabel)}</p>
         {/if}
       {:else}
         <p class="font-semibold truncate">{item.title}</p>

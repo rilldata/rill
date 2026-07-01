@@ -4,6 +4,7 @@
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { type V1Conversation } from "../../../../runtime-client";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
@@ -41,12 +42,14 @@
   <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
   <div class="chatbot-header-actions">
     <IconButton
-      ariaLabel="New conversation"
+      ariaLabel={m.chat_new_conversation()}
       bgGray
       onclick={handleNewConversation}
     >
       <PlusIcon className="text-fg-muted" />
-      <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
+      <svelte:fragment slot="tooltip-content"
+        >{m.chat_new_conversation()}</svelte:fragment
+      >
     </IconButton>
 
     {#if $adminServer}
@@ -64,9 +67,9 @@
       onSelect={handleSelectConversation}
     />
 
-    <IconButton ariaLabel="Close chat" bgGray onclick={onClose}>
+    <IconButton ariaLabel={m.chat_close()} bgGray onclick={onClose}>
       <Close className="text-fg-muted" />
-      <svelte:fragment slot="tooltip-content">Close</svelte:fragment>
+      <svelte:fragment slot="tooltip-content">{m.chat_close()}</svelte:fragment>
     </IconButton>
   </div>
 </div>

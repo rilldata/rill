@@ -11,6 +11,7 @@ import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-for
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { timeFormat } from "d3-time-format";
@@ -281,7 +282,8 @@ export function getDimensionColumnProps(
     if (isTimeDimension(d, config.time.timeDimension)) {
       const timeGrain = getTimeGrainFromDimension(d);
       const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
-      label = `Time ${grainLabel}`;
+      // Display-only column header; the stable backend key stays `name` (below).
+      label = m.pivot_time_dimension_header({ grain: grainLabel });
       description = undefined;
     }
     return {
