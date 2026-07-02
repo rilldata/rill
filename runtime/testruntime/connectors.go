@@ -96,7 +96,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		token := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")
 		require.NotEmpty(t, token)
 
-		return map[string]string{"path": path, "token": token}
+		return map[string]string{"path": path, "token": token, "schema_name": "integration_test"}
 	},
 	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {

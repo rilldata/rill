@@ -81,13 +81,12 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 	// Previously we did not require `managed: true` to use embedded DuckDB.
 	// For backward compatibility, we default to managed if no external config is provided.
-	hasExternalConfig := cfg.Path != "" || cfg.Attach != ""
-	if !hasExternalConfig {
+	if !cfg.hasExternalConfig() {
 		cfg.Managed = true
 	}
 
 	// Validate that managed is not combined with external config.
-	if cfg.Managed && hasExternalConfig {
+	if cfg.Managed && cfg.hasExternalConfig() {
 		return nil, fmt.Errorf("'managed: true' cannot be combined with 'path' or 'attach' fields")
 	}
 
@@ -129,6 +128,11 @@ func (c *config) writeSettings() map[string]string {
 	// useful for motherduck but safe to pass at initial connect
 	writeSettings["custom_user_agent"] = "rill"
 	return writeSettings
+}
+
+// isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
+func (c *config) hasExternalConfig() bool {
+	return c.Path != "" || c.Attach != ""
 }
 
 // isMotherduck returns true if the Path or Attach config options reference a Motherduck database.

@@ -229,7 +229,7 @@ func TestDuckDBModeDefaults(t *testing.T) {
 
 			// Apply default mode logic
 			if cfg.Mode == "" {
-				if cfg.Path != "" || cfg.Attach != "" {
+				if cfg.hasExternalConfig() {
 					cfg.Mode = modeReadOnly
 				} else {
 					cfg.Mode = modeReadWrite
