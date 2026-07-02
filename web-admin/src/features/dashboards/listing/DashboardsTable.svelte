@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
@@ -9,36 +8,24 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { renderComponent } from "tanstack-table-8-svelte-5";
-  import DashboardsFilterToolbar from "./DashboardsFilterToolbar.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
-  import DashboardsTagFolder from "./DashboardsTagFolder.svelte";
   import {
     UNTAGGED_KEY,
     getResourceTags,
     useDashboards,
     useIsInitialBuild,
   } from "./selectors";
+  import { Search } from "@rilldata/web-common/components/search";
+  import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
 
   export let isEmbedded = false;
   export let isPreview = false;
   export let previewLimit = 5;
 
-  const TAGS_PARAM = "tags";
-
-  $: selectedTags = ($page.url.searchParams.get(TAGS_PARAM) ?? "")
+  $: selectedTags = ($page.url.searchParams.get("tags") ?? "")
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
-
-  function setSelectedTags(tags: string[]) {
-    const url = new URL($page.url);
-    if (tags.length === 0) {
-      url.searchParams.delete(TAGS_PARAM);
-    } else {
-      url.searchParams.set(TAGS_PARAM, tags.join(","));
-    }
-    void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
-  }
 
   let searchText = "";
 
@@ -76,10 +63,6 @@
 
   $: allDashboards = dashboardsData ?? [];
 
-  $: availableTags = Array.from(
-    new Set(allDashboards.flatMap(getResourceTags)),
-  ).sort();
-
   $: tagFilteredDashboards =
     selectedTags.length === 0
       ? allDashboards
@@ -95,34 +78,6 @@
   $: searchFilteredDashboards = tagFilteredDashboards.filter((r) =>
     matchesSearch(r, searchText),
   );
-
-  // Folder mode: group dashboards by tag. A dashboard with multiple tags
-  // appears under each of its tags. Tags respect the selectedTags filter.
-  $: tagGroups = (() => {
-    const activeTags = selectedTags.length > 0 ? selectedTags : availableTags;
-    const groups: { tag: string; resources: V1Resource[] }[] = [];
-    const untagged: V1Resource[] = [];
-    const untaggedVisible =
-      selectedTags.length === 0 || selectedTags.includes(UNTAGGED_KEY);
-
-    for (const tag of activeTags) {
-      if (tag === UNTAGGED_KEY) continue;
-      const members = searchFilteredDashboards.filter((r) =>
-        getResourceTags(r).includes(tag),
-      );
-      if (members.length > 0) groups.push({ tag, resources: members });
-    }
-
-    if (untaggedVisible) {
-      for (const r of searchFilteredDashboards) {
-        if (getResourceTags(r).length === 0) untagged.push(r);
-      }
-      if (untagged.length > 0)
-        groups.push({ tag: UNTAGGED_KEY, resources: untagged });
-    }
-
-    return groups;
-  })();
 
   $: displayData = isPreview
     ? searchFilteredDashboards.slice(0, previewLimit)
@@ -213,62 +168,45 @@
 {:else if isSuccess}
   <div class="flex flex-col w-full gap-y-3">
     {#if !isPreview}
-      <DashboardsFilterToolbar
-        {availableTags}
-        {selectedTags}
-        onTagsChange={setSelectedTags}
-        bind:searchText
-      />
+      <div class="flex flex-row items-center gap-x-2">
+        <DashboardsTagFilter />
+
+        <div class="flex-1 min-w-0">
+          <Search
+            placeholder="Search"
+            autofocus={false}
+            bind:value={searchText}
+            rounded="lg"
+          />
+        </div>
+      </div>
     {/if}
 
-    {#if !isPreview && availableTags.length}
-      <!-- Folder mode: grouped by tag, all inside one bordered container -->
-      <div class="w-full border rounded-lg overflow-hidden divide-y">
-        {#each tagGroups as { tag, resources } (tag)}
-          <DashboardsTagFolder
-            {tag}
-            {resources}
-            {organization}
-            {project}
-            {isEmbedded}
-          />
-        {:else}
-          <div
-            class="text-center py-16 text-fg-secondary text-sm font-semibold"
-          >
-            {searchText
-              ? "No dashboards match your search"
-              : "You don't have any dashboards yet"}
-          </div>
-        {/each}
-      </div>
-    {:else}
-      <!-- Flat mode: standard list -->
-      <ResourceList
-        kind="dashboard"
-        data={displayData}
-        {columns}
-        {columnVisibility}
-        {initialSorting}
-        toolbar={false}
+    <!-- Flat mode: standard list -->
+    <ResourceList
+      kind="dashboard"
+      data={displayData}
+      {columns}
+      {columnVisibility}
+      {initialSorting}
+      toolbar={false}
+    >
+      <ResourceListEmptyState
+        slot="empty"
+        icon={ExploreIcon}
+        message="You don't have any dashboards yet"
       >
-        <ResourceListEmptyState
-          slot="empty"
-          icon={ExploreIcon}
-          message="You don't have any dashboards yet"
-        >
-          <span slot="action">
-            <a
-              href="https://docs.rilldata.com/developers/build/dashboards"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Create a dashboard</a
-            > to get started
-          </span>
-        </ResourceListEmptyState>
-      </ResourceList>
-    {/if}
+        <span slot="action">
+          <a
+            href="https://docs.rilldata.com/developers/build/dashboards"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Create a dashboard</a
+          > to get started
+        </span>
+      </ResourceListEmptyState>
+    </ResourceList>
 
     {#if hasMoreDashboards}
       <div class="pl-4 py-1">
