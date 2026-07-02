@@ -23,6 +23,7 @@ rill deploy [<path>] [flags]
       --provisioner string      Project provisioner
       --primary-branch string   Git branch to deploy from (default: the default Git branch)
       --push-env                Push local .env file to Rill Cloud (default true)
+      --force-push              Force push local changes in case of Rill managed repos
       --managed                 Create project using rill managed repo
       --github                  Use github repo to create the project
 ```

@@ -284,6 +284,14 @@ func Push(ctx context.Context, path, remote, refspec string) error {
 	return err
 }
 
+// ForcePush force-pushes HEAD to branch on remote, overwriting the remote ref unconditionally.
+// It uses the refspec HEAD:<branch> so it works even when the local HEAD is detached or points
+// to a different branch. remote may be a remote name or a URL with embedded credentials.
+func ForcePush(ctx context.Context, path, remote, branch string) error {
+	_, err := Run(ctx, path, "push", "--force", remote, "HEAD:"+branch)
+	return err
+}
+
 // UpstreamMerge merges the remote tracking branch `<remoteName>/<branch>` into the current branch.
 // If favourLocal is true, merge conflicts are resolved in favour of local changes.
 func UpstreamMerge(ctx context.Context, path, remoteName, branch string, favourLocal bool) error {
