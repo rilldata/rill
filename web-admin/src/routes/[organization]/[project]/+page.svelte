@@ -14,7 +14,7 @@
   import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
   import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { escapeHtml } from "@rilldata/web-common/lib/i18n/escape-html";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   const { chat, personalCanvases } = featureFlags;
 

@@ -1,3 +1,4 @@
+import { Settings } from "luxon";
 import { baseLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
 
 const RTL_LOCALES = new Set<string>([]);
@@ -15,4 +16,18 @@ export function syncDocumentLocale(locale: string | undefined | null): void {
   const root = document.documentElement;
   root.lang = effective;
   root.dir = localeDirection(effective);
+}
+
+export function syncLuxonLocale(locale: string | undefined | null): void {
+  Settings.defaultLocale = locale || baseLocale;
+}
+
+export function escapeHtml(value: string | undefined | null): string {
+  if (!value) return "";
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

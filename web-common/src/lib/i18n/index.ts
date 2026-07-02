@@ -1,6 +1,5 @@
 import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
-import { syncDocumentLocale } from "./document-locale";
-import { syncLuxonLocale } from "./luxon-locale";
+import { syncDocumentLocale, syncLuxonLocale } from "./locale-utils";
 
 export function initializeI18n(): void {
   const locale = getLocale();
@@ -8,7 +7,9 @@ export function initializeI18n(): void {
   syncLuxonLocale(locale);
 }
 
-export { syncDocumentLocale } from "./document-locale";
-export { syncLuxonLocale } from "./luxon-locale";
-export { normalizeLocale } from "./normalize-locale";
-export { escapeHtml } from "./escape-html";
+export {
+  escapeHtml,
+  localeDirection,
+  syncDocumentLocale,
+  syncLuxonLocale,
+} from "./locale-utils";
