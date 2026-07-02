@@ -103,6 +103,7 @@
 
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
+  $: webhookNotifier = extractNotifier(reportSpec?.notifiers, "webhook");
 
   $: queryName =
     (reportSpec?.resolverProperties?.query_name as string | undefined) ??
@@ -307,6 +308,14 @@
       <MetadataList
         data={[...slackNotifier.channels, ...slackNotifier.users]}
         label={m.report_slack_recipients()}
+      />
+    {/if}
+
+    <!-- Webhook recipients -->
+    {#if webhookNotifier}
+      <MetadataList
+        data={webhookNotifier.urls}
+        label={m.report_webhook_recipients()}
       />
     {/if}
 
