@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
@@ -17,34 +17,39 @@
   } from "./selectors";
   import { Search } from "@rilldata/web-common/components/search";
   import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
+  import {
+    UrlParamsArrayState,
+    UrlParamsState,
+  } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
 
-  export let isEmbedded = false;
-  export let isPreview = false;
-  export let previewLimit = 5;
+  let {
+    isEmbedded = false,
+    isPreview = false,
+    previewLimit = 5,
+  }: {
+    isEmbedded?: boolean;
+    isPreview?: boolean;
+    previewLimit?: number;
+  } = $props();
 
-  $: selectedTags = ($page.url.searchParams.get("tags") ?? "")
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
+  const selectedTagsState = UrlParamsArrayState.createStringArrayParam("tags");
 
-  let searchText = "";
+  const searchTextState = UrlParamsState.createStringParam("search");
 
   const runtimeClient = useRuntimeClient();
-  $: ({
-    params: { organization, project },
-  } = $page);
+  let { organization, project } = $derived(page.params);
 
-  $: dashboards = useDashboards(runtimeClient);
-  $: ({
+  const dashboards = useDashboards(runtimeClient);
+  let {
     data: dashboardsData,
     isLoading,
     isError,
     isSuccess,
     error,
-  } = $dashboards);
+  } = $derived($dashboards);
 
-  $: initialBuild = useIsInitialBuild(runtimeClient);
-  $: isBuilding = $initialBuild.data === true;
+  let initialBuild = useIsInitialBuild(runtimeClient);
+  let isBuilding = $initialBuild.data === true;
 
   function matchesSearch(resource: V1Resource, query: string): boolean {
     if (!query) return true;
@@ -61,30 +66,36 @@
     );
   }
 
-  $: allDashboards = dashboardsData ?? [];
+  let allDashboards = $derived(dashboardsData ?? []);
 
-  $: tagFilteredDashboards =
-    selectedTags.length === 0
+  let tagFilteredDashboards = $derived(
+    selectedTagsState.value.length === 0
       ? allDashboards
       : allDashboards.filter((resource) => {
           const resourceTags = getResourceTags(resource);
-          return selectedTags.some((t) =>
+          return selectedTagsState.value.some((t) =>
             t === UNTAGGED_KEY
               ? resourceTags.length === 0
               : resourceTags.includes(t),
           );
-        });
-
-  $: searchFilteredDashboards = tagFilteredDashboards.filter((r) =>
-    matchesSearch(r, searchText),
+        }),
   );
 
-  $: displayData = isPreview
-    ? searchFilteredDashboards.slice(0, previewLimit)
-    : searchFilteredDashboards;
+  let searchFilteredDashboards = $derived(
+    tagFilteredDashboards.filter((r) =>
+      matchesSearch(r, searchTextState.value),
+    ),
+  );
 
-  $: hasMoreDashboards =
-    isPreview && searchFilteredDashboards.length > previewLimit;
+  let displayData = $derived(
+    isPreview
+      ? searchFilteredDashboards.slice(0, previewLimit)
+      : searchFilteredDashboards,
+  );
+
+  let hasMoreDashboards = $derived(
+    isPreview && searchFilteredDashboards.length > previewLimit,
+  );
 
   const columns = [
     {
@@ -175,7 +186,7 @@
           <Search
             placeholder="Search"
             autofocus={false}
-            bind:value={searchText}
+            bind:value={searchTextState.getter, searchTextState.setter}
             rounded="lg"
           />
         </div>

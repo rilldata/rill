@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/state";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -8,7 +7,7 @@
     useDashboards,
   } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { goto } from "$app/navigation";
+  import { UrlParamsArrayState } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
 
   let {
     align = "start",
@@ -18,25 +17,7 @@
 
   let open = $state(false);
 
-  let selectedTags = $derived(
-    (page.url.searchParams.get("tags") ?? "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean),
-  );
-  function toggleTag(tag: string) {
-    const newTags = selectedTags.includes(tag)
-      ? selectedTags.filter((t) => t !== tag)
-      : [...selectedTags, tag];
-
-    const url = new URL(page.url);
-    if (newTags.length === 0) {
-      url.searchParams.delete("tags");
-    } else {
-      url.searchParams.set("tags", newTags.join(","));
-    }
-    void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
-  }
+  const selectedTagsState = UrlParamsArrayState.createStringArrayParam("tags");
 
   const runtimeClient = useRuntimeClient();
   let dashboards = useDashboards(runtimeClient);
@@ -47,11 +28,11 @@
   );
 
   let tagsLabel = $derived(
-    selectedTags.length === 0
+    selectedTagsState.value.length === 0
       ? "All tags"
-      : selectedTags.length === 1
-        ? selectedTags[0]
-        : `${selectedTags[0]}, +${selectedTags.length - 1} other${selectedTags.length > 2 ? "s" : ""}`,
+      : selectedTagsState.value.length === 1
+        ? selectedTagsState.value[0]
+        : `${selectedTagsState.value[0]}, +${selectedTagsState.value.length - 1} other${selectedTagsState.value.length > 2 ? "s" : ""}`,
   );
 </script>
 
@@ -72,8 +53,8 @@
     <DropdownMenu.Content {align} class="w-48 max-h-72 overflow-y-auto">
       {#each availableTags as tag (tag)}
         <DropdownMenu.CheckboxItem
-          checked={selectedTags.includes(tag)}
-          onCheckedChange={() => toggleTag(tag)}
+          checked={selectedTagsState.value.includes(tag)}
+          onCheckedChange={() => selectedTagsState.toggle(tag)}
         >
           {tag}
         </DropdownMenu.CheckboxItem>
