@@ -31,6 +31,7 @@
   import type { ConnectError } from "@connectrpc/connect";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
   import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
+  import ChangedFilesDialog from "@rilldata/web-common/features/project/ChangedFilesDialog.svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
 
   export let organization: string;
@@ -47,6 +48,9 @@
   let isMerging = false;
   let errorMessage = "";
   let mergeConflictDialog = false;
+  // The diff dialog is hosted here (not inside the popover) so it survives the popover closing.
+  let diffDialogOpen = false;
+  let diffInitialPath: string | undefined = undefined;
   // Captured at click time so the merge flow can resume after a force merge
   // without re-reading state that may have changed. `preCommitSha` is refreshed
   // before completing the flow because prod's parser may have advanced while
@@ -279,7 +283,15 @@
             to production. We'll open a new tab so you can watch updates reconcile.
           {/if}
         </p>
-        <ChangedFilesList remoteBranch={primaryBranch} {open} />
+        <ChangedFilesList
+          remoteBranch={primaryBranch}
+          {open}
+          onViewDiff={(path) => {
+            diffInitialPath = path;
+            open = false;
+            diffDialogOpen = true;
+          }}
+        />
         {#if branchUrl}
           <a
             class="github-link"
@@ -329,6 +341,12 @@
   loading={isMerging}
   error={errorFromGitCommand}
   onUseLatestVersion={handleForceMerge}
+/>
+
+<ChangedFilesDialog
+  bind:open={diffDialogOpen}
+  remoteBranch={primaryBranch}
+  initialPath={diffInitialPath}
 />
 
 <style lang="postcss">

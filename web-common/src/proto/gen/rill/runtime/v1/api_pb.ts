@@ -5996,6 +5996,23 @@ export class GitDiffRequest extends Message$1<GitDiffRequest> {
    */
   remoteBranch = "";
 
+  /**
+   * include_diff also computes and returns the combined unified patch in addition to the
+   * changed_files list. It is opt-in because computing the diff is more expensive.
+   *
+   * @generated from field: bool include_diff = 3;
+   */
+  includeDiff = false;
+
+  /**
+   * fetch first updates the remote-tracking ref from the remote before computing the changes.
+   * When false, changes are computed against the already-fetched ref; use that when a recent
+   * GitStatus/GitDiff already fetched, to avoid a redundant fetch.
+   *
+   * @generated from field: bool fetch = 4;
+   */
+  fetch = false;
+
   constructor(data?: PartialMessage<GitDiffRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6006,6 +6023,8 @@ export class GitDiffRequest extends Message$1<GitDiffRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "include_diff", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "fetch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffRequest {
@@ -6038,6 +6057,14 @@ export class GitDiffResponse extends Message$1<GitDiffResponse> {
    */
   changedFiles: GitDiffResponse_GitFileChange[] = [];
 
+  /**
+   * diff is the combined unified patch across all changed_files; only set when include_diff is true.
+   * Individual files whose diff is very large are elided to a "Binary files differ" placeholder.
+   *
+   * @generated from field: string diff = 2;
+   */
+  diff = "";
+
   constructor(data?: PartialMessage<GitDiffResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6047,6 +6074,7 @@ export class GitDiffResponse extends Message$1<GitDiffResponse> {
   static readonly typeName = "rill.runtime.v1.GitDiffResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "changed_files", kind: "message", T: GitDiffResponse_GitFileChange, repeated: true },
+    { no: 2, name: "diff", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffResponse {
