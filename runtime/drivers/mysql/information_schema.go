@@ -157,7 +157,7 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name 
 	var col, typ string
 	fields := make([]*runtimev1.StructType_Field, 0)
 	for rows.Next() {
-		if err = rows.Scan(&view, &col, &typ); err != nil {
+		if err := rows.Scan(&view, &col, &typ); err != nil {
 			return nil, err
 		}
 		fields = append(fields, &runtimev1.StructType_Field{
