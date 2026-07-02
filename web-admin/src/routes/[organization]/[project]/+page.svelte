@@ -12,7 +12,7 @@
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { escapeHtml } from "@rilldata/web-common/lib/i18n/escape-html";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   const { chat, personalCanvases } = featureFlags;
 
