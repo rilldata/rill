@@ -2503,6 +2503,54 @@ metrics_view: missing
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestTags(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// A resource with tags: the tags should land generically on the parsed resource.
+		`models/tagged.yaml`: `
+type: model
+tags: [finance, ops]
+sql: SELECT 1
+`,
+		// A resource without tags: Tags should remain nil.
+		`models/untagged.yaml`: `
+type: model
+sql: SELECT 1
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "tagged"},
+			Paths: []string{"/models/tagged.yaml"},
+			Tags:  []string{"finance", "ops"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "untagged"},
+			Paths: []string{"/models/untagged.yaml"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func TestSecurityPolicyWithRef(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
@@ -2752,6 +2800,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.Name, got.Name)
 				require.ElementsMatch(t, want.Refs, got.Refs, "for resource %q", want.Name)
 				require.ElementsMatch(t, want.Paths, got.Paths, "for resource %q", want.Name)
+				require.Equal(t, want.Tags, got.Tags, "for resource %q", want.Name)
 				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)

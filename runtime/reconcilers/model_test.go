@@ -12,6 +12,23 @@ import (
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
+func TestResourceTagsMetadata(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/tagged.yaml": `
+type: model
+tags: [finance, ops]
+sql: SELECT 1
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	res := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "tagged")
+	require.Equal(t, []string{"finance", "ops"}, res.Meta.Tags)
+}
+
 func TestPatchModeManualTrigger(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 
@@ -432,7 +449,7 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 	require.NoError(t, err)
 
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: "test-partition-refresh"}
-	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{

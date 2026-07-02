@@ -2386,6 +2386,7 @@ export interface V1ResourceMeta {
   refs?: V1ResourceName[];
   owner?: V1ResourceName;
   filePaths?: string[];
+  tags?: string[];
   hidden?: boolean;
   version?: string;
   specVersion?: string;

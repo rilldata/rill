@@ -209,7 +209,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	}
 
 	// Track canvas
-	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {
-		r, err := p.insertResource(ResourceKindComponent, def.name, node.Paths, def.refs...)
+		r, err := p.insertResource(ResourceKindComponent, def.name, node.Paths, nil, def.refs...)
 		if err != nil {
 			// Normally we could return the error, but we can't do that here because we've already inserted the canvas.
 			// Since the component has been validated with insertDryRun in parseCanvasItemComponent, this error should never happen in practice.
