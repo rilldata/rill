@@ -19,6 +19,7 @@
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import { formatRefreshSchedule } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -82,6 +83,7 @@
 
   $: emailNotifier = extractNotifier(alertSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(alertSpec?.notifiers, "slack");
+  $: webhookNotifier = extractNotifier(alertSpec?.notifiers, "webhook");
 
   $: exploreUrl = getMappedExploreUrl(
     {
@@ -233,6 +235,14 @@
       <MetadataList
         data={[...slackNotifier.channels, ...slackNotifier.users]}
         label="Slack notifications"
+      />
+    {/if}
+
+    <!-- Webhook notifications -->
+    {#if webhookNotifier}
+      <MetadataList
+        data={webhookNotifier.urls}
+        label={m.alert_webhook_notifications()}
       />
     {/if}
 

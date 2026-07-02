@@ -1419,6 +1419,10 @@ notify:
       - reports
     users:
       - user_2@example.com
+  webhook:
+    connector: my_hook
+    urls:
+      - https://example.com/report-hook
 
 annotations:
   foo: bar
@@ -1473,6 +1477,7 @@ annotations:
 				Notifiers: []*runtimev1.Notifier{
 					{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))},
 					{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{"user_2@example.com"}, "channels": []any{"reports"}, "webhooks": []any{}}))},
+					{Connector: "my_hook", Properties: must(structpb.NewStruct(map[string]any{"urls": []any{"https://example.com/report-hook"}}))},
 				},
 				Annotations:          map[string]string{"foo": "bar"},
 				WatermarkInherit:     true,
@@ -1525,6 +1530,9 @@ notify:
   email:
     recipients:
       - benjamin@example.com
+  webhook:
+    urls:
+      - https://example.com/rill-hook
 
 annotations:
   foo: bar
@@ -1566,8 +1574,11 @@ annotations:
 				NotifyOnFail:         true,
 				Renotify:             true,
 				RenotifyAfterSeconds: 24 * 60 * 60,
-				Notifiers:            []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}}))}},
-				Annotations:          map[string]string{"foo": "bar"},
+				Notifiers: []*runtimev1.Notifier{
+					{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}}))},
+					{Connector: "webhook", Properties: must(structpb.NewStruct(map[string]any{"urls": []any{"https://example.com/rill-hook"}}))},
+				},
+				Annotations: map[string]string{"foo": "bar"},
 			},
 		},
 	}
@@ -1575,6 +1586,39 @@ annotations:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestAlertWebhookInvalidURL(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`alerts/a1.yaml`: `
+type: alert
+display_name: My Alert
+
+refresh:
+  cron: '0 * * * *'
+
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+
+notify:
+  webhook:
+    urls:
+      - ftp://example.com/hook
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{
+		{
+			Message:  `invalid value "ftp://example.com/hook" for property "notify.webhook.urls"`,
+			FilePath: "/alerts/a1.yaml",
+		},
+	})
 }
 
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {

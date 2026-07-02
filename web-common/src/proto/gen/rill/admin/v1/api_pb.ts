@@ -18525,6 +18525,11 @@ export class ReportOptions extends Message<ReportOptions> {
   slackWebhooks: string[] = [];
 
   /**
+   * @generated from field: repeated string webhook_urls = 23;
+   */
+  webhookUrls: string[] = [];
+
+  /**
    * Annotation for the subpath of <UI host>/org/project to open for the report.
    *
    * @generated from field: string web_open_path = 15;
@@ -18583,6 +18588,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 23, name: "webhook_urls", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -18691,6 +18697,11 @@ export class AlertOptions extends Message<AlertOptions> {
   slackWebhooks: string[] = [];
 
   /**
+   * @generated from field: repeated string webhook_urls = 18;
+   */
+  webhookUrls: string[] = [];
+
+  /**
    * Annotation for the subpath of <UI host>/org/project to open for the report.
    *
    * @generated from field: string web_open_path = 15;
@@ -18727,6 +18738,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 18, name: "webhook_urls", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

@@ -924,16 +924,23 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					if err != nil {
 						return err
 					}
-					urls, ok := adminMeta.RecipientURLs[""]
-					if !ok {
-						return fmt.Errorf("failed to get recipient URLs for anon user")
+					// adminMeta may be nil if the admin service doesn't support alert metadata
+					// (e.g. in local development). Notifications still work, just without links.
+					if adminMeta != nil && adminMeta.RecipientURLs != nil {
+						urls, ok := adminMeta.RecipientURLs[""]
+						if !ok {
+							return fmt.Errorf("failed to get recipient URLs for anon user")
+						}
+						openLink, err := addExecutionTime(urls.OpenURL, executionTime)
+						if err != nil {
+							return fmt.Errorf("failed to build recipient open url: %w", err)
+						}
+						msg.OpenLink = openLink
+						msg.EditLink = urls.EditURL
+					} else {
+						msg.OpenLink = ""
+						msg.EditLink = ""
 					}
-					openLink, err := addExecutionTime(urls.OpenURL, executionTime)
-					if err != nil {
-						return fmt.Errorf("failed to build recipient open url: %w", err)
-					}
-					msg.OpenLink = openLink
-					msg.EditLink = urls.EditURL
 					start := time.Now()
 					defer func() {
 						totalLatency := time.Since(start).Milliseconds()
