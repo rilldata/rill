@@ -94,7 +94,7 @@ _[oneOf]_ - Data source for the alert _(required)_
 
         - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
 
-        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+        - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that re-lists recent partitions.
 
         - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
 
