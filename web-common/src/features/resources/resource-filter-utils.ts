@@ -63,19 +63,34 @@ export function filterResources(
   types: string[],
   search: string,
   statuses: string[],
+  tags: string[] = [],
 ): V1Resource[] {
   if (!resources) return [];
 
   return resources.filter((r) => {
     const kind = r.meta?.name?.kind;
     const name = r.meta?.name?.name ?? "";
+    const resourceTags = r.meta?.tags ?? [];
 
     const matchesType = types.length === 0 || types.includes(kind ?? "");
     const matchesSearch =
       !search || name.toLowerCase().includes(search.toLowerCase());
     const matchesStatus =
       statuses.length === 0 || statuses.includes(getResourceStatus(r));
+    const matchesTags =
+      tags.length === 0 || tags.some((t) => resourceTags.includes(t));
 
-    return matchesType && matchesSearch && matchesStatus;
+    return matchesType && matchesSearch && matchesStatus && matchesTags;
   });
+}
+
+export function getAvailableTags(
+  resources: V1Resource[] | undefined,
+): string[] {
+  if (!resources) return [];
+  const set = new Set<string>();
+  for (const r of resources) {
+    for (const t of r.meta?.tags ?? []) set.add(t);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
@@ -9,53 +9,100 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
-  import { useDashboards, useIsInitialBuild } from "./selectors";
+  import {
+    UNTAGGED_KEY,
+    getResourceTags,
+    useDashboards,
+    useIsInitialBuild,
+  } from "./selectors";
+  import { Search } from "@rilldata/web-common/components/search";
+  import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
+  import {
+    UrlParamsArrayState,
+    UrlParamsState,
+  } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
 
-  export let isEmbedded = false;
-  export let isPreview = false;
-  export let previewLimit = 5;
+  let {
+    isEmbedded = false,
+    isPreview = false,
+    previewLimit = 5,
+  }: {
+    isEmbedded?: boolean;
+    isPreview?: boolean;
+    previewLimit?: number;
+  } = $props();
+
+  const selectedTagsState = UrlParamsArrayState.createStringArrayParam("tags");
+
+  const searchTextState = UrlParamsState.createStringParam("search");
 
   const runtimeClient = useRuntimeClient();
-  $: ({
-    params: { organization, project },
-  } = $page);
+  let { organization, project } = $derived(page.params);
 
-  $: dashboards = useDashboards(runtimeClient);
-  $: ({
+  const dashboards = useDashboards(runtimeClient);
+  let {
     data: dashboardsData,
     isLoading,
     isError,
     isSuccess,
     error,
-  } = $dashboards);
+  } = $derived($dashboards);
 
-  $: initialBuild = useIsInitialBuild(runtimeClient);
-  $: isBuilding = $initialBuild.data === true;
+  let initialBuild = useIsInitialBuild(runtimeClient);
+  let isBuilding = $initialBuild.data === true;
 
-  $: displayData = isPreview
-    ? (dashboardsData?.slice(0, previewLimit) ?? [])
-    : (dashboardsData ?? []);
-  $: hasMoreDashboards =
-    isPreview && dashboardsData && dashboardsData.length > previewLimit;
+  function matchesSearch(resource: V1Resource, query: string): boolean {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    const name = resource.meta?.name?.name ?? "";
+    const title = resource.explore
+      ? (resource.explore.spec?.displayName ?? "")
+      : (resource.canvas?.spec?.displayName ?? "");
+    const desc = resource.explore?.spec?.description ?? "";
+    return (
+      name.toLowerCase().includes(q) ||
+      title.toLowerCase().includes(q) ||
+      desc.toLowerCase().includes(q)
+    );
+  }
 
-  /**
-   * Table column definitions.
-   * - "composite": Renders all dashboard data in a single cell.
-   * - Others: Used for sorting and filtering but not displayed.
-   *
-   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
-   * Relevant issues:
-   * - https://github.com/TanStack/table/issues/4241
-   * - https://github.com/TanStack/table/issues/4302
-   */
+  let allDashboards = $derived(dashboardsData ?? []);
+
+  let tagFilteredDashboards = $derived(
+    selectedTagsState.value.length === 0
+      ? allDashboards
+      : allDashboards.filter((resource) => {
+          const resourceTags = getResourceTags(resource);
+          return selectedTagsState.value.some((t) =>
+            t === UNTAGGED_KEY
+              ? resourceTags.length === 0
+              : resourceTags.includes(t),
+          );
+        }),
+  );
+
+  let searchFilteredDashboards = $derived(
+    tagFilteredDashboards.filter((r) =>
+      matchesSearch(r, searchTextState.value),
+    ),
+  );
+
+  let displayData = $derived(
+    isPreview
+      ? searchFilteredDashboards.slice(0, previewLimit)
+      : searchFilteredDashboards,
+  );
+
+  let hasMoreDashboards = $derived(
+    isPreview && searchFilteredDashboards.length > previewLimit,
+  );
+
   const columns = [
     {
       id: "composite",
       cell: ({ row }) => {
         const resource = row.original as V1Resource;
         const name = resource.meta.name.name;
-
-        // If not a Metrics Explorer, it's a Custom Dashboard.
         const isMetricsExplorer = !!resource?.explore;
         const title = isMetricsExplorer
           ? resource.explore.spec.displayName
@@ -66,6 +113,7 @@
         const refreshedOn = isMetricsExplorer
           ? resource.explore?.state?.dataRefreshedOn
           : resource.canvas?.state?.dataRefreshedOn;
+        const tags = resource.meta?.tags ?? [];
 
         return renderComponent(DashboardsTableCompositeCell, {
           name,
@@ -77,6 +125,7 @@
           isEmbedded,
           organization,
           project,
+          tags,
         });
       },
     },
@@ -129,13 +178,29 @@
   <ResourceError kind="dashboard" {error} />
 {:else if isSuccess}
   <div class="flex flex-col w-full gap-y-3">
+    {#if !isPreview}
+      <div class="flex flex-row items-center gap-x-2">
+        <DashboardsTagFilter />
+
+        <div class="flex-1 min-w-0">
+          <Search
+            placeholder="Search"
+            autofocus={false}
+            bind:value={searchTextState.getter, searchTextState.setter}
+            rounded="lg"
+          />
+        </div>
+      </div>
+    {/if}
+
+    <!-- Flat mode: standard list -->
     <ResourceList
       kind="dashboard"
       data={displayData}
       {columns}
       {columnVisibility}
       {initialSorting}
-      toolbar={!isPreview}
+      toolbar={false}
     >
       <ResourceListEmptyState
         slot="empty"
@@ -153,6 +218,7 @@
         </span>
       </ResourceListEmptyState>
     </ResourceList>
+
     {#if hasMoreDashboards}
       <div class="pl-4 py-1">
         <a

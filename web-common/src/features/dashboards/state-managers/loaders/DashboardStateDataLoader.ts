@@ -10,7 +10,6 @@ import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/das
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { normalizeWeekday } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
-import { cleanEmbedUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
@@ -27,6 +26,7 @@ import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import { derived, get } from "svelte/store";
 import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
+import { cleanNonExploreParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 /**
  * Loads data from explore and metrics view specs, along with all time range query.
@@ -313,7 +313,7 @@ export class DashboardStateDataLoader {
     backButtonUsed: boolean;
     skipSessionStorage: boolean;
   }) {
-    urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
+    urlSearchParams = cleanNonExploreParams(urlSearchParams);
 
     skipSessionStorage ||= backButtonUsed;
     const exploreStateFromSessionStorage = skipSessionStorage

@@ -21,8 +21,10 @@
   import {
     filterTemporaryTables,
     applyTableFilters,
+    applyTagFilter,
     splitTablesByModel,
   } from "@rilldata/web-common/features/projects/status/tables/utils";
+  import { getAvailableTags } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
   import ModelPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/RefreshErroredPartitionsDialog.svelte";
@@ -47,6 +49,7 @@
   const filterSync = createUrlFilterSync([
     { key: "q", type: "string" },
     { key: "type", type: "array" },
+    { key: "tags", type: "array" },
   ]);
   filterSync.init($page.url);
 
@@ -86,6 +89,7 @@
   let typeFilter: string[] = parseArrayParam(
     $page.url.searchParams.get("type"),
   );
+  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   let mounted = false;
 
   // Sync URL → local state on external navigation (back/forward)
@@ -93,16 +97,26 @@
     filterSync.markSynced($page.url);
     searchText = parseStringParam($page.url.searchParams.get("q"));
     typeFilter = parseArrayParam($page.url.searchParams.get("type"));
+    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   }
 
   // Sync filter state → URL
   $: if (mounted) {
-    filterSync.syncToUrl({ q: searchText, type: typeFilter });
+    filterSync.syncToUrl({
+      q: searchText,
+      type: typeFilter,
+      tags: selectedTags,
+    });
   }
 
   onMount(() => {
     mounted = true;
   });
+
+  // Tags — collected from model resources only (external tables have no tags).
+  // `modelResources` indexes each resource twice (by result table and model name),
+  // so values() is deduped inside getAvailableTags via its Set.
+  $: availableTags = getAvailableTags([...modelResources.values()]);
 
   $: filterGroups = [
     {
@@ -116,17 +130,45 @@
       defaultValue: [],
       multiSelect: true,
     },
+    ...(availableTags.length > 0
+      ? [
+          {
+            label: "Tags",
+            key: "tags",
+            options: availableTags.map((t) => ({ value: t, label: t })),
+            selected: selectedTags,
+            defaultValue: [],
+            multiSelect: true,
+          },
+        ]
+      : []),
   ] satisfies FilterGroup[];
 
-  // Split once on unfiltered tables, then apply type filter per section
+  function onFilterChange(key: string, selected: string[] | string) {
+    if (key === "type") typeFilter = selected as string[];
+    if (key === "tags") selectedTags = selected as string[];
+  }
+
+  function clearFilters() {
+    typeFilter = [];
+    selectedTags = [];
+    searchText = "";
+  }
+
+  // Split once on unfiltered tables, then apply type + tag filters per section.
+  // Tag filter only applies to model tables; external tables are hidden entirely
+  // when a tag filter is active since they can't match.
   $: ({ modelTables: allModelTables, externalTables: allExternalTables } =
     splitTablesByModel(filteredTables, modelResources));
-  $: modelTables = applyTableFilters(allModelTables, typeFilter, isViewMap);
-  $: externalTables = applyTableFilters(
-    allExternalTables,
-    typeFilter,
-    isViewMap,
+  $: modelTables = applyTagFilter(
+    applyTableFilters(allModelTables, typeFilter, isViewMap),
+    modelResources,
+    selectedTags,
   );
+  $: externalTables =
+    selectedTags.length > 0
+      ? []
+      : applyTableFilters(allExternalTables, typeFilter, isViewMap);
 
   // Dialog states
   let specDialogOpen = false;
@@ -145,12 +187,6 @@
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
-
-  function onFilterChange(key: string, selected: string[]) {
-    if (key === "type") {
-      typeFilter = selected;
-    }
-  }
 
   // Handlers
   function handleModelInfoClick(resource: V1Resource) {
@@ -224,10 +260,7 @@
     bind:searchText
     {filterGroups}
     {onFilterChange}
-    onClearAllFilters={() => {
-      typeFilter = [];
-      searchText = "";
-    }}
+    onClearAllFilters={clearFilters}
     showSort={false}
   />
 

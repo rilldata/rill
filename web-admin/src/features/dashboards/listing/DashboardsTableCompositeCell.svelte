@@ -15,13 +15,20 @@
   export let isEmbedded: boolean;
   export let organization: string;
   export let project: string;
+  export let tags: string[] = [];
+  // When set, appends ?tags=<tag> so back-navigation preserves folder context.
+  export let tag: string | undefined = undefined;
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
   $: dashboardSlug = isMetricsExplorer ? "explore" : "canvas";
-  $: href = isEmbedded
+  $: basePath = isEmbedded
     ? `/-/embed/${dashboardSlug}/${name}`
     : `/${organization}/${project}/${dashboardSlug}/${name}`;
+  $: tagForLink = tag ?? tags[0];
+  $: href = tagForLink
+    ? `${basePath}?tags=${encodeURIComponent(tagForLink)}`
+    : basePath;
 
   $: resourceKind = isMetricsExplorer
     ? ResourceKind.Explore
@@ -39,6 +46,9 @@
     {#if error !== ""}
       <Tag color="red">Error</Tag>
     {/if}
+    {#each tags as tag (tag)}
+      <Tag color="gray">{tag}</Tag>
+    {/each}
   </div>
   <div
     class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"

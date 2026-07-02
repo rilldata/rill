@@ -19,7 +19,6 @@
   } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Header from "@rilldata/web-common/layout/header/Header.svelte";
@@ -34,7 +33,10 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import { useDashboards } from "../dashboards/listing/selectors";
+  import {
+    getPrimaryTag,
+    useDashboards,
+  } from "../dashboards/listing/selectors";
   import {
     useBreadcrumbOrgPaths,
     useBreadcrumbProjectPaths,
@@ -47,6 +49,14 @@
     isProjectPage,
     isPublicURLPage,
   } from "../navigation/nav-utils";
+  import {
+    buildTagPathsOptions,
+    buildVisualizationOptions,
+    getAllDashboardTags,
+    groupDashboardsByTag,
+    hasUntaggedDashboards,
+    sortDashboardResources,
+  } from "./project-header-paths";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import SharePersonalFile from "@rilldata/web-admin/features/personal-files/SharePersonalFile.svelte";
@@ -103,33 +113,57 @@
   $: reportsQuery = useReports(runtimeClient, onReportPage);
 
   $: visualizations = $visualizationsQuery.data ?? [];
+
+  $: onDashboardPage = onMetricsExplorerPage || onCanvasDashboardPage;
+
+  $: paramTag =
+    ($page.url.searchParams.get("tags") ?? "").split(",")[0] || undefined;
+
+  $: currentDashboardResource = dashboard
+    ? visualizations.find((r) => r.meta?.name?.name === dashboard)
+    : undefined;
+
+  // Tag breadcrumb derivation:
+  //  - Prefer an explicit ?tags= param (user-selected folder)
+  //  - Otherwise, on a dashboard page, fall back to the dashboard's first
+  //    declared tag, or UNTAGGED_KEY when the dashboard has no tags.
+  //  - On the project home without a filter, no tag breadcrumb is rendered.
+  $: activeTag = (() => {
+    if (paramTag) return paramTag;
+    if (onDashboardPage && currentDashboardResource)
+      return getPrimaryTag(currentDashboardResource);
+    return undefined;
+  })();
+
+  $: allDashboardTags = getAllDashboardTags(visualizations);
+
+  $: hasUntaggedDashboard = hasUntaggedDashboards(visualizations);
+
+  $: sortedVisualizations = sortDashboardResources(visualizations);
+
+  // Dashboards grouped by tag. Multi-tag dashboards appear in every tag's
+  // bucket. Used for both the tag submenu entries and the tag-grouped
+  // dashboard dropdown.
+  $: dashboardsByTag = groupDashboardsByTag(sortedVisualizations);
+
+  $: tagPathsOptions = buildTagPathsOptions({
+    allDashboardTags,
+    dashboardsByTag,
+    hasUntaggedDashboard,
+    activeTag,
+    organization,
+    project,
+  });
+
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
   $: visualizationPaths = {
-    options: [...visualizations]
-      .sort((a, b) => {
-        const aIsCanvas = !!a?.canvas;
-        const bIsCanvas = !!b?.canvas;
-        if (aIsCanvas !== bIsCanvas) return aIsCanvas ? -1 : 1;
-        const aName = a.meta.name.name;
-        const bName = b.meta.name.name;
-        return aName.localeCompare(bName);
-      })
-      .reduce((map, resource) => {
-        const name = resource.meta.name.name;
-        const isMetricsExplorer = !!resource?.explore;
-        return map.set(name.toLowerCase(), {
-          label:
-            (isMetricsExplorer
-              ? resource?.explore?.spec?.displayName
-              : resource?.canvas?.spec?.displayName) || name,
-          section: isMetricsExplorer ? "explore" : "canvas",
-          resourceKind: isMetricsExplorer
-            ? ResourceKind.Explore
-            : ResourceKind.Canvas,
-        });
-      }, new Map<string, PathOption>()),
+    options: buildVisualizationOptions({
+      sortedVisualizations,
+      dashboardsByTag,
+      activeTag: allDashboardTags.length ? activeTag : undefined,
+    }),
     carryOverSearchParams: $stickyDashboardState,
   };
 
@@ -153,12 +187,22 @@
     }, new Map<string, PathOption>()),
   };
 
+  $: tagPathsSegment =
+    allDashboardTags.length && activeTag && tagPathsOptions.size > 0
+      ? { options: tagPathsOptions }
+      : null;
+
   $: pathParts = [
     { options: $orgPathsQuery.data ?? new Map() },
     { options: $projectPathsQuery.data ?? new Map() },
+    ...(tagPathsSegment ? [tagPathsSegment] : []),
     visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];
+
+  $: currentPath = tagPathsSegment
+    ? [organization, project, activeTag, dashboard, report || alert]
+    : [organization, project, dashboard, report || alert];
 
   $: exploreQuery = useExplore(runtimeClient, dashboard, {
     enabled:
@@ -180,8 +224,6 @@
     ? $canvasQuery.data?.canvas?.displayName || dashboard
     : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
       dashboard;
-
-  $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
 <Header borderBottom={!onProjectPage}>
