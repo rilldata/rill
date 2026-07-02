@@ -546,6 +546,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	res.Notify.Webhook.URLs = opts.WebhookUrls
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -589,6 +590,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	res.Notify.Webhook.URLs = opts.WebhookUrls
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
 	return yaml.Marshal(res)
@@ -630,6 +632,9 @@ type alertYAML struct {
 			Users    []string `yaml:"users"`
 			Channels []string `yaml:"channels"`
 			Webhooks []string `yaml:"webhooks"`
+		}
+		Webhook struct {
+			URLs []string `yaml:"urls"`
 		}
 	}
 	Annotations alertAnnotations `yaml:"annotations,omitempty"`
