@@ -3549,7 +3549,7 @@ definitions:
                     description: Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
                   last:
                     type: integer
-                    description: Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+                    description: Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that re-lists recent partitions.
                   partition:
                     type: string
                     enum: [ "file", "directory", "hive"]
@@ -3676,7 +3676,7 @@ definitions:
                     description: Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
                   last:
                     type: integer
-                    description: Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+                    description: Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that re-lists recent partitions.
                   partition:
                     type: string
                     enum: [ "file", "directory", "hive"]

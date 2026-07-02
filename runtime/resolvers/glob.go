@@ -75,9 +75,12 @@ type globProps struct {
 	// End defines the upper bound (exclusive) for partition filtering.
 	// Only partitions with paths less than this value are considered.
 	End string `mapstructure:"end"`
-	// Last sets a lower bound based on the Nth partition from the end of the
-	// lexicographically sorted, successfully processed partitions. Only partitions
-	// after this point are included.
+	// Last limits the result to the last N partitions (the N highest paths in
+	// lexicographic order). It always applies as a hard limit, including on the
+	// first run when there is no existing data. Additionally, when previously
+	// processed partitions exist, it raises the lower bound to the Nth partition
+	// from the end of those successfully processed partitions, forming a rolling
+	// window that re-lists recent partitions.
 	Last int `mapstructure:"last"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
@@ -167,7 +170,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 			return nil, err
 		}
 
-		paths := make([]string, len(partitions))
+		paths := make([]string, 0, len(partitions))
 		for _, p := range partitions {
 			var data map[string]any
 
@@ -290,6 +293,14 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		rows = r.buildPartitionedResult(entries, true)
 	default:
 		return nil, fmt.Errorf("unknown glob partition type %q", r.props.Partition)
+	}
+
+	// If `last` is set, return only the last N rows (the N highest paths).
+	// Combined with the lookback window applied via partitionStart in newGlob,
+	// this ensures we always return at most N partitions, including on the first
+	// run when there is no existing processed data.
+	if r.props.Last > 0 && len(rows) > r.props.Last {
+		rows = rows[len(rows)-r.props.Last:]
 	}
 
 	if r.props.TransformSQL != "" {
