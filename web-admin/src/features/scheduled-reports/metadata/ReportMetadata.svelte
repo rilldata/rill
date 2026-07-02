@@ -3,6 +3,7 @@
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -48,7 +49,6 @@
     formatNextRunOn,
     formatRefreshSchedule,
   } from "./utils";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -99,6 +99,7 @@
 
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
+  $: webhookNotifier = extractNotifier(reportSpec?.notifiers, "webhook");
 
   $: queryName =
     (reportSpec?.resolverProperties?.query_name as string | undefined) ??
@@ -294,6 +295,14 @@
       <MetadataList
         data={[...slackNotifier.channels, ...slackNotifier.users]}
         label={m.report_slack_recipients()}
+      />
+    {/if}
+
+    <!-- Webhook recipients -->
+    {#if webhookNotifier}
+      <MetadataList
+        data={webhookNotifier.urls}
+        label={m.report_webhook_recipients()}
       />
     {/if}
 
