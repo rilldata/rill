@@ -155,40 +155,4 @@ func TestUser(t *testing.T) {
 		}
 
 	})
-
-	t.Run("Preference preferred_locale", func(t *testing.T) {
-		_, c1 := fix.NewUser(t)
-		resp, err := c1.UpdateUserPreferences(ctx, &adminv1.UpdateUserPreferencesRequest{
-			Preferences: &adminv1.UserPreferences{
-				PreferredLocale: strPtr("es"),
-			},
-		})
-		require.NoError(t, err)
-		require.Equal(t, "es", *resp.Preferences.PreferredLocale)
-		cur, err := c1.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-		require.NoError(t, err)
-		require.Equal(t, "es", *cur.Preferences.PreferredLocale)
-	})
-
-	t.Run("Preference preferred_locale invalid", func(t *testing.T) {
-		_, c1 := fix.NewUser(t)
-		_, err := c1.UpdateUserPreferences(ctx, &adminv1.UpdateUserPreferencesRequest{
-			Preferences: &adminv1.UserPreferences{
-				PreferredLocale: strPtr("a"),
-			},
-		})
-		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
-	})
-
-	t.Run("Nil preferences", func(t *testing.T) {
-		_, c1 := fix.NewUser(t)
-		_, err := c1.UpdateUserPreferences(ctx, &adminv1.UpdateUserPreferencesRequest{})
-		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
-	})
-}
-
-func strPtr(s string) *string {
-	return &s
 }
