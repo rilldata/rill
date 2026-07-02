@@ -1450,7 +1450,7 @@
   "report_downloading": "Downloading report...",
   "report_edit": "Edit report",
   "report_email_recipients": "Email recipients",
-  "report_email_validation": "At least one email recipient, slack user, or slack channel is required",
+  "report_email_validation": "At least one email recipient, slack user, slack channel, or webhook URL is required",
   "report_form_cancel": "Cancel",
   "report_form_channels": "Channels",
   "report_form_clear_filters": "Clear filters",
@@ -2212,5 +2212,14 @@
   "parquet_preview_read_error_title": "Unable to read Parquet file",
   "parquet_preview_unknown_error": "Unknown error",
   "parquet_preview_no_project_dir": "Could not resolve the project directory for this file.",
-  "parquet_preview_requires_duckdb": "Previewing Parquet files requires a DuckDB connector."
+  "parquet_preview_requires_duckdb": "Previewing Parquet files requires a DuckDB connector.",
+  "alert_form_webhook_not_configured": "Webhooks have not been configured for this project. Read the <a href=\"{docsUrl}\" target=\"_blank\">docs</a> to learn more.",
+  "alert_form_webhook_placeholder": "Enter a webhook URL",
+  "alert_form_webhook_title": "Webhook notifications",
+  "alert_form_webhook_urls_desc": "We'll send alerts as JSON payloads to these URLs.",
+  "report_form_webhook_not_configured": "Webhooks have not been configured for this project. Read the <a href=\"{docsUrl}\" target=\"_blank\">docs</a> to learn more.",
+  "report_form_webhook_placeholder": "Enter a webhook URL",
+  "report_form_webhook_title": "Webhook notifications",
+  "report_form_webhook_urls": "URLs",
+  "report_form_webhook_urls_hint": "We'll send the report as a JSON payload to these URLs."
 }

@@ -1459,7 +1459,7 @@
   "report_downloading": "Descargando informe...",
   "report_edit": "Editar informe",
   "report_email_recipients": "Destinatarios de correo",
-  "report_email_validation": "Se requiere al menos un destinatario de correo, usuario de Slack o canal de Slack",
+  "report_email_validation": "Se requiere al menos un destinatario de correo, usuario de Slack, canal de Slack o URL de webhook",
   "report_form_cancel": "Cancelar",
   "report_form_channels": "Canales",
   "report_form_clear_filters": "Limpiar filtros",
