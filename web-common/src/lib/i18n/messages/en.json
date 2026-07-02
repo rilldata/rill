@@ -445,8 +445,16 @@
   "canvas_saving_default_filters": "Saving default filters",
   "canvas_scheme": "Scheme",
   "canvas_see_less": "See less",
-  "canvas_see_more_value": "See 1 more value",
-  "canvas_see_more_values": "See {count} more values",
+  "canvas_see_more_values": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "See {count} more value",
+        "countPlural=other": "See {count} more values"
+      }
+    }
+  ],
   "canvas_select_metrics_view": "Select a metrics view",
   "canvas_sequential_theme": "Sequential (Theme)",
   "canvas_show_axis_title": "Show axis title",
@@ -509,10 +517,26 @@
   "chat_downvote_aria": "Downvote response",
   "chat_downvote_tooltip": "This response needs improvement",
   "chat_duration_less_than_second": "less than a second",
-  "chat_duration_minutes": "{count} minutes",
-  "chat_duration_one_minute": "1 minute",
-  "chat_duration_one_second": "1 second",
-  "chat_duration_seconds": "{count} seconds",
+  "chat_duration_minutes": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} minute",
+        "countPlural=other": "{count} minutes"
+      }
+    }
+  ],
+  "chat_duration_seconds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} second",
+        "countPlural=other": "{count} seconds"
+      }
+    }
+  ],
   "chat_empty_label": "Happy to help explore your data",
   "chat_failed_to_generate": "Failed to generate response",
   "chat_feedback_analyzing": "Analyzing feedback...",
@@ -554,16 +578,28 @@
   "common_contact_us": "Contact us",
   "common_continue": "Continue",
   "common_delete": "Delete",
+  "common_deselect_all": "Deselect all",
   "common_got_it": "Got it",
   "common_learn_more": "Learn more",
   "common_loading": "Loading...",
   "common_must_be_number": "Value must be a valid number",
   "common_name": "Name",
   "common_no_results_found": "No results found.",
+  "common_other_values_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} other value selected",
+        "countPlural=other": "{count} other values selected"
+      }
+    }
+  ],
   "common_preview": "Preview",
   "common_required": "Required",
   "common_search": "Search",
   "common_search_list": "Search list",
+  "common_select_all": "Select all",
   "common_status": "Status",
   "common_type": "Type",
   "common_undo": "Undo",
@@ -672,7 +708,7 @@
   "dashboard_no_additional_details": "No additional details available.",
   "dashboard_no_available_fields": "No available fields",
   "dashboard_no_comparison_dimension": "No comparison dimension selected",
-  "dashboard_no_dashboards_found": "No dashboards found",
+  "dashboard_no_dashboards_yet": "You don't have any dashboards yet",
   "dashboard_no_filters_selected": "No filters selected",
   "dashboard_no_matching_tags": "No matching tags",
   "dashboard_no_mock_users": "No mock users",
@@ -682,8 +718,16 @@
   "dashboard_no_valid_grains": "No valid grains available.",
   "dashboard_of": "of",
   "dashboard_open_dimension_details_aria": "Open dimension details",
-  "dashboard_other": "other",
-  "dashboard_others": "others",
+  "dashboard_others": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "+{count} other",
+        "countPlural=other": "+{count} others"
+      }
+    }
+  ],
   "dashboard_output_excludes": "Output excludes selected values",
   "dashboard_output_includes": "Output includes selected values",
   "dashboard_percent_of_total": "Percent of total",
@@ -731,7 +775,7 @@
   "dashboard_select_time_grain": "Select a time grain",
   "dashboard_select_time_range": "Select time range",
   "dashboard_select_time_range_aria": "Select time range",
-  "dashboard_selected": "selected",
+  "dashboard_selected": "{count} selected",
   "dashboard_show_panels": "Show panels",
   "dashboard_sort_by_absolute_change_aria": "Toggle sort leaderboards by absolute change",
   "dashboard_sort_by_percent_change_aria": "Toggle sort leaderboards by percent change",
@@ -814,7 +858,16 @@
   "env_development_label": "Development",
   "env_development_production_label": "Development, Production",
   "env_documentation_link": "documentation",
-  "env_duplicate_keys_error": "Duplicate keys are not allowed",
+  "env_duplicate_keys_error": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This key is duplicated",
+        "countPlural=other": "Duplicate keys are not allowed"
+      }
+    }
+  ],
   "env_edit_action": "Edit",
   "env_edit_button": "Edit",
   "env_edit_title": "Edit environment variable",
@@ -823,10 +876,17 @@
   "env_error_loading": "Error loading environment variables:",
   "env_for_help_see": "For help, see",
   "env_import_dotenv": "Import .env",
-  "env_key_duplicated_error": "This key is duplicated",
-  "env_key_exists_error": "This key already exists for your target environment(s)",
   "env_key_placeholder": "Key",
-  "env_keys_exist_error": "These keys already exist for your target environment(s)",
+  "env_keys_exist_error": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This key already exists for your target environment(s)",
+        "countPlural=other": "These keys already exist for your target environment(s)"
+      }
+    }
+  ],
   "env_learn_more": "Learn more ->",
   "env_must_select_environment": "You must select at least one environment",
   "env_new_key_button": "New key",
@@ -999,9 +1059,13 @@
   "footer_view_documentation": "View documentation",
   "form_optional": "(optional)",
   "github_access_requested_title": "GitHub access requested",
+  "github_again_once_granted": "again once access has been granted.",
+  "github_and_run": "and run",
   "github_branch": "branch",
+  "github_cancel_in_cli": "in the CLI to cancel the connect request.)",
+  "github_cli_polling": "The CLI will keep polling until GitHub access has been granted by an admin. You can stop polling by pressing",
   "github_click_to_reauthorize": "Click the button below to re-authorize/authorize another account.",
-  "github_click_to_retry": "Click the button below to retry.",
+  "github_click_to_retry": "Click the button below to retry. (Or if this was intentional, press",
   "github_close_and_continue_cli": "Close this page and continue setup in the Rill CLI.",
   "github_close_page_now": ". You can close this page now.",
   "github_connect_other_orgs": "+ Connect other orgs",
@@ -1063,7 +1127,7 @@
   "home_greeting": "Hi {name}!",
   "home_subtitle_no_chat": "Explore your dashboards below",
   "home_subtitle_with_chat": "Ask questions about your data, or explore your dashboards below",
-  "home_welcome_getting_started": "It looks like you're just starting out! Check out our {link}.",
+  "home_welcome_getting_started": "It looks like you're just starting out! Check out our",
   "home_welcome_quickstart_link": "Quickstart to create your first project",
   "home_welcome_to": "Welcome to {projectName}",
   "interval_day": "Day",
@@ -1077,7 +1141,6 @@
   "language_en": "English",
   "language_es": "Español",
   "language_switcher_label": "Language",
-  "language_switcher_persist_error": "Couldn't save your language preference. It may revert on reload.",
   "layout_inspector_panel_aria": "Inspector Panel",
   "leaderboard_compare": "Compare",
   "leaderboard_copy_value": "Copy this value to clipboard",
@@ -1138,20 +1201,57 @@
   "org_tab_settings": "Settings",
   "org_tab_users": "Users",
   "organizations_overview_page_title": "{title} overview - Rill",
+  "pivot_apis_failed": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "One or more APIs failed with the following error:",
+        "countPlural=other": "One or more APIs failed with the following errors:"
+      }
+    }
+  ],
   "pivot_collapse_row": "Collapse row",
-  "pivot_dim_one": "dim",
-  "pivot_dim_other": "dims",
+  "pivot_dim_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "dim",
+        "countPlural=other": "dims"
+      }
+    }
+  ],
   "pivot_drop_arrange_aria": "Drop here to auto-arrange tag",
   "pivot_drop_replace_aria": "Drop here to replace rows and columns with this tag",
   "pivot_drop_replace_text": "Drop to <strong>replace</strong>: <strong>{dimCount}</strong> {dimLabel} → rows, <strong>{measureCount}</strong> {measureLabel} → columns",
   "pivot_drop_split_hint": "Drop to replace",
   "pivot_drop_split_text": "Drop here to split: <strong>{dimCount}</strong> {dimLabel} → rows, <strong>{measureCount}</strong> {measureLabel} → columns",
   "pivot_expand_row": "Expand row",
-  "pivot_measure_one": "measure",
-  "pivot_measure_other": "measures",
+  "pivot_measure_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "measure",
+        "countPlural=other": "measures"
+      }
+    }
+  ],
   "pivot_tags": "TAGS",
   "pivot_time_dimension_header": "Time {grain}",
   "pivot_time_prefix": "Time",
+  "pivot_trace_ids_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Trace ID",
+        "countPlural=other": "Trace IDs"
+      }
+    }
+  ],
+  "pivot_unexpected_query_error": "Sorry, unexpected query error!",
   "project_branch_hibernated": "Branch hibernated",
   "project_branch_is_hibernated": "This branch is hibernated.",
   "project_contact_admin_to_redeploy": "Contact the project's administrator to redeploy the project.",
@@ -1461,9 +1561,16 @@
   "status_column_table_name": "Table Name",
   "status_column_type": "Type",
   "status_complete": "Complete",
-  "status_compute_unit": "Compute unit",
-  "status_compute_units": "Compute units",
-  "status_connection_failed": "Connection failed: {error}",
+  "status_compute_units": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} Compute unit",
+        "countPlural=other": "{count} Compute units"
+      }
+    }
+  ],
   "status_copied_error_message": "Copied error message to clipboard",
   "status_copied_test_error": "Copied test error to clipboard",
   "status_data_accessible": "Data accessible",
@@ -1482,8 +1589,6 @@
   "status_download_project": "Download Project",
   "status_error_loading_resources": "Error loading resources",
   "status_error_loading_tables": "Error loading tables",
-  "status_error_plural": "errors",
-  "status_error_singular": "error",
   "status_errors": "Errors",
   "status_external_tables_section": "External Tables",
   "status_filter_error": "Error",
@@ -1550,8 +1655,16 @@
   "status_owned_by_other": "Owned by another user",
   "status_owned_by_you": "Owned by you",
   "status_page_title": "Project Status",
-  "status_parse_error": "Parse error",
-  "status_parse_errors": "Parse errors",
+  "status_parse_errors": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Parse error",
+        "countPlural=other": "Parse errors"
+      }
+    }
+  ],
   "status_parse_errors_title": "Parse Errors",
   "status_reconciling": "Reconciling",
   "status_refresh_all": "Refresh all",
@@ -1565,13 +1678,31 @@
   "status_resource_reconciling": "Resource is currently being reconciled",
   "status_rill_managed": "Rill Managed",
   "status_table": "Table",
+  "status_table_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Table",
+        "countPlural=other": "Tables"
+      }
+    }
+  ],
   "status_table_name": "Table Name",
-  "status_table_plural": "Tables",
   "status_table_singular": "Table",
   "status_tables": "Tables",
   "status_unable_to_check_errors": "Unable to check for errors.",
   "status_view_all": "View all",
-  "status_view_plural": "Views",
+  "status_view_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "View",
+        "countPlural=other": "Views"
+      }
+    }
+  ],
   "status_view_singular": "View",
   "status_views": "Views",
   "status_yes_refresh": "Yes, refresh",
@@ -1580,14 +1711,8 @@
   "theme_label": "Theme",
   "theme_light": "Light",
   "theme_system": "System",
-  "time_1_day_ago": "1 day ago",
-  "time_1_hour_ago": "1 hour ago",
-  "time_1_minute_ago": "1 minute ago",
-  "time_1_month_ago": "1 month ago",
-  "time_1_week_ago": "1 week ago",
-  "time_1_year_ago": "1 year ago",
   "time_ago": "{duration} ago",
-  "time_all_time": "All Time",
+  "time_all_time": "All time",
   "time_comparing": "Comparing",
   "time_comparison_previous_day": "Previous day",
   "time_comparison_previous_period": "Previous period",
@@ -1607,6 +1732,8 @@
   "time_grain_months": "months",
   "time_grain_quarter": "quarter",
   "time_grain_quarters": "quarters",
+  "time_grain_second": "second",
+  "time_grain_seconds": "seconds",
   "time_grain_time": "Time",
   "time_grain_week": "week",
   "time_grain_weeks": "weeks",
@@ -1615,12 +1742,66 @@
   "time_just_now": "Just now",
   "time_last_duration": "Last {duration}",
   "time_month_to_date": "Month to Date",
-  "time_n_days_ago": "{count} days ago",
-  "time_n_hours_ago": "{count} hours ago",
-  "time_n_minutes_ago": "{count} minutes ago",
-  "time_n_months_ago": "{count} months ago",
-  "time_n_weeks_ago": "{count} weeks ago",
-  "time_n_years_ago": "{count} years ago",
+  "time_n_days_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} day ago",
+        "countPlural=other": "{count} days ago"
+      }
+    }
+  ],
+  "time_n_hours_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} hour ago",
+        "countPlural=other": "{count} hours ago"
+      }
+    }
+  ],
+  "time_n_minutes_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} minute ago",
+        "countPlural=other": "{count} minutes ago"
+      }
+    }
+  ],
+  "time_n_months_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} month ago",
+        "countPlural=other": "{count} months ago"
+      }
+    }
+  ],
+  "time_n_weeks_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} week ago",
+        "countPlural=other": "{count} weeks ago"
+      }
+    }
+  ],
+  "time_n_years_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} year ago",
+        "countPlural=other": "{count} years ago"
+      }
+    }
+  ],
   "time_no_comparison_dimension": "No comparison dimension",
   "time_no_comparison_period": "no comparison period",
   "time_previous_month": "Previous month",
@@ -1657,7 +1838,20 @@
   "users_add_guests_description": "Guests can only access provisioned projects with assigned roles. They do not have organization-wide access.",
   "users_add_guests_title": "Add guest users",
   "users_add_users": "Add users",
-  "users_added_groups_count": "Added {count} groups",
+  "users_added_groups_success": [
+    {
+      "declarations": [
+        "input count",
+        "input role",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Added {count} group as {role}",
+        "countPlural=other": "Added {count} groups as {role}"
+      }
+    }
+  ],
   "users_already_member": "{emails} already a member of this organization",
   "users_and_more": "and {count} more",
   "users_billing_change_role_desc": "This user is currently the billing contact. To change their role, assign another admin as the billing contact first.",
@@ -1697,19 +1891,80 @@
   "users_form_untitled": "Untitled",
   "users_form_users": "Users",
   "users_general_access": "General Access",
-  "users_group_count": "{count} Groups",
+  "users_group_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} Group",
+        "countPlural=other": "{count} Groups"
+      }
+    }
+  ],
   "users_guest_upgraded": "Guest upgraded to member and assigned {role} role",
   "users_guest_upgraded_to": "Guest upgraded to {role}",
-  "users_guests_invited_success": "Invited {count} guests as {role}",
+  "users_guests_invited_success": [
+    {
+      "declarations": [
+        "input count",
+        "input role",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Invited {count} guest as {role}",
+        "countPlural=other": "Invited {count} guests as {role}"
+      }
+    }
+  ],
   "users_invalid_email": "Invalid email",
   "users_invite": "Invite",
   "users_invite_only": "Invite only",
-  "users_invited_count": "Invited {count} people",
-  "users_invited_success": "Successfully invited {count} people as {role}",
+  "users_invited_and_added_success": [
+    {
+      "declarations": [
+        "input emails",
+        "input groups",
+        "input role",
+        "local emailsPlural = emails: plural",
+        "local groupsPlural = groups: plural"
+      ],
+      "selectors": ["emailsPlural", "groupsPlural"],
+      "match": {
+        "emailsPlural=one, groupsPlural=one": "Invited {emails} person and added {groups} group as {role}",
+        "emailsPlural=one, groupsPlural=other": "Invited {emails} person and added {groups} groups as {role}",
+        "emailsPlural=other, groupsPlural=one": "Invited {emails} people and added {groups} group as {role}",
+        "emailsPlural=other, groupsPlural=other": "Invited {emails} people and added {groups} groups as {role}"
+      }
+    }
+  ],
+  "users_invited_success": [
+    {
+      "declarations": [
+        "input count",
+        "input role",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Invited {count} person as {role}",
+        "countPlural=other": "Invited {count} people as {role}"
+      }
+    }
+  ],
   "users_learn_more_sharing": "Learn more about sharing",
   "users_loading": "Loading...",
   "users_loading_more": "Loading more...",
-  "users_member_count": "{count} members",
+  "users_member_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} member",
+        "countPlural=other": "{count} members"
+      }
+    }
+  ],
   "users_no_groups": "No groups",
   "users_no_projects": "No projects",
   "users_no_users": "No users",
@@ -1718,7 +1973,16 @@
   "users_page_title": "Manage users",
   "users_pending_invitation": "Pending invitation",
   "users_project_access": "Project access",
-  "users_project_count": "{count} Projects",
+  "users_project_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} Project",
+        "countPlural=other": "{count} Projects"
+      }
+    }
+  ],
   "users_projects_count": "{count} Projects",
   "users_remove": "Remove",
   "users_remove_confirm_desc": "This user will no longer be able to access the organization.",
@@ -1744,7 +2008,17 @@
   "users_upgrade_confirm_desc": "Upgrading a guest to {role} will grant this user access to all open projects in the organization. Would you like to upgrade this guest user to {role}?",
   "users_upgrade_confirm_title": "Upgrade guest to {role}?",
   "users_url_copied": "URL copied",
-  "users_user_count": "{count} Users",
+  "users_user_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} User",
+        "countPlural=other": "{count} Users"
+      }
+    }
+  ],
   "users_yes_remove": "Yes, remove",
-  "users_yes_upgrade": "Yes, upgrade"
+  "users_yes_upgrade": "Yes, upgrade",
+  "workspace_generating_sample_data": "Generating your sample data..."
 }

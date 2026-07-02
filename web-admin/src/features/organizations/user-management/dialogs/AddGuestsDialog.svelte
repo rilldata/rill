@@ -317,7 +317,7 @@
 
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {m.users_failed_invite({ emails: failedInvites.join(", "), count: failedInvites.length })}
+          {m.users_failed_invite({ emails: failedInvites.join(", ") })}
         </div>
       {/if}
     </form>

@@ -302,7 +302,8 @@
       <DialogTitle>{m.env_add_title()}</DialogTitle>
     </DialogHeader>
     <DialogDescription>
-      {m.env_for_help_see()} <a
+      {m.env_for_help_see()}
+      <a
         href="https://docs.rilldata.com/guide/administration/project-settings/variables-and-credentials"
         target="_blank">{m.env_documentation_link()}</a
       >
@@ -333,7 +334,9 @@
           class="hidden"
         />
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-fg-primary">{m.env_environment_label()}</div>
+          <div class="text-sm font-medium text-fg-primary">
+            {m.env_environment_label()}
+          </div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
@@ -357,7 +360,9 @@
           {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-fg-primary">{m.env_variables_label()}</div>
+          <div class="text-sm font-medium text-fg-primary">
+            {m.env_variables_label()}
+          </div>
           <!-- 64 (gap 16px * 4) + 160 (item height 32 * 5) = 224 -->
           <div
             class="flex flex-col gap-y-4 w-full overflow-y-auto max-h-[224px]"
@@ -424,13 +429,13 @@
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
                   {#if Object.values(inputErrors).every((err) => err.type === "draft")}
-                    {Object.keys(inputErrors).length > 1
-                      ? m.env_duplicate_keys_error()
-                      : m.env_key_duplicated_error()}
+                    {m.env_duplicate_keys_error({
+                      count: Object.keys(inputErrors).length,
+                    })}
                   {:else if Object.values(inputErrors).every((err) => err.type === "existing")}
-                    {Object.keys(inputErrors).length > 1
-                      ? m.env_keys_exist_error()
-                      : m.env_key_exists_error()}
+                    {m.env_keys_exist_error({
+                      count: Object.keys(inputErrors).length,
+                    })}
                   {:else}
                     {m.env_some_keys_duplicated_error()}
                   {/if}

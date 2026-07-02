@@ -139,16 +139,16 @@
     <footer>
       <Button onClick={onToggleSelectAll} type="tertiary">
         {#if allSelected}
-          Deselect all
+          {m.common_deselect_all()}
         {:else}
-          Select all
+          {m.common_select_all()}
         {/if}
       </Button>
 
       <slot name="action" />
       {#if numSelectedNotShown && showHiddenSelectionsCount}
         <div class="ui-label">
-          {numSelectedNotShown} other value{numSelectedNotShown > 1 ? "s" : ""} selected
+          {m.common_other_values_selected({ count: numSelectedNotShown })}
         </div>
       {/if}
     </footer>

@@ -51,13 +51,11 @@
 
     {#if smallChip}
       <span class="italic">
-        {values.length}
-        {m.dashboard_selected()}
+        {m.dashboard_selected({ count: values.length })}
       </span>
     {:else if values.length > 1}
       <span class="italic flex-none">
-        +{whatsLeft}
-        {#if whatsLeft !== 1}{m.dashboard_others()}{:else}{m.dashboard_other()}{/if}
+        {m.dashboard_others({ count: whatsLeft })}
       </span>
     {/if}
   {/if}

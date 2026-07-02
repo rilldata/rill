@@ -32,17 +32,12 @@
 
   function formatDuration(seconds: number): string {
     if (seconds < 1) return m.chat_duration_less_than_second();
-    if (seconds === 1) return m.chat_duration_one_second();
-    if (seconds < 60)
-      return m.chat_duration_seconds({ count: String(seconds) });
+    if (seconds < 60) return m.chat_duration_seconds({ count: seconds });
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    if (remainingSeconds === 0) {
-      return minutes === 1
-        ? m.chat_duration_one_minute()
-        : m.chat_duration_minutes({ count: String(minutes) });
-    }
-    return `${minutes === 1 ? m.chat_duration_one_minute() : m.chat_duration_minutes({ count: String(minutes) })} ${remainingSeconds === 1 ? m.chat_duration_one_second() : m.chat_duration_seconds({ count: String(remainingSeconds) })}`;
+    if (remainingSeconds === 0)
+      return m.chat_duration_minutes({ count: minutes });
+    return `${m.chat_duration_minutes({ count: minutes })} ${m.chat_duration_seconds({ count: remainingSeconds })}`;
   }
 
   function onUserInteraction() {

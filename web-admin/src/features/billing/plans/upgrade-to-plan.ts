@@ -43,7 +43,7 @@ export async function upgradeToPlan(
     });
     eventBus.emit("notification", {
       type: "success",
-      message: m.billing_plan_renewed({ planName: plan.displayName }),
+      message: m.billing_plan_renewed({ planName: plan.displayName ?? "" }),
     });
   } else {
     await adminServiceUpdateBillingSubscription(org, {

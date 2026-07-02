@@ -68,28 +68,24 @@
       {#if $modifierHeld}
         {@html m.pivot_drop_replace_text({
           dimCount: String(dragData.tagPayload.dimensions.length),
-          dimLabel:
-            dragData.tagPayload.dimensions.length === 1
-              ? m.pivot_dim_one()
-              : m.pivot_dim_other(),
+          dimLabel: m.pivot_dim_label({
+            count: dragData.tagPayload.dimensions.length,
+          }),
           measureCount: String(dragData.tagPayload.measures.length),
-          measureLabel:
-            dragData.tagPayload.measures.length === 1
-              ? m.pivot_measure_one()
-              : m.pivot_measure_other(),
+          measureLabel: m.pivot_measure_label({
+            count: dragData.tagPayload.measures.length,
+          }),
         })}
       {:else}
         {@html m.pivot_drop_split_text({
           dimCount: String(dragData.tagPayload.dimensions.length),
-          dimLabel:
-            dragData.tagPayload.dimensions.length === 1
-              ? m.pivot_dim_one()
-              : m.pivot_dim_other(),
+          dimLabel: m.pivot_dim_label({
+            count: dragData.tagPayload.dimensions.length,
+          }),
           measureCount: String(dragData.tagPayload.measures.length),
-          measureLabel:
-            dragData.tagPayload.measures.length === 1
-              ? m.pivot_measure_one()
-              : m.pivot_measure_other(),
+          measureLabel: m.pivot_measure_label({
+            count: dragData.tagPayload.measures.length,
+          }),
         })}
         (<span class="kbd">⌘</span> + {m.pivot_drop_split_hint()})
       {/if}

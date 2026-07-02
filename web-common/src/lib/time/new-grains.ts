@@ -406,6 +406,8 @@ export function allowedGrainsForInterval(
  */
 export function translateGrainName(grain: string): string {
   switch (grain) {
+    case "second":
+      return m.time_grain_second();
     case "minute":
       return m.time_grain_minute();
     case "hour":
@@ -431,6 +433,9 @@ export function translateGrainName(grain: string): string {
  */
 export function translateGrainNamePlural(grain: string): string {
   switch (grain) {
+    case "second":
+    case "seconds":
+      return m.time_grain_seconds();
     case "minute":
     case "minutes":
       return m.time_grain_minutes();

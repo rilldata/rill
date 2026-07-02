@@ -98,15 +98,24 @@
 
     // Generate success notification message
     let successMessage = "";
-    if (succeededEmails.length > 0) {
-      successMessage += m.users_invited_count({ count: succeededEmails.length });
-    }
-    if (succeededGroups.length > 0) {
-      if (successMessage) successMessage += " and ";
-      successMessage += m.users_added_groups_count({ count: succeededGroups.length });
+    if (succeededEmails.length > 0 && succeededGroups.length > 0) {
+      successMessage = m.users_invited_and_added_success({
+        emails: succeededEmails.length,
+        groups: succeededGroups.length,
+        role,
+      });
+    } else if (succeededEmails.length > 0) {
+      successMessage = m.users_invited_success({
+        count: succeededEmails.length,
+        role,
+      });
+    } else if (succeededGroups.length > 0) {
+      successMessage = m.users_added_groups_success({
+        count: succeededGroups.length,
+        role,
+      });
     }
     if (successMessage) {
-      successMessage += ` as ${role}`;
       eventBus.emit("notification", {
         type: "success",
         message: successMessage,
@@ -118,7 +127,7 @@
       const groupsText = failedGroups.join(", ");
       eventBus.emit("notification", {
         type: "error",
-        message: m.users_failed_add_groups({ groups: groupsText, count: failedGroups.length }),
+        message: m.users_failed_add_groups({ groups: groupsText }),
       });
     }
 
@@ -126,7 +135,7 @@
       const emailsText = failedEmails.join(", ");
       eventBus.emit("notification", {
         type: "error",
-        message: m.users_failed_invite_users({ emails: emailsText, count: failedEmails.length }),
+        message: m.users_failed_invite_users({ emails: emailsText }),
       });
     }
 

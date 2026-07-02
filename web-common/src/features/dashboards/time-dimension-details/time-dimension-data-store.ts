@@ -431,12 +431,12 @@ export function createTimeDimensionDataStore(
         comparing = timeControls.showTimeComparison ? "time" : "none";
         const currentRange = timeControls?.selectedTimeRange?.name;
 
-        let currentLabel = m.time_custom_range();
+        let currentLabel: string = m.time_custom_range();
         if (currentRange && currentRange in DEFAULT_TIME_RANGES)
           currentLabel = DEFAULT_TIME_RANGES[currentRange].label;
 
         const comparisonRange = timeControls?.selectedComparisonTimeRange?.name;
-        let comparisonLabel = m.time_custom_range();
+        let comparisonLabel: string = m.time_custom_range();
 
         if (comparisonRange && comparisonRange in TIME_COMPARISON)
           comparisonLabel = TIME_COMPARISON[comparisonRange].label;

@@ -445,8 +445,16 @@
   "canvas_saving_default_filters": "Guardando filtros predeterminados",
   "canvas_scheme": "Esquema",
   "canvas_see_less": "Ver menos",
-  "canvas_see_more_value": "Ver 1 valor más",
-  "canvas_see_more_values": "Ver {count} valores más",
+  "canvas_see_more_values": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Ver {count} valor más",
+        "countPlural=other": "Ver {count} valores más"
+      }
+    }
+  ],
   "canvas_select_metrics_view": "Seleccionar una vista de métricas",
   "canvas_sequential_theme": "Secuencial (Tema)",
   "canvas_show_axis_title": "Mostrar título del eje",
@@ -509,10 +517,26 @@
   "chat_downvote_aria": "Valorar negativamente",
   "chat_downvote_tooltip": "Esta respuesta necesita mejora",
   "chat_duration_less_than_second": "menos de un segundo",
-  "chat_duration_minutes": "{count} minutos",
-  "chat_duration_one_minute": "1 minuto",
-  "chat_duration_one_second": "1 segundo",
-  "chat_duration_seconds": "{count} segundos",
+  "chat_duration_minutes": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} minuto",
+        "countPlural=other": "{count} minutos"
+      }
+    }
+  ],
+  "chat_duration_seconds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} segundo",
+        "countPlural=other": "{count} segundos"
+      }
+    }
+  ],
   "chat_empty_label": "Encantado de ayudarte a explorar tus datos",
   "chat_failed_to_generate": "No se pudo generar la respuesta",
   "chat_feedback_analyzing": "Analizando retroalimentación...",
@@ -554,16 +578,28 @@
   "common_contact_us": "Contáctenos",
   "common_continue": "Continuar",
   "common_delete": "Eliminar",
+  "common_deselect_all": "Deseleccionar todo",
   "common_got_it": "Entendido",
   "common_learn_more": "Más información",
   "common_loading": "Cargando...",
   "common_must_be_number": "El valor debe ser un número válido",
   "common_name": "Nombre",
   "common_no_results_found": "No se encontraron resultados.",
+  "common_other_values_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} otro valor seleccionado",
+        "countPlural=other": "{count} otros valores seleccionados"
+      }
+    }
+  ],
   "common_preview": "Vista previa",
   "common_required": "Requerido",
   "common_search": "Buscar",
   "common_search_list": "Buscar en la lista",
+  "common_select_all": "Seleccionar todo",
   "common_status": "Estado",
   "common_type": "Tipo",
   "common_undo": "Deshacer",
@@ -672,7 +708,7 @@
   "dashboard_no_additional_details": "No hay detalles adicionales disponibles.",
   "dashboard_no_available_fields": "No hay campos disponibles",
   "dashboard_no_comparison_dimension": "No se seleccionó dimensión de comparación",
-  "dashboard_no_dashboards_found": "No se encontraron tableros",
+  "dashboard_no_dashboards_yet": "Aún no tienes ningún tablero",
   "dashboard_no_filters_selected": "No hay filtros seleccionados",
   "dashboard_no_matching_tags": "No hay etiquetas coincidentes",
   "dashboard_no_mock_users": "No hay usuarios de prueba",
@@ -682,8 +718,16 @@
   "dashboard_no_valid_grains": "No hay granularidades válidas disponibles.",
   "dashboard_of": "de",
   "dashboard_open_dimension_details_aria": "Abrir detalles de dimensión",
-  "dashboard_other": "otro",
-  "dashboard_others": "otros",
+  "dashboard_others": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "+{count} otro",
+        "countPlural=other": "+{count} otros"
+      }
+    }
+  ],
   "dashboard_output_excludes": "La salida excluye los valores seleccionados",
   "dashboard_output_includes": "La salida incluye los valores seleccionados",
   "dashboard_percent_of_total": "Porcentaje del total",
@@ -731,7 +775,16 @@
   "dashboard_select_time_grain": "Seleccionar granularidad temporal",
   "dashboard_select_time_range": "Seleccionar rango de tiempo",
   "dashboard_select_time_range_aria": "Seleccionar rango de tiempo",
-  "dashboard_selected": "seleccionados",
+  "dashboard_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} seleccionado",
+        "countPlural=other": "{count} seleccionados"
+      }
+    }
+  ],
   "dashboard_show_panels": "Mostrar paneles",
   "dashboard_sort_by_absolute_change_aria": "Alternar orden por cambio absoluto",
   "dashboard_sort_by_percent_change_aria": "Alternar orden por cambio porcentual",
@@ -814,7 +867,16 @@
   "env_development_label": "Desarrollo",
   "env_development_production_label": "Desarrollo, Producción",
   "env_documentation_link": "documentación",
-  "env_duplicate_keys_error": "No se permiten claves duplicadas",
+  "env_duplicate_keys_error": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Esta clave está duplicada",
+        "countPlural=other": "No se permiten claves duplicadas"
+      }
+    }
+  ],
   "env_edit_action": "Editar",
   "env_edit_button": "Editar",
   "env_edit_title": "Editar variable de entorno",
@@ -823,10 +885,17 @@
   "env_error_loading": "Error al cargar las variables de entorno:",
   "env_for_help_see": "Para más ayuda, consulte la",
   "env_import_dotenv": "Importar .env",
-  "env_key_duplicated_error": "Esta clave está duplicada",
-  "env_key_exists_error": "Esta clave ya existe en los entornos de destino",
   "env_key_placeholder": "Clave",
-  "env_keys_exist_error": "Estas claves ya existen en los entornos de destino",
+  "env_keys_exist_error": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Esta clave ya existe en los entornos de destino",
+        "countPlural=other": "Estas claves ya existen en los entornos de destino"
+      }
+    }
+  ],
   "env_learn_more": "Más información ->",
   "env_must_select_environment": "Debe seleccionar al menos un entorno",
   "env_new_key_button": "Nueva clave",
@@ -999,9 +1068,13 @@
   "footer_view_documentation": "Ver documentación",
   "form_optional": "(opcional)",
   "github_access_requested_title": "Acceso a GitHub solicitado",
+  "github_again_once_granted": "de nuevo una vez concedido el acceso.",
+  "github_and_run": "y ejecute",
   "github_branch": "rama",
+  "github_cancel_in_cli": "en la CLI para cancelar la solicitud de conexión.)",
+  "github_cli_polling": "La CLI seguirá consultando hasta que un administrador conceda el acceso a GitHub. Puede detener la consulta presionando",
   "github_click_to_reauthorize": "Haga clic en el botón de abajo para reautorizar u otra cuenta.",
-  "github_click_to_retry": "Haga clic en el botón de abajo para reintentar.",
+  "github_click_to_retry": "Haga clic en el botón de abajo para reintentar. (O si fue intencional, presione",
   "github_close_and_continue_cli": "Cierre esta página y continúe la configuración en el Rill CLI.",
   "github_close_page_now": ". Puede cerrar esta página ahora.",
   "github_connect_other_orgs": "+ Conectar otras organizaciones",
@@ -1063,7 +1136,7 @@
   "home_greeting": "¡Hola {name}!",
   "home_subtitle_no_chat": "Explora tus dashboards a continuación",
   "home_subtitle_with_chat": "Haz preguntas sobre tus datos o explora tus dashboards a continuación",
-  "home_welcome_getting_started": "¡Parece que estás comenzando! Consulta nuestro {link}.",
+  "home_welcome_getting_started": "¡Parece que estás comenzando! Consulta nuestro",
   "home_welcome_quickstart_link": "Inicio rápido para crear tu primer proyecto",
   "home_welcome_to": "Bienvenido a {projectName}",
   "interval_day": "Día",
@@ -1077,7 +1150,6 @@
   "language_en": "English",
   "language_es": "Español",
   "language_switcher_label": "Idioma",
-  "language_switcher_persist_error": "No se pudo guardar tu preferencia de idioma. Puede revertirse al recargar.",
   "layout_inspector_panel_aria": "Panel del inspector",
   "leaderboard_compare": "Comparar",
   "leaderboard_copy_value": "Copiar este valor al portapapeles",
@@ -1138,20 +1210,57 @@
   "org_tab_settings": "Configuración",
   "org_tab_users": "Usuarios",
   "organizations_overview_page_title": "Resumen de {title} - Rill",
+  "pivot_apis_failed": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Una o más APIs fallaron con el siguiente error:",
+        "countPlural=other": "Una o más APIs fallaron con los siguientes errores:"
+      }
+    }
+  ],
   "pivot_collapse_row": "Contraer fila",
-  "pivot_dim_one": "dim",
-  "pivot_dim_other": "dims",
+  "pivot_dim_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "dim",
+        "countPlural=other": "dims"
+      }
+    }
+  ],
   "pivot_drop_arrange_aria": "Soltar aquí para organizar automáticamente",
   "pivot_drop_replace_aria": "Soltar aquí para reemplazar filas y columnas con esta etiqueta",
   "pivot_drop_replace_text": "Soltar para <strong>reemplazar</strong>: <strong>{dimCount}</strong> {dimLabel} → filas, <strong>{measureCount}</strong> {measureLabel} → columnas",
   "pivot_drop_split_hint": "Soltar para reemplazar",
   "pivot_drop_split_text": "Soltar aquí para dividir: <strong>{dimCount}</strong> {dimLabel} → filas, <strong>{measureCount}</strong> {measureLabel} → columnas",
   "pivot_expand_row": "Expandir fila",
-  "pivot_measure_one": "medida",
-  "pivot_measure_other": "medidas",
+  "pivot_measure_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "medida",
+        "countPlural=other": "medidas"
+      }
+    }
+  ],
   "pivot_tags": "ETIQUETAS",
   "pivot_time_dimension_header": "Tiempo {grain}",
   "pivot_time_prefix": "Tiempo",
+  "pivot_trace_ids_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "ID de traza",
+        "countPlural=other": "IDs de traza"
+      }
+    }
+  ],
+  "pivot_unexpected_query_error": "¡Lo sentimos, error inesperado en la consulta!",
   "project_branch_hibernated": "Rama en hibernación",
   "project_branch_is_hibernated": "Esta rama está en hibernación.",
   "project_contact_admin_to_redeploy": "Contacte al administrador del proyecto para redesplegar el proyecto.",
@@ -1461,9 +1570,16 @@
   "status_column_table_name": "Nombre de tabla",
   "status_column_type": "Tipo",
   "status_complete": "Completo",
-  "status_compute_unit": "Unidad de cómputo",
-  "status_compute_units": "Unidades de cómputo",
-  "status_connection_failed": "Conexión fallida: {error}",
+  "status_compute_units": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} Unidad de cómputo",
+        "countPlural=other": "{count} Unidades de cómputo"
+      }
+    }
+  ],
   "status_copied_error_message": "Mensaje de error copiado al portapapeles",
   "status_copied_test_error": "Error de prueba copiado al portapapeles",
   "status_data_accessible": "Datos accesibles",
@@ -1482,8 +1598,6 @@
   "status_download_project": "Descargar proyecto",
   "status_error_loading_resources": "Error al cargar recursos",
   "status_error_loading_tables": "Error al cargar tablas",
-  "status_error_plural": "errores",
-  "status_error_singular": "error",
   "status_errors": "Errores",
   "status_external_tables_section": "Tablas externas",
   "status_filter_error": "Error",
@@ -1550,8 +1664,16 @@
   "status_owned_by_other": "Propiedad de otro usuario",
   "status_owned_by_you": "De tu propiedad",
   "status_page_title": "Estado del proyecto",
-  "status_parse_error": "Error de análisis",
-  "status_parse_errors": "Errores de análisis",
+  "status_parse_errors": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Error de análisis",
+        "countPlural=other": "Errores de análisis"
+      }
+    }
+  ],
   "status_parse_errors_title": "Errores de análisis",
   "status_reconciling": "Reconciliando",
   "status_refresh_all": "Actualizar todo",
@@ -1565,13 +1687,31 @@
   "status_resource_reconciling": "El recurso se está reconciliando",
   "status_rill_managed": "Gestionado por Rill",
   "status_table": "Tabla",
+  "status_table_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Tabla",
+        "countPlural=other": "Tablas"
+      }
+    }
+  ],
   "status_table_name": "Nombre de tabla",
-  "status_table_plural": "Tablas",
   "status_table_singular": "Tabla",
   "status_tables": "Tablas",
   "status_unable_to_check_errors": "No se pudieron verificar los errores.",
   "status_view_all": "Ver todo",
-  "status_view_plural": "Vistas",
+  "status_view_label": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Vista",
+        "countPlural=other": "Vistas"
+      }
+    }
+  ],
   "status_view_singular": "Vista",
   "status_views": "Vistas",
   "status_yes_refresh": "Sí, actualizar",
@@ -1580,12 +1720,6 @@
   "theme_label": "Tema",
   "theme_light": "Claro",
   "theme_system": "Sistema",
-  "time_1_day_ago": "hace 1 día",
-  "time_1_hour_ago": "hace 1 hora",
-  "time_1_minute_ago": "hace 1 minuto",
-  "time_1_month_ago": "hace 1 mes",
-  "time_1_week_ago": "hace 1 semana",
-  "time_1_year_ago": "hace 1 año",
   "time_ago": "hace {duration}",
   "time_all_time": "Todo el período",
   "time_comparing": "Comparando",
@@ -1607,6 +1741,8 @@
   "time_grain_months": "meses",
   "time_grain_quarter": "trimestre",
   "time_grain_quarters": "trimestres",
+  "time_grain_second": "segundo",
+  "time_grain_seconds": "segundos",
   "time_grain_time": "Tiempo",
   "time_grain_week": "semana",
   "time_grain_weeks": "semanas",
@@ -1615,12 +1751,66 @@
   "time_just_now": "Ahora mismo",
   "time_last_duration": "Últimos {duration}",
   "time_month_to_date": "Mes actual",
-  "time_n_days_ago": "hace {count} días",
-  "time_n_hours_ago": "hace {count} horas",
-  "time_n_minutes_ago": "hace {count} minutos",
-  "time_n_months_ago": "hace {count} meses",
-  "time_n_weeks_ago": "hace {count} semanas",
-  "time_n_years_ago": "hace {count} años",
+  "time_n_days_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "hace {count} día",
+        "countPlural=other": "hace {count} días"
+      }
+    }
+  ],
+  "time_n_hours_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "hace {count} hora",
+        "countPlural=other": "hace {count} horas"
+      }
+    }
+  ],
+  "time_n_minutes_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "hace {count} minuto",
+        "countPlural=other": "hace {count} minutos"
+      }
+    }
+  ],
+  "time_n_months_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "hace {count} mes",
+        "countPlural=other": "hace {count} meses"
+      }
+    }
+  ],
+  "time_n_weeks_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "hace {count} semana",
+        "countPlural=other": "hace {count} semanas"
+      }
+    }
+  ],
+  "time_n_years_ago": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "hace {count} año",
+        "countPlural=other": "hace {count} años"
+      }
+    }
+  ],
   "time_no_comparison_dimension": "Sin dimensión de comparación",
   "time_no_comparison_period": "sin período de comparación",
   "time_previous_month": "Mes anterior",
@@ -1657,7 +1847,20 @@
   "users_add_guests_description": "Los invitados solo pueden acceder a proyectos provisionados con roles asignados. No tienen acceso a toda la organización.",
   "users_add_guests_title": "Agregar usuarios invitados",
   "users_add_users": "Agregar usuarios",
-  "users_added_groups_count": "Se agregaron {count} grupos",
+  "users_added_groups_success": [
+    {
+      "declarations": [
+        "input count",
+        "input role",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Se agregó {count} grupo como {role}",
+        "countPlural=other": "Se agregaron {count} grupos como {role}"
+      }
+    }
+  ],
   "users_already_member": "{emails} ya es miembro de esta organización",
   "users_and_more": "y {count} más",
   "users_billing_change_role_desc": "Este usuario es actualmente el contacto de facturación. Para cambiar su rol, asigne otro administrador como contacto de facturación primero.",
@@ -1697,19 +1900,80 @@
   "users_form_untitled": "Sin título",
   "users_form_users": "Usuarios",
   "users_general_access": "Acceso general",
-  "users_group_count": "{count} Grupos",
+  "users_group_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} Grupo",
+        "countPlural=other": "{count} Grupos"
+      }
+    }
+  ],
   "users_guest_upgraded": "Invitado promovido a miembro con rol {role}",
   "users_guest_upgraded_to": "Invitado promovido a {role}",
-  "users_guests_invited_success": "Se invitaron {count} invitados como {role}",
+  "users_guests_invited_success": [
+    {
+      "declarations": [
+        "input count",
+        "input role",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Se invitó a {count} invitado como {role}",
+        "countPlural=other": "Se invitaron {count} invitados como {role}"
+      }
+    }
+  ],
   "users_invalid_email": "Correo electrónico no válido",
   "users_invite": "Invitar",
   "users_invite_only": "Solo por invitación",
-  "users_invited_count": "Se invitaron {count} personas",
-  "users_invited_success": "Se invitaron {count} personas como {role} exitosamente",
+  "users_invited_and_added_success": [
+    {
+      "declarations": [
+        "input emails",
+        "input groups",
+        "input role",
+        "local emailsPlural = emails: plural",
+        "local groupsPlural = groups: plural"
+      ],
+      "selectors": ["emailsPlural", "groupsPlural"],
+      "match": {
+        "emailsPlural=one, groupsPlural=one": "Se invitó a {emails} persona y se agregó {groups} grupo como {role}",
+        "emailsPlural=one, groupsPlural=other": "Se invitó a {emails} persona y se agregaron {groups} grupos como {role}",
+        "emailsPlural=other, groupsPlural=one": "Se invitaron {emails} personas y se agregó {groups} grupo como {role}",
+        "emailsPlural=other, groupsPlural=other": "Se invitaron {emails} personas y se agregaron {groups} grupos como {role}"
+      }
+    }
+  ],
+  "users_invited_success": [
+    {
+      "declarations": [
+        "input count",
+        "input role",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Se invitó a {count} persona como {role}",
+        "countPlural=other": "Se invitaron {count} personas como {role}"
+      }
+    }
+  ],
   "users_learn_more_sharing": "Más información sobre compartir",
   "users_loading": "Cargando...",
   "users_loading_more": "Cargando más...",
-  "users_member_count": "{count} miembros",
+  "users_member_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} miembro",
+        "countPlural=other": "{count} miembros"
+      }
+    }
+  ],
   "users_no_groups": "Sin grupos",
   "users_no_projects": "Sin proyectos",
   "users_no_users": "Sin usuarios",
@@ -1718,7 +1982,16 @@
   "users_page_title": "Gestionar usuarios",
   "users_pending_invitation": "Invitación pendiente",
   "users_project_access": "Acceso al proyecto",
-  "users_project_count": "{count} Proyectos",
+  "users_project_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} Proyecto",
+        "countPlural=other": "{count} Proyectos"
+      }
+    }
+  ],
   "users_projects_count": "{count} Proyectos",
   "users_remove": "Eliminar",
   "users_remove_confirm_desc": "Este usuario ya no podrá acceder a la organización.",
@@ -1744,7 +2017,17 @@
   "users_upgrade_confirm_desc": "Promover un invitado a {role} le otorgará acceso a todos los proyectos abiertos en la organización. ¿Desea promover este usuario invitado a {role}?",
   "users_upgrade_confirm_title": "¿Promover invitado a {role}?",
   "users_url_copied": "URL copiada",
-  "users_user_count": "{count} Usuarios",
+  "users_user_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} Usuario",
+        "countPlural=other": "{count} Usuarios"
+      }
+    }
+  ],
   "users_yes_remove": "Sí, eliminar",
-  "users_yes_upgrade": "Sí, promover"
+  "users_yes_upgrade": "Sí, promover",
+  "workspace_generating_sample_data": "Generando tus datos de ejemplo..."
 }

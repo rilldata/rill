@@ -262,7 +262,7 @@
 
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {m.users_already_member({ emails: failedInvites.join(", "), count: failedInvites.length })}
+          {m.users_already_member({ emails: failedInvites.join(", ") })}
         </div>
       {/if}
     </form>
