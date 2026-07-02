@@ -135,7 +135,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	prefix := catalogPrefix(database)
 	q := fmt.Sprintf(`
 	SELECT
@@ -149,34 +149,40 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	ORDER BY c.ordinal_position
 	`, prefix, prefix)
 
-	db, err := c.getDB(ctx)
+	conn, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.QueryContext(ctx, q, databaseSchema, table)
+	rows, err := conn.QueryContext(ctx, q, databaseSchema, name)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	t := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
-	var colName, colType string
 	var isView bool
+	var fields []*runtimev1.StructType_Field
+	var colName, colType string
 	for rows.Next() {
 		if err := rows.Scan(&isView, &colName, &colType); err != nil {
 			return nil, err
 		}
-		t.Schema[colName] = colType
-		t.View = isView
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: colName,
+			Type: databaseTypeToPB(colType),
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return t, nil
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           isView,
+		Schema:         &runtimev1.StructType{Fields: fields},
+	}, nil
 }
 
 // All implements drivers.OLAPInformationSchema.
@@ -210,57 +216,6 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	}
 	table.DDL = ddl
 	return nil
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *connection) Lookup(ctx context.Context, database, schema, name string) (*drivers.OlapTable, error) {
-	prefix := catalogPrefix(database)
-	q := fmt.Sprintf(`
-	SELECT
-		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS is_view,
-		c.column_name,
-		c.data_type
-	FROM %sinformation_schema.tables t
-	JOIN %sinformation_schema.columns c
-	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-	WHERE t.table_schema = ? AND t.table_name = ?
-	ORDER BY c.ordinal_position
-	`, prefix, prefix)
-
-	conn, err := c.getDB(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := conn.QueryContext(ctx, q, schema, name)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var isView bool
-	var fields []*runtimev1.StructType_Field
-	var colName, colType string
-	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
-			return nil, err
-		}
-		fields = append(fields, &runtimev1.StructType_Field{
-			Name: colName,
-			Type: databaseTypeToPB(colType),
-		})
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return &drivers.OlapTable{
-		Database:       database,
-		DatabaseSchema: schema,
-		Name:           name,
-		View:           isView,
-		Schema:         &runtimev1.StructType{Fields: fields},
-	}, nil
 }
 
 // catalogPrefix returns "<catalog>." if catalog is non-empty, or "" otherwise.

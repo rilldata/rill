@@ -194,12 +194,20 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
-	tableMetadata, err := is.GetTable(ctx, req.Database, req.DatabaseSchema, req.Table)
+	tableMetadata, err := is.Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
 		return nil, err
 	}
+	schema := make(map[string]string)
+	for _, field := range tableMetadata.Schema.Fields {
+		if field.Type.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.Type.RawType)
+		} else {
+			schema[field.Name] = field.Type.RawType
+		}
+	}
 
 	return &runtimev1.GetTableResponse{
-		Schema: tableMetadata.Schema,
+		Schema: schema,
 	}, nil
 }

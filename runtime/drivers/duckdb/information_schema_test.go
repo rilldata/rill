@@ -34,13 +34,12 @@ func TestInformationSchema(t *testing.T) {
 	databaseSchema := "main"
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
 	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap) })
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema, database, databaseSchema) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema, database, databaseSchema) })
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
 	t.Run("testLoadDDL", func(t *testing.T) { testLoadDDL(t, olap) })
 }
 
@@ -75,13 +74,12 @@ schema_name: integration_test
 	databaseSchema := "integration_test"
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
 	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap) })
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema, database, databaseSchema) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema, database, databaseSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema, database, databaseSchema) })
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
 }
 
 func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore) {
@@ -122,26 +120,6 @@ func testInformationSchemaAllLike(t *testing.T, olap drivers.OLAPStore) {
 	tables, _, err = olap.InformationSchema().All(context.Background(), "%nonexistent_table%", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 0, len(tables))
-}
-
-func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
-	ctx := context.Background()
-	bar, err := olap.InformationSchema().Lookup(ctx, "", "", "bar")
-	require.NoError(t, err)
-	require.Equal(t, "bar", bar.Name)
-	require.Equal(t, 2, len(bar.Schema.Fields))
-	require.Equal(t, "bar", bar.Schema.Fields[0].Name)
-	require.Equal(t, runtimev1.Type_CODE_STRING, bar.Schema.Fields[0].Type.Code)
-	require.Equal(t, "baz", bar.Schema.Fields[1].Name)
-	require.Equal(t, runtimev1.Type_CODE_INT32, bar.Schema.Fields[1].Type.Code)
-	require.Equal(t, false, bar.View)
-
-	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
-	require.Equal(t, drivers.ErrNotFound, err)
-
-	table, err := olap.InformationSchema().Lookup(ctx, "", "", "model")
-	require.NoError(t, err)
-	require.Equal(t, "model", table.Name)
 }
 
 func testInformationSchemaAllPagination(t *testing.T, olap drivers.OLAPStore) {
@@ -233,23 +211,6 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 	require.Equal(t, true, model.View)
 }
 
-func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema, database, databaseSchema string) {
-	ctx := context.Background()
-	bar, err := infoSchema.GetTable(ctx, database, databaseSchema, "bar")
-	require.NoError(t, err)
-	require.Equal(t, 2, len(bar.Schema))
-	require.Equal(t, "STRING", bar.Schema["bar"])
-	require.Equal(t, "INT32", bar.Schema["baz"])
-	require.Equal(t, false, bar.View)
-
-	noTable, err := infoSchema.GetTable(ctx, database, databaseSchema, "nonexistent_table")
-	require.Equal(t, 0, len(noTable.Schema))
-
-	table, err := infoSchema.GetTable(ctx, database, databaseSchema, "model")
-	require.NoError(t, err)
-	require.Equal(t, true, table.View)
-}
-
 func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.InformationSchema, database, databaseSchema string) {
 	ctx := context.Background()
 	pageSize := 2
@@ -303,4 +264,24 @@ func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 	require.Contains(t, view.DDL, "CREATE VIEW")
 	require.Contains(t, view.DDL, "model")
+}
+
+func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	bar, err := olap.InformationSchema().Lookup(ctx, "", "", "bar")
+	require.NoError(t, err)
+	require.Equal(t, "bar", bar.Name)
+	require.Equal(t, 2, len(bar.Schema.Fields))
+	require.Equal(t, "bar", bar.Schema.Fields[0].Name)
+	require.Equal(t, runtimev1.Type_CODE_STRING, bar.Schema.Fields[0].Type.Code)
+	require.Equal(t, "baz", bar.Schema.Fields[1].Name)
+	require.Equal(t, runtimev1.Type_CODE_INT32, bar.Schema.Fields[1].Type.Code)
+	require.Equal(t, false, bar.View)
+
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
+	require.Equal(t, drivers.ErrNotFound, err)
+
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", "model")
+	require.NoError(t, err)
+	require.Equal(t, "model", table.Name)
 }

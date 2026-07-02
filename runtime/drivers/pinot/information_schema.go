@@ -127,7 +127,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return result, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, name string) (*drivers.TableMetadata, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
 	for k, v := range c.headers {
 		req.Header.Set(k, v)
@@ -150,47 +150,51 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, nam
 		return nil, err
 	}
 
-	schema := make(map[string]string)
+	unsupportedCols := make(map[string]string)
+	var schemaFields []*runtimev1.StructType_Field
 	for _, field := range schemaResponse.DateTimeFieldSpecs {
 		if field.DataType != "TIMESTAMP" && field.DataType != "LONG" {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_DATE_TIME")
+			unsupportedCols[field.Name] = field.DataType + "_(DATE_TIME_FIELD)"
 			continue
 		}
-		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
-		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
-		} else {
-			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
+		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, true)})
 	}
 	for _, field := range schemaResponse.DimensionFieldSpecs {
-		// Skip fields where SingleValueField is false (i.e. arrays).
-		if field.SingleValueField != nil && !*field.SingleValueField {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_ARRAY")
+		singleValueField := true
+		if field.SingleValueField != nil {
+			singleValueField = *field.SingleValueField
+		}
+		if !singleValueField {
+			// Skip array fields for now
+			unsupportedCols[field.Name] = field.DataType + "_ARRAY"
 			continue
 		}
-		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
-		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
-		} else {
-			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
+		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 	for _, field := range schemaResponse.MetricFieldSpecs {
-		// Skip fields where SingleValueField is false (i.e. arrays).
-		if field.SingleValueField != nil && !*field.SingleValueField {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_ARRAY")
+		singleValueField := true
+		if field.SingleValueField != nil {
+			singleValueField = *field.SingleValueField
+		}
+		if !singleValueField {
+			// Skip array fields for now
+			unsupportedCols[field.Name] = field.DataType + "_ARRAY"
 			continue
 		}
-		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
-		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
-		} else {
-			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
+		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 
-	return &drivers.TableMetadata{Schema: schema, View: false}, nil
+	table := &drivers.OlapTable{
+		Database:          "",
+		DatabaseSchema:    databaseSchema,
+		Name:              name,
+		View:              false,
+		Schema:            &runtimev1.StructType{Fields: schemaFields},
+		UnsupportedCols:   unsupportedCols,
+		PhysicalSizeBytes: -1,
+	}
+
+	return table, nil
 }
 
 func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
@@ -289,75 +293,6 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 	}
 
 	return tables, next, nil
-}
-
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
-	for k, v := range c.headers {
-		req.Header.Set(k, v)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	var schemaResponse pinotSchema
-	err = json.NewDecoder(resp.Body).Decode(&schemaResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	unsupportedCols := make(map[string]string)
-	var schemaFields []*runtimev1.StructType_Field
-	for _, field := range schemaResponse.DateTimeFieldSpecs {
-		if field.DataType != "TIMESTAMP" && field.DataType != "LONG" {
-			unsupportedCols[field.Name] = field.DataType + "_(DATE_TIME_FIELD)"
-			continue
-		}
-		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, true)})
-	}
-	for _, field := range schemaResponse.DimensionFieldSpecs {
-		singleValueField := true
-		if field.SingleValueField != nil {
-			singleValueField = *field.SingleValueField
-		}
-		if !singleValueField {
-			// Skip array fields for now
-			unsupportedCols[field.Name] = field.DataType + "_ARRAY"
-			continue
-		}
-		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
-	}
-	for _, field := range schemaResponse.MetricFieldSpecs {
-		singleValueField := true
-		if field.SingleValueField != nil {
-			singleValueField = *field.SingleValueField
-		}
-		if !singleValueField {
-			// Skip array fields for now
-			unsupportedCols[field.Name] = field.DataType + "_ARRAY"
-			continue
-		}
-		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
-	}
-
-	table := &drivers.OlapTable{
-		Database:          "",
-		DatabaseSchema:    "",
-		Name:              name,
-		View:              false,
-		Schema:            &runtimev1.StructType{Fields: schemaFields},
-		UnsupportedCols:   unsupportedCols,
-		PhysicalSizeBytes: -1,
-	}
-
-	return table, nil
 }
 
 // LoadDDL implements drivers.OLAPInformationSchema.

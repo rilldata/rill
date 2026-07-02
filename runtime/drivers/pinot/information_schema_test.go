@@ -29,14 +29,12 @@ func TestInformationSchema(t *testing.T) {
 
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
 	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap) })
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, infoSchema) })
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema) })
-
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
 }
 
 func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore) {
@@ -70,30 +68,6 @@ func testInformationSchemaAllLike(t *testing.T, olap drivers.OLAPStore) {
 	tables, _, err = olap.InformationSchema().All(context.Background(), "%nonexistent_table%", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 0, len(tables))
-}
-
-func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
-	ctx := context.Background()
-	starbucksStores, err := olap.InformationSchema().Lookup(ctx, "", "", "starbucksStores")
-	require.NoError(t, err)
-	require.Equal(t, "starbucksStores", starbucksStores.Name)
-
-	require.Equal(t, 5, len(starbucksStores.Schema.Fields))
-	require.Equal(t, "starbucksStores", starbucksStores.Name)
-	require.Equal(t, "lon", starbucksStores.Schema.Fields[0].Name)
-	require.Equal(t, runtimev1.Type_CODE_FLOAT32, starbucksStores.Schema.Fields[0].Type.Code)
-	require.Equal(t, "lat", starbucksStores.Schema.Fields[1].Name)
-	require.Equal(t, runtimev1.Type_CODE_FLOAT32, starbucksStores.Schema.Fields[1].Type.Code)
-	require.Equal(t, "name", starbucksStores.Schema.Fields[2].Name)
-	require.Equal(t, runtimev1.Type_CODE_STRING, starbucksStores.Schema.Fields[2].Type.Code)
-	require.Equal(t, "address", starbucksStores.Schema.Fields[3].Name)
-	require.Equal(t, runtimev1.Type_CODE_STRING, starbucksStores.Schema.Fields[3].Type.Code)
-	require.Equal(t, "location_st_point", starbucksStores.Schema.Fields[4].Name)
-	require.Equal(t, runtimev1.Type_CODE_BYTES, starbucksStores.Schema.Fields[4].Type.Code)
-	require.Equal(t, false, starbucksStores.View)
-
-	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
-	require.ErrorContains(t, err, "unexpected status code: 404")
 }
 
 func testInformationSchemaAllPagination(t *testing.T, olap drivers.OLAPStore) {
@@ -185,23 +159,6 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 	require.Equal(t, "testUnnest", tables[9].Name)
 }
 
-func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema) {
-	ctx := context.Background()
-	starbucksStores, err := infoSchema.GetTable(ctx, "", "default", "starbucksStores")
-	require.NoError(t, err)
-
-	require.Equal(t, 5, len(starbucksStores.Schema))
-	require.Equal(t, "FLOAT32", starbucksStores.Schema["lon"])
-	require.Equal(t, "FLOAT32", starbucksStores.Schema["lat"])
-	require.Equal(t, "STRING", starbucksStores.Schema["name"])
-	require.Equal(t, "STRING", starbucksStores.Schema["address"])
-	require.Equal(t, "BYTES", starbucksStores.Schema["location_st_point"])
-	require.Equal(t, false, starbucksStores.View)
-
-	_, err = infoSchema.GetTable(ctx, "", "default", "nonexistent_table")
-	require.ErrorContains(t, err, "unexpected status code: 404")
-}
-
 func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.InformationSchema) {
 	ctx := context.Background()
 	pageSize := 4
@@ -235,4 +192,28 @@ func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.
 	require.NoError(t, err)
 	require.Equal(t, 10, len(tables))
 	require.Empty(t, nextToken)
+}
+
+func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	starbucksStores, err := olap.InformationSchema().Lookup(ctx, "", "", "starbucksStores")
+	require.NoError(t, err)
+	require.Equal(t, "starbucksStores", starbucksStores.Name)
+
+	require.Equal(t, 5, len(starbucksStores.Schema.Fields))
+	require.Equal(t, "starbucksStores", starbucksStores.Name)
+	require.Equal(t, "lon", starbucksStores.Schema.Fields[0].Name)
+	require.Equal(t, runtimev1.Type_CODE_FLOAT32, starbucksStores.Schema.Fields[0].Type.Code)
+	require.Equal(t, "lat", starbucksStores.Schema.Fields[1].Name)
+	require.Equal(t, runtimev1.Type_CODE_FLOAT32, starbucksStores.Schema.Fields[1].Type.Code)
+	require.Equal(t, "name", starbucksStores.Schema.Fields[2].Name)
+	require.Equal(t, runtimev1.Type_CODE_STRING, starbucksStores.Schema.Fields[2].Type.Code)
+	require.Equal(t, "address", starbucksStores.Schema.Fields[3].Name)
+	require.Equal(t, runtimev1.Type_CODE_STRING, starbucksStores.Schema.Fields[3].Type.Code)
+	require.Equal(t, "location_st_point", starbucksStores.Schema.Fields[4].Name)
+	require.Equal(t, runtimev1.Type_CODE_BYTES, starbucksStores.Schema.Fields[4].Type.Code)
+	require.Equal(t, false, starbucksStores.View)
+
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
+	require.ErrorContains(t, err, "unexpected status code: 404")
 }
