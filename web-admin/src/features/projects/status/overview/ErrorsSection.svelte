@@ -59,7 +59,7 @@
         <a href="{basePage}/resources?status=error" class="error-chip">
           <AlertCircleOutline size="12px" />
           <span class="font-medium">{parseErrors.length}</span>
-          <span>{parseErrors.length !== 1 ? m.status_parse_errors() : m.status_parse_error()}</span>
+          <span>{m.status_parse_errors({ count: parseErrors.length })}</span>
         </a>
       {/if}
 
@@ -84,7 +84,9 @@
     </div>
 
     {#if $projectParserQuery.isError || $resourcesQuery.isError}
-      <p class="text-sm text-fg-secondary">{m.status_unable_to_check_errors()}</p>
+      <p class="text-sm text-fg-secondary">
+        {m.status_unable_to_check_errors()}
+      </p>
     {:else if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
       <p class="text-sm text-fg-secondary">{m.status_checking_errors()}</p>
     {:else}

@@ -168,7 +168,7 @@
 
   function handleTransportError(error: Error) {
     console.error("Logs SSE error:", error);
-    connectionError = error.message || m.status_connection_failed();
+    connectionError = error.message || m.status_logs_connection_failed();
   }
 
   function handleOpen() {

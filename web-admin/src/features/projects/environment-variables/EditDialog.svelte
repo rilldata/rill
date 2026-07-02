@@ -284,7 +284,8 @@
       <DialogTitle>{m.env_edit_title()}</DialogTitle>
     </DialogHeader>
     <DialogDescription>
-      {m.env_for_help_see()} <a
+      {m.env_for_help_see()}
+      <a
         href="https://docs.rilldata.com/guide/administration/project-settings/variables-and-credentials"
         target="_blank">{m.env_documentation_link()}</a
       >
@@ -300,7 +301,9 @@
     >
       <div class="flex flex-col gap-y-5">
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-fg-primary">{m.env_environment_label()}</div>
+          <div class="text-sm font-medium text-fg-primary">
+            {m.env_environment_label()}
+          </div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
@@ -324,7 +327,9 @@
           {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-fg-primary">{m.env_variable_label()}</div>
+          <div class="text-sm font-medium text-fg-primary">
+            {m.env_variable_label()}
+          </div>
           <div class="flex flex-col w-full">
             <div class="flex flex-row items-center gap-2">
               <Input
@@ -355,7 +360,7 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  {m.env_key_exists_error()}
+                  {m.env_keys_exist_error({ count: 1 })}
                 </p>
               </div>
             {/if}

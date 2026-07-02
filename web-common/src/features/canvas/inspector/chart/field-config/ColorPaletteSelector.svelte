@@ -125,11 +125,9 @@
           <div>
             {#if hasMoreThanThreshold && !showAllValues}
               <Button type="text" onClick={() => (showAllValues = true)}>
-                {allColorMappings.length - THRESHOLD === 1
-                  ? m.canvas_see_more_value()
-                  : m.canvas_see_more_values({
-                      count: allColorMappings.length - THRESHOLD,
-                    })}
+                {m.canvas_see_more_values({
+                  count: allColorMappings.length - THRESHOLD,
+                })}
               </Button>
             {:else if hasMoreThanThreshold && showAllValues}
               <Button type="text" onClick={() => (showAllValues = false)}>

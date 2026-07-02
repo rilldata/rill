@@ -46,16 +46,18 @@
 </script>
 
 <div class="flex flex-col items-center w-full h-full">
-  <span class="text-3xl font-normal m-2">Sorry, unexpected query error!</span>
+  <span class="text-3xl font-normal m-2"
+    >{m.pivot_unexpected_query_error()}</span
+  >
   {#if traceIds.length > 0}
     <div class="text-sm text-fg-primary mt-1">
-      <b>Trace ID{traceIds.length !== 1 ? "s" : ""}</b>: {traceIds.join(", ")}
+      <b>{m.pivot_trace_ids_label({ count: traceIds.length })}</b>: {traceIds.join(
+        ", ",
+      )}
     </div>
   {/if}
   <div class="text-base text-fg-secondary mt-4">
-    One or more APIs failed with the following error{uniqueErrors.length !== 1
-      ? "s"
-      : ""}:
+    {m.pivot_apis_failed({ count: uniqueErrors.length })}
   </div>
 
   {#each uniqueErrors as error}

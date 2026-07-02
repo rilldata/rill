@@ -63,7 +63,7 @@
           >{tableCount}{hasMore && tableCount > 0 ? "+" : ""}</span
         >
         <span class="text-fg-secondary"
-          >{tableCount === 1 ? m.status_table_singular() : m.status_table_plural()}</span
+          >{m.status_table_label({ count: tableCount })}</span
         >
       </a>
       <a href="{basePage}/tables?type=view" class="chip">
@@ -71,7 +71,7 @@
           >{viewCount}{hasMore && viewCount > 0 ? "+" : ""}</span
         >
         <span class="text-fg-secondary"
-          >{viewCount === 1 ? m.status_view_singular() : m.status_view_plural()}</span
+          >{m.status_view_label({ count: viewCount })}</span
         >
       </a>
     </div>

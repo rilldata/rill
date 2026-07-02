@@ -78,7 +78,7 @@
         });
         eventBus.emit("notification", {
           type: "success",
-          message: m.billing_plan_renewed({ plan: paidPlan.displayName }),
+          message: m.billing_plan_renewed({ planName: paidPlan.displayName }),
         });
       } else {
         await $planUpdater.mutateAsync({

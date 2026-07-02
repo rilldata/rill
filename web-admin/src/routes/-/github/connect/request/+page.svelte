@@ -21,12 +21,16 @@
     <Github className="w-10 h-10 text-fg-primary" />
     <CtaHeader>{m.github_connect_to_github()}</CtaHeader>
     <CtaMessage>
-      {m.github_requested_access()} <GithubRepoInline gitRemote={remote} />{m.github_close_page_now()}
+      {m.github_requested_access()}
+      <GithubRepoInline gitRemote={remote} />{m.github_close_page_now()}
     </CtaMessage>
     <CtaMessage>
       {m.github_cli_polling()}
       <KeyboardKey label="Control" /> +
-      <KeyboardKey label="C" /> {m.github_run_deploy_again()}
+      <KeyboardKey label="C" />
+      {m.github_and_run()}
+      <CodeBlockInline code="rill deploy" />
+      {m.github_again_once_granted()}
     </CtaMessage>
   </CtaContentContainer>
 </CtaLayoutContainer>
