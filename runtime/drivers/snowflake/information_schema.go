@@ -140,7 +140,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	q := fmt.Sprintf(`
 		SELECT
 			CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END as is_view,
@@ -158,31 +158,39 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		return nil, err
 	}
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
+	rows, err := db.QueryxContext(ctx, q, databaseSchema, name)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	t := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
-	var (
-		colName, colType string
-		isView           bool
-	)
+	var view bool
+	var col, typ string
+	fields := make([]*runtimev1.StructType_Field, 0)
 	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
+		if err := rows.Scan(&view, &col, &typ); err != nil {
 			return nil, err
 		}
-		t.Schema[colName] = colType
-		t.View = isView
+		t, err := databaseTypeToPB(typ, 0, true) // add scale and nullability if needed
+		if err != nil {
+			return nil, err
+		}
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: col,
+			Type: t,
+		})
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return t, nil
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           view,
+		Schema: &runtimev1.StructType{
+			Fields: fields,
+		},
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
+	}, rows.Err()
 }
 
 // All implements drivers.OLAPInformationSchema.
@@ -218,35 +226,6 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	}
 	table.DDL = ddl
 	return nil
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-
-	rtSchema := &runtimev1.StructType{}
-	for name, typ := range meta.Schema {
-		t, err := databaseTypeToPB(typ, 0, true) // add scale and nullability if needed
-		if err != nil {
-			return nil, err
-		}
-		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: t,
-		})
-	}
-	return &drivers.OlapTable{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            rtSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
 
 func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, string, error) {

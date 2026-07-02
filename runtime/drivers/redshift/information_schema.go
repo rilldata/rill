@@ -139,16 +139,18 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	// Query to get column name and data type
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	q := fmt.Sprintf(`
-SELECT 
-	column_name, 
-	data_type
-FROM svv_all_columns
-WHERE database_name = %s AND schema_name = %s AND table_name = %s
-ORDER BY ordinal_position;
-`, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(table))
+	SELECT 
+		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS view,
+		c.column_name, 
+		c.data_type
+	FROM svv_all_tables t
+	JOIN svv_all_columns c 
+	ON t.database_name = c.database_name and t.schema_name = c.schema_name AND t.table_name = c.table_name
+	WHERE t.database_name = %s AND t.schema_name = %s AND t.table_name = %s
+	ORDER BY ordinal_position;
+	`, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(name))
 
 	client, err := c.getClient(ctx)
 	if err != nil {
@@ -167,25 +169,37 @@ ORDER BY ordinal_position;
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query results: %w", err)
 	}
-
-	var column, dataType string
-	schemaMap := make(map[string]string, len(result.Records))
-	for _, record := range result.Records {
-		colField, ok := record[0].(*types.FieldMemberStringValue)
+	var view bool
+	fields := make([]*runtimev1.StructType_Field, len(result.Records))
+	for i, record := range result.Records {
+		viewField, ok := record[0].(*types.FieldMemberBooleanValue)
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for column_name field")
 		}
-		typeField, ok := record[1].(*types.FieldMemberStringValue)
+		view = viewField.Value
+		colField, ok := record[1].(*types.FieldMemberStringValue)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for column_name field")
+		}
+		typeField, ok := record[2].(*types.FieldMemberStringValue)
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for data_type field")
 		}
-		column = colField.Value
-		dataType = typeField.Value
-		schemaMap[column] = dataType
+		fields[i] = &runtimev1.StructType_Field{
+			Name: colField.Value,
+			Type: redshiftTypeToRuntimeType(typeField.Value),
+		}
 	}
-
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           view,
+		Schema: &runtimev1.StructType{
+			Fields: fields,
+		},
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
 	}, nil
 }
 
@@ -206,30 +220,4 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 // LoadDDL implements drivers.OLAPInformationSchema.
 func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
 	return nil // Not implemented
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-	runtimeSchema := &runtimev1.StructType{
-		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
-	}
-	for name, typ := range meta.Schema {
-		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: redshiftTypeToRuntimeType(typ),
-		})
-	}
-	return &drivers.OlapTable{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            runtimeSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
