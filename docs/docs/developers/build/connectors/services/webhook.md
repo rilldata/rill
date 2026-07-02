@@ -76,10 +76,15 @@ secret.
 ## Static headers
 
 If a receiver requires additional headers (e.g. an `Authorization` header for an API
-gateway), configure them on the connector:
+gateway), configure them on a connector YAML file (connector variables cannot express
+nested maps, so headers cannot be set via `.env`):
 
-```shell
-connector.webhook.headers.Authorization=Bearer <token>
+```yaml
+# connectors/webhook.yaml
+type: connector
+driver: webhook
+headers:
+  Authorization: "Bearer {{ .env.connector.webhook.gateway_token }}"
 ```
 
 ## Per-receiver configuration
