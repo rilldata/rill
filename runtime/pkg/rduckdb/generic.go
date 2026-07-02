@@ -489,10 +489,10 @@ func (m *generic) schemaUsingConn(ctx context.Context, database, databaseSchema,
 
 	if ilike != "" {
 		whereClause += " AND t.table_name ilike ?"
-		args = []any{ilike}
+		args = append(args, ilike)
 	} else if name != "" {
 		whereClause += " AND t.table_name = ?"
-		args = []any{name}
+		args = append(args, name)
 	}
 
 	// Add pagination filter
