@@ -472,7 +472,7 @@ func (m *generic) schemaUsingConn(ctx context.Context, database, databaseSchema,
 	var whereClause string
 	var args []any
 	// Database filter
-	if databaseSchema != "" {
+	if database != "" {
 		whereClause += "WHERE t.table_catalog = ?"
 		args = append(args, database)
 	} else {
@@ -488,10 +488,10 @@ func (m *generic) schemaUsingConn(ctx context.Context, database, databaseSchema,
 	}
 
 	if ilike != "" {
-		whereClause = " AND t.table_name ilike ?"
+		whereClause += " AND t.table_name ilike ?"
 		args = []any{ilike}
 	} else if name != "" {
-		whereClause = " AND t.table_name = ?"
+		whereClause += " AND t.table_name = ?"
 		args = []any{name}
 	}
 
