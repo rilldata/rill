@@ -208,6 +208,8 @@
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email(m.report_form_invalid_email())),
+      enableWebhookNotification: boolean(),
+      webhookUrls: array().of(string().url("Invalid URL")),
       columns: isCanvasReport
         ? array().of(string())
         : array().of(string()).min(1),
@@ -220,7 +222,12 @@
           const hasEmailRecipients = value.emailRecipients
             ? value.emailRecipients.filter(Boolean).length > 0
             : false;
-          if (!value.enableSlackNotification) return hasEmailRecipients;
+          const hasWebhookUrls =
+            value.enableWebhookNotification && value.webhookUrls
+              ? value.webhookUrls.filter(Boolean).length > 0
+              : false;
+          if (!value.enableSlackNotification)
+            return hasEmailRecipients || hasWebhookUrls;
 
           const hasSlackUsers = value.slackUsers
             ? value.slackUsers.filter(Boolean).length > 0
@@ -229,7 +236,12 @@
             ? value.slackChannels.filter(Boolean).length > 0
             : false;
 
-          return hasEmailRecipients || hasSlackUsers || hasSlackChannels;
+          return (
+            hasEmailRecipients ||
+            hasSlackUsers ||
+            hasSlackChannels ||
+            hasWebhookUrls
+          );
         },
       )
       .test(
@@ -301,6 +313,9 @@
         : undefined,
       slackUsers: values.enableSlackNotification
         ? values.slackUsers.filter(Boolean)
+        : undefined,
+      webhookUrls: values.enableWebhookNotification
+        ? values.webhookUrls.filter(Boolean)
         : undefined,
       webOpenMode: values.webOpenMode,
     };
