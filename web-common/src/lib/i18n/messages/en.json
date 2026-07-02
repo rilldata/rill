@@ -8,7 +8,8 @@
   "alert_dashboard": "Dashboard",
   "alert_dashboard_not_exist": "Dashboard does not exist",
   "alert_delete": "Delete Alert",
-  "alert_edit": "Edit alert",
+  "alert_edit": "Edit",
+  "alert_edit_label": "Edit alert",
   "alert_email_notifications": "Email notifications",
   "alert_filters_label": "Filters ({count})",
   "alert_form_back": "Back",
@@ -69,6 +70,8 @@
   "alert_has_not_run_yet": "This alert has not run yet",
   "alert_last_checked": "Last checked {time}",
   "alert_loading": "Loading...",
+  "alert_meta_created_by": "Alert created by {name}",
+  "alert_meta_created_through_code": "Alert created through code",
   "alert_name_label": "Name",
   "alert_no_filters_body": "No filters were applied to the dashboard that this alert was created from.",
   "alert_no_filters_heading": "No filters selected",
@@ -140,7 +143,7 @@
   "avatar_share_dashboard": "Share dashboard",
   "avatar_share_description": "Share your current view with another project member.",
   "avatar_view_as": "View as",
-  "bignumber_copy_value": "Copy this value to clipboard",
+  "bignumber_copy_value": "this value to clipboard",
   "bignumber_shift_click": "+ Click",
   "billing_30_day_free_trial": "30 day free trial",
   "billing_30_days": "30 days",
@@ -151,7 +154,7 @@
   "billing_cancel": "Cancel",
   "billing_cancel_anytime": "Cancel anytime.",
   "billing_cancel_plan": "Cancel plan",
-  "billing_cancel_plan_desc": "If you cancel your plan, you'll still be able to access your account through {date}.",
+  "billing_cancel_plan_desc": "If you cancel your plan, you'll still be able to access your account through {date}",
   "billing_cancel_plan_title": "Cancel your {planName} plan?",
   "billing_cancel_subscription": "Cancel subscription",
   "billing_change_billing_contact": "Change billing contact",
@@ -190,7 +193,7 @@
   "billing_fix_payment_issues": "Please fix payment issues: {details}",
   "billing_free_credit_desc": "$250 free credit",
   "billing_free_trial_info": "free trial · 30 days, no credit card required. Projects hibernate when trial ends.",
-  "billing_free_trial_with_credits": "You are on a free trial with ${amount} in credits.",
+  "billing_free_trial_with_credits": "You are on a free trial with {amount}$ in credits.",
   "billing_got_it": "Got it",
   "billing_highlight_1m_ai_tokens": "1M AI tokens / seat / month",
   "billing_highlight_2m_ai_tokens": "2M AI tokens / seat / month",
@@ -229,7 +232,7 @@
   "billing_plan_was_cancelled": "Your {planName} plan was cancelled",
   "billing_prod_compute_units": "{count} Prod Compute Units",
   "billing_projects": "Projects",
-  "billing_projects_hibernating": " and this org's projects are now hibernating",
+  "billing_projects_hibernating": " and this org’s projects are now hibernating",
   "billing_quota_api_calls": "{value} API calls / seat / month",
   "billing_quota_compute_units": "Up to {value} compute units",
   "billing_quota_managed_db": "Managed database up to {value}",
@@ -251,7 +254,7 @@
   "billing_trial_credit_running_low": "Your trial credit is running low.",
   "billing_trial_expired": "Your trial has expired.",
   "billing_trial_expired_hibernated": "Trial expired · Projects hibernated",
-  "billing_trial_expired_hibernating": "Your trial has expired and this org's projects are now hibernating.",
+  "billing_trial_expired_hibernating": "Your trial has expired and this org’s projects are now hibernating.",
   "billing_trial_expires_in": "Your trial expires in {duration}.",
   "billing_trial_percent_used": "{percent}% of trial used, projects will hibernate when trial ends",
   "billing_unit_spec": "1 unit = 4GiB RAM, 1vGPU",
@@ -293,7 +296,8 @@
   "bookmark_filters_only_tooltip": "Toggling this on will only save the filter set above, not the full dashboard layout and state.",
   "bookmark_go_to_home": "Go to Home",
   "bookmark_home_created": "Home bookmark created",
-  "bookmark_home_description": "This will be everyone's main view for this dashboard.",
+  "bookmark_filters_only_label": "Filters only",
+  "bookmark_home_description": "This will be everyone’s main view for this dashboard.",
   "bookmark_label": "Label",
   "bookmark_managed_bookmarks": "Managed bookmarks",
   "bookmark_no_bookmarks": "You have no bookmarks for this dashboard.",
@@ -320,7 +324,7 @@
   "branch_production": "Production",
   "branch_read_only": "Read-only",
   "branch_recreate_with": "To edit this branch, recreate it with",
-  "branch_resume": "Resume branch",
+  "branch_resume": "Resume",
   "branch_resume_failed": "Failed to resume branch: {error}",
   "branch_slots": "Slots",
   "branch_status_error": "Error",
@@ -574,6 +578,7 @@
   "common_apply": "Apply",
   "common_back": "Back",
   "common_cancel": "Cancel",
+  "common_close": "Close",
   "common_close_search": "Close search",
   "common_contact_us": "Contact us",
   "common_continue": "Continue",
@@ -584,6 +589,7 @@
   "common_loading": "Loading...",
   "common_must_be_number": "Value must be a valid number",
   "common_name": "Name",
+  "common_no_results": "No results found",
   "common_no_results_found": "No results found.",
   "common_other_values_selected": [
     {
@@ -598,6 +604,7 @@
   "common_preview": "Preview",
   "common_required": "Required",
   "common_search": "Search",
+  "common_search_ellipsis": "Search...",
   "common_search_list": "Search list",
   "common_select_all": "Select all",
   "common_status": "Status",
@@ -631,7 +638,7 @@
   "dashboard_clear_recents": "Clear recents",
   "dashboard_clear_view": "Clear view",
   "dashboard_click_to_edit_values": "Click to edit the values",
-  "dashboard_cmd_click_replace": "⌘ + Click to replace",
+  "dashboard_cmd_click_replace": "Click to replace",
   "dashboard_collapse_all": "Collapse All",
   "dashboard_columns": "Columns",
   "dashboard_comparison_column_aria": "Comparison column",
@@ -658,6 +665,7 @@
   "dashboard_dimensions": "Dimensions",
   "dashboard_dimensions_count": "{count} dimensions",
   "dashboard_dimensions_label": "DIMENSIONS",
+  "dashboard_download_as_png": "Download as PNG",
   "dashboard_download_png": "Download PNG",
   "dashboard_drag_dimensions": "Drag dimensions here",
   "dashboard_drag_dimensions_or_measures": "Drag dimensions or measures here",
@@ -806,7 +814,7 @@
   "dashboard_total_row": "Total row",
   "dashboard_view_as": "View as",
   "dashboard_viewing_as": "Viewing as",
-  "dialog_close_without_saving_alert_desc": "You haven't saved changes to this alert yet, so closing this window will lose your work.",
+  "dialog_close_without_saving_alert_desc": "You haven’t saved changes to this alert yet, so closing this window will lose your work.",
   "dialog_close_without_saving_cancel": "Keep editing",
   "dialog_close_without_saving_confirm": "Close",
   "dialog_close_without_saving_title": "Close without saving?",
@@ -1022,7 +1030,8 @@
   "filter_advanced_beta": "Advanced (BETA)",
   "filter_advanced_warning": "Advanced filters are a bleeding edge feature! There may be bugs.",
   "filter_dimensions": "DIMENSIONS",
-  "filter_enter_search_term": "Enter search term",
+  "filter_enter_search_term": "Enter a search term",
+  "filter_enter_search_term_select": "Enter search term",
   "filter_make_optional": "Make filter optional",
   "filter_make_required": "Make filter required",
   "filter_measure_for_dimension": "for {dimension}",
@@ -1062,6 +1071,7 @@
   "github_again_once_granted": "again once access has been granted.",
   "github_and_run": "and run",
   "github_branch": "branch",
+  "github_branch_label": "Branch",
   "github_cancel_in_cli": "in the CLI to cancel the connect request.)",
   "github_cli_polling": "The CLI will keep polling until GitHub access has been granted by an admin. You can stop polling by pressing",
   "github_click_to_reauthorize": "Click the button below to re-authorize/authorize another account.",
@@ -1084,7 +1094,8 @@
   "github_error_subpath_exists": "The subpath you specified already exists in this repo. Please use a different subpath or remove the existing folder before pushing.",
   "github_existing_repository": "Existing repository",
   "github_grant_access_to_repo": "Please grant access to your repository",
-  "github_no_access_to_repo": "Your authorized GitHub account does not have access to the repository.",
+  "github_no_access_account": "Your authorized GitHub account",
+  "github_no_access_to": "does not have access to",
   "github_organization": "Organization",
   "github_overwrite_warning": "Current project contents will be overwritten with the contents of the repository. There is no way to retrieve this current project. Are you sure?",
   "github_pull_changes": "Pull changes",
@@ -1096,6 +1107,7 @@
   "github_select_organization": "Select organization",
   "github_select_repository": "Select repository",
   "github_subpath": "subpath",
+  "github_subpath_label": "Subpath",
   "github_synced": "Synced",
   "github_type_to_confirm": "Type {text} in the box below to confirm:",
   "github_unlock_bi_as_code": "Unlock the power of BI-as-code with GitHub-backed collaboration, version control, and approval workflows.",
@@ -1121,7 +1133,16 @@
   "groups_role_updated": "User group role updated",
   "groups_table_empty": "No groups found",
   "groups_table_header_group": "Group",
-  "groups_total_count": "{count} total groups",
+  "groups_total_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} total group",
+        "countPlural=other": "{count} total groups"
+      }
+    }
+  ],
   "groups_yes_delete": "Yes, delete",
   "home_dashboards_heading": "Dashboards",
   "home_greeting": "Hi {name}!",
@@ -1129,6 +1150,7 @@
   "home_subtitle_with_chat": "Ask questions about your data, or explore your dashboards below",
   "home_welcome_getting_started": "It looks like you're just starting out! Check out our",
   "home_welcome_quickstart_link": "Quickstart to create your first project",
+  "home_project_title_label": "Project title",
   "home_welcome_to": "Welcome to {projectName}",
   "interval_day": "Day",
   "interval_hour": "Hour",
@@ -1143,7 +1165,7 @@
   "language_switcher_label": "Language",
   "layout_inspector_panel_aria": "Inspector Panel",
   "leaderboard_compare": "Compare",
-  "leaderboard_copy_value": "Copy this value to clipboard",
+  "leaderboard_copy_value": "this value to clipboard",
   "leaderboard_expand_table": "(Expand Table)",
   "leaderboard_expand_tooltip": "Expand dimension to see more values",
   "leaderboard_no_available_values": "(No available values)",
@@ -1260,7 +1282,7 @@
   "project_create_project": "Create project",
   "project_dashboards_title": "Project dashboards",
   "project_delete": "Delete",
-  "project_deploying": "Deploying your project...",
+  "project_deploying": "Hang tight! We're deploying your project...",
   "project_edit": "Edit",
   "project_failed_to_wake": "Failed to wake project: {error}",
   "project_hibernating": "Hibernating...",
@@ -1272,7 +1294,7 @@
   "project_name_new": "Name your project",
   "project_name_required": "Name is required",
   "project_rename": "Rename",
-  "project_rename_anytime": "You can rename your project anytime.",
+  "project_rename_anytime": "You can rename anytime from project settings.",
   "project_resume_branch": "Resume branch",
   "project_role_admin": "Admin",
   "project_role_guest_description": "Access to invited projects only",
@@ -1282,14 +1304,14 @@
   "project_share": "Share",
   "project_share_failed_to_invite": "Failed to invite.",
   "project_share_heading": "Share project: {project}",
-  "project_share_invalid_email": "Invalid email address",
-  "project_share_invalid_email_or_group": "Invalid email or group name",
+  "project_share_invalid_email": "Invalid email",
+  "project_share_invalid_email_or_group": "Must be a valid email or group name",
   "project_share_role_admin": "Admin",
-  "project_share_role_admin_description": "Can manage project settings and members",
+  "project_share_role_admin_description": "Full control of project settings and members",
   "project_share_role_editor": "Editor",
-  "project_share_role_editor_description": "Can edit project resources",
+  "project_share_role_editor_description": "Can create and edit dashboards; manage non-admin access",
   "project_share_role_viewer": "Viewer",
-  "project_share_role_viewer_description": "Can view dashboards",
+  "project_share_role_viewer_description": "Read-only access to all project resources",
   "project_share_tooltip": "Share project",
   "project_starting": "Starting...",
   "project_starting_branch_deployment": "Starting branch deployment...",
@@ -1337,7 +1359,7 @@
   "report_adhoc_tooltip": "This report was run manually off-schedule.",
   "report_context_menu_aria": "Report context menu",
   "report_created_by": "Created by {name}",
-  "report_created_through_code": "Report created through code",
+  "report_created_through_code": "Created through code",
   "report_dashboard": "Dashboard",
   "report_dashboard_not_exist": "Dashboard does not exist",
   "report_delete": "Delete report",
@@ -1365,7 +1387,7 @@
   "report_form_day_wednesday": "Wednesday",
   "report_form_docs": "docs",
   "report_form_edited_notification": "Report edited",
-  "report_form_email_hint": "Recipients will receive different views based on their security policy.",
+  "report_form_email_hint": "Recipients will receive different views based on their security policy. Recipients without project access can only download the report.",
   "report_form_email_placeholder": "Enter an email address",
   "report_form_email_recipients": "Email Recipients",
   "report_form_email_recurring": "Email recurring exports to recipients.",
@@ -1418,6 +1440,8 @@
   "report_hasnt_run_yet": "Hasn't run yet",
   "report_last_run": "Last run {time}",
   "report_loading": "Loading...",
+  "report_meta_created_by": "Report created by {name}",
+  "report_meta_created_through_code": "Report created through code",
   "report_name_label": "Name",
   "report_next_run": "Next run",
   "report_no_row_limit": "No row limit",
@@ -1474,6 +1498,7 @@
   "settings_dark_logo_label": "Dark Logo",
   "settings_delete_button": "Delete",
   "settings_delete_org_button": "Delete Organization",
+  "settings_delete_org_button_label": "Delete organization",
   "settings_delete_org_confirm_description": "The organization \"{organization}\" will be permanently deleted along with all its projects, data, and settings. This action cannot be undone.",
   "settings_delete_org_confirm_title": "Delete this organization?",
   "settings_delete_org_description": "Permanently delete this organization and all of its contents from the Rill platform. This action is not reversible — please continue with caution.",
@@ -1524,8 +1549,8 @@
   "settings_project_page_title": "Project settings",
   "settings_project_title": "Project",
   "settings_project_url_description": "Your project will be available at https://ui.rilldata.com/{org}/{slug}.",
-  "settings_project_visibility_private": "This project is currently Private. Only members of the organization can access this project.",
-  "settings_project_visibility_public": "This project is currently Public. Anyone with the URL can view this project.",
+  "settings_project_visibility_private": "This project is currently <strong>Private</strong>. Only members of the organization can access this project.",
+  "settings_project_visibility_public": "This project is currently <strong>Public</strong>. Anyone with the URL can view this project.",
   "settings_project_visibility_title": "Project Visibility",
   "settings_remove_button": "Remove",
   "settings_rename_button": "Rename",
@@ -1549,7 +1574,7 @@
   "status_action_refresh_errored_partitions": "Refresh Errored Partitions",
   "status_action_view_logs": "View Logs",
   "status_action_view_partitions": "View Partitions",
-  "status_all_types": "All Types",
+  "status_all_types": "All types",
   "status_cancel": "Cancel",
   "status_checking_errors": "Checking for errors...",
   "status_clear": "Clear",
@@ -1611,13 +1636,26 @@
   "status_label_status": "Status",
   "status_learn_about_external_olap": "Learn about connecting external OLAP engines",
   "status_learn_more": "Learn more ->",
-  "status_levels_selected": "{first}, +{count} other(s)",
+  "status_levels_selected": [
+    {
+      "declarations": [
+        "input first",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{first}, +{count} other",
+        "countPlural=other": "{first}, +{count} others"
+      }
+    }
+  ],
   "status_load_more_tables": "Load more tables",
   "status_loading": "Loading...",
   "status_loading_models": "Loading models",
   "status_loading_resources": "Loading resources...",
-  "status_loading_tables": "Loading tables...",
-  "status_loading_tables_short": "Loading tables",
+  "status_loading_tables": "Loading tables",
+  "status_loading_tables_short": "Loading tables...",
   "status_logs_all_levels": "All levels",
   "status_logs_connecting": "Connecting",
   "status_logs_connection_failed": "Connection failed",
@@ -1720,6 +1758,7 @@
   "time_comparison_previous_period": "Previous period",
   "time_custom": "Custom",
   "time_custom_range": "Custom range",
+  "time_custom_range_title": "Custom Range",
   "time_enter_time_range": "Enter a time range",
   "time_from_now": "{duration} from now",
   "time_grain_by": "by",
@@ -1743,7 +1782,7 @@
   "time_grain_years": "years",
   "time_just_now": "Just now",
   "time_last_duration": "Last {duration}",
-  "time_month_to_date": "Month to Date",
+  "time_month_to_date": "Month to date",
   "time_n_days_ago": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1810,7 +1849,7 @@
   "time_previous_quarter": "Previous quarter",
   "time_previous_week": "Previous week",
   "time_previous_year": "Previous year",
-  "time_quarter_to_date": "Quarter to Date",
+  "time_quarter_to_date": "Quarter to date",
   "time_range_grain_to_date": "{grain} to date",
   "time_range_last_n_grains": "last {count} {grains}",
   "time_range_next_grain": "next {grain}",
@@ -1829,8 +1868,8 @@
   "time_today": "Today",
   "time_unable_to_parse": "Unable to parse time string",
   "time_vs": "vs",
-  "time_week_to_date": "Week to Date",
-  "time_year_to_date": "Year to Date",
+  "time_week_to_date": "Week to date",
+  "time_year_to_date": "Year to date",
   "time_yesterday": "Yesterday",
   "users_access_changed_everyone": "Project access changed to everyone",
   "users_access_changed_invite_only": "Project access changed to invite-only",
@@ -1854,7 +1893,20 @@
       }
     }
   ],
-  "users_already_member": "{emails} already a member of this organization",
+  "users_already_member": [
+    {
+      "declarations": [
+        "input emails",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{emails} is already a member of this organization",
+        "countPlural=other": "{emails} are already members of this organization"
+      }
+    }
+  ],
   "users_and_more": "and {count} more",
   "users_billing_change_role_desc": "This user is currently the billing contact. To change their role, assign another admin as the billing contact first.",
   "users_billing_change_role_title": "Assign a new billing contact first to change this user's role",
@@ -1876,9 +1928,48 @@
   "users_error_updating_role": "Error updating user role",
   "users_error_upgrading_role": "Error upgrading user role",
   "users_everyone_at_org": "Everyone at {organization}",
-  "users_failed_add_groups": "Failed to add groups: {groups}",
-  "users_failed_invite": "Failed to invite {emails}",
-  "users_failed_invite_users": "Failed to invite users: {emails}",
+  "users_failed_add_groups": [
+    {
+      "declarations": [
+        "input groups",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Failed to add group: {groups}",
+        "countPlural=other": "Failed to add groups: {groups}"
+      }
+    }
+  ],
+  "users_failed_invite": [
+    {
+      "declarations": [
+        "input emails",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Failed to invite {emails}",
+        "countPlural=other": "Failed to invite: {emails}"
+      }
+    }
+  ],
+  "users_failed_invite_users": [
+    {
+      "declarations": [
+        "input emails",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Failed to invite user: {emails}",
+        "countPlural=other": "Failed to invite users: {emails}"
+      }
+    }
+  ],
   "users_failed_load_projects": "Failed to load projects",
   "users_failed_load_users": "Failed to load users",
   "users_filter_admins": "Admins",
@@ -1956,7 +2047,7 @@
   ],
   "users_learn_more_sharing": "Learn more about sharing",
   "users_loading": "Loading...",
-  "users_loading_more": "Loading more...",
+  "users_loading_more": "Loading more…",
   "users_member_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -1971,6 +2062,20 @@
   "users_no_projects": "No projects",
   "users_no_users": "No users",
   "users_only_admins_access": "Only admins and invited users can access",
+  "users_org_invited_success": [
+    {
+      "declarations": [
+        "input count",
+        "input role",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Successfully invited {count} person as {role}",
+        "countPlural=other": "Successfully invited {count} people as {role}"
+      }
+    }
+  ],
   "users_org_members_access": "Org members can access",
   "users_page_title": "Manage users",
   "users_pending_invitation": "Pending invitation",
@@ -1985,7 +2090,6 @@
       }
     }
   ],
-  "users_projects_count": "{count} Projects",
   "users_remove": "Remove",
   "users_remove_confirm_desc": "This user will no longer be able to access the organization.",
   "users_remove_confirm_title": "Remove user from organization?",
@@ -2015,8 +2119,8 @@
       "declarations": ["input count", "local countPlural = count: plural"],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{count} User",
-        "countPlural=other": "{count} Users"
+        "countPlural=one": "{count} user",
+        "countPlural=other": "{count} users"
       }
     }
   ],

@@ -55,7 +55,7 @@
 
 <OverviewCard title={m.status_nav_tables()} viewAllHref="{basePage}/tables">
   {#if isLoading}
-    <p class="text-sm text-fg-secondary">{m.status_loading_tables()}</p>
+    <p class="text-sm text-fg-secondary">{m.status_loading_tables_short()}</p>
   {:else if filteredTables.length > 0}
     <div class="chips">
       <a href="{basePage}/tables?type=table" class="chip">

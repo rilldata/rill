@@ -11,6 +11,7 @@
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
@@ -60,7 +61,9 @@
   />
   <h2 class="text-lg font-normal">{m.auth_request_access_title()}</h2>
   <div class="text-fg-secondary text-base">
-    {m.auth_request_access_description({ project })}
+    {@html m.auth_request_access_description({
+      project: `<b>${escapeHtml(project)}</b>`,
+    })}
   </div>
   <Button
     type="primary"
@@ -69,7 +72,8 @@
     loading={isPending}
     disabled={requested}
   >
-    {#if requested}<Check />{m.auth_access_requested()}{:else}{m.auth_request_access()}{/if}
+    {#if requested}<Check
+      />{m.auth_access_requested()}{:else}{m.auth_request_access()}{/if}
   </Button>
   {#if requested && !isPending}
     {#if errorMessage}

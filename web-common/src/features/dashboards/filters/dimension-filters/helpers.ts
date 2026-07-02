@@ -4,13 +4,13 @@ import { DimensionFilterMode } from "./constants";
 export function getSearchPlaceholder(mode: DimensionFilterMode): string {
   switch (mode) {
     case DimensionFilterMode.Select:
-      return m.filter_enter_search_term();
+      return m.filter_enter_search_term_select();
     case DimensionFilterMode.InList:
       return m.filter_paste_list_hint();
     case DimensionFilterMode.Contains:
       return m.filter_enter_search_term();
     default:
-      return m.filter_enter_search_term();
+      return m.filter_enter_search_term_select();
   }
 }
 

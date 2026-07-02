@@ -26,9 +26,10 @@
     <GithubFail />
     <CtaHeader>{m.github_could_not_connect()}</CtaHeader>
     <CtaMessage>
-      {m.github_no_access_to_repo()}
+      {m.github_no_access_account()}
       <GithubUserInline {githubUsername} />
-      <GithubRepoInline gitRemote={remote} />
+      {m.github_no_access_to()}
+      <GithubRepoInline gitRemote={remote} />.
     </CtaMessage>
     <CtaMessage>
       {m.github_click_to_reauthorize()}

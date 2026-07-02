@@ -72,7 +72,7 @@
   $: selectedProjectsLabel = (() => {
     if (selectedProjects.length === 0) return m.users_select_projects();
     if (selectedProjects.length === 1) return selectedProjects[0];
-    return m.users_projects_count({ count: selectedProjects.length });
+    return m.users_project_count({ count: selectedProjects.length });
   })();
 
   $: if (open && !hasAutoSelectedProject && projects.length > 0) {
@@ -156,7 +156,10 @@
         if (succeeded.length > 0) {
           eventBus.emit("notification", {
             type: "success",
-            message: m.users_guests_invited_success({ count: succeeded.length, role: selectedRole }),
+            message: m.users_guests_invited_success({
+              count: succeeded.length,
+              role: selectedRole,
+            }),
           });
         }
 
@@ -317,12 +320,17 @@
 
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {m.users_failed_invite({ emails: failedInvites.join(", ") })}
+          {m.users_failed_invite({
+            emails: failedInvites.join(", "),
+            count: failedInvites.length,
+          })}
         </div>
       {/if}
     </form>
     <DialogFooter>
-      <Button type="tertiary" onClick={() => (open = false)}>{m.users_cancel()}</Button>
+      <Button type="tertiary" onClick={() => (open = false)}
+        >{m.users_cancel()}</Button
+      >
       <Button
         type="primary"
         submitForm

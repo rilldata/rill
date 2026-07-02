@@ -325,7 +325,7 @@
           <Switch
             bind:checked={$form["filtersOnly"]}
             id="filtersOnly"
-            label={m.bookmark_save_filters_only()}
+            label={m.bookmark_filters_only_label()}
           />
 
           <Label

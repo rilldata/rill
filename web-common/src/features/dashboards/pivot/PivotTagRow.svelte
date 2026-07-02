@@ -261,7 +261,9 @@
             {m.dashboard_replace_rows_tag_dims()}
           {:else}
             <div>{m.dashboard_add_all_to_rows()}</div>
-            <div class="hint">{m.dashboard_cmd_click_replace()}</div>
+            <div class="hint">
+              <span class="kbd">⌘</span> + {m.dashboard_cmd_click_replace()}
+            </div>
           {/if}
         </Tooltip.Content>
       </Tooltip.Root>
@@ -291,7 +293,9 @@
           {m.dashboard_replace_columns_tag_items()}
         {:else}
           <div>{m.dashboard_add_all_to_columns()}</div>
-          <div class="hint">{m.dashboard_cmd_click_replace()}</div>
+          <div class="hint">
+            <span class="kbd">⌘</span> + {m.dashboard_cmd_click_replace()}
+          </div>
         {/if}
       </Tooltip.Content>
     </Tooltip.Root>
@@ -321,7 +325,9 @@
             {m.dashboard_replace_rows_cols_tag()}
           {:else}
             <div>{m.dashboard_auto_arrange()}</div>
-            <div class="hint">{m.dashboard_cmd_click_replace()}</div>
+            <div class="hint">
+              <span class="kbd">⌘</span> + {m.dashboard_cmd_click_replace()}
+            </div>
           {/if}
         </Tooltip.Content>
       </Tooltip.Root>

@@ -7,6 +7,7 @@
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import Callout from "@rilldata/web-common/components/callout/Callout.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -54,7 +55,9 @@
       {#if activeBranch}
         <Callout level="info">
           <span class="text-sm">
-            {m.settings_branch_callout({ branch: activeBranch })}
+            {@html m.settings_branch_callout({
+              branch: `<span class="font-mono">${escapeHtml(activeBranch)}</span>`,
+            })}
           </span>
         </Callout>
       {/if}

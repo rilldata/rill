@@ -58,13 +58,19 @@
             <div class="h-11 w-96 animate-pulse rounded bg-gray-200"></div>
           </DelayedContent>
         {:else if isErrorDisplayName}
-          <h1 class="text-4xl font-semibold text-fg-secondary">
+          <h1
+            class="text-4xl font-semibold text-fg-secondary"
+            aria-label={m.home_project_title_label()}
+          >
             {@html m.home_welcome_to({
               projectName: `<span class="text-accent-primary-action">${escapeHtml(project)}</span>`,
             })}
           </h1>
         {:else}
-          <h1 class="text-4xl font-semibold text-fg-secondary">
+          <h1
+            class="text-4xl font-semibold text-fg-secondary"
+            aria-label={m.home_project_title_label()}
+          >
             {@html m.home_welcome_to({
               projectName: `<span class="text-accent-primary-action">${escapeHtml(projectDisplayName)}</span>`,
             })}

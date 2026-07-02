@@ -322,7 +322,7 @@
                 rel="noopener noreferrer"
                 class="text-primary-500 hover:text-primary-600"
               >
-                {m.status_learn_more()}
+                {m.common_learn_more()}
               </a>
             </span>
           {/if}

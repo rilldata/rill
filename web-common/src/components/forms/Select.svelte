@@ -227,7 +227,9 @@
               {/if}
             </Select.Item>
           {:else}
-            <div class="px-2.5 py-1.5 text-fg-secondary">{m.common_no_results_found()}</div>
+            <div class="px-2.5 py-1.5 text-fg-secondary">
+              {m.common_no_results()}
+            </div>
           {/each}
           {#if onAddNew}
             <SelectSeparator />

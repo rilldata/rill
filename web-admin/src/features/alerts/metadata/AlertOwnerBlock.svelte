@@ -12,7 +12,7 @@
 {#if $ownerName.isSuccess}
   <span>
     {$ownerName.data
-      ? m.alert_created_by({ name: $ownerName.data })
-      : m.alert_created_through_code()}
+      ? m.alert_meta_created_by({ name: $ownerName.data })
+      : m.alert_meta_created_through_code()}
   </span>
 {/if}

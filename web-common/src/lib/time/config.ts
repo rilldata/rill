@@ -693,7 +693,7 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
 
 /** The default configurations for time comparisons. */
 export const TIME_COMPARISON: Record<
-  string,
+  TimeComparisonOption,
   {
     readonly label: string;
     shorthand: string;

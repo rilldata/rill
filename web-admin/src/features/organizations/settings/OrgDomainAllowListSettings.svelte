@@ -60,7 +60,7 @@
         <Label for="allow-domain" class="font-normal text-fg-secondary text-sm">
           {@html m.settings_allow_domain_description({
             domain: `<b>@${$userDomain.data}</b>`,
-            role: `<b>Viewer</b>`,
+            role: `<b>${m.role_viewer()}</b>`,
           })}
           <a
             target="_blank"

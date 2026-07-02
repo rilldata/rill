@@ -69,7 +69,9 @@
 
     <IconButton ariaLabel={m.chat_close()} bgGray onclick={onClose}>
       <Close className="text-fg-muted" />
-      <svelte:fragment slot="tooltip-content">{m.chat_close()}</svelte:fragment>
+      <svelte:fragment slot="tooltip-content"
+        >{m.common_close()}</svelte:fragment
+      >
     </IconButton>
   </div>
 </div>

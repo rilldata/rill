@@ -28,7 +28,8 @@
   $: isPublicDomain = userDomainIsPublic();
   const addToAllowlist = createAdminServiceCreateProjectWhitelistedDomain();
 
-  $: buttonText = invited || allowDomain ? m.auth_continue() : m.auth_skip_for_now();
+  $: buttonText =
+    invited || allowDomain ? m.auth_continue() : m.auth_skip_for_now();
 
   $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 
@@ -91,7 +92,7 @@
         <Label for="allow-domain" class="font-normal text-fg-primary text-sm">
           {@html m.common_allow_domain_join_project({
             domain: `<b>@${$userDomain.data}</b>`,
-            role: `<b>Viewer</b>`,
+            role: `<b>${m.role_viewer()}</b>`,
           })}
           <a
             target="_blank"

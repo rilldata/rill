@@ -27,6 +27,15 @@
       ? TIME_GRAIN[item.id as AvailableTimeGrain]?.label
       : undefined;
 
+  $: capitalizedLabel =
+    activeTimeGrainLabel &&
+    translateGrainName(activeTimeGrainLabel)
+      .split(" ")
+      .map((word) => {
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(" ");
+
   // Measure/dimension chips always show a tooltip (display name, plus the
   // description when present). Time chips only have something worth showing
   // when a description is set.
@@ -55,8 +64,8 @@
     >
       {#if item.type === PivotChipType.Time}
         <b>{m.pivot_time_prefix()}</b>
-        {#if activeTimeGrainLabel}
-          <p class="grain-label truncate">{translateGrainName(activeTimeGrainLabel)}</p>
+        {#if capitalizedLabel}
+          <p class="grain-label truncate">{capitalizedLabel}</p>
         {/if}
       {:else}
         <p class="font-semibold truncate">{item.title}</p>

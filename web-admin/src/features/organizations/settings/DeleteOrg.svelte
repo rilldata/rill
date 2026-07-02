@@ -56,7 +56,7 @@
       error={deleteOrgResult.error?.message}
       onConfirm={deleteOrg}
     >
-      <Button type="destructive" label={m.settings_delete_org_button()}>
+      <Button type="destructive" label={m.settings_delete_org_button_label()}>
         {m.settings_delete_org_button()}
       </Button>
     </AlertDialogGuardedConfirmation>

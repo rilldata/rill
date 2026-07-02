@@ -6,17 +6,19 @@
   import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
 
-  export let kind: "report" | "dashboard" | "alert";
+  type ProjectPageKindParam = "report" | "dashboard" | "alert";
+
+  export let kind: ProjectPageKindParam;
   export let query: CreateQueryResult<V1ListResourcesResponse, Error>;
 
   $: ({ isLoading, isError, isSuccess, error } = $query);
 
-  const kindTitleMap: Record<string, () => string> = {
+  const kindTitleMap: Record<ProjectPageKindParam, () => string> = {
     report: () => m.nav_tab_reports(),
     dashboard: () => m.nav_tab_dashboards(),
     alert: () => m.nav_tab_alerts(),
   };
-  $: title = (kindTitleMap[kind] ?? (() => kind))();
+  $: title = kindTitleMap[kind]();
 </script>
 
 <ContentContainer {title}>

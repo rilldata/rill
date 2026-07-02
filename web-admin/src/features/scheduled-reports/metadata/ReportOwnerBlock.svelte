@@ -12,7 +12,7 @@
 {#if $ownerName.isSuccess}
   <span>
     {$ownerName.data
-      ? m.report_created_by({ name: $ownerName.data })
-      : m.report_created_through_code()} •
+      ? m.report_meta_created_by({ name: $ownerName.data })
+      : m.report_meta_created_through_code()} •
   </span>
 {/if}

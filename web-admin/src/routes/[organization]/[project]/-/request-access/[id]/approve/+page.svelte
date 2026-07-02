@@ -13,6 +13,7 @@
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import type { AxiosError } from "axios";
 
   $: organization = $page.params.organization;
@@ -35,7 +36,11 @@
       });
       eventBus.emit("notification", {
         type: "success",
-        message: m.auth_user_added_to_project({ email: $requestAccess.data.email, project, role }),
+        message: m.auth_user_added_to_project({
+          email: $requestAccess.data.email,
+          project,
+          role,
+        }),
         options: {
           persisted: true,
         },
@@ -75,7 +80,10 @@
   <h2 class="text-lg font-normal">{m.auth_grant_access_title()}</h2>
   {#if $requestAccess.data}
     <div class="text-fg-secondary text-base">
-      {m.auth_grant_access_description({ email: $requestAccess.data.email, project })}
+      {@html m.auth_grant_access_description({
+        email: `<b>${escapeHtml($requestAccess.data.email)}</b>`,
+        project: `<b>${escapeHtml(project)}</b>`,
+      })}
     </div>
     <Select
       bind:value={role}

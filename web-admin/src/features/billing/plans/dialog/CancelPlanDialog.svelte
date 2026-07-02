@@ -17,6 +17,7 @@
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations.ts";
 
   let {
@@ -49,7 +50,10 @@
   });
   async function handleCancelPlan() {
     await $planCanceller.mutateAsync({ org: organization });
-    const planDisplayName = currentPlan === "pro" ? m.billing_plan_badge_pro() : m.billing_plan_badge_team();
+    const planDisplayName =
+      currentPlan === "pro"
+        ? m.billing_plan_badge_pro()
+        : m.billing_plan_badge_team();
     eventBus.emit("notification", {
       type: "success",
       message: m.billing_plan_was_cancelled({ planName: planDisplayName }),
@@ -72,10 +76,17 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>
-        {m.billing_cancel_plan_title({ planName: currentPlan === "pro" ? m.billing_plan_badge_pro() : m.billing_plan_badge_team() })}
+        {m.billing_cancel_plan_title({
+          planName:
+            currentPlan === "pro"
+              ? m.billing_plan_badge_pro()
+              : m.billing_plan_badge_team(),
+        })}
       </AlertDialogTitle>
       <AlertDialogDescription>
-        {m.billing_cancel_plan_desc({ date: cycleEndFormatted })}
+        {@html m.billing_cancel_plan_desc({
+          date: `<span class="font-semibold">${escapeHtml(cycleEndFormatted)}.</span>`,
+        })}
       </AlertDialogDescription>
       {#if cancelError}
         <p class="text-red-500 text-sm">{cancelError}</p>
@@ -89,7 +100,9 @@
       >
         {m.billing_cancel_plan()}
       </Button>
-      <Button type="primary" onClick={() => (open = false)}>{m.billing_keep_plan()}</Button>
+      <Button type="primary" onClick={() => (open = false)}
+        >{m.billing_keep_plan()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

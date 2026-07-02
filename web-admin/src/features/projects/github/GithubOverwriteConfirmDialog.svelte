@@ -13,6 +13,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   export let open = false;
   export let loading: boolean;
@@ -66,7 +67,9 @@
           {m.github_overwrite_warning()}
         </div>
         <div class="mt-1">
-          {m.github_type_to_confirm({ text: CONFIRMATION_TEXT })}
+          {@html m.github_type_to_confirm({
+            text: `<b>${escapeHtml(CONFIRMATION_TEXT)}</b>`,
+          })}
         </div>
         <Input bind:value={confirmInput} id="confirmation" label="" />
         {#if error}

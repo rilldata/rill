@@ -135,7 +135,10 @@
         if (succeeded.length > 0) {
           eventBus.emit("notification", {
             type: "success",
-            message: m.users_invited_success({ count: succeeded.length, role: values.role }),
+            message: m.users_org_invited_success({
+              count: succeeded.length,
+              role: values.role,
+            }),
           });
         }
 
@@ -262,7 +265,10 @@
 
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {m.users_already_member({ emails: failedInvites.join(", ") })}
+          {m.users_already_member({
+            emails: failedInvites.join(", "),
+            count: failedInvites.length,
+          })}
         </div>
       {/if}
     </form>

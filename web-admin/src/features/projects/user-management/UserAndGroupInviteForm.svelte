@@ -127,7 +127,10 @@
       const groupsText = failedGroups.join(", ");
       eventBus.emit("notification", {
         type: "error",
-        message: m.users_failed_add_groups({ groups: groupsText }),
+        message: m.users_failed_add_groups({
+          groups: groupsText,
+          count: failedGroups.length,
+        }),
       });
     }
 
@@ -135,7 +138,10 @@
       const emailsText = failedEmails.join(", ");
       eventBus.emit("notification", {
         type: "error",
-        message: m.users_failed_invite_users({ emails: emailsText }),
+        message: m.users_failed_invite_users({
+          emails: emailsText,
+          count: failedEmails.length,
+        }),
       });
     }
 

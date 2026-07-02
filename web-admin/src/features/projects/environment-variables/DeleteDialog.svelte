@@ -17,6 +17,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   export let open = false;
   export let name: string;
@@ -82,7 +83,9 @@
       <AlertDialogTitle>{m.env_delete_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          {m.env_delete_description({ name })}
+          {@html m.env_delete_description({
+            name: `<span class="source-code text-sm font-medium">${escapeHtml(name)}</span>`,
+          })}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -95,13 +98,17 @@
       >
         {m.env_cancel_button()}
       </Button>
-      <Button type="destructive" onClick={handleDelete}>{m.env_yes_delete_button()}</Button>
+      <Button type="destructive" onClick={handleDelete}
+        >{m.env_yes_delete_button()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
 
 <style lang="postcss">
-  .source-code {
+  /* :global() because the span is injected via {@html}, so it doesn't get
+     Svelte's scoping class. Anchored to `div` to keep it component-local. */
+  div :global(.source-code) {
     font-family: "Source Code Variable", monospace;
   }
 </style>

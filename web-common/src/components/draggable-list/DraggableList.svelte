@@ -203,7 +203,7 @@
       {:else}
         <input
           bind:value={searchValue}
-          placeholder={m.common_search()}
+          placeholder={m.common_search_ellipsis()}
           class="w-full px-2 py-1 border rounded text-sm"
         />
       {/if}

@@ -249,7 +249,7 @@
             bind:value={$form.branch}
             errors={$errors?.branch}
             id="branch"
-            label={m.github_branch()}
+            label={m.github_branch_label()}
             placeholder="main"
             capitalizeLabel={false}
           />
@@ -258,7 +258,7 @@
             bind:value={$form.subpath}
             errors={$errors?.subpath}
             id="subpath"
-            label={m.github_subpath()}
+            label={m.github_subpath_label()}
             placeholder="/"
             capitalizeLabel={false}
             optional

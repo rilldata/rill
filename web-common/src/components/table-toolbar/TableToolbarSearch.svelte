@@ -45,7 +45,7 @@
       bind:value={searchText}
       type="text"
       class="outline-none bg-transparent text-sm text-fg-primary placeholder-fg-secondary flex-1 min-w-0"
-      placeholder={m.common_search()}
+      placeholder={m.common_search_ellipsis()}
       onkeydown={handleKeyDown}
     />
     <button

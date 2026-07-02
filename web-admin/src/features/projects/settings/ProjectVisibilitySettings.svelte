@@ -46,7 +46,8 @@
       const axiosError = err as AxiosError<RpcStatus>;
       eventBus.emit("notification", {
         message:
-          axiosError.response?.data?.message ?? m.settings_visibility_update_failed(),
+          axiosError.response?.data?.message ??
+          m.settings_visibility_update_failed(),
         type: "error",
       });
     }
@@ -55,9 +56,9 @@
 
 <SettingsContainer title={m.settings_project_visibility_title()}>
   {#if isPublic}
-    {m.settings_project_visibility_public()}
+    {@html m.settings_project_visibility_public()}
   {:else}
-    {m.settings_project_visibility_private()}
+    {@html m.settings_project_visibility_private()}
   {/if}
 
   {#snippet action()}
@@ -66,7 +67,9 @@
       type="secondary-destructive"
       loading={$updateProjectMutation.isPending}
     >
-      {isPublic ? m.settings_make_private_button() : m.settings_make_public_button()}
+      {isPublic
+        ? m.settings_make_private_button()
+        : m.settings_make_public_button()}
     </Button>
   {/snippet}
 </SettingsContainer>
