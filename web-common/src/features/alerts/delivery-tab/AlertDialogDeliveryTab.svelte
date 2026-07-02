@@ -4,10 +4,14 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
+  import {
+    getHasSlackConnection,
+    getHasWebhookConnection,
+  } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { SuperForm } from "sveltekit-superforms/client";
 
@@ -19,6 +23,7 @@
   $: ({ form, errors } = superFormInstance);
 
   $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
+  $: hasWebhookNotifier = getHasWebhookConnection(runtimeClient);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -103,6 +108,36 @@
           >
             docs
           </a> to learn more.
+        </span>
+      </svelte:fragment>
+    </FormSection>
+  {/if}
+  {#if $hasWebhookNotifier.data}
+    <FormSection
+      bind:enabled={$form["enableWebhookNotification"]}
+      showSectionToggle
+      title={m.alert_form_webhook_title()}
+    >
+      <MultiInput
+        id="webhookUrls"
+        placeholder={m.alert_form_webhook_placeholder()}
+        description={m.alert_form_webhook_urls_desc()}
+        contentClassName="relative"
+        bind:values={$form.webhookUrls}
+        errors={$errors.webhookUrls}
+        singular="URL"
+        plural="URLs"
+        preventFocus={true}
+      />
+    </FormSection>
+  {:else}
+    <FormSection title={m.alert_form_webhook_title()}>
+      <svelte:fragment slot="description">
+        <span class="text-sm text-fg-secondary">
+          {@html m.alert_form_webhook_not_configured({
+            docsUrl:
+              "https://docs.rilldata.com/developers/build/connectors/services/webhook",
+          })}
         </span>
       </svelte:fragment>
     </FormSection>

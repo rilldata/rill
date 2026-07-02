@@ -159,6 +159,10 @@ components:
                 webOpenState:
                     description: Annotation for the base64-encoded UI state to open for the report.
                     type: string
+                webhookUrls:
+                    items:
+                        type: string
+                    type: array
             type: object
         v1ApproveProjectAccessResponse:
             type: object
@@ -1912,6 +1916,10 @@ components:
                 webOpenState:
                     description: Annotation for the base64-encoded UI state to open for the report.
                     type: string
+                webhookUrls:
+                    items:
+                        type: string
+                    type: array
             type: object
         v1RequestProjectAccessResponse:
             type: object

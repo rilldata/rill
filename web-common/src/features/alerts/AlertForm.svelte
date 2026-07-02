@@ -190,6 +190,9 @@
           slackUsers: values.enableSlackNotification
             ? values.slackUsers.filter(Boolean)
             : undefined,
+          webhookUrls: values.enableWebhookNotification
+            ? values.webhookUrls.filter(Boolean)
+            : undefined,
           emailRecipients: values.enableEmailNotification
             ? values.emailRecipients.filter(Boolean)
             : undefined,

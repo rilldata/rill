@@ -1,4 +1,13 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "organizations_overview_page_title": "{title} overview - Rill"
+  "alert_form_webhook_not_configured": "Webhooks have not been configured for this project. Read the <a href=\"{docsUrl}\" target=\"_blank\">docs</a> to learn more.",
+  "alert_form_webhook_placeholder": "Enter a webhook URL",
+  "alert_form_webhook_title": "Webhook notifications",
+  "alert_form_webhook_urls_desc": "We'll send alerts as JSON payloads to these URLs.",
+  "organizations_overview_page_title": "{title} overview - Rill",
+  "report_form_webhook_not_configured": "Webhooks have not been configured for this project. Read the <a href=\"{docsUrl}\" target=\"_blank\">docs</a> to learn more.",
+  "report_form_webhook_placeholder": "Enter a webhook URL",
+  "report_form_webhook_title": "Webhook notifications",
+  "report_form_webhook_urls": "URLs",
+  "report_form_webhook_urls_hint": "We'll send the report as a JSON payload to these URLs."
 }

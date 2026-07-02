@@ -52,6 +52,8 @@ export type AlertNotificationValues = Pick<
   | "enableSlackNotification"
   | "slackChannels"
   | "slackUsers"
+  | "enableWebhookNotification"
+  | "webhookUrls"
   | "enableEmailNotification"
   | "emailRecipients"
 >;
@@ -71,6 +73,14 @@ export function extractAlertNotification(
     : [];
   slackUsers.push("");
 
+  const webhookNotifier = alertSpec.notifiers?.find(
+    (n) => n.connector === "webhook",
+  );
+  const webhookUrls = webhookNotifier?.properties?.urls
+    ? [...(webhookNotifier.properties.urls as string[])]
+    : [];
+  webhookUrls.push("");
+
   const emailNotifier = alertSpec.notifiers?.find(
     (n) => n.connector === "email",
   );
@@ -83,6 +93,9 @@ export function extractAlertNotification(
     enableSlackNotification: !!slackNotifier,
     slackChannels,
     slackUsers,
+
+    enableWebhookNotification: !!webhookNotifier,
+    webhookUrls,
 
     enableEmailNotification: !!emailNotifier,
     emailRecipients,
