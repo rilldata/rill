@@ -10,6 +10,7 @@
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { appendChipsToZone, replaceZoneCleaningOther } from "./pivot-utils";
   import { PivotChipType, type PivotChipData } from "./types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   type Props = {
     tag: DimensionTag;
@@ -215,12 +216,20 @@
 
   <div class="flex items-center gap-x-1 flex-none group-hover:hidden">
     {#if measureCount > 0}
-      <span class="count-tile meas-tile" title={`${measureCount} measures`}>
+      <span
+        class="count-tile meas-tile"
+        title={m.dashboard_measures_count({ count: measureCount.toString() })}
+      >
         {measureCount}
       </span>
     {/if}
     {#if dimensionCount > 0}
-      <span class="count-tile dim-tile" title={`${dimensionCount} dimensions`}>
+      <span
+        class="count-tile dim-tile"
+        title={m.dashboard_dimensions_count({
+          count: dimensionCount.toString(),
+        })}
+      >
         {dimensionCount}
       </span>
     {/if}
@@ -237,8 +246,8 @@
               class={actionBtnClass}
               onclick={(e) => handleActionClick(e, addToRows)}
               aria-label={$modifierHeld
-                ? `Replace rows with dimensions in ${tag.name}`
-                : `Add all dimensions in ${tag.name} to rows`}
+                ? m.dashboard_replace_rows_tag({ name: tag.name })
+                : m.dashboard_add_all_dims_rows({ name: tag.name })}
             >
               <Row size="14px" color="currentColor" />
             </button>
@@ -249,12 +258,10 @@
           class="bg-popover text-fg-primary z-popover text-xs px-2 py-1"
         >
           {#if $modifierHeld}
-            Replace rows with this tag's dimensions
+            {m.dashboard_replace_rows_tag_dims()}
           {:else}
-            <div>Add all to rows</div>
-            <div class="hint">
-              <span class="kbd">⌘</span> + Click to replace
-            </div>
+            <div>{m.dashboard_add_all_to_rows()}</div>
+            <div class="hint">{m.dashboard_cmd_click_replace()}</div>
           {/if}
         </Tooltip.Content>
       </Tooltip.Root>
@@ -269,8 +276,8 @@
             class={actionBtnClass}
             onclick={(e) => handleActionClick(e, addToColumns)}
             aria-label={$modifierHeld
-              ? `Replace columns with items in ${tag.name}`
-              : `Add all in ${tag.name} to columns`}
+              ? m.dashboard_replace_columns_tag({ name: tag.name })
+              : m.dashboard_add_all_to_columns_tag({ name: tag.name })}
           >
             <Column size="14px" color="currentColor" />
           </button>
@@ -281,12 +288,10 @@
         class="bg-popover text-fg-primary z-popover text-xs px-2 py-1"
       >
         {#if $modifierHeld}
-          Replace columns with this tag's items
+          {m.dashboard_replace_columns_tag_items()}
         {:else}
-          <div>Add all to columns</div>
-          <div class="hint">
-            <span class="kbd">⌘</span> + Click to replace
-          </div>
+          <div>{m.dashboard_add_all_to_columns()}</div>
+          <div class="hint">{m.dashboard_cmd_click_replace()}</div>
         {/if}
       </Tooltip.Content>
     </Tooltip.Root>
@@ -301,8 +306,8 @@
               class={actionBtnClass}
               onclick={(e) => handleActionClick(e, autoArrange)}
               aria-label={$modifierHeld
-                ? `Replace rows and columns with auto-arranged ${tag.name}`
-                : `Auto-arrange ${tag.name}: dimensions to rows, measures to columns`}
+                ? m.dashboard_replace_auto_arrange({ name: tag.name })
+                : m.dashboard_auto_arrange_tag({ name: tag.name })}
             >
               <Pivot size="14px" color="currentColor" />
             </button>
@@ -313,12 +318,10 @@
           class="bg-popover text-fg-primary z-popover text-xs px-2 py-1"
         >
           {#if $modifierHeld}
-            Replace rows and columns with this tag
+            {m.dashboard_replace_rows_cols_tag()}
           {:else}
-            <div>Auto-arrange</div>
-            <div class="hint">
-              <span class="kbd">⌘</span> + Click to replace
-            </div>
+            <div>{m.dashboard_auto_arrange()}</div>
+            <div class="hint">{m.dashboard_cmd_click_replace()}</div>
           {/if}
         </Tooltip.Content>
       </Tooltip.Root>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -43,7 +44,10 @@
 
 <thead>
   <tr>
-    <th aria-label="Comparison column" class="grid place-content-center">
+    <th
+      aria-label={m.dashboard_comparison_column_aria()}
+      class="grid place-content-center"
+    >
       {#if isFetching}
         <DelayedSpinner isLoading={isFetching} size="16px" />
       {:else if allowDimensionComparison && (hovered || isBeingCompared)}
@@ -64,7 +68,7 @@
           class="text-fg-muted text-left {allowExpandTable
             ? 'hover:text-theme-700'
             : ''}"
-          aria-label="Open dimension details"
+          aria-label={m.dashboard_open_dimension_details_aria()}
           onclick={() => setPrimaryDimension(dimensionName)}
         >
           <span class="line-clamp-2">{displayName}</span>
@@ -98,7 +102,7 @@
     {#each leaderboardMeasureNames as measureName, index (index)}
       <th data-measure-header>
         <button
-          aria-label="Toggle sort leaderboards by value"
+          aria-label={m.dashboard_sort_by_value_aria()}
           onclick={() => {
             toggleSort(SortType.VALUE, measureName);
           }}
@@ -133,7 +137,7 @@
       {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
         <th data-percent-of-total-header>
           <button
-            aria-label="Toggle sort leaderboards by percent of total"
+            aria-label={m.dashboard_sort_by_percent_total_aria()}
             onclick={() => toggleSort(SortType.PERCENT, measureName)}
           >
             <PercentOfTotal />
@@ -163,7 +167,7 @@
       {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
         <th data-absolute-change-header>
           <button
-            aria-label="Toggle sort leaderboards by absolute change"
+            aria-label={m.dashboard_sort_by_absolute_change_aria()}
             onclick={() => toggleSort(SortType.DELTA_ABSOLUTE, measureName)}
           >
             <DeltaChange />
@@ -193,7 +197,7 @@
       {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
         <th data-percent-change-header>
           <button
-            aria-label="Toggle sort leaderboards by percent change"
+            aria-label={m.dashboard_sort_by_percent_change_aria()}
             onclick={() => toggleSort(SortType.DELTA_PERCENT, measureName)}
           >
             <DeltaChangePercentage />

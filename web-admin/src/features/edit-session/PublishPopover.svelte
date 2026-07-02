@@ -32,6 +32,7 @@
     getDeploymentGithubStatus,
     invalidateGitStatusQueries,
   } from "@rilldata/web-admin/features/edit-session/selectors.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -133,7 +134,7 @@
     if (!hasLocalChanges && !hasChangesOnCurrent) {
       eventBus.emit("notification", {
         type: "default",
-        message: "No changes detected",
+        message: m.edit_no_changes_detected(),
       });
       isPublishing = false;
       return;
@@ -154,7 +155,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: extractErrorMessage(err) || "Failed to publish",
+        message: extractErrorMessage(err) || m.edit_failed_to_publish(),
       });
       isPublishing = false;
       return;
@@ -217,7 +218,7 @@
         const detail = extractErrorMessage(err);
         eventBus.emit("notification", {
           type: "error",
-          message: `Changes merged to production, but starting the production deployment failed${
+          message: `${m.edit_publish_merge_deploy_failed()}${
             detail ? `: ${detail}` : ""
           }.`,
         });
@@ -238,7 +239,7 @@
       void goto(targetUrl);
       eventBus.emit("notification", {
         type: "error",
-        message: "Pop-up was blocked.",
+        message: m.edit_popup_blocked(),
       });
     }
   }
@@ -285,7 +286,7 @@
       {#snippet child({ props })}
         <Button {...props} type="primary" {disabled}>
           <Rocket size="14" />
-          Publish
+          {m.edit_publish()}
         </Button>
       {/snippet}
     </Popover.Trigger>
@@ -293,15 +294,11 @@
       <div class="flex flex-col gap-y-3">
         <p class="text-xs text-fg-secondary">
           {#if !prodDeployment}
-            Publishing sets up your production deployment. We'll open a new tab
-            where you can invite teammates while it reconciles.
+            {m.edit_publish_first_deploy()}
           {:else if !prodDeploymentActive}
-            Production is hibernated. Publishing will resume it and apply your
-            changes. We'll open the deployment in a new tab so you can watch
-            updates reconcile.
+            {m.edit_publish_hibernated()}
           {:else}
-            Publishing pushes your changes to production. We'll open a new tab
-            so you can watch updates reconcile.
+            {m.edit_publish_push()}
           {/if}
         </p>
         <ChangedFilesList remoteBranch={primaryBranch} {open} />
@@ -310,10 +307,10 @@
           small
           disabled={isPublishing}
           loading={isPublishing}
-          loadingCopy="Publishing..."
+          loadingCopy={m.edit_publishing()}
           onClick={handlePublish}
         >
-          Publish
+          {m.edit_publish()}
         </Button>
       </div>
     </Popover.Content>
@@ -321,15 +318,15 @@
   <TooltipContent slot="tooltip-content" maxWidth="240px">
     <span class="text-xs">
       {#if alreadyOnPrimary}
-        Already on production
+        {m.edit_publish_tooltip_on_primary()}
       {:else if isPending || !projectLoaded}
-        Loading project...
+        {m.edit_publish_tooltip_loading()}
       {:else if !hasLocalChanges}
-        No changes to publish
+        {m.edit_publish_tooltip_no_changes()}
       {:else if hasRemoteChanges}
-        Remote has updates not in your session. Click to review.
+        {m.edit_publish_tooltip_remote_updates()}
       {:else}
-        Review and confirm before publishing
+        {m.edit_publish_tooltip_confirm()}
       {/if}
     </span>
   </TooltipContent>

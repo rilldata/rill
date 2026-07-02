@@ -18,6 +18,7 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { appendChipsToZone, splitTagItems } from "./pivot-utils";
 
   export let zone: "rows" | "columns" | null = null;
@@ -80,7 +81,7 @@
     ...(tagGroupItems.length > 0
       ? [
           <SearchableFilterSelectableGroup>{
-            name: "TAGS",
+            name: m.pivot_tags(),
             items: tagGroupItems,
           },
         ]
@@ -88,7 +89,7 @@
     ...(zone === "columns"
       ? [
           <SearchableFilterSelectableGroup>{
-            name: "MEASURES",
+            name: m.dashboard_measures_label(),
             items: $measures?.map((m) => ({
               name: m.id,
               label: m.title,
@@ -97,14 +98,14 @@
         ]
       : []),
     <SearchableFilterSelectableGroup>{
-      name: "DIMENSIONS",
+      name: m.dashboard_dimensions_label(),
       items: $dimensions?.map((d) => ({
         name: d.id,
         label: d.title,
       })),
     },
     <SearchableFilterSelectableGroup>{
-      name: "TIME",
+      name: m.dashboard_time_label(),
       items: timeGrainOptions.map((tgo) => ({
         name: tgo.id,
         label: tgo.title,
@@ -161,7 +162,11 @@
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger>
     {#snippet child({ props })}
-      <button {...props} class:active={open} aria-label="Add filter button">
+      <button
+        {...props}
+        class:active={open}
+        aria-label={m.dashboard_add_filter_button_aria()}
+      >
         <Add size="17px" />
       </button>
     {/snippet}

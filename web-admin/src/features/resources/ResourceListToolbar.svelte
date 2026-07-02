@@ -20,7 +20,6 @@
 </script>
 
 <Search
-  placeholder="Search"
   autofocus={false}
   bind:value={filter}
   rounded="lg"

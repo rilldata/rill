@@ -9,6 +9,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ComponentType } from "svelte";
   import Tab from "./Tab.svelte";
 
@@ -19,14 +20,14 @@
     [
       MetricsEventScreenName.Explore,
       {
-        label: "Explore",
+        label: m.dashboard_explore(),
         Icon: Chart,
       },
     ],
     [
       MetricsEventScreenName.Pivot,
       {
-        label: "Pivot",
+        label: m.dashboard_pivot(),
         Icon: Pivot,
       },
     ],

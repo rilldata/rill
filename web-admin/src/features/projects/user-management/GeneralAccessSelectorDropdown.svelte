@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceRemoveProjectMemberUsergroup,
@@ -83,7 +84,7 @@
       });
 
       eventBus.emit("notification", {
-        message: "Project access changed to invite-only",
+        message: m.users_access_changed_invite_only(),
       });
     }
 
@@ -114,7 +115,7 @@
     });
 
     eventBus.emit("notification", {
-      message: "Project access changed to everyone",
+      message: m.users_access_changed_everyone(),
     });
 
     accessType = "everyone";
@@ -141,11 +142,11 @@
           <div
             class={cn(
               "h-7 w-7 rounded-sm flex items-center justify-center",
-              getRandomBgColor(`Everyone at ${organization}`),
+              getRandomBgColor(m.users_everyone_at_org({ organization })),
             )}
           >
             <span class="text-sm text-white font-semibold"
-              >{getInitials(`Everyone at ${organization}`)}</span
+              >{getInitials(m.users_everyone_at_org({ organization }))}</span
             >
           </div>
         {:else}
@@ -157,9 +158,9 @@
               class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-fg-primary hover:bg-surface-hover rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
             >
               {#if accessType === "everyone"}
-                Everyone at {organization}
+                {m.users_everyone_at_org({ organization })}
               {:else}
-                Invite only
+                {m.users_invite_only()}
               {/if}
               {#if accessDropdownOpen}
                 <CaretUpIcon size="12px" color="text-fg-primary" />
@@ -173,16 +174,14 @@
             <div class="flex flex-row items-center gap-x-1">
               {#if userGroupMemberUsersCount && userGroupMemberUsersCount > 0}
                 <span class="text-xs text-fg-secondary">
-                  {userGroupMemberUsersCount} user{userGroupMemberUsersCount > 1
-                    ? "s"
-                    : ""}
+                  {m.users_user_count({ count: userGroupMemberUsersCount })}
                 </span>
               {/if}
             </div>
           {:else}
             <div class="flex flex-row items-center gap-x-1">
               <span class="text-xs text-fg-secondary">
-                Only admins and invited users can access
+                {m.users_only_admins_access()}
               </span>
             </div>
           {/if}
@@ -200,12 +199,12 @@
     >
       <div class="flex items-start gap-2">
         <Lock size="20px" color="#374151" />
-        <span class="text-xs font-medium text-fg-primary">Invite only</span>
+        <span class="text-xs font-medium text-fg-primary">{m.users_invite_only()}</span>
       </div>
       <div class="flex flex-row items-center gap-2">
         <div class="w-[20px]"></div>
         <span class="text-[11px] text-fg-secondary"
-          >Only admins and invited users can access</span
+          >{m.users_only_admins_access()}</span
         >
       </div>
     </DropdownMenu.Item>
@@ -225,12 +224,12 @@
           >
         </div>
         <span class="text-xs font-medium text-fg-primary"
-          >Everyone at {organization}</span
+          >{m.users_everyone_at_org({ organization })}</span
         >
       </div>
       <div class="flex flex-row items-center gap-2">
         <div class="w-[20px]"></div>
-        <span class="text-[11px] text-fg-secondary">Org members can access</span
+        <span class="text-[11px] text-fg-secondary">{m.users_org_members_access()}</span
         >
       </div>
     </DropdownMenu.Item>

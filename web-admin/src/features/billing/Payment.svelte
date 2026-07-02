@@ -7,6 +7,7 @@
   import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { organization }: { organization: string } = $props();
 
@@ -30,7 +31,7 @@
 </script>
 
 <section>
-  <h2 class="section-header">Payment methods</h2>
+  <h2 class="section-header">{m.billing_payment_methods_header()}</h2>
   <div class="section-card">
     <div class="card-content">
       {#if paymentIssues?.length}
@@ -56,18 +57,18 @@
           </div>
           <div>
             <p class="text-sm font-medium text-fg-primary">
-              Payment method on file
+              {m.billing_payment_method_on_file()}
             </p>
-            <p class="text-xs text-fg-tertiary">Manage your cards via Stripe</p>
+            <p class="text-xs text-fg-tertiary">{m.billing_manage_cards_via_stripe()}</p>
           </div>
         </div>
       {:else}
-        <span class="text-sm text-fg-tertiary">No payment method on file.</span>
+        <span class="text-sm text-fg-tertiary">{m.billing_no_payment_method()}</span>
       {/if}
     </div>
     {#if hasPaymentCustomer}
       <button class="manage-btn" onclick={handleManageCards}>
-        Manage in Stripe
+        {m.billing_manage_in_stripe()}
         <svg
           class="w-3.5 h-3.5"
           viewBox="0 0 12 12"

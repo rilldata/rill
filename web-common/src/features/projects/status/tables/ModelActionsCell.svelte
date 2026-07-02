@@ -11,6 +11,7 @@
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { getAvailableModelActions } from "./model-actions";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let resource: V1Resource | undefined;
   export let isDropdownOpen: boolean;
@@ -42,7 +43,7 @@
       >
         <div class="flex items-center">
           <CodeIcon size="12px" />
-          <span class="ml-2">Describe</span>
+          <span class="ml-2">{m.status_action_describe()}</span>
         </div>
       </DropdownMenu.Item>
 
@@ -53,7 +54,7 @@
         >
           <div class="flex items-center">
             <ScrollTextIcon size="12px" />
-            <span class="ml-2">View Logs</span>
+            <span class="ml-2">{m.status_action_view_logs()}</span>
           </div>
         </DropdownMenu.Item>
       {/if}
@@ -65,7 +66,7 @@
         >
           <div class="flex items-center">
             <LayoutGridIcon size="12px" />
-            <span class="ml-2">View Partitions</span>
+            <span class="ml-2">{m.status_action_view_partitions()}</span>
           </div>
         </DropdownMenu.Item>
       {/if}
@@ -77,7 +78,7 @@
         >
           <div class="flex items-center">
             <AlertCircleIcon size="12px" />
-            <span class="ml-2">Refresh Errored Partitions</span>
+            <span class="ml-2">{m.status_action_refresh_errored_partitions()}</span>
           </div>
         </DropdownMenu.Item>
       {/if}
@@ -90,7 +91,7 @@
       >
         <div class="flex items-center">
           <RefreshCcwIcon size="12px" />
-          <span class="ml-2">Full Refresh</span>
+          <span class="ml-2">{m.status_action_full_refresh()}</span>
         </div>
       </DropdownMenu.Item>
 
@@ -101,7 +102,7 @@
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />
-            <span class="ml-2">Incremental Refresh</span>
+            <span class="ml-2">{m.status_action_incremental_refresh()}</span>
           </div>
         </DropdownMenu.Item>
       {/if}

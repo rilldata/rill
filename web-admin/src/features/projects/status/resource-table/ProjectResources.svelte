@@ -27,6 +27,7 @@
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
@@ -69,9 +70,9 @@
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
-    { label: "Error", value: "error" },
-    { label: "Warn", value: "warn" },
-    { label: "OK", value: "ok" },
+    { label: m.status_filter_error(), value: "error" },
+    { label: m.status_filter_warn(), value: "warn" },
+    { label: m.status_filter_ok(), value: "ok" },
   ];
 
   // Resource types available for filtering (excluding internal types)
@@ -90,7 +91,7 @@
 
   $: filterGroups = [
     {
-      label: "Type",
+      label: m.status_column_type(),
       key: "kind",
       options: filterableTypes.map((t) => ({
         value: t,
@@ -101,7 +102,7 @@
       multiSelect: true,
     },
     {
-      label: "Status",
+      label: m.status_label_status(),
       key: "status",
       options: statusFilters.map((s) => ({
         value: s.value,
@@ -167,7 +168,7 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <h2 class="text-lg font-medium">Resources</h2>
+  <h2 class="text-lg font-medium">{m.status_nav_resources()}</h2>
 
   <TableToolbar
     bind:searchText
@@ -185,8 +186,8 @@
       }}
       disabled={isRefreshButtonDisabled}
     >
-      <span class="hidden lg:inline">Refresh all sources and models</span>
-      <span class="lg:hidden">Refresh all</span>
+      <span class="hidden lg:inline">{m.status_refresh_all_sources_models()}</span>
+      <span class="lg:hidden">{m.status_refresh_all()}</span>
     </Button>
   </TableToolbar>
 
@@ -194,7 +195,7 @@
     <DelayedSpinner isLoading={true} size="16px" />
   {:else if $resources.isError}
     <div class="text-red-500">
-      Error loading resources: {$resources.error?.message}
+      {m.status_error_loading_resources()}: {$resources.error?.message}
     </div>
   {:else if $resources.data}
     <ProjectResourcesTable data={filteredResources} />
@@ -202,13 +203,13 @@
 
   <div class="parse-errors">
     <h3 class="parse-errors-header">
-      Parse Errors
+      {m.status_parse_errors_title()}
       {#if parseErrors.length > 0}
         <span class="parse-errors-badge">{parseErrors.length}</span>
       {/if}
     </h3>
     {#if parseErrors.length === 0}
-      <p class="text-sm text-fg-secondary">No parse errors</p>
+      <p class="text-sm text-fg-secondary">{m.status_no_parse_errors()}</p>
     {:else}
       <div class="parse-errors-list">
         {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}

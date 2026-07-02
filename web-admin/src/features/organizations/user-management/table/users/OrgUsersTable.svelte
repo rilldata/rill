@@ -19,6 +19,7 @@
   } from "@tanstack/svelte-query";
   import { ExternalLinkIcon } from "lucide-svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
     invitedBy?: string;
@@ -49,7 +50,7 @@
 
   const UserCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "user",
-    header: "User",
+    header: m.users_table_header_user(),
     enableSorting: false,
     cell: ({ row }) =>
       renderComponent(UserCompositeCell, {
@@ -66,7 +67,7 @@
   };
   const RoleCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "roleName",
-    header: "Organization Role",
+    header: m.users_table_header_org_role(),
     cell: ({ row }) =>
       renderComponent(UserRoleCell, {
         email: row.original.userEmail,
@@ -83,7 +84,7 @@
   };
   const UserGroupCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "usergroupsCount",
-    header: "Groups",
+    header: m.users_table_header_groups(),
     cell: ({ row }) =>
       renderComponent(UserGroupsCell, {
         userId: row.original.userId,
@@ -98,7 +99,7 @@
   };
   const ProjectsCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "projectsCount",
-    header: "Projects",
+    header: m.users_table_header_projects(),
     cell: ({ row }) =>
       renderComponent(UserProjectsCell, {
         organization,
@@ -161,7 +162,7 @@
     invitesQuery.isFetchingNextPage}
   onLoadMore={handleLoadMore}
   maxHeight={dynamicTableMaxHeight}
-  emptyStateMessage="No users found"
+  emptyStateMessage={m.users_table_empty()}
   {headerIcons}
   {scrollToTopTrigger}
 />

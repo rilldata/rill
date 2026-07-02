@@ -3,6 +3,7 @@ import {
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { shiftToLargest } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DateTime, type Duration } from "luxon";
 
@@ -38,11 +39,11 @@ export function getMessageForTrialPlan(
 
   const message: BillingIssueMessage = {
     type: "default",
-    title: "Your trial has expired.",
-    description: "Choose a plan to maintain access.",
+    title: m.billing_trial_expired(),
+    description: m.billing_choose_plan_to_maintain(),
     iconType: "alert",
     cta: {
-      text: "Choose a plan",
+      text: m.billing_choose_a_plan(),
       type: "show-upgrade",
       teamPlanDialogType: "base",
     },
@@ -71,12 +72,11 @@ export function getMessageForTrialPlan(
       ? gracePeriodDate.diff(today)
       : null;
     if (gracePeriodDiff && gracePeriodDiff.milliseconds > 0) {
-      message.description = `Upgrade within ${humanizeDuration(gracePeriodDiff)} to maintain access.`;
+      message.description = m.billing_upgrade_within_to_maintain({ duration: humanizeDuration(gracePeriodDiff) });
       message.type = "warning";
     } else {
-      message.title =
-        "Your trial has expired and this org’s projects are now hibernating.";
-      message.description = "Upgrade to wake projects and regain full access.";
+      message.title = m.billing_trial_expired_hibernating();
+      message.description = m.billing_upgrade_to_wake();
       message.type = "error";
       if (message.cta) message.cta.teamPlanDialogType = "trial-expired";
     }
@@ -88,11 +88,11 @@ export function getMessageForTrialPlan(
 function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
   const message: BillingIssueMessage = {
     type: "default",
-    title: `Your trial has expired.`,
-    description: "Choose a plan to maintain access.",
+    title: m.billing_trial_expired(),
+    description: m.billing_choose_plan_to_maintain(),
     iconType: "alert",
     cta: {
-      text: "Choose a plan",
+      text: m.billing_choose_a_plan(),
       type: "show-upgrade",
     },
   };
@@ -101,7 +101,7 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
 
   if (onCreditTrial.lowCredit) {
     message.type = "warning";
-    message.title = "Your trial credit is running low.";
+    message.title = m.billing_trial_credit_running_low();
     message.description = "";
     message.dismissible = {
       key: trialIssue.org ?? "",
@@ -110,8 +110,8 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
     };
   } else {
     message.type = "default";
-    message.title = `Welcome to rill.`;
-    message.description = `You are on a free trial with ${onCreditTrial.creditAllocation ?? 0}$ in credits.`;
+    message.title = m.billing_welcome_to_rill();
+    message.description = m.billing_free_trial_with_credits({ amount: String(onCreditTrial.creditAllocation ?? 0) });
     message.dismissible = {
       key: trialIssue.org ?? "",
       id: `${trialIssue.type ?? ""}`,
@@ -124,20 +124,19 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
 function getMessageForCreditsDepletedIssue() {
   return {
     type: "error",
-    title:
-      "Trial credit is used up. Projects are hibernated and dashboards are offline.",
+    title: m.billing_credits_depleted(),
     description: "",
     iconType: "alert",
     cta: {
-      text: "Choose a plan",
+      text: m.billing_choose_a_plan(),
       type: "show-upgrade",
     },
   } satisfies BillingIssueMessage;
 }
 
 export function getTrialMessageForDays(diff: Duration) {
-  if (diff.milliseconds < 0) return "Your trial has expired.";
-  return `Your trial expires in ${humanizeDuration(diff)}.`;
+  if (diff.milliseconds < 0) return m.billing_trial_expired();
+  return m.billing_trial_expires_in({ duration: humanizeDuration(diff) });
 }
 
 export function trialHasPastGracePeriod(trialEndedIssue: V1BillingIssue) {

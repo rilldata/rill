@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -11,15 +12,15 @@
   let isDropdownOpen = false;
   let isRoleDropdownOpen = false;
 
-  const roleOptions = [
-    { value: "all" as const, label: "All Roles" },
-    { value: "admin" as const, label: "Admins" },
-    { value: "editor" as const, label: "Editors" },
-    { value: "viewer" as const, label: "Viewers" },
+  $: roleOptions = [
+    { value: "all" as const, label: m.users_filter_all_roles() },
+    { value: "admin" as const, label: m.users_filter_admins() },
+    { value: "editor" as const, label: m.users_filter_editors() },
+    { value: "viewer" as const, label: m.users_filter_viewers() },
   ];
 
   $: roleFilterLabel =
-    roleOptions.find((opt) => opt.value === roleFilter)?.label ?? "All Roles";
+    roleOptions.find((opt) => opt.value === roleFilter)?.label ?? m.users_filter_all_roles();
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -27,7 +28,7 @@
     class="min-w-[140px] flex flex-row justify-between gap-1 items-center rounded-sm border bg-input px-2 py-1"
   >
     <span class="capitalize"
-      >{filterSelection === "all" ? "All users" : filterSelection}</span
+      >{filterSelection === "all" ? m.users_filter_all_users() : filterSelection === "members" ? m.users_filter_members() : filterSelection === "pending" ? m.users_filter_pending_invites() : filterSelection}</span
     >
     {#if isDropdownOpen}
       <CaretUpIcon size="12px" />
@@ -43,7 +44,7 @@
         filterSelection = "all";
       }}
     >
-      <span>All</span>
+      <span>{m.users_filter_all()}</span>
     </DropdownMenu.CheckboxItem>
     {#if showMembers}
       <DropdownMenu.CheckboxItem
@@ -53,7 +54,7 @@
           filterSelection = "members";
         }}
       >
-        <span>Members</span>
+        <span>{m.users_filter_members()}</span>
       </DropdownMenu.CheckboxItem>
     {/if}
     <DropdownMenu.CheckboxItem
@@ -63,7 +64,7 @@
         filterSelection = "pending";
       }}
     >
-      <span>Pending invites</span>
+      <span>{m.users_filter_pending_invites()}</span>
     </DropdownMenu.CheckboxItem>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

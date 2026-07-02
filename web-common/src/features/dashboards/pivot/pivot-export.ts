@@ -133,6 +133,11 @@ export function getPivotAggregationRequest({
         },
   );
 
+  // `pivotOn` is an internal request key, not a display label: each entry must
+  // match the alias the backend assigns to the corresponding dimension (built
+  // from the same `d.title` in `allDimensions` above). It is never shown to the
+  // user, so it must NOT be localized — doing so would diverge from the alias
+  // and break the aggregation ("pivot field not found in dimensions").
   const pivotOn = isFlat
     ? undefined
     : columns.dimension.map((d) =>

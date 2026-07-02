@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   export let valueFormatter: (value: number | null) => string;
   export let tooltipCurrentValue: number | null;
   export let tooltipComparisonValue: number | null;
@@ -27,7 +28,7 @@
     class="fill-fg-muted"
     style:font-style={tooltipComparisonValue === null ? "italic" : "normal"}
   >
-    vs {valueFormatter(tooltipComparisonValue)}
+    {m.chart_vs()} {valueFormatter(tooltipComparisonValue)}
   </tspan>
   {#if showDelta}
     <tspan class={deltaIsFavorable ? "fill-green-600" : "fill-red-600"}>

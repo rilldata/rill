@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Progress } from "@rilldata/web-common/components/progress";
   import GlobalDimensionSearchResult from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearchResult.svelte";
   import {
@@ -61,7 +62,7 @@
       <button
         {...props}
         class="absolute left-32"
-        aria-label="Dimension search results"
+        aria-label={m.dashboard_dimension_search_results_aria()}
       ></button>
     {/snippet}
   </DropdownMenuTrigger>

@@ -6,6 +6,7 @@
     V1AssertionStatus,
     type V1AssertionResult,
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let currentExecution: V1AlertExecution;
   export let result: V1AssertionResult;
@@ -19,20 +20,20 @@
     AssertionResultDisplay
   > = {
     [V1AssertionStatus.ASSERTION_STATUS_PASS]: {
-      text: "Not triggered",
+      text: m.alert_status_not_triggered(),
       color: "gray",
     },
     [V1AssertionStatus.ASSERTION_STATUS_FAIL]: {
-      text: "Triggered",
+      text: m.alert_status_triggered(),
       color: "blue",
     },
     [V1AssertionStatus.ASSERTION_STATUS_ERROR]: {
-      text: "Failed",
+      text: m.alert_status_failed(),
       color: "red",
     },
     // This should never happen
     [V1AssertionStatus.ASSERTION_STATUS_UNSPECIFIED]: {
-      text: "Status unknown",
+      text: m.alert_status_unknown(),
       color: "amber",
     },
   };
@@ -41,7 +42,7 @@
 </script>
 
 {#if currentExecution}
-  <Tag color="green">Running</Tag>
+  <Tag color="green">{m.alert_status_running()}</Tag>
 {:else}
   <Tag color={assertionResultDisplay.color}>
     {assertionResultDisplay.text}

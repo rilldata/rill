@@ -20,6 +20,7 @@
     UnderlineTabsList,
     UnderlineTabsTrigger,
   } from "@rilldata/web-common/components/tabs";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -164,7 +165,7 @@
         onClick={() => void githubAccessManager.ensureGithubAccess()}
       >
         <Github className="w-5 h-5 flex-shrink-0" />
-        Connect to GitHub
+        {m.github_connect_to_github()}
       </Button>
     {/snippet}
   </Dialog.Trigger>
@@ -173,9 +174,9 @@
       <div class="flex flex-row gap-x-2 items-center">
         <Github size="40px" />
         <div class="flex flex-col gap-y-1">
-          <Dialog.Title>Connect to GitHub</Dialog.Title>
+          <Dialog.Title>{m.github_connect_to_github()}</Dialog.Title>
           <Dialog.Description>
-            Connect this project to GitHub.
+            {m.github_connect_project_description()}
           </Dialog.Description>
         </div>
       </div>
@@ -192,10 +193,10 @@
     >
       <UnderlineTabsList>
         <UnderlineTabsTrigger value="new"
-          >Create repository</UnderlineTabsTrigger
+          >{m.github_create_repository()}</UnderlineTabsTrigger
         >
         <UnderlineTabsTrigger value="existing">
-          Existing repository
+          {m.github_existing_repository()}
         </UnderlineTabsTrigger>
       </UnderlineTabsList>
 
@@ -212,43 +213,43 @@
           <Select
             bind:value={$form.org}
             id="org"
-            label="Organization"
-            placeholder="Select organization"
+            label={m.github_organization()}
+            placeholder={m.github_select_organization()}
             options={$githubUserOrgs.data ?? []}
             optionsLoading={$githubUserOrgs.isFetching}
             sameWidth
             enableSearch
             onAddNew={() => githubAccessManager.reselectOrgOrRepos(false)}
-            addNewLabel="+ Connect other orgs"
+            addNewLabel={m.github_connect_other_orgs()}
           />
 
           <Input
             bind:value={$form.name}
             errors={$errors?.name}
             id="name"
-            label="Repository name"
+            label={m.github_repository_name()}
             capitalizeLabel={false}
           />
         {:else}
           <Select
             bind:value={$form.repo}
             id="repo"
-            label="Repository"
-            placeholder="Select repository"
+            label={m.github_repository()}
+            placeholder={m.github_select_repository()}
             sameWidth
             options={$githubUserRepos.data?.repoOptions ?? []}
             optionsLoading={$githubUserRepos.isFetching}
             enableSearch
             onChange={(newRepo) => onSelectedRepoChange(newRepo)}
             onAddNew={() => githubAccessManager.reselectOrgOrRepos(true)}
-            addNewLabel="+ Connect other repos"
+            addNewLabel={m.github_connect_other_repos()}
           />
 
           <Input
             bind:value={$form.branch}
             errors={$errors?.branch}
             id="branch"
-            label="Branch"
+            label={m.github_branch()}
             placeholder="main"
             capitalizeLabel={false}
           />
@@ -257,7 +258,7 @@
             bind:value={$form.subpath}
             errors={$errors?.subpath}
             id="subpath"
-            label="Subpath"
+            label={m.github_subpath()}
             placeholder="/"
             capitalizeLabel={false}
             optional
@@ -272,12 +273,12 @@
 
         {#if $githubConnectionFailed}
           <div class="text-red-500 text-sm py-px">
-            <div>Failed to connect to GitHub. Please try again.</div>
+            <div>{m.github_connection_failed()}</div>
             <Button
               type="secondary"
               onClick={() => githubAccessManager.ensureGithubAccess()}
             >
-              Reconnect
+              {m.github_reconnect()}
             </Button>
           </div>
         {/if}
@@ -293,7 +294,7 @@
         }}
         type="secondary"
       >
-        Cancel
+        {m.common_cancel()}
       </Button>
       {#if activeTab === "new"}
         <Button
@@ -303,7 +304,7 @@
           loading={disableSubmit}
           disabled={disableSubmit}
         >
-          Create and push
+          {m.github_create_and_push()}
         </Button>
       {:else}
         <Button
@@ -312,7 +313,7 @@
           disabled={disableSubmit}
           onClick={() => (showOverwriteConfirmation = true)}
         >
-          Pull changes
+          {m.github_pull_changes()}
         </Button>
       {/if}
     </Dialog.Footer>

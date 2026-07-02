@@ -9,6 +9,7 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { RefreshCcwIcon, CodeIcon } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let resourceKind: string;
   export let resourceName: string;
@@ -79,7 +80,7 @@
       >
         <div class="flex items-center">
           <CodeIcon size="12px" />
-          <span class="ml-2">Describe</span>
+          <span class="ml-2">{m.status_action_describe()}</span>
         </div>
       </DropdownMenu.Item>
     {/if}
@@ -94,7 +95,7 @@
         <div class="flex items-center">
           <RefreshCcwIcon size="12px" />
           <span class="ml-2"
-            >{isLoading ? "Refreshing..." : "Full Refresh"}</span
+            >{isLoading ? m.status_refreshing() : m.status_action_full_refresh()}</span
           >
         </div>
       </DropdownMenu.Item>
@@ -108,7 +109,7 @@
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />
-            <span class="ml-2">Incremental Refresh</span>
+            <span class="ml-2">{m.status_action_incremental_refresh()}</span>
           </div>
         </DropdownMenu.Item>
       {/if}

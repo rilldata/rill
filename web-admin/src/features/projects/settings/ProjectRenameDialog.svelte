@@ -4,6 +4,7 @@
     ProjectRenameFormId,
   } from "@rilldata/web-admin/features/projects/settings/ProjectRenameForm.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     organization,
@@ -18,10 +19,10 @@
 <Dialog.Root bind:open>
   <Dialog.Trigger><div class="hidden"></div></Dialog.Trigger>
   <Dialog.Content>
-    <Dialog.Title>Rename Project</Dialog.Title>
+    <Dialog.Title>{m.settings_rename_project_title()}</Dialog.Title>
     <ProjectRenameForm {organization} {project} bind:loading bind:changed />
     <Dialog.Footer>
-      <Dialog.Close>Cancel</Dialog.Close>
+      <Dialog.Close>{m.settings_cancel_button()}</Dialog.Close>
       <Button
         submitForm
         form={ProjectRenameFormId}
@@ -30,7 +31,7 @@
         disabled={!changed}
         onRename={() => (open = false)}
       >
-        Rename
+        {m.settings_rename_button()}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

@@ -28,6 +28,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: PageData;
   $: ({ cancelled, paymentIssues } = data);
@@ -52,9 +53,9 @@
     if (paymentIssues.length) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Please fix payment issues: ${getPaymentIssueErrorText(paymentIssues)}`,
+        message: m.billing_fix_payment_issues({ details: getPaymentIssueErrorText(paymentIssues) }),
         link: {
-          text: "Update payment",
+          text: m.billing_update_payment(),
           href: await fetchPaymentsPortalURL(
             organization,
             getBillingUpgradeUrl($page, organization),
@@ -77,7 +78,7 @@
         });
         eventBus.emit("notification", {
           type: "success",
-          message: `Your ${paidPlan.displayName} plan was renewed`,
+          message: m.billing_plan_renewed({ planName: paidPlan.displayName }),
         });
       } else {
         await $planUpdater.mutateAsync({
@@ -111,9 +112,9 @@
     <LoadingSpinner />
     <CtaHeader variant="bold">
       {#if cancelled}
-        Renewing {planDisplayName} plan...
+        {m.billing_renewing_plan({ plan: planDisplayName })}
       {:else}
-        Upgrading to {planDisplayName} plan...
+        {m.billing_upgrading_plan({ plan: planDisplayName })}
       {/if}
     </CtaHeader>
     <CtaNeedHelp />

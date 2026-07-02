@@ -13,6 +13,7 @@
   import EditBranchDialog from "@rilldata/web-admin/features/edit-session/EditBranchDialog.svelte";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { getRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { readable } from "svelte/store";
 
   let { organization, project }: { organization: string; project: string } =
@@ -99,8 +100,10 @@
     <!-- Permissions tag -->
     <Tag>
       <ProjectAccessControls {organization} {project}>
-        <svelte:fragment slot="read-project">Viewer</svelte:fragment>
-        <svelte:fragment slot="manage-project">Admin</svelte:fragment>
+        <svelte:fragment slot="read-project"
+          >{m.project_role_viewer()}</svelte:fragment
+        >
+        <svelte:fragment slot="manage-project">{m.project_role_admin()}</svelte:fragment>
       </ProjectAccessControls>
     </Tag>
     <!-- Public vs Private indicator -->

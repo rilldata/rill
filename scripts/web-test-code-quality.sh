@@ -86,13 +86,14 @@ if [[ "$COMMON" == "true" ]]; then
 fi
 
 echo ""
-echo "== i18n guard for migrated areas (warning only) =="
-# Scans a fixed set of already-migrated areas on the filesystem, so it runs
-# unconditionally rather than under an app filter: the migrated areas span
-# multiple apps and are independent of which files a given PR touched.
-# Reports hardcoded strings; non-fatal for now: the final i18n migration chunk
-# adds --strict to make it fatal.
-node ./scripts/i18n-guard.js || true
+echo "== i18n guard: catalog integrity + migrated areas =="
+# Scans the message catalogs and a fixed set of already-migrated areas on the
+# filesystem, so it runs unconditionally rather than under an app filter: the
+# migrated areas span multiple apps and are independent of which files a given
+# PR touched. Catalog integrity errors are exact and fatal; hardcoded-string
+# findings are heuristic and non-fatal for now: the final i18n migration chunk
+# adds --strict to make them fatal too.
+node ./scripts/i18n-guard.js || exit_code=$?
 
 if [[ "$LOCAL" == "true" ]]; then
   echo ""

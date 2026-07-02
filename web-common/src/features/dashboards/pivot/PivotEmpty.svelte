@@ -1,6 +1,7 @@
 <script>
   import Spinner from "../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../entity-management/types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import EmptyMeasureIcon from "./EmptyMeasureIcon.svelte";
   import EmptyTableIcon from "./EmptyTableIcon.svelte";
 
@@ -14,28 +15,30 @@
   {#if isFetching}
     <Spinner size="64px" status={EntityStatus.Running} />
     <div class="font-semibold text-fg-primary mt-1 text-lg">
-      Hang tight! We're building your table...
+      {m.dashboard_pivot_building_table()}
     </div>
     {#if !isEmbedded}
       <div class="text-fg-secondary">
-        Need help? Reach out to us on <a
-          target="_blank"
-          rel="noopener"
-          href="https://discord.gg/2ubRfjC7Rh">Discord</a
+        {m.dashboard_pivot_need_help_discord()}
+        <a target="_blank" rel="noopener" href="https://discord.gg/2ubRfjC7Rh"
+          >Discord</a
         >
       </div>
     {/if}
   {:else if hasColumnAndNoMeasure}
     <EmptyMeasureIcon />
     <div class="flex flex-col items-center gap-y-2">
-      <div class="font-semibold text-fg-primary mt-1 text-lg">Keep it up!</div>
+      <div class="font-semibold text-fg-primary mt-1 text-lg">
+        {m.dashboard_pivot_keep_it_up()}
+      </div>
       <div class="text-fg-secondary text-base">
-        Add a measure to complete your table.
+        {m.dashboard_pivot_add_measure()}
       </div>
     </div>
     {#if !isEmbedded}
       <div class="text-fg-secondary">
-        Learn more about tables in our <a
+        {m.dashboard_pivot_learn_more()}
+        <a
           target="_blank"
           rel="noopener"
           href="https://docs.rilldata.com/guide/dashboards/explore/pivot"
@@ -46,21 +49,22 @@
   {:else if assembled}
     <EmptyTableIcon />
     <div class="text-fg-secondary text-base">
-      No data to show for the selected filters.
+      {m.dashboard_pivot_no_data()}
     </div>
   {:else}
     <EmptyTableIcon />
     <div class="flex flex-col items-center gap-y-2">
       <div class="font-semibold text-fg-primary mt-1 text-lg">
-        Your table looks lonely
+        {m.dashboard_pivot_table_lonely()}
       </div>
       <div class="text-fg-secondary text-base">
-        Give it some data to keep it company.
+        {m.dashboard_pivot_give_data()}
       </div>
     </div>
     {#if !isEmbedded}
       <div class="text-fg-secondary">
-        Learn more about tables in our <a
+        {m.dashboard_pivot_learn_more()}
+        <a
           target="_blank"
           href="https://docs.rilldata.com/guide/dashboards/explore/pivot"
           >docs</a

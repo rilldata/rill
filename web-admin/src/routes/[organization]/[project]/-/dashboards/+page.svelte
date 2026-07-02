@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   $: ({
     params: { project },
@@ -12,7 +13,7 @@
   <title>{project} overview - Rill</title>
 </svelte:head>
 
-<ContentContainer maxWidth={800} title="Project dashboards">
+<ContentContainer maxWidth={800} title={m.project_dashboards_title()}>
   <div class="flex flex-col items-center gap-y-4">
     <DashboardsTable />
   </div>

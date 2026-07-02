@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
   import AlertPreviewTable from "@rilldata/web-common/features/alerts/AlertPreviewTable.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -41,8 +42,8 @@
   </div>
 {:else if isCriteriaEmpty || !$alertPreviewQuery.data}
   <PreviewEmpty
-    topLine="No criteria selected"
-    bottomLine="Select criteria to see a preview"
+    topLine={m.alert_form_no_criteria()}
+    bottomLine={m.alert_form_select_criteria()}
   />
 {:else if rows.length > 0}
   <div class="max-h-64 overflow-auto">

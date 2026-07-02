@@ -12,6 +12,7 @@
   import MaterializationCell from "./MaterializationCell.svelte";
   import ModelActionsCell from "./ModelActionsCell.svelte";
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let tables: V1OlapTableInfo[] = [];
   export let isView: Map<string, boolean> = new Map();
@@ -31,7 +32,7 @@
     {
       id: "materialization",
       accessorFn: (row) => isView.get(row.name ?? ""),
-      header: "Type",
+      header: m.status_column_type(),
       cell: ({ row, getValue }) =>
         renderComponent(MaterializationCell, {
           isView: getValue() as boolean | undefined,
@@ -44,7 +45,7 @@
         const resource = modelResources.get((row.name ?? "").toLowerCase());
         return resource?.meta?.name?.name ?? row.name ?? "";
       },
-      header: "Model Name",
+      header: m.status_column_model_name(),
       cell: ({ getValue }) =>
         renderComponent(NameCell, {
           name: getValue() as string,
@@ -53,7 +54,7 @@
     {
       id: "tableName",
       accessorFn: (row) => row.name,
-      header: "Table Name",
+      header: m.status_column_table_name(),
       cell: ({ getValue }) =>
         renderComponent(NameCell, {
           name: getValue() as string,
@@ -61,7 +62,7 @@
     },
     {
       id: "status",
-      header: "Status",
+      header: m.status_label_status(),
       accessorFn: (row) => {
         const resource = modelResources.get((row.name ?? "").toLowerCase());
         return resource?.meta?.reconcileStatus;
@@ -83,7 +84,7 @@
     {
       id: "size",
       accessorFn: (row) => row.physicalSizeBytes,
-      header: "Database Size",
+      header: m.status_column_database_size(),
       sortDescFirst: true,
       sortingFn: (rowA, rowB) => {
         const sizeA = rowA.getValue("size") as string | number | undefined;

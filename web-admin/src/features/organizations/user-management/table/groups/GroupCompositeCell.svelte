@@ -12,6 +12,7 @@
   import type { V1UsergroupMemberUser } from "@rilldata/web-admin/client";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let name: string;
   export let usersCount: number;
@@ -109,12 +110,12 @@
         onblur={() => (hovered = false)}
       >
         <span class="text-xs text-fg-secondary">
-          {usersCount} user{usersCount === 1 ? "" : "s"}
+          {m.users_user_count({ count: usersCount })}
         </span>
       </div>
       <TooltipContent slot="tooltip-content">
         {#if (usersCount ?? 0) === 0}
-          <div class="text-xs text-gray-300 px-1 py-0.5">No users</div>
+          <div class="text-xs text-gray-300 px-1 py-0.5">{m.users_no_users()}</div>
         {:else if $listUsergroupMemberUsers.isLoading}
           <div class="px-1 py-0.5">
             <Spinner
@@ -125,7 +126,7 @@
           </div>
         {:else if $listUsergroupMemberUsers.isError}
           <div class="text-xs text-red-300 px-1 py-0.5">
-            Failed to load users
+            {m.users_failed_load_users()}
           </div>
         {:else}
           <ul>
@@ -146,7 +147,7 @@
               </div>
             {/each}
             {#if (usersCount ?? 0) > visiblePreviewCount}
-              <li>and {(usersCount ?? 0) - visiblePreviewCount} more</li>
+              <li>{m.users_and_more({ count: (usersCount ?? 0) - visiblePreviewCount })}</li>
             {/if}
           </ul>
         {/if}

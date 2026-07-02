@@ -1,6 +1,7 @@
 <script lang="ts">
   import CodeBlock from "@rilldata/web-common/components/code-block/CodeBlock.svelte";
   import PersonalAccessTokensSection from "../../personal-access-tokens/PersonalAccessTokensSection.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let apiUrl: string;
   export let isPublic: boolean;
@@ -43,15 +44,15 @@
   {/if}
 
   <div class="flex flex-col gap-y-3 min-w-0">
-    <h4 class="text-sm font-medium text-fg-primary">Configuration</h4>
+    <h4 class="text-sm font-medium text-fg-primary">{m.mcp_configuration()}</h4>
     <p class="text-sm text-fg-secondary">
-      Add this to your MCP client's configuration file.
+      {m.mcp_add_to_config()}
       <a
         href="https://docs.rilldata.com/guide/ai/mcp#manual-configuration-alternative-method"
         target="_blank"
         rel="noopener"
       >
-        Learn more
+        {m.mcp_learn_more()}
       </a>
     </p>
     <div class="overflow-x-auto">

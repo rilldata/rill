@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { Chip } from "@rilldata/web-common/components/chip";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
@@ -67,7 +68,7 @@
         >
         {#if result.groupCount !== undefined}
           <span class="text-xs text-fg-secondary">
-            {result.groupCount} user{result.groupCount > 1 ? "s" : ""}
+            {m.users_user_count({ count: result.groupCount })}
           </span>
         {/if}
       </div>
@@ -85,8 +86,8 @@
             class="text-sm font-medium text-fg-primary flex flex-row items-center gap-x-1"
           >
             {result.identifier}
-            <Chip type="amber" label="Guest" compact readOnly>
-              <svelte:fragment slot="body">Guest</svelte:fragment>
+            <Chip type="amber" label={m.role_guest()} compact readOnly>
+              <svelte:fragment slot="body">{m.role_guest()}</svelte:fragment>
             </Chip>
           </span>
         {:else}
@@ -95,7 +96,7 @@
           </span>
         {/if}
         <span class="text-xs text-fg-secondary"
-          >{result.invitedBy ? "Pending invitation" : result.name}</span
+          >{result.invitedBy ? m.users_pending_invitation() : result.name}</span
         >
       </div>
     {/if}

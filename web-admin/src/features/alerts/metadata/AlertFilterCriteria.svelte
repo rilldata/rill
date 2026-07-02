@@ -10,6 +10,7 @@
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let filters: V1Expression | undefined;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -24,7 +25,7 @@
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label="Alert criteria">
-  <MetadataLabel>Criteria</MetadataLabel>
+  <MetadataLabel>{m.alert_criteria()}</MetadataLabel>
   <div class="flex flex-wrap gap-2">
     {#if filtersLength}
       {#each measureFilters as filter, index (index)}
@@ -48,7 +49,7 @@
         class="text-fg-disabled grid items-center"
         style:min-height="26px"
       >
-        No criteria selected
+        {m.alert_form_no_criteria()}
       </div>
     {/if}
   </div>

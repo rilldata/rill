@@ -8,6 +8,7 @@
     AlertDialogTitle,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let onRefresh: () => void;
@@ -25,15 +26,13 @@
 <AlertDialog bind:open>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Refresh all sources and models?</AlertDialogTitle>
+      <AlertDialogTitle>{m.status_refresh_all_confirm_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          This will refresh all project sources and models.
+          {m.status_refresh_all_confirm_body()}
           <br />
           <br />
-          <span class="font-medium">Note:</span> To refresh a single resource, scroll
-          to the source or model, click the '...' button, and select the refresh
-          option.
+          <span class="font-medium">{m.status_note()}</span> {m.status_refresh_all_confirm_tip()}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -42,9 +41,9 @@
         type="tertiary"
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.status_cancel()}</Button
       >
-      <Button type="primary" onClick={handleRefresh}>Yes, refresh</Button>
+      <Button type="primary" onClick={handleRefresh}>{m.status_yes_refresh()}</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

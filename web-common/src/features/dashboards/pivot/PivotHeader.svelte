@@ -7,6 +7,7 @@
   import PivotAutoArrangeZone from "./PivotAutoArrangeZone.svelte";
   import { lastNestState } from "./PivotToolbar.svelte";
   import { PivotChipType, type PivotChipData, type PivotState } from "./types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let pivotState: PivotState;
   export let setRows: (items: PivotChipData[]) => void;
@@ -36,11 +37,12 @@
   {#if !isFlat}
     <div class="header-row" transition:slide={{ duration: 200, axis: "y" }}>
       <span class="row-label">
-        <Row size="16px" /> Rows
+        <Row size="16px" />
+        {m.dashboard_rows()}
       </span>
       <DragList
         zone="rows"
-        placeholder="Drag dimensions here"
+        placeholder={m.dashboard_drag_dimensions()}
         items={rows}
         onUpdate={updateRows}
       />
@@ -54,14 +56,15 @@
   {/if}
   <div class="header-row">
     <div class="row-label">
-      <Column size="16px" /> Columns
+      <Column size="16px" />
+      {m.dashboard_columns()}
     </div>
 
     <DragList
       zone="columns"
       {tableMode}
       items={columnsForList}
-      placeholder="Drag dimensions or measures here"
+      placeholder={m.dashboard_drag_dimensions_or_measures()}
       onUpdate={updateColumn}
     />
   </div>

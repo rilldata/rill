@@ -4,6 +4,7 @@
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import CanvasTabGroupView from "./CanvasTabGroupView.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
   import { page } from "$app/stores";
@@ -88,7 +89,9 @@
         {#if $firstLoad}
           <Spinner status={EntityStatus.Running} size="32px" />
         {:else}
-          <p class="text-lg text-fg-secondary">No components added</p>
+          <p class="text-lg text-fg-secondary">
+            {m.canvas_no_components_added()}
+          </p>
         {/if}
       </div>
     {/each}

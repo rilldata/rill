@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
@@ -38,9 +39,9 @@
     class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
   >
     {#if !lastTrigger}
-      <span class="shrink-0">Hasn't been checked yet</span>
+      <span class="shrink-0">{m.alert_not_checked_yet()}</span>
     {:else}
-      <span class="shrink-0">Last checked {timeAgo(new Date(lastTrigger))}</span
+      <span class="shrink-0">{m.alert_last_checked({ time: timeAgo(new Date(lastTrigger)) })}</span
       >
     {/if}
     <ProjectAccessControls {organization} {project}>
