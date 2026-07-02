@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -249,4 +250,11 @@ func TestInvalidSecretFailsFast(t *testing.T) {
 	_, err := newNotifier(&configProperties{SigningSecret: "whsec_!!!"}, EncodeProps([]string{"https://example.com"}))
 	require.Error(t, err)
 	require.True(t, strings.Contains(err.Error(), "invalid signing secret"))
+}
+
+func TestPingValidatesSigningSecret(t *testing.T) {
+	ctx := context.Background()
+	require.NoError(t, (&handle{config: &configProperties{}}).Ping(ctx))
+	require.NoError(t, (&handle{config: &configProperties{SigningSecret: "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw"}}).Ping(ctx))
+	require.Error(t, (&handle{config: &configProperties{SigningSecret: "whsec_!!!"}}).Ping(ctx))
 }
