@@ -22,27 +22,15 @@
     type UserLike,
   } from "@rilldata/web-common/features/help/initPylonChat";
   import {
-    adminServiceUpdateUserPreferences,
     createAdminServiceGetCurrentUser,
-    getAdminServiceGetCurrentUserQueryKey,
     type V1ProjectPermissions,
   } from "../../client";
   import LanguageSwitcher from "@rilldata/web-common/components/i18n/LanguageSwitcher.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   export let projectPermissions: V1ProjectPermissions | undefined = undefined;
-
-  async function persistLocale(preferredLocale: string) {
-    await adminServiceUpdateUserPreferences({
-      preferences: { preferredLocale },
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getAdminServiceGetCurrentUserQueryKey(),
-    });
-  }
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -138,7 +126,7 @@
     {/if}
 
     <ThemeToggle />
-    <LanguageSwitcher {persistLocale} />
+    <LanguageSwitcher />
     <DropdownMenu.Separator />
 
     <DropdownMenu.Item

@@ -7257,8 +7257,6 @@ definitions:
     properties:
       timeZone:
         type: string
-      preferredLocale:
-        type: string
   v1UserQuotas:
     type: object
     properties:

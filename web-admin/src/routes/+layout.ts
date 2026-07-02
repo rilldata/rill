@@ -22,20 +22,10 @@ import { getFetchOrganizationQueryOptions } from "@rilldata/web-admin/features/o
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import { syncDocumentLocale } from "@rilldata/web-common/lib/i18n/document-locale";
-import { resolveInitialLocale } from "@rilldata/web-common/lib/i18n/initial-locale";
-import { syncLuxonLocale } from "@rilldata/web-common/lib/i18n/luxon-locale";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import {
-  getLocale,
-  setLocale,
-} from "@rilldata/web-common/lib/i18n/gen/runtime";
 import { error, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { maybeRedirectToWelcomePage } from "@rilldata/web-admin/features/welcome/utils.ts";
-
-syncLuxonLocale(getLocale());
-syncDocumentLocale(getLocale());
 
 export const load = async ({ params, url, route, depends }) => {
   depends("app:root");
@@ -61,17 +51,6 @@ export const load = async ({ params, url, route, depends }) => {
       staleTime: 5 * 60 * 1000, // 5 minutes; prevents refetches on every navigation/hover
     });
     user = userQuery.user;
-
-    const action = resolveInitialLocale(
-      userQuery.preferences?.preferredLocale,
-      getLocale(),
-    );
-    if (action.type === "set-and-reload") {
-      setLocale(action.locale, { reload: true });
-      return;
-    }
-    syncLuxonLocale(getLocale());
-    syncDocumentLocale(getLocale());
   } catch (e) {
     // If the user's auth token has expired, we automatically redirect to the login page
     if (isAxiosError<RpcStatus>(e) && e.response?.status === 401) {

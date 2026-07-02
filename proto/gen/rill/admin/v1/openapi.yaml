@@ -2435,8 +2435,6 @@ components:
             type: object
         v1UserPreferences:
             properties:
-                preferredLocale:
-                    type: string
                 timeZone:
                     type: string
             type: object

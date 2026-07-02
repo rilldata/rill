@@ -42,13 +42,4 @@ describe("LanguageSwitcher", () => {
 
     expect(setLocale).toHaveBeenCalledWith("es");
   });
-
-  it("does not call setLocale when current locale is selected", async () => {
-    render(LanguageSwitcher);
-
-    const enButton = screen.getByText("English");
-    await fireEvent.click(enButton);
-
-    expect(setLocale).not.toHaveBeenCalled();
-  });
 });
