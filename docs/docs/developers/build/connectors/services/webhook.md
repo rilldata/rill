@@ -65,7 +65,7 @@ Set the secret as a connector variable in your project's `.env` file (or via
 `rill env set`):
 
 ```shell
-connector.webhook.signing_secret=whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw
+connector.webhook.signing_secret=whsec_<base64-encoded-secret>
 ```
 
 Secrets prefixed with `whsec_` are treated as base64-encoded per the specification; other
