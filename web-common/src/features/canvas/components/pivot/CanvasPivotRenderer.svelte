@@ -4,6 +4,7 @@
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import type {
     PivotDataStore,
     PivotDataStoreConfig,
@@ -101,6 +102,7 @@
         assembled={$pivotDataStore.assembled}
         isFetching={$pivotDataStore.isFetching}
         {hasColumnAndNoMeasure}
+        isEmbedded={EmbedStore.isEmbedded()}
       />
     {:else}
       <PivotTable
