@@ -171,7 +171,7 @@ func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, name 
 	}
 	var view bool
 	fields := make([]*runtimev1.StructType_Field, len(result.Records))
-	for _, record := range result.Records {
+	for i, record := range result.Records {
 		viewField, ok := record[0].(*types.FieldMemberBooleanValue)
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for column_name field")
@@ -181,14 +181,14 @@ func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, name 
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for column_name field")
 		}
-		typeField, ok := record[0].(*types.FieldMemberStringValue)
+		typeField, ok := record[2].(*types.FieldMemberStringValue)
 		if !ok {
 			return nil, fmt.Errorf("unexpected type for data_type field")
 		}
-		fields = append(fields, &runtimev1.StructType_Field{
+		fields[i] = &runtimev1.StructType_Field{
 			Name: colField.Value,
 			Type: redshiftTypeToRuntimeType(typeField.Value),
-		})
+		}
 	}
 	return &drivers.OlapTable{
 		Database:       database,
