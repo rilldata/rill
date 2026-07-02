@@ -69,9 +69,11 @@ var _ drivers.Handle = &handle{}
 
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
-	// There is nothing to verify at the connector level: delivery URLs are provided
-	// per alert/report and the signing secret cannot be validated without a receiver.
-	return nil
+	// Delivery URLs are provided per alert/report, so there is no receiver to contact at
+	// the connector level. Validate that the signing secret (if any) is well-formed so a
+	// misconfiguration surfaces here instead of on the first delivery.
+	_, err := signingKey(h.config.SigningSecret)
+	return err
 }
 
 func (h *handle) Driver() string {
