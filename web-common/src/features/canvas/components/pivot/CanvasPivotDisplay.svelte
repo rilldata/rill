@@ -3,7 +3,7 @@
   import ComponentHeader from "../../ComponentHeader.svelte";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
-  import { tableFieldMapper } from "./util";
+  import { normalizeRowLimit, tableFieldMapper } from "./util";
 
   export let component: PivotCanvasComponent;
 
@@ -71,6 +71,8 @@
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      rowLimit: normalizeRowLimit(tableSpec.row_limit),
+      outermostRowLimit: undefined,
     }));
   }
 </script>

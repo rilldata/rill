@@ -126,6 +126,7 @@ export interface NestedCellContext {
   hasCrossSelection: boolean;
   isAncestorOfSelectedHeader: boolean;
   isTotalsRow: boolean;
+  isShowMore: boolean;
   canShowDataViewer: boolean;
   enableClickToFilter: boolean;
 }
@@ -222,9 +223,13 @@ export function nestedCellState(ctx: NestedCellContext): NestedCellState {
       !ctx.isAncestorOfSelectedHeader,
     crossSelectedRowHeader:
       ctx.hasCrossSelection && ctx.isRowHeaderSelected && ctx.cellIndex === 0,
-    interactiveCell: ctx.isTotalsRow
-      ? ctx.canShowDataViewer
-      : ctx.canShowDataViewer || ctx.enableClickToFilter,
+    // Show-more rows are inert: only the row-header link increases the limit,
+    // and it renders its own affordance, so cells get no interactive styling.
+    interactiveCell:
+      !ctx.isShowMore &&
+      (ctx.isTotalsRow
+        ? ctx.canShowDataViewer
+        : ctx.canShowDataViewer || ctx.enableClickToFilter),
   };
 }
 
