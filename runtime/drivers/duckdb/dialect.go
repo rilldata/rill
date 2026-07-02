@@ -11,6 +11,7 @@ import (
 
 type dialect struct {
 	drivers.BaseDialect
+	isGeneric bool
 }
 
 var DialectDuckDB drivers.Dialect = func() drivers.Dialect {
@@ -19,10 +20,21 @@ var DialectDuckDB drivers.Dialect = func() drivers.Dialect {
 	return d
 }()
 
+var DialectDuckDBGeneric drivers.Dialect = func() drivers.Dialect {
+	d := &dialect{
+		isGeneric: true,
+	}
+	d.BaseDialect = drivers.NewBaseDialect(drivers.DialectNameDuckDB, drivers.DoubleQuotesEscapeIdentifier, drivers.DoubleQuotesEscapeIdentifier)
+	return d
+}()
+
 func (d *dialect) CanPivot() bool { return true }
 
 // EscapeTable for DuckDB only uses the table name (no db/schema prefix).
-func (d *dialect) EscapeTable(_, _, table string) string {
+func (d *dialect) EscapeTable(db, schema, table string) string {
+	if d.isGeneric {
+		return d.BaseDialect.EscapeTable(db, schema, table)
+	}
 	return d.EscapeIdentifier(table)
 }
 
