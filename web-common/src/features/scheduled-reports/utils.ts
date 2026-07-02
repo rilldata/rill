@@ -269,6 +269,11 @@ function extractNotification(
     slackNotifier?.properties?.users as string[],
   );
 
+  const webhookNotifier = notifiers?.find((n) => n.connector === "webhook");
+  const webhookUrls = mapAndAddEmptyEntry(
+    webhookNotifier?.properties?.urls as string[],
+  );
+
   const emailNotifier = notifiers?.find((n) => n.connector === "email");
   const emailRecipients = mapAndAddEmptyEntry(
     emailNotifier?.properties?.recipients as string[],
@@ -285,6 +290,9 @@ function extractNotification(
       isEdit && !EmbedStore.isEmbedded() ? !!slackNotifier : false,
     slackChannels,
     slackUsers,
+
+    enableWebhookNotification: isEdit ? !!webhookNotifier : false,
+    webhookUrls,
 
     enableEmailNotification: isEdit ? !!emailNotifier : true,
     emailRecipients,

@@ -45,6 +45,7 @@ export interface FormMetadataProvider<M, D> {
   isLoading: boolean;
   projectMembersSet: Set<string>;
   hasSlackNotifier: boolean;
+  hasWebhookNotifier: boolean;
 
   cleanup(): void;
 }
@@ -73,6 +74,7 @@ class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
   public isLoading = $state(true);
   public projectMembersSet = $state<Set<string>>(new Set());
   public hasSlackNotifier = $state(false);
+  public hasWebhookNotifier = $state(false);
 
   private readonly userUnsub: () => void;
   private readonly projectMembersUnsub: () => void;
@@ -109,10 +111,11 @@ class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
     );
     this.notifiersUnsub = notifierConnectorsQuery.subscribe(
       (notifierConnectorsResp) => {
-        this.hasSlackNotifier =
-          !!notifierConnectorsResp?.data?.connectors?.some(
-            (c) => c.name === "slack",
-          );
+        const connectors = notifierConnectorsResp?.data?.connectors;
+        this.hasSlackNotifier = !!connectors?.some((c) => c.name === "slack");
+        this.hasWebhookNotifier = !!connectors?.some(
+          (c) => c.name === "webhook",
+        );
       },
     );
   }
@@ -135,6 +138,7 @@ class EmbedFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
   public isLoading = false;
   public projectMembersSet = new Set<string>();
   public hasSlackNotifier = false; // not support in embed
+  public hasWebhookNotifier = false; // not support in embed
 
   private readonly orgAndProjectUnsub: () => void;
 

@@ -769,6 +769,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	res.Notify.Webhook.URLs = opts.WebhookUrls
 	res.Annotations.AdminManaged = true
 
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -879,6 +880,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	res.Notify.Webhook.URLs = opts.WebhookUrls
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenMode = WebOpenMode(opts.WebOpenMode)
 	if res.Annotations.WebOpenMode == "" {
@@ -1243,6 +1245,9 @@ type reportYAML struct {
 			Channels []string `yaml:"channels"`
 			Webhooks []string `yaml:"webhooks"`
 		} `yaml:"slack"`
+		Webhook struct {
+			URLs []string `yaml:"urls"`
+		} `yaml:"webhook"`
 	} `yaml:"notify"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
 }

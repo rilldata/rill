@@ -12,3 +12,15 @@ export function getHasSlackConnection(client: RuntimeClient) {
     },
   );
 }
+
+export function getHasWebhookConnection(client: RuntimeClient) {
+  return createRuntimeServiceListNotifierConnectors(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => !!data.connectors?.some((c) => c.name === "webhook"),
+      },
+    },
+  );
+}
