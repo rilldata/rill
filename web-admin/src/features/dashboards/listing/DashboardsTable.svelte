@@ -11,7 +11,6 @@
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards, useIsInitialBuild } from "./selectors";
   import { Search } from "@rilldata/web-common/components/search";
-  import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
   import {
     UrlParamsArrayState,
     UrlParamsState,
