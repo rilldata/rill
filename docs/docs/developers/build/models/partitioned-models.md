@@ -230,7 +230,7 @@ Use `start` and `end` to filter which partitions are processed based on their pa
 
 - **`start`** — lower bound (inclusive): only partitions with paths ≥ this value are included.
 - **`end`** — upper bound (exclusive): only partitions with paths < this value are included.
-- **`last`** — process only the last N successfully ingested partitions (by lexicographic path order). Useful for rolling windows.
+- **`last`** — limit to the last N partitions (by lexicographic path order). This hard limit always applies, including on the first run when no partitions have been ingested yet. Once partitions have been ingested, it also raises the lower bound to the Nth-from-last successfully ingested partition, forming a rolling window that re-lists recent partitions.
 
 ```yaml
 # Fixed window: only process a specific month

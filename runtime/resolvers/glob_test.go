@@ -73,6 +73,72 @@ func TestGlobTrimsWhitespace(t *testing.T) {
 	require.Equal(t, "file1.csv", rows[2]["path"])
 }
 
+func TestGlobLast(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"file1.csv":     ``,
+		"dir/file2.csv": ``,
+		"dir/file3.csv": ``,
+	})
+
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector": "mock",
+			"path":      "mock://bucket/**/*.csv",
+			"last":      2,
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+
+	// With no existing partitions, `last` acts as a hard limit on the last N rows (the N highest paths).
+	require.Len(t, rows, 2)
+	require.Equal(t, "dir/file3.csv", rows[0]["path"])
+	require.Equal(t, "file1.csv", rows[1]["path"])
+}
+
+func TestGlobLastPartitioned(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"dir/file1.csv":        ``,
+		"dir/subdir/file2.csv": ``,
+		"dir/subdir/file3.csv": ``,
+	})
+
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector":    "mock",
+			"path":         "mock://bucket/**/*.csv",
+			"partition":    "directory",
+			"rollup_files": true,
+			"last":         1,
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+
+	for _, row := range rows {
+		delete(row, "updated_on")
+	}
+
+	// The limit applies to partition rows, not files: only the last partition is returned.
+	require.Equal(t, []map[string]interface{}{
+		{"uri": "mock://bucket/dir/subdir", "path": "dir/subdir", "files": []any{"dir/subdir/file2.csv", "dir/subdir/file3.csv"}},
+	}, rows)
+}
+
 func TestGlobDirectoryPartitioned(t *testing.T) {
 	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
 		"dir/file1.csv":        ``,
