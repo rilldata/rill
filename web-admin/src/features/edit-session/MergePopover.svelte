@@ -30,8 +30,8 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
-  import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
-  import ChangedFilesDialog from "@rilldata/web-common/features/project/ChangedFilesDialog.svelte";
+  import ChangedFilesList from "@rilldata/web-common/features/project/changes/ChangedFilesList.svelte";
+  import ChangedFilesDialog from "@rilldata/web-common/features/project/changes/ChangedFilesDialog.svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
 
   export let organization: string;

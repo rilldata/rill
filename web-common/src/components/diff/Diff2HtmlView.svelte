@@ -6,25 +6,37 @@
   import { html as diffToHtml } from "diff2html";
   import "diff2html/bundles/css/diff2html.min.css";
   import DOMPurify from "dompurify";
+  import type { Snippet } from "svelte";
 
-  export let diff: string;
-  // showFileHeaders keeps diff2html's per-file header visible (and sticky) so each
-  // section is labeled. Callers that render their own header leave it false.
-  export let showFileHeaders = false;
-  // scrollX makes this element the horizontal scroll container. Leave false when an
-  // ancestor already handles scrolling (else the computed overflow-y would break
-  // sticky file headers).
-  export let scrollX = false;
+  let {
+    diff,
+    // showFileHeaders keeps diff2html's per-file header visible (and sticky) so each
+    // section is labeled. Callers that render their own header leave it false.
+    showFileHeaders = false,
+    // scrollX makes this element the horizontal scroll container. Leave false when an
+    // ancestor already handles scrolling (else the computed overflow-y would break
+    // sticky file headers).
+    scrollX = false,
+    // empty renders when there is no diff to show.
+    empty,
+  }: {
+    diff: string;
+    showFileHeaders?: boolean;
+    scrollX?: boolean;
+    empty?: Snippet;
+  } = $props();
 
-  $: diffHtml = diff
-    ? DOMPurify.sanitize(
-        diffToHtml(diff, {
-          drawFileList: false,
-          outputFormat: "line-by-line",
-          matching: "lines",
-        }),
-      )
-    : "";
+  let diffHtml = $derived(
+    diff
+      ? DOMPurify.sanitize(
+          diffToHtml(diff, {
+            drawFileList: false,
+            outputFormat: "line-by-line",
+            matching: "lines",
+          }),
+        )
+      : "",
+  );
 </script>
 
 {#if diffHtml}
@@ -36,7 +48,7 @@
     {@html diffHtml}
   </div>
 {:else}
-  <slot name="empty" />
+  {@render empty?.()}
 {/if}
 
 <style lang="postcss">

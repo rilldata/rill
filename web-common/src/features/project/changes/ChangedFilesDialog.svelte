@@ -8,31 +8,37 @@
   import Diff2HtmlView from "@rilldata/web-common/components/diff/Diff2HtmlView.svelte";
   import FileChangeBadge from "./FileChangeBadge.svelte";
 
-  export let open = false;
-  export let remoteBranch: string | undefined;
   // initialPath, when set, scrolls the diff to that file once the dialog has rendered.
-  export let initialPath: string | undefined = undefined;
+  let {
+    open = $bindable(false),
+    remoteBranch,
+    initialPath = undefined,
+  }: {
+    open?: boolean;
+    remoteBranch: string | undefined;
+    initialPath?: string | undefined;
+  } = $props();
 
   const client = useRuntimeClient();
   // includeDiff fetches the combined patch alongside the file list. fetch is left false so this
   // reuses the fetch the changed-files list call already performed when the popover opened, avoiding
   // a redundant fetch. Gated on `open` and refetchOnMount "always" so it loads fresh each time the
   // dialog is opened.
-  $: diffQuery = createRuntimeServiceGitDiff(
-    client,
-    { remoteBranch, includeDiff: true },
-    { query: { enabled: open && !!remoteBranch, refetchOnMount: "always" } },
+  let diffQuery = $derived(
+    createRuntimeServiceGitDiff(
+      client,
+      { remoteBranch, includeDiff: true },
+      { query: { enabled: open && !!remoteBranch, refetchOnMount: "always" } },
+    ),
   );
-  $: changedFiles = $diffQuery.data?.changedFiles ?? [];
-  $: diff = $diffQuery.data?.diff ?? "";
-  $: isFetching = $diffQuery.isFetching;
+  let changedFiles = $derived($diffQuery.data?.changedFiles ?? []);
+  let diff = $derived($diffQuery.data?.diff ?? "");
+  let isFetching = $derived($diffQuery.isFetching);
 
-  let diffPane: HTMLElement | undefined;
+  let diffPane = $state<HTMLElement | undefined>(undefined);
 
   // Scroll the diff to a file's section. diff2html's rendered file name may carry the project
   // subpath prefix, so match it by suffix against the subpath-relative changed-files path.
-  // Scroll the diff pane directly (rather than scrollIntoView, which also scrolls ancestors and
-  // lands imprecisely against the sticky file headers) so the file's header sits at the top.
   function scrollToFile(path: string | undefined) {
     if (!path || !diffPane) return;
     const wrappers =
@@ -40,20 +46,18 @@
     for (const wrapper of wrappers) {
       const name = wrapper.querySelector(".d2h-file-name")?.textContent?.trim();
       if (name === path || name?.endsWith("/" + path)) {
-        const top =
-          wrapper.getBoundingClientRect().top -
-          diffPane.getBoundingClientRect().top +
-          diffPane.scrollTop;
-        diffPane.scrollTo({ top });
+        wrapper.scrollIntoView({ block: "start" });
         return;
       }
     }
   }
 
   // Jump to the file the user clicked once the diff has rendered.
-  $: if (open && diff && initialPath) {
-    void tick().then(() => scrollToFile(initialPath));
-  }
+  $effect(() => {
+    if (open && diff && initialPath) {
+      void tick().then(() => scrollToFile(initialPath));
+    }
+  });
 </script>
 
 <Dialog.Root bind:open>
@@ -97,7 +101,9 @@
         </ul>
         <div class="diff-pane" bind:this={diffPane}>
           <Diff2HtmlView {diff} showFileHeaders>
-            <div slot="empty" class="state-message">No diff to display</div>
+            {#snippet empty()}
+              <div class="state-message">No diff to display</div>
+            {/snippet}
           </Diff2HtmlView>
         </div>
       </div>

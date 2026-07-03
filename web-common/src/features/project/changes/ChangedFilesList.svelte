@@ -7,28 +7,36 @@
 
   // remoteBranch is the branch to compare against; open gates the query so the
   // changed-files list is only fetched while the popover is open, not on page load.
-  export let remoteBranch: string | undefined;
-  export let open: boolean;
   // onViewDiff opens the full diff. The host (popover) owns the dialog so it survives the popover
   // closing. Passing a path requests scrolling to that file.
-  export let onViewDiff: (path?: string) => void = () => {};
+  let {
+    remoteBranch,
+    open,
+    onViewDiff = () => {},
+  }: {
+    remoteBranch: string | undefined;
+    open: boolean;
+    onViewDiff?: (path?: string) => void;
+  } = $props();
 
   const client = useRuntimeClient();
   // fetch: true updates the remote-tracking ref so the list reflects the latest remote; the diff
   // dialog reuses this fetch. refetchOnMount "always" overrides the global default (false) so the
   // list is re-fetched every time the popover reopens and this component remounts, rather than
   // serving a stale cache from a previous session.
-  $: changesQuery = createRuntimeServiceGitDiff(
-    client,
-    { remoteBranch, fetch: true },
-    { query: { enabled: open && !!remoteBranch, refetchOnMount: "always" } },
+  let changesQuery = $derived(
+    createRuntimeServiceGitDiff(
+      client,
+      { remoteBranch, fetch: true },
+      { query: { enabled: open && !!remoteBranch, refetchOnMount: "always" } },
+    ),
   );
-  $: changedFiles = $changesQuery.data?.changedFiles ?? [];
-  $: isFetching = $changesQuery.isFetching;
+  let changedFiles = $derived($changesQuery.data?.changedFiles ?? []);
+  let isFetching = $derived($changesQuery.isFetching);
 
-  let expanded = false;
+  let expanded = $state(false);
 
-  $: count = changedFiles.length;
+  let count = $derived(changedFiles.length);
 </script>
 
 {#if isFetching}

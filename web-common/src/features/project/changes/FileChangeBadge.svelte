@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { GitDiffResponse_GitFileStatus } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 
-  export let status: GitDiffResponse_GitFileStatus | undefined;
+  let { status }: { status: GitDiffResponse_GitFileStatus | undefined } =
+    $props();
 
   // The v2 client serializes proto enums as their JSON string names (e.g. "GIT_FILE_STATUS_ADDED").
   const badges: Record<
@@ -30,8 +31,9 @@
     },
   };
 
-  $: badge =
-    badges[status as unknown as string] ?? badges.GIT_FILE_STATUS_MODIFIED;
+  const badge = $derived(
+    badges[status as unknown as string] ?? badges.GIT_FILE_STATUS_MODIFIED,
+  );
 </script>
 
 <span class="badge {badge.class}" title={badge.label}>{badge.letter}</span>

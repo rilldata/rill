@@ -12,8 +12,8 @@
   import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
-  import ChangedFilesDialog from "@rilldata/web-common/features/project/ChangedFilesDialog.svelte";
+  import ChangedFilesList from "@rilldata/web-common/features/project/changes/ChangedFilesList.svelte";
+  import ChangedFilesDialog from "@rilldata/web-common/features/project/changes/ChangedFilesDialog.svelte";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";

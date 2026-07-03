@@ -31,7 +31,9 @@
       {/if}
     </div>
     <Diff2HtmlView diff={block.diff} scrollX>
-      <div slot="empty" class="no-changes-message">No changes detected</div>
+      {#snippet empty()}
+        <div class="no-changes-message">No changes detected</div>
+      {/snippet}
     </Diff2HtmlView>
   </div>
 </div>
