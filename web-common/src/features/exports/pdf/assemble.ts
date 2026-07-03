@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import chroma from "chroma-js";
+import { resolveCSSVariable } from "@rilldata/web-common/features/components/charts/util";
 import type { PaginationResult, Placement } from "./layout";
 
 export interface AssembleMeta {
@@ -146,18 +147,18 @@ function setTextColor(
   doc.setTextColor(r, g, b);
 }
 
-// Reads a CSS custom property off the document root, following up to a couple of
+// Resolves a CSS custom property to an actual color, following up to a couple of
 // levels of var() indirection (e.g. --fg-primary -> var(--color-neutral-950) ->
-// an actual color). Returns the input unchanged outside a browser.
+// an actual color). Delegates each step to resolveCSSVariable, which reads the
+// scoped theme boundary and handles light/dark palette variants; the loop here
+// unwraps the multi-level theme tokens it leaves intact. Returns the input
+// unchanged outside a browser.
 function resolveThemeColor(cssVar: string): string {
   if (typeof window === "undefined") return cssVar;
   let value = cssVar;
   for (let i = 0; i < 3 && value.startsWith("var("); i++) {
-    const varName = value.slice(4, value.lastIndexOf(")")).split(",")[0].trim();
-    const resolved = getComputedStyle(document.documentElement)
-      .getPropertyValue(varName)
-      .trim();
-    if (!resolved) return value;
+    const resolved = resolveCSSVariable(value);
+    if (resolved === value) return value;
     value = resolved;
   }
   return value;
