@@ -80,7 +80,7 @@ type globProps struct {
 	// first run when there is no existing data. Additionally, when previously
 	// processed partitions exist, it raises the lower bound to the Nth partition
 	// from the end of those successfully processed partitions, forming a rolling
-	// window that re-lists recent partitions.
+	// window that re-lists only recent partitions (to avoid repeated full listings, which are expensive).
 	Last int `mapstructure:"last"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
