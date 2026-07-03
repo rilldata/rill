@@ -33,12 +33,10 @@ func TestInformationSchema(t *testing.T) {
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap, expectedTables) })
 	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap, expectedTables) })
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap, expectedTables) })
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap, expectedTables) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, infoSchema, expectedTables) })
 	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema, expectedTables) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema, expectedTables) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema, expectedTables) })
-
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap, expectedTables) })
 }
 
 type expectedTable struct {
@@ -169,24 +167,6 @@ func testInformationSchemaAllPaginationWithLike(t *testing.T, olap drivers.OLAPS
 	}
 }
 
-func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
-	ctx := context.Background()
-
-	require.GreaterOrEqual(t, len(expected), 1, "expected one table for schema lookup test")
-	testTable := expected[0].Name
-	testSchema := expected[0].Schema
-
-	// Lookup the table
-	table, err := olap.InformationSchema().Lookup(ctx, testSchema, "", testTable)
-	require.NoError(t, err)
-	require.Equal(t, testTable, table.Name)
-	require.Equal(t, testSchema, table.DatabaseSchema)
-
-	// Lookup a table that does not exist
-	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
-	require.Equal(t, drivers.ErrNotFound, err)
-}
-
 func testInformationSchemaListDatabaseSchemas(t *testing.T, infoSchema drivers.InformationSchema, expected []expectedTable) {
 	ctx := context.Background()
 
@@ -212,21 +192,6 @@ func testInformationSchemaListTables(t *testing.T, infoSchema drivers.Informatio
 	for i, tbl := range tables {
 		require.Equal(t, expected[i].Name, tbl.Name)
 	}
-}
-
-func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema, expected []expectedTable) {
-	ctx := context.Background()
-
-	require.GreaterOrEqual(t, len(expected), 1, "expected one table for schema get table test")
-	testTable := expected[0].Name
-
-	// Lookup the table
-	table, err := infoSchema.GetTable(ctx, "", "druid", testTable)
-	require.NoError(t, err)
-	require.Greater(t, len(table.Schema), 1)
-
-	table, err = infoSchema.GetTable(ctx, "", "druid", "nonexistent_table")
-	require.Equal(t, 0, len(table.Schema))
 }
 
 func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.InformationSchema, expected []expectedTable) {
@@ -255,4 +220,22 @@ func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.
 	for i, tbl := range expected {
 		require.Equal(t, tbl.Name, resultTables[i])
 	}
+}
+
+func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore, expected []expectedTable) {
+	ctx := context.Background()
+
+	require.GreaterOrEqual(t, len(expected), 1, "expected one table for schema lookup test")
+	testTable := expected[0].Name
+	testSchema := expected[0].Schema
+
+	// Lookup the table
+	table, err := olap.InformationSchema().Lookup(ctx, testSchema, "", testTable)
+	require.NoError(t, err)
+	require.Equal(t, testTable, table.Name)
+	require.Equal(t, testSchema, table.DatabaseSchema)
+
+	// Lookup a table that does not exist
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
+	require.Equal(t, drivers.ErrNotFound, err)
 }

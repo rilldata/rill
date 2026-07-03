@@ -129,7 +129,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, rows.Err()
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	q := `
 	SELECT 
 		CASE WHEN lower(t.table_type) = 'view' THEN true ELSE false END AS view,
@@ -146,9 +146,9 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 
 	var args []any
 	if databaseSchema != "" {
-		args = append(args, databaseSchema, table)
+		args = append(args, databaseSchema, name)
 	} else {
-		args = append(args, nil, table)
+		args = append(args, nil, name)
 	}
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -156,18 +156,28 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}
 	defer rows.Close()
 
-	columns := make(map[string]string)
-	var name, typ string
 	var view bool
+	var col, typ string
+	fields := make([]*runtimev1.StructType_Field, 0)
 	for rows.Next() {
-		if err := rows.Scan(&view, &name, &typ); err != nil {
+		if err := rows.Scan(&view, &col, &typ); err != nil {
 			return nil, err
 		}
-		columns[name] = typ
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: col,
+			Type: databaseTypeToPB(typ),
+		})
 	}
-	return &drivers.TableMetadata{
-		View:   view,
-		Schema: columns,
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           view,
+		Schema: &runtimev1.StructType{
+			Fields: fields,
+		},
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
 	}, rows.Err()
 }
 
@@ -235,30 +245,4 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	}
 	table.DDL = ddl
 	return nil
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-
-	rtSchema := &runtimev1.StructType{}
-	for name, typ := range meta.Schema {
-		t := databaseTypeToPB(typ)
-		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: t,
-		})
-	}
-	return &drivers.OlapTable{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            rtSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
