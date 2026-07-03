@@ -9,16 +9,24 @@
 <script lang="ts">
   import { get } from "svelte/store";
 
-  let observer: IntersectionObserver;
+  // When false (the PDF export render), skip lazy-loading entirely: render
+  // immediately and never touch the shared `visible` latch. Data still fetches
+  // via the component's `dataEnabled` store (visible || exportMode), so the live
+  // dashboard's lazy-load state is left untouched during export.
+  export let lazy = true;
+
+  let observer: IntersectionObserver | undefined;
 
   let mounted = false;
 
   onMount(() => {
+    mounted = true;
+    if (!lazy) return;
     observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           component.visible.set(true);
-          observer.unobserve(container);
+          observer?.unobserve(container);
         }
       },
       {
@@ -27,14 +35,13 @@
         threshold: 0,
       },
     );
-    mounted = true;
     observer.observe(container);
   });
 
   export let component: BaseCanvasComponent;
 
   let prevComponent: BaseCanvasComponent | undefined;
-  $: if (mounted && component !== prevComponent) {
+  $: if (mounted && observer && component !== prevComponent) {
     const wasVisible = prevComponent ? get(prevComponent.visible) : false;
     prevComponent = component;
     if (wasVisible) {
