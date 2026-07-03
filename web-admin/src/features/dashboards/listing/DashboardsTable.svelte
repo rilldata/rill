@@ -18,6 +18,7 @@
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
   import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   let {
     isEmbedded = false,
@@ -200,7 +201,7 @@
           >
             <span slot="action">
               {@html m.dashboard_list_create_to_start({
-                link: `<a href="https://docs.rilldata.com/developers/build/dashboards" target="_blank" rel="noopener noreferrer">${m.dashboard_list_create()}</a>`,
+                link: `<a href="https://docs.rilldata.com/developers/build/dashboards" target="_blank" rel="noopener noreferrer">${escapeHtml(m.dashboard_list_create())}</a>`,
               })}
             </span>
           </ResourceListEmptyState>

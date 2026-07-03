@@ -16,6 +16,7 @@
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   let { organization }: { organization: string } = $props();
 
@@ -59,8 +60,8 @@
       {#if !$isPublicDomain.data}
         <Label for="allow-domain" class="font-normal text-fg-secondary text-sm">
           {@html m.settings_allow_domain_description({
-            domain: `<b>@${$userDomain.data}</b>`,
-            role: `<b>${m.role_viewer()}</b>`,
+            domain: `<b>@${escapeHtml($userDomain.data)}</b>`,
+            role: `<b>${escapeHtml(m.role_viewer())}</b>`,
           })}
           <a
             target="_blank"

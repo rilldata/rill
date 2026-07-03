@@ -10,8 +10,6 @@
 
   export let excludeMode: boolean;
   export let onClick: () => void;
-
-  const getMode = (isExclude: boolean) => (isExclude ? "exclude" : "include");
 </script>
 
 <Tooltip distance={8} location="top">

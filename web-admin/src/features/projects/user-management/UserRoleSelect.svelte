@@ -7,7 +7,6 @@
   } from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getProjectRolesOptions } from "./constants";
 
   export let value: string;

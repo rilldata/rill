@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
@@ -194,7 +195,7 @@
         <svelte:fragment slot="description">
           <span class="text-sm text-fg-secondary">
             {@html m.report_form_slack_not_configured({
-              link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${m.report_form_docs()}</a>`,
+              link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${escapeHtml(m.report_form_docs())}</a>`,
             })}
           </span>
         </svelte:fragment>

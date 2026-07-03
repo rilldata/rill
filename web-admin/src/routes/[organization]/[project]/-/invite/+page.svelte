@@ -17,6 +17,7 @@
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import type { AxiosError } from "axios";
 
   $: organization = $page.params.organization;
@@ -91,8 +92,8 @@
         />
         <Label for="allow-domain" class="font-normal text-fg-primary text-sm">
           {@html m.common_allow_domain_join_project({
-            domain: `<b>@${$userDomain.data}</b>`,
-            role: `<b>${m.role_viewer()}</b>`,
+            domain: `<b>@${escapeHtml($userDomain.data)}</b>`,
+            role: `<b>${escapeHtml(m.role_viewer())}</b>`,
           })}
           <a
             target="_blank"

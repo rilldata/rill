@@ -10,13 +10,18 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Champagne from "@rilldata/web-common/components/icons/Champagne.svelte";
-  import { SELF_SERVE_PLANS_BY_NAME, getTranslatedPlanDisplayName } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
+  import {
+    SELF_SERVE_PLANS_BY_NAME,
+    getTranslatedPlanDisplayName,
+  } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   export let open: boolean;
   export let planName: string;
 
-  $: planDisplayName = getTranslatedPlanDisplayName(planName) ||
+  $: planDisplayName =
+    getTranslatedPlanDisplayName(planName) ||
     (SELF_SERVE_PLANS_BY_NAME[planName]?.displayName ?? planName);
 </script>
 
@@ -33,14 +38,16 @@
         <AlertDialogTitle>{m.billing_welcome_to_rill_cloud()}</AlertDialogTitle>
         <AlertDialogDescription>
           {@html m.billing_congrats_plan({
-            planName: `<b>${planDisplayName}</b>`,
-            docsLink: `<a href="https://docs.rilldata.com/" target="_blank" class="text-primary-600 font-medium">${m.billing_refer_to_docs()}</a>`,
+            planName: `<b>${escapeHtml(planDisplayName)}</b>`,
+            docsLink: `<a href="https://docs.rilldata.com/" target="_blank" class="text-primary-600 font-medium">${escapeHtml(m.billing_refer_to_docs())}</a>`,
           })}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <div class="grow"></div>
       <AlertDialogFooter class="mt-3">
-        <Button type="primary" onClick={() => (open = false)}>{m.billing_got_it()}</Button>
+        <Button type="primary" onClick={() => (open = false)}
+          >{m.billing_got_it()}</Button
+        >
       </AlertDialogFooter>
     </div>
   </AlertDialogContent>
