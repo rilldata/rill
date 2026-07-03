@@ -33,10 +33,7 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import {
-    getPrimaryTag,
-    useDashboards,
-  } from "../dashboards/listing/selectors";
+  import { useDashboards } from "../dashboards/listing/selectors";
   import {
     useBreadcrumbOrgPaths,
     useBreadcrumbProjectPaths,
@@ -60,6 +57,7 @@
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import SharePersonalFile from "@rilldata/web-admin/features/personal-files/SharePersonalFile.svelte";
+  import { getPrimaryTag } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   export let organization: string;
   export let project: string;

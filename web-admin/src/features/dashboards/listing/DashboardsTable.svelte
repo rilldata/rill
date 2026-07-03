@@ -9,18 +9,20 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
-  import {
-    UNTAGGED_KEY,
-    getResourceTags,
-    useDashboards,
-    useIsInitialBuild,
-  } from "./selectors";
+  import { useDashboards, useIsInitialBuild } from "./selectors";
   import { Search } from "@rilldata/web-common/components/search";
   import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
   import {
     UrlParamsArrayState,
     UrlParamsState,
   } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
+  import {
+    getAllTagsForResources,
+    getResourceTags,
+    UNTAGGED_KEY,
+  } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
+  import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
 
   let {
     isEmbedded = false,
@@ -67,6 +69,8 @@
   }
 
   let allDashboards = $derived(dashboardsData ?? []);
+  let availableTags = $derived(getAllTagsForResources(allDashboards));
+  let hasSomeTag = $derived(availableTags.length > 0);
 
   let tagFilteredDashboards = $derived(
     selectedTagsState.value.length === 0
@@ -180,54 +184,69 @@
   <div class="flex flex-col w-full gap-y-3">
     {#if !isPreview}
       <div class="flex flex-row items-center gap-x-2">
-        <DashboardsTagFilter />
-
-        <div class="flex-1 min-w-0">
-          <Search
-            placeholder="Search"
-            autofocus={false}
-            bind:value={searchTextState.getter, searchTextState.setter}
-            rounded="lg"
-          />
-        </div>
+        <Search
+          placeholder="Search"
+          autofocus={false}
+          bind:value={searchTextState.getter, searchTextState.setter}
+          rounded="lg"
+        />
       </div>
     {/if}
 
-    <!-- Flat mode: standard list -->
-    <ResourceList
-      kind="dashboard"
-      data={displayData}
-      {columns}
-      {columnVisibility}
-      {initialSorting}
-      toolbar={false}
-    >
-      <ResourceListEmptyState
-        slot="empty"
-        icon={ExploreIcon}
-        message="You don't have any dashboards yet"
-      >
-        <span slot="action">
-          <a
-            href="https://docs.rilldata.com/developers/build/dashboards"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Create a dashboard</a
-          > to get started
-        </span>
-      </ResourceListEmptyState>
-    </ResourceList>
-
-    {#if hasMoreDashboards}
-      <div class="pl-4 py-1">
-        <a
-          href={`/${organization}/${project}/-/dashboards`}
-          class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+    <div class="flex flex-row flex-1 w-full gap-x-2">
+      {#if hasSomeTag && !isPreview}
+        <ResizableSidebar
+          id="dashboards-tag-sidebar"
+          minWidth={200}
+          maxWidth={500}
+          defaultWidth={200}
+          additionalClass="overflow-auto bg-surface-subtle border rounded-lg"
+          side="right"
         >
-          See all dashboards →
-        </a>
+          <DashboardsTagSidebar
+            resources={allDashboards}
+            searchText={searchTextState.value}
+          />
+        </ResizableSidebar>
+      {/if}
+
+      <div class="flex flex-col flex-grow">
+        <ResourceList
+          kind="dashboard"
+          data={displayData}
+          {columns}
+          {columnVisibility}
+          {initialSorting}
+          toolbar={false}
+        >
+          <ResourceListEmptyState
+            slot="empty"
+            icon={ExploreIcon}
+            message="You don't have any dashboards yet"
+          >
+            <span slot="action">
+              <a
+                href="https://docs.rilldata.com/developers/build/dashboards"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Create a dashboard</a
+              > to get started
+            </span>
+          </ResourceListEmptyState>
+        </ResourceList>
+
+        {#if hasMoreDashboards}
+          <div class="pl-4 py-1">
+            <a
+              href={`/${organization}/${project}/-/dashboards`}
+              class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+            >
+              See all dashboards →
+            </a>
+          </div>
+        {/if}
       </div>
-    {/if}
+    </div>
   </div>
 {/if}

@@ -2,10 +2,10 @@ import type { PathOption } from "@rilldata/web-common/components/navigation/brea
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
+  getResourceTags,
   UNTAGGED_KEY,
   UNTAGGED_LABEL,
-  getResourceTags,
-} from "../dashboards/listing/selectors";
+} from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
 // Canvas dashboards sort before explore dashboards, then alphabetically by
 // resource name.

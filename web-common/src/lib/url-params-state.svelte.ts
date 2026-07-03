@@ -1,6 +1,5 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
-import { untrack } from "svelte";
 import { SvelteURL } from "svelte/reactivity";
 
 export class UrlParamsState<Val, DefaultVal> {
@@ -10,7 +9,7 @@ export class UrlParamsState<Val, DefaultVal> {
   public constructor(
     private readonly param: string,
     private readonly serializer: (value: Val) => string | null,
-    deserializer: (value: string | null) => Val | DefaultVal,
+    private readonly deserializer: (value: string | null) => Val | DefaultVal,
     defaultVal: Val | DefaultVal,
   ) {
     this.paramValue = page.url.searchParams.get(param);
@@ -20,10 +19,8 @@ export class UrlParamsState<Val, DefaultVal> {
       const newParamValue = page.url.searchParams.get(this.param);
       if (newParamValue === this.paramValue) return;
 
-      const newValue = deserializer(newParamValue);
-      untrack(() => {
-        this.value = newValue;
-      });
+      this.paramValue = newParamValue;
+      this.value = deserializer(newParamValue);
     });
   }
 
@@ -42,9 +39,6 @@ export class UrlParamsState<Val, DefaultVal> {
 
   public setter = (newValue: Val) => {
     const newParamValue = this.serializer(newValue);
-    this.paramValue = newParamValue;
-    this.value = newValue;
-
     const newUrl = new SvelteURL(window.location.href);
     if (newParamValue === null) {
       newUrl.searchParams.delete(this.param);

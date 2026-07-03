@@ -1,6 +1,5 @@
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
-import { UNTAGGED_KEY, UNTAGGED_LABEL } from "../dashboards/listing/selectors";
 import {
   buildDashboardHref,
   buildDashboardPathOption,
@@ -12,6 +11,10 @@ import {
   hasUntaggedDashboards,
   sortDashboardResources,
 } from "./project-header-paths";
+import {
+  UNTAGGED_KEY,
+  UNTAGGED_LABEL,
+} from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
 function makeExplore(
   name: string,

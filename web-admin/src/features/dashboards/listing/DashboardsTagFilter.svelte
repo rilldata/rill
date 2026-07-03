@@ -2,12 +2,10 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import {
-    getResourceTags,
-    useDashboards,
-  } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
+  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { UrlParamsArrayState } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   let {
     align = "start",
@@ -21,11 +19,7 @@
 
   const runtimeClient = useRuntimeClient();
   let dashboards = useDashboards(runtimeClient);
-  let availableTags = $derived(
-    Array.from(
-      new Set($dashboards?.data?.flatMap(getResourceTags) ?? []),
-    ).sort(),
-  );
+  let availableTags = $derived(getAllTagsForResources($dashboards?.data ?? []));
 
   let tagsLabel = $derived(
     selectedTagsState.value.length === 0
@@ -51,12 +45,12 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content {align} class="w-48 max-h-72 overflow-y-auto">
-      {#each availableTags as tag (tag)}
+      {#each availableTags as tag (tag.name)}
         <DropdownMenu.CheckboxItem
-          checked={selectedTagsState.value.includes(tag)}
-          onCheckedChange={() => selectedTagsState.toggle(tag)}
+          checked={selectedTagsState.value.includes(tag.name)}
+          onCheckedChange={() => selectedTagsState.toggle(tag.name)}
         >
-          {tag}
+          {tag.name}
         </DropdownMenu.CheckboxItem>
       {/each}
     </DropdownMenu.Content>
