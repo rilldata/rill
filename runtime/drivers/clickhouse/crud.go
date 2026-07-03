@@ -710,14 +710,44 @@ func (c *Connection) replacePartition(ctx context.Context, src, dest, part strin
 
 // syncReplica syncs the local replicated table across the cluster
 func (c *Connection) syncReplica(ctx context.Context, tableName string) error {
-	if c.config.Cluster == "" {
+	if c.config.Cluster == "" || !c.config.SyncReplicas {
 		return nil
+	}
+	// get current database
+	database, err := c.currentDatabase(ctx)
+	if err != nil {
+		return err
 	}
 	onClusterClause := "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s", onClusterClause, safeSQLName(localTableName(tableName))),
+		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s.%s", onClusterClause, safeSQLName(database), safeSQLName(localTableName(tableName))),
 		Priority: 1,
 	})
+}
+
+func (c *Connection) currentDatabase(ctx context.Context) (string, error) {
+	if c.config.Database != "" {
+		return c.config.Database, nil
+	}
+	var database string
+	rows, err := c.Query(ctx, &drivers.Statement{
+		Query:    "SELECT currentDatabase()",
+		Priority: 1,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(&database); err != nil {
+			return "", err
+		}
+	}
+	err = rows.Err()
+	if err != nil {
+		return "", err
+	}
+	return database, nil
 }
 
 func isReplicatedEngine(engine string) bool {

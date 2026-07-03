@@ -51,6 +51,7 @@
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { onMount } from "svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -70,7 +71,13 @@
         query: {
           refetchInterval: (query) => {
             const deployments = query.state.data?.deployments;
-            if (deployments?.some((d) => isTransitoryStatus(d.status))) {
+            if (
+              deployments?.some((d) =>
+                isTransitoryStatus(
+                  d.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED,
+                ),
+              )
+            ) {
               return 2000;
             }
             return false;
@@ -82,12 +89,16 @@
   let projectQuery = $derived(
     createAdminServiceGetProject(organization, project),
   );
+  const { cloudEditing } = featureFlags;
   const startMutation = createAdminServiceStartDeployment();
   const stopMutation = createAdminServiceStopDeployment();
   const deleteMutation = createAdminServiceDeleteDeployment();
 
   let primaryBranch = $derived($projectQuery.data?.project?.primaryBranch);
   let activeBranch = $derived(extractBranchFromPath(page.url.pathname));
+  let canEditProject = $derived(
+    $cloudEditing && !!$projectQuery.data?.projectPermissions?.manageDev,
+  );
 
   let userNameMap = $derived(
     new Map(
@@ -424,7 +435,7 @@
                   </IconButton>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="start">
-                  {#if deployment.editable}
+                  {#if canEditProject && deployment.editable}
                     <DropdownMenu.Item
                       class="font-normal flex items-center"
                       href={editUrl(deployment.branch)}

@@ -1,32 +1,28 @@
 import {
-  filterSchemaValuesForSubmit,
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
-import {
-  applyDuckLakeFormPipeline,
-  injectDuckLakeAttach,
-} from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
-import { compileConnectorYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
+import { generateYAML } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
-  compileSourceYAML,
+  generateSourceYAML,
   prepareSourceFormData,
 } from "@rilldata/web-common/features/sources/sourceUtils.ts";
 import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
-export function getConnectorYamlPreview({
+export function getConnectorYAML({
   connector,
   schema,
   formValues,
-  existingEnvBlob,
+  envEditSession,
 }: {
   connector: V1ConnectorDriver;
   schema: MultiStepFormSchema | null;
   formValues: Record<string, unknown>;
-  existingEnvBlob: string | null;
+  envEditSession: EnvEditSession;
 }) {
   const schemaFields = schema
     ? getSchemaFieldMetaList(schema, { step: "connector" })
@@ -37,23 +33,7 @@ export function getConnectorYamlPreview({
   const schemaStringKeys = schema
     ? getSchemaStringKeys(schema, { step: "connector" })
     : [];
-  // DuckLake: mirror the submit path so the preview reflects the composed
-  // ATTACH clause and rewritten env-var refs. Discards extractedSecrets
-  // since previews don't write to `.env`.
-  const { transformedValues } = applyDuckLakeFormPipeline(schema, formValues, {
-    connectorName: connector.name ?? "",
-    existingEnvBlob: existingEnvBlob ?? "",
-  });
-  const filteredValues = schema
-    ? injectDuckLakeAttach(
-        schema,
-        filterSchemaValuesForSubmit(schema, transformedValues, {
-          step: "connector",
-        }),
-        transformedValues,
-      )
-    : transformedValues;
-  const yamlPreview = compileConnectorYAML(connector, filteredValues, {
+  const yaml = generateYAML(connector, formValues, envEditSession, {
     fieldFilter: (property) => {
       if ("internal" in property && property.internal) return false;
       return !("noPrompt" in property && property.noPrompt);
@@ -62,25 +42,24 @@ export function getConnectorYamlPreview({
     secretKeys: schemaSecretKeys,
     stringKeys: schemaStringKeys,
     schema: schema ?? undefined,
-    existingEnvBlob: existingEnvBlob ?? "",
   });
 
-  return yamlPreview;
+  return yaml;
 }
 
-export function getSourceYamlPreview({
+export function getSourceYAML({
   connectorName,
   connector,
   schema,
   formValues,
-  existingEnvBlob,
+  envEditSession,
   outputConnector,
 }: {
   connectorName: string;
   connector: V1ConnectorDriver;
   schema: MultiStepFormSchema | null;
   formValues: Record<string, unknown>;
-  existingEnvBlob: string | null;
+  envEditSession: EnvEditSession;
   outputConnector?: string;
 }) {
   const isPublicAuth = formValues.auth_method === "public";
@@ -101,17 +80,22 @@ export function getSourceYamlPreview({
     ? getSchemaStringKeys(rewrittenSchema, { step: "source" })
     : undefined;
   if (isRewrittenToDuckDb) {
-    return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
-      secretKeys: rewrittenSecretKeys,
-      stringKeys: rewrittenStringKeys,
-      originalDriverName: connector.name || undefined,
-      outputConnector,
-    });
+    return generateSourceYAML(
+      rewrittenConnector,
+      rewrittenFormValues,
+      envEditSession,
+      {
+        secretKeys: rewrittenSecretKeys,
+        stringKeys: rewrittenStringKeys,
+        originalDriverName: connector.name || undefined,
+        outputConnector,
+      },
+    );
   }
-  return getConnectorYamlPreview({
+  return getConnectorYAML({
     connector,
     schema,
     formValues: rewrittenFormValues,
-    existingEnvBlob,
+    envEditSession,
   });
 }

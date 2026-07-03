@@ -112,6 +112,7 @@
         {pivotState}
         {rowSelectionState}
         {clickSelection}
+        fillWidth
         enableClickToFilter
         setPivotExpanded={(expanded) => {
           pivotState.update((state) => ({

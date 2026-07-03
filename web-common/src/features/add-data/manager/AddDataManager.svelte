@@ -23,9 +23,10 @@
     getConnectorDriverForSchema,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import ConnectorFormWrapper from "@rilldata/web-common/features/add-data/form/ConnectorFormWrapper.svelte";
   import { getAddDataClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
   import { inferSchemaForConnector } from "@rilldata/web-common/features/entity-management/add/selectors.ts";
+  import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
+  import EnvStoreReady from "@rilldata/web-common/features/env-management/EnvStoreReady.svelte";
 
   const {
     config,
@@ -176,60 +177,62 @@
     />
   {/if}
 
-  {#if stepState.step === AddDataStep.SelectConnector}
-    <SourceSelector {config} onSelect={schemaSelected} {onBack} />
-  {:else if stepState.step === AddDataStep.CreateConnector}
-    <ConnectorFormWrapper
-      {stateManager}
-      step={stepState}
-      onSubmit={(connectorName, connectorFormValues) =>
-        void connectorSelected(
-          connectorName,
-          stepState.schema,
-          connectorFormValues,
-        )}
-      {onBack}
-      onClose={onDone}
-    />
-  {:else if stepState.step === AddDataStep.CreateModel}
-    {#key stepState.connector}
-      <SourceForm
-        {config}
+  <EnvStoreReady>
+    {#if stepState.step === AddDataStep.SelectConnector}
+      <SourceSelector {config} onSelect={schemaSelected} {onBack} />
+    {:else if stepState.step === AddDataStep.CreateConnector}
+      <ConnectorForm
         {stateManager}
         step={stepState}
-        onSubmit={importConfigured}
+        onSubmit={(connectorName, connectorFormValues) =>
+          void connectorSelected(
+            connectorName,
+            stepState.schema,
+            connectorFormValues,
+          )}
         {onBack}
+        onClose={onDone}
       />
-    {/key}
-  {:else if stepState.step === AddDataStep.ExploreConnector}
-    {#key stepState.connector}
-      <ImportTableForm
-        {config}
-        step={stepState}
-        onSubmit={importConfigured}
-        {onBack}
-      />
-    {/key}
-  {:else if stepState.step === AddDataStep.Import}
-    {@const isImportOnlyStep =
-      stepState.config.importSteps.length === 1 &&
-      stepState.config.importSteps[0] === ImportDataStep.CreateModel}
-    {#if isImportOnlyStep}
-      <!-- Special case for import only, we show additional options to handle success and failures. -->
-      <ImportDataStatus
-        {config}
-        {stateManager}
-        importAddDataStep={stepState}
-        {onDone}
-      />
-    {:else}
-      <GenerateDashboardStatus
-        {config}
-        {stateManager}
-        importAddDataStep={stepState}
-        {onBack}
-        {onDone}
-      />
+    {:else if stepState.step === AddDataStep.CreateModel}
+      {#key stepState.connector}
+        <SourceForm
+          {config}
+          {stateManager}
+          step={stepState}
+          onSubmit={importConfigured}
+          {onBack}
+        />
+      {/key}
+    {:else if stepState.step === AddDataStep.ExploreConnector}
+      {#key stepState.connector}
+        <ImportTableForm
+          {config}
+          step={stepState}
+          onSubmit={importConfigured}
+          {onBack}
+        />
+      {/key}
+    {:else if stepState.step === AddDataStep.Import}
+      {@const isImportOnlyStep =
+        stepState.config.importSteps.length === 1 &&
+        stepState.config.importSteps[0] === ImportDataStep.CreateModel}
+      {#if isImportOnlyStep}
+        <!-- Special case for import only, we show additional options to handle success and failures. -->
+        <ImportDataStatus
+          {config}
+          {stateManager}
+          importAddDataStep={stepState}
+          {onDone}
+        />
+      {:else}
+        <GenerateDashboardStatus
+          {config}
+          {stateManager}
+          importAddDataStep={stepState}
+          {onBack}
+          {onDone}
+        />
+      {/if}
     {/if}
-  {/if}
+  </EnvStoreReady>
 </div>

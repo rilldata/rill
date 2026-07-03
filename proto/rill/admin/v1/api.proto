@@ -3797,6 +3797,7 @@ message Quotas {
   string storage_limit_bytes_per_deployment = 6;
   string api_calls_per_seat = 7;
   string seats = 8;
+  string tokens_per_seat = 9;
 }
 
 message Usergroup {

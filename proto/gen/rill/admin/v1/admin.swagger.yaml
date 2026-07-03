@@ -6627,6 +6627,8 @@ definitions:
         type: string
       seats:
         type: string
+      tokensPerSeat:
+        type: string
   v1RecordEventsRequest:
     type: object
     properties:

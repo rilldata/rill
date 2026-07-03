@@ -354,7 +354,7 @@ func (c *connection) ListCommits(ctx context.Context, pageToken string, limit in
 	return commits, nextPageToken, nil
 }
 
-func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
+func (c *connection) Status(ctx context.Context, remoteBranch string, changedFiles bool) (*drivers.RepoStatus, error) {
 	if !gitutil.IsGitRepo(c.root) {
 		return &drivers.RepoStatus{}, nil
 	}
@@ -396,6 +396,15 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 	if err != nil {
 		return nil, err
 	}
+	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed separately
+	var files []gitutil.ChangedFile
+	if changedFiles {
+		f, err := gitutil.ChangedFiles(ctx, gitPath, subPath, config.RemoteName(), remoteBranch)
+		if err != nil {
+			return nil, err
+		}
+		files = f
+	}
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
 		Branch:        gs.Branch,
@@ -405,6 +414,7 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
+		ChangedFiles:  repoFileChanges(files),
 	}, nil
 }
 
@@ -682,4 +692,34 @@ func restoreToCommit(path, subpath, commithash string) error {
 		return fmt.Errorf("failed to restore to commit: %s, %w", string(output), err)
 	}
 	return nil
+}
+
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }

@@ -106,3 +106,6 @@ vite.config.ts.timestamp-*
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# inlang manages this file itself (^2.5); keep it untracked to avoid churn
+**/*.inlang/.gitignore

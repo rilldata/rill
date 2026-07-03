@@ -10,6 +10,7 @@
     organization,
     project,
     open = $bindable(false),
+    canEdit = false,
     onEdit,
     onRename,
     onDelete,
@@ -17,7 +18,8 @@
     organization: string;
     project: string;
     open?: boolean;
-    onEdit: () => void;
+    canEdit?: boolean;
+    onEdit?: () => void;
     onRename: () => void;
     onDelete: () => void;
   } = $props();
@@ -28,9 +30,11 @@
     <ThreeDot size="16px" />
   </Dropdown.Trigger>
   <Dropdown.Content class="w-48" align="start" side="right">
-    <Dropdown.Item class="text-sm" onclick={onEdit}>
-      <FeatherEditIcon /> Edit
-    </Dropdown.Item>
+    {#if canEdit}
+      <Dropdown.Item class="text-sm" onclick={() => onEdit?.()}>
+        <FeatherEditIcon /> Edit
+      </Dropdown.Item>
+    {/if}
     <Dropdown.Item class="text-sm" onclick={onRename}>
       <PencilIcon /> Rename
     </Dropdown.Item>

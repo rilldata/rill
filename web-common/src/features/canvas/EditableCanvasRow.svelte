@@ -17,6 +17,7 @@
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
+  import { rowColFromPath } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
 
@@ -40,6 +41,10 @@
   }) => void;
   export let onDuplicate: (params: { columnIndex: number }) => void;
   export let onDelete: (params: { component: BaseCanvasComponent }) => void;
+  // Optional: convert this row into a tab group (top-level rows only).
+  export let onConvertToTabGroup: (() => void) | undefined = undefined;
+  // Optional: insert a tab group at a given top-level index (top-level rows only).
+  export let onAddTabGroup: ((index: number) => void) | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
   export let initializeRow: (row: number, type: CanvasComponentType) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
@@ -47,6 +52,10 @@
     index: number,
     newWidths: number[],
   ) => void;
+  // Disambiguates row DOM ids across tab containers so height-resize querySelectors
+  // don't collide with same-index rows elsewhere on the canvas.
+  export let idPrefix: string = "";
+  export let zoneScope = "canvas";
 
   let rowHeight = get(row.height) ?? MIN_HEIGHT;
   let hasLocalChange = false;
@@ -66,7 +75,7 @@
   $: updateHeightFromSpec($height);
   $: updateWidthsFromSpec($itemWidths);
 
-  $: id = `canvas-row-${rowIndex}`;
+  $: id = `canvas-row-${idPrefix}${rowIndex}`;
 
   function onRowResizeStart() {
     initialMousePosition = $mousePosition;
@@ -146,8 +155,7 @@
     const width = widths[columnIndex];
 
     initialHeight =
-      document.querySelector(`#canvas-row-${rowIndex}`)?.getBoundingClientRect()
-        .height ??
+      document.querySelector(`#${id}`)?.getBoundingClientRect().height ??
       rowHeight ??
       MIN_HEIGHT;
 
@@ -193,6 +201,7 @@
           {rowIndex}
           resizeIndex={-1}
           addIndex={columnIndex}
+          {zoneScope}
           rowLength={itemCount}
           dragging={activelyDragging}
           {isSpreadEvenly}
@@ -205,6 +214,7 @@
         {isSpreadEvenly}
         columnWidth={widths[columnIndex]}
         {rowIndex}
+        {zoneScope}
         dragging={activelyDragging}
         resizeIndex={columnIndex}
         addIndex={columnIndex + 1}
@@ -219,7 +229,11 @@
         row={rowIndex}
         maxColumns={itemCount}
         allowDrop={activelyDragging &&
-          (itemCount < 4 || dragComponent?.pathInYAML?.[1] === rowIndex)}
+          (itemCount < 4 ||
+            (dragComponent
+              ? rowColFromPath(dragComponent.pathInYAML).row === rowIndex
+              : false))}
+        {zoneScope}
         {onDrop}
       />
 
@@ -242,6 +256,9 @@
           onDelete={() => {
             onDelete({ component });
           }}
+          onConvertToTabGroup={onConvertToTabGroup
+            ? () => onConvertToTabGroup?.()
+            : undefined}
         />
       {:else}
         <ComponentError error="No valid component {id} in project" />
@@ -252,21 +269,27 @@
     allowDrop={activelyDragging}
     resizeIndex={rowIndex}
     dropIndex={rowIndex + 1}
+    {zoneScope}
     {onRowResizeStart}
     {onDrop}
     addItem={(type) => {
       initializeRow(rowIndex + 1, type);
     }}
+    onAddTabGroup={onAddTabGroup
+      ? () => onAddTabGroup?.(rowIndex + 1)
+      : undefined}
   />
 
   {#if rowIndex === 0}
     <RowDropZone
       allowDrop={activelyDragging}
       dropIndex={0}
+      {zoneScope}
       {onDrop}
       addItem={(type) => {
         initializeRow(rowIndex, type);
       }}
+      onAddTabGroup={onAddTabGroup ? () => onAddTabGroup?.(0) : undefined}
     />
   {/if}
 </RowWrapper>

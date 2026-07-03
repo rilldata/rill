@@ -3,13 +3,22 @@
 
   export let zIndex: number;
   export let type: string | undefined = undefined;
+  // When true, the wrapper sizes to its content rather than the type's fixed
+  // initial height. Used for the "add widget" filler so it doesn't reserve a
+  // full row's worth of empty space below the button.
+  export let fitContent = false;
 
   $: expandable =
     type === "kpi_grid" || type === "markdown" || type === "leaderboard";
   $: minHeight = getInitialHeight(type) + "px";
 </script>
 
-<div style:z-index={zIndex} class:expandable style:--min-height={minHeight}>
+<div
+  style:z-index={zIndex}
+  class:expandable
+  class:fit-content={fitContent}
+  style:--min-height={minHeight}
+>
   <slot />
 </div>
 
@@ -20,11 +29,15 @@
     container-name: component-container;
   }
 
-  .expandable {
+  .fit-content {
+    @apply h-fit;
+  }
+
+  .expandable:not(.fit-content) {
     min-height: var(--row-height);
   }
 
-  :not(.expandable) {
+  :not(.expandable):not(.fit-content) {
     height: max(var(--row-height), var(--min-height));
     min-height: 100%;
   }

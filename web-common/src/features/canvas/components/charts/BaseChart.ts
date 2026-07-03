@@ -34,7 +34,12 @@ import type {
   CommonChartProperties,
   FieldConfig,
 } from "../../../components/charts/types";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import {
+  rowColFromPath,
+  type CanvasEntity,
+  type ComponentPath,
+} from "../../stores/canvas-entity";
+import { namePrefixFromPath } from "../../layout-util";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
@@ -187,13 +192,15 @@ export abstract class BaseChart<
       ...commonProps,
     };
 
+    const { row, col } = rowColFromPath(this.pathInYAML);
     const newResource = this.parent.createOptimisticResource({
       type: key,
-      row: this.pathInYAML[1],
-      column: this.pathInYAML[3],
+      row,
+      column: col,
       metricsViewName: currentSpec.metrics_view,
       metricsViewSpec,
       spec: mergedSpec,
+      namePrefix: namePrefixFromPath(this.pathInYAML),
     });
 
     const newComponent = createComponent(

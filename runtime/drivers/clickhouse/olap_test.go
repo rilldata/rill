@@ -66,6 +66,7 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
+	t.Run("SyncReplica_NonDefaultDatabase", func(t *testing.T) { testSyncReplicaNonDefaultDatabase(t, olap, dsn, cluster) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 }
@@ -386,6 +387,65 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 		require.True(t, exists, "Expected DateTime %s to be present in the result set", e.DT)
 		require.Equal(t, e.Value, value, "Expected value for DateTime %s to be %s, but got %s", e.DT, e.Value, value)
 	}
+}
+
+func testSyncReplicaNonDefaultDatabase(t *testing.T, olap drivers.OLAPStore, dsn, cluster string) {
+	ctx := context.Background()
+
+	// create a non-default database on the cluster
+	err := olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE DATABASE IF NOT EXISTS sync_repl_db ON CLUSTER %s", cluster)})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP DATABASE IF EXISTS sync_repl_db ON CLUSTER %s", cluster)})
+	})
+
+	// open a connection scoped to the non-default database (the database is taken from the DSN path)
+	conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn + "/sync_repl_db", "cluster": cluster, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer conn.Close()
+	c := conn.(*Connection)
+	dbOLAP, ok := conn.AsOLAP("default")
+	require.True(t, ok)
+
+	props := &ModelOutputProperties{
+		Engine:                 "ReplicatedMergeTree",
+		Table:                  "repl_tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyPartitionOverwrite,
+		OrderBy:                "id",
+		PartitionBy:            "id",
+		PrimaryKey:             "id",
+	}
+	_, err = c.createTableAsSelect(ctx, "repl_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props, "", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = c.dropTable(context.Background(), "repl_tbl") })
+
+	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyPartitionOverwrite}
+	_, err = c.insertTableAsSelect(ctx, "repl_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts, props)
+	require.NoError(t, err)
+
+	res, err := dbOLAP.Query(ctx, &drivers.Statement{Query: "SELECT id, value FROM repl_tbl ORDER BY id"})
+	require.NoError(t, err)
+
+	resultSet := make(map[int]string)
+	for res.Next() {
+		var id int
+		var value string
+		require.NoError(t, res.Scan(&id, &value))
+		resultSet[id] = value
+	}
+	require.NoError(t, res.Err())
+	require.NoError(t, res.Close())
+
+	expected := map[int]string{
+		0: "insert",
+		1: "insert",
+		2: "replace",
+		3: "replace",
+		4: "replace",
+		5: "replace",
+	}
+	require.Equal(t, expected, resultSet)
 }
 
 func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {

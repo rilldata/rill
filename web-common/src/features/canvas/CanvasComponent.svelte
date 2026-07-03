@@ -60,6 +60,7 @@
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
+  export let onConvertToTabGroup: (() => void) | undefined = undefined;
 
   let open = false;
   let container: HTMLElement;
@@ -86,6 +87,7 @@
     {component}
     {onDelete}
     {onDuplicate}
+    {onConvertToTabGroup}
     {editable}
     bind:dropdownOpen={open}
     {navigationEnabled}

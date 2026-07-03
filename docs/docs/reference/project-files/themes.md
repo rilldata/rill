@@ -17,57 +17,57 @@ _[string]_ - Refers to the resource type and must be `theme` _(required)_
 
 ### `colors`
 
-_[object]_ - Color palette for the theme 
+_[object]_ - Color palette for the theme
 
-  - **`primary`** - _[string]_ - Primary color 
+  - **`primary`** - _[string]_ - Primary color
 
-  - **`secondary`** - _[string]_ - Secondary color 
+  - **`secondary`** - _[string]_ - Secondary color
 
 ### `light`
 
-_[object]_ - Light theme color configuration 
+_[object]_ - Light theme color configuration
 
-  - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-  - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-  - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray). 
+  - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray).
 
-  - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red. 
+  - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red.
 
-  - **`variables`** - _[object]_ - Custom CSS variables for light theme 
+  - **`variables`** - _[object]_ - Custom CSS variables for light theme
 
 ### `dark`
 
-_[object]_ - Dark theme color configuration 
+_[object]_ - Dark theme color configuration
 
-  - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-  - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-  - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray). 
+  - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray).
 
-  - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red. 
+  - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red.
 
-  - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
+  - **`variables`** - _[object]_ - Custom CSS variables for dark theme
 
 ## Common Properties
 
 ### `name`
 
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
 
 ### `refs`
 
-_[array of string]_ - List of resource references 
+_[array of string]_ - List of resource references
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.
 
 ## Examples
 

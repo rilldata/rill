@@ -14417,6 +14417,255 @@ var _ interface {
 	ErrorName() string
 } = GitStatusResponseValidationError{}
 
+// Validate checks the field values on GitDiffRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *GitDiffRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitDiffRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in GitDiffRequestMultiError,
+// or nil if none found.
+func (m *GitDiffRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitDiffRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GitDiffRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GitDiffRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for RemoteBranch
+
+	if len(errors) > 0 {
+		return GitDiffRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitDiffRequestMultiError is an error wrapping multiple validation errors
+// returned by GitDiffRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GitDiffRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitDiffRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitDiffRequestMultiError) AllErrors() []error { return m }
+
+// GitDiffRequestValidationError is the validation error returned by
+// GitDiffRequest.Validate if the designated constraints aren't met.
+type GitDiffRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitDiffRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitDiffRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitDiffRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitDiffRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitDiffRequestValidationError) ErrorName() string { return "GitDiffRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitDiffRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitDiffRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitDiffRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitDiffRequestValidationError{}
+
+var _GitDiffRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GitDiffResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitDiffResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitDiffResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitDiffResponseMultiError, or nil if none found.
+func (m *GitDiffResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitDiffResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetChangedFiles() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GitDiffResponseValidationError{
+						field:  fmt.Sprintf("ChangedFiles[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GitDiffResponseValidationError{
+						field:  fmt.Sprintf("ChangedFiles[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GitDiffResponseValidationError{
+					field:  fmt.Sprintf("ChangedFiles[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GitDiffResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitDiffResponseMultiError is an error wrapping multiple validation errors
+// returned by GitDiffResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GitDiffResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitDiffResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitDiffResponseMultiError) AllErrors() []error { return m }
+
+// GitDiffResponseValidationError is the validation error returned by
+// GitDiffResponse.Validate if the designated constraints aren't met.
+type GitDiffResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitDiffResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitDiffResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitDiffResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitDiffResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitDiffResponseValidationError) ErrorName() string { return "GitDiffResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitDiffResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitDiffResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitDiffResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitDiffResponseValidationError{}
+
 // Validate checks the field values on ListGitBranchesRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -16450,3 +16699,112 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ConnectorDriver_PropertyValidationError{}
+
+// Validate checks the field values on GitDiffResponse_GitFileChange with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GitDiffResponse_GitFileChange) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitDiffResponse_GitFileChange with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GitDiffResponse_GitFileChangeMultiError, or nil if none found.
+func (m *GitDiffResponse_GitFileChange) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitDiffResponse_GitFileChange) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Path
+
+	// no validation rules for Status
+
+	// no validation rules for OldPath
+
+	if len(errors) > 0 {
+		return GitDiffResponse_GitFileChangeMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitDiffResponse_GitFileChangeMultiError is an error wrapping multiple
+// validation errors returned by GitDiffResponse_GitFileChange.ValidateAll()
+// if the designated constraints aren't met.
+type GitDiffResponse_GitFileChangeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitDiffResponse_GitFileChangeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitDiffResponse_GitFileChangeMultiError) AllErrors() []error { return m }
+
+// GitDiffResponse_GitFileChangeValidationError is the validation error
+// returned by GitDiffResponse_GitFileChange.Validate if the designated
+// constraints aren't met.
+type GitDiffResponse_GitFileChangeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitDiffResponse_GitFileChangeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitDiffResponse_GitFileChangeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitDiffResponse_GitFileChangeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitDiffResponse_GitFileChangeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitDiffResponse_GitFileChangeValidationError) ErrorName() string {
+	return "GitDiffResponse_GitFileChangeValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GitDiffResponse_GitFileChangeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitDiffResponse_GitFileChange.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitDiffResponse_GitFileChangeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitDiffResponse_GitFileChangeValidationError{}

@@ -314,7 +314,7 @@ func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string,
 	return nil
 }
 
-func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error {
+func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored, whereSkipped bool) error {
 	var qry strings.Builder
 	var args []any
 
@@ -326,6 +326,9 @@ func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, model
 	qry.WriteString(" AND (false") // false ensures it's a no-op if no conditions are added; safer that way
 	if whereErrored {
 		qry.WriteString(" OR error != ''")
+	}
+	if whereSkipped {
+		qry.WriteString(" OR skipped = true")
 	}
 	if len(wherePartitionKeyIn) > 0 {
 		qry.WriteString(" OR key IN (")

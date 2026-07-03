@@ -18879,6 +18879,11 @@ export class Quotas extends Message<Quotas> {
    */
   seats = "";
 
+  /**
+   * @generated from field: string tokens_per_seat = 9;
+   */
+  tokensPerSeat = "";
+
   constructor(data?: PartialMessage<Quotas>) {
     super();
     proto3.util.initPartial(data, this);
@@ -18895,6 +18900,7 @@ export class Quotas extends Message<Quotas> {
     { no: 6, name: "storage_limit_bytes_per_deployment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "api_calls_per_seat", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "seats", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "tokens_per_seat", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Quotas {

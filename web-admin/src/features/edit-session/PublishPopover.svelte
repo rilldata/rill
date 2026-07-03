@@ -9,8 +9,10 @@
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -43,6 +45,7 @@
     preCommitSha: string | undefined;
   };
 
+  let open = false;
   let isPublishing = false;
   let publishMergeConflictDialog = false;
   // Captured at click time so the publish flow can resume after a force
@@ -99,6 +102,7 @@
     // the bus. After a successful pull the user re-clicks Publish.
     if (hasRemoteChanges) {
       eventBus.emit("remote-changes-detected");
+      open = false;
       return;
     }
 
@@ -166,6 +170,7 @@
         pendingPublishSnapshots = snapshots;
         errorFromGitCommand = null;
         publishMergeConflictDialog = true;
+        open = false; // only close when opening merge conflict dialog
       } else {
         eventBus.emit("notification", {
           type: "error",
@@ -178,6 +183,7 @@
 
     await completePublishFlow(snapshots);
     isPublishing = false;
+    open = false;
   }
 
   async function completePublishFlow(snapshots: PublishSnapshots) {
@@ -273,17 +279,45 @@
   }
 </script>
 
-<Tooltip distance={8}>
-  <Button
-    type="primary"
-    {disabled}
-    loading={isPublishing}
-    loadingCopy="Publishing..."
-    onClick={handlePublish}
-  >
-    <Rocket size="14" />
-    Publish
-  </Button>
+<Tooltip distance={8} suppress={open}>
+  <Popover.Root bind:open>
+    <Popover.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} type="primary" {disabled}>
+          <Rocket size="14" />
+          Publish
+        </Button>
+      {/snippet}
+    </Popover.Trigger>
+    <Popover.Content align="end" class="!w-[320px]">
+      <div class="flex flex-col gap-y-3">
+        <p class="text-xs text-fg-secondary">
+          {#if !prodDeployment}
+            Publishing sets up your production deployment. We'll open a new tab
+            where you can invite teammates while it reconciles.
+          {:else if !prodDeploymentActive}
+            Production is hibernated. Publishing will resume it and apply your
+            changes. We'll open the deployment in a new tab so you can watch
+            updates reconcile.
+          {:else}
+            Publishing pushes your changes to production. We'll open a new tab
+            so you can watch updates reconcile.
+          {/if}
+        </p>
+        <ChangedFilesList remoteBranch={primaryBranch} {open} />
+        <Button
+          type="primary"
+          small
+          disabled={isPublishing}
+          loading={isPublishing}
+          loadingCopy="Publishing..."
+          onClick={handlePublish}
+        >
+          Publish
+        </Button>
+      </div>
+    </Popover.Content>
+  </Popover.Root>
   <TooltipContent slot="tooltip-content" maxWidth="240px">
     <span class="text-xs">
       {#if alreadyOnPrimary}
@@ -294,16 +328,8 @@
         No changes to publish
       {:else if hasRemoteChanges}
         Remote has updates not in your session. Click to review.
-      {:else if !prodDeployment}
-        Publish your project to production. We'll open a new tab where you can
-        invite teammates while the deployment reconciles.
-      {:else if !prodDeploymentActive}
-        Production is hibernated. Publishing will resume it and apply your
-        changes. We'll open the deployment in a new tab so you can watch updates
-        reconcile.
       {:else}
-        Publish your changes to production. We'll open a new tab so you can
-        watch updates reconcile.
+        Review and confirm before publishing
       {/if}
     </span>
   </TooltipContent>

@@ -31,39 +31,39 @@ _[string]_ - Refers to the URI of the remote connector you are using for the sou
 - `s3://your-org/bucket/file.parquet` — the s3 URI of your file
 - `gs://your-org/bucket/file.parquet` — the gsutil URI of your file
 - `https://data.example.org/path/to/file.parquet` — the web address of your file
- 
+
 
 ### `path`
 
-_[string]_ - Refers to the local path of the connector you are using for the source 
+_[string]_ - Refers to the local path of the connector you are using for the source
 
 ### `sql`
 
-_[string]_ - Sets the SQL query to extract data from a SQL source 
+_[string]_ - Sets the SQL query to extract data from a SQL source
 
 ### `region`
 
-_[string]_ - Sets the cloud region of the S3 bucket or Athena 
+_[string]_ - Sets the cloud region of the S3 bucket or Athena
 
 ### `endpoint`
 
-_[string]_ - Overrides the S3 endpoint to connect to 
+_[string]_ - Overrides the S3 endpoint to connect to
 
 ### `output_location`
 
-_[string]_ - Sets the query output location and result files in Athena 
+_[string]_ - Sets the query output location and result files in Athena
 
 ### `workgroup`
 
-_[string]_ - Sets a workgroup for Athena connector 
+_[string]_ - Sets a workgroup for Athena connector
 
 ### `project_id`
 
-_[string]_ - Sets a project id to be used to run BigQuery jobs 
+_[string]_ - Sets a project id to be used to run BigQuery jobs
 
 ### `timeout`
 
-_[string]_ - The maximum time to wait for source ingestion 
+_[string]_ - The maximum time to wait for source ingestion
 
 ### `refresh`
 
@@ -73,42 +73,42 @@ refresh:
   cron: "* * * * *"
   every: "24h"
 ```
- 
 
-  - **`cron`** - _[string]_ - A cron schedule expression, which should be encapsulated in single quotes, e.g. `* * * * *` 
 
-  - **`every`** - _[string]_ - A Go duration string, such as `24h` 
+  - **`cron`** - _[string]_ - A cron schedule expression, which should be encapsulated in single quotes, e.g. `* * * * *`
+
+  - **`every`** - _[string]_ - A Go duration string, such as `24h`
 
 ### `db`
 
-_[string]_ - Sets the database for motherduck connections and/or the path to the DuckDB/SQLite db file 
+_[string]_ - Sets the database for motherduck connections and/or the path to the DuckDB/SQLite db file
 
 ### `database_url`
 
-_[string]_ - Postgres connection string that should be used 
+_[string]_ - Postgres connection string that should be used
 
 ### `duckdb`
 
-_[object]_ - Specifies the raw parameters to inject into the DuckDB read_csv, read_json or read_parquet statement 
+_[object]_ - Specifies the raw parameters to inject into the DuckDB read_csv, read_json or read_parquet statement
 
 ### `dsn`
 
-_[string]_ - Used to set the Snowflake connection string 
+_[string]_ - Used to set the Snowflake connection string
 
 ## Common Properties
 
 ### `name`
 
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
 
 ### `refs`
 
-_[array of string]_ - List of resource references 
+_[array of string]_ - List of resource references
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.
