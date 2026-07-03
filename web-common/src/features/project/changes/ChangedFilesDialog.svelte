@@ -67,7 +67,7 @@
         const file = files.find(
           (f) => name === f.path || name.endsWith("/" + f.path),
         );
-        if (file) map.set(file.path, wrapper);
+        if (file?.path) map.set(file.path, wrapper);
       }
       wrapperMap = map;
       if (scrollPath) map.get(scrollPath)?.scrollIntoView({ block: "start" });
@@ -118,8 +118,8 @@
         <ul class="file-nav">
           {#each changedFiles as file (file.path)}
             {@const IconComponent = getIconComponent(
-              getFileKind(file.path) ?? undefined,
-              "/" + file.path,
+              getFileKind(file.path ?? "") ?? undefined,
+              "/" + (file.path ?? ""),
             )}
             <li>
               <button
