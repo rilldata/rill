@@ -244,6 +244,64 @@ func TestGlobHivePartitionedTransformSQL(t *testing.T) {
 	}, rows)
 }
 
+func TestGlobWindowedTransformSQL(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"dir/year=2024/month=02/file1.csv": ``,
+		"dir/year=2024/month=03/file2.csv": ``,
+		"dir/year=2024/month=03/file3.csv": ``,
+	})
+
+	// `start` and `end` are static path bounds applied during listing, so they compose
+	// with `transform_sql`, which runs afterward on the resulting rows. Here the window
+	// keeps only the month=02 partition (end is exclusive), and the transform reshapes it.
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector":     "mock",
+			"path":          "mock://bucket/**/*.csv",
+			"partition":     "hive",
+			"rollup_files":  true,
+			"start":         "mock://bucket/dir/year=2024/month=02",
+			"end":           "mock://bucket/dir/year=2024/month=03",
+			"transform_sql": "SELECT path, len(files) AS num_files FROM {{ .table }}",
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+
+	require.Equal(t, []map[string]interface{}{
+		{"path": "dir/year=2024/month=02", "num_files": float64(1)},
+	}, rows)
+}
+
+func TestGlobLastTransformSQLError(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"file1.csv": ``,
+		"file2.csv": ``,
+	})
+
+	// `last` is stateful and re-trims rows after listing, so it is not supported with `transform_sql`.
+	_, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector":     "mock",
+			"path":          "mock://bucket/**/*.csv",
+			"last":          1,
+			"transform_sql": "SELECT * FROM {{ .table }}",
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.ErrorContains(t, err, "`last` is not supported with `transform_sql`")
+}
+
 func prepareGlobTest(t *testing.T, connector string, files map[string]string) (*runtime.Runtime, string) {
 	// Write the provided file contents into a temporary directory.
 	tempDir := t.TempDir()
