@@ -130,7 +130,7 @@ func (c *config) writeSettings() map[string]string {
 	return writeSettings
 }
 
-// isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
+// hasExternalConfig returns true if either Path or Attach is configured.
 func (c *config) hasExternalConfig() bool {
 	return c.Path != "" || c.Attach != ""
 }
