@@ -6,7 +6,11 @@
   import { createRuntimeServiceGitDiff } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Diff2HtmlView from "@rilldata/web-common/components/diff/Diff2HtmlView.svelte";
-  import FileChangeBadge from "./FileChangeBadge.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { inferResourceKind } from "@rilldata/web-common/features/entity-management/infer-resource-kind";
+  import { getIconComponent } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { get } from "svelte/store";
 
   // initialPath, when set, scrolls the diff to that file once the dialog has rendered.
   let {
@@ -37,27 +41,53 @@
 
   let diffPane = $state<HTMLElement | undefined>(undefined);
 
-  // Scroll the diff to a file's section. diff2html's rendered file name may carry the project
-  // subpath prefix, so match it by suffix against the subpath-relative changed-files path.
-  function scrollToFile(path: string | undefined) {
-    if (!path || !diffPane) return;
-    const wrappers =
-      diffPane.querySelectorAll<HTMLElement>(".d2h-file-wrapper");
-    for (const wrapper of wrappers) {
-      const name = wrapper.querySelector(".d2h-file-name")?.textContent?.trim();
-      if (name === path || name?.endsWith("/" + path)) {
-        wrapper.scrollIntoView({ block: "start" });
-        return;
-      }
+  // Map from subpath-relative file path → its .d2h-file-wrapper element.
+  // Built once after the diff renders; rebuilt when diff or changedFiles changes.
+  // diff2html names may carry the project subpath prefix, so we match by suffix
+  // when building the map rather than on every scroll call.
+  let wrapperMap = new Map<string, HTMLElement>();
+
+  $effect(() => {
+    const files = changedFiles;
+    const pane = diffPane;
+    const scrollPath = open ? initialPath : undefined;
+    if (!diff || !pane) {
+      wrapperMap = new Map();
+      return;
     }
+    void tick().then(() => {
+      const map = new Map<string, HTMLElement>();
+      for (const wrapper of pane.querySelectorAll<HTMLElement>(
+        ".d2h-file-wrapper",
+      )) {
+        const name = wrapper
+          .querySelector(".d2h-file-name")
+          ?.textContent?.trim();
+        if (!name) continue;
+        const file = files.find(
+          (f) => name === f.path || name.endsWith("/" + f.path),
+        );
+        if (file) map.set(file.path, wrapper);
+      }
+      wrapperMap = map;
+      if (scrollPath) map.get(scrollPath)?.scrollIntoView({ block: "start" });
+    });
+  });
+
+  function scrollToFile(path: string | undefined) {
+    if (!path) return;
+    wrapperMap.get(path)?.scrollIntoView({ block: "start" });
   }
 
-  // Jump to the file the user clicked once the diff has rendered.
-  $effect(() => {
-    if (open && diff && initialPath) {
-      void tick().then(() => scrollToFile(initialPath));
+  function getFileKind(path: string): ResourceKind | null | undefined {
+    const filePath = "/" + path;
+    if (!fileArtifacts.hasFileArtifact(filePath)) {
+      return inferResourceKind(filePath, "");
     }
-  });
+    const artifact = fileArtifacts.getFileArtifact(filePath);
+    return (get(artifact.resourceName)?.kind ??
+      get(artifact.inferredResourceKind)) as ResourceKind | null | undefined;
+  }
 </script>
 
 <Dialog.Root bind:open>
@@ -87,13 +117,17 @@
       <div class="flex flex-1 min-h-0">
         <ul class="file-nav">
           {#each changedFiles as file (file.path)}
+            {@const IconComponent = getIconComponent(
+              getFileKind(file.path) ?? undefined,
+              "/" + file.path,
+            )}
             <li>
               <button
                 type="button"
                 class="file-row"
                 onclick={() => scrollToFile(file.path)}
               >
-                <FileChangeBadge status={file.status} />
+                <IconComponent />
                 <span class="file-path" title={file.path}>{file.path}</span>
               </button>
             </li>
