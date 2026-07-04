@@ -4,16 +4,7 @@
     createAdminServiceUpdateProjectVariables,
     getAdminServiceGetProjectVariablesQueryKey,
   } from "@rilldata/web-admin/client";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-  } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
+  import DeleteConfirmDialog from "@rilldata/web-common/features/resources/DeleteConfirmDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -27,14 +18,14 @@
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
 
-  async function onDelete(deletedName: string) {
+  async function handleDelete() {
     try {
       await $updateProjectVariables.mutateAsync({
         org: organization,
         project,
         data: {
           environment,
-          unsetVariables: [deletedName],
+          unsetVariables: [name],
         },
       });
 
@@ -59,50 +50,14 @@
       });
     }
   }
-
-  async function handleDelete() {
-    try {
-      onDelete(name);
-      open = false;
-    } catch (error) {
-      console.error("Failed to delete environment variable:", error);
-    }
-  }
 </script>
 
-<AlertDialog bind:open>
-  <AlertDialogTrigger>
-    {#snippet child({ props })}
-      <div {...props} class="hidden"></div>
-    {/snippet}
-  </AlertDialogTrigger>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Delete this environment variable?</AlertDialogTitle>
-      <AlertDialogDescription>
-        <div class="mt-1">
-          The environment variable <span class="source-code text-sm font-medium"
-            >{name}</span
-          > will no longer be available for this project.
-        </div>
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        type="tertiary"
-        onClick={() => {
-          open = false;
-        }}
-      >
-        Cancel
-      </Button>
-      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
-
-<style lang="postcss">
-  .source-code {
-    font-family: "Source Code Variable", monospace;
-  }
-</style>
+<DeleteConfirmDialog
+  bind:open
+  title="Delete this environment variable?"
+  onDelete={handleDelete}
+>
+  The environment variable <span class="font-mono text-sm font-medium"
+    >{name}</span
+  > will no longer be available for this project.
+</DeleteConfirmDialog>

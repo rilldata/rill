@@ -5,6 +5,8 @@
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import DeleteConfirmDialog from "@rilldata/web-common/features/resources/DeleteConfirmDialog.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -96,22 +98,31 @@
   const deleteReport = createAdminServiceDeleteReport();
 
   let showEditReportDialog = false;
+  let isDeleteConfirmOpen = false;
+
   function handleEditReport() {
     showEditReportDialog = true;
   }
 
   async function handleDeleteReport() {
-    await $deleteReport.mutateAsync({
-      org: organization,
-      project,
-      name: $reportQuery.data.resource.meta.name.name,
-    });
-    queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(
-        runtimeClient.instanceId,
-      ),
-    });
-    goto(`/${organization}/${project}/-/reports`);
+    try {
+      await $deleteReport.mutateAsync({
+        org: organization,
+        project,
+        name: $reportQuery.data.resource.meta.name.name,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+        ),
+      });
+      goto(`/${organization}/${project}/-/reports`);
+    } catch {
+      eventBus.emit("notification", {
+        message: "Failed to delete report",
+        type: "error",
+      });
+    }
   }
 </script>
 
@@ -161,7 +172,12 @@
               >
                 Edit report
               </DropdownMenu.Item>
-              <DropdownMenu.Item onclick={handleDeleteReport}>
+              <DropdownMenu.Item
+                type="destructive"
+                onclick={() => {
+                  isDeleteConfirmOpen = true;
+                }}
+              >
                 Delete report
               </DropdownMenu.Item>
             </DropdownMenu.Content>
@@ -244,3 +260,12 @@
     }}
   />
 {/if}
+
+<DeleteConfirmDialog
+  bind:open={isDeleteConfirmOpen}
+  title="Delete this report?"
+  onDelete={handleDeleteReport}
+>
+  The report "<strong>{reportSpec?.displayName ?? ""}</strong>" will be
+  permanently deleted and will no longer send scheduled emails.
+</DeleteConfirmDialog>

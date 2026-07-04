@@ -11,8 +11,11 @@
   $: ({ isLoading, isError, isSuccess, error } = $query);
 </script>
 
-<ContentContainer title="{kind.charAt(0).toUpperCase() + kind.slice(1)}s">
-  <div class="flex flex-col items-center gap-y-4">
+<ContentContainer
+  maxWidth={1100}
+  title="{kind.charAt(0).toUpperCase() + kind.slice(1)}s"
+>
+  <div class="flex flex-col gap-y-4 w-full">
     {#if isLoading}
       <div class="m-auto mt-20">
         <DelayedSpinner isLoading size="24px" />
