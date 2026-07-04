@@ -1,0 +1,9 @@
+type: theme
+light:
+  primary: "#3b82f6"
+  background: "#f9fafb"
+  card: "#ffffff"
+dark:
+  primary: "#60a5fa"
+  background: "#111827"
+  card: "#374151"
