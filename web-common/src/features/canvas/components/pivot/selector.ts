@@ -9,10 +9,17 @@ import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 export function validateTableSchema(
   metricsView: V1MetricsViewSpec | undefined,
   tableSpec: PivotSpec | TableSpec,
+  isLoading = false,
 ): {
   isValid: boolean;
   error?: string;
 } {
+  // While the metrics view resource is still loading its spec is undefined;
+  // treat this as valid so we don't flash a "not found" error on page load.
+  if (isLoading) {
+    return { isValid: true, error: undefined };
+  }
+
   if (!metricsView) {
     return {
       isValid: false,

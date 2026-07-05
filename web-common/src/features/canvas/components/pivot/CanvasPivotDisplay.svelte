@@ -38,7 +38,11 @@
   $: _metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
   $: metricsViewSpec = $_metricViewSpec.metricsView;
 
-  $: schema = validateTableSchema(metricsViewSpec, tableSpec);
+  $: schema = validateTableSchema(
+    metricsViewSpec,
+    tableSpec,
+    $_metricViewSpec.isLoading,
+  );
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
   let defaultSorting: SortingState;
