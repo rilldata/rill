@@ -1,15 +1,17 @@
 import {
+  extractNumbers,
+  getTimeGrainFromDimension,
+  isTimeDimension,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   COMPARISON_VALUE,
   type PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import {
-  extractNumbers,
-  getTimeGrainFromDimension,
-  isTimeDimension,
-} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
+import { timeFormat } from "d3-time-format";
 import type { DefaultSort } from "./index";
 
 /** Separator between column-dimension values in a nested-sort label. */
@@ -61,11 +63,13 @@ export function getSortChips(
     const chips: SortChip[] = parts.map((part) => {
       const { c, v } = extractNumbers(part);
       const dimensionName = config.colDimensionNames[c];
+      const value = columnDimensionAxes[dimensionName]?.[v] ?? "";
+      const isTime = isTimeDimension(dimensionName, config.time.timeDimension);
       return {
-        label: columnDimensionAxes[dimensionName]?.[v] ?? "",
-        type: isTimeDimension(dimensionName, config.time.timeDimension)
-          ? "time"
-          : "dimension",
+        label: isTime
+          ? formatColumnTimeValue(value, dimensionName, config)
+          : value,
+        type: isTime ? "time" : "dimension",
       };
     });
 
@@ -82,6 +86,29 @@ export function getSortChips(
   return [
     { label: getFieldLabel(id, config), type: getSortFieldType(id, config) },
   ];
+}
+
+/**
+ * Whether all chip values for a sort id can be resolved from the currently
+ * loaded data. Nested pivot leaf accessors reference column-dimension values
+ * that arrive asynchronously; until they load, chips would render blank or,
+ * for time dimensions, as "NaN". Stable fields resolve synchronously.
+ */
+export function areSortChipsReady(
+  id: string,
+  config: PivotDataStoreConfig,
+  columnDimensionAxes: Record<string, string[]> = {},
+): boolean {
+  if (!NESTED_ACCESSOR_RE.test(id)) return true;
+
+  const [colPart] = id.split("m");
+  const parts = colPart.split("_").filter(Boolean);
+
+  return parts.every((part) => {
+    const { c, v } = extractNumbers(part);
+    const dimensionName = config.colDimensionNames[c];
+    return columnDimensionAxes[dimensionName]?.[v] != null;
+  });
 }
 
 /**
@@ -104,6 +131,20 @@ const COMPARISON_MODIFIER: Record<string, string> = {
   [COMPARISON_DELTA]: " Δ",
   [COMPARISON_PERCENT]: " Δ %",
 };
+
+function formatColumnTimeValue(
+  value: string,
+  dimensionName: string,
+  config: PivotDataStoreConfig,
+): string {
+  const grain = getTimeGrainFromDimension(dimensionName);
+  const dt = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
+    value,
+    config.time.timeZone || "UTC",
+  );
+  const formatter = timeFormat(grain ? TIME_GRAIN[grain].d3format : "%H:%M");
+  return formatter(dt);
+}
 
 function getFieldLabel(field: string, config: PivotDataStoreConfig): string {
   if (isTimeDimension(field, config.time.timeDimension)) {
