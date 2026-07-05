@@ -4,7 +4,7 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
-  import DelayedCircleOutlineSpinner from "@rilldata/web-common/components/spinner/DelayedCircleOutlineSpinner.svelte";
+  import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
   import type { PivotCanvasComponent } from "../components/pivot";
   import {
     areSortChipsReady,
@@ -79,7 +79,7 @@
       </div>
     {:else}
       <div class="flex items-center gap-1 text-fg-secondary">
-        <DelayedCircleOutlineSpinner isLoading size="14px" />
+        <LoadingCircleOutline size="14px" />
       </div>
     {/if}
 
