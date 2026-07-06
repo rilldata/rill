@@ -37,7 +37,7 @@
       </li>
     {:else}
       <p class="text-fg-secondary text-xs">
-        This organization has no projects yet.
+        {m.org_no_projects_yet()}
       </p>
     {/each}
   </ol>
