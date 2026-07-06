@@ -14,7 +14,7 @@
   import {
     ArrayRuneStore,
     InMemoryRuneStore,
-  } from "@rilldata/web-common/lib/store-utils/types.ts";
+  } from "web-common/src/lib/store-utils/types.svelte.ts";
 
   let {
     options,

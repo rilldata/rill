@@ -5,9 +5,8 @@
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
-  import { DashboardFavourites } from "./dashboard-favourites.ts";
   import { Star } from "lucide-svelte";
-  import { readable } from "svelte/store";
+  import { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
 
   export let name: string;
   export let title: string;
@@ -19,7 +18,8 @@
   export let organization: string;
   export let project: string;
   export let tags: string[] = [];
-  export let dashboardFavourites: DashboardFavourites | undefined = undefined;
+  export let dashboardFavourites: ArrayRuneStore<string> | undefined =
+    undefined;
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
@@ -32,15 +32,15 @@
     ? ResourceKind.Explore
     : ResourceKind.Canvas;
 
-  $: favourites = dashboardFavourites?.favourites ?? readable([]);
-  $: isFavourite = $favourites.includes(name);
+  $: favourites = dashboardFavourites?.value ?? [];
+  $: isFavourite = favourites.includes(name);
 
   let hovered = false;
 
   function onDashboardFavouriteToggle(e: MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
-    dashboardFavourites?.toggleDashboard(name);
+    dashboardFavourites?.toggle(name);
   }
 </script>
 

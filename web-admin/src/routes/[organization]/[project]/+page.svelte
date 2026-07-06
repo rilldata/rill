@@ -105,7 +105,7 @@
           <CreatePersonalCanvasDialog org={organization} {project} />
         {/if}
       </h2>
-      <DashboardsTable isPreview />
+      <DashboardsTable isPreview previewLimit={5} />
     </div>
   </div>
 </ContentContainer>

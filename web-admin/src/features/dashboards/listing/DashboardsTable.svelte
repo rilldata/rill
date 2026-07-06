@@ -19,11 +19,12 @@
   } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
+  import { getDashboardFavouritesStore } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
 
   let {
     isEmbedded = false,
     isPreview = false,
-    previewLimit = 5,
+    previewLimit,
   }: {
     isEmbedded?: boolean;
     isPreview?: boolean;
@@ -87,10 +88,14 @@
     ),
   );
 
-  let displayData = $derived(
-    isPreview
-      ? searchFilteredDashboards.slice(0, previewLimit)
-      : searchFilteredDashboards,
+  let dashboardFavourites = $derived(
+    getDashboardFavouritesStore(organization, project),
+  );
+
+  let validDashboardFavourites = $derived(
+    dashboardFavourites.value.filter((f) =>
+      searchFilteredDashboards.find((r) => r.meta?.name?.name === f),
+    ),
   );
 
   let hasMoreDashboards = $derived(
@@ -126,6 +131,7 @@
           organization,
           project,
           tags,
+          dashboardFavourites,
         });
       },
     },
@@ -158,10 +164,6 @@
         return isMetricsExplorer ? row.explore.spec.description : "";
       },
     },
-    {
-      id: "favourite",
-      accessorFn: (row: V1Resource & { favourite: number }) => row.favourite,
-    },
   ];
 
   const columnVisibility = {
@@ -169,13 +171,9 @@
     name: false,
     lastRefreshed: false,
     description: false,
-    favourite: false,
   };
 
-  const initialSorting = [
-    { id: "favourite", desc: false },
-    { id: "name", desc: false },
-  ];
+  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
 {#if isLoading || isBuilding}
@@ -217,11 +215,13 @@
       <div class="flex flex-col flex-grow">
         <ResourceList
           kind="dashboard"
-          data={displayData}
+          data={searchFilteredDashboards}
           {columns}
           {columnVisibility}
           {initialSorting}
           toolbar={false}
+          pinnedRows={validDashboardFavourites}
+          maxRows={previewLimit}
         >
           <ResourceListEmptyState
             slot="empty"
