@@ -179,17 +179,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if err != nil {
 		return nil, err
 	}
-
+	// 1. System prompt
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
-	// Prior turns only (exclude the current call, whose ID equals s.ParentID).
-	// We use MessagesWithChildren (not MessagesWithResults) so that prior turns' intermediate tool calls stay in history;
-	// this lets later turns reuse earlier lookups (e.g. avoid re-calling get_metrics_view). Do not switch this to MessagesWithResults.
-	// The notCurrentCall filter is load-bearing: without it the current call's seeded children would be duplicated by the block below.
+	// 2. Previous analyst calls with their tool calls
 	notCurrentCall := func(m *Message) bool { return m.ID != s.ParentID }
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithChildren(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName), notCurrentCall))...)
-	// The rich per-invocation context and the user's ask.
+	// 3. User prompt
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
-	// The current call's seeded tool calls and their results, placed after the user prompt to mirror the developer agent.
+	// 4. Seeded tool calls for the current iteration
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
 
 	// Run an LLM tool call loop
