@@ -21,6 +21,8 @@
   let priorRange: DashboardTimeControls | null = null;
   let button: HTMLButtonElement;
 
+  const explainEnabled = measureSelection.getEnabledStore();
+
   const StateManagers = getStateManagers();
   const {
     dashboardStore,
@@ -58,7 +60,8 @@
     }
 
     const isMac = window.navigator.userAgent.includes("Macintosh");
-    const isExplainKey = e.key === "e" && !e.metaKey && !e.ctrlKey;
+    const isExplainKey =
+      $explainEnabled && e.key === "e" && !e.metaKey && !e.ctrlKey;
 
     if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {

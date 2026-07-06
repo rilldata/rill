@@ -101,9 +101,9 @@ export class MeasureSelection {
 
   public getEnabledStore() {
     return derived(
-      [featureFlags.dashboardChat, getExploreNameStore()],
-      ([dashboardChat, exploreName]) => {
-        return Boolean(dashboardChat && exploreName);
+      [featureFlags.ai, featureFlags.dashboardChat, getExploreNameStore()],
+      ([ai, dashboardChat, exploreName]) => {
+        return Boolean(ai && dashboardChat && exploreName);
       },
     );
   }
