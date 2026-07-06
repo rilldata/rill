@@ -2268,6 +2268,8 @@ func (m *CreateDeploymentRequest) validate(all bool) error {
 
 	// no validation rules for Editable
 
+	// no validation rules for ReadOnlyModels
+
 	if len(errors) > 0 {
 		return CreateDeploymentRequestMultiError(errors)
 	}
@@ -45650,6 +45652,8 @@ func (m *Deployment) validate(all bool) error {
 	// no validation rules for Branch
 
 	// no validation rules for Editable
+
+	// no validation rules for ReadOnlyModels
 
 	// no validation rules for RuntimeHost
 

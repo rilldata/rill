@@ -605,6 +605,8 @@ components:
                     type: string
                 projectId:
                     type: string
+                readOnlyModels:
+                    type: boolean
                 runtimeHost:
                     type: string
                 runtimeInstanceId:
@@ -4429,6 +4431,9 @@ paths:
                                     type: boolean
                                 environment:
                                     type: string
+                                readOnlyModels:
+                                    description: Set for editable projects when edits to models is not allowed.
+                                    type: boolean
                             type: object
                 required: true
                 x-originalParamName: body

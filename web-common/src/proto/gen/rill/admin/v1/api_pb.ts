@@ -1043,6 +1043,13 @@ export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
    */
   editable = false;
 
+  /**
+   * Set for editable projects when edits to models is not allowed.
+   *
+   * @generated from field: bool read_only_models = 6;
+   */
+  readOnlyModels = false;
+
   constructor(data?: PartialMessage<CreateDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1056,6 +1063,7 @@ export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
     { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "read_only_models", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDeploymentRequest {
@@ -17087,6 +17095,11 @@ export class Deployment extends Message<Deployment> {
   editable = false;
 
   /**
+   * @generated from field: bool read_only_models = 15;
+   */
+  readOnlyModels = false;
+
+  /**
    * @generated from field: string runtime_host = 5;
    */
   runtimeHost = "";
@@ -17135,6 +17148,7 @@ export class Deployment extends Message<Deployment> {
     { no: 11, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "read_only_models", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "status", kind: "enum", T: proto3.getEnumType(DeploymentStatus) },

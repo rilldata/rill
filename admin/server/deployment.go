@@ -253,6 +253,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		attribute.String("args.environment", req.Environment),
 		attribute.String("args.branch", req.Branch),
 		attribute.Bool("args.editable", req.Editable),
+		attribute.Bool("args.read_only_models", req.ReadOnlyModels),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
@@ -284,7 +285,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		} else {
 			branch = proj.PrimaryBranch
 		}
-		if req.Editable {
+		if req.Editable && !req.ReadOnlyModels {
 			return nil, status.Error(codes.InvalidArgument, "editable cannot be set for prod deployments")
 		}
 		slots = proj.ProdSlots
@@ -345,11 +346,12 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 	}
 
 	depl, err := s.admin.CreateDeployment(ctx, &admin.CreateDeploymentOptions{
-		ProjectID:   proj.ID,
-		OwnerUserID: ownerUserID,
-		Environment: req.Environment,
-		Branch:      branch,
-		Editable:    req.Editable,
+		ProjectID:      proj.ID,
+		OwnerUserID:    ownerUserID,
+		Environment:    req.Environment,
+		Branch:         branch,
+		Editable:       req.Editable,
+		ReadOnlyModels: req.ReadOnlyModels,
 	})
 	if err != nil {
 		return nil, err

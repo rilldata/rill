@@ -2977,6 +2977,179 @@ light:
 	}
 }
 
+func TestFileResourceKind(t *testing.T) {
+	tt := []struct {
+		name     string
+		path     string
+		contents string
+		want     ResourceKind
+		wantErr  bool
+	}{
+		{
+			name:     "yaml with explicit type",
+			path:     "/custom/foo.yaml",
+			contents: "type: model\nsql: SELECT 1",
+			want:     ResourceKindModel,
+		},
+		{
+			name:     "yaml with legacy kind",
+			path:     "/custom/foo.yaml",
+			contents: "kind: source\nconnector: s3",
+			want:     ResourceKindSource,
+		},
+		{
+			name:     "type takes precedence over kind",
+			path:     "/custom/foo.yaml",
+			contents: "kind: source\ntype: model\nsql: SELECT 1",
+			want:     ResourceKindModel,
+		},
+		{
+			name:     "sources dir with legacy connector in type",
+			path:     "/sources/foo.yaml",
+			contents: "type: s3\nuri: s3://bucket/path",
+			want:     ResourceKindSource,
+		},
+		{
+			name:     "invalid type outside sources dir",
+			path:     "/custom/foo.yaml",
+			contents: "type: bogus",
+			wantErr:  true,
+		},
+		{
+			name:     "sql with type annotation",
+			path:     "/custom/foo.sql",
+			contents: "-- @type: metrics_view\nSELECT 1",
+			want:     ResourceKindMetricsView,
+		},
+		{
+			name:     "sql with legacy kind annotation",
+			path:     "/custom/foo.sql",
+			contents: "-- @kind: model\nSELECT 1",
+			want:     ResourceKindModel,
+		},
+		{
+			name:     "sql with configure template",
+			path:     "/custom/foo.sql",
+			contents: `{{ configure "type" "metrics_view" }}SELECT 1`,
+			want:     ResourceKindMetricsView,
+		},
+		{
+			name:     "bare sql defaults to model",
+			path:     "/custom/foo.sql",
+			contents: "SELECT 1",
+			want:     ResourceKindModel,
+		},
+		{
+			name:     "init.sql is migration",
+			path:     "/init.sql",
+			contents: "CREATE TABLE foo (x INT)",
+			want:     ResourceKindMigration,
+		},
+		{
+			name:     "models dir convention",
+			path:     "/models/foo.yaml",
+			contents: "sql: SELECT 1",
+			want:     ResourceKindModel,
+		},
+		{
+			name:     "dashboards dir convention",
+			path:     "/dashboards/foo.yaml",
+			contents: "table: foo",
+			want:     ResourceKindMetricsView,
+		},
+		{
+			name:     "sources dir convention",
+			path:     "/sources/foo.yaml",
+			contents: "connector: s3",
+			want:     ResourceKindSource,
+		},
+		{
+			name:     "connectors dir convention",
+			path:     "/connectors/foo.yaml",
+			contents: "driver: duckdb",
+			want:     ResourceKindConnector,
+		},
+		{
+			name:     "inline sql annotation overrides path convention",
+			path:     "/models/foo.yaml",
+			contents: "sql: |\n  -- @type: metrics_view\n  SELECT 1",
+			want:     ResourceKindMetricsView,
+		},
+		{
+			name:     "templating disabled ignores sql annotation",
+			path:     "/models/foo.yaml",
+			contents: "parser:\n  templating: false\nsql: |\n  -- @type: metrics_view\n  SELECT 1",
+			want:     ResourceKindModel,
+		},
+		{
+			name:     "rill.yaml is not a resource",
+			path:     "/rill.yaml",
+			contents: "olap_connector: duckdb",
+			want:     ResourceKindUnspecified,
+		},
+		{
+			name:     "dotenv is not a resource",
+			path:     "/.env",
+			contents: "KEY=value",
+			want:     ResourceKindUnspecified,
+		},
+		{
+			name:     "named dotenv is not a resource",
+			path:     "/.cloud.env",
+			contents: "KEY=value",
+			want:     ResourceKindUnspecified,
+		},
+		{
+			name:     "ignored path",
+			path:     "/.rillcloud/deploy.yaml",
+			contents: "type: model",
+			want:     ResourceKindUnspecified,
+		},
+		{
+			name:     "non-resource extension",
+			path:     "/data/foo.csv",
+			contents: "a,b,c",
+			want:     ResourceKindUnspecified,
+		},
+		{
+			name:     "yaml without type at non-convention path",
+			path:     "/custom/foo.yaml",
+			contents: "sql: SELECT 1",
+			wantErr:  true,
+		},
+		{
+			name:     "malformed yaml",
+			path:     "/models/foo.yaml",
+			contents: "sql: [unclosed",
+			wantErr:  true,
+		},
+		{
+			name:     "sql with template syntax error",
+			path:     "/models/foo.sql",
+			contents: "SELECT {{",
+			wantErr:  true,
+		},
+		{
+			name:     "path without leading slash",
+			path:     "models/foo.sql",
+			contents: "SELECT 1",
+			want:     ResourceKindModel,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := FileResourceKind(tc.path, []byte(tc.contents))
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)

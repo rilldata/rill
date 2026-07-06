@@ -1490,6 +1490,8 @@ message CreateDeploymentRequest {
   // Whether the deployment is editable and the edited changes are persisted back to the git repo.
   // Can't be set for `prod` deployments.
   bool editable = 5;
+  // Set for editable projects when edits to models is not allowed.
+  bool read_only_models = 6;
 }
 
 message CreateDeploymentResponse {
@@ -3524,6 +3526,7 @@ message Deployment {
   string environment = 11;
   string branch = 4;
   bool editable = 13;
+  bool read_only_models = 15;
   string runtime_host = 5;
   string runtime_instance_id = 6;
   DeploymentStatus status = 7;

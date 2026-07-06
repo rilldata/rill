@@ -153,7 +153,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	if cfg.DisableModels { // Global disable
-		return runtime.ReconcileResult{Err: errors.New("model execution is paused")}
+		return runtime.ReconcileResult{Err: errors.New("model execution is disabled")}
+	}
+
+	if cfg.AssumeModelsMaterialized {
+		return r.reconcileAssumedMaterialized(ctx, self, model)
 	}
 
 	// Handle deletion
@@ -486,6 +490,48 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	return runtime.ReconcileResult{Warnings: reconcileWarnings(model, &cfg), Retrigger: refreshOn}
+}
+
+// reconcileAssumedMaterialized implements Reconcile for instances with the AssumeModelsMaterialized config.
+// It assumes the model's output already exists in the output connector: it marks the model successful and points its
+// state at the assumed table, but never executes the model or makes any changes to the output connector.
+func (r *ModelReconciler) reconcileAssumedMaterialized(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model) runtime.ReconcileResult {
+	// The output is externally managed, so there is nothing to clean up on deletion.
+	if self.Meta.DeletedOn != nil {
+		return runtime.ReconcileResult{}
+	}
+
+	// Clear any manual refresh trigger since there is nothing to refresh.
+	if model.Spec.Trigger || model.Spec.TriggerFull || model.Spec.TriggerPartitions {
+		err := r.updateTriggerFalse(ctx, self.Meta.Name)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+	}
+
+	// Resolve the assumed table name: an explicitly configured output table, else the model name.
+	// Note: templating in the output properties is not resolved here.
+	table := self.Meta.Name.Name
+	if t, ok := model.Spec.OutputProperties.AsMap()["table"].(string); ok && t != "" {
+		table = t
+	}
+
+	// Skip the state update if the state already points at the assumed table (also covers renames, which recompute the table name from the new model name).
+	if model.State.ResultConnector == model.Spec.OutputConnector && model.State.ResultTable == table {
+		return runtime.ReconcileResult{}
+	}
+
+	model.State.RefreshedOn = timestamppb.Now()
+	err := r.updateStateWithResult(ctx, self, &drivers.ModelResult{
+		Connector:  model.Spec.OutputConnector,
+		Properties: map[string]any{"table": table, "used_model_name": table == self.Meta.Name.Name},
+		Table:      table,
+	})
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
+	return runtime.ReconcileResult{}
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {

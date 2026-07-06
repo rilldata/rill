@@ -1,0 +1,1 @@
+ALTER TABLE deployments ADD COLUMN read_only_models BOOLEAN DEFAULT FALSE;

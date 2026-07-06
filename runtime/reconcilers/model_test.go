@@ -556,3 +556,66 @@ post_exec: DETACH extdb
 	testruntime.ReconcileParserAndWait(t, rt, instanceID)
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 }
+
+func TestAssumeModelsMaterialized(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:     map[string]string{"rill.yaml": ``},
+		Variables: map[string]string{"rill.models.assume_materialized": "true"},
+	})
+
+	// Simulate an externally managed table that the model's output is assumed to be
+	olap, release, err := rt.OLAP(t.Context(), instanceID, "")
+	require.NoError(t, err)
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE foo AS SELECT 42 AS a"})
+	require.NoError(t, err)
+	release()
+
+	// The model's SQL intentionally differs from the existing table's contents so an execution would be detectable
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"models/foo.sql": `SELECT 1 AS b`,
+		"metrics/foo_metrics.yaml": `
+version: 1
+type: metrics_view
+model: foo
+dimensions:
+  - column: a
+measures:
+  - expression: COUNT(*)
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	// The model's state points at the assumed table without having executed
+	res := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo")
+	require.Equal(t, res.GetModel().Spec.OutputConnector, res.GetModel().State.ResultConnector)
+	require.Equal(t, "foo", res.GetModel().State.ResultTable)
+	require.NotNil(t, res.GetModel().State.RefreshedOn)
+
+	// The pre-existing table was not modified
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT a FROM foo`},
+		Result:     []map[string]any{{"a": 42}},
+	})
+
+	// A manual refresh trigger is a no-op and does not execute the model
+	testruntime.RefreshAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"})
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT a FROM foo`},
+		Result:     []map[string]any{{"a": 42}},
+	})
+
+	// A model without a pre-existing table still reconciles successfully and does not create anything
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{"models/bar.sql": `SELECT 1 AS b`})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+	testruntime.RequireNoOLAPTable(t, rt, instanceID, "bar")
+
+	// Deleting a model file does not drop the externally managed table
+	testruntime.DeleteFiles(t, rt, instanceID, "models/foo.sql", "metrics/foo_metrics.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+	testruntime.RequireOLAPTable(t, rt, instanceID, "foo")
+}

@@ -145,6 +145,9 @@ type InstanceConfig struct {
 	ModelTestsWarnOnFailure bool `mapstructure:"rill.model.tests_warn_on_failure"`
 	// DisableModels: when true, model execution is disabled. Useful for stopping any ingestion in Rill temporarily.
 	DisableModels bool `mapstructure:"rill.models.disable"`
+	// AssumeModelsMaterialized: when true, models are never executed and their outputs are assumed to already exist in the output connector.
+	// Reconciles mark models successful and point their state at the assumed table, but never create, modify or drop anything in the output connector.
+	AssumeModelsMaterialized bool `mapstructure:"rill.models.assume_materialized"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
