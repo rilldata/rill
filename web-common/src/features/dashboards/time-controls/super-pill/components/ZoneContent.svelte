@@ -55,126 +55,132 @@
   <Search bind:value={searchValue} autofocus={false} />
 </div>
 
-{#if !pinnedTimeZones.has(activeTimeZone) && !recentIANAs.includes(activeTimeZone)}
-  <div class="group">
-    {#if formatted}
-      <button
-        class="item"
-        onclick={() => {
-          onSelectTimeZone(activeTimeZone);
-        }}
-      >
-        <ZoneDisplay
-          abbreviation={formatted.abbreviation}
-          offset={formatted.offset}
-          iana={activeTimeZone}
-        />
-        <!-- {#if activeTimeZone === iana} -->
-        <Check class="size-4" color="var(--foreground)" />
-        <!-- {/if} -->
-      </button>
-    {/if}
-  </div>
-
-  <div class="separator"></div>
-{/if}
-
-<div class="group">
-  {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
-    <button
-      class="item"
-      onclick={() => {
-        onSelectTimeZone(iana);
-      }}
-    >
-      <ZoneDisplay
-        {abbreviation}
-        {offset}
-        isBrowserTime={iana === browserIANA}
-        {iana}
-      />
-      <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
-        {#if activeTimeZone === iana}
-          <Check class="size-4" color="var(--foreground)" />
-        {/if}
-      </span>
-    </button>
-  {/each}
-</div>
-
-{#if !searchValue && recentIANAs.length}
-  <div class="separator"></div>
-  <div class="group">
-    <div class="flex justify-between pr-2 items-center">
-      <h3>Recent</h3>
-      {#if recentIANAs.length}
-        <button
-          class="text-[11px] text-fg-secondary hover:bg-surface-hover p-1 rounded-sm h-fit"
-          onclick={() => {
-            recents.set([]);
-          }}
-        >
-          Clear recents
-        </button>
-      {/if}
-    </div>
-
-    {#each recentIANAs as iana, i (i)}
-      {@const formatted = ianaMap.get(iana)}
-      {#if formatted && !availableTimeZones.includes(iana)}
+<div class="max-h-72 overflow-y-auto">
+  {#if !pinnedTimeZones.has(activeTimeZone) && !recentIANAs.includes(activeTimeZone)}
+    <div class="group">
+      {#if formatted}
         <button
           class="item"
           onclick={() => {
-            onSelectTimeZone(iana);
+            onSelectTimeZone(activeTimeZone);
           }}
         >
           <ZoneDisplay
             abbreviation={formatted.abbreviation}
             offset={formatted.offset}
-            {iana}
+            iana={activeTimeZone}
           />
-          <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
-            {#if activeTimeZone === iana}
-              <Check class="size-4" color="var(--foreground)" />
-            {/if}
-          </span>
+          <!-- {#if activeTimeZone === iana} -->
+          <Check class="size-4" color="var(--foreground)" />
+          <!-- {/if} -->
         </button>
       {/if}
-    {/each}
-  </div>
-{/if}
+    </div>
 
-{#if searchValue}
-  <div class="separator"></div>
-  <div class="group max-h-72 overflow-y-auto">
-    <h3
-      class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
-    >
-      Search Results
-    </h3>
+    <div class="separator"></div>
+  {/if}
 
-    {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
+  <div class="group">
+    {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
       <button
         class="item"
         onclick={() => {
           onSelectTimeZone(iana);
-          recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
         }}
       >
-        <ZoneDisplay {iana} {offset} {abbreviation} />
+        <ZoneDisplay
+          {abbreviation}
+          {offset}
+          isBrowserTime={iana === browserIANA}
+          {iana}
+        />
         <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
           {#if activeTimeZone === iana}
             <Check class="size-4" color="var(--foreground)" />
           {/if}
         </span>
       </button>
-    {:else}
-      <div>
-        <p class="pt-0 pb-2 text-fg-secondary text-center">No options found</p>
-      </div>
     {/each}
   </div>
-{/if}
+
+  {#if !searchValue && recentIANAs.length}
+    <div class="separator"></div>
+    <div class="group">
+      <div class="flex justify-between pr-2 items-center">
+        <h3>Recent</h3>
+        {#if recentIANAs.length}
+          <button
+            class="text-[11px] text-fg-secondary hover:bg-surface-hover p-1 rounded-sm h-fit"
+            onclick={() => {
+              recents.set([]);
+            }}
+          >
+            Clear recents
+          </button>
+        {/if}
+      </div>
+
+      {#each recentIANAs as iana, i (i)}
+        {@const formatted = ianaMap.get(iana)}
+        {#if formatted && !availableTimeZones.includes(iana)}
+          <button
+            class="item"
+            onclick={() => {
+              onSelectTimeZone(iana);
+            }}
+          >
+            <ZoneDisplay
+              abbreviation={formatted.abbreviation}
+              offset={formatted.offset}
+              {iana}
+            />
+            <span
+              class="flex flex-none h-3.5 w-3.5 items-center justify-center"
+            >
+              {#if activeTimeZone === iana}
+                <Check class="size-4" color="var(--foreground)" />
+              {/if}
+            </span>
+          </button>
+        {/if}
+      {/each}
+    </div>
+  {/if}
+
+  {#if searchValue}
+    <div class="separator"></div>
+    <div class="group">
+      <h3
+        class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
+      >
+        Search Results
+      </h3>
+
+      {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
+        <button
+          class="item"
+          onclick={() => {
+            onSelectTimeZone(iana);
+            recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
+          }}
+        >
+          <ZoneDisplay {iana} {offset} {abbreviation} />
+          <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
+            {#if activeTimeZone === iana}
+              <Check class="size-4" color="var(--foreground)" />
+            {/if}
+          </span>
+        </button>
+      {:else}
+        <div>
+          <p class="pt-0 pb-2 text-fg-secondary text-center">
+            No options found
+          </p>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>
 
 <style lang="postcss">
   .item {

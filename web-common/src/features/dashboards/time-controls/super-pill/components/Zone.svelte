@@ -78,108 +78,112 @@
       <Search bind:value={searchValue} autofocus={false} />
     </div>
 
-    {#if !pinnedTimeZones.has(activeTimeZone) && !recentIANAs.includes(activeTimeZone)}
-      <DropdownMenu.Group>
-        {@const formatted = ianaMap.get(activeTimeZone)}
-        {#if formatted}
-          <DropdownMenu.Item>
-            <ZoneDisplay
-              abbreviation={formatted.abbreviation}
-              offset={formatted.offset}
-              iana={activeTimeZone}
-            />
-          </DropdownMenu.Item>
-        {/if}
-      </DropdownMenu.Group>
-      <DropdownMenu.Separator />
-    {/if}
-
-    <DropdownMenu.Group>
-      {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
-        <DropdownMenu.CheckboxItem
-          checkRight
-          closeOnSelect
-          checked={activeTimeZone === iana}
-          onSelect={() => {
-            onSelectTimeZone(iana);
-          }}
-        >
-          <ZoneDisplay
-            {abbreviation}
-            {offset}
-            isBrowserTime={iana === browserIANA}
-            {iana}
-          />
-        </DropdownMenu.CheckboxItem>
-      {/each}
-    </DropdownMenu.Group>
-
-    {#if !searchValue && recentIANAs.length}
-      <DropdownMenu.Separator />
-
-      <DropdownMenu.Group>
-        <div class="flex justify-between pr-2">
-          <DropdownMenu.Label>Recent</DropdownMenu.Label>
-          {#if recentIANAs.length}
-            <button
-              onclick={() => {
-                recents.set([]);
-              }}
-              class="text-[10px] text-fg-secondary">Clear recents</button
-            >
-          {/if}
-        </div>
-
-        {#each recentIANAs as iana, i (i)}
-          {@const formatted = ianaMap.get(iana)}
-          {#if formatted && !availableTimeZones.includes(iana) && iana !== browserIANA}
-            <DropdownMenu.CheckboxItem
-              checkRight
-              checked={activeTimeZone === iana}
-              onclick={() => {
-                onSelectTimeZone(iana);
-              }}
-            >
+    <div class="max-h-72 overflow-y-auto">
+      {#if !pinnedTimeZones.has(activeTimeZone) && !recentIANAs.includes(activeTimeZone)}
+        <DropdownMenu.Group>
+          {@const formatted = ianaMap.get(activeTimeZone)}
+          {#if formatted}
+            <DropdownMenu.Item>
               <ZoneDisplay
                 abbreviation={formatted.abbreviation}
                 offset={formatted.offset}
-                {iana}
+                iana={activeTimeZone}
               />
-            </DropdownMenu.CheckboxItem>
+            </DropdownMenu.Item>
           {/if}
-        {/each}
-      </DropdownMenu.Group>
-    {/if}
+        </DropdownMenu.Group>
+        <DropdownMenu.Separator />
+      {/if}
 
-    {#if searchValue}
-      <DropdownMenu.Separator />
-
-      <DropdownMenu.Group class="max-h-72 overflow-y-auto">
-        <DropdownMenu.Label
-          class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
-        >
-          Search Results
-        </DropdownMenu.Label>
-
-        {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
+      <DropdownMenu.Group>
+        {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
           <DropdownMenu.CheckboxItem
             checkRight
             closeOnSelect
+            checked={activeTimeZone === iana}
             onSelect={() => {
               onSelectTimeZone(iana);
-              recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
             }}
           >
-            <ZoneDisplay {iana} {offset} {abbreviation} />
+            <ZoneDisplay
+              {abbreviation}
+              {offset}
+              isBrowserTime={iana === browserIANA}
+              {iana}
+            />
           </DropdownMenu.CheckboxItem>
-        {:else}
-          <DropdownMenu.Group>
-            <p class="pt-0 pb-2 text-fg-secondary text-center">
-              No options found
-            </p>
-          </DropdownMenu.Group>
         {/each}
       </DropdownMenu.Group>
-    {/if}
+
+      {#if !searchValue && recentIANAs.length}
+        <DropdownMenu.Separator />
+
+        <DropdownMenu.Group>
+          <div class="flex justify-between pr-2">
+            <DropdownMenu.Label>Recent</DropdownMenu.Label>
+            {#if recentIANAs.length}
+              <button
+                onclick={() => {
+                  recents.set([]);
+                }}
+                class="text-[10px] text-fg-secondary">Clear recents</button
+              >
+            {/if}
+          </div>
+
+          {#each recentIANAs as iana, i (i)}
+            {@const formatted = ianaMap.get(iana)}
+            {#if formatted && !availableTimeZones.includes(iana) && iana !== browserIANA}
+              <DropdownMenu.CheckboxItem
+                checkRight
+                checked={activeTimeZone === iana}
+                onclick={() => {
+                  onSelectTimeZone(iana);
+                }}
+              >
+                <ZoneDisplay
+                  abbreviation={formatted.abbreviation}
+                  offset={formatted.offset}
+                  {iana}
+                />
+              </DropdownMenu.CheckboxItem>
+            {/if}
+          {/each}
+        </DropdownMenu.Group>
+      {/if}
+
+      {#if searchValue}
+        <DropdownMenu.Separator />
+
+        <DropdownMenu.Group>
+          <DropdownMenu.Label
+            class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
+          >
+            Search Results
+          </DropdownMenu.Label>
+
+          {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
+            <DropdownMenu.CheckboxItem
+              checkRight
+              closeOnSelect
+              onSelect={() => {
+                onSelectTimeZone(iana);
+                recents.set(
+                  Array.from(new Set([iana, ...$recents])).slice(0, 5),
+                );
+              }}
+            >
+              <ZoneDisplay {iana} {offset} {abbreviation} />
+            </DropdownMenu.CheckboxItem>
+          {:else}
+            <DropdownMenu.Group>
+              <p class="pt-0 pb-2 text-fg-secondary text-center">
+                No options found
+              </p>
+            </DropdownMenu.Group>
+          {/each}
+        </DropdownMenu.Group>
+      {/if}
+    </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
