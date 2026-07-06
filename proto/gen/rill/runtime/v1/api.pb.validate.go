@@ -14452,6 +14452,10 @@ func (m *GitDiffRequest) validate(all bool) error {
 
 	// no validation rules for RemoteBranch
 
+	// no validation rules for IncludeDiff
+
+	// no validation rules for Fetch
+
 	if len(errors) > 0 {
 		return GitDiffRequestMultiError(errors)
 	}
@@ -14587,6 +14591,8 @@ func (m *GitDiffResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for Diff
 
 	if len(errors) > 0 {
 		return GitDiffResponseMultiError(errors)
