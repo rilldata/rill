@@ -79,7 +79,7 @@
   <div class="separator"></div>
 {/if}
 
-<div class="group">
+<div class="group max-h-72 overflow-y-auto">
   {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
     <button
       class="item"
