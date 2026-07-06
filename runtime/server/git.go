@@ -105,6 +105,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	if !gs.IsGitRepo {
 		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
 	}
+
 	return &runtimev1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
@@ -114,6 +115,55 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
 	}, nil
+}
+
+// GitDiff implements RuntimeService.
+func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*runtimev1.GitDiffResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	gd, err := repo.Diff(ctx, req.RemoteBranch, req.IncludeDiff, req.Fetch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git diff: %w", err)
+	}
+	if !gd.IsGitRepo {
+		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
+	}
+
+	changedFiles := make([]*runtimev1.GitDiffResponse_GitFileChange, len(gd.ChangedFiles))
+	for i, f := range gd.ChangedFiles {
+		changedFiles[i] = &runtimev1.GitDiffResponse_GitFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  gitFileStatusToPB(f.Status),
+		}
+	}
+
+	return &runtimev1.GitDiffResponse{
+		ChangedFiles: changedFiles,
+		Diff:         gd.Diff,
+	}, nil
+}
+
+func gitFileStatusToPB(s drivers.RepoFileStatus) runtimev1.GitDiffResponse_GitFileStatus {
+	switch s {
+	case drivers.RepoFileStatusAdded:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_ADDED
+	case drivers.RepoFileStatusModified:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_MODIFIED
+	case drivers.RepoFileStatusDeleted:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_DELETED
+	case drivers.RepoFileStatusRenamed:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_RENAMED
+	default:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_UNSPECIFIED
+	}
 }
 
 func (s *Server) ListGitCommits(ctx context.Context, req *runtimev1.ListGitCommitsRequest) (*runtimev1.ListGitCommitsResponse, error) {

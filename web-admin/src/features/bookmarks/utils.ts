@@ -2,10 +2,7 @@ import type { V1Bookmark } from "@rilldata/web-admin/client";
 import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
 import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
-import {
-  ExploreStateURLParams,
-  KnownExploreParams,
-} from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { type DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -217,8 +214,6 @@ function isBookmarkActive(
     return bookmarkUrlParams.toString() === curUrlParams.toString();
 
   return [...bookmarkUrlParams.entries()].every(([key, value]) => {
-    if (!KnownExploreParams.has(key as any)) return true;
-
     const curValue = curUrlParams.get(key);
     return curValue === value;
   });

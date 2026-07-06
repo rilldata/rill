@@ -95,6 +95,7 @@
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
+  const explainEnabled = measureSelection.getEnabledStore();
   const selMeasure = measureSelection.measure;
   const selStart = measureSelection.start;
   const selEnd = measureSelection.end;
@@ -627,7 +628,7 @@
   {/if}
 
   <!-- Explain CTA -->
-  {#if !isScrubbing && explainX !== null}
+  {#if $explainEnabled && !isScrubbing && explainX !== null}
     <ExplainButton
       x={explainX}
       plotBounds={pb}

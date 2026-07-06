@@ -408,6 +408,53 @@ func (c *connection) Status(ctx context.Context, remoteBranch string) (*drivers.
 	}, nil
 }
 
+func (c *connection) Diff(ctx context.Context, remoteBranch string, includeDiff, fetch bool) (*drivers.RepoDiff, error) {
+	if !gitutil.IsGitRepo(c.root) {
+		return &drivers.RepoDiff{}, nil
+	}
+
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
+	gitPath, subPath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		// should not happen because we already checked isGitRepo
+		return nil, err
+	}
+
+	config, err := c.loadGitConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// When requested, fetch so the comparison ref is up to date; otherwise compute the changes
+	// against the already-fetched ref.
+	if fetch {
+		if err := gitutil.Fetch(ctx, gitPath, config); err != nil {
+			return nil, err
+		}
+	}
+
+	remoteName := config.RemoteName()
+	files, err := gitutil.ChangedFiles(ctx, gitPath, subPath, remoteName, remoteBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	var diff string
+	if includeDiff {
+		diff, err = gitutil.Diff(ctx, gitPath, subPath, remoteName, remoteBranch)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &drivers.RepoDiff{
+		IsGitRepo:    true,
+		ChangedFiles: repoFileChanges(files),
+		Diff:         diff,
+	}, nil
+}
+
 // Pull implements drivers.RepoStore.
 func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 	// If its a Git repository, pull the current branch. Otherwise, this is a no-op.
@@ -682,4 +729,34 @@ func restoreToCommit(path, subpath, commithash string) error {
 		return fmt.Errorf("failed to restore to commit: %s, %w", string(output), err)
 	}
 	return nil
+}
+
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }

@@ -1,46 +1,47 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
-  import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
-  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
-  import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
-  import EditActions from "@rilldata/web-admin/features/edit-session/EditActions.svelte";
-  import EditButton from "@rilldata/web-admin/features/edit-session/EditButton.svelte";
-  import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
-  import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
-  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import CanvasBookmarks from "web-admin/src/features/bookmarks/CanvasBookmarks.svelte";
+  import ExploreBookmarks from "web-admin/src/features/bookmarks/ExploreBookmarks.svelte";
+  import { extractBranchFromPath } from "web-admin/src/features/branches/branch-utils";
+  import ShareDashboardPopover from "web-admin/src/features/dashboards/share/ShareDashboardPopover.svelte";
+  import EditActions from "web-admin/src/features/edit-session/EditActions.svelte";
+  import EditButton from "web-admin/src/features/edit-session/EditButton.svelte";
+  import ShareProjectPopover from "web-admin/src/features/projects/user-management/ShareProjectPopover.svelte";
+  import Breadcrumbs from "web-common/src/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import type {
+    BreadcrumbItemDropdownProps,
+    PathOption,
+  } from "web-common/src/components/navigation/breadcrumbs/types";
+  import { ResourceKind } from "web-common/src/features/entity-management/resource-selectors";
+  import { useCanvas } from "web-common/src/features/canvas/selector";
+  import ChatToggle from "web-common/src/features/chat/layouts/sidebar/ChatToggle.svelte";
   import {
     dashboardChatActions,
     dashboardChatOpen,
     developerChatActions,
     developerChatOpen,
-  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
-  import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
-  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import { useExplore } from "@rilldata/web-common/features/explores/selectors";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import Header from "@rilldata/web-common/layout/header/Header.svelte";
-  import HeaderLogo from "@rilldata/web-common/layout/header/HeaderLogo.svelte";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { V1ProjectPermissions } from "../../client";
-  import { createAdminServiceGetCurrentUser } from "../../client";
-  import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
-  import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
-  import CreateAlert from "../alerts/CreateAlert.svelte";
-  import { useAlerts } from "../alerts/selectors";
-  import AvatarButton from "../authentication/AvatarButton.svelte";
-  import SignIn from "../authentication/SignIn.svelte";
-  import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import {
-    getPrimaryTag,
-    useDashboards,
-  } from "../dashboards/listing/selectors";
+  } from "web-common/src/features/chat/layouts/sidebar/sidebar-store";
+  import GlobalDimensionSearch from "web-common/src/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
+  import StateManagersProvider from "web-common/src/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { useExplore } from "web-common/src/features/explores/selectors";
+  import { featureFlags } from "web-common/src/features/feature-flags";
+  import Header from "web-common/src/layout/header/Header.svelte";
+  import HeaderLogo from "web-common/src/layout/header/HeaderLogo.svelte";
+  import { useRuntimeClient } from "web-common/src/runtime-client/v2";
+  import type { V1ProjectPermissions } from "../../../client";
+  import { createAdminServiceGetCurrentUser } from "../../../client";
+  import ViewAsUserChip from "../../view-as-user/ViewAsUserChip.svelte";
+  import { viewAsUserStore } from "../../view-as-user/viewAsUserStore";
+  import CreateAlert from "../../alerts/CreateAlert.svelte";
+  import { useAlerts } from "../../alerts/selectors";
+  import { useDashboards } from "../../dashboards/listing/selectors";
+  import AvatarButton from "../../authentication/AvatarButton.svelte";
+  import SignIn from "../../authentication/SignIn.svelte";
+  import LastRefreshedDate from "../../dashboards/listing/LastRefreshedDate.svelte";
   import {
     useBreadcrumbOrgPaths,
     useBreadcrumbProjectPaths,
-  } from "../navigation/breadcrumb-selectors";
+  } from "../../navigation/breadcrumb-selectors";
   import {
     isCanvasDashboardPage,
     isEditDashboardPreviewPage,
@@ -48,18 +49,11 @@
     isPersonalFilePage,
     isProjectPage,
     isPublicURLPage,
-  } from "../navigation/nav-utils";
-  import {
-    buildTagPathsOptions,
-    buildVisualizationOptions,
-    getAllDashboardTags,
-    groupDashboardsByTag,
-    hasUntaggedDashboards,
-    sortDashboardResources,
-  } from "./project-header-paths";
-  import PageTitle from "../public-urls/PageTitle.svelte";
-  import { useReports } from "../scheduled-reports/selectors";
-  import SharePersonalFile from "@rilldata/web-admin/features/personal-files/SharePersonalFile.svelte";
+  } from "../../navigation/nav-utils";
+  import PageTitle from "../../public-urls/PageTitle.svelte";
+  import { useReports } from "../../scheduled-reports/selectors";
+  import SharePersonalFile from "web-admin/src/features/personal-files/SharePersonalFile.svelte";
+  import VisualizationsBreadcrumbDropdown from "./VisualizationsBreadcrumbDropdown.svelte";
 
   export let organization: string;
   export let project: string;
@@ -113,58 +107,35 @@
   $: reportsQuery = useReports(runtimeClient, onReportPage);
 
   $: visualizations = $visualizationsQuery.data ?? [];
-
-  $: onDashboardPage = onMetricsExplorerPage || onCanvasDashboardPage;
-
-  $: paramTag =
-    ($page.url.searchParams.get("tags") ?? "").split(",")[0] || undefined;
-
-  $: currentDashboardResource = dashboard
-    ? visualizations.find((r) => r.meta?.name?.name === dashboard)
-    : undefined;
-
-  // Tag breadcrumb derivation:
-  //  - Prefer an explicit ?tags= param (user-selected folder)
-  //  - Otherwise, on a dashboard page, fall back to the dashboard's first
-  //    declared tag, or UNTAGGED_KEY when the dashboard has no tags.
-  //  - On the project home without a filter, no tag breadcrumb is rendered.
-  $: activeTag = (() => {
-    if (paramTag) return paramTag;
-    if (onDashboardPage && currentDashboardResource)
-      return getPrimaryTag(currentDashboardResource);
-    return undefined;
-  })();
-
-  $: allDashboardTags = getAllDashboardTags(visualizations);
-
-  $: hasUntaggedDashboard = hasUntaggedDashboards(visualizations);
-
-  $: sortedVisualizations = sortDashboardResources(visualizations);
-
-  // Dashboards grouped by tag. Multi-tag dashboards appear in every tag's
-  // bucket. Used for both the tag submenu entries and the tag-grouped
-  // dashboard dropdown.
-  $: dashboardsByTag = groupDashboardsByTag(sortedVisualizations);
-
-  $: tagPathsOptions = buildTagPathsOptions({
-    allDashboardTags,
-    dashboardsByTag,
-    hasUntaggedDashboard,
-    activeTag,
-    organization,
-    project,
-  });
-
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
   $: visualizationPaths = {
-    options: buildVisualizationOptions({
-      sortedVisualizations,
-      dashboardsByTag,
-      activeTag: allDashboardTags.length ? activeTag : undefined,
-    }),
+    options: [...visualizations]
+      .sort((a, b) => {
+        const aIsCanvas = !!a?.canvas;
+        const bIsCanvas = !!b?.canvas;
+        if (aIsCanvas !== bIsCanvas) return aIsCanvas ? -1 : 1;
+        const aName = a.meta.name.name;
+        const bName = b.meta.name.name;
+        return aName.localeCompare(bName);
+      })
+      .reduce((map, resource) => {
+        const name = resource.meta.name.name;
+        const isMetricsExplorer = !!resource?.explore;
+        return map.set(name.toLowerCase(), {
+          label:
+            (isMetricsExplorer
+              ? resource?.explore?.spec?.displayName
+              : resource?.canvas?.spec?.displayName) || name,
+          section: isMetricsExplorer ? "explore" : "canvas",
+          resourceKind: isMetricsExplorer
+            ? ResourceKind.Explore
+            : ResourceKind.Canvas,
+        });
+      }, new Map<string, PathOption>()),
     carryOverSearchParams: $stickyDashboardState,
+    content: visualizationsDropdown,
   };
 
   $: alertPaths = {
@@ -187,22 +158,12 @@
     }, new Map<string, PathOption>()),
   };
 
-  $: tagPathsSegment =
-    allDashboardTags.length && activeTag && tagPathsOptions.size > 0
-      ? { options: tagPathsOptions }
-      : null;
-
   $: pathParts = [
     { options: $orgPathsQuery.data ?? new Map() },
     { options: $projectPathsQuery.data ?? new Map() },
-    ...(tagPathsSegment ? [tagPathsSegment] : []),
     visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];
-
-  $: currentPath = tagPathsSegment
-    ? [organization, project, activeTag, dashboard, report || alert]
-    : [organization, project, dashboard, report || alert];
 
   $: exploreQuery = useExplore(runtimeClient, dashboard, {
     enabled:
@@ -224,7 +185,13 @@
     ? $canvasQuery.data?.canvas?.displayName || dashboard
     : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
       dashboard;
+
+  $: currentPath = [organization, project, dashboard, report || alert];
 </script>
+
+{#snippet visualizationsDropdown(props: BreadcrumbItemDropdownProps)}
+  <VisualizationsBreadcrumbDropdown {...props} />
+{/snippet}
 
 <Header borderBottom={!onProjectPage}>
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
@@ -330,6 +297,8 @@
         <CanvasBookmarks {organization} {project} canvasName={dashboard} />
         <ShareDashboardPopover
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
+          canvasName={dashboard}
+          instanceId={runtimeClient.instanceId}
         />
       {/if}
     {/if}

@@ -474,6 +474,7 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
+
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
 		Branch:        st.Branch,
@@ -484,6 +485,83 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 		LocalCommits:  st.LocalCommits,
 		RemoteCommits: st.RemoteCommits,
 	}, nil
+}
+
+// Diff implements drivers.RepoStore.
+func (r *repo) Diff(ctx context.Context, remoteBranch string, includeDiff, fetch bool) (*drivers.RepoDiff, error) {
+	err := r.rlockEnsureReady(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git == nil {
+		return &drivers.RepoDiff{}, nil
+	}
+
+	if fetch {
+		currentBranch, err := currentBranch(r.git.repoDir)
+		if err != nil {
+			return nil, err
+		}
+		branches := []string{currentBranch}
+		// fetch the requested remote branch too so the comparison ref is up to date.
+		if remoteBranch != "" && remoteBranch != branches[0] {
+			branches = append(branches, remoteBranch)
+		}
+		if err := gitutil.FetchBranches(ctx, r.git.repoDir, branches...); err != nil {
+			return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
+		}
+	}
+
+	files, err := gitutil.ChangedFiles(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list changed files: %w", err)
+	}
+
+	var diff string
+	if includeDiff {
+		diff, err = gitutil.Diff(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute git diff: %w", err)
+		}
+	}
+
+	return &drivers.RepoDiff{
+		IsGitRepo:    true,
+		ChangedFiles: repoFileChanges(files),
+		Diff:         diff,
+	}, nil
+}
+
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }
 
 func (r *repo) Commit(ctx context.Context, message string) (string, error) {

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
@@ -9,60 +8,49 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { renderComponent } from "tanstack-table-8-svelte-5";
-  import DashboardsFilterToolbar from "./DashboardsFilterToolbar.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
-  import DashboardsTagFolder from "./DashboardsTagFolder.svelte";
+  import { useDashboards, useIsInitialBuild } from "./selectors";
+  import { Search } from "@rilldata/web-common/components/search";
   import {
-    UNTAGGED_KEY,
+    UrlParamsArrayState,
+    UrlParamsState,
+  } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
+  import {
+    getAllTagsForResources,
     getResourceTags,
-    useDashboards,
-    useIsInitialBuild,
-  } from "./selectors";
-  import { DashboardFavourites } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
+    UNTAGGED_KEY,
+  } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
+  import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
 
-  export let isEmbedded = false;
-  export let isPreview = false;
-  export let previewLimit = 5;
+  let {
+    isEmbedded = false,
+    isPreview = false,
+    previewLimit = 5,
+  }: {
+    isEmbedded?: boolean;
+    isPreview?: boolean;
+    previewLimit?: number;
+  } = $props();
 
-  const TAGS_PARAM = "tags";
+  const selectedTagsState = UrlParamsArrayState.createStringArrayParam("tags");
 
-  $: selectedTags = ($page.url.searchParams.get(TAGS_PARAM) ?? "")
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
-
-  function setSelectedTags(tags: string[]) {
-    const url = new URL($page.url);
-    if (tags.length === 0) {
-      url.searchParams.delete(TAGS_PARAM);
-    } else {
-      url.searchParams.set(TAGS_PARAM, tags.join(","));
-    }
-    void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
-  }
-
-  let searchText = "";
+  const searchTextState = UrlParamsState.createStringParam("search");
 
   const runtimeClient = useRuntimeClient();
-  $: ({
-    params: { organization, project },
-  } = $page);
+  let { organization, project } = $derived(page.params);
 
-  const dashboardFavourites = new DashboardFavourites();
-  $: dashboardFavourites.setOrgAndProject(organization, project);
-  $: favourites = dashboardFavourites.favourites;
-
-  $: dashboards = useDashboards(runtimeClient);
-  $: ({
+  const dashboards = useDashboards(runtimeClient);
+  let {
     data: dashboardsData,
     isLoading,
     isError,
     isSuccess,
     error,
-  } = $dashboards);
+  } = $derived($dashboards);
 
-  $: initialBuild = useIsInitialBuild(runtimeClient);
-  $: isBuilding = $initialBuild.data === true;
+  let initialBuild = useIsInitialBuild(runtimeClient);
+  let isBuilding = $initialBuild.data === true;
 
   function matchesSearch(resource: V1Resource, query: string): boolean {
     if (!query) return true;
@@ -79,78 +67,38 @@
     );
   }
 
-  $: allDashboards = dashboardsData ?? [];
+  let allDashboards = $derived(dashboardsData ?? []);
+  let availableTags = $derived(getAllTagsForResources(allDashboards));
+  let hasSomeTag = $derived(availableTags.length > 0);
 
-  $: availableTags = Array.from(
-    new Set(allDashboards.flatMap(getResourceTags)),
-  ).sort();
-
-  $: tagFilteredDashboards =
-    selectedTags.length === 0
+  let tagFilteredDashboards = $derived(
+    selectedTagsState.value.length === 0
       ? allDashboards
       : allDashboards.filter((resource) => {
           const resourceTags = getResourceTags(resource);
-          return selectedTags.some((t) =>
+          return selectedTagsState.value.some((t) =>
             t === UNTAGGED_KEY
               ? resourceTags.length === 0
               : resourceTags.includes(t),
           );
-        });
-
-  $: searchFilteredDashboards = tagFilteredDashboards.filter((r) =>
-    matchesSearch(r, searchText),
+        }),
   );
 
-  // Folder mode: group dashboards by tag. A dashboard with multiple tags
-  // appears under each of its tags. Tags respect the selectedTags filter.
-  $: tagGroups = (() => {
-    const activeTags = selectedTags.length > 0 ? selectedTags : availableTags;
-    const groups: { tag: string; resources: V1Resource[] }[] = [];
-    const untagged: V1Resource[] = [];
-    const untaggedVisible =
-      selectedTags.length === 0 || selectedTags.includes(UNTAGGED_KEY);
+  let searchFilteredDashboards = $derived(
+    tagFilteredDashboards.filter((r) =>
+      matchesSearch(r, searchTextState.value),
+    ),
+  );
 
-    for (const tag of activeTags) {
-      if (tag === UNTAGGED_KEY) continue;
-      const members = searchFilteredDashboards.filter((r) =>
-        getResourceTags(r).includes(tag),
-      );
-      if (members.length > 0) groups.push({ tag, resources: members });
-    }
+  let displayData = $derived(
+    isPreview
+      ? searchFilteredDashboards.slice(0, previewLimit)
+      : searchFilteredDashboards,
+  );
 
-    if (untaggedVisible) {
-      for (const r of searchFilteredDashboards) {
-        if (getResourceTags(r).length === 0) untagged.push(r);
-      }
-      if (untagged.length > 0)
-        groups.push({ tag: UNTAGGED_KEY, resources: untagged });
-    }
-
-    return groups;
-  })();
-
-  $: displayData = (() => {
-    const ranked = searchFilteredDashboards.map((resource) => {
-      const idx = $favourites.indexOf(resource.meta.name.name);
-      return {
-        ...resource,
-        favourite: idx === -1 ? Number.MAX_SAFE_INTEGER : idx,
-      };
-    });
-    // Sort favourites to the top before applying the preview limit, otherwise a
-    // favourite beyond previewLimit gets sliced off before the table can sort
-    // it up. Mirrors the table's sort keys (favourite, then name) so the
-    // previewed top-N matches the full list.
-    ranked.sort(
-      (a, b) =>
-        a.favourite - b.favourite ||
-        a.meta.name.name.localeCompare(b.meta.name.name),
-    );
-    return isPreview ? ranked.slice(0, previewLimit) : ranked;
-  })();
-
-  $: hasMoreDashboards =
-    isPreview && searchFilteredDashboards.length > previewLimit;
+  let hasMoreDashboards = $derived(
+    isPreview && searchFilteredDashboards.length > previewLimit,
+  );
 
   const columns = [
     {
@@ -181,7 +129,6 @@
           organization,
           project,
           tags,
-          dashboardFavourites,
         });
       },
     },
@@ -243,73 +190,70 @@
 {:else if isSuccess}
   <div class="flex flex-col w-full gap-y-3">
     {#if !isPreview}
-      <DashboardsFilterToolbar
-        {availableTags}
-        {selectedTags}
-        onTagsChange={setSelectedTags}
-        bind:searchText
-      />
+      <div class="flex flex-row items-center gap-x-2">
+        <Search
+          placeholder="Search"
+          autofocus={false}
+          bind:value={searchTextState.getter, searchTextState.setter}
+          rounded="lg"
+        />
+      </div>
     {/if}
 
-    {#if !isPreview && availableTags.length}
-      <!-- Folder mode: grouped by tag, all inside one bordered container -->
-      <div class="w-full border rounded-lg overflow-hidden divide-y">
-        {#each tagGroups as { tag, resources } (tag)}
-          <DashboardsTagFolder
-            {tag}
-            {resources}
-            {organization}
-            {project}
-            {isEmbedded}
-            {dashboardFavourites}
+    <div class="flex flex-row flex-1 w-full gap-x-2">
+      {#if hasSomeTag && !isPreview}
+        <ResizableSidebar
+          id="dashboards-tag-sidebar"
+          minWidth={200}
+          maxWidth={500}
+          defaultWidth={200}
+          additionalClass="overflow-auto bg-surface-subtle border rounded-lg"
+          side="right"
+        >
+          <DashboardsTagSidebar
+            resources={allDashboards}
+            searchText={searchTextState.value}
           />
-        {:else}
-          <div
-            class="text-center py-16 text-fg-secondary text-sm font-semibold"
-          >
-            {searchText
-              ? "No dashboards match your search"
-              : "You don't have any dashboards yet"}
-          </div>
-        {/each}
-      </div>
-    {:else}
-      <!-- Flat mode: standard list -->
-      <ResourceList
-        kind="dashboard"
-        data={displayData}
-        {columns}
-        {columnVisibility}
-        {initialSorting}
-        toolbar={false}
-      >
-        <ResourceListEmptyState
-          slot="empty"
-          icon={ExploreIcon}
-          message="You don't have any dashboards yet"
-        >
-          <span slot="action">
-            <a
-              href="https://docs.rilldata.com/developers/build/dashboards"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Create a dashboard</a
-            > to get started
-          </span>
-        </ResourceListEmptyState>
-      </ResourceList>
-    {/if}
+        </ResizableSidebar>
+      {/if}
 
-    {#if hasMoreDashboards}
-      <div class="pl-4 py-1">
-        <a
-          href={`/${organization}/${project}/-/dashboards`}
-          class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+      <div class="flex flex-col flex-grow">
+        <ResourceList
+          kind="dashboard"
+          data={displayData}
+          {columns}
+          {columnVisibility}
+          {initialSorting}
+          toolbar={false}
         >
-          See all dashboards →
-        </a>
+          <ResourceListEmptyState
+            slot="empty"
+            icon={ExploreIcon}
+            message="You don't have any dashboards yet"
+          >
+            <span slot="action">
+              <a
+                href="https://docs.rilldata.com/developers/build/dashboards"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Create a dashboard</a
+              > to get started
+            </span>
+          </ResourceListEmptyState>
+        </ResourceList>
+
+        {#if hasMoreDashboards}
+          <div class="pl-4 py-1">
+            <a
+              href={`/${organization}/${project}/-/dashboards`}
+              class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+            >
+              See all dashboards →
+            </a>
+          </div>
+        {/if}
       </div>
-    {/if}
+    </div>
   </div>
 {/if}

@@ -166,6 +166,43 @@ func CommitAndPush(ctx context.Context, path string, config *Config, commitMsg s
 	return Push(ctx, path, remote, config.DefaultBranch)
 }
 
+// CommitAndForcePush is similar to CommitAndPush but force pushes the local changes to the remote.
+// Unlike CommitAndPush, the current local branch need not match config.DefaultBranch, and HEAD may
+// be detached.
+func CommitAndForcePush(ctx context.Context, path string, config *Config, commitMsg string, author Signature) error {
+	if config.Subpath != "" {
+		// this is ensured upstream but just to be safe
+		return fmt.Errorf("force push does not support subpath, please commit and push from the root of the repository")
+	}
+	err := EnsureInit(ctx, path, config.DefaultBranch)
+	if err != nil {
+		return fmt.Errorf("failed to init git repo: %w", err)
+	}
+
+	if commitMsg == "" {
+		commitMsg = "Auto committed by Rill"
+	}
+	_, err = CommitAll(ctx, path, "", commitMsg, author)
+	if err != nil && !errors.Is(err, ErrEmptyCommit) {
+		return fmt.Errorf("failed to commit files to git: %w", err)
+	}
+
+	err = SetRemote(path, config)
+	if err != nil {
+		return err
+	}
+
+	if config.Username == "" {
+		return ForcePush(ctx, path, config.RemoteName(), config.DefaultBranch)
+	}
+
+	remote, err := config.FullyQualifiedRemote()
+	if err != nil {
+		return err
+	}
+	return ForcePush(ctx, path, remote, config.DefaultBranch)
+}
+
 // IsCommitHash reports whether s is a full hex commit hash (SHA-1 or SHA-256).
 // Use it to validate untrusted hashes before passing them as git CLI arguments: it rules out
 // strings that git would interpret as flags or other revision syntax.

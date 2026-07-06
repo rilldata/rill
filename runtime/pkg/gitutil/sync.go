@@ -1,12 +1,14 @@
 package gitutil
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -17,6 +19,25 @@ type GitStatus struct {
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
 	LocalCommits  int32
 	RemoteCommits int32
+}
+
+// ChangedFileStatus describes how a file changed relative to a comparison ref.
+type ChangedFileStatus int
+
+const (
+	ChangedFileStatusUnspecified ChangedFileStatus = iota
+	ChangedFileStatusAdded
+	ChangedFileStatusModified
+	ChangedFileStatusDeleted
+	ChangedFileStatusRenamed
+)
+
+// ChangedFile is a single file that differs from a comparison ref.
+type ChangedFile struct {
+	Path string
+	// OldPath is the previous path; only set when Status is ChangedFileStatusRenamed.
+	OldPath string
+	Status  ChangedFileStatus
 }
 
 // Status returns the status of the git repo at path.
@@ -79,6 +100,170 @@ func Status(ctx context.Context, path, subpath, remoteName, remoteBranch string)
 		status.RemoteURL = remoteURL
 	}
 	return status, nil
+}
+
+// ChangedFiles returns the files that differ between the working tree at path and the comparison
+// ref, i.e. the changes that would land on the ref if merged.
+//
+// The diff is computed from the merge base of HEAD and the remote ref, not directly against the
+// remote ref. This ensures that commits on the remote that have not been pulled locally do not
+// appear as spurious inverse changes in the result.
+//
+// Paths are returned relative to subpath (with the subpath prefix stripped). Uncommitted and
+// untracked changes are included, since those are committed before a merge.
+// Renames are reported with status Renamed and the old path, but only when git can detect them (a
+// committed or staged rename); a rename that is still uncommitted in the working tree appears as a
+// deleted old path plus an added new path, because git cannot pair an untracked new file with a
+// deleted old one.
+func ChangedFiles(ctx context.Context, path, subpath, remoteName, remoteBranch string) ([]ChangedFile, error) {
+	compareBranch := remoteBranch
+	if compareBranch == "" {
+		branch, err := Run(ctx, path, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return nil, err
+		}
+		compareBranch = branch
+	}
+	ref := fmt.Sprintf("%s/%s", remoteName, compareBranch)
+
+	mergeBase, err := Run(ctx, path, "merge-base", "HEAD", ref)
+	if err != nil {
+		return nil, err
+	}
+	mergeBase = strings.TrimSpace(mergeBase)
+
+	diffArgs := []string{"diff", "--name-status", "-M", mergeBase}
+	if subpath != "" {
+		diffArgs = append(diffArgs, "--", subpath)
+	}
+	diffOut, err := Run(ctx, path, diffArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Keyed by new path so a later untracked-file pass can override a stale entry for the same path.
+	changes := map[string]ChangedFile{}
+	for line := range strings.SplitSeq(strings.TrimSpace(diffOut), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// Format is "<code>\t<path>", or "<code>\t<oldpath>\t<newpath>" for renames/copies.
+		fields := strings.Split(line, "\t")
+		if len(fields) < 2 {
+			continue
+		}
+		status := changedFileStatusFromCode(fields[0][0])
+		if status == ChangedFileStatusUnspecified {
+			continue
+		}
+		file := fields[len(fields)-1]
+		change := ChangedFile{Path: file, Status: status}
+		if status == ChangedFileStatusRenamed && len(fields) >= 3 {
+			change.OldPath = fields[1]
+		}
+		changes[file] = change
+	}
+
+	// `git diff` does not list untracked files; treat them as added.
+	statusArgs := []string{"status", "--porcelain", "--untracked-files=all"}
+	if subpath != "" {
+		statusArgs = append(statusArgs, "--", subpath)
+	}
+	statusOut, err := Run(ctx, path, statusArgs...)
+	if err != nil {
+		return nil, err
+	}
+	for line := range strings.SplitSeq(statusOut, "\n") {
+		if file, ok := strings.CutPrefix(line, "?? "); ok {
+			changes[file] = ChangedFile{Path: file, Status: ChangedFileStatusAdded}
+		}
+	}
+
+	result := make([]ChangedFile, 0, len(changes))
+	for _, change := range changes {
+		change.Path = trimSubpath(change.Path, subpath)
+		if change.OldPath != "" {
+			change.OldPath = trimSubpath(change.OldPath, subpath)
+		}
+		result = append(result, change)
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Path < result[j].Path })
+	return result, nil
+}
+
+// maxFileDiffBytes caps the size of a single file's diff in the combined patch returned by Diff.
+// A file whose diff exceeds this (e.g. a large generated or accidentally committed data file) is
+// suppressed to a "diff too large" placeholder so one huge file cannot bloat the response.
+const maxFileDiffBytes = 100 * 1024
+
+// Diff returns the combined unified patch between the working tree at path and the comparison ref,
+// i.e. the changes that would land on the ref if merged. It mirrors ChangedFiles: committed, staged,
+// and untracked changes are all included.
+//
+// The result is git's standard unified diff format, ready for rendering. Per-file sections larger
+// than maxFileDiffBytes are replaced with a "diff too large" placeholder. (Genuinely binary files
+// stay small because git emits a "Binary files … differ" line for them rather than their content.)
+func Diff(ctx context.Context, path, subpath, remoteName, remoteBranch string) (string, error) {
+	compareBranch := remoteBranch
+	if compareBranch == "" {
+		branch, err := Run(ctx, path, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return "", err
+		}
+		compareBranch = branch
+	}
+	ref := fmt.Sprintf("%s/%s", remoteName, compareBranch)
+
+	mergeBase, err := Run(ctx, path, "merge-base", "HEAD", ref)
+	if err != nil {
+		return "", err
+	}
+	mergeBase = strings.TrimSpace(mergeBase)
+
+	// Committed and staged changes, with rename detection (-M). Diff from the merge base (like
+	// ChangedFiles) so remote-only commits are not treated as local changes to be reverted.
+	diffArgs := []string{"diff", "-M", "--no-color", mergeBase}
+	if subpath != "" {
+		diffArgs = append(diffArgs, "--", subpath)
+	}
+	tracked, err := Run(ctx, path, diffArgs...)
+	if err != nil {
+		return "", err
+	}
+
+	var b strings.Builder
+	if tracked != "" {
+		b.WriteString(tracked)
+		b.WriteByte('\n')
+	}
+
+	// `git diff` omits untracked files; append each one's patch (mirrors the untracked pass in
+	// ChangedFiles so the diff covers the same files as the list).
+	statusArgs := []string{"status", "--porcelain", "--untracked-files=all"}
+	if subpath != "" {
+		statusArgs = append(statusArgs, "--", subpath)
+	}
+	statusOut, err := Run(ctx, path, statusArgs...)
+	if err != nil {
+		return "", err
+	}
+	for line := range strings.SplitSeq(statusOut, "\n") {
+		file, ok := strings.CutPrefix(line, "?? ")
+		if !ok {
+			continue
+		}
+		untracked, err := diffNoIndex(ctx, path, file)
+		if err != nil {
+			return "", err
+		}
+		if untracked != "" {
+			b.WriteString(untracked)
+			b.WriteByte('\n')
+		}
+	}
+
+	return orderAndCapDiffSections(b.String()), nil
 }
 
 // Fetch fetches the latest changes from the remote described by config, updating the
@@ -171,6 +356,14 @@ func Pull(ctx context.Context, path string, discardLocal bool, remote, remoteNam
 // passed as an argument only and redacted from any error).
 func Push(ctx context.Context, path, remote, refspec string) error {
 	_, err := Run(ctx, path, "push", remote, refspec)
+	return err
+}
+
+// ForcePush force-pushes HEAD to branch on remote, overwriting the remote ref unconditionally.
+// It uses the refspec HEAD:<branch> so it works even when the local HEAD is detached or points
+// to a different branch. remote may be a remote name or a URL with embedded credentials.
+func ForcePush(ctx context.Context, path, remote, branch string) error {
+	_, err := Run(ctx, path, "push", "--force", remote, "HEAD:"+branch)
 	return err
 }
 
@@ -277,4 +470,102 @@ func countAheadBehind(ctx context.Context, path, subpath, local, remote string) 
 		return 0, 0, fmt.Errorf("failed to parse behind count: %w", err)
 	}
 	return int32(ahead), int32(behind), nil
+}
+
+func trimSubpath(file, subpath string) string {
+	return strings.TrimPrefix(strings.TrimPrefix(file, subpath), "/")
+}
+
+// changedFileStatusFromCode maps a `git diff --name-status` status code to a ChangedFileStatus.
+// Copies are reported as added against their destination path.
+func changedFileStatusFromCode(code byte) ChangedFileStatus {
+	switch code {
+	case 'A', 'C':
+		return ChangedFileStatusAdded
+	case 'M', 'T':
+		return ChangedFileStatusModified
+	case 'D':
+		return ChangedFileStatusDeleted
+	case 'R':
+		return ChangedFileStatusRenamed
+	default:
+		return ChangedFileStatusUnspecified
+	}
+}
+
+// diffNoIndex runs `git diff --no-index` to produce a patch for an untracked file.
+//
+// It cannot use Run for two reasons: `git diff --no-index` exits with code 1 whenever the files
+// differ (the expected case here, not an error), and Run discards stdout on any non-zero exit, so
+// the patch we want would be lost. So we run the command directly, capture stdout, and treat exit
+// code 1 as success.
+func diffNoIndex(ctx context.Context, path, file string) (string, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "diff", "--no-index", "--no-color", os.DevNull, file)
+	cmd.Env = append(os.Environ(), "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return stdout.String(), nil
+		}
+		return "", fmt.Errorf("git diff --no-index %s: %s (%w)", file, strings.TrimSpace(stderr.String()), err)
+	}
+	return stdout.String(), nil
+}
+
+// orderAndCapDiffSections splits a combined unified diff into per-file sections and reassembles them
+// in ascending path order (matching the sorted ChangedFiles list; git emits tracked files sorted but
+// Diff appends untracked files after them). Any section larger than maxFileDiffBytes is replaced
+// with a "diff too large" placeholder, so one huge file cannot bloat the response.
+func orderAndCapDiffSections(diff string) string {
+	if diff == "" {
+		return ""
+	}
+
+	// Group lines into per-file sections, each starting with a "diff --git a/<old> b/<new>" line.
+	type section struct {
+		path  string // The new ("b/") path, used as the sort key.
+		lines []string
+	}
+	var sections []section
+	for line := range strings.SplitSeq(diff, "\n") {
+		if strings.HasPrefix(line, "diff --git ") {
+			_, newPath, _ := strings.Cut(line, " b/")
+			sections = append(sections, section{path: newPath})
+		}
+		if len(sections) == 0 {
+			continue // No header seen yet; git output always starts with one.
+		}
+		sections[len(sections)-1].lines = append(sections[len(sections)-1].lines, line)
+	}
+	sort.SliceStable(sections, func(i, j int) bool { return sections[i].path < sections[j].path })
+
+	var out strings.Builder
+	for _, s := range sections {
+		joined := strings.Join(s.lines, "\n")
+		if len(joined) > maxFileDiffBytes {
+			out.WriteString(tooLargePlaceholder(s.lines[0], len(joined)))
+		} else {
+			out.WriteString(joined)
+		}
+		out.WriteByte('\n')
+	}
+	return out.String()
+}
+
+// tooLargePlaceholder replaces an over-cap per-file diff section with a minimal unified-diff hunk
+// whose single context line reports that the diff was elided. diff2html renders this as a neutral
+// row; the "Binary files … differ" marker is avoided because diff2html always labels it "Binary
+// file" regardless of the file's actual type, which would be misleading for a large text file.
+// diffGitLine is the section's "diff --git a/X b/Y" header; size is the section size in bytes.
+func tooLargePlaceholder(diffGitLine string, size int) string {
+	a, b := "a/file", "b/file"
+	if rest, ok := strings.CutPrefix(diffGitLine, "diff --git "); ok {
+		if x, y, ok := strings.Cut(rest, " b/"); ok {
+			a, b = x, "b/"+y
+		}
+	}
+	return fmt.Sprintf("%s\n--- %s\n+++ %s\n@@ -1,1 +1,1 @@\n Diff too large to display (%d KB)", diffGitLine, a, b, size/1024)
 }
