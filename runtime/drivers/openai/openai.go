@@ -56,6 +56,13 @@ var spec = drivers.Spec{
 			Description: "Maximum number of tokens to generate in the completion (default: 8192).",
 		},
 		{
+			Key:         "max_input_tokens",
+			Type:        drivers.NumberPropertyType,
+			Required:    false,
+			DisplayName: "Max Input Tokens",
+			Description: "Maximum number of input tokens a completion request may contain (default: 200000).",
+		},
+		{
 			Key:         "reasoning_effort",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
@@ -154,6 +161,7 @@ type configProperties struct {
 	APIKey          string   `mapstructure:"api_key"`
 	Model           string   `mapstructure:"model"`
 	MaxOutputTokens int64    `mapstructure:"max_output_tokens"`
+	MaxInputTokens  int      `mapstructure:"max_input_tokens"`
 	ReasoningEffort string   `mapstructure:"reasoning_effort"`
 	Temperature     *float64 `mapstructure:"temperature"`
 	BaseURL         string   `mapstructure:"base_url"`
@@ -173,6 +181,13 @@ func (c *configProperties) getMaxOutputTokens() int64 {
 		return c.MaxOutputTokens
 	}
 	return 8192
+}
+
+func (c *configProperties) getMaxInputTokens() int {
+	if c.MaxInputTokens > 0 {
+		return c.MaxInputTokens
+	}
+	return drivers.DefaultAIMaxInputTokens
 }
 
 func (c *configProperties) getTemperature() *float64 {
@@ -291,6 +306,11 @@ func (o *openaiHandle) Ping(ctx context.Context) error {
 	return nil
 }
 
+// MaxInputTokens implements drivers.AIService.
+func (o *openaiHandle) MaxInputTokens() int {
+	return o.config.getMaxInputTokens()
+}
+
 // Complete implements drivers.AIService.
 func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	// Convert Rill messages to OpenAI's message format
@@ -325,6 +345,10 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 	}
 	if o.config.ReasoningEffort != "" {
 		params.ReasoningEffort = shared.ReasoningEffort(o.config.ReasoningEffort)
+	}
+	// A stable per-session cache key improves prompt cache routing when many sessions share the same prompt prefix.
+	if opts.CacheKey != "" {
+		params.PromptCacheKey = openai.String(opts.CacheKey)
 	}
 
 	// Set response format based on output schema

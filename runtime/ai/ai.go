@@ -29,12 +29,18 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // maxMessageSizeBytes is the maximum allowed size of a message's contents.
 // Exceeding it will result in an error.
 const maxMessageSizeBytes = 100 * 1024 // 100 KB
+
+// reservedInputTokens is headroom subtracted from the model's input token limit to make room for
+// tool definitions, model output (some providers share one context window between input and output),
+// and token estimation error.
+const reservedInputTokens = 64_000
 
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
@@ -1212,6 +1218,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		}
 		defer release()
 
+		// Determine the token budget for input messages based on the model's input token limit.
+		// The reserved headroom is capped at a quarter of the limit so small limits keep a usable budget.
+		maxInputTokens := llm.MaxInputTokens()
+		if maxInputTokens <= 0 {
+			maxInputTokens = drivers.DefaultAIMaxInputTokens
+		}
+		messagesTokenBudget := maxInputTokens - min(reservedInputTokens, maxInputTokens/4)
+
 		// Setup input messages.
 		messages := slices.Clone(opts.Messages)
 
@@ -1287,7 +1301,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			}
 
 			// Truncate messages to fit within LLM context window.
-			truncMessages := maybeTruncateMessages(messages)
+			truncMessages := maybeTruncateMessages(messages, messagesTokenBudget)
 
 			// Telemetry
 			iterations++
@@ -1304,6 +1318,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				Messages:     truncMessages,
 				Tools:        tools,
 				OutputSchema: outputSchema,
+				CacheKey:     s.id,
 			})
 			llmCancel()
 
@@ -1600,26 +1615,59 @@ func NewTextCompletionMessage(role Role, content string) *aiv1.CompletionMessage
 	}
 }
 
+// Tuning constants for maybeTruncateMessages.
+const (
+	truncateKeepFirst = 4  // Always keep the first messages for context
+	truncateStep      = 20 // Skip messages in multiples of this
+)
+
 // maybeTruncateMessages keeps recent messages and a few early ones for context.
 // It's a simple placeholder strategy. In the future, we'll enhance this with AI summarization.
-func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.CompletionMessage {
-	const (
-		maxMessages = 20 // Keep up to 20 messages total
-		keepFirst   = 4  // Always keep first 4 messages for context
-		keepLast    = 16 // Keep last 16 messages
-	)
-
-	if len(messages) <= maxMessages {
+//
+// Truncation triggers when the estimated token count of the messages exceeds maxTokens.
+//
+// LLM prompt caching requires the message prefix to be byte-stable across requests, so the number
+// of skipped messages only changes in coarse steps of truncateStep: while up to truncateStep new
+// messages accumulate, the result is an append-only extension of the previous result, causing a
+// cache miss once per step instead of on every request.
+func maybeTruncateMessages(messages []*aiv1.CompletionMessage, maxTokens int) []*aiv1.CompletionMessage {
+	if maxTokens <= 0 || len(messages) <= truncateKeepFirst+1 {
 		return messages
+	}
+
+	// Determine the smallest number of messages to skip such that the estimated token count of the
+	// kept messages fits within maxTokens. Skipping never reaches the last message: if the first
+	// and last messages alone exceed the budget, truncation can't help and we send them anyway.
+	var skipped int
+	var keptTokens int
+	est := make([]int, len(messages))
+	for i, m := range messages {
+		est[i] = estimateMessageTokens(m)
+		keptTokens += est[i]
+	}
+	for keptTokens > maxTokens && truncateKeepFirst+skipped < len(messages)-1 {
+		keptTokens -= est[truncateKeepFirst+skipped]
+		skipped++
+	}
+
+	if skipped == 0 {
+		return messages
+	}
+
+	// Round the skipped count up to a multiple of truncateStep to keep the skipped range stable
+	// until a step's worth of additional tokens has accumulated.
+	skipped = ((skipped + truncateStep - 1) / truncateStep) * truncateStep
+	// do not skip
+	if skipped > len(messages)-truncateKeepFirst-1 {
+		skipped = len(messages) - truncateKeepFirst - 1
 	}
 
 	var result []*aiv1.CompletionMessage
 
 	// Keep first messages
-	result = append(result, messages[:keepFirst]...)
+	result = append(result, messages[:truncateKeepFirst]...)
 
 	// Add truncation indicator
-	skipped := len(messages) - keepFirst - keepLast
 	result = append(result, &aiv1.CompletionMessage{
 		Role: "system",
 		Content: []*aiv1.ContentBlock{
@@ -1631,9 +1679,8 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 		},
 	})
 
-	// Keep last messages
-	start := len(messages) - keepLast
-	result = append(result, messages[start:]...)
+	// Keep messages after the skipped range
+	result = append(result, messages[truncateKeepFirst+skipped:]...)
 
 	// Make sure there are no partial tool calls/results
 	unbalancedIDs := make(map[string]bool)
@@ -1658,6 +1705,13 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 	})
 
 	return result
+}
+
+// estimateMessageTokens conservatively estimates the number of LLM tokens in a message.
+// It uses the proto-encoded size at 3 bytes per token: typical English text is ~4 bytes per token,
+// but dense JSON and numeric content (common in tool results) can be as low as ~2-3.
+func estimateMessageTokens(m *aiv1.CompletionMessage) int {
+	return proto.Size(m) / 3
 }
 
 // completionMessageID turns a UUID into a truncated ID suitable for use in completion messages (which don't require IDs to be globally unique).

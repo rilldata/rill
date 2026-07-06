@@ -8,6 +8,16 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+// MaxInputTokens implements drivers.AIService.
+// The admin service proxies to a Rill-managed provider whose configuration isn't known here, so
+// this defaults to a conservative limit that fits all providers currently used for managed AI.
+func (h *Handle) MaxInputTokens() int {
+	if h.config.MaxInputTokens > 0 {
+		return h.config.MaxInputTokens
+	}
+	return drivers.DefaultAIMaxInputTokens
+}
+
 func (h *Handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	var outputJSONSchema string
 	if opts.OutputSchema != nil {
@@ -22,6 +32,7 @@ func (h *Handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		Messages:         opts.Messages,
 		Tools:            opts.Tools,
 		OutputJsonSchema: outputJSONSchema,
+		CacheKey:         opts.CacheKey,
 	})
 	if err != nil {
 		return nil, err

@@ -54,6 +54,13 @@ var spec = drivers.Spec{
 			Default:     "8192",
 		},
 		{
+			Key:         "max_input_tokens",
+			Type:        drivers.NumberPropertyType,
+			Required:    false,
+			DisplayName: "Max Input Tokens",
+			Description: "Maximum number of input tokens a completion request may contain (default: 200000).",
+		},
+		{
 			Key:         "temperature",
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
@@ -120,11 +127,12 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey      string   `mapstructure:"api_key"`
-	Model       string   `mapstructure:"model"`
-	MaxTokens   int      `mapstructure:"max_tokens"`
-	Temperature *float64 `mapstructure:"temperature"`
-	BaseURL     string   `mapstructure:"base_url"`
+	APIKey         string   `mapstructure:"api_key"`
+	Model          string   `mapstructure:"model"`
+	MaxTokens      int      `mapstructure:"max_tokens"`
+	MaxInputTokens int      `mapstructure:"max_input_tokens"`
+	Temperature    *float64 `mapstructure:"temperature"`
+	BaseURL        string   `mapstructure:"base_url"`
 }
 
 func (c *configProperties) getModel() string {
@@ -250,6 +258,14 @@ func (h *handle) MigrationStatus(ctx context.Context) (current, desired int, err
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
 	return nil
+}
+
+// MaxInputTokens implements drivers.AIService.
+func (h *handle) MaxInputTokens() int {
+	if h.config.MaxInputTokens > 0 {
+		return h.config.MaxInputTokens
+	}
+	return drivers.DefaultAIMaxInputTokens
 }
 
 // Complete implements drivers.AIService.

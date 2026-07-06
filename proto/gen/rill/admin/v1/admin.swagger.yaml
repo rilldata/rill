@@ -5171,6 +5171,11 @@ definitions:
       outputJsonSchema:
         type: string
         title: Optional output JSON schema
+      cacheKey:
+        type: string
+        description: |-
+          Optional key identifying a series of requests that share a prompt prefix (e.g. an AI session ID).
+          Providers may use it to improve prompt cache routing.
   v1CompleteResponse:
     type: object
     properties:
