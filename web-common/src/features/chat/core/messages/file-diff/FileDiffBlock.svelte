@@ -8,6 +8,7 @@
   import ToolCall from "../tools/ToolCall.svelte";
   import type { FileDiffBlock } from "./file-diff-block";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let block: FileDiffBlock;
   export let tools: V1Tool[] | undefined = undefined;
@@ -27,12 +28,12 @@
         {block.filePath}
       </a>
       {#if block.isNewFile}
-        <span class="new-badge">new</span>
+        <span class="new-badge">{m.chat_diff_new_badge()}</span>
       {/if}
     </div>
     <Diff2HtmlView diff={block.diff} scrollX>
       {#snippet empty()}
-        <div class="no-changes-message">No changes detected</div>
+        <div class="no-changes-message">{m.common_no_changes_detected()}</div>
       {/snippet}
     </Diff2HtmlView>
   </div>

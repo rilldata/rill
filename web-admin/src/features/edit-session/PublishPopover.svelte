@@ -138,7 +138,7 @@
     if (!hasLocalChanges && !hasChangesOnCurrent) {
       eventBus.emit("notification", {
         type: "default",
-        message: m.edit_no_changes_detected(),
+        message: m.common_no_changes_detected(),
       });
       isPublishing = false;
       return;

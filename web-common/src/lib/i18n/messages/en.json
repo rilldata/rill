@@ -520,6 +520,7 @@
   "chat_close": "Close chat",
   "chat_connect_client": "Connect your own client",
   "chat_conversation_history": "Conversation history",
+  "chat_diff_new_badge": "new",
   "chat_downvote_aria": "Downvote response",
   "chat_downvote_tooltip": "This response needs improvement",
   "chat_duration_less_than_second": "less than a second",
@@ -592,6 +593,7 @@
   "common_loading": "Loading...",
   "common_must_be_number": "Value must be a valid number",
   "common_name": "Name",
+  "common_no_changes_detected": "No changes detected",
   "common_no_results": "No results found",
   "common_no_results_found": "No results found.",
   "common_other_values_selected": [
@@ -824,14 +826,43 @@
   "dialog_close_without_saving_title": "Close without saving?",
   "edit_back_to_projects": "Back to projects",
   "edit_branch_name": "Branch name",
+  "edit_changes_checking": "Checking for changes…",
   "edit_changes_committed_pushed": "Changes committed and pushed",
+  "edit_changes_file_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} file",
+        "countPlural=other": "{count} files"
+      }
+    }
+  ],
+  "edit_changes_files_changed": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} file changed",
+        "countPlural=other": "{count} files changed"
+      }
+    }
+  ],
+  "edit_changes_loading_diff": "Loading diff…",
+  "edit_changes_no_diff": "No diff to display",
+  "edit_changes_none_to_show": "No changes to show",
+  "edit_changes_review_title": "Review changes",
+  "edit_changes_status_added": "Added",
+  "edit_changes_status_deleted": "Deleted",
+  "edit_changes_status_modified": "Modified",
+  "edit_changes_status_renamed": "Renamed",
+  "edit_changes_view_diff": "View diff",
   "edit_describe_changes": "Describe your changes...",
   "edit_failed_to_commit": "Failed to commit and push changes",
   "edit_failed_to_merge": "Failed to merge",
   "edit_failed_to_publish": "Failed to publish",
   "edit_failed_to_start": "Failed to start edit session.",
   "edit_merging": "Merging...",
-  "edit_no_changes_detected": "No changes detected",
   "edit_popup_blocked": "Pop-up was blocked.",
   "edit_provisioning_env": "Provisioning your editing environment...",
   "edit_publish": "Publish",
@@ -1026,6 +1057,14 @@
   "explore_unknown_dimension": "Unknown dimension",
   "explore_unknown_measure": "Unknown measure",
   "explore_user_no_access": "This user can't access this dashboard",
+  "export_pdf_building": "Building PDF…",
+  "export_pdf_button": "Export PDF",
+  "export_pdf_capturing": "Capturing dashboard…",
+  "export_pdf_description": "Export this dashboard as a PDF.",
+  "export_pdf_failed": "Failed to export PDF",
+  "export_pdf_include_filters": "Include filters",
+  "export_pdf_rendering_charts": "Rendering charts…",
+  "export_pdf_success": "Dashboard exported as PDF",
   "field_list_add_fields": "Add {label} fields",
   "field_list_aria": "{label} field list",
   "field_list_dimensions": "DIMENSIONS",

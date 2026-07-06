@@ -221,6 +221,9 @@ const MIGRATED_GLOBS = [
   // web-admin organization overview page. Literal `[organization]` brackets are
   // a glob character class, so match the segment with a wildcard.
   "web-admin/src/routes/*organization*/+page.svelte",
+  "web-common/src/features/chat/core/messages/file-diff/*.svelte",
+  "web-common/src/features/exports/pdf/*.svelte",
+  "web-common/src/features/project/changes/*.svelte",
 ];
 
 // Human-facing attributes worth translating. Attributes like `class`, `id`,
