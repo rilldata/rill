@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import DashboardsTagRow from "./DashboardsTagRow.svelte";
-  import { UrlParamsArrayState } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
+  import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   let {
@@ -12,7 +12,7 @@
     searchText: string;
   } = $props();
 
-  const selectedTagsState = UrlParamsArrayState.createStringArrayParam("tags");
+  const selectedTagsState = UrlParamsState.createStringArrayParam("tags");
 
   // Derive the tag rows (name + count) from the dashboards' meta tags. The tag
   // index dedupes and counts; we sort alphabetically for a stable listing.

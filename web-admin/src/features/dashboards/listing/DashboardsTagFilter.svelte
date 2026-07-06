@@ -5,10 +5,8 @@
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
-  import {
-    type ArrayStore,
-    InMemoryArrayStore,
-  } from "web-common/src/lib/store-utils/array-store-utils.svelte.ts";
+
+  import type { ArrayRuneStore } from "@rilldata/web-common/lib/store-utils/types.ts";
 
   let {
     align = "start",
@@ -17,7 +15,7 @@
   }: {
     align?: "start" | "end";
     size?: "xs" | "sm";
-    selectedTagsStore: ArrayStore<string>;
+    selectedTagsStore: ArrayRuneStore<string>;
   } = $props();
 
   let open = $state(false);

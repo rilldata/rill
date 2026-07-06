@@ -1,8 +1,14 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { SvelteURL } from "svelte/reactivity";
+import {
+  ArrayRuneStore,
+  type RuneStore,
+} from "@rilldata/web-common/lib/store-utils/types.ts";
 
-export class UrlParamsState<Val, DefaultVal> {
+export class UrlParamsState<Val, DefaultVal>
+  implements RuneStore<Val, DefaultVal>
+{
   public value: Val | DefaultVal;
   private paramValue: string | null = null;
 
@@ -33,6 +39,17 @@ export class UrlParamsState<Val, DefaultVal> {
     );
   }
 
+  public static createStringArrayParam(param: string) {
+    return new ArrayRuneStore<string>(
+      new UrlParamsState(
+        param,
+        (value: string[]) => (value.length ? value.join(",") : null),
+        (value) => value?.split(",") ?? [],
+        [],
+      ),
+    );
+  }
+
   public getter = () => {
     return this.value;
   };
@@ -46,51 +63,5 @@ export class UrlParamsState<Val, DefaultVal> {
       newUrl.searchParams.set(this.param, newParamValue);
     }
     void goto(newUrl, { noScroll: true, keepFocus: true });
-  };
-}
-
-export class UrlParamsArrayState<Val> {
-  public value: Val[];
-  private readonly urlParamState: UrlParamsState<Val[], Val[]>;
-
-  public getter: () => Val[];
-  public setter: (newValue: Val[]) => void;
-
-  public constructor(
-    private readonly param: string,
-    private readonly serializer: (value: Val) => string | null,
-    deserializer: (value: string) => Val,
-    defaultVal: Val[],
-  ) {
-    this.urlParamState = new UrlParamsState(
-      param,
-      (value: Val[]) =>
-        value.length ? value.map(this.serializer).join(",") : null,
-      (value) => value?.split(",").map(deserializer) ?? defaultVal,
-      defaultVal,
-    );
-
-    this.value = $derived(this.urlParamState.value);
-    this.getter = this.urlParamState.getter;
-    this.setter = this.urlParamState.setter;
-  }
-
-  public static createStringArrayParam(
-    param: string,
-    defaultValue: string[] = [],
-  ) {
-    return new UrlParamsArrayState<string>(
-      param,
-      (value) => value,
-      (value) => value,
-      defaultValue,
-    );
-  }
-
-  public toggle = (value: Val) => {
-    const newTags = this.value.includes(value)
-      ? this.value.filter((v) => v !== value)
-      : [...this.value, value];
-    this.setter(newTags);
   };
 }
