@@ -108,7 +108,7 @@
     });
   }
 
-  let unsubscribe: (() => void) | undefined = undefined;
+  let release: (() => void) | undefined = undefined;
 
   onNavigate(() => {
     if (hasBanner) {
@@ -166,25 +166,29 @@
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
         };
 
-        return setCanvasStore(
+        const newStore = setCanvasStore(
           canvasName,
           instanceId,
           processed,
           client,
           allowUnvalidatedSpec,
         );
+        newStore.canvasEntity.acquire();
+        release?.(); // release our reference to the previous entity, if any
+        release = newStore.canvasEntity.release;
+        return newStore;
       }
     }
 
-    existingStore?.canvasEntity?.resubscribe();
-    unsubscribe?.(); // cleanup old entities if any
-    unsubscribe = existingStore?.canvasEntity?.unsubscribe;
+    existingStore?.canvasEntity?.acquire();
+    release?.(); // release our reference to the previous entity, if any
+    release = existingStore?.canvasEntity?.release;
 
     return existingStore;
   }
 
   onDestroy(() => {
-    unsubscribe?.();
+    release?.();
   });
 </script>
 

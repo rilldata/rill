@@ -472,6 +472,205 @@ func TestUpstreamMerge(t *testing.T) {
 	require.Equal(t, "local content C", readFile(t, tempDir, "fileC.txt"), "local version of C should be preserved")
 }
 
+func TestChangedFiles(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// origin/<mainBranch> stays at the initial commit (test1-3.txt); build a mix of changes on
+	// top of it. The diff is taken against origin/<mainBranch>, so all of these should surface.
+	createCommit(t, tempDir, "added_committed.txt", "new", "add committed file")           // committed add
+	createCommit(t, tempDir, "test1.txt", "changed", "modify committed file")              // committed modify
+	require.NoError(t, os.Remove(filepath.Join(tempDir, "test2.txt")), "failed to delete") // working-tree delete
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test3.txt"), []byte("edit"), 0644), "failed to modify")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "untracked.txt"), []byte("x"), 0644), "failed to create untracked")
+
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed")
+
+	got := map[string]ChangedFileStatus{}
+	for _, f := range files {
+		got[f.Path] = f.Status
+	}
+	require.Equal(t, map[string]ChangedFileStatus{
+		"added_committed.txt": ChangedFileStatusAdded,
+		"test1.txt":           ChangedFileStatusModified,
+		"test2.txt":           ChangedFileStatusDeleted,
+		"test3.txt":           ChangedFileStatusModified,
+		"untracked.txt":       ChangedFileStatusAdded,
+	}, got)
+
+	// With no remoteBranch, files are compared against the current branch's upstream
+	// (origin/<mainBranch>) and still reported.
+	files, err = ChangedFiles(context.Background(), tempDir, "", "origin", "")
+	require.NoError(t, err, "ChangedFiles failed")
+	require.NotEmpty(t, files, "ChangedFiles should be computed without a remoteBranch")
+}
+
+func TestChangedFiles_Rename(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Committed rename: git can pair the old and new paths.
+	cmd := exec.Command("git", "-C", tempDir, "mv", "test1.txt", "renamed1.txt")
+	require.NoError(t, cmd.Run(), "failed to rename file")
+	cmd = exec.Command("git", "-C", tempDir, "commit", "-m", "rename")
+	require.NoError(t, cmd.Run(), "failed to commit rename")
+
+	// Uncommitted rename: the new file is untracked, so git cannot detect the rename.
+	require.NoError(t, os.Rename(filepath.Join(tempDir, "test2.txt"), filepath.Join(tempDir, "renamed2.txt")), "failed to rename")
+
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed")
+
+	got := map[string]ChangedFile{}
+	for _, f := range files {
+		got[f.Path] = f
+	}
+	require.Equal(t, ChangedFile{Path: "renamed1.txt", OldPath: "test1.txt", Status: ChangedFileStatusRenamed}, got["renamed1.txt"])
+	require.Equal(t, ChangedFileStatusDeleted, got["test2.txt"].Status, "uncommitted rename should show old path as deleted")
+	require.Equal(t, ChangedFileStatusAdded, got["renamed2.txt"].Status, "uncommitted rename should show new path as added")
+}
+
+func TestDiff(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// origin/<mainBranch> stays at the initial commit (test1-3.txt). Build a committed modify, a
+	// working-tree delete, and an untracked add on top; the diff is taken against origin/<mainBranch>.
+	createCommit(t, tempDir, "test1.txt", "modified content", "modify test1")
+	require.NoError(t, os.Remove(filepath.Join(tempDir, "test2.txt")), "failed to delete")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "untracked.txt"), []byte("brand new line"), 0644), "failed to create untracked")
+
+	diff, err := Diff(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "Diff failed")
+
+	require.Contains(t, diff, "diff --git", "expected a unified diff")
+	require.Contains(t, diff, "+modified content", "modified file's added line should appear")
+	require.Contains(t, diff, "-content of file 1", "modified file's removed line should appear")
+	require.Contains(t, diff, "-content of file 2", "deleted file's removed lines should appear")
+	require.Contains(t, diff, "+brand new line", "untracked file's content should appear")
+}
+
+func TestDiff_OrderMatchesChangedFiles(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Mix tracked and untracked changes whose sorted order interleaves the two. Untracked files
+	// ("aaa.txt", "zzz.txt") are appended after tracked files in the raw diff, so without ordering
+	// the diff would list test1/test2 before aaa, diverging from the sorted ChangedFiles list.
+	createCommit(t, tempDir, "test1.txt", "modified content", "modify test1")
+	require.NoError(t, os.Remove(filepath.Join(tempDir, "test2.txt")), "failed to delete")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "aaa.txt"), []byte("first"), 0644), "failed to create untracked")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "zzz.txt"), []byte("last"), 0644), "failed to create untracked")
+
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed")
+	listOrder := make([]string, len(files))
+	for i, f := range files {
+		listOrder[i] = f.Path
+	}
+
+	diff, err := Diff(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "Diff failed")
+
+	var diffOrder []string
+	for line := range strings.SplitSeq(diff, "\n") {
+		if _, b, ok := strings.Cut(line, " b/"); ok && strings.HasPrefix(line, "diff --git ") {
+			diffOrder = append(diffOrder, b)
+		}
+	}
+
+	require.Equal(t, []string{"aaa.txt", "test1.txt", "test2.txt", "zzz.txt"}, listOrder)
+	require.Equal(t, listOrder, diffOrder, "diff sections should follow the same order as the changed-files list")
+}
+
+func TestDiff_LargeFile(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// An untracked file whose diff exceeds maxFileDiffBytes must be elided to a placeholder so one
+	// huge file cannot bloat the response.
+	large := strings.Repeat("some long line of text\n", (maxFileDiffBytes/22)+1000)
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "big.txt"), []byte(large), 0644), "failed to create big file")
+
+	diff, err := Diff(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "Diff failed")
+
+	require.Contains(t, diff, "big.txt", "large file should still be present in the diff")
+	require.Contains(t, diff, "Diff too large to display", "large file diff should be elided to a placeholder")
+	require.NotContains(t, diff, "some long line of text", "large file content must not be included")
+	require.Less(t, len(diff), maxFileDiffBytes, "elided diff should be well under the cap")
+}
+
+func TestDiff_RemoteDiverged(t *testing.T) {
+	tempDir, remoteDir := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Add a file to the remote that the local repo has not pulled, then fetch (advancing the
+	// remote-tracking ref) without pulling so local HEAD stays behind.
+	createRemoteCommit(t, remoteDir, "remote_only.txt", "content", "add remote-only file")
+	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	// Make a local (uncommitted) edit so there is something local to show.
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test1.txt"), []byte("edited"), 0644))
+
+	diff, err := Diff(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "Diff failed")
+
+	require.Contains(t, diff, "test1.txt", "the local edit should appear in the diff")
+	require.NotContains(t, diff, "remote_only.txt", "remote-only file must not appear as a deletion")
+}
+
+func TestChangedFiles_Monorepo(t *testing.T) {
+	tempDir, _ := setupMonorepoTestRepository(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	createCommit(t, tempDir, "subproject1/new.txt", "new", "subproject1: add file")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subproject2", "file2.txt"), []byte("edit"), 0644), "failed to modify")
+
+	files, err := ChangedFiles(context.Background(), tempDir, "subproject1", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed for subproject1")
+	require.Equal(t, []ChangedFile{{Path: "new.txt", Status: ChangedFileStatusAdded}}, files)
+
+	files, err = ChangedFiles(context.Background(), tempDir, "subproject2", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed for subproject2")
+	require.Equal(t, []ChangedFile{{Path: "file2.txt", Status: ChangedFileStatusModified}}, files)
+}
+
+// TestChangedFiles_RemoteDiverged verifies that files added on the remote but not pulled locally
+// do not appear as spurious inverse changes in the result.
+func TestChangedFiles_RemoteDiverged(t *testing.T) {
+	tempDir, remoteDir := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Add a file to the remote that the local repo has not pulled.
+	createRemoteCommit(t, remoteDir, "remote_only.txt", "content", "add remote-only file")
+
+	// Fetch so the remote-tracking ref advances, but do NOT pull (local HEAD stays behind).
+	require.NoError(t, Fetch(t.Context(), tempDir, nil), "failed to fetch")
+
+	st, err := Status(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err)
+	require.Equal(t, int32(0), st.LocalCommits, "expected no local commits")
+	require.Equal(t, int32(1), st.RemoteCommits, "expected remote to be 1 ahead")
+
+	// Make a local (uncommitted) edit so there is something local to show.
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test1.txt"), []byte("edited"), 0644))
+
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err, "ChangedFiles failed")
+
+	got := map[string]ChangedFileStatus{}
+	for _, f := range files {
+		got[f.Path] = f.Status
+	}
+
+	// Only the local edit should be reported; remote_only.txt must NOT appear as deleted.
+	require.Equal(t, map[string]ChangedFileStatus{
+		"test1.txt": ChangedFileStatusModified,
+	}, got)
+}
+
 // Helper: compare canonicalized paths
 func assertPathsEqual(t *testing.T, p1, p2 string) {
 	t.Helper()
