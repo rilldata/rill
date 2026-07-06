@@ -182,15 +182,15 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	// Prior turns only (exclude the current call, whose ID equals s.ParentID).
-	// We use MessagesWithChildren (not MessagesWithResults) so that prior turns' intermediate tool calls
-	// stay in history; this lets later turns reuse earlier lookups (e.g. avoid re-calling get_metrics_view).
-	// Do not switch this to MessagesWithResults.
+	// We use MessagesWithChildren (not MessagesWithResults) so that prior turns' intermediate tool calls stay in history;
+	// this lets later turns reuse earlier lookups (e.g. avoid re-calling get_metrics_view). Do not switch this to MessagesWithResults.
+	// The notCurrentCall filter is load-bearing: without it the current call's seeded children would be duplicated by the block below.
 	notCurrentCall := func(m *Message) bool { return m.ID != s.ParentID }
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithChildren(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName), notCurrentCall))...)
-	// The current call's seeded tool calls and their results.
-	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
-	// The rich per-invocation context and the user's ask, placed last (after the seeded tool calls).
+	// The rich per-invocation context and the user's ask.
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
+	// The current call's seeded tool calls and their results, placed after the user prompt to mirror the developer agent.
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
 
 	// Run an LLM tool call loop
 	var response string
@@ -290,8 +290,7 @@ func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string
 	}
 
 	// Generate the user prompt.
-	// It carries all the per-invocation context: the current date, dashboard/report context, applied query
-	// settings, forked-session caveats, and finally the user's actual prompt.
+	// It carries all the per-invocation context: the current date, dashboard/report context, applied query settings, forked-session caveats, and finally the user's actual prompt.
 	return executeTemplate(`Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
 
 {{ if .is_report }}
