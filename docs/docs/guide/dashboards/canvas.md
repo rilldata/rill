@@ -5,7 +5,7 @@ sidebar_position: 20
 ---
 
 
-After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/guide/administration/organization-settings#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
+After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/guide/administration/organization-settings#organization) that are available and/or have been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project.
 
 
 <div style={{ 
@@ -45,7 +45,7 @@ Similar to our [Explore dashboards](/guide/dashboards/explore), Canvas Dashboard
 
 ### Navigation Bar
 
-- _**Time Selector and Time Selector Comparison:**_ You can change the period of analysis to different ranges of time (see `red` box), either by selecting from a pre-defined period (such as last week) or choosing a custom date range. Along with this, you can enable a comparison filter to compare range of dates with 1 click.
+- _**Time Selector and Time Selector Comparison:**_ You can change the period of analysis to different ranges of time (see `red` box), either by selecting from a pre-defined period (such as last week) or choosing a custom date range. Along with this, you can enable a comparison filter to compare a range of dates with one click.
 
 - _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/guide/dashboards/filters) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
 
@@ -57,7 +57,7 @@ Similar to our [Explore dashboards](/guide/dashboards/explore), Canvas Dashboard
 <!-- - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/guide/dashboards/bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/guide/administration/users-and-access/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/guide/dashboards/public-urls.md)) . -->
 
 ## Component Navigation
-![Canvas Navigaton](/img/explore/canvas/canvas-navigaton.png)
+![Canvas Navigation](/img/explore/canvas/canvas-navigaton.png)
 
 
 If you want to further drill into a component's data, select the top right button to take you to the equivalent Explore dashboard.
