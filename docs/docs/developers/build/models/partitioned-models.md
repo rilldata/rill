@@ -254,7 +254,7 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
 ```
 
 :::note
-`start`, `end`, and `last` are not compatible with `transform_sql`.
+`last` is not compatible with `transform_sql`.
 :::
 
 ### Viewing Partitions in Rill Developer

@@ -138,8 +138,8 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 
 	props.Path = strings.TrimSpace(props.Path)
 
-	if props.TransformSQL != "" && (props.Start != "" || props.Last > 0 || props.End != "") {
-		return nil, fmt.Errorf("Properties `start`, `last` and `end` is not support with transform_sql")
+	if props.TransformSQL != "" && props.Last > 0 {
+		return nil, fmt.Errorf("property `last` is not supported with `transform_sql`")
 	}
 
 	startURL, err := globutil.ParseBucketURLLenient(props.Start)
