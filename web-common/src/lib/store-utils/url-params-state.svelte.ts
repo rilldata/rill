@@ -4,7 +4,7 @@ import { SvelteURL } from "svelte/reactivity";
 import {
   ArrayRuneStore,
   type RuneStore,
-} from "@rilldata/web-common/lib/store-utils/types.ts";
+} from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
 export class UrlParamsState<Val, DefaultVal>
   implements RuneStore<Val, DefaultVal>

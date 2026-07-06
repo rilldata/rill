@@ -6,7 +6,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
-  import type { ArrayRuneStore } from "@rilldata/web-common/lib/store-utils/types.ts";
+  import type { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
 
   let {
     align = "start",
