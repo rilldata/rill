@@ -87,10 +87,10 @@ export class UrlParamsArrayState<Val> {
     );
   }
 
-  public toggle = (newValue: Val) => {
-    const newTags = this.value.includes(newValue)
-      ? this.value.filter((v) => v !== newValue)
-      : [...this.value, newValue];
+  public toggle = (value: Val) => {
+    const newTags = this.value.includes(value)
+      ? this.value.filter((v) => v !== value)
+      : [...this.value, value];
     this.setter(newTags);
   };
 }

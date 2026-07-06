@@ -4,29 +4,34 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { UrlParamsArrayState } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import {
+    type ArrayStore,
+    InMemoryArrayStore,
+  } from "web-common/src/lib/store-utils/array-store-utils.svelte.ts";
 
   let {
     align = "start",
+    size = "sm",
+    selectedTagsStore,
   }: {
     align?: "start" | "end";
+    size?: "xs" | "sm";
+    selectedTagsStore: ArrayStore<string>;
   } = $props();
 
   let open = $state(false);
-
-  const selectedTagsState = UrlParamsArrayState.createStringArrayParam("tags");
 
   const runtimeClient = useRuntimeClient();
   let dashboards = useDashboards(runtimeClient);
   let availableTags = $derived(getAllTagsForResources($dashboards?.data ?? []));
 
   let tagsLabel = $derived(
-    selectedTagsState.value.length === 0
+    selectedTagsStore.value.length === 0
       ? "All tags"
-      : selectedTagsState.value.length === 1
-        ? selectedTagsState.value[0]
-        : `${selectedTagsState.value[0]}, +${selectedTagsState.value.length - 1} other${selectedTagsState.value.length > 2 ? "s" : ""}`,
+      : selectedTagsStore.value.length === 1
+        ? selectedTagsStore.value[0]
+        : `${selectedTagsStore.value[0]}, +${selectedTagsStore.value.length - 1} other${selectedTagsStore.value.length > 2 ? "s" : ""}`,
   );
 </script>
 
@@ -37,7 +42,7 @@
         ? 'bg-gray-200'
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
-      <span class="text-fg-secondary font-medium text-sm">{tagsLabel}</span>
+      <span class="text-fg-secondary font-medium text-{size}">{tagsLabel}</span>
       {#if open}
         <CaretUpIcon size="12px" />
       {:else}
@@ -47,8 +52,8 @@
     <DropdownMenu.Content {align} class="w-48 max-h-72 overflow-y-auto">
       {#each availableTags as tag (tag.name)}
         <DropdownMenu.CheckboxItem
-          checked={selectedTagsState.value.includes(tag.name)}
-          onCheckedChange={() => selectedTagsState.toggle(tag.name)}
+          checked={selectedTagsStore.value.includes(tag.name)}
+          onCheckedChange={() => selectedTagsStore.toggle(tag.name)}
         >
           {tag.name}
         </DropdownMenu.CheckboxItem>
