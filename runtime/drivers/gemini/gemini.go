@@ -69,6 +69,13 @@ var spec = drivers.Spec{
 			Description: "Maximum number of tokens in the response.",
 		},
 		{
+			Key:         "max_input_tokens",
+			Type:        drivers.NumberPropertyType,
+			Required:    false,
+			DisplayName: "Max Input Tokens",
+			Description: "Maximum number of input tokens a completion request may contain (default: 200000).",
+		},
+		{
 			Key:         "temperature",
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
@@ -143,6 +150,7 @@ type configProperties struct {
 	IncludeThoughts bool     `mapstructure:"include_thoughts"`
 	ThinkingLevel   string   `mapstructure:"thinking_level"`
 	MaxOutputTokens int      `mapstructure:"max_output_tokens"`
+	MaxInputTokens  int      `mapstructure:"max_input_tokens"`
 	Temperature     *float64 `mapstructure:"temperature"`
 	TopP            float64  `mapstructure:"top_p"`
 	TopK            float64  `mapstructure:"top_k"`
@@ -275,6 +283,14 @@ func (h *handle) MigrationStatus(ctx context.Context) (current, desired int, err
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
 	return nil
+}
+
+// MaxInputTokens implements drivers.AIService.
+func (h *handle) MaxInputTokens() int {
+	if h.config.MaxInputTokens > 0 {
+		return h.config.MaxInputTokens
+	}
+	return drivers.DefaultAIMaxInputTokens
 }
 
 // Complete implements drivers.AIService.

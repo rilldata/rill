@@ -31,6 +31,11 @@ var spec = drivers.Spec{
 			Required: true,
 			Secret:   true,
 		},
+		{
+			Key:      "max_input_tokens",
+			Type:     drivers.NumberPropertyType,
+			Required: false,
+		},
 	},
 }
 
@@ -46,6 +51,8 @@ type configProperties struct {
 	AdminURL    string `mapstructure:"admin_url"`
 	AccessToken string `mapstructure:"access_token"`
 	ProjectID   string `mapstructure:"project_id"`
+	// MaxInputTokens is the input token limit for AI completion requests proxied to the admin service.
+	MaxInputTokens int `mapstructure:"max_input_tokens"`
 }
 
 func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {

@@ -161,6 +161,11 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // Complete implements drivers.AIService.
+// MaxInputTokens implements drivers.AIService.
+func (c *connection) MaxInputTokens() int {
+	return drivers.DefaultAIMaxInputTokens
+}
+
 func (c *connection) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	if c.toolCallingMode {
 		return &drivers.CompleteResult{

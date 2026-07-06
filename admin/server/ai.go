@@ -50,6 +50,7 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 		Messages:     messages,
 		Tools:        req.Tools,
 		OutputSchema: outputSchema,
+		CacheKey:     req.CacheKey,
 	})
 	if err != nil {
 		return nil, err

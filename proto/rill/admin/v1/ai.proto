@@ -23,6 +23,9 @@ message CompleteRequest {
   repeated rill.ai.v1.Tool tools = 2;
   // Optional output JSON schema
   string output_json_schema = 3;
+  // Optional key identifying a series of requests that share a prompt prefix (e.g. an AI session ID).
+  // Providers may use it to improve prompt cache routing.
+  string cache_key = 4;
 }
 
 message CompleteResponse {

@@ -305,6 +305,9 @@ export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
   outputJsonSchema?: string;
+  /** Optional key identifying a series of requests that share a prompt prefix (e.g. an AI session ID).
+Providers may use it to improve prompt cache routing. */
+  cacheKey?: string;
 }
 
 export interface V1CompleteResponse {

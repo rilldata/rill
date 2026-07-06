@@ -32,6 +32,14 @@ export class CompleteRequest extends Message<CompleteRequest> {
    */
   outputJsonSchema = "";
 
+  /**
+   * Optional key identifying a series of requests that share a prompt prefix (e.g. an AI session ID).
+   * Providers may use it to improve prompt cache routing.
+   *
+   * @generated from field: string cache_key = 4;
+   */
+  cacheKey = "";
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -43,6 +51,7 @@ export class CompleteRequest extends Message<CompleteRequest> {
     { no: 1, name: "messages", kind: "message", T: CompletionMessage, repeated: true },
     { no: 2, name: "tools", kind: "message", T: Tool, repeated: true },
     { no: 3, name: "output_json_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "cache_key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {

@@ -382,6 +382,11 @@ components:
             type: object
         v1CompleteRequest:
             properties:
+                cacheKey:
+                    description: |-
+                        Optional key identifying a series of requests that share a prompt prefix (e.g. an AI session ID).
+                        Providers may use it to improve prompt cache routing.
+                    type: string
                 messages:
                     description: Input message(s) for the AI to complete.
                     items:

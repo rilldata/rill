@@ -122,6 +122,14 @@ type recordingAIMessage struct {
 
 var _ drivers.AIService = &recordingAIService{}
 
+// MaxInputTokens implements drivers.AIService.
+func (r *recordingAIService) MaxInputTokens() int {
+	if r.ai == nil {
+		return 0
+	}
+	return r.ai.MaxInputTokens()
+}
+
 // Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error)
 func (r *recordingAIService) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	// Create a recorded call
