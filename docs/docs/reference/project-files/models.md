@@ -459,7 +459,7 @@ _[array of string]_ - List of resource references
 
 ### `tags`
 
-_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list). 
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
 ### `dev`
 
@@ -543,7 +543,7 @@ _[array of string]_ - List of resource references
 
 ### `tags`
 
-_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list). 
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
 ### `dev`
 
