@@ -11,10 +11,7 @@
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards, useIsInitialBuild } from "./selectors";
   import { Search } from "@rilldata/web-common/components/search";
-  import {
-    UrlParamsArrayState,
-    UrlParamsState,
-  } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
+  import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
   import {
     getAllTagsForResources,
     getResourceTags,
@@ -33,7 +30,7 @@
     previewLimit?: number;
   } = $props();
 
-  const selectedTagsState = UrlParamsArrayState.createStringArrayParam("tags");
+  const selectedTagsState = UrlParamsState.createStringArrayParam("tags");
 
   const searchTextState = UrlParamsState.createStringParam("search");
 

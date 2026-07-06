@@ -10,8 +10,11 @@
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
-  import { InMemoryArrayStore } from "@rilldata/web-common/lib/store-utils/array-store-utils.svelte.ts";
   import { Search } from "@rilldata/web-common/components/search";
+  import {
+    ArrayRuneStore,
+    InMemoryRuneStore,
+  } from "@rilldata/web-common/lib/store-utils/types.ts";
 
   let {
     options,
@@ -28,7 +31,9 @@
   let availableTags = $derived(getAllTagsForResources(allDashboards));
   let hasSomeTag = $derived(availableTags.length > 0);
 
-  const selectedTagsStore = new InMemoryArrayStore<string>();
+  const selectedTagsStore = new ArrayRuneStore<string>(
+    new InMemoryRuneStore([]),
+  );
   let searchText = $state("");
 
   // `id` in `options` is the resource name (`V1Resource.meta.name.name`), so

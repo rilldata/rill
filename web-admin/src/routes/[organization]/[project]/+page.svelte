@@ -12,7 +12,7 @@
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
-  import { UrlParamsArrayState } from "@rilldata/web-common/lib/url-params-state.svelte.ts";
+  import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
 
   const { chat, personalCanvases } = featureFlags;
 
@@ -98,9 +98,7 @@
           <span>Dashboards</span>
           <DashboardsTagFilter
             align="end"
-            selectedTagsStore={UrlParamsArrayState.createStringArrayParam(
-              "tags",
-            )}
+            selectedTagsStore={UrlParamsState.createStringArrayParam("tags")}
           />
         </div>
         {#if $personalCanvases && hasNoPersonalCanvases}
