@@ -143,7 +143,7 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 	}
 
 	// Setup a temporary directory for intermediate files
-	tmpDir, err := os.MkdirTemp("", "sqlite-backup-*")
+	tmpDir, err := c.storage.RandomTempDir("sqlite-backup")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
@@ -176,6 +176,14 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 		return fmt.Errorf("failed to rewrite snapshot for analytics: %w", err)
 	}
 
+	// Direct DuckDB's temp directory to our controlled tmpDir.
+	// By default, in-memory DuckDB creates ".tmp" in the current working directory, which may not be writable.
+	duckdbTmpDir, err := c.storage.RandomTempDir("duckdb-tmp")
+	if err != nil {
+		return fmt.Errorf("failed to create DuckDB temp directory: %w", err)
+	}
+	defer os.RemoveAll(duckdbTmpDir)
+
 	// Open an in-memory DuckDB handle with 1 CPU and 512MB memory limit.
 	// We'll use this to create Parquet files for the tables in the SQLite database.
 	duckdb, err := sqlx.Open("duckdb", "?threads=1&memory_limit=512MB")
@@ -184,6 +192,11 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 	}
 	duckdb.SetMaxOpenConns(1)
 	defer duckdb.Close()
+
+	_, err = duckdb.ExecContext(ctx, fmt.Sprintf("SET temp_directory='%s'", duckdbTmpDir))
+	if err != nil {
+		return fmt.Errorf("failed to set DuckDB temp directory: %w", err)
+	}
 
 	// Attach the SQLite database to DuckDB and export tables to Parquet.
 	_, err = duckdb.ExecContext(ctx, fmt.Sprintf("ATTACH '%s' AS sqlite_db (TYPE SQLITE); USE sqlite_db;", snapshotPath))

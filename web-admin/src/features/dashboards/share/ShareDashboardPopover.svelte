@@ -17,12 +17,29 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import ExportDashboardForm from "@rilldata/web-common/features/exports/pdf/ExportDashboardForm.svelte";
+  import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
+  import type { PdfExportRunOptions } from "@rilldata/web-common/features/exports/pdf/types";
 
   export let createMagicAuthTokens: boolean;
+  // Provide canvas identifiers to enable the "PDF" tab (canvas dashboards only).
+  export let canvasName: string | undefined = undefined;
+  export let instanceId: string | undefined = undefined;
 
   const { hidePublicUrl } = featureFlags;
   let isOpen = false;
   let copied = false;
+  let runPdfExport: ((o: PdfExportRunOptions) => Promise<void>) | null = null;
+
+  // Bind the (now-narrowed) identifiers in a helper so the returned closure keeps
+  // them as `string` rather than `string | undefined`.
+  $: runPdfExport =
+    canvasName && instanceId ? makeRunPdfExport(canvasName, instanceId) : null;
+
+  function makeRunPdfExport(name: string, id: string) {
+    return (o: PdfExportRunOptions) =>
+      exportCanvasPdf({ canvasName: name, instanceId: id, ...o });
+  }
 
   function onCopy() {
     navigator.clipboard.writeText(window.location.href).catch(console.error);
@@ -49,6 +66,9 @@
         <TabsTrigger value="tab1">Copy URL</TabsTrigger>
         {#if createMagicAuthTokens && !$hidePublicUrl}
           <TabsTrigger value="tab2">Create public URL</TabsTrigger>
+        {/if}
+        {#if runPdfExport}
+          <TabsTrigger value="pdf">PDF</TabsTrigger>
         {/if}
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
@@ -77,6 +97,14 @@
           <CreatePublicURLForm />
         {/if}
       </TabsContent>
+      {#if runPdfExport}
+        <TabsContent value="pdf" class="mt-0 p-4">
+          <ExportDashboardForm
+            runExport={runPdfExport}
+            onComplete={() => (isOpen = false)}
+          />
+        </TabsContent>
+      {/if}
     </Tabs>
   </PopoverContent>
 </Popover>

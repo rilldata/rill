@@ -16,6 +16,7 @@
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { getContext } from "svelte";
+  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
 
@@ -43,6 +44,8 @@
   }) => void = () => {};
   export let lowerIsBetter = false;
   export let onkeydown: ((e: KeyboardEvent) => void) | undefined = undefined;
+  // When set, renders a hover-revealed external link icon for URI dimensions.
+  export let href: string | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -53,7 +56,7 @@
   function onFocus() {
     onInspect(row.index);
     cellActive = true;
-    cellInspectorStore.updateValue(value, tooltipValue);
+    cellInspectorStore.updateValue(value, inspectorValue);
   }
 
   function onSelect(e: MouseEvent) {
@@ -113,6 +116,11 @@
         ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
         : value;
 
+  // The tooltip truncates long strings, but the cell inspector should show the
+  // full value, so feed it an untruncated version.
+  $: inspectorValue =
+    tooltipFormatter && value != null ? tooltipFormatter(value) : value;
+
   $: formattedDataTypeStyle = excluded
     ? "font-normal text-fg-muted"
     : rowSelected
@@ -133,6 +141,7 @@
 >
   <div
     class="
+      table-cell-content
       {positionStatic ? 'static' : 'absolute'}
       z-9
       text-ellipsis
@@ -162,25 +171,62 @@
       value={barValue}
       compact
     >
-      <button
-        aria-label={label}
-        class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
-        class:px-4={!isDimensionTable}
-        onclick={modified({
-          shift: shiftClick,
-        })}
-        style:height="{row.size}px"
-      >
-        <FormattedDataType
-          customStyle={formattedDataTypeStyle}
-          inTable
-          isNull={value === null || value === undefined}
-          {type}
-          value={formattedValue || value}
-          color="text-fg-secondary"
-          {lowerIsBetter}
-        />
-      </button>
+      {#if href}
+        <!-- URI dimension: lay the value button and external-link icon side by
+        side. This wrapper only exists when there is a link, so non-URI cells
+        keep the exact DOM (and text content) the table's matchers expect. -->
+        <div
+          class="flex items-center gap-x-1 w-full min-w-0 {isTextColumn
+            ? 'justify-start'
+            : 'justify-end'}"
+        >
+          <button
+            aria-label={label}
+            class="{isTextColumn ? 'text-left' : 'text-right'} truncate min-w-0"
+            class:px-4={!isDimensionTable}
+            onclick={modified({ shift: shiftClick })}
+            style:height="{row.size}px"
+          >
+            <FormattedDataType
+              customStyle={formattedDataTypeStyle}
+              inTable
+              isNull={value === null || value === undefined}
+              {type}
+              value={formattedValue || value}
+              color="text-fg-secondary"
+              {lowerIsBetter}
+            />
+          </button>
+          <a
+            class="external-link shrink-0"
+            target="_blank"
+            rel="noopener noreferrer"
+            {href}
+            title={href}
+            onclick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="fill-primary-600" />
+          </a>
+        </div>
+      {:else}
+        <button
+          aria-label={label}
+          class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
+          class:px-4={!isDimensionTable}
+          onclick={modified({ shift: shiftClick })}
+          style:height="{row.size}px"
+        >
+          <FormattedDataType
+            customStyle={formattedDataTypeStyle}
+            inTable
+            isNull={value === null || value === undefined}
+            {type}
+            value={formattedValue || value}
+            color="text-fg-secondary"
+            {lowerIsBetter}
+          />
+        </button>
+      {/if}
     </BarAndLabel>
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
@@ -201,3 +247,14 @@
     </TooltipShortcutContainer>
   </TooltipContent>
 </Tooltip>
+
+<style lang="postcss">
+  .external-link {
+    @apply inline-flex items-center justify-center transition-opacity;
+    opacity: 0;
+  }
+
+  .table-cell-content:hover .external-link {
+    opacity: 0.7;
+  }
+</style>

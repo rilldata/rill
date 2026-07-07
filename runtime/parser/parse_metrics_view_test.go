@@ -853,6 +853,62 @@ measures:
 `,
 			wantErr: `invalid "data_time_range"`,
 		},
+		{
+			name: "unbounded metrics view data_time_range (inf)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "inf"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `must have a bounded start`,
+		},
+		{
+			name: "unbounded metrics view data_time_range (earliest to now)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "earliest to now"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+			wantErr: `must have a bounded start`,
+		},
+		{
+			name: "unbounded rollup data_time_range (inf)",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "inf"
+`,
+			wantErr: `must have a bounded start`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -868,6 +924,42 @@ measures:
 			require.NoError(t, err)
 			require.NotEmpty(t, p.Errors)
 			require.Contains(t, p.Errors[0].Message, tt.wantErr)
+		})
+	}
+}
+
+func TestMetricsViewDataTimeRangeBounded(t *testing.T) {
+	// Bounded ranges (relative and absolute) must pass validation; only an unbounded start is rejected.
+	for _, expr := range []string{"-90d to now", "-1Y to now", "2020-01-01 to now", "-3M to -1M"} {
+		t.Run(expr, func(t *testing.T) {
+			yaml := `
+type: metrics_view
+version: 1
+model: m1
+timeseries: id
+data_time_range: "` + expr + `"
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+rollups:
+  - model: r1
+    time_grain: day
+    measures:
+      - count
+    data_time_range: "` + expr + `"
+`
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id`,
+				`models/r1.sql`:          `SELECT 1 AS id`,
+				`metrics_views/mv1.yaml`: yaml,
+			}
+			p, err := Parse(context.Background(), makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Empty(t, p.Errors)
 		})
 	}
 }

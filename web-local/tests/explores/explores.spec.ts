@@ -24,8 +24,6 @@ test.describe("explores", () => {
   test("Autogenerate explore from source nav file", async ({ page }) => {
     await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
     await createExploreFromSource(page);
-    // Temporary timeout while the issue is looked into
-    await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
   });
 
@@ -231,7 +229,6 @@ time_ranges:
 
     // Change filter to excluded
     await page.getByText("Publisher Facebook").click();
-    await page.waitForTimeout(500); // wait for the filter bar to update
     await page.getByLabel("Include exclude toggle").click();
     await page.keyboard.press("Escape"); // close the dimension filter dropdown
 

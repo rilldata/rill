@@ -32,6 +32,7 @@ import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/
 import type { SvelteComponent } from "svelte";
 import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import { SortType } from "../proto-state/derived-types";
+import { URI_DIMENSION_SUFFIX } from "../dashboard-utils";
 import { getFiltersForOtherDimensions } from "../selectors";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
@@ -479,6 +480,13 @@ export function prepareDimensionTableRows(
         ...rawVals,
         ...formattedVals,
       ]);
+
+      // Carry through the resolved URI for clickable dimension values, if requested.
+      // This is not a spec measure, so it must be copied explicitly.
+      const uriKey = dimensionColumn + URI_DIMENSION_SUFFIX;
+      if (uriKey in row) {
+        rowOut[uriKey] = (row[uriKey] as string | null) ?? null;
+      }
 
       if (addDeltas) {
         // Process deltas for all measures that have comparison data

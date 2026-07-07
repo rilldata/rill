@@ -7,13 +7,19 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import PersonalCanvasesList from "@rilldata/web-admin/features/personal-files/canvas/PersonalCanvasesList.svelte";
+  import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/CreatePersonalCanvasDialog.svelte";
+  import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
+  import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
 
-  const { chat } = featureFlags;
+  const { chat, personalCanvases } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
 
   $: ({
-    params: { project },
+    params: { organization, project },
   } = $page);
 
   // Query the instance to get the project display name
@@ -22,6 +28,18 @@
     $instanceQuery.data?.instance?.projectDisplayName || project;
   $: isLoadingDisplayName = $instanceQuery.isLoading;
   $: isErrorDisplayName = $instanceQuery.isError;
+
+  $: personalCanvasesQuery = getPersonalFilteredResources(
+    runtimeClient,
+    organization,
+    project,
+    ResourceKind.Canvas,
+  );
+  $: hasNoPersonalCanvases =
+    !$personalCanvasesQuery.isPending &&
+    ($personalCanvasesQuery.data?.length ?? 0) === 0;
+
+  const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
 </script>
 
 <svelte:head>
@@ -72,8 +90,20 @@
     </div>
 
     <!-- Dashboards Section -->
+    {#if $personalCanvases}
+      <PersonalCanvasesList org={organization} {project} />
+    {/if}
+
     <div class="flex flex-col gap-y-4">
-      <h2 class="text-xl font-semibold text-fg-secondary">Dashboards</h2>
+      <h2 class="flex text-xl font-semibold text-fg-secondary justify-between">
+        <div class="flex flex-row w-full items-center justify-between">
+          <span>Dashboards</span>
+          <DashboardsTagFilter align="end" {selectedTagsStore} />
+        </div>
+        {#if $personalCanvases && hasNoPersonalCanvases}
+          <CreatePersonalCanvasDialog org={organization} {project} />
+        {/if}
+      </h2>
       <DashboardsTable isPreview />
     </div>
   </div>

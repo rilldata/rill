@@ -2,6 +2,8 @@ import {
   addFilter,
   useDashboardFetchMocksForComponentTests,
 } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
+import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import { renderFilterComponent } from "@rilldata/web-common/features/dashboards/filters/test/render-filter-component";
 import {
   createAndExpression,
@@ -16,9 +18,19 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
-import { act, fireEvent, screen, waitFor } from "@testing-library/svelte";
+import {
+  RUNTIME_CONTEXT_KEY,
+  RuntimeClient,
+} from "@rilldata/web-common/runtime-client/v2";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/svelte";
 import { get } from "svelte/store";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 // bits-ui 2.x Select uses PointerEvent APIs that jsdom doesn't support.
 // Polyfill the missing types and methods so pointer-based interactions work in tests.
@@ -337,55 +349,196 @@ describe("DimensionFilter", () => {
     );
   });
 
-  it("In-List filter mode using search text", async () => {
-    const { stateManagers } = renderFilterComponent();
+  it("Select filter mode treats comma search text literally", async () => {
+    renderFilterComponent();
 
     // Add a filter pill for publisher
     await addFilter("publisher");
 
-    // Enter a search term with commas
+    // Enter search text with commas.
     await act(() =>
       fireEvent.input(screen.getByLabelText("publisher search list"), {
         target: { value: "Facebook,Google,Apple" },
       }),
     );
-    // Mode is automatically changed to In-List
-    expect(getModeSelectorText()).toContain("In List");
-    // 2 of 3 results matched based on mocked response.
+
+    // Select mode should not auto-switch to In List.
+    expect(getModeSelectorText()).toContain("Select");
+    expect(
+      screen.queryByLabelText("publisher result count"),
+    ).not.toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByLabelText("publisher result count")).toHaveTextContent(
-        "2 of 3 matched",
+      expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
+        "publisher",
       ),
     );
-    expect(getGroupItemTexts("publisher results")).toEqual([
+  });
+
+  it("checks In List URL length using selected and searched values", async () => {
+    const isUrlTooLongAfterInListFilter = vi.fn(() => false);
+
+    render(DimensionFilter, {
+      props: {
+        filterData: {
+          name: AD_BIDS_PUBLISHER_DIMENSION,
+          label: AD_BIDS_PUBLISHER_DIMENSION,
+          mode: DimensionFilterMode.InList,
+          dimensions: new Map([[AD_BIDS_METRICS_NAME, {}]]),
+          selectedValues: ["Existing"],
+        },
+        expressionMap: new Map(),
+        openOnMount: false,
+        timeStart: undefined,
+        timeEnd: undefined,
+        timeDimension: undefined,
+        timeControlsReady: false,
+        removeDimensionFilter: vi.fn(),
+        applyDimensionInListMode: vi.fn(),
+        toggleDimensionValueSelections: vi.fn(),
+        applyDimensionContainsMode: vi.fn(),
+        toggleDimensionFilterMode: vi.fn(),
+        isUrlTooLongAfterInListFilter,
+      },
+      context: new Map<string | symbol, unknown>([
+        [
+          RUNTIME_CONTEXT_KEY,
+          new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+        ],
+      ]),
+    });
+
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+    await act(() =>
+      fireEvent.input(screen.getByLabelText("publisher search list"), {
+        target: { value: "Facebook,Google" },
+      }),
+    );
+
+    expect(isUrlTooLongAfterInListFilter).toHaveBeenLastCalledWith([
+      "Existing",
       "Facebook",
       "Google",
-      "Apple",
     ]);
-    // Pill is updated as well.
-    expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
-      "publisher In list (2 of 3)",
-    );
 
-    // Apply to get the filter to take effect.
-    await act(() => screen.getByRole("button", { name: "Apply" }).click());
+    // Close the dropdown so bits-ui's body-scroll-lock cleanup fires while
+    // jsdom is still alive (otherwise the deferred cleanup fires after teardown
+    // and produces an unhandled "document is not defined" error).
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+  });
 
-    // Filter is added to the dashboard
-    expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
-      createAndExpression([
-        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
-          "Facebook",
-          "Google",
-          "Apple",
-        ]),
+  it("rerenders the chip when only the include/exclude operator changes", async () => {
+    const props = {
+      filterData: {
+        name: "device_type",
+        label: "Device Type",
+        mode: DimensionFilterMode.Select,
+        dimensions: new Map([[AD_BIDS_METRICS_NAME, {}]]),
+        selectedValues: ["ConnectedTV"],
+        isInclude: false,
+      },
+      expressionMap: new Map(),
+      openOnMount: false,
+      timeStart: undefined,
+      timeEnd: undefined,
+      timeDimension: undefined,
+      timeControlsReady: false,
+      removeDimensionFilter: vi.fn(),
+      applyDimensionInListMode: vi.fn(),
+      toggleDimensionValueSelections: vi.fn(),
+      applyDimensionContainsMode: vi.fn(),
+      toggleDimensionFilterMode: vi.fn(),
+    };
+
+    const { rerender } = render(DimensionFilter, {
+      props,
+      context: new Map<string | symbol, unknown>([
+        [
+          RUNTIME_CONTEXT_KEY,
+          new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+        ],
       ]),
+    });
+
+    const chip = screen.getByLabelText("device_type filter");
+    expect(screen.getByLabelText("Open device_type filter")).toHaveTextContent(
+      "Exclude Device Type ConnectedTV",
+    );
+    expect(chip).toHaveClass("exclude");
+
+    await rerender({
+      ...props,
+      filterData: {
+        ...props.filterData,
+        isInclude: true,
+      },
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("Open device_type filter"),
+      ).toHaveTextContent("Device Type ConnectedTV"),
     );
     expect(
-      get(stateManagers.dashboardStore).dimensionsWithInlistFilter,
-    ).toEqual(["publisher"]);
-    // Filter pill is persisted
-    expect(screen.getByLabelText("Open publisher filter")).toHaveTextContent(
-      "publisher In list (2 of 3)",
+      screen.getByLabelText("Open device_type filter"),
+    ).not.toHaveTextContent("Exclude");
+    expect(chip).not.toHaveClass("exclude");
+  });
+
+  it("applies a pending include/exclude toggle when select mode closes", async () => {
+    const toggleDimensionFilterMode = vi.fn().mockResolvedValue(undefined);
+    const toggleDimensionValueSelections = vi.fn().mockResolvedValue(undefined);
+    const props = {
+      filterData: {
+        name: AD_BIDS_PUBLISHER_DIMENSION,
+        label: "Publisher",
+        mode: DimensionFilterMode.Select,
+        dimensions: new Map([[AD_BIDS_METRICS_NAME, {}]]),
+        selectedValues: ["Facebook"],
+        isInclude: true,
+      },
+      expressionMap: new Map(),
+      openOnMount: false,
+      timeStart: undefined,
+      timeEnd: undefined,
+      timeDimension: undefined,
+      timeControlsReady: false,
+      removeDimensionFilter: vi.fn(),
+      applyDimensionInListMode: vi.fn(),
+      toggleDimensionValueSelections,
+      applyDimensionContainsMode: vi.fn(),
+      toggleDimensionFilterMode,
+    };
+
+    render(DimensionFilter, {
+      props,
+      context: new Map<string | symbol, unknown>([
+        [
+          RUNTIME_CONTEXT_KEY,
+          new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+        ],
+      ]),
+    });
+
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+    await act(() =>
+      fireEvent.click(screen.getByLabelText("Include exclude toggle")),
+    );
+    expect(screen.getByLabelText("Include exclude toggle")).toHaveAttribute(
+      "data-state",
+      "checked",
+    );
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+
+    await waitFor(() =>
+      expect(toggleDimensionFilterMode).toHaveBeenCalledWith(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        [AD_BIDS_METRICS_NAME],
+      ),
+    );
+    expect(toggleDimensionValueSelections).toHaveBeenCalledWith(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      [],
+      [AD_BIDS_METRICS_NAME],
     );
   });
 });

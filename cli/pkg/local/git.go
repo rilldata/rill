@@ -6,9 +6,9 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 )
 
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
@@ -20,7 +20,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
 		// if not authenticated do not return local/remote changes info
-		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin", "")
+		st, err := gitutil.Status(ctx, gitPath, subPath, "origin", "")
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +39,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 			return nil, err
 		}
 		// if not connected to a project do not return local/remote changes info
-		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin", "")
+		st, err := gitutil.Status(ctx, gitPath, subPath, "origin", "")
 		if err != nil {
 			return nil, err
 		}
@@ -68,11 +68,11 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	if err != nil {
 		return nil, err
 	}
-	err = gitutil.GitFetch(ctx, gitPath, config)
+	err = gitutil.Fetch(ctx, gitPath, config)
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.RunGitStatus(gitPath, subPath, config.RemoteName(), "")
+	gs, err := gitutil.Status(ctx, gitPath, subPath, config.RemoteName(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, err
 	}
 
-	out, err := gitutil.RunGitPull(ctx, gitPath, r.Msg.DiscardLocal, remote, config.RemoteName())
+	out, err := gitutil.Pull(ctx, gitPath, r.Msg.DiscardLocal, remote, config.RemoteName())
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 	}
 
 	// fetch the status again
-	gs, err := gitutil.RunGitStatus(gitPath, subpath, config.RemoteName(), "")
+	gs, err := gitutil.Status(ctx, gitPath, subpath, config.RemoteName(), "")
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
-  import { getConnectorYamlPreview } from "./yaml-preview.ts";
+  import { getConnectorYAML } from "./connector-source-yaml-generator.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -17,6 +17,7 @@
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getConnectorDriverForSchema } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
 
   export let stateManager: AddDataStateManager;
   export let step: CreateConnectorStep;
@@ -27,11 +28,14 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
-  export let cachedFormValues: Record<string, unknown>;
-  export let connectorName: string;
-  export let cachedEnvBlob: string;
-
+  const envStore = getEnvFileStore();
   const runtimeClient = useRuntimeClient();
+
+  const {
+    name: connectorName,
+    formValues: cachedFormValues,
+    envEditSession: cachedEnvEditSession,
+  } = connectorFormCache.getOrCreate(step.schema, step.connectorId, envStore);
 
   $: connectorDriver = getConnectorDriverForSchema(step.schema);
 
@@ -49,7 +53,7 @@
           schemaName: step.schema,
           formValues: form.data,
           validate: true,
-          existingEnvBlob: cachedEnvBlob,
+          envEditSession: cachedEnvEditSession,
         });
 
         connectorFormCache.updateFormValues(step.connectorId, form.data);
@@ -67,11 +71,11 @@
 
   $: schema = getConnectorSchema(step.schema);
   $: yamlPreview = connectorDriver
-    ? getConnectorYamlPreview({
+    ? getConnectorYAML({
         connector: connectorDriver,
         formValues: $form,
         schema,
-        existingEnvBlob: cachedEnvBlob,
+        envEditSession: cachedEnvEditSession,
       })
     : "";
 
@@ -87,14 +91,20 @@
       schemaName: step.schema,
       formValues: $form,
       validate: false,
-      existingEnvBlob: cachedEnvBlob,
+      envEditSession: cachedEnvEditSession,
     });
     onClose();
     return navigateToFile(addLeadingSlash(connectorPath));
   }
 
   async function cleanupAndBack() {
-    await maybeDeleteConnector(runtimeClient, queryClient, connectorName);
+    await maybeDeleteConnector(
+      runtimeClient,
+      queryClient,
+      connectorName,
+      cachedEnvEditSession,
+    );
+    connectorFormCache.delete(step.connectorId);
 
     onBack();
   }

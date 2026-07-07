@@ -124,52 +124,74 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	q := fmt.Sprintf(`
-	SELECT 
-		CASE t.table_type WHEN 'VIEW' THEN true else false END AS is_view,
-		c.column_name,
-		c.data_type
-	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+` AS t
-	JOIN `+"`%s.%s.INFORMATION_SCHEMA.COLUMNS`"+` AS c
-	ON t.table_name = c.table_name
-	WHERE c.table_name = @table
-	ORDER BY c.ordinal_position
-	`, database, databaseSchema, database, databaseSchema)
-
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
+
+	var table *bigquery.Table
+	if database != "" {
+		table = client.DatasetInProject(database, databaseSchema).Table(name)
+	} else {
+		table = client.Dataset(databaseSchema).Table(name)
+	}
+
+	meta, err := table.Metadata(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get table metadata: %w", err)
+	}
+	runtimeSchema, err := fromBQSchema(meta.Schema)
+	if err != nil {
+		return nil, err
+	}
+	tbl := &drivers.OlapTable{
+		Database:          database,
+		DatabaseSchema:    databaseSchema,
+		Name:              name,
+		View:              meta.Type == bigquery.ViewTable,
+		Schema:            runtimeSchema,
+		UnsupportedCols:   nil, // all columns are currently being mapped though may not be as specific as in BigQuery
+		PhysicalSizeBytes: 0,
+	}
+	return tbl, nil
+}
+
+// All implements drivers.OLAPInformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.OLAPInformationSchema.
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	client, err := c.getClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	q := fmt.Sprintf("SELECT ddl FROM `%s.%s.INFORMATION_SCHEMA.TABLES` WHERE table_name = @name", table.Database, table.DatabaseSchema)
 	cq := client.Query(q)
 	cq.Parameters = []bigquery.QueryParameter{
-		{Name: "table", Value: table},
+		{Name: "name", Value: table.Name},
 	}
 
 	it, err := cq.Read(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to run INFORMATION_SCHEMA query: %w", err)
+		return err
 	}
 
-	r := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
 	var row struct {
-		IsView     bool   `bigquery:"is_view"`
-		ColumnName string `bigquery:"column_name"`
-		DataType   string `bigquery:"data_type"`
+		DDL string `bigquery:"ddl"`
 	}
-	for {
-		err := it.Next(&row)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to iterate over schema rows: %w", err)
-		}
-		r.Schema[row.ColumnName] = row.DataType
-		r.View = row.IsView
+	err = it.Next(&row)
+	if err != nil {
+		return err
 	}
-
-	return r, nil
+	table.DDL = row.DDL
+	return nil
 }

@@ -30,14 +30,14 @@
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
     .join(" ");
+
+  // Measure/dimension chips always show a tooltip (display name, plus the
+  // description when present). Time chips only have something worth showing
+  // when a description is set.
+  $: showTooltip = item.type === PivotChipType.Time ? !!item.description : true;
 </script>
 
-<Tooltip
-  distance={8}
-  location="top"
-  suppress={!item.description}
-  activeDelay={200}
->
+<Tooltip distance={8} location="top" suppress={!showTooltip} activeDelay={200}>
   <Chip
     theme
     type={item.type}
@@ -69,6 +69,13 @@
     </div>
   </Chip>
   <TooltipContent slot="tooltip-content">
-    {item.description}
+    {#if item.type === PivotChipType.Time}
+      {item.description}
+    {:else}
+      <div class="font-bold">{item.title}</div>
+      {#if item.description}
+        <div class="text-fg-inverse/70 mt-0.5">{item.description}</div>
+      {/if}
+    {/if}
   </TooltipContent>
 </Tooltip>

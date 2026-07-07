@@ -6,12 +6,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
   import { onMount } from "svelte";
-  import { getSourceYamlPreview } from "./yaml-preview.ts";
+  import { getSourceYAML } from "./connector-source-yaml-generator.ts";
   import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { prepareSourceFormData } from "@rilldata/web-common/features/sources/sourceUtils.ts";
-  import { getSchemaSecretKeys } from "@rilldata/web-common/features/templates/schema-utils.ts";
-  import { updateDotEnvWithSecrets } from "@rilldata/web-common/features/connectors/code-utils.ts";
   import {
     type AddDataConfig,
     type CreateModelStep,
@@ -30,9 +28,10 @@
   import {
     getConnectorDriverForSchema,
     getImportStepsForSource,
-    maybeGetEnvContent,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
+  import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
   import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
   import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
   import { setError, type SuperValidated } from "sveltekit-superforms";
@@ -52,15 +51,20 @@
     $connectorDriverQuery.data?.driver ??
     getConnectorDriverForSchema(step.schema);
 
+  const envStore = getEnvFileStore();
+  const envEditSession = new EnvEditSession(
+    envStore,
+    step.connector,
+    getConnectorSchema(step.schema),
+  );
+
   const importSteps = getImportStepsForSource(config);
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
   // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
-  let existingEnvBlob: string | null = null;
   let defaultOLAP = "duckdb";
   onMount(async () => {
-    existingEnvBlob = await maybeGetEnvContent();
     try {
       const runtimeInstance = await queryClient.fetchQuery({
         queryKey: getRuntimeServiceGetInstanceQueryKey(
@@ -95,12 +99,12 @@
 
   $: schema = getConnectorSchema(step.schema);
   $: yamlPreview = connectorDriver
-    ? getSourceYamlPreview({
+    ? getSourceYAML({
         connectorName: step.connector,
         connector: connectorDriver,
         formValues: $form,
         schema,
-        existingEnvBlob,
+        envEditSession,
         outputConnector: defaultOLAP,
       })
     : "";
@@ -116,27 +120,6 @@
     const formValues = form.data;
 
     await maybeInitProject(runtimeClient);
-
-    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
-      connectorDriver,
-      formValues,
-      { connectorInstanceName: step.connector },
-    );
-    const schema = getConnectorSchema(rewrittenConnector.name ?? "");
-    const schemaSecretKeys = schema
-      ? getSchemaSecretKeys(schema, { step: "source" })
-      : [];
-
-    // Create or update the `.env` file
-    const { newBlob } = await updateDotEnvWithSecrets(
-      runtimeClient,
-      queryClient,
-      rewrittenConnector,
-      rewrittenFormValues,
-      {
-        secretKeys: schemaSecretKeys,
-      },
-    );
 
     if (formValues.file) {
       // TODO: support multiple files upload
@@ -154,12 +137,20 @@
         throw e; // rethrow so that global error handler is triggered
       }
     }
-    const yaml = getSourceYamlPreview({
+
+    const [rewrittenConnector] = prepareSourceFormData(
+      connectorDriver,
+      formValues,
+      { connectorInstanceName: step.connector },
+    );
+    const schema = getConnectorSchema(rewrittenConnector.name ?? "");
+
+    const yaml = getSourceYAML({
       connectorName: step.connector,
       connector: connectorDriver,
       formValues,
       schema,
-      existingEnvBlob,
+      envEditSession,
       outputConnector: defaultOLAP,
     });
 
@@ -176,7 +167,7 @@
         importFrom,
         formValues.name as string | undefined,
       ),
-      envBlob: newBlob,
+      envEditSession,
     } satisfies ImportStepConfig;
 
     onSubmit(importConfig);

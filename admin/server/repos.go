@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -74,13 +74,15 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, err
 	}
 
-	ep, err := transport.NewEndpoint(*proj.GitRemote)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create endpoint from %q: %w", *proj.GitRemote, err)
+	cfg := &gitutil.Config{
+		Remote:   *proj.GitRemote,
+		Username: "x-access-token",
+		Password: token,
 	}
-	ep.User = "x-access-token"
-	ep.Password = token
-	gitURL := ep.String()
+	gitURL, err := cfg.FullyQualifiedRemote()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build git url from %q: %w", *proj.GitRemote, err)
+	}
 
 	return &adminv1.GetRepoMetaResponse{
 		ExpiresOn:      timestamppb.New(expiresAt),

@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
 
@@ -33,7 +34,11 @@
 
   $: ({ url } = $page);
 
-  $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
+  $: existingStore = getCanvasStoreUnguarded(
+    canvasName,
+    instanceId,
+    allowUnvalidatedSpec,
+  );
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
@@ -103,6 +108,8 @@
     });
   }
 
+  let release: (() => void) | undefined = undefined;
+
   onNavigate(() => {
     if (hasBanner) {
       eventBus.emit("remove-banner", DashboardBannerID);
@@ -159,18 +166,30 @@
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
         };
 
-        return setCanvasStore(
+        const newStore = setCanvasStore(
           canvasName,
           instanceId,
           processed,
           client,
           allowUnvalidatedSpec,
         );
+        newStore.canvasEntity.acquire();
+        release?.(); // release our reference to the previous entity, if any
+        release = newStore.canvasEntity.release;
+        return newStore;
       }
     }
 
+    existingStore?.canvasEntity?.acquire();
+    release?.(); // release our reference to the previous entity, if any
+    release = existingStore?.canvasEntity?.release;
+
     return existingStore;
   }
+
+  onDestroy(() => {
+    release?.();
+  });
 </script>
 
 <svelte:head>

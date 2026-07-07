@@ -4,6 +4,7 @@
   import { getPlanCredits } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
   import { PricingDetailsCompact } from "@rilldata/web-common/features/billing/pricing-details.ts";
+  import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
 
   let {
     organization,
@@ -48,23 +49,8 @@
     <span class="text-xs text-fg-tertiary font-medium">
       {creditPercent}% used, projects will hibernate when credits run out.
     </span>
-    <a
-      class="pricing-link"
-      href="https://www.rilldata.com/pricing"
-      target="_blank"
-      rel="noreferrer noopener"
-    >
-      See pricing details
-      <svg
-        class="w-3 h-3"
-        viewBox="0 0 12 12"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-      >
-        <path d="M1 6h9M7.5 3l3 3-3 3" />
-      </svg>
-    </a>
+
+    <PricingLink />
   </div>
 </PlanContainer>
 
@@ -100,14 +86,5 @@
 
   .subscribe-btn:hover {
     @apply bg-primary-600;
-  }
-
-  .pricing-link {
-    @apply mt-3 inline-flex items-center gap-1 self-end;
-    @apply text-xs font-medium text-primary-600 no-underline;
-  }
-
-  .pricing-link:hover {
-    @apply underline;
   }
 </style>

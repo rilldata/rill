@@ -152,6 +152,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		defer cancel()
 	}
 
+	if cfg.DisableModels { // Global disable
+		return runtime.ReconcileResult{Err: errors.New("model execution is paused")}
+	}
+
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
 		if prevManager != nil {
@@ -292,6 +296,26 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			err = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
+			}
+		}
+		// If the model currently has partition errors, recompute whether that's still the case. The error state may
+		// have cleared without an execution if errored partitions were skipped (skipped partitions are excluded from
+		// the error check). Skipping can't introduce a new error, so we only need to recompute when an error is set.
+		if model.State.PartitionsHaveErrors && model.State.PartitionsModelId != "" {
+			catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			partitionsHaveErrors, err := catalog.CheckModelPartitionsHaveErrors(ctx, model.State.PartitionsModelId)
+			release()
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+			if !partitionsHaveErrors {
+				model.State.PartitionsHaveErrors = false
+				if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
+					return runtime.ReconcileResult{Err: err}
+				}
 			}
 		}
 		// Show if any partitions errored
@@ -1227,9 +1251,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			panic("executePartition returned false despite returnErr being set to true") // Can't happen
 		}
 
-		// Update the state so the next invocations will be incremental
+		// Update the state so the next invocations will be incremental.
+		// We also update incrementalState so that templating (e.g. the "incremental" helper) reflects the flip.
 		prevResult = res
 		incrementalRun = true
+		incrementalState["incremental"] = true
 		totalExecDuration.Add(int64(res.ExecDuration))
 		totalPartitionsProcessed.Add(1)
 
@@ -1363,7 +1389,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	if len(partition.DataJSON) < 256 {
 		logArgs = append(logArgs, zap.Any("data", data))
 	}
-	r.C.Logger.Debug("Executing model partition", logArgs...)
+	r.C.Logger.Info("Executing model partition", logArgs...)
 	defer func() { r.C.Logger.Info("Executed model partition", logArgs...) }()
 
 	// Execute the partition.

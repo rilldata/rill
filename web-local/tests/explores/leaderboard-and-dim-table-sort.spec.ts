@@ -4,14 +4,19 @@ import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
-  const topA = await locA.boundingBox().then((box) => box?.y);
-  const topB = await locB.boundingBox().then((box) => box?.y);
+  await expect(locA).toBeVisible();
+  await expect(locB).toBeVisible();
 
-  expect(topA).toBeDefined();
-  expect(topB).toBeDefined();
-
-  // Safety: topB is defined
-  expect(topA).toBeLessThan(topB as number);
+  // Poll the layout so the assertion waits for rankings to settle rather than
+  // relying on a fixed sleep after the action that triggered the re-sort.
+  await expect
+    .poll(async () => {
+      const topA = (await locA.boundingBox())?.y;
+      const topB = (await locB.boundingBox())?.y;
+      if (topA === undefined || topB === undefined) return false;
+      return topA < topB;
+    })
+    .toBe(true);
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
@@ -63,18 +68,12 @@ test.describe("leaderboard and dimension table sorting", () => {
     // add time comparison and select Pct change
     await page.getByLabel("Toggle time comparison").click();
 
-    // need a slight delay for the time range to update
-    // and the "Pct change" option to be available
-    // in the context column dropdown
-    await page.waitForTimeout(1000);
-
+    // The percent-change sort toggle only appears once time comparison is on;
+    // the click below auto-waits for it to become actionable.
     await page
       .getByLabel("publisher leaderboard")
       .getByLabel("Toggle sort leaderboards by percent change")
       .click();
-
-    // need a slight delay for the rankings to update
-    await page.waitForTimeout(1000);
 
     // Broader selectors using RegEx to account for some Playwright runs triggering the display
     // of the starting value on hover

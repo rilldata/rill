@@ -69,6 +69,7 @@
                 {resource}
                 whereErrored={selectedFilter === "errors"}
                 wherePending={selectedFilter === "pending"}
+                whereSkipped={selectedFilter === "skipped"}
                 {searchText}
               />
             </div>

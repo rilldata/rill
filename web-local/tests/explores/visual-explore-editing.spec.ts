@@ -14,7 +14,6 @@ test.describe("visual explore editing", () => {
     await waitForReconciliation(page);
 
     await page.getByLabel("/dashboards").click();
-    await page.waitForTimeout(1000);
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
@@ -25,13 +24,15 @@ test.describe("visual explore editing", () => {
     await page.getByRole("button", { name: "Custom" }).nth(1).click();
     await page.getByRole("button", { name: "Custom" }).nth(2).click();
 
-    let text = await page
-      .getByRole("textbox", { name: "codemirror editor" })
-      .textContent();
-
-    expect(text).toEqual(
-      ' 561234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253545556# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: "Adbids dashboard"metrics_view: AdBids_metricsdimensions:  - publisher  - domain  - timestamp  - offset_timestampmeasures:  - total_records  - bid_price_sumtime_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYC  - inftime_zones:  - UTC  - America/Los_Angeles  - America/Chicago  - America/New_York  - Europe/London  - Europe/Paris  - Asia/Jerusalem  - Europe/Moscow  - Asia/Kolkata  - Asia/Shanghai  - Asia/Tokyo  - Australia/Sydneytheme:  light:    primary: hsl(180, 100%, 50%)    secondary: lightgreen  dark:    primary: hsl(180, 100%, 50%)    secondary: lightgreen',
-    );
+    // Poll the editor content so the assertion waits for the visual-editor
+    // edits to flush into the code editor rather than reading mid-update.
+    await expect
+      .poll(() =>
+        page.getByRole("textbox", { name: "codemirror editor" }).textContent(),
+      )
+      .toContain(
+        '# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: "Adbids dashboard"metrics_view: AdBids_metricsdimensions:  - publisher  - domain  - timestamp  - offset_timestampmeasures:  - total_records  - bid_price_sumtime_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYC  - inftime_zones:  - UTC  - America/Los_Angeles  - America/Chicago  - America/New_York  - Europe/London  - Europe/Paris  - Asia/Jerusalem  - Europe/Moscow  - Asia/Kolkata  - Asia/Shanghai  - Asia/Tokyo  - Australia/Sydneytheme:  light:    primary: hsl(180, 100%, 50%)    secondary: lightgreen  dark:    primary: hsl(180, 100%, 50%)    secondary: lightgreen',
+      );
 
     await page.getByRole("button", { name: "Expression" }).first().click();
     await page.getByRole("button", { name: "Expression" }).nth(1).click();
@@ -39,12 +40,12 @@ test.describe("visual explore editing", () => {
     await page.getByRole("button", { name: "Default" }).first().click();
     await page.getByRole("button", { name: "Presets" }).click();
 
-    text = await page
-      .getByRole("textbox", { name: "codemirror editor" })
-      .textContent();
-
-    expect(text).toEqual(
-      ' 45123456789101112131415161718192021222324252627282930313233343536373839404142434445# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: "Adbids dashboard"metrics_view: AdBids_metricsdimensions:  expr: "*"measures:  expr: "*"time_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P3M  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYCtime_zones:  - UTC  - America/Los_Angeles  - America/Chicago  - America/New_York  - Europe/London  - Europe/Paris  - Asia/Jerusalem  - Europe/Moscow  - Asia/Kolkata  - Asia/Shanghai  - Asia/Tokyo  - Australia/Sydney',
-    );
+    await expect
+      .poll(() =>
+        page.getByRole("textbox", { name: "codemirror editor" }).textContent(),
+      )
+      .toContain(
+        '# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: "Adbids dashboard"metrics_view: AdBids_metricsdimensions:  expr: "*"measures:  expr: "*"time_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P3M  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYCtime_zones:  - UTC  - America/Los_Angeles  - America/Chicago  - America/New_York  - Europe/London  - Europe/Paris  - Asia/Jerusalem  - Europe/Moscow  - Asia/Kolkata  - Asia/Shanghai  - Asia/Tokyo  - Australia/Sydney',
+      );
   });
 });

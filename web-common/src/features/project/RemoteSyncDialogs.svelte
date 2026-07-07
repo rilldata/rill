@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { ConnectError } from "@connectrpc/connect";
-  import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -96,7 +95,7 @@
       return;
     }
 
-    if (isMergeConflictError(resp.output)) {
+    if (resp.conflict) {
       mergeConflictResolutionDialog = true;
       return;
     }

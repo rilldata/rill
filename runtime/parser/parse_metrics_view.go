@@ -314,8 +314,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	if tmp.DataTimeRange != "" {
-		_, err := rilltime.Parse(tmp.DataTimeRange, rilltime.ParseOptions{})
-		if err != nil {
+		if err := validateDataTimeRange(tmp.DataTimeRange); err != nil {
 			return fmt.Errorf(`invalid "data_time_range": %w`, err)
 		}
 	}
@@ -801,7 +800,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			}
 		}
 		if rollup.DataTimeRange != "" {
-			if _, err := rilltime.Parse(rollup.DataTimeRange, rilltime.ParseOptions{}); err != nil {
+			if err := validateDataTimeRange(rollup.DataTimeRange); err != nil {
 				return fmt.Errorf(`rollup[%d]: invalid "data_time_range": %w`, i, err)
 			}
 		}
@@ -866,13 +865,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// validate and insert inline explore, if true and no error is returned from the method then an explore resource is created so no error should be returned after this point
-	skipExplore, exploreRes, err := p.parseAndInsertInlineExplore(tmp, node.Name, node.Paths)
+	skipExplore, exploreRes, err := p.parseAndInsertInlineExplore(tmp, node.Name, node.Paths, node.Tags)
 	if err != nil {
 		return fmt.Errorf("failed to parse inline explore: %w", err)
 	}
 
 	// insert metrics view resource immediately after parsing the inline explore as it inserts the explore resource so we should not return an error now
-	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		// If we fail to insert the metrics view, we must delete the inline explore if it was created.
 		if exploreRes != nil {
@@ -966,7 +965,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if tmp.DefaultTheme != "" {
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
-	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, refs...)
+	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, refs...)
 	if err != nil {
 		// We mustn't error because we have already emitted one resource.
 		// Since this probably means an explore has been defined separately, we can just ignore this error.
@@ -1031,7 +1030,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 }
 
 // parseAndInsertInlineExplore parses and validates the inline explore definition in a metrics view YAML. It returns true if automatic explore emission should be skipped, false otherwise.
-func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string, mvPaths []string) (bool, *Resource, error) {
+func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string, mvPaths, mvTags []string) (bool, *Resource, error) {
 	if tmp.Explore == nil {
 		return false, nil, nil
 	}
@@ -1151,7 +1150,7 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 		name = tmp.Explore.Name
 	}
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, name, mvPaths, refs...)
+	r, err := p.insertResource(ResourceKindExplore, name, mvPaths, mvTags, refs...)
 	if err != nil {
 		return false, nil, err
 	}
@@ -1266,6 +1265,24 @@ func inferRefsFromSecurityRules(rules []*runtimev1.SecurityRule) ([]ResourceName
 	}
 	// No need to deduplicate because that's done upstream when the resource is inserted.
 	return refs, nil
+}
+
+// validateDataTimeRange parses a data_time_range expression and rejects it if it resolves to an
+// unbounded lower bound (e.g. "inf" or "earliest to now"). A zero start is the system-wide assumption
+// for "no time data present" (see valOrNullTime in the server and the metrics_time_range resolver),
+// so a declared range must have a concrete start; otherwise omit data_time_range to probe the table.
+func validateDataTimeRange(expr string) error {
+	rt, err := rilltime.Parse(expr, rilltime.ParseOptions{})
+	if err != nil {
+		return err
+	}
+	// Evaluate against the same synthetic anchors used when resolving declared ranges.
+	now := time.Now()
+	start, _, _ := rt.Eval(rilltime.EvalOptions{Now: now, MinTime: time.Time{}, MaxTime: now, Watermark: now})
+	if start.IsZero() {
+		return errors.New("must have a bounded start; \"inf\" and \"earliest\" resolve to an unbounded lower bound which the system treats as no data (use a concrete range like \"-90d to now\", or omit data_time_range to detect bounds from the table)")
+	}
+	return nil
 }
 
 // validateQueryAttributes validates query attribute keys

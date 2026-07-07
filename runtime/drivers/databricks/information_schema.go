@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
@@ -134,7 +135,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	prefix := catalogPrefix(database)
 	q := fmt.Sprintf(`
 	SELECT
@@ -148,34 +149,73 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	ORDER BY c.ordinal_position
 	`, prefix, prefix)
 
-	db, err := c.getDB(ctx)
+	conn, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.QueryContext(ctx, q, databaseSchema, table)
+	rows, err := conn.QueryContext(ctx, q, databaseSchema, name)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	t := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
-	var colName, colType string
 	var isView bool
+	var fields []*runtimev1.StructType_Field
+	var colName, colType string
 	for rows.Next() {
 		if err := rows.Scan(&isView, &colName, &colType); err != nil {
 			return nil, err
 		}
-		t.Schema[colName] = colType
-		t.View = isView
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: colName,
+			Type: databaseTypeToPB(colType),
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return t, nil
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           isView,
+		Schema:         &runtimev1.StructType{Fields: fields},
+	}, nil
+}
+
+// All implements drivers.OLAPInformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.OLAPInformationSchema.
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	fqn := DialectDatabricks.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
+
+	objectType := "TABLE"
+	if table.View {
+		objectType = "VIEW"
+	}
+
+	var ddl string
+	err = db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE %s %s", objectType, fqn)).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
 }
 
 // catalogPrefix returns "<catalog>." if catalog is non-empty, or "" otherwise.

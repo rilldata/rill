@@ -45,7 +45,11 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let primaryTimeDimension: string | undefined = undefined;
   export let selectedTimeDimension: string | undefined = undefined;
-  export let timeDimensions: { value: string; label: string }[] = [];
+  export let timeDimensions: {
+    value: string;
+    label: string;
+    description?: string;
+  }[] = [];
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;

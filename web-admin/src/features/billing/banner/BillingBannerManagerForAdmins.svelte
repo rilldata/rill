@@ -4,13 +4,12 @@
     type BillingIssueMessage,
     useBillingIssueMessage,
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/StartTeamPlanDialog.svelte";
+  import ChoosePlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/ChoosePlanDialog.svelte";
   import {
     BillingBannerID,
     BillingBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
 
   export let organization: string;
 
@@ -18,10 +17,6 @@
   $: billingCTAHandler = new BillingCTAHandler(organization);
   $: ({ showStartTeamPlanDialog, startTeamPlanType, teamPlanEndDate } =
     billingCTAHandler);
-
-  $: categorisedIssuesQuery =
-    useCategorisedOrganizationBillingIssues(organization);
-  $: categorisedIssues = $categorisedIssuesQuery.data;
 
   function showBillingIssueBanner(message: BillingIssueMessage | undefined) {
     if (!message) {
@@ -42,7 +37,7 @@
                 type: "button",
                 text: message.cta.text + " ->",
                 onClick() {
-                  return billingCTAHandler.handle(message, categorisedIssues);
+                  return billingCTAHandler.handle(message);
                 },
               },
             }
@@ -55,7 +50,7 @@
   $: showBillingIssueBanner($billingIssueMessage.data);
 </script>
 
-<StartTeamPlanDialog
+<ChoosePlanDialog
   bind:open={$showStartTeamPlanDialog}
   type={$startTeamPlanType}
   endDate={$teamPlanEndDate}

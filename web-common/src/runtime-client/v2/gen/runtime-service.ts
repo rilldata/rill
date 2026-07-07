@@ -36,6 +36,8 @@ import {
   GetModelPartitionsRequest,
   GetResourceRequest,
   GitCommitRequest,
+  GitDiffRequest,
+  GitDiffResponse,
   GitMergeToBranchRequest,
   GitPullRequest,
   GitPushRequest,
@@ -63,6 +65,8 @@ import {
   RenameFileRequest,
   RestoreGitCommitRequest,
   ShareConversationRequest,
+  SkipModelPartitionsRequest,
+  SkipModelPartitionsResponse,
   UnpackEmptyRequest,
   UnpackExampleRequest,
 } from "../../../proto/gen/rill/runtime/v1/api_pb";
@@ -2045,6 +2049,84 @@ export function createRuntimeServiceGitStatus<TData = V1GitStatusResponse>(
 }
 
 /**
+ * Raw RPC call: RuntimeService.GitDiff
+ */
+export async function runtimeServiceGitDiff(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GitDiffRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<GitDiffResponse>> {
+  const r = await client.runtimeService.gitDiff(
+    GitDiffRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GitDiffResponse>;
+}
+
+export function getRuntimeServiceGitDiffQueryKey(
+  instanceId: string,
+  request?: Omit<PartialMessage<GitDiffRequest>, "instanceId">,
+): QueryKey {
+  return ["RuntimeService", "gitDiff", instanceId, request ?? {}] as const;
+}
+
+export function getRuntimeServiceGitDiffQueryOptions<
+  TData = PartialMessage<GitDiffResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GitDiffRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<PartialMessage<GitDiffResponse>, ConnectError, TData>
+    >;
+  },
+): CreateQueryOptions<PartialMessage<GitDiffResponse>, ConnectError, TData> & {
+  queryKey: QueryKey;
+} {
+  const queryKey = getRuntimeServiceGitDiffQueryKey(client.instanceId, request);
+  const queryFn: QueryFunction<PartialMessage<GitDiffResponse>> = ({
+    signal,
+  }) => runtimeServiceGitDiff(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<
+    PartialMessage<GitDiffResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
+}
+
+export function createRuntimeServiceGitDiff<
+  TData = PartialMessage<GitDiffResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GitDiffRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<PartialMessage<GitDiffResponse>, ConnectError, TData>
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceGitDiffQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
  * Raw RPC call: RuntimeService.ListGitBranches
  */
 export async function runtimeServiceListGitBranches(
@@ -2958,6 +3040,70 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
   Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGenerateCanvasFileMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.SkipModelPartitions
+ */
+export async function runtimeServiceSkipModelPartitions(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<SkipModelPartitionsResponse>> {
+  const r = await client.runtimeService.skipModelPartitions(
+    SkipModelPartitionsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<SkipModelPartitionsResponse>;
+}
+
+export function getRuntimeServiceSkipModelPartitionsMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<SkipModelPartitionsResponse>,
+      unknown,
+      Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<SkipModelPartitionsResponse>,
+  unknown,
+  Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceSkipModelPartitions(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceSkipModelPartitionsMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<SkipModelPartitionsResponse>,
+      unknown,
+      Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<SkipModelPartitionsResponse>,
+  unknown,
+  Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceSkipModelPartitionsMutationOptions(
     client,
     options,
   );

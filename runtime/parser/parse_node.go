@@ -18,6 +18,7 @@ type Node struct {
 	Kind              ResourceKind
 	Name              string
 	Refs              []ResourceName
+	Tags              []string
 	Paths             []string
 	YAML              *yaml.Node
 	YAMLOverride      *yaml.Node
@@ -78,6 +79,8 @@ type commonYAML struct {
 	Namespace string `yaml:"namespace"`
 	// Refs are a list of other resources that this resource depends on. They are usually inferred from other fields, but can also be specified manually.
 	Refs []yaml.Node `yaml:"refs"`
+	// Tags are user-defined labels for organizing and filtering resources. Parsed generically for all resource types.
+	Tags []string `yaml:"tags"`
 	// ParserConfig enables setting file-level parser config.
 	ParserConfig struct {
 		Templating *bool `yaml:"templating"`
@@ -159,6 +162,7 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		// Copy basic properties
 		res.Version = cfg.Version
 		res.Name = cfg.Name
+		res.Tags = cfg.Tags
 		res.Connector = cfg.Connector
 		res.SQL = cfg.SQL
 		res.SQLPath = ymlPath

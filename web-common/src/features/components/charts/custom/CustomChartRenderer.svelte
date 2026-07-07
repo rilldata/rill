@@ -65,7 +65,14 @@
       {
         query: {
           enabled: !!sql && hasValidTimeRange,
-          queryKey: [`metrics_sql`, name, index, sql, filterKey],
+          queryKey: [
+            `metrics_sql`,
+            runtimeClient.instanceId,
+            name,
+            index,
+            sql,
+            filterKey,
+          ],
         },
       },
     ),

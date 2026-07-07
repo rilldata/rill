@@ -15,7 +15,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { ComponentType, SvelteComponent } from "svelte";
-import type { Readable } from "svelte/store";
+import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
@@ -49,7 +49,19 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // Widget specific time filters
   localTimeControls: TimeState;
 
+  // Lazy-load latch: flipped true once the component scrolls into view, gating
+  // its data query so off-screen components don't fetch.
   visible = writable(false);
+
+  // Whether the component's data query should run: true when the component is
+  // visible or while the canvas is exporting to PDF. Export uses this rather than
+  // forcing `visible` so it never mutates the live lazy-load state.
+  dataEnabled: Readable<boolean>;
+
+  // Tears down the spec subscription opened in the constructor. Without this,
+  // a component replaced in CanvasEntity.processRows keeps reacting to spec
+  // emissions and mutates the shared filter/time state of a deleted widget.
+  private unsubscribeSpec: Unsubscriber;
 
   abstract type: CanvasComponentType;
   // Component responsible for DOM rendering
@@ -88,6 +100,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     this.resource.set(resource);
     this.id = resource.meta?.name?.name as string;
+
+    this.dataEnabled = derived(
+      [this.visible, this.parent.exportMode],
+      ([visible, exportMode]) => visible || exportMode,
+    );
 
     const yamlTimeFilterStore: SearchParamsStore = (() => {
       const store = derived(this.specStore, (spec) => {
@@ -137,7 +154,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.metricsViewName,
     );
 
-    this.specStore.subscribe((spec) => {
+    this.unsubscribeSpec = this.specStore.subscribe((spec) => {
       this.localFilters.onFilterStringChange(
         spec["dimension_filters"] as string,
       );
@@ -146,6 +163,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         new URLSearchParams(spec?.["time_filters"] ?? ""),
       );
     });
+  }
+
+  destroy() {
+    this.unsubscribeSpec?.();
   }
 
   update(resource: V1Resource, path: ComponentPath) {

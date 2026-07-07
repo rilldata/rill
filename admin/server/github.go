@@ -15,19 +15,14 @@ import (
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v71/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
-	cligitutil "github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/archive"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -421,7 +416,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	}
 
 	if proj.ArchiveAssetID != nil {
-		author := &object.Signature{
+		author := gitutil.Signature{
 			Name:  user.GithubUsername,
 			Email: user.Email,
 		}
@@ -1207,7 +1202,7 @@ func (s *Server) createRepo(ctx context.Context, remote, branch string, user *da
 	return token, nil
 }
 
-func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, token string, author *object.Signature) error {
+func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, token string, author gitutil.Signature) error {
 	asset, err := s.admin.DB.FindAsset(ctx, assetID)
 	if err != nil {
 		return err
@@ -1230,13 +1225,13 @@ func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, to
 		return err
 	}
 
-	config := &cligitutil.Config{
+	config := &gitutil.Config{
 		Remote:        remote,
 		Username:      "x-access-token",
 		Password:      token,
 		DefaultBranch: branch,
 	}
-	return cligitutil.CommitAndPush(ctx, projPath, config, "", author)
+	return gitutil.CommitAndPush(ctx, projPath, config, "", author)
 }
 
 func (s *Server) githubAppInstallationURL(state githubConnectState) (string, error) {
@@ -1267,31 +1262,34 @@ func mirrorGitRepo(ctx context.Context, srcGitRemote, destGitRemote, srcToken, d
 	}
 	defer os.RemoveAll(gitPath)
 
-	repo, err := git.PlainCloneContext(ctx, gitPath, false, &git.CloneOptions{
-		URL:    srcGitRemote,
-		Auth:   &githttp.BasicAuth{Username: "x-access-token", Password: srcToken},
-		Mirror: true,
-	})
+	srcURL, err := gitRemoteWithToken(srcGitRemote, srcToken)
 	if err != nil {
+		return fmt.Errorf("failed to build source git url: %w", err)
+	}
+
+	// Mirror-clone into the temp dir
+	if _, err := gitutil.Run(ctx, "", "clone", "--mirror", srcURL, gitPath); err != nil {
 		return fmt.Errorf("failed to clone git repo: %w", err)
 	}
 
-	_, err = repo.CreateRemote(&config.RemoteConfig{
-		Name: "dest",
-		URLs: []string{destGitRemote},
-	})
+	destURL, err := gitRemoteWithToken(destGitRemote, destToken)
 	if err != nil {
-		return fmt.Errorf("failed to create remote: %w", err)
+		return fmt.Errorf("failed to build destination git url: %w", err)
 	}
 
-	// Push everything (all refs, like git push --mirror)
-	return repo.PushContext(ctx, &git.PushOptions{
-		Auth:       &githttp.BasicAuth{Username: "x-access-token", Password: destToken},
-		RemoteName: "dest",
-		RefSpecs: []config.RefSpec{
-			"+refs/*:refs/*", // force-push all refs
-		},
-	})
+	// Force-push every ref, equivalent to `git push --mirror`.
+	if err := gitutil.Push(ctx, gitPath, destURL, "+refs/*:refs/*"); err != nil {
+		return fmt.Errorf("failed to push git repo: %w", err)
+	}
+	return nil
+}
+
+func gitRemoteWithToken(remote, token string) (string, error) {
+	if token == "" {
+		return remote, nil
+	}
+	cfg := &gitutil.Config{Remote: remote, Username: "x-access-token", Password: token}
+	return cfg.FullyQualifiedRemote()
 }
 
 // normalizeGitRemote adds a .git suffix to the Git remote URL if it doesn't already have one.

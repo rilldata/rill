@@ -10,13 +10,13 @@ import type {
   CanvasEntity,
   ComponentPath,
 } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   PivotChipType,
   type PivotChipData,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
@@ -145,6 +145,8 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
       enableComparison: false,
       tableMode: "nest",
       activeCell: null,
+      showTotalsColumn: true,
+      showTotalsRow: true,
     };
 
     return {

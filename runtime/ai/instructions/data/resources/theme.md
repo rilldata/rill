@@ -186,6 +186,65 @@ dark:
   color-diverging-11: "#2563eb"
 ```
 
+## Building an on-brand theme from a brand
+
+A common request is "make a theme that matches `<company>`" or "build a theme that looks like `<url>`". Follow this process to produce a theme that emulates a brand while keeping dashboards legible.
+
+### Step 1: Extract the brand palette
+
+From the brand's website or assets, identify a small structured palette before writing YAML. Prefer the brand's *digital* colors (from the live site / CSS) over print or PDF brand guidelines, since those are the colors users associate with the product on screen.
+
+- **Primary**: the dominant brand color, usually the logo color or primary button color. This drives `primary`.
+- **Secondary / accent**: a complementary or analogous color used for links or secondary actions. This drives `secondary`. If the brand is effectively monochrome, derive one by rotating the primary hue ~20–40° or using a desaturated variant.
+- **Background**: whether surfaces are pure white, warm off-white, cool gray, etc. Informs `background`, `surface`, and `card`.
+- **Text**: the body text color (most brands use near-black, not pure `#000`). Informs `fg-primary`.
+- **Status colors**: any brand-specific green/red for success/error. Inform `kpi-positive` / `kpi-negative`.
+
+### Step 2: Build the light theme
+
+- Set `primary` to a saturated, mid-tone color. It powers buttons, selected states, and emphasis, so avoid very light or very dark primaries. If the raw brand color is too light or dark to act as an action color, keep its hue but nudge lightness toward a usable mid-tone.
+- Only override `background`, `surface`, and `card` when the brand calls for a distinctly tinted or off-white canvas; otherwise the defaults work well. Keep light backgrounds genuinely light (high lightness, low saturation) — charts and tables assume a light canvas.
+- Ensure `fg-primary` meets WCAG AA contrast (≥ 4.5:1) against the background. Near-black brand text almost always passes; verify if the brand text is a mid-gray.
+
+### Step 3: Adapt the dark theme (do not just copy light)
+
+Colors that look correct on white are often too dark, too saturated, or too low-contrast on a dark canvas. Adapt each role:
+
+- **Lighten and slightly desaturate** `primary` and `secondary` so they sit comfortably on a dark surface, while keeping the same hue identity (the dark primary should read as "the same brand color, brighter," not a different hue).
+- **Avoid pure black and pure white.** Use a deep near-neutral background and a soft near-white `fg-primary`. Pure `#000`/`#fff` cause harsh contrast and halation.
+- **Brighten status colors** so `kpi-positive` / `kpi-negative` pop against the dark canvas.
+- **Re-check contrast** against the dark background, not the light one.
+
+## Data visualization palette guidelines
+
+Setting `primary` does not populate the chart palettes. To make charts on-brand, set `color-qualitative-*`, `color-sequential-*`, and `color-diverging-*` explicitly in both `light:` and `dark:`. For these palettes, legibility and analytical correctness come first, brand fidelity second.
+
+### Qualitative palette (categorical data)
+
+Used for dimension values, series, and legend entries. Up to 24 colors; the earliest entries are used most, so they matter most.
+
+- **Lead with the brand**: make `color-qualitative-1` (and ideally `-2`) the brand primary and secondary, so common single- and two-series charts read on-brand.
+- **Maximize distinguishability** after the first one or two: walk *around* the hue wheel (e.g. indigo → pink → cyan → amber → green → purple → red → teal) rather than clustering near the brand hue. Adjacent entries should differ clearly in hue and/or lightness.
+- **Hold lightness and saturation roughly constant** so no single category pops just because it is brighter.
+- **Be colorblind-aware**: do not rely on red/green adjacency to carry meaning; vary lightness alongside hue.
+- In dark mode, shift the whole palette lighter so every color stays visible against the dark canvas.
+- You need not define all 24 — define as many as the brand supports with clear separation; Rill cycles through what you provide.
+
+### Sequential palette (ordered / quantitative data)
+
+Used for heatmaps, choropleths, and intensity scales. Nine steps.
+
+- Use a **single hue** (ideally the brand hue) with **monotonic, perceptually even lightness** from light to dark.
+- **Orientation differs by mode**: in light mode, `-1` is the lightest and `-9` the darkest; in dark mode, reverse it so `-1` is the darkest and `-9` the lightest. In both modes `-1` sits closest to the background and `-9` is the most prominent.
+
+### Diverging palette (data with a meaningful midpoint)
+
+Used for deviation from a baseline, change vs. prior period, or above/below target. Eleven steps.
+
+- Two contrasting hues meeting at a **neutral midpoint** (`-6`): light gray in light mode, dark gray/slate in dark mode.
+- **Map semantics intentionally** (conventionally negative on one end, positive on the other) and keep the **two arms symmetric** in intensity so neither side looks more important.
+- Prefer hue pairs that survive color-vision deficiency (e.g. blue↔red, or brand-hue↔complement) over red↔green alone; if using red↔green, keep a clear lightness difference between the arms.
+
 ## Minimal Theme Example
 
 If you only need to set brand colors without customizing palettes, use this minimal structure:

@@ -584,6 +584,7 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
+		attribute.String("args.email", req.Email),
 	)
 
 	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
@@ -733,6 +734,7 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
+		attribute.String("args.email", req.Email),
 	)
 
 	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)

@@ -28,8 +28,10 @@ func (h *Handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	}
 
 	return &drivers.CompleteResult{
-		Message:      res.Message,
-		InputTokens:  int(res.InputTokens),
-		OutputTokens: int(res.OutputTokens),
+		Message:           res.Message,
+		Provider:          res.GetProvider(),
+		InputTokens:       int(res.InputTokens),
+		OutputTokens:      int(res.OutputTokens),
+		CachedInputTokens: int(res.GetCachedInputTokens()),
 	}, nil
 }

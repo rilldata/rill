@@ -70,6 +70,7 @@
       : [];
   let curPinned = filterData.pinned;
   let curRequired = filterData.required;
+  let excludeModeDirty = false;
 
   const client = useRuntimeClient();
 
@@ -86,7 +87,19 @@
     missingRequired,
   } = filterData);
 
-  $: if (!open && filterData.mode !== curMode) {
+  $: if (
+    !open &&
+    excludeModeDirty &&
+    (isInclude === false) === curExcludeMode
+  ) {
+    excludeModeDirty = false;
+  }
+
+  $: if (
+    !open &&
+    (mode !== curMode ||
+      (!excludeModeDirty && (isInclude === false) !== curExcludeMode))
+  ) {
     resyncFilterData(filterData);
   }
 
@@ -228,24 +241,21 @@
   function checkSearchText(inputText: string) {
     inListTooLong = false;
 
-    // Do not check search text and possibly switch to InList when mode is Contains
-    if (curMode === DimensionFilterMode.Contains) return;
+    // Only InList mode parses bulk values. Other modes treat input as search text.
+    if (curMode !== DimensionFilterMode.InList) return;
 
     const values = splitDimensionSearchText(inputText);
 
     if (values.length <= 1) {
-      if (curMode === DimensionFilterMode.InList) {
-        searchedBulkValues = inputText === "" ? [] : values;
-      }
+      searchedBulkValues = inputText === "" ? [] : values;
       return;
     }
 
-    // When switching to InList mode, include both existing selected values and new search values
-    // This ensures the below-fold query can find existing selected values that might not be in top 250
-    const allRelevantValues = [...new Set([...selectedValues, ...values])];
-    searchedBulkValues = allRelevantValues;
-    curMode = DimensionFilterMode.InList;
-    inListTooLong = isUrlTooLongAfterInListFilter(values);
+    // Include both existing selected values and new search values so the
+    // below-fold query can find existing selected values that might not be
+    // in the top 250.
+    searchedBulkValues = [...new Set([...selectedValues, ...values])];
+    inListTooLong = isUrlTooLongAfterInListFilter(searchedBulkValues);
   }
 
   function handleModeChange(newMode: DimensionFilterMode) {
@@ -295,6 +305,7 @@
 
   function handleToggleExcludeMode(checked: boolean) {
     curExcludeMode = checked;
+    excludeModeDirty = true;
   }
 
   function onToggleSelectAll() {
@@ -399,6 +410,7 @@
     curMode = filterData.mode;
     curSearchText = filterData.inputText ?? "";
     curExcludeMode = filterData.isInclude === false;
+    excludeModeDirty = false;
     selectedValuesProxy = filterData.selectedValues ?? [];
     searchedBulkValues =
       filterData.mode === DimensionFilterMode.InList

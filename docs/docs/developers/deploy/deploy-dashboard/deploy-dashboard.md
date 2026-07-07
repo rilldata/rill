@@ -40,7 +40,7 @@ Starting from **v0.48**, we have introduced the possibility to push dashboards _
 
 ![Deploy UI](/img/deploy/existing-project/deploy-ui.gif)
 
-Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](/guide/administration/users-and-access/user-management) section. 
+Now that your project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](/guide/administration/users-and-access/user-management) section.
 
 If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Update` button.
 
@@ -171,7 +171,7 @@ Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tuto
 Opening project in browser...
 ```
 
-Once completed, you will see the following in the settings page. Note that the GitHub repository is already setup!
+Once completed, you will see the following in the settings page. Note that the GitHub repository is already set up!
 
 ![Cli Upload](/img/deploy/existing-project/cli-upload.png)
 
@@ -179,7 +179,7 @@ Once completed, you will see the following in the settings page. Note that the G
 
 ## Continuous Deployment 
 
-Whether you decide to manage your Rill projects using GitHub or re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may result in a project reconciliation. If you are experiencing some issues with the project after pushing changes to the CLI, please refer to the project's status page for more information or you can run via the CLI:
+Whether you decide to manage your Rill projects using GitHub or by re-running `rill project deploy`, Rill should automatically detect changes that you have pushed locally and update your deployed project accordingly. Depending on the changes, this may result in a project reconciliation. If you are experiencing issues with the project after pushing changes with the CLI, please refer to the project's status page for more information, or run the following command:
 
 ```
 rill project status
@@ -187,9 +187,9 @@ rill project status
 
 Likewise, if using the UI by selecting the `Update` button, Rill will detect the changes in files and update your deployed project accordingly. Along with the above CLI command, you can view the status of the objects in the Status page.
 
-:::tip Interested in using Gitlab?
+:::tip Interested in using GitLab?
 
-Check out our documentation on deploying a [Rill project using Gitlab](/developers/deploy/deploy-dashboard/deploy-from-cli)!
+Check out our documentation on deploying a [Rill project using GitLab](/developers/deploy/deploy-dashboard/deploy-from-cli)!
 
 :::
 

@@ -83,6 +83,8 @@ export function transformChartSpecToPivotState(
     columnPage: 0,
     rowPage: 0,
     enableComparison: false,
+    showTotalsColumn: true,
+    showTotalsRow: true,
     tableMode: "nest",
     activeCell: null,
   };

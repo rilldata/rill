@@ -2,7 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { Copy } from "lucide-svelte";
+  import { Copy, Columns } from "lucide-svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
@@ -10,6 +10,9 @@
   export let dropdownOpen = false;
   export let onDelete: () => void;
   export let onDuplicate: () => void;
+  // Optional: convert this component's row into a tab group. Only provided for
+  // top-level rows (a tab's rows cannot be nested into another tab group).
+  export let onConvertToTabGroup: (() => void) | undefined = undefined;
   export let editable = false;
   export let component: BaseCanvasComponent;
   export let navigationEnabled: boolean = true;
@@ -63,6 +66,12 @@
           <Copy size="14px" />
           Duplicate
         </DropdownMenu.Item>
+        {#if onConvertToTabGroup}
+          <DropdownMenu.Item onclick={onConvertToTabGroup}>
+            <Columns size="14px" />
+            Convert row to tab group
+          </DropdownMenu.Item>
+        {/if}
         {#if showExplore && exploreComponent}
           <DropdownMenu.Separator />
           <ExploreLink component={exploreComponent} mode="dropdown-item" />

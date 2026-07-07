@@ -20,10 +20,10 @@ import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboard
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   MetricsViewSpecDimensionType,
+  V1TimeGrain,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { get, type Readable } from "svelte/store";
 import type { ChartDataQuery } from "../../../../components/charts/types";
 import type {
@@ -336,6 +336,8 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
       enableComparison: false,
       tableMode: "nest",
       activeCell: null,
+      showTotalsColumn: true,
+      showTotalsRow: true,
     };
 
     return {

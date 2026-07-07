@@ -2,6 +2,7 @@
   import {
     createAdminServiceRedeployProject,
     getAdminServiceGetProjectQueryKey,
+    type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { Button } from "@rilldata/web-common/components/button";
@@ -24,6 +25,8 @@
   // Track waking state: true when mutation is pending OR has succeeded (waiting for refetch)
   $: isWaking = $redeployMutation.isPending || $redeployMutation.isSuccess;
 
+  const REFETCH_INTERVAL = 2000;
+
   async function handleWakeProject() {
     try {
       await $redeployMutation.mutateAsync({
@@ -31,10 +34,21 @@
         project: project,
       });
 
-      void queryClient.refetchQueries({
-        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
-        exact: true,
-      });
+      while (true) {
+        await queryClient.refetchQueries({
+          queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+          exact: true,
+        });
+        const projectQueryResp = queryClient.getQueryData<V1GetProjectResponse>(
+          getAdminServiceGetProjectQueryKey(organization, project),
+        );
+        // If there is a deployment, project refetch logic will handle the rest.
+        if (projectQueryResp.deployment) {
+          break;
+        }
+        // Refetch until a deployment is created.
+        await new Promise((resolve) => setTimeout(resolve, REFETCH_INTERVAL));
+      }
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",

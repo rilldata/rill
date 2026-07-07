@@ -83,7 +83,8 @@ test.describe("canvas time filters", () => {
 
     await page.goto(`${currentUrl}`);
 
-    await page.waitForTimeout(1000);
+    // The app redirects to a URL carrying the default-filter params after load.
+    await page.waitForURL("**/*f.AdBids_metrics=*");
     expect(page.url()).toContain(
       "?tr=PT24H&compare_tr=rill-PP&f.AdBids_metrics=domain+IN+%28%27facebook.com%27%2C%27google.com%27%2C%27msn.com%27%29",
     );

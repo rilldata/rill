@@ -21,7 +21,7 @@ export type BillingIssueMessage = {
   dismissible?: BannerMessage["dismissible"];
 };
 export type BillingIssueMessageCTA = {
-  type: "upgrade" | "show-upgrade" | "payment" | "contact";
+  type: "show-upgrade" | "payment" | "contact";
   text: string;
 
   teamPlanDialogType?: TeamPlanDialogTypes;

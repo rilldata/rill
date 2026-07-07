@@ -7,7 +7,7 @@
     ChartScales,
     ChartSeries,
   } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
-  import { bridgeSmallGaps } from "./sparse-data-utils";
+  import { bridgeGaps } from "./sparse-data-utils";
 
   const numAccessor = (d: number | null) => d;
   const numClone = (_d: number | null, v: number): number | null => v;
@@ -37,13 +37,7 @@
   $: primarySeries = series[0];
 
   $: primaryBridgeResult = primarySeries
-    ? bridgeSmallGaps(
-        primarySeries.values,
-        numAccessor,
-        numClone,
-        scales.x,
-        connectNulls,
-      )
+    ? bridgeGaps(primarySeries.values, numAccessor, numClone, connectNulls)
     : {
         values: [] as (number | null)[],
         inputSegments: [],
@@ -63,13 +57,7 @@
     : [];
 
   $: secondarySeries = series.slice(1).map((s) => {
-    const bridged = bridgeSmallGaps(
-      s.values,
-      numAccessor,
-      numClone,
-      scales.x,
-      connectNulls,
-    );
+    const bridged = bridgeGaps(s.values, numAccessor, numClone, connectNulls);
     const singletons = bridged.bridgedSegments
       .filter((seg) => seg.startIndex === seg.endIndex)
       .map((seg) => seg.startIndex);

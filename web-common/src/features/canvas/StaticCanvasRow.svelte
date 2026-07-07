@@ -15,6 +15,9 @@
   export let heightUnit: string = "px";
   export let navigationEnabled: boolean = true;
   export let activeComponentId: string | null = null;
+  // When false, components render eagerly without lazy-load (PDF export).
+  export let lazy: boolean = true;
+  export let idPrefix: string = "";
 
   $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
@@ -22,7 +25,7 @@
 
   $: itemIds = $_itemIds;
 
-  $: id = `canvas-row-${rowIndex}`;
+  $: id = `canvas-row-${idPrefix}${rowIndex}`;
 </script>
 
 <RowWrapper
@@ -40,6 +43,7 @@
         <CanvasComponent
           {component}
           {navigationEnabled}
+          {lazy}
           active={activeComponentId === id}
         />
       {:else}

@@ -217,7 +217,8 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		runtimeProxyCORSMiddleware(s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject))),
 	)
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}", proxyHandler)
-	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler) // Backwards compatibility
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)        // Backwards compatibility
+	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/branch/{branch}/runtime/{path...}", proxyHandler) // Branch-specific deployment
 
 	// Add backwards compatibility alias for iframe endpoint
 	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/iframe", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

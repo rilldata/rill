@@ -24,6 +24,7 @@ func TestDeleteExpiredAISessions(t *testing.T) {
 	// Open the database, run migrations, and seed test data.
 	h, err := driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
+	defer h.Close()
 	require.NoError(t, h.Migrate(t.Context()))
 
 	catalog, ok := h.AsCatalogStore("inst")
@@ -43,12 +44,7 @@ func TestDeleteExpiredAISessions(t *testing.T) {
 	// Session 4: new session with no messages (should be kept).
 	require.NoError(t, catalog.InsertAISession(t.Context(), &drivers.AISession{ID: "s4", CreatedOn: now, UpdatedOn: now}))
 
-	// Close the handle, then re-open and migrate to trigger the TTL cleanup.
-	require.NoError(t, h.Close())
-	h, err = driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	defer h.Close()
-	require.NoError(t, h.Migrate(t.Context()))
+	require.NoError(t, h.(*connection).deleteExpiredAISessions(t.Context()))
 
 	// Query the database directly to verify results.
 	db := h.(*connection).db

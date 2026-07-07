@@ -17,7 +17,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, branch string
 	var local bool
 	var models, modelPartitions, sources, metricViews, alerts, reports, connectors []string
-	var all, full, erroredPartitions, parser, yes bool
+	var all, full, erroredPartitions, skippedPartitions, parser, yes bool
 	var partitionKey, partitionStart, partitionEnd string
 
 	refreshCmd := &cobra.Command{
@@ -90,8 +90,8 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				if partitionKey == "" || partitionStart == "" || partitionEnd == "" {
 					return fmt.Errorf("--partition-key, --partition-start, and --partition-end must all be set together")
 				}
-				if len(modelPartitions) > 0 || erroredPartitions {
-					return fmt.Errorf("--partition-key cannot be combined with --partition or --errored-partitions")
+				if len(modelPartitions) > 0 || erroredPartitions || skippedPartitions {
+					return fmt.Errorf("--partition-key cannot be combined with --partition, --errored-partitions, or --skipped-partitions")
 				}
 				if partitionStart > partitionEnd {
 					return fmt.Errorf("--partition-start (%q) must be <= --partition-end (%q)", partitionStart, partitionEnd)
@@ -99,10 +99,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Build model triggers
-			if len(modelPartitions) > 0 || erroredPartitions || rangeMode {
+			if len(modelPartitions) > 0 || erroredPartitions || skippedPartitions || rangeMode {
 				// If partitions are specified, ensure exactly one model is specified.
 				if len(models) != 1 {
-					return fmt.Errorf("must specify exactly one --model when using --partition, --errored-partitions, or --partition-key")
+					return fmt.Errorf("must specify exactly one --model when using --partition, --errored-partitions, --skipped-partitions, or --partition-key")
 				}
 
 				// Since it's a common error, do an early check to ensure the model is incremental.
@@ -151,6 +151,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 					Model:                m,
 					Full:                 full,
 					AllErroredPartitions: erroredPartitions,
+					AllSkippedPartitions: skippedPartitions,
 					Partitions:           modelPartitions,
 				})
 			}
@@ -194,6 +195,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringSliceVar(&models, "model", nil, "Refresh a model")
 	refreshCmd.Flags().StringSliceVar(&modelPartitions, "partition", nil, "Refresh a model partition (must set --model)")
 	refreshCmd.Flags().BoolVar(&erroredPartitions, "errored-partitions", false, "Refresh all model partitions with errors (must set --model)")
+	refreshCmd.Flags().BoolVar(&skippedPartitions, "skipped-partitions", false, "Refresh all skipped model partitions (must set --model)")
 	refreshCmd.Flags().StringVar(&partitionKey, "partition-key", "", "Name of the field in the partition data to range-filter on (must set --model)")
 	refreshCmd.Flags().StringVar(&partitionStart, "partition-start", "", "Inclusive lower bound for --partition-key (lexicographic string compare)")
 	refreshCmd.Flags().StringVar(&partitionEnd, "partition-end", "", "Inclusive upper bound for --partition-key (lexicographic string compare)")

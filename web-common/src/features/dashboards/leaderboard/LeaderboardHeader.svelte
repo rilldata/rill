@@ -83,7 +83,7 @@
               style:min-width="200px"
             >
               <div
-                class="text-fg-muted justify-self-start"
+                class="text-fg-inverse/70 justify-self-start"
                 style:max-width="280px"
                 aria-label="tooltip-name-description"
               >

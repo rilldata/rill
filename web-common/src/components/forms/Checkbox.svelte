@@ -9,6 +9,7 @@
 
   type $$Props = CheckboxPrimitive.RootProps & {
     label?: string;
+    labelClass?: string;
     inverse?: boolean;
     hint?: string;
     optional?: boolean;
@@ -17,6 +18,7 @@
   export let checked: $$Props["checked"] = false;
   export let disabled: $$Props["disabled"] = undefined;
   export let label: $$Props["label"] = undefined;
+  export let labelClass: $$Props["labelClass"] = undefined;
   export let inverse = false;
   export let hint: string | undefined = undefined;
   export let optional: boolean = false;
@@ -49,7 +51,10 @@
   </CheckboxPrimitive.Root>
 
   {#if label}
-    <label for={$$props.id} class="flex items-center text-sm gap-x-1">
+    <label
+      for={$$props.id}
+      class={cn("flex items-center text-sm gap-x-1", labelClass)}
+    >
       {label}
       {#if optional}
         <span class="text-fg-secondary text-[12px] font-normal capitalize"

@@ -59,8 +59,8 @@ function getHeaderDataForRow(
   unfilteredTotal: number,
 ) {
   const rowData = isAllTime ? row?.data?.slice(1) : row?.data?.slice(1, -1);
-  const dataRow = [
-    { value: row?.value },
+  const dataRow: HeaderData<string>[] = [
+    { value: row?.value, uri: row?.uri },
     {
       value: row?.total?.toString() ?? "",
       spark: createSparkline(rowData, (v) =>

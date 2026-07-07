@@ -440,13 +440,32 @@ If not found in `time_ranges`, it should be added to the list. */
   filterExpr?: V1CanvasPresetFilterExpr;
 }
 
+export interface V1CanvasTab {
+  /** Stable identifier for the tab, used for URL state. Derived from the label. */
+  name?: string;
+  /** User-facing label for the tab. */
+  displayName?: string;
+  /** Rows to render when the tab is active. These are always plain rows;
+a tab's rows never contain a nested tab_group. */
+  rows?: V1CanvasRow[];
+}
+
+export interface V1CanvasTabGroup {
+  /** Stable identifier for the tab group, used for URL state.
+Defaults to "group-<index>" if not provided in the canvas YAML. */
+  name?: string;
+  /** Tabs in the group. A group always has at least one tab. */
+  tabs?: V1CanvasTab[];
+}
+
 export interface V1CanvasRow {
   /** Height of the row. The unit is given in height_unit. */
   height?: number;
   /** Unit of the height. Current possible values: "px", empty string. */
   heightUnit?: string;
-  /** Items to render in the row. */
+  /** Items to render in the row. Empty when the row is a tab group. */
   items?: V1CanvasItem[];
+  tabGroup?: V1CanvasTabGroup;
 }
 
 export interface V1CanvasSpec {
@@ -482,6 +501,7 @@ The values should be valid IANA location identifiers. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
   requiredFilters?: string[];
+  annotations?: Record<string, string>;
 }
 
 export interface V1CanvasState {
@@ -925,6 +945,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
   pivotRowLimit?: number;
+  pivotShowTotalsColumn?: boolean;
+  pivotShowTotalsRow?: boolean;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
@@ -1165,11 +1187,13 @@ export interface V1GitCommitResponse {
 export interface V1GitMergeToBranchResponse {
   /** The output of the git merge command. Only set for unsuccessful merges. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
+  conflict?: boolean;
 }
 
 export interface V1GitPushResponse {
@@ -1884,6 +1908,7 @@ export interface V1ModelPartition {
   executedOn?: string;
   error?: string;
   elapsedMs?: number;
+  skipped?: boolean;
 }
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
@@ -2202,6 +2227,8 @@ For non-incremental models, this is equivalent to a normal refresh. */
   partitions?: string[];
   /** If true, it will refresh all partitions that errored on their last execution. */
   allErroredPartitions?: boolean;
+  /** If true, it will refresh all partitions that are currently marked as skipped. */
+  allSkippedPartitions?: boolean;
 }
 
 export interface V1RefreshTrigger {
@@ -2359,6 +2386,8 @@ export interface V1ResourceMeta {
   refs?: V1ResourceName[];
   owner?: V1ResourceName;
   filePaths?: string[];
+  /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
+  tags?: string[];
   hidden?: boolean;
   version?: string;
   specVersion?: string;

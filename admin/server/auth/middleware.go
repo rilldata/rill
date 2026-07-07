@@ -10,6 +10,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -203,6 +204,10 @@ func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) 
 	// Set user ID in span and request log
 	if claims.OwnerType() == OwnerTypeUser {
 		observability.AddRequestAttributes(ctx, semconv.EnduserID(claims.OwnerID()))
+		// If a superuser is assuming this user, record the superuser's own ID.
+		if assumedByUserID, ok := claims.AssumedByUserID(); ok {
+			observability.AddRequestAttributes(ctx, attribute.String("auth.assumed_by_user_id", assumedByUserID))
+		}
 	}
 
 	return ctx, nil

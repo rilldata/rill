@@ -176,6 +176,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 			DROP VIEW,
 			TRUNCATE,
 			OPTIMIZE,
+			SYSTEM SYNC REPLICA,
 			SHOW DICTIONARIES,
 			dictGet
 		ON %s.* TO %s

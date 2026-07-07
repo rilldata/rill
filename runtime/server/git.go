@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-git/go-git/v5"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
@@ -79,7 +79,7 @@ func (s *Server) GitSwitchBranch(ctx context.Context, req *runtimev1.GitSwitchBr
 
 	err = repo.SwitchBranch(ctx, req.Branch, req.Create, req.IgnoreLocalChanges)
 	if err != nil {
-		if errors.Is(err, git.ErrBranchNotFound) {
+		if errors.Is(err, gitutil.ErrRefNotFound) {
 			return nil, status.Errorf(codes.NotFound, "branch %s not found", req.Branch)
 		}
 		return nil, fmt.Errorf("failed to switch git branch: %w", err)
@@ -105,6 +105,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	if !gs.IsGitRepo {
 		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
 	}
+
 	return &runtimev1.GitStatusResponse{
 		Branch:        gs.Branch,
 		GithubUrl:     gs.RemoteURL,
@@ -114,6 +115,55 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
 	}, nil
+}
+
+// GitDiff implements RuntimeService.
+func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*runtimev1.GitDiffResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	gd, err := repo.Diff(ctx, req.RemoteBranch, req.IncludeDiff, req.Fetch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git diff: %w", err)
+	}
+	if !gd.IsGitRepo {
+		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
+	}
+
+	changedFiles := make([]*runtimev1.GitDiffResponse_GitFileChange, len(gd.ChangedFiles))
+	for i, f := range gd.ChangedFiles {
+		changedFiles[i] = &runtimev1.GitDiffResponse_GitFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  gitFileStatusToPB(f.Status),
+		}
+	}
+
+	return &runtimev1.GitDiffResponse{
+		ChangedFiles: changedFiles,
+		Diff:         gd.Diff,
+	}, nil
+}
+
+func gitFileStatusToPB(s drivers.RepoFileStatus) runtimev1.GitDiffResponse_GitFileStatus {
+	switch s {
+	case drivers.RepoFileStatusAdded:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_ADDED
+	case drivers.RepoFileStatusModified:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_MODIFIED
+	case drivers.RepoFileStatusDeleted:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_DELETED
+	case drivers.RepoFileStatusRenamed:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_RENAMED
+	default:
+		return runtimev1.GitDiffResponse_GIT_FILE_STATUS_UNSPECIFIED
+	}
 }
 
 func (s *Server) ListGitCommits(ctx context.Context, req *runtimev1.ListGitCommitsRequest) (*runtimev1.ListGitCommitsResponse, error) {
@@ -204,7 +254,8 @@ func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeTo
 		var mergeErr *drivers.MergeFailedError
 		if errors.As(err, &mergeErr) {
 			return &runtimev1.GitMergeToBranchResponse{
-				Output: mergeErr.Error(),
+				Output:   mergeErr.Error(),
+				Conflict: mergeErr.Conflict,
 			}, nil
 		}
 		return nil, err
@@ -233,6 +284,7 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 			return &runtimev1.GitPullResponse{
 				Output:       mergeErr.Error(),
 				MergedBranch: mergeErr.MergedBranch,
+				Conflict:     mergeErr.Conflict,
 			}, nil
 		}
 		return nil, fmt.Errorf("failed to pull: %w", err)
@@ -251,7 +303,12 @@ func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*r
 	}
 	defer release()
 
-	err = repo.CommitAndPush(ctx, req.CommitMessage, req.Force)
+	msg := req.CommitMessage
+	if msg == "" {
+		msg = "User triggered commit from Rill"
+	}
+
+	err = repo.CommitAndPush(ctx, msg, req.Force)
 	if err != nil {
 		if errors.Is(err, drivers.ErrRemoteAhead) {
 			return nil, status.Error(codes.FailedPrecondition, "remote repository has changes that are not in local state, please pull first")

@@ -94,7 +94,7 @@
       <DropdownMenu.Separator />
     {/if}
 
-    <DropdownMenu.Group>
+    <DropdownMenu.Group class="max-h-72 overflow-y-auto">
       {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
         <DropdownMenu.CheckboxItem
           checkRight

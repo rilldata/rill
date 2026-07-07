@@ -12,6 +12,7 @@
     { value: "all", label: "All partitions" },
     { value: "pending", label: "Pending" },
     { value: "errors", label: "Errored" },
+    { value: "skipped", label: "Skipped" },
   ];
 
   $: selectedLabel =

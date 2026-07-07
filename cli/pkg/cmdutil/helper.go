@@ -13,18 +13,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/version"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/term"
@@ -521,41 +518,44 @@ func (h *Helper) GitHelper(org, project, localPath string) *GitHelper {
 	return h.gitHelper
 }
 
-func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signature, error) {
-	repo, err := git.PlainOpen(path)
-	if err == nil {
-		cfg, err := repo.ConfigScoped(config.SystemScope)
-		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-			// user has git properly configured use that
-			return &object.Signature{
-				Name:  cfg.User.Name,
-				Email: cfg.User.Email,
-				When:  time.Now(),
-			}, nil
+// GitSignature returns the author to attribute Rill's git commits to.
+//
+// The path must be the root of the git working tree (the directory that contains .git), not a
+// subpath within it. Callers working from a monorepo subpath must resolve the root first, e.g.
+// via gitutil.InferRepoRootAndSubpath. This matters because the local git identity is only read
+// when .git is found directly at path: a subpath would silently fall back to the Rill user even
+// when a local identity is configured.
+func (h *Helper) GitSignature(ctx context.Context, path string) (gitutil.Signature, error) {
+	// Only read the user's git config when path is an existing repo: without this exact-path
+	// guard, the global git identity would be picked up even for paths that are not git repos
+	// yet (e.g. a first-time deploy that only initializes the repo later).
+	if _, err := os.Stat(filepath.Join(path, ".git")); err == nil {
+		sig, err := gitutil.UserSignature(ctx, path)
+		if err == nil {
+			return sig, nil
 		}
+		// git identity not configured: fall through to the Rill user
 	}
 
 	// use email of rill user
 	c, err := h.Client()
 	if err != nil {
-		return nil, err
+		return gitutil.Signature{}, err
 	}
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		if strings.Contains(err.Error(), "not authenticated as a user") {
-			return &object.Signature{
+			return gitutil.Signature{
 				Name:  "service-account",
 				Email: "service-account@rilldata.com", // not an actual email
-				When:  time.Now(),
 			}, nil
 		}
-		return nil, err
+		return gitutil.Signature{}, err
 	}
 
-	return &object.Signature{
+	return gitutil.Signature{
 		Name:  userResp.User.DisplayName,
 		Email: userResp.User.Email,
-		When:  time.Now(),
 	}, nil
 }
 
@@ -566,7 +566,7 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 	h.gitHelperMu.Unlock()
 
 	// remove rill managed remote
-	err := removeRemote(path, "__rill_remote")
+	err := gitutil.RemoveRemote(path, "__rill_remote")
 	if err != nil {
 		return err
 	}
@@ -589,21 +589,21 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 //   - "3": Abort the push operation
 //
 // If h.Interactive is true and there are remote commits, the user will be prompted to choose how to proceed.
-func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature, defaultPushChoice string) error {
-	// Set remote if not set (go-git complains if we try to fetch without setting remote)
+func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author gitutil.Signature, defaultPushChoice string) error {
+	// Set remote if not set
 	err := gitutil.SetRemote(root, config)
 	if err != nil {
 		return fmt.Errorf("failed to set git remote: %w", err)
 	}
 
 	// 1. Fetch latest from remote
-	err = gitutil.GitFetch(ctx, root, config)
+	err = gitutil.Fetch(ctx, root, config)
 	if err != nil {
 		return fmt.Errorf("failed to fetch from remote: %w", err)
 	}
 
 	// 2. Check status of the subpath
-	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName(), "")
+	status, err := gitutil.Status(ctx, root, config.Subpath, config.RemoteName(), "")
 	if err != nil {
 		return fmt.Errorf("failed to get git status: %w", err)
 	}
@@ -632,7 +632,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	// The push can still fail if there were new remote commits since the fetch. But that's okay, the user can just retry.
 	switch choice {
 	case "1":
-		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, false)
+		err := gitutil.UpstreamMerge(ctx, root, config.RemoteName(), status.Branch, false)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
@@ -646,7 +646,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
 			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
 		}
-		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, true)
+		err := gitutil.UpstreamMerge(ctx, root, config.RemoteName(), status.Branch, true)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
@@ -667,19 +667,6 @@ func IsLocalRillRunning(ctx context.Context) bool {
 	}
 	conn.Close()
 	return true
-}
-
-func removeRemote(path, remoteName string) error {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return fmt.Errorf("failed to open git repository: %w", err)
-	}
-
-	err = repo.DeleteRemote(remoteName)
-	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
-		return err
-	}
-	return nil
 }
 
 func hashStr(ss ...string) string {

@@ -218,6 +218,10 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
 	defer cancel()
 
+	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
+	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
 		return nil, status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
@@ -332,6 +336,10 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	}
 	ctx, cancel := context.WithTimeout(stream.Context(), time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
 	defer cancel()
+
+	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
+	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {

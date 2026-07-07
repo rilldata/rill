@@ -628,12 +628,12 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectedTwoMeasureRowDimColDim);
 
     // Flatten the table
-    await page.getByRole("button", { name: "Pivot table" }).click();
+    await page.getByRole("button", { name: "Flat", exact: true }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedFlatTable);
 
     // Nest the table
-    await page.getByRole("button", { name: "Flat table" }).click();
+    await page.getByRole("button", { name: "Pivot", exact: true }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
 
     // Remove the row dimension and second measure
@@ -667,7 +667,12 @@ test.describe("pivot run through", () => {
       await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
-    await page.waitForTimeout(100);
+    // Wait for the new time range to apply before dragging chips. The running
+    // status can flip too quickly to observe reliably, so assert the applied
+    // range instead.
+    await expect(page.getByLabel("Select time range")).toContainText(
+      "Last 4 Weeks",
+    );
 
     // add measure and time week to column
     await dragPivotChip(page, totalRecords, columnZone);

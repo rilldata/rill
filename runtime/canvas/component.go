@@ -301,7 +301,7 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		return errors.New("renderer properties for table must include a non-empty 'columns' array of strings")
 	}
 	for _, col := range columns {
-		if !metricsViewHasDimension(mv, col) && !metricsViewHasMeasure(mv, col) {
+		if !metricsViewHasDimension(mv, col) && !metricsViewHasMeasure(mv, col) && !isEncodedTimeDimension(mv, col) {
 			return fmt.Errorf("referenced columns value %q is not a dimension or measure in metrics view %q", col, mvn)
 		}
 	}
@@ -339,12 +339,12 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		}
 	}
 	for _, d := range rowDims {
-		if !metricsViewHasDimension(mv, d) {
+		if !metricsViewHasDimension(mv, d) && !isEncodedTimeDimension(mv, d) {
 			return fmt.Errorf("referenced row_dimensions value %q is not a dimension in metrics view %q", d, mvn)
 		}
 	}
 	for _, d := range colDims {
-		if !metricsViewHasDimension(mv, d) {
+		if !metricsViewHasDimension(mv, d) && !isEncodedTimeDimension(mv, d) {
 			return fmt.Errorf("referenced col_dimensions value %q is not a dimension in metrics view %q", d, mvn)
 		}
 	}
@@ -517,6 +517,27 @@ func metricsViewHasDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bo
 		}
 	}
 	return false
+}
+
+// isEncodedTimeDimension reports whether fieldName is an encoded time-grain dimension of the
+// form "{timeDimension}_rill_{GRAIN}" (e.g. "ts_rill_TIME_GRAIN_MONTH"). The canvas pivot and
+// table frontends encode a time dimension at a chosen grain this way; it is decoded back into
+// a proper aggregation dimension at query time on the client.
+//
+// Note: this only recognizes the metrics view's primary time dimension, matching the frontend,
+// which currently only encodes the primary one. If pivots/tables start allowing secondary time
+// dimensions (time-type dimensions declared in the dimension list), this check must be extended
+// to recognize those prefixes as well.
+func isEncodedTimeDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
+	if mv.TimeDimension == "" {
+		return false
+	}
+	grain, ok := strings.CutPrefix(fieldName, mv.TimeDimension+"_rill_")
+	if !ok {
+		return false
+	}
+	v, ok := runtimev1.TimeGrain_value[grain]
+	return ok && v != int32(runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
 }
 
 // metricsViewHasMeasure returns true if the metrics view has a measure with the given name.

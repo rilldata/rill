@@ -200,7 +200,8 @@
   $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
     return {
       value: timeDim.name!,
-      label: timeDim.name!,
+      label: timeDim.displayName || timeDim.name!,
+      description: timeDim.description,
     };
   });
 

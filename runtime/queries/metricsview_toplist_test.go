@@ -29,6 +29,7 @@ func TestMetricsViewsToplistAgainstBigQuery(t *testing.T) {
 }
 
 func TestMetricsViewsToplistAgainstDatabricks(t *testing.T) {
+	t.Skip("Skipping Databricks due to disabled test instance")
 	testmode.Expensive(t)
 	rt, instanceID := newDatabricksInstance(t)
 	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
@@ -37,6 +38,7 @@ func TestMetricsViewsToplistAgainstDatabricks(t *testing.T) {
 }
 
 func TestMetricsViewsToplistAgainstSnowflake(t *testing.T) {
+	t.Skip("Skipping Snowflake due to disabled test instance")
 	testmode.Expensive(t)
 	rt, instanceID := newSnowflakeInstance(t)
 	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
