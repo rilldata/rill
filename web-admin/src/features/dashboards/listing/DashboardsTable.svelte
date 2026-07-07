@@ -12,13 +12,10 @@
   import { useDashboards, useIsInitialBuild } from "./selectors";
   import { Search } from "@rilldata/web-common/components/search";
   import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
-  import {
-    getAllTagsForResources,
-    getResourceTags,
-    UNTAGGED_KEY,
-  } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
 
   let {
     isEmbedded = false,
@@ -47,54 +44,28 @@
   } = $derived($dashboards);
 
   let initialBuild = useIsInitialBuild(runtimeClient);
-  let isBuilding = $initialBuild.data === true;
-
-  function matchesSearch(resource: V1Resource, query: string): boolean {
-    if (!query) return true;
-    const q = query.toLowerCase();
-    const name = resource.meta?.name?.name ?? "";
-    const title = resource.explore
-      ? (resource.explore.spec?.displayName ?? "")
-      : (resource.canvas?.spec?.displayName ?? "");
-    const desc = resource.explore?.spec?.description ?? "";
-    return (
-      name.toLowerCase().includes(q) ||
-      title.toLowerCase().includes(q) ||
-      desc.toLowerCase().includes(q)
-    );
-  }
+  let isBuilding = $derived($initialBuild.data === true);
 
   let allDashboards = $derived(dashboardsData ?? []);
   let availableTags = $derived(getAllTagsForResources(allDashboards));
   let hasSomeTag = $derived(availableTags.length > 0);
 
-  let tagFilteredDashboards = $derived(
-    selectedTagsState.value.length === 0
-      ? allDashboards
-      : allDashboards.filter((resource) => {
-          const resourceTags = getResourceTags(resource);
-          return selectedTagsState.value.some((t) =>
-            t === UNTAGGED_KEY
-              ? resourceTags.length === 0
-              : resourceTags.includes(t),
-          );
-        }),
-  );
-
-  let searchFilteredDashboards = $derived(
-    tagFilteredDashboards.filter((r) =>
-      matchesSearch(r, searchTextState.value),
+  let filteredDashboards = $derived(
+    filterResources(
+      allDashboards,
+      [],
+      searchTextState.value,
+      [],
+      selectedTagsState.value,
     ),
   );
 
   let displayData = $derived(
-    isPreview
-      ? searchFilteredDashboards.slice(0, previewLimit)
-      : searchFilteredDashboards,
+    isPreview ? filteredDashboards.slice(0, previewLimit) : filteredDashboards,
   );
 
   let hasMoreDashboards = $derived(
-    isPreview && searchFilteredDashboards.length > previewLimit,
+    isPreview && filteredDashboards.length > previewLimit,
   );
 
   const columns = [
@@ -185,6 +156,7 @@
           autofocus={false}
           bind:value={searchTextState.getter, searchTextState.setter}
           rounded="lg"
+          retainValueOnMount
         />
       </div>
     {/if}

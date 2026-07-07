@@ -2,6 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { getTagFilterLabel } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   /** All tag values available to choose from. Dropdown renders nothing if empty. */
   export let tags: string[];
@@ -11,6 +12,8 @@
   export let closeOnSelect = true;
 
   let open = false;
+
+  $: tagsLabel = getTagFilterLabel(selectedTags);
 
   function toggle(tag: string) {
     if (selectedTags.includes(tag)) {
@@ -29,16 +32,7 @@
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
       <span class="text-fg-secondary font-medium">
-        {#if selectedTags.length === 0}
-          All tags
-        {:else if selectedTags.length === 1}
-          {selectedTags[0]}
-        {:else}
-          {selectedTags[0]}, +{selectedTags.length - 1} other{selectedTags.length >
-          2
-            ? "s"
-            : ""}
-        {/if}
+        {tagsLabel}
       </span>
       {#if open}
         <CaretUpIcon size="12px" />

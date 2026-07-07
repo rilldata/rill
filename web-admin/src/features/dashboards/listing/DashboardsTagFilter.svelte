@@ -4,7 +4,10 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import {
+    getAllTagsForResources,
+    getTagFilterLabel,
+  } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   import type { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
 
@@ -24,13 +27,7 @@
   let dashboards = useDashboards(runtimeClient);
   let availableTags = $derived(getAllTagsForResources($dashboards?.data ?? []));
 
-  let tagsLabel = $derived(
-    selectedTagsStore.value.length === 0
-      ? "All tags"
-      : selectedTagsStore.value.length === 1
-        ? selectedTagsStore.value[0]
-        : `${selectedTagsStore.value[0]}, +${selectedTagsStore.value.length - 1} other${selectedTagsStore.value.length > 2 ? "s" : ""}`,
-  );
+  let tagsLabel = $derived(getTagFilterLabel(selectedTagsStore.value));
 </script>
 
 {#if availableTags.length > 0}

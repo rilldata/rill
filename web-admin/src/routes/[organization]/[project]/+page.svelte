@@ -38,6 +38,8 @@
   $: hasNoPersonalCanvases =
     !$personalCanvasesQuery.isPending &&
     ($personalCanvasesQuery.data?.length ?? 0) === 0;
+
+  const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
 </script>
 
 <svelte:head>
@@ -96,10 +98,7 @@
       <h2 class="flex text-xl font-semibold text-fg-secondary justify-between">
         <div class="flex flex-row w-full items-center justify-between">
           <span>Dashboards</span>
-          <DashboardsTagFilter
-            align="end"
-            selectedTagsStore={UrlParamsState.createStringArrayParam("tags")}
-          />
+          <DashboardsTagFilter align="end" {selectedTagsStore} />
         </div>
         {#if $personalCanvases && hasNoPersonalCanvases}
           <CreatePersonalCanvasDialog org={organization} {project} />

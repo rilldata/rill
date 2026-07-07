@@ -20,16 +20,14 @@
   import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
-  import {
-    filterResources,
-    getAvailableTags,
-  } from "@rilldata/web-common/features/resources/resource-filter-utils";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import {
     createUrlFilterSync,
     parseArrayParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
@@ -117,7 +115,7 @@
 
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
-  $: availableTags = getAvailableTags($resources.data?.resources);
+  $: availableTags = getAllTagsForResources($resources.data?.resources ?? []);
 
   $: filterGroups = [
     {
@@ -147,7 +145,10 @@
           {
             label: "Tags",
             key: "tags",
-            options: availableTags.map((t) => ({ value: t, label: t })),
+            options: availableTags.map((t) => ({
+              value: t.name,
+              label: t.name,
+            })),
             selected: selectedTags,
             defaultValue: [],
             multiSelect: true,

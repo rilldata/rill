@@ -62,6 +62,9 @@ export class UrlParamsState<Val, DefaultVal>
     } else {
       newUrl.searchParams.set(this.param, newParamValue);
     }
+
+    this.paramValue = newParamValue;
+    this.value = newValue;
     void goto(newUrl, { noScroll: true, keepFocus: true });
   };
 }

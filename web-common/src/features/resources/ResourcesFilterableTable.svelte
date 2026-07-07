@@ -16,7 +16,6 @@
   import {
     filterableTypes,
     filterResources,
-    getAvailableTags,
     getStatusPriority,
     statusFilters,
   } from "@rilldata/web-common/features/resources/resource-filter-utils";
@@ -31,6 +30,7 @@
   } from "@rilldata/web-common/runtime-client";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import { renderComponent } from "tanstack-table-8-svelte-5";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   /** All resources (unfiltered). Filtering is handled internally. */
   export let resources: V1Resource[];
@@ -82,7 +82,7 @@
     return openDropdownResourceKey === resourceKey;
   };
 
-  $: availableTags = getAvailableTags(resources);
+  $: availableTags = getAllTagsForResources(resources).map((t) => t.name);
 
   $: filteredResources = filterResources(
     resources,

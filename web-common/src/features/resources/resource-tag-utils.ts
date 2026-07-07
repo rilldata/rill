@@ -7,20 +7,6 @@ import {
   type DimensionTag,
 } from "@rilldata/web-common/components/menu/tag-utils.ts";
 
-export const UNTAGGED_KEY = "__rill_untagged";
-// Display label rendered to the user wherever `UNTAGGED_KEY` would otherwise
-// surface (folder header, breadcrumb dropdown). The URL value stays
-// kebab-case for stable links.
-export const UNTAGGED_LABEL = "Not Tagged";
-
-export function getResourceTags(resource: V1Resource): string[] {
-  return resource.meta?.tags ?? [];
-}
-
-export function getPrimaryTag(resource: V1Resource): string {
-  return getResourceTags(resource)[0] ?? UNTAGGED_KEY;
-}
-
 export function getAllTagsForResources(
   resources: V1Resource[],
 ): DimensionTag[] {
@@ -30,4 +16,12 @@ export function getAllTagsForResources(
       tags: r.meta?.tags,
     })),
   ).tags.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function getTagFilterLabel(tags: string[]) {
+  return tags.length === 0
+    ? "All tags"
+    : tags.length === 1
+      ? tags[0]
+      : `${tags[0]}, +${tags.length - 1} other${tags.length > 2 ? "s" : ""}`;
 }
