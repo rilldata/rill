@@ -49,6 +49,7 @@
   // Since the topk query is in a reactive statement with `enable`, `topK` can be undefined.
   // This leads to unexpected issues when paired with transition
   $: topKCopy = topK ?? topKCopy;
+  $: topKNormalised = topKCopy?.map((k) => k.toJSON());
 
   function ensureSpaces(str: string, n = 6) {
     const sanitized = DOMPurify.sanitize(str, { ALLOWED_TAGS: [] });
@@ -77,9 +78,9 @@
   /** handle LISTs and STRUCTs */
 </script>
 
-{#if topKCopy && totalRows}
+{#if topKNormalised && totalRows}
   <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-    {#each topKCopy.slice(0, k) as item (item.value)}
+    {#each topKNormalised.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
         ? "<.01%"
