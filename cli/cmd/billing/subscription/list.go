@@ -11,7 +11,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	listCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List subscription for an organization",
+		Short: "List subscriptions for an organization",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()

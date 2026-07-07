@@ -46,11 +46,11 @@ _[string]_ - Specifies how the watermark is determined for incremental processin
 
 ### `intervals`
 
-_[object]_ - Define the interval of the report to check
+_[object]_ - Defines the report interval to check.
 
-  - **`duration`** - _[string]_ - A valid ISO8601 duration to define the interval duration
+  - **`duration`** - _[string]_ - An ISO 8601 duration to define the interval duration.
 
-  - **`limit`** - _[integer]_ - Maximum number of intervals to check for on invocation
+  - **`limit`** - _[integer]_ - Maximum number of intervals to check on invocation.
 
   - **`check_unclosed`** - _[boolean]_ - Whether unclosed intervals should be checked
 
@@ -68,7 +68,7 @@ Supports ai resolvers only as of now.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
+    - **`connector`** - _[string]_ - Specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -82,7 +82,7 @@ Supports ai resolvers only as of now.
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
       - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
