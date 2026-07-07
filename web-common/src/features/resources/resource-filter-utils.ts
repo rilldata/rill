@@ -86,16 +86,16 @@ export function filterResources(
 
 function matchSearch(resource: V1Resource, lowerSearch: string): boolean {
   const name = resource.meta?.name?.name ?? "";
-  const nameMatches = !name || name.toLowerCase().includes(lowerSearch);
+  const nameMatches = name.toLowerCase().includes(lowerSearch);
 
   const title =
     resource.metricsView?.state?.validSpec?.displayName ??
     resource.explore?.state?.validSpec?.displayName ??
     resource.canvas?.state?.validSpec?.displayName;
-  const matchesTitle = !title || title.toLowerCase().includes(lowerSearch);
+  const matchesTitle = Boolean(title?.toLowerCase().includes(lowerSearch));
 
   const desc = resource.explore?.state?.validSpec?.description ?? "";
-  const matchesDesc = !desc || desc.toLowerCase().includes(lowerSearch);
+  const matchesDesc = Boolean(desc?.toLowerCase().includes(lowerSearch));
 
-  return nameMatches && matchesTitle && matchesDesc;
+  return nameMatches || matchesTitle || matchesDesc;
 }
