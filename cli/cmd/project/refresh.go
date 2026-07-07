@@ -17,7 +17,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, branch string
 	var local bool
 	var models, modelPartitions, sources, metricViews, alerts, reports, connectors []string
-	var all, full, erroredPartitions, skippedPartitions, parser, yes bool
+	var all, full, erroredPartitions, skippedPartitions, parser, force bool
 	var partitionKey, partitionStart, partitionEnd string
 
 	refreshCmd := &cobra.Command{
@@ -83,15 +83,19 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Merge sources into models since sources have been deprecated and are no longer created on the backend.
 			models = append(models, sources...)
 
-			// Validate partition-range flags. All three must be set together, and the range mode
-			// is mutually exclusive with --partition and --errored-partitions.
+			// Validate partition-range flags. All three must be set together. The range can be
+			// narrowed by --errored-partitions or --skipped-partitions (but not both), and cannot
+			// be combined with an explicit --partition list.
 			rangeMode := partitionKey != "" || partitionStart != "" || partitionEnd != ""
 			if rangeMode {
 				if partitionKey == "" || partitionStart == "" || partitionEnd == "" {
 					return fmt.Errorf("--partition-key, --partition-start, and --partition-end must all be set together")
 				}
-				if len(modelPartitions) > 0 || erroredPartitions || skippedPartitions {
-					return fmt.Errorf("--partition-key cannot be combined with --partition, --errored-partitions, or --skipped-partitions")
+				if len(modelPartitions) > 0 {
+					return fmt.Errorf("--partition-key cannot be combined with --partition")
+				}
+				if erroredPartitions && skippedPartitions {
+					return fmt.Errorf("--errored-partitions and --skipped-partitions cannot be combined")
 				}
 				if partitionStart > partitionEnd {
 					return fmt.Errorf("--partition-start (%q) must be <= --partition-end (%q)", partitionStart, partitionEnd)
@@ -121,9 +125,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// Resolve partition range to concrete partition keys.
+			// Resolve partition range to concrete partition keys. When --errored-partitions or
+			// --skipped-partitions is also set, the range is narrowed to partitions in that state.
 			if rangeMode {
-				matched, err := resolvePartitionRange(cmd.Context(), rt, instanceID, models[0], partitionKey, partitionStart, partitionEnd)
+				matched, err := resolvePartitionRange(cmd.Context(), rt, instanceID, models[0], partitionKey, partitionStart, partitionEnd, false, erroredPartitions, skippedPartitions)
 				if err != nil {
 					return err
 				}
@@ -134,7 +139,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				ch.PrintModelPartitions(matched)
 
-				if !yes && ch.Interactive {
+				if !force && ch.Interactive {
 					if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Refresh %d partition(s)?", len(matched)), true); err != nil {
 						return err
 					}
@@ -144,6 +149,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				for _, p := range matched {
 					modelPartitions = append(modelPartitions, p.Key)
 				}
+				// The resolved key list is authoritative; clear the model-wide flags so the trigger
+				// refreshes only the matched partitions rather than all errored/skipped ones.
+				erroredPartitions = false
+				skippedPartitions = false
 			}
 			var modelTriggers []*runtimev1.RefreshModelTrigger
 			for _, m := range models {
@@ -199,7 +208,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringVar(&partitionKey, "partition-key", "", "Name of the field in the partition data to range-filter on (must set --model)")
 	refreshCmd.Flags().StringVar(&partitionStart, "partition-start", "", "Inclusive lower bound for --partition-key (lexicographic string compare)")
 	refreshCmd.Flags().StringVar(&partitionEnd, "partition-end", "", "Inclusive upper bound for --partition-key (lexicographic string compare)")
-	refreshCmd.Flags().BoolVar(&yes, "yes", false, "Skip the partition-range refresh confirmation prompt")
+	refreshCmd.Flags().BoolVar(&force, "force", false, "Skip the partition-range refresh confirmation prompt")
 	refreshCmd.Flags().StringSliceVar(&sources, "source", nil, "Refresh a source")
 	refreshCmd.Flags().StringSliceVar(&metricViews, "metrics-view", nil, "Refresh a metrics view")
 	refreshCmd.Flags().StringSliceVar(&alerts, "alert", nil, "Refresh an alert")
@@ -210,9 +219,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	return refreshCmd
 }
 
-// resolvePartitionRange lists all partitions of the given model and returns those whose
-// data field `key` falls within [start, end] (inclusive, lexicographic string compare).
-func resolvePartitionRange(ctx context.Context, rt runtimev1.RuntimeServiceClient, instanceID, model, key, start, end string) ([]*runtimev1.ModelPartition, error) {
+// resolvePartitionRange lists partitions of the given model and returns those whose data field
+// `key` falls within [start, end] (inclusive, lexicographic string compare). The pending, errored,
+// and skipped flags narrow the listing to partitions in the corresponding state (server-side).
+func resolvePartitionRange(ctx context.Context, rt runtimev1.RuntimeServiceClient, instanceID, model, key, start, end string, pending, errored, skipped bool) ([]*runtimev1.ModelPartition, error) {
 	var matched []*runtimev1.ModelPartition
 	var pageToken string
 	var sawAnyPartition bool
@@ -220,6 +230,9 @@ func resolvePartitionRange(ctx context.Context, rt runtimev1.RuntimeServiceClien
 		res, err := rt.GetModelPartitions(ctx, &runtimev1.GetModelPartitionsRequest{
 			InstanceId: instanceID,
 			Model:      model,
+			Pending:    pending,
+			Errored:    errored,
+			Skipped:    skipped,
 			PageSize:   100,
 			PageToken:  pageToken,
 		})
@@ -264,7 +277,10 @@ func resolvePartitionRange(ctx context.Context, rt runtimev1.RuntimeServiceClien
 		pageToken = res.NextPageToken
 	}
 
-	if !sawAnyPartition {
+	// When no state filter is applied, an empty listing means the model genuinely has no
+	// partitions, which is a usage error. With a state filter, an empty listing just means no
+	// partitions are in that state, so let the caller report the friendly "no match" message.
+	if !sawAnyPartition && !pending && !errored && !skipped {
 		return nil, fmt.Errorf("model %q has no partitions to filter", model)
 	}
 	return matched, nil
