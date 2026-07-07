@@ -161,14 +161,14 @@
       </div>
     {/if}
 
-    <div class="flex flex-row flex-1 w-full gap-x-2">
+    <div class="flex flex-row flex-1 w-full gap-x-2 overflow-hidden">
       {#if hasSomeTag && !isPreview}
         <ResizableSidebar
           id="dashboards-tag-sidebar"
           minWidth={200}
           maxWidth={500}
           defaultWidth={200}
-          additionalClass="overflow-auto bg-surface-subtle border rounded-lg"
+          additionalClass="overflow-hidden border rounded-lg"
           side="right"
         >
           <DashboardsTagSidebar

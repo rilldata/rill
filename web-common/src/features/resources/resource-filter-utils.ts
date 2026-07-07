@@ -97,5 +97,5 @@ function matchSearch(resource: V1Resource, lowerSearch: string): boolean {
   const desc = resource.explore?.state?.validSpec?.description ?? "";
   const matchesDesc = !desc || desc.toLowerCase().includes(lowerSearch);
 
-  return nameMatches || matchesTitle || matchesDesc;
+  return nameMatches && matchesTitle && matchesDesc;
 }
