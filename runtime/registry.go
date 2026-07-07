@@ -546,7 +546,7 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 		return
 	}
 
-	err = ctrl.Create(ctx, GlobalProjectParserName, nil, nil, nil, true, &runtimev1.Resource{
+	err = ctrl.Create(ctx, GlobalProjectParserName, nil, nil, nil, nil, true, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_ProjectParser{
 			ProjectParser: &runtimev1.ProjectParser{Spec: &runtimev1.ProjectParserSpec{}},
 		},

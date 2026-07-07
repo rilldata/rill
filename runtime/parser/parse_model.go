@@ -235,7 +235,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 
 	// Insert the model
-	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}
