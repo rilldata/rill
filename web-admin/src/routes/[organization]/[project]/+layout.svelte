@@ -18,6 +18,7 @@
     branchPathPrefix,
     extractBranchFromPath,
     handleBranchNavigation,
+    removeBranchFromPath,
   } from "@rilldata/web-admin/features/branches/branch-utils";
   import {
     V1DeploymentStatus,
@@ -109,6 +110,21 @@
     return () => {
       viewAsUserStore.clear();
     };
+  });
+
+  // While "View As" is active, scope the project view to dashboards only.
+  // Any other project page (Home, AI, Reports, Alerts, Status, Settings) is
+  // redirected — entering View As is a deliberate "see what they see" mode,
+  // and admin surfaces aren't part of that.
+  $effect(() => {
+    if (!$viewAsUserStore) return;
+    if (!onProjectPage) return;
+    const dashboardsPath = `/${organization}/${project}${branchPrefix}/-/dashboards`;
+    const normalizedPath = removeBranchFromPath(page.url.pathname);
+    const normalizedDashboards = removeBranchFromPath(dashboardsPath);
+    if (!normalizedPath.startsWith(normalizedDashboards)) {
+      void goto(dashboardsPath);
+    }
   });
 
   // --- Queries (three auth strategies; cookie and token are mutually exclusive,

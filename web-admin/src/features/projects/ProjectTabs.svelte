@@ -5,6 +5,7 @@
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
   import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import { removeBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
+  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1ProjectPermissions } from "../../client";
 
@@ -16,48 +17,59 @@
 
   const { chat, reports, alerts } = featureFlags;
 
-  $: tabs = [
-    {
-      route: `/${organization}/${project}${branchPrefix}`,
-      label: "Home",
-      hasPermission: true,
-    },
-    {
-      route: `/${organization}/${project}${branchPrefix}/-/ai`,
-      label: "AI",
-      hasPermission: $chat,
-    },
-    {
-      route: `/${organization}/${project}${branchPrefix}/-/dashboards`,
-      label: "Dashboards",
-      hasPermission: true,
-    },
-    {
-      route: `/${organization}/${project}${branchPrefix}/-/query`,
-      label: "Query",
-      hasPermission: false,
-    },
-    {
-      route: `/${organization}/${project}${branchPrefix}/-/reports`,
-      label: "Reports",
-      hasPermission: $reports,
-    },
-    {
-      route: `/${organization}/${project}${branchPrefix}/-/alerts`,
-      label: "Alerts",
-      hasPermission: $alerts,
-    },
-    {
-      route: `/${organization}/${project}${branchPrefix}/-/status`,
-      label: "Status",
-      hasPermission: projectPermissions.manageProject,
-    },
-    {
-      route: `/${organization}/${project}${branchPrefix}/-/settings`,
-      label: "Settings",
-      hasPermission: projectPermissions.manageProject,
-    },
-  ];
+  // While "View As" is active, the project view is scoped to dashboards
+  // only — other tabs (Home, AI, Reports, Alerts, Status, Settings) are
+  // hidden and their routes redirect in the project layout.
+  $: tabs = $viewAsUserStore
+    ? [
+        {
+          route: `/${organization}/${project}${branchPrefix}/-/dashboards`,
+          label: "Dashboards",
+          hasPermission: true,
+        },
+      ]
+    : [
+        {
+          route: `/${organization}/${project}${branchPrefix}`,
+          label: "Home",
+          hasPermission: true,
+        },
+        {
+          route: `/${organization}/${project}${branchPrefix}/-/ai`,
+          label: "AI",
+          hasPermission: $chat,
+        },
+        {
+          route: `/${organization}/${project}${branchPrefix}/-/dashboards`,
+          label: "Dashboards",
+          hasPermission: true,
+        },
+        {
+          route: `/${organization}/${project}${branchPrefix}/-/query`,
+          label: "Query",
+          hasPermission: false,
+        },
+        {
+          route: `/${organization}/${project}${branchPrefix}/-/reports`,
+          label: "Reports",
+          hasPermission: $reports,
+        },
+        {
+          route: `/${organization}/${project}${branchPrefix}/-/alerts`,
+          label: "Alerts",
+          hasPermission: $alerts,
+        },
+        {
+          route: `/${organization}/${project}${branchPrefix}/-/status`,
+          label: "Status",
+          hasPermission: projectPermissions.manageProject,
+        },
+        {
+          route: `/${organization}/${project}${branchPrefix}/-/settings`,
+          label: "Settings",
+          hasPermission: projectPermissions.manageProject,
+        },
+      ];
 
   $: selectedIndex = tabs?.findLastIndex((t) => isSelected(t.route, pathname));
 
