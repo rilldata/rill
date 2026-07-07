@@ -65,7 +65,6 @@ export function isEnterprisePlan(planName: string) {
 export const PaidPlanTypes = {
   [V1BillingPlanType.BILLING_PLAN_TYPE_PRO]: true,
   [V1BillingPlanType.BILLING_PLAN_TYPE_TEAM]: true,
-  [V1BillingPlanType.BILLING_PLAN_TYPE_ENTERPRISE]: true,
   [V1BillingPlanType.BILLING_PLAN_TYPE_STARTER]: true,
   [V1BillingPlanType.BILLING_PLAN_TYPE_GROWTH]: true,
 };
