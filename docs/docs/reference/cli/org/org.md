@@ -4,7 +4,7 @@ title: rill org
 ---
 ## rill org
 
-Manage organisations
+Manage organizations
 
 ### Global flags
 

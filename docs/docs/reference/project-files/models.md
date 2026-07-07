@@ -49,7 +49,7 @@ refresh:
 
 ### `connector`
 
-_[string]_ - Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse`
+_[string]_ - Refers to the resource type and is needed when setting an explicit OLAP engine, e.g. `clickhouse`
 
 ### `sql`
 
@@ -129,7 +129,7 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
+    - **`connector`** - _[string]_ - Specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -143,7 +143,7 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
       - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
@@ -221,13 +221,13 @@ state:
 
 ### `partitions`
 
-_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional)
+_[oneOf]_ - Refers to how your data is partitioned; cannot be used with state. (optional)
 
   - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
+    - **`connector`** - _[string]_ - Specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -241,7 +241,7 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
       - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
@@ -377,13 +377,13 @@ stage:
 
 ### `output`
 
-_[object]_ - to define the properties of output
+_[object]_ - Defines the output properties.
 
   - **`table`** - _[string]_ - Name of the output table. If not specified, the model name is used.
 
-  - **`materialize`** - _[boolean]_ - Whether to materialize the model as a table or view
+  - **`materialize`** - _[boolean]_ - Whether to materialize the model as a table or view.
 
-  - **`connector`** - _[string]_ - Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector
+  - **`connector`** - _[string]_ - Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connectors.
 
   - **`incremental_strategy`** - _[string]_ - Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite'
 

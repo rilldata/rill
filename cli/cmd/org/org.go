@@ -12,7 +12,7 @@ import (
 func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 	orgCmd := &cobra.Command{
 		Use:               "org",
-		Short:             "Manage organisations",
+		Short:             "Manage organizations",
 		PersistentPreRunE: cmdutil.CheckAuth(ch),
 	}
 
