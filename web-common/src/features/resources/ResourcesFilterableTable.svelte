@@ -12,6 +12,7 @@
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import TagFilterDropdown from "@rilldata/web-common/features/resources/TagFilterDropdown.svelte";
   import {
     filterableTypes,
     filterResources,
@@ -29,6 +30,7 @@
   } from "@rilldata/web-common/runtime-client";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import { renderComponent } from "tanstack-table-8-svelte-5";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   /** All resources (unfiltered). Filtering is handled internally. */
   export let resources: V1Resource[];
@@ -45,6 +47,8 @@
   export let selectedStatuses: string[] = [];
   /** Pre-set type filters (e.g. from overview resources section) */
   export let selectedTypes: string[] = [];
+  /** Pre-set tag filters */
+  export let selectedTags: string[] = [];
   /** Two-way bindable search text */
   export let searchText = "";
   /** Fixed table container height (web-admin uses 550) */
@@ -78,11 +82,14 @@
     return openDropdownResourceKey === resourceKey;
   };
 
+  $: availableTags = getAllTagsForResources(resources).map((t) => t.name);
+
   $: filteredResources = filterResources(
     resources,
     selectedTypes,
     searchText,
     selectedStatuses,
+    selectedTags,
   );
 
   $: tableData = filteredResources.filter(
@@ -92,7 +99,10 @@
   );
 
   $: hasActiveFilters =
-    selectedTypes.length > 0 || searchText || selectedStatuses.length > 0;
+    selectedTypes.length > 0 ||
+    searchText ||
+    selectedStatuses.length > 0 ||
+    selectedTags.length > 0;
 
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {
@@ -113,6 +123,7 @@
   function clearFilters() {
     selectedTypes = [];
     selectedStatuses = [];
+    selectedTags = [];
     searchText = "";
   }
 
@@ -290,6 +301,8 @@
         {/each}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
+
+    <TagFilterDropdown tags={availableTags} bind:selectedTags />
 
     {#if hasActiveFilters}
       <button

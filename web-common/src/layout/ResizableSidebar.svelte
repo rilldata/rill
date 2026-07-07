@@ -20,6 +20,7 @@
   export let defaultWidth: number;
   export let maxWidth: number;
   export let additionalClass = "";
+  export let side: "left" | "right" | "top" | "bottom" = "left";
 
   const store = getWidthStore(id, defaultWidth);
 </script>
@@ -31,7 +32,7 @@
     basis={defaultWidth}
     dimension={$store}
     direction="EW"
-    side="left"
+    {side}
     onUpdate={(d) => store.set(d)}
   />
   <slot />
