@@ -31,7 +31,7 @@ Work with Rill projects from the command line.
 * [rill init](init.md)	 - Initialize a new Rill project
 * [rill login](login.md)	 - Authenticate with the Rill API
 * [rill logout](logout.md)	 - Logout of the Rill API
-* [rill org](org/org.md)	 - Manage organisations
+* [rill org](org/org.md)	 - Manage organizations
 * [rill project](project/project.md)	 - Manage projects
 * [rill public-url](public-url/public-url.md)	 - Manage public URLs
 * [rill query](query.md)	 - Query data in a project

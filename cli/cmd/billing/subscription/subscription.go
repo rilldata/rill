@@ -8,7 +8,7 @@ import (
 func SubscriptionCmd(ch *cmdutil.Helper) *cobra.Command {
 	subsCmd := &cobra.Command{
 		Use:               "subscription",
-		Short:             "Manage organisation subscription",
+		Short:             "Manage organization subscriptions",
 		PersistentPreRunE: cmdutil.CheckAuth(ch),
 	}
 

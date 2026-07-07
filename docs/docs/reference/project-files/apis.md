@@ -92,7 +92,7 @@ _[string]_ - Raw SQL query to run against existing models in the project. _(requ
 
 ### `connector`
 
-_[string]_ - specifies the connector to use when running SQL or glob queries.
+_[string]_ - Specifies the connector to use when running SQL or glob queries.
 
 ```yaml
 type: api
@@ -138,7 +138,7 @@ Uses a file-matching pattern (glob) to query data from a connector.
 
 ### `glob`
 
-_[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
+_[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
   - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
@@ -191,7 +191,7 @@ Invokes multiple resolvers and returns the union of their results. Each entry in
 _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
 
 ```yaml
-# Exampe for union resolvers
+# Example for union resolvers
 type: api
 union:
     - connector: duckdb
