@@ -67,14 +67,14 @@ export function filterResources(
 ): V1Resource[] {
   if (!resources) return [];
 
+  const lowerSearch = search.toLowerCase();
+
   return resources.filter((r) => {
     const kind = r.meta?.name?.kind;
-    const name = r.meta?.name?.name ?? "";
     const resourceTags = r.meta?.tags ?? [];
 
     const matchesType = types.length === 0 || types.includes(kind ?? "");
-    const matchesSearch =
-      !search || name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = !lowerSearch || matchSearch(r, lowerSearch);
     const matchesStatus =
       statuses.length === 0 || statuses.includes(getResourceStatus(r));
     const matchesTags =
@@ -84,13 +84,18 @@ export function filterResources(
   });
 }
 
-export function getAvailableTags(
-  resources: V1Resource[] | undefined,
-): string[] {
-  if (!resources) return [];
-  const set = new Set<string>();
-  for (const r of resources) {
-    for (const t of r.meta?.tags ?? []) set.add(t);
-  }
-  return [...set].sort((a, b) => a.localeCompare(b));
+function matchSearch(resource: V1Resource, lowerSearch: string): boolean {
+  const name = resource.meta?.name?.name ?? "";
+  const nameMatches = name.toLowerCase().includes(lowerSearch);
+
+  const title =
+    resource.metricsView?.state?.validSpec?.displayName ??
+    resource.explore?.state?.validSpec?.displayName ??
+    resource.canvas?.state?.validSpec?.displayName;
+  const matchesTitle = Boolean(title?.toLowerCase().includes(lowerSearch));
+
+  const desc = resource.explore?.state?.validSpec?.description ?? "";
+  const matchesDesc = Boolean(desc?.toLowerCase().includes(lowerSearch));
+
+  return nameMatches || matchesTitle || matchesDesc;
 }

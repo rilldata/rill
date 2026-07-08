@@ -12,19 +12,17 @@
   import { useDashboards, useIsInitialBuild } from "./selectors";
   import { Search } from "@rilldata/web-common/components/search";
   import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
-  import {
-    getAllTagsForResources,
-    getResourceTags,
-    UNTAGGED_KEY,
-  } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
+  import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
   import { getDashboardFavouritesStore } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
 
   let {
     isEmbedded = false,
     isPreview = false,
-    previewLimit,
+    previewLimit = 5,
   }: {
     isEmbedded?: boolean;
     isPreview?: boolean;
@@ -34,6 +32,10 @@
   const selectedTagsState = UrlParamsState.createStringArrayParam("tags");
 
   const searchTextState = UrlParamsState.createStringParam("search");
+  const throttler = new Throttler(500, 500);
+  const throttledSearchSetter = (newValue: string) => {
+    throttler.throttle(() => searchTextState.setter(newValue));
+  };
 
   const runtimeClient = useRuntimeClient();
   let { organization, project } = $derived(page.params);
@@ -48,44 +50,24 @@
   } = $derived($dashboards);
 
   let initialBuild = useIsInitialBuild(runtimeClient);
-  let isBuilding = $initialBuild.data === true;
-
-  function matchesSearch(resource: V1Resource, query: string): boolean {
-    if (!query) return true;
-    const q = query.toLowerCase();
-    const name = resource.meta?.name?.name ?? "";
-    const title = resource.explore
-      ? (resource.explore.spec?.displayName ?? "")
-      : (resource.canvas?.spec?.displayName ?? "");
-    const desc = resource.explore?.spec?.description ?? "";
-    return (
-      name.toLowerCase().includes(q) ||
-      title.toLowerCase().includes(q) ||
-      desc.toLowerCase().includes(q)
-    );
-  }
+  let isBuilding = $derived($initialBuild.data === true);
 
   let allDashboards = $derived(dashboardsData ?? []);
   let availableTags = $derived(getAllTagsForResources(allDashboards));
   let hasSomeTag = $derived(availableTags.length > 0);
 
-  let tagFilteredDashboards = $derived(
-    selectedTagsState.value.length === 0
-      ? allDashboards
-      : allDashboards.filter((resource) => {
-          const resourceTags = getResourceTags(resource);
-          return selectedTagsState.value.some((t) =>
-            t === UNTAGGED_KEY
-              ? resourceTags.length === 0
-              : resourceTags.includes(t),
-          );
-        }),
+  let filteredDashboards = $derived(
+    filterResources(
+      allDashboards,
+      [],
+      searchTextState.value,
+      [],
+      selectedTagsState.value,
+    ),
   );
 
-  let searchFilteredDashboards = $derived(
-    tagFilteredDashboards.filter((r) =>
-      matchesSearch(r, searchTextState.value),
-    ),
+  let displayData = $derived(
+    isPreview ? filteredDashboards.slice(0, previewLimit) : filteredDashboards,
   );
 
   let dashboardFavourites = $derived(
@@ -94,12 +76,12 @@
 
   let validDashboardFavourites = $derived(
     dashboardFavourites.value.filter((f) =>
-      searchFilteredDashboards.find((r) => r.meta?.name?.name === f),
+      filteredDashboards.find((r) => r.meta?.name?.name === f),
     ),
   );
 
   let hasMoreDashboards = $derived(
-    isPreview && searchFilteredDashboards.length > previewLimit,
+    isPreview && filteredDashboards.length > previewLimit,
   );
 
   const columns = [
@@ -189,20 +171,21 @@
         <Search
           placeholder="Search"
           autofocus={false}
-          bind:value={searchTextState.getter, searchTextState.setter}
+          bind:value={searchTextState.getter, throttledSearchSetter}
           rounded="lg"
+          retainValueOnMount
         />
       </div>
     {/if}
 
-    <div class="flex flex-row flex-1 w-full gap-x-2">
+    <div class="flex flex-row flex-1 w-full gap-x-2 overflow-hidden">
       {#if hasSomeTag && !isPreview}
         <ResizableSidebar
           id="dashboards-tag-sidebar"
           minWidth={200}
           maxWidth={500}
           defaultWidth={200}
-          additionalClass="overflow-auto bg-surface-subtle border rounded-lg"
+          additionalClass="overflow-hidden border rounded-lg"
           side="right"
         >
           <DashboardsTagSidebar
@@ -215,7 +198,7 @@
       <div class="flex flex-col flex-grow">
         <ResourceList
           kind="dashboard"
-          data={searchFilteredDashboards}
+          data={displayData}
           {columns}
           {columnVisibility}
           {initialSorting}

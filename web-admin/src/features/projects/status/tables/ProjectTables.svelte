@@ -24,7 +24,6 @@
     applyTagFilter,
     splitTablesByModel,
   } from "@rilldata/web-common/features/projects/status/tables/utils";
-  import { getAvailableTags } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
   import ModelPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/RefreshErroredPartitionsDialog.svelte";
@@ -35,6 +34,7 @@
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -115,8 +115,8 @@
 
   // Tags — collected from model resources only (external tables have no tags).
   // `modelResources` indexes each resource twice (by result table and model name),
-  // so values() is deduped inside getAvailableTags via its Set.
-  $: availableTags = getAvailableTags([...modelResources.values()]);
+  // so values() is deduped inside getAllTagsForResources via its Set.
+  $: availableTags = getAllTagsForResources([...modelResources.values()]);
 
   $: filterGroups = [
     {
@@ -135,7 +135,10 @@
           {
             label: "Tags",
             key: "tags",
-            options: availableTags.map((t) => ({ value: t, label: t })),
+            options: availableTags.map((t) => ({
+              value: t.name,
+              label: t.name,
+            })),
             selected: selectedTags,
             defaultValue: [],
             multiSelect: true,
@@ -349,6 +352,7 @@
           {#if allExternalTables.length > 0}
             <span class="text-fg-secondary font-semibold text-sm">
               No external tables match the current filters
+              {#if selectedTags.length > 0}(External tables do not carry tags){/if}
             </span>
           {:else}
             <span class="text-fg-secondary font-semibold text-sm">

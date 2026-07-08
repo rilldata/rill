@@ -2,11 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { BreadcrumbItemDropdownProps } from "@rilldata/web-common/components/navigation/breadcrumbs/types.ts";
   import BreadcrumbDropdownItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbDropdownItem.svelte";
-  import {
-    getAllTagsForResources,
-    getResourceTags,
-    UNTAGGED_KEY,
-  } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
@@ -15,6 +11,7 @@
     ArrayRuneStore,
     InMemoryRuneStore,
   } from "web-common/src/lib/store-utils/types.svelte.ts";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
 
   let {
     options,
@@ -36,32 +33,18 @@
   );
   let searchText = $state("");
 
-  // `id` in `options` is the resource name (`V1Resource.meta.name.name`), so
-  // build a lookup to resolve each option back to its resource for tag filtering.
-  let dashboardsByName = $derived(
-    new Map(allDashboards.map((r) => [r.meta?.name?.name?.toLowerCase(), r])),
+  let filteredDashboards = $derived(
+    filterResources(allDashboards, [], searchText, [], selectedTagsStore.value),
   );
 
-  function matchesTags(id: string): boolean {
-    if (selectedTagsStore.value.length === 0) return true;
-    const resource = dashboardsByName.get(id);
-    if (!resource) return false;
-    const resourceTags = getResourceTags(resource);
-    return selectedTagsStore.value.some((t) =>
-      t === UNTAGGED_KEY ? resourceTags.length === 0 : resourceTags.includes(t),
-    );
-  }
-
-  function matchesSearch(id: string, label: string): boolean {
-    if (!searchText) return true;
-    const q = searchText.toLowerCase();
-    return id.toLowerCase().includes(q) || label.toLowerCase().includes(q);
-  }
+  let filteredDashboardNames = $derived(
+    new Set(
+      filteredDashboards.map((r) => r.meta?.name?.name?.toLowerCase() ?? ""),
+    ),
+  );
 
   let filteredOptions = $derived(
-    [...options].filter(
-      ([id, option]) => matchesTags(id) && matchesSearch(id, option.label),
-    ),
+    [...options].filter(([id]) => filteredDashboardNames.has(id)),
   );
 </script>
 

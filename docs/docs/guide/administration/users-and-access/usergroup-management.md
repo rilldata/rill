@@ -1,21 +1,21 @@
 ---
-title: User group Permissions
-sidebar_label: User Groups 
+title: User Group Permissions
+sidebar_label: User Groups
 sidebar_position: 24
 ---
 
-Creating user groups in Rill allows administrators to easily grant permission to multiple projects at different access levels. It is possible to mix and match viewer and administrator permission in a single group and users can be part of multiple groups. However, please keep in mind that the higher permission will be applied.
+Creating user groups in Rill allows administrators to easily grant permissions to multiple projects at different access levels. It is possible to mix and match viewer and administrator permissions in a single group, and users can be part of multiple groups. However, please keep in mind that the higher permission will be applied.
 
-## Managing User groups Permissions
+## Managing User Group Permissions
 There are two ways to set up user groups in Rill.
 
-1. Administrator via Rill Cloud
-2. Administrator via CLI 
+1. Administer them via Rill Cloud
+2. Administer them via CLI
 
 ### How to Manage User Groups in Rill Cloud
 From the organization page, you can manage user groups under the Users tab. Adding user groups from this page will add the user group to the organization. You can then add users to a user group to inherit the group [permissions](/guide/administration/users-and-access/roles-permissions).
 
-![Usergroup Management](/img/manage/user-management/usergroup-management.png)
+![User Group Management](/img/manage/user-management/usergroup-management.png)
 
 ### How to Manage User Groups via the CLI
 ```
@@ -37,7 +37,7 @@ Available Commands:
   remove      Remove a group's role on a project or organization
 ```
 
-## Creating the User group
+## Creating the User Group
 
 You can create a new user group by running the following and following the CLI instructions:
 
@@ -57,7 +57,7 @@ rill usergroup add --project <project_name>
       --project string   Project
       --role string      Role of the user group (options: admin, editor, viewer)
 ```
-You will be prompted for the role and the name of the group you are editing. If you want to specify a specific project, please use the --project flag. If no project flag is defined, you will be setting permission on the organization level.
+You will be prompted for the role and the name of the group you are editing. If you want to specify a specific project, please use the --project flag. If no project flag is defined, you will be setting permissions at the organization level.
 
 If you have any questions on permission levels, please review the [Roles and Permissions page](roles-permissions).
 

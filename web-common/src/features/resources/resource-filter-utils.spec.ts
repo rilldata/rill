@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   filterResources,
-  getAvailableTags,
   getResourceStatus,
   getStatusPriority,
 } from "./resource-filter-utils";
@@ -187,20 +186,5 @@ describe("filterResources", () => {
       const result = filterResources(tagged, [], "", [], ["finance"]);
       expect(result.some((r) => r.meta?.name?.name === "m4")).toBe(false);
     });
-  });
-});
-
-describe("getAvailableTags", () => {
-  it("returns an empty array for undefined input", () => {
-    expect(getAvailableTags(undefined)).toEqual([]);
-  });
-
-  it("returns unique tags sorted alphabetically", () => {
-    const resources = [
-      makeResource("a", ResourceKind.Model, { tags: ["zeta", "alpha"] }),
-      makeResource("b", ResourceKind.Model, { tags: ["alpha", "mu"] }),
-      makeResource("c", ResourceKind.Model),
-    ];
-    expect(getAvailableTags(resources)).toEqual(["alpha", "mu", "zeta"]);
   });
 });
