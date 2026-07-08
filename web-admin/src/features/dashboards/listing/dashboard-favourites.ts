@@ -4,3 +4,8 @@ export function getDashboardFavouritesStore(org: string, project: string) {
   const key = `rill:app:${org}:${project}:dashboard:favourites`;
   return SvelteLocalStorage.createStringArrayStore(key);
 }
+
+export function getDashboardTagFavouritesStore(org: string, project: string) {
+  const key = `rill:app:${org}:${project}:tag:favourites`;
+  return SvelteLocalStorage.createStringArrayStore(key);
+}

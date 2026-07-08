@@ -1,25 +1,44 @@
 <script lang="ts">
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { detectOverflow } from "@rilldata/web-common/lib/actions/detect-overflow";
+  import { Star } from "lucide-svelte";
 
   let {
     name,
     count,
     selected,
+    isFavourite,
     onToggle,
+    onFavouriteToggle,
   }: {
     name: string;
     count: number;
     selected: boolean;
+    isFavourite: boolean;
     onToggle: () => void;
+    onFavouriteToggle: () => void;
   } = $props();
 
   // Only show the tooltip when the tag name is actually clipped, matching the
   // pivot tag rows.
   let isTruncated = $state(false);
+
+  let hovered = $state(false);
+
+  function handleFavouriteToggle(e: MouseEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    onFavouriteToggle();
+  }
 </script>
 
-<button class="tag-row" class:selected onclick={onToggle}>
+<button
+  class="tag-row"
+  class:selected
+  onclick={onToggle}
+  onmouseenter={() => (hovered = true)}
+  onmouseleave={() => (hovered = false)}
+>
   <Tooltip.Root delayDuration={200} disabled={!isTruncated}>
     <Tooltip.Trigger>
       {#snippet child({ props })}
@@ -39,6 +58,16 @@
       {name}
     </Tooltip.Content>
   </Tooltip.Root>
+
+  {#if hovered || isFavourite}
+    <Star
+      size="14px"
+      class="text-accent-primary-action {isFavourite
+        ? 'fill-accent-primary-action'
+        : ''}"
+      onclick={handleFavouriteToggle}
+    />
+  {/if}
 
   <span class="count-tile" title={`${count} dashboards`}>{count}</span>
 </button>

@@ -3,6 +3,9 @@
   import DashboardsTagRow from "./DashboardsTagRow.svelte";
   import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { getDashboardTagFavouritesStore } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
+  import { page } from "$app/state";
+  import { flip } from "svelte/animate";
 
   let {
     resources,
@@ -25,21 +28,40 @@
         )
       : tags,
   );
+
+  let { organization, project } = $derived(page.params);
+  let tagsFavourites = $derived(
+    getDashboardTagFavouritesStore(organization, project),
+  );
+
+  let sortedTags = $derived(
+    [...filteredTags].sort((a, b) => {
+      let aIndex = tagsFavourites.value.indexOf(a.name);
+      if (aIndex === -1) aIndex = tagsFavourites.value.length;
+      let bIndex = tagsFavourites.value.indexOf(b.name);
+      if (bIndex === -1) bIndex = tagsFavourites.value.length;
+      return aIndex - bIndex;
+    }),
+  );
 </script>
 
 <div class="tags-scroll">
   <h3 class="column-header">Tags</h3>
 
-  {#if filteredTags.length === 0}
+  {#if sortedTags.length === 0}
     <p class="text-fg-secondary my-1 px-2 text-xs">No matching tags</p>
   {:else}
-    {#each filteredTags as tag (tag.name)}
-      <DashboardsTagRow
-        name={tag.name}
-        count={tag.totalCount}
-        selected={selectedTagsState.value.includes(tag.name)}
-        onToggle={() => selectedTagsState.toggle(tag.name)}
-      />
+    {#each sortedTags as tag (tag.name)}
+      <div animate:flip={{ duration: 200 }}>
+        <DashboardsTagRow
+          name={tag.name}
+          count={tag.totalCount}
+          selected={selectedTagsState.value.includes(tag.name)}
+          isFavourite={tagsFavourites.value.includes(tag.name)}
+          onToggle={() => selectedTagsState.toggle(tag.name)}
+          onFavouriteToggle={() => tagsFavourites.toggle(tag.name)}
+        />
+      </div>
     {/each}
   {/if}
 </div>

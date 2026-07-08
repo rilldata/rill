@@ -22,7 +22,7 @@
   let {
     isEmbedded = false,
     isPreview = false,
-    previewLimit = 5,
+    previewLimit = undefined,
   }: {
     isEmbedded?: boolean;
     isPreview?: boolean;
@@ -64,10 +64,6 @@
       [],
       selectedTagsState.value,
     ),
-  );
-
-  let displayData = $derived(
-    isPreview ? filteredDashboards.slice(0, previewLimit) : filteredDashboards,
   );
 
   let dashboardFavourites = $derived(
@@ -198,7 +194,7 @@
       <div class="flex flex-col flex-grow">
         <ResourceList
           kind="dashboard"
-          data={displayData}
+          data={filteredDashboards}
           {columns}
           {columnVisibility}
           {initialSorting}

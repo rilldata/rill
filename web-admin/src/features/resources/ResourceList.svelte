@@ -15,6 +15,7 @@
   import { writable } from "svelte/store";
   import ResourceListToolbar from "./ResourceListToolbar.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { flip } from "svelte/animate";
 
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
@@ -110,7 +111,11 @@
     <slot name="header" />
     <ul role="list" class="resource-list">
       {#each limitedRows as row (row.id)}
-        <li class="resource-list-item" class:fixed-height={fixedRowHeight}>
+        <li
+          class="resource-list-item"
+          class:fixed-height={fixedRowHeight}
+          animate:flip={{ duration: 200 }}
+        >
           {#each row.getVisibleCells() as cell (cell.id)}
             <svelte:component
               this={flexRender(cell.column.columnDef.cell, cell.getContext())}
