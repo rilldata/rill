@@ -1,6 +1,6 @@
 module github.com/rilldata/rill
 
-go 1.25.5
+go 1.26.5
 
 require (
 	cloud.google.com/go v0.121.0
