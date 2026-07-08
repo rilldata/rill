@@ -30,6 +30,7 @@
   import { InfoIcon } from "lucide-svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -83,8 +84,12 @@
   // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
   let starting = false;
 
+  // Wait for `primaryProjectQuery` too: the cloud readonly notice is gated on
+  // `hasPrimaryDeployment`, and it must be registered before `<slot />` renders
+  // any file editor (getReadonlyNotice reads the notice non-reactively).
   $: isLoading =
     $projectQuery.isPending ||
+    $primaryProjectQuery.isPending ||
     starting ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
 
@@ -119,7 +124,17 @@
     });
   };
 
-  setCloudReadonlyNotice(envEditDisabled);
+  // Only surface the env notice once the project has a primary deployment.
+  // `isLoading` blocks `<slot />` until `primaryProjectQuery` resolves, so this
+  // has run before any file editor reads the notice.
+  $: if (!$primaryProjectQuery.isPending) {
+    setCloudReadonlyNotice(
+      $primaryProjectQuery.data?.project?.primaryDeploymentId
+        ? envEditDisabled
+        : undefined,
+    );
+    fileArtifacts.recheckReadonlyStatus();
+  }
 
   onDestroy(() => {
     $editorRoutePrefix = "";
@@ -161,7 +176,7 @@
       bind:starting
     />
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
-    {#key `${runtimeHost}::${instanceId}`}
+    {#key `${runtimeHost}::${instanceId}::${hasPrimaryDeployment}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
         {#if !inProjectWelcomePage}
           <ProjectHeader
@@ -229,19 +244,14 @@
 
 {#snippet envEditDisabled()}
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
-    {#if hasPrimaryDeployment}
-      <InfoIcon size={14} /> Manage environment variables in
-      <a
-        href="/{organization}/{project}/-/settings/environment-variables"
-        target="_blank"
-        rel="noopener"
-      >
-        Settings →
-      </a>
-    {:else}
-      <InfoIcon size={14} /> You can manage environment variables from settings page
-      after the project has been published.
-    {/if}
+    <InfoIcon size={14} /> Manage environment variables in
+    <a
+      href="/{organization}/{project}/-/settings/environment-variables"
+      target="_blank"
+      rel="noopener"
+    >
+      Settings →
+    </a>
   </div>
 {/snippet}
 
