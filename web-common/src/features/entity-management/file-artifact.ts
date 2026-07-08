@@ -41,11 +41,14 @@ import type { FileIO } from "./file-io";
 import type { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 
+// Data files that can't be edited as text, but whose contents can be
+// previewed by querying them with DuckDB (see ParquetWorkspace).
+const PREVIEWABLE_DATA_EXTENSIONS = [".parquet"];
+
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
   ".db",
   ".db.wal",
-  ".parquet",
   ".xls",
   ".xlsx",
 
@@ -85,6 +88,9 @@ export class FileArtifact {
   );
   readonly fileExtension: string;
   readonly fileTypeUnsupported: boolean;
+  // True for data files (e.g. .parquet) that have no editable text content and
+  // are instead rendered as a queryable data preview.
+  readonly isPreviewableDataFile: boolean;
   readonly folderName: string;
   readonly fileName: string;
   readonly disableAutoSave: boolean;
@@ -128,6 +134,9 @@ export class FileArtifact {
 
     this.fileExtension = extractFileExtension(filePath);
     this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
+      this.fileExtension,
+    );
+    this.isPreviewableDataFile = PREVIEWABLE_DATA_EXTENSIONS.includes(
       this.fileExtension,
     );
 
