@@ -1,5 +1,6 @@
 import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { getParquetPreviewQueryKey } from "@rilldata/web-common/features/workspaces/parquet-preview";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { Throttler } from "@rilldata/web-common/lib/throttler";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -52,8 +53,17 @@ export async function handleFileEvent(
 
   if (!event.isDir) {
     switch (event.event) {
-      case V1FileEvent.FILE_EVENT_WRITE:
-        await fileArtifacts.getFileArtifact(event.path).fetchContent(true);
+      case V1FileEvent.FILE_EVENT_WRITE: {
+        const artifact = fileArtifacts.getFileArtifact(event.path);
+        if (artifact.isPreviewableDataFile) {
+          // Data files (e.g. .parquet) have no editable text content; refresh
+          // their DuckDB-powered preview instead of fetching binary content.
+          void queryClient.invalidateQueries({
+            queryKey: getParquetPreviewQueryKey(instanceId, event.path),
+          });
+        } else {
+          await artifact.fetchContent(true);
+        }
         if (event.path === "/rill.yaml") {
           void queryClient.invalidateQueries({
             queryKey: getRuntimeServiceIssueDevJWTQueryKey(instanceId),
@@ -65,6 +75,7 @@ export async function handleFileEvent(
         }
         state.seenFiles.add(event.path);
         break;
+      }
 
       case V1FileEvent.FILE_EVENT_DELETE:
         void queryClient.resetQueries({

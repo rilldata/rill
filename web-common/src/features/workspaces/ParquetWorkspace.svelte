@@ -11,6 +11,7 @@
     createRuntimeServiceQueryResolver,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getParquetPreviewQueryKey } from "./parquet-preview";
 
   // Number of rows to preview. Parquet files can be large, so we cap the
   // preview the same way the model results table does.
@@ -23,13 +24,14 @@
   let { path } = $derived(fileArtifact);
   let fileName = $derived(fileArtifact.fileName);
 
+  let instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+    sensitive: true,
+  });
+
   // DuckDB resolves relative paths against its own working directory, not the
   // project root, so we must read the file by its absolute path. The project's
   // local root is the `dsn` of the repo connector (only present in Rill
   // Developer, where the project lives on the local filesystem).
-  let instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
-    sensitive: true,
-  });
   let repoRoot = $derived.by(() => {
     const instance = $instanceQuery.data?.instance;
     const repo = instance?.connectors?.find(
@@ -37,6 +39,18 @@
     );
     const dsn = repo?.config?.dsn;
     return typeof dsn === "string" ? dsn : "";
+  });
+
+  // read_parquet is DuckDB-specific, so the query must run against a DuckDB
+  // connector even when the project's default OLAP connector is something else
+  // (e.g. ClickHouse). Prefer the default OLAP connector if it is DuckDB,
+  // otherwise fall back to any DuckDB connector in the project.
+  let duckDbConnector = $derived.by(() => {
+    const instance = $instanceQuery.data?.instance;
+    const connectors = instance?.connectors ?? [];
+    const olap = connectors.find((c) => c.name === instance?.olapConnector);
+    if (olap?.type === "duckdb") return olap.name ?? "";
+    return connectors.find((c) => c.type === "duckdb")?.name ?? "";
   });
 
   // Join the repo root and the file's project-relative path into an absolute
@@ -56,14 +70,15 @@
       {
         resolver: "sql",
         resolverProperties: {
+          connector: duckDbConnector,
           sql,
           limit: PREVIEW_LIMIT,
         } as unknown as PartialMessage<Struct>,
       },
       {
         query: {
-          enabled: !!absolutePath,
-          queryKey: ["parquet-preview", runtimeClient.instanceId, absolutePath],
+          enabled: !!absolutePath && !!duckDbConnector,
+          queryKey: getParquetPreviewQueryKey(runtimeClient.instanceId, path),
         },
       },
     ),
@@ -72,11 +87,16 @@
   // While the instance is loading we don't yet know the repo root, so treat it
   // as part of the preview's loading state.
   let isLoading = $derived($instanceQuery.isLoading || $previewQuery.isLoading);
-  let error = $derived(
-    !$instanceQuery.isLoading && !repoRoot
-      ? new Error("Could not resolve the project directory for this file.")
-      : $previewQuery.error,
-  );
+  let error = $derived.by(() => {
+    if ($instanceQuery.isLoading) return null;
+    if (!repoRoot)
+      return new Error(
+        "Could not resolve the project directory for this file.",
+      );
+    if (!duckDbConnector)
+      return new Error("Previewing Parquet files requires a DuckDB connector.");
+    return $previewQuery.error;
+  });
   let data = $derived($previewQuery.data);
 
   let rows = $derived(data?.data ?? []);
