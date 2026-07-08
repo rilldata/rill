@@ -238,11 +238,12 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, args *AnalystAgentArgs)
 	}
 
 	data := map[string]any{
-		"is_prompt":      args.Prompt != "",
-		"feature_flags":  ff,
-		"forked":         session.Forked(),
-		"is_report":      args.IsReport,
-		"has_comparison": !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero(),
+		"is_prompt":       args.Prompt != "",
+		"feature_flags":   ff,
+		"forked":          session.Forked(),
+		"is_report":       args.IsReport,
+		"has_comparison":  !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero(),
+		"ai_instructions": session.ProjectInstructions(), // Set once at session creation, so stable for the session
 	}
 
 	// Generate the system prompt
@@ -377,6 +378,13 @@ If a question seems unrelated, first inspect the available metrics views to see 
 Decline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.
 </guardrails>
 
+{{ if .ai_instructions }}
+<project_instructions>
+The administrator has provided the following project-wide instructions, which may or may not be relevant to this task:
+{{ .ai_instructions }}
+</project_instructions>
+{{ end }}
+
 <thinking>
 After each query in Phase 2, think through:
 - What patterns or anomalies did this reveal?
@@ -449,7 +457,6 @@ func (t *AnalystAgent) contextPrompt(ctx context.Context, metricsViewNames []str
 	}
 
 	data := map[string]any{
-		"ai_instructions":  session.ProjectInstructions(),
 		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
 		"explore":          args.Explore,
 		"canvas":           args.Canvas,
@@ -519,11 +526,6 @@ The user is looking at "{{ .canvas_component }}". Pay special attention to its d
 {{ end }}
 
 The system allows a max row limit of {{ .max_query_limit }} per query.
-
-{{ if .ai_instructions }}
-The administrator has provided the following project-wide instructions, which may or may not be relevant to this task:
-{{ .ai_instructions }}
-{{ end }}
 </context>
 `, data)
 }
