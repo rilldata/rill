@@ -1,3 +1,5 @@
+import { debounce } from "@rilldata/web-common/lib/create-debouncer.ts";
+
 export interface RuneStore<Val, DefaultVal = Val> {
   value: Val | DefaultVal;
   getter: () => Val | DefaultVal;
@@ -44,4 +46,23 @@ export class ArrayRuneStore<Val> implements RuneStore<Val[]> {
       : [...this.value, value];
     this.setter(newTags);
   };
+
+  public delete = (value: Val) => {
+    const newTags = this.value.filter((v) => v !== value);
+    this.setter(newTags);
+  };
+}
+
+export class DebouncedRuneStore<Val, DefaultVal = Val>
+  implements RuneStore<Val, DefaultVal>
+{
+  public value: Val;
+  public getter: () => Val;
+  public setter: (newValue: Val) => void;
+
+  public constructor(store: RuneStore<Val>, timeout: number) {
+    this.value = $derived(store.value);
+    this.getter = store.getter;
+    this.setter = debounce(store.setter, timeout);
+  }
 }

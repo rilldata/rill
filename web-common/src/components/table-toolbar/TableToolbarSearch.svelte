@@ -2,29 +2,33 @@
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { X } from "lucide-svelte";
   import { tick } from "svelte";
+  import type { RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import { Search } from "@rilldata/web-common/components/search";
 
   let {
-    searchText = $bindable(""),
-    disabled = false,
+    searchTextStore,
   }: {
-    searchText?: string;
-    disabled?: boolean;
+    searchTextStore?: RuneStore<string>;
   } = $props();
 
   let manualExpanded = $state(false);
-  let expanded = $derived(manualExpanded || searchText.length > 0);
+  let expanded = $derived(manualExpanded || !!searchTextStore?.value);
   let inputRef: HTMLInputElement | undefined = $state();
 
   async function open() {
-    if (disabled) return;
+    if (!searchTextStore) return;
     manualExpanded = true;
     await tick();
     inputRef?.focus();
   }
 
   function close() {
-    searchText = "";
+    searchTextStore?.setter("");
     manualExpanded = false;
+  }
+
+  function handleInput(event) {
+    searchTextStore?.setter(event.target?.value);
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -34,17 +38,18 @@
   }
 </script>
 
-{#if expanded}
+{#if expanded && searchTextStore}
   <div
     class="flex flex-row items-center gap-x-1.5 h-9 border rounded-sm bg-input px-2 min-w-[200px]"
   >
     <SearchIcon size="16" className="text-fg-secondary shrink-0" />
     <input
       bind:this={inputRef}
-      bind:value={searchText}
+      value={searchTextStore.value}
       type="text"
       class="outline-none bg-transparent text-sm text-fg-primary placeholder-fg-secondary flex-1 min-w-0"
       placeholder="Search..."
+      oninput={handleInput}
       onkeydown={handleKeyDown}
     />
     <button
@@ -62,7 +67,7 @@
     class="flex items-center justify-center h-9 w-4 text-fg-primary hover:text-fg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
     onclick={open}
     aria-label="Search"
-    {disabled}
+    disabled={!searchTextStore}
   >
     <SearchIcon size="16" className="text-fg-secondary" />
   </button>

@@ -10,24 +10,30 @@
   import FiltersCell from "./cells/FiltersCell.svelte";
   import DateCell from "./cells/DateCell.svelte";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
+  import { InMemoryRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   interface PublicURLRow extends V1MagicAuthToken {
     dashboardTitle: string;
   }
 
-  export let data: PublicURLRow[];
-  export let onDelete: (deletedTokenId: string) => void;
+  let {
+    data,
+    onDelete,
+  }: { data: PublicURLRow[]; onDelete: (deletedTokenId: string) => void } =
+    $props();
 
-  let searchText = "";
+  const searchTextStore = new InMemoryRuneStore<string>("");
 
-  $: filteredData = data.filter((row) => {
-    if (!searchText) return true;
-    const q = searchText.toLowerCase();
-    const label = (row.displayName || row.dashboardTitle || "").toLowerCase();
-    const dashboard = (row.dashboardTitle || "").toLowerCase();
-    const creator = String(row.attributes?.name || "").toLowerCase();
-    return label.includes(q) || dashboard.includes(q) || creator.includes(q);
-  });
+  let filteredData = $derived(
+    data.filter((row) => {
+      if (!searchTextStore.value) return true;
+      const q = searchTextStore.value.toLowerCase();
+      const label = (row.displayName || row.dashboardTitle || "").toLowerCase();
+      const dashboard = (row.dashboardTitle || "").toLowerCase();
+      const creator = String(row.attributes?.name || "").toLowerCase();
+      return label.includes(q) || dashboard.includes(q) || creator.includes(q);
+    }),
+  );
 
   const columns: ColumnDef<PublicURLRow, any>[] = [
     {
@@ -87,11 +93,7 @@
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
-  <TableToolbar
-    bind:searchText
-    searchDisabled={data.length === 0}
-    showSort={false}
-  />
+  <TableToolbar {searchTextStore} />
 
   <BasicTable
     data={filteredData}

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     createRuntimeServiceCreateTriggerMutation,
@@ -21,56 +20,23 @@
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
-  import {
-    createUrlFilterSync,
-    parseArrayParam,
-    parseStringParam,
-  } from "@rilldata/web-common/lib/url-filter-sync";
-  import { onMount } from "svelte";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
+  import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
-  const filterSync = createUrlFilterSync([
-    { key: "kind", type: "array" },
-    { key: "status", type: "array" },
-    { key: "tags", type: "array" },
-    { key: "q", type: "string" },
-  ]);
-  filterSync.init($page.url);
-
-  let isConfirmDialogOpen = false;
-  let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-  let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
-  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
-  let mounted = false;
-
-  // Sync URL → local state on external navigation (back/forward)
-  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
-    filterSync.markSynced($page.url);
-    selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
-    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
-    searchText = parseStringParam($page.url.searchParams.get("q"));
-  }
-
-  // Sync filter state → URL
-  $: if (mounted) {
-    filterSync.syncToUrl({
-      kind: selectedTypes,
-      status: selectedStatuses,
-      tags: selectedTags,
-      q: searchText,
-    });
-  }
-
-  onMount(() => {
-    mounted = true;
-  });
+  let isConfirmDialogOpen = $state(false);
+  const searchTextStore = new DebouncedRuneStore(
+    UrlParamsState.createStringParam("q"),
+    500,
+  );
+  const selectedTypesStore = UrlParamsState.createStringArrayParam("kind");
+  const selectedStatusesStore = UrlParamsState.createStringArrayParam("status");
+  const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
@@ -93,31 +59,36 @@
     ResourceKind.Connector,
   ];
 
-  $: resources = useResources(runtimeClient);
+  let resources = $derived(useResources(runtimeClient));
 
   // Parse errors
-  $: projectParserQuery = createRuntimeServiceGetResource(
-    runtimeClient,
-    {
-      name: {
-        kind: ResourceKind.ProjectParser,
-        name: SingletonProjectParserName,
+  let projectParserQuery = $derived(
+    createRuntimeServiceGetResource(
+      runtimeClient,
+      {
+        name: {
+          kind: ResourceKind.ProjectParser,
+          name: SingletonProjectParserName,
+        },
       },
-    },
-    { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
+      { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
+    ),
   );
-  $: parseErrors =
-    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
-
-  $: hasReconcilingResources = $resources.data?.resources?.some(
-    isResourceReconciling,
+  let parseErrors = $derived(
+    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [],
   );
 
-  $: isRefreshButtonDisabled = hasReconcilingResources;
+  let hasReconcilingResources = $derived(
+    $resources.data?.resources?.some(isResourceReconciling),
+  );
 
-  $: availableTags = getAllTagsForResources($resources.data?.resources ?? []);
+  let isRefreshButtonDisabled = $derived(hasReconcilingResources);
 
-  $: filterGroups = [
+  let availableTags = $derived(
+    getAllTagsForResources($resources.data?.resources ?? []),
+  );
+
+  let filterGroups = $derived<FilterGroup[]>([
     {
       label: "Type",
       key: "kind",
@@ -125,7 +96,8 @@
         value: t,
         label: prettyResourceKind(t),
       })),
-      selected: selectedTypes,
+      selectedStore: selectedTypesStore,
+      selected: selectedTypesStore.value,
       defaultValue: [],
       multiSelect: true,
     },
@@ -136,47 +108,45 @@
         value: s.value,
         label: s.label,
       })),
-      selected: selectedStatuses,
+      selectedStore: selectedStatusesStore,
+      selected: selectedStatusesStore.value,
       defaultValue: [],
       multiSelect: true,
     },
     ...(availableTags.length > 0
       ? [
-          {
+          <FilterGroup>{
             label: "Tags",
             key: "tags",
             options: availableTags.map((t) => ({
               value: t.name,
               label: t.name,
             })),
-            selected: selectedTags,
+            selectedStore: selectedTagsStore,
+            selected: selectedTagsStore.value,
             defaultValue: [],
             multiSelect: true,
           },
         ]
       : []),
-  ] satisfies FilterGroup[];
+  ]);
 
   // Filter resources by type, search text, status, and tags
-  $: filteredResources = filterResources(
-    $resources.data?.resources,
-    selectedTypes,
-    searchText,
-    selectedStatuses,
-    selectedTags,
+  let filteredResources = $derived(
+    filterResources(
+      $resources.data?.resources,
+      selectedTypesStore.value,
+      searchTextStore.value,
+      selectedStatusesStore.value,
+      selectedTagsStore.value,
+    ),
   );
 
-  function onFilterChange(key: string, selected: string[] | string) {
-    if (key === "kind") selectedTypes = selected as string[];
-    if (key === "status") selectedStatuses = selected as string[];
-    if (key === "tags") selectedTags = selected as string[];
-  }
-
-  function clearFilters() {
-    selectedTypes = [];
-    selectedStatuses = [];
-    selectedTags = [];
-    searchText = "";
+  function onClearAllFilters() {
+    selectedTypesStore.setter([]);
+    selectedStatusesStore.setter([]);
+    selectedTagsStore.setter([]);
+    searchTextStore.setter("");
   }
 
   function refreshAllSourcesAndModels() {
@@ -194,13 +164,7 @@
 <section class="flex flex-col gap-y-4">
   <h2 class="text-lg font-medium">Resources</h2>
 
-  <TableToolbar
-    bind:searchText
-    {filterGroups}
-    {onFilterChange}
-    onClearAllFilters={clearFilters}
-    showSort={false}
-  >
+  <TableToolbar {searchTextStore} {filterGroups} {onClearAllFilters}>
     <Button
       type="secondary"
       large

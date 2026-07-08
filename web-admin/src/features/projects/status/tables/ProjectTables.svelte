@@ -4,7 +4,7 @@
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
   import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createRuntimeServiceCreateTriggerMutation,
@@ -17,7 +17,6 @@
   import ModelsTable from "@rilldata/web-common/features/projects/status/tables/ModelsTable.svelte";
   import ExternalTablesTable from "@rilldata/web-common/features/projects/status/tables/ExternalTablesTable.svelte";
   import { useInfiniteTablesList, useModelResources } from "../selectors";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     filterTemporaryTables,
     applyTableFilters,
@@ -28,41 +27,29 @@
   import ModelPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "@rilldata/web-common/features/projects/status/tables/RefreshErroredPartitionsDialog.svelte";
   import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
-  import {
-    createUrlFilterSync,
-    parseArrayParam,
-    parseStringParam,
-  } from "@rilldata/web-common/lib/url-filter-sync";
-  import { onMount } from "svelte";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
+  import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   const runtimeClient = useRuntimeClient();
 
   // OLAP connector info
-  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
+  const instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
-  $: instance = $instanceQuery.data?.instance;
-  $: connectorName = instance?.olapConnector ?? "";
+  let instance = $derived($instanceQuery.data?.instance);
+  let connectorName = $derived(instance?.olapConnector ?? "");
 
-  // Filters — initialized from URL params (type is multi-select array)
-  const filterSync = createUrlFilterSync([
-    { key: "q", type: "string" },
-    { key: "type", type: "array" },
-    { key: "tags", type: "array" },
-  ]);
-  filterSync.init($page.url);
+  const searchTextStore = new DebouncedRuneStore(
+    UrlParamsState.createStringParam("q"),
+    500,
+  );
+  const selectedTypesStore = UrlParamsState.createStringArrayParam("kind");
+  const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
 
-  let searchText = parseStringParam($page.url.searchParams.get("q"));
-
-  // Debounce search for server-side filtering
-  let debouncedSearch = searchText;
-  const updateDebouncedSearch = debounce((text: string) => {
-    debouncedSearch = text;
-  }, 300);
-  $: updateDebouncedSearch(searchText);
-
-  $: searchPattern = debouncedSearch ? `%${debouncedSearch}%` : undefined;
+  let searchPattern = $derived(
+    searchTextStore.value ? `%${searchTextStore.value}%` : undefined,
+  );
 
   // Use a writable store so createInfiniteQuery is called once during init;
   // parameter changes flow reactively through the store.
@@ -71,54 +58,34 @@
     connector: "",
     searchPattern: undefined as string | undefined,
   });
-  $: tablesParams.set({
-    client: runtimeClient,
-    connector: connectorName,
-    searchPattern,
-  });
+  $effect(() =>
+    tablesParams.set({
+      client: runtimeClient,
+      connector: connectorName,
+      searchPattern,
+    }),
+  );
   const tablesList = useInfiniteTablesList(tablesParams);
 
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
-  $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
+  let filteredTables = $derived(
+    filterTemporaryTables($tablesList.data?.tables),
+  );
 
   // TODO: populate from OLAPGetTable responses when per-table metadata is available
   let isViewMap = new Map<string, boolean>();
   // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
-  $: modelResourcesQuery = useModelResources(runtimeClient);
-  $: modelResources = $modelResourcesQuery.data ?? new Map();
-  let typeFilter: string[] = parseArrayParam(
-    $page.url.searchParams.get("type"),
-  );
-  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
-  let mounted = false;
-
-  // Sync URL → local state on external navigation (back/forward)
-  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
-    filterSync.markSynced($page.url);
-    searchText = parseStringParam($page.url.searchParams.get("q"));
-    typeFilter = parseArrayParam($page.url.searchParams.get("type"));
-    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
-  }
-
-  // Sync filter state → URL
-  $: if (mounted) {
-    filterSync.syncToUrl({
-      q: searchText,
-      type: typeFilter,
-      tags: selectedTags,
-    });
-  }
-
-  onMount(() => {
-    mounted = true;
-  });
+  const modelResourcesQuery = useModelResources(runtimeClient);
+  let modelResources = $derived($modelResourcesQuery.data ?? new Map());
 
   // Tags — collected from model resources only (external tables have no tags).
   // `modelResources` indexes each resource twice (by result table and model name),
   // so values() is deduped inside getAllTagsForResources via its Set.
-  $: availableTags = getAllTagsForResources([...modelResources.values()]);
+  let availableTags = $derived(
+    getAllTagsForResources([...modelResources.values()]),
+  );
 
-  $: filterGroups = [
+  let filterGroups = $derived<FilterGroup[]>([
     {
       label: "Type",
       key: "type",
@@ -126,66 +93,70 @@
         { label: "Table", value: "table" },
         { label: "View", value: "view" },
       ],
-      selected: typeFilter,
+      selectedStore: selectedTypesStore,
+      selected: selectedTagsStore.value,
       defaultValue: [],
       multiSelect: true,
     },
     ...(availableTags.length > 0
       ? [
-          {
+          <FilterGroup>{
             label: "Tags",
             key: "tags",
             options: availableTags.map((t) => ({
               value: t.name,
               label: t.name,
             })),
-            selected: selectedTags,
+            selectedStore: selectedTagsStore,
+            selected: selectedTagsStore.value,
             defaultValue: [],
             multiSelect: true,
           },
         ]
       : []),
-  ] satisfies FilterGroup[];
-
-  function onFilterChange(key: string, selected: string[] | string) {
-    if (key === "type") typeFilter = selected as string[];
-    if (key === "tags") selectedTags = selected as string[];
-  }
+  ]);
 
   function clearFilters() {
-    typeFilter = [];
-    selectedTags = [];
-    searchText = "";
+    selectedTypesStore.setter([]);
+    selectedTagsStore.setter([]);
+    searchTextStore.setter("");
   }
 
   // Split once on unfiltered tables, then apply type + tag filters per section.
   // Tag filter only applies to model tables; external tables are hidden entirely
   // when a tag filter is active since they can't match.
-  $: ({ modelTables: allModelTables, externalTables: allExternalTables } =
-    splitTablesByModel(filteredTables, modelResources));
-  $: modelTables = applyTagFilter(
-    applyTableFilters(allModelTables, typeFilter, isViewMap),
-    modelResources,
-    selectedTags,
+  let { modelTables: allModelTables, externalTables: allExternalTables } =
+    $derived(splitTablesByModel(filteredTables, modelResources));
+  let modelTables = $derived(
+    applyTagFilter(
+      applyTableFilters(allModelTables, selectedTypesStore.value, isViewMap),
+      modelResources,
+      selectedTagsStore.value,
+    ),
   );
-  $: externalTables =
-    selectedTags.length > 0
+  let externalTables = $derived(
+    selectedTagsStore.value.length > 0
       ? []
-      : applyTableFilters(allExternalTables, typeFilter, isViewMap);
+      : applyTableFilters(
+          allExternalTables,
+          selectedTypesStore.value,
+          isViewMap,
+        ),
+  );
 
   // Dialog states
-  let specDialogOpen = false;
-  let specResourceName = "";
-  let specResourceKind = "";
-  let specResource: V1Resource | undefined = undefined;
+  let specDialogOpen = $state(false);
+  let specResourceName = $state("");
+  let specResourceKind = $state("");
+  let specResource = $state<V1Resource | undefined>(undefined);
 
-  let partitionsDialogOpen = false;
-  let erroredPartitionsDialogOpen = false;
-  let incrementalRefreshDialogOpen = false;
-  let fullRefreshDialogOpen = false;
+  let partitionsDialogOpen = $state(false);
+  let erroredPartitionsDialogOpen = $state(false);
+  let incrementalRefreshDialogOpen = $state(false);
+  let fullRefreshDialogOpen = $state(false);
 
-  let selectedResource: V1Resource | null = null;
-  let selectedModelName = "";
+  let selectedResource = $state<V1Resource | null>(null);
+  let selectedModelName = $state("");
 
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
@@ -221,7 +192,7 @@
   }
 
   function handleViewLogsClick(name: string) {
-    const basePath = $page.url.pathname.replace(/\/tables\/?$/, "");
+    const basePath = page.url.pathname.replace(/\/tables\/?$/, "");
     void goto(`${basePath}/logs?q=${encodeURIComponent(name)}`);
   }
 
@@ -260,11 +231,9 @@
   </div>
 
   <TableToolbar
-    bind:searchText
+    {searchTextStore}
     {filterGroups}
-    {onFilterChange}
     onClearAllFilters={clearFilters}
-    showSort={false}
   />
 
   {#if $tablesList.isError}
@@ -352,7 +321,8 @@
           {#if allExternalTables.length > 0}
             <span class="text-fg-secondary font-semibold text-sm">
               No external tables match the current filters
-              {#if selectedTags.length > 0}(External tables do not carry tags){/if}
+              {#if selectedTagsStore.value.length > 0}(External tables do not
+                carry tags){/if}
             </span>
           {:else}
             <span class="text-fg-secondary font-semibold text-sm">

@@ -1,17 +1,20 @@
 <script lang="ts">
   import { ArrowUpDown } from "lucide-svelte";
   import type { SortDirection } from "./types";
+  import type { RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   let {
-    sortDirection = $bindable("newest"),
+    sortDirectionStore,
   }: {
-    sortDirection: SortDirection;
+    sortDirectionStore: RuneStore<SortDirection>;
   } = $props();
 
-  const sortLabel = $derived(sortDirection === "newest" ? "Newest" : "Oldest");
+  const sortLabel = $derived(
+    sortDirectionStore.value === "newest" ? "Newest" : "Oldest",
+  );
 
   function toggleSortDirection() {
-    sortDirection = sortDirection === "newest" ? "oldest" : "newest";
+    sortDirectionStore.setter(sortDirectionStore.value ? "oldest" : "newest");
   }
 </script>
 

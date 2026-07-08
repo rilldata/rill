@@ -5,11 +5,9 @@
 
   let {
     filterGroups = [],
-    onFilterChange,
     onClearAllFilters,
   }: {
     filterGroups: FilterGroup[];
-    onFilterChange?: (key: string, selected: string | string[]) => void;
     onClearAllFilters?: () => void;
   } = $props();
 
@@ -19,9 +17,9 @@
     label: string;
   }
 
-  const appliedFilters = $derived(
+  let appliedFilters = $derived(
     filterGroups.flatMap((g): AppliedChip[] => {
-      if (g.multiSelect && Array.isArray(g.selected)) {
+      if (g.multiSelect) {
         return g.selected.map((val) => ({
           key: g.key,
           value: val,
@@ -53,11 +51,9 @@
     const group = filterGroups.find((g) => g.key === key);
     if (!group) return;
     if (group.multiSelect) {
-      const current = Array.isArray(group.selected) ? group.selected : [];
-      const next = current.filter((v) => v !== value);
-      onFilterChange?.(group.key, next);
+      group.selectedStore.delete(value);
     } else {
-      onFilterChange?.(group.key, group.defaultValue);
+      group.selectedStore.setter(group.defaultValue);
     }
   }
 </script>

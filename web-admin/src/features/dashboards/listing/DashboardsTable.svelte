@@ -16,7 +16,7 @@
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
-  import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
+  import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   let {
     isEmbedded = false,
@@ -30,11 +30,10 @@
 
   const selectedTagsState = UrlParamsState.createStringArrayParam("tags");
 
-  const searchTextState = UrlParamsState.createStringParam("search");
-  const throttler = new Throttler(500, 500);
-  const throttledSearchSetter = (newValue: string) => {
-    throttler.throttle(() => searchTextState.setter(newValue));
-  };
+  const searchTextStore = new DebouncedRuneStore(
+    UrlParamsState.createStringParam("q"),
+    500,
+  );
 
   const runtimeClient = useRuntimeClient();
   let { organization, project } = $derived(page.params);
@@ -59,7 +58,7 @@
     filterResources(
       allDashboards,
       [],
-      searchTextState.value,
+      searchTextStore.value,
       [],
       selectedTagsState.value,
     ),
@@ -159,9 +158,10 @@
         <Search
           placeholder="Search"
           autofocus={false}
-          bind:value={searchTextState.getter, throttledSearchSetter}
+          bind:value={searchTextStore.getter, searchTextStore.setter}
           rounded="lg"
           retainValueOnMount
+          large
         />
       </div>
     {/if}
@@ -178,7 +178,7 @@
         >
           <DashboardsTagSidebar
             resources={allDashboards}
-            searchText={searchTextState.value}
+            searchText={searchTextStore.value}
           />
         </ResizableSidebar>
       {/if}

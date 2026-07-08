@@ -1,120 +1,93 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { createAdminServiceGetProjectVariables } from "@rilldata/web-admin/client";
   import AddDialog from "@rilldata/web-admin/features/projects/environment-variables/AddDialog.svelte";
   import EnvironmentVariablesTable from "@rilldata/web-admin/features/projects/environment-variables/EnvironmentVariablesTable.svelte";
-  import {
-    EnvironmentType,
-    type EnvironmentTypes,
-  } from "@rilldata/web-admin/features/projects/environment-variables/types";
+  import { EnvironmentType } from "@rilldata/web-admin/features/projects/environment-variables/types";
   import { getEnvironmentType } from "@rilldata/web-admin/features/projects/environment-variables/utils";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import {
+    type FilterGroup,
+    TableToolbar,
+  } from "@rilldata/web-common/components/table-toolbar";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import {
-    createUrlFilterSync,
-    parseArrayParam,
-    parseStringParam,
-  } from "@rilldata/web-common/lib/url-filter-sync";
   import { Plus } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
+  import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
-  let open = false;
+  let open = $state(false);
 
-  // Filters — synced to URL params `q` and `env` (multi-select array)
-  const filterSync = createUrlFilterSync([
-    { key: "q", type: "string" },
-    { key: "env", type: "array" },
-  ]);
-  filterSync.init($page.url);
+  const searchTextStore = new DebouncedRuneStore(
+    UrlParamsState.createStringParam("q"),
+    500,
+  );
+  const envFilterStore = UrlParamsState.createStringArrayParam("env");
 
-  let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let envFilter: EnvironmentTypes[] = parseArrayParam(
-    $page.url.searchParams.get("env"),
-  ) as EnvironmentTypes[];
-  let mounted = false;
+  let { organization, project } = $derived(page.params);
 
-  // URL → local state on external navigation (back/forward)
-  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
-    filterSync.markSynced($page.url);
-    searchText = parseStringParam($page.url.searchParams.get("q"));
-    envFilter = parseArrayParam(
-      $page.url.searchParams.get("env"),
-    ) as EnvironmentTypes[];
-  }
-
-  // Local state → URL
-  $: if (mounted) {
-    filterSync.syncToUrl({ q: searchText, env: envFilter });
-  }
-
-  onMount(() => {
-    mounted = true;
-  });
-
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
-
-  $: getProjectVariables = createAdminServiceGetProjectVariables(
-    organization,
-    project,
-    {
+  let getProjectVariables = $derived(
+    createAdminServiceGetProjectVariables(organization, project, {
       forAllEnvironments: true,
-    },
+    }),
   );
 
-  $: projectVariables = $getProjectVariables.data?.variables || [];
+  let projectVariables = $derived($getProjectVariables.data?.variables || []);
 
-  $: variableNames = projectVariables.map((variable) => {
-    return {
-      environment: getEnvironmentType(variable.environment),
-      name: variable.name,
-    };
-  });
-
-  $: searchedVariables = projectVariables.filter((variable) =>
-    variable.name.toLowerCase().includes(searchText.toLowerCase()),
+  let variableNames = $derived(
+    projectVariables.map((variable) => {
+      return {
+        environment: getEnvironmentType(variable.environment),
+        name: variable.name,
+      };
+    }),
   );
 
-  $: filteredVariables = searchedVariables.filter((variable) => {
-    if (envFilter.length === 0) return true;
-    return envFilter.some((sel) => {
-      if (sel === EnvironmentType.DEVELOPMENT) {
-        return (
-          variable.environment === EnvironmentType.DEVELOPMENT ||
-          variable.environment === EnvironmentType.UNDEFINED
-        );
-      }
-      if (sel === EnvironmentType.PRODUCTION) {
-        return (
-          variable.environment === EnvironmentType.PRODUCTION ||
-          variable.environment === EnvironmentType.UNDEFINED
-        );
-      }
-      return false;
-    });
-  });
+  let searchedVariables = $derived(
+    projectVariables.filter((variable) =>
+      variable.name.toLowerCase().includes(searchTextStore.value.toLowerCase()),
+    ),
+  );
 
-  $: sortedVariables = [...filteredVariables].sort((a, b) => {
-    return new Date(b.updatedOn).getTime() - new Date(a.updatedOn).getTime();
-  });
+  let filteredVariables = $derived(
+    searchedVariables.filter((variable) => {
+      if (envFilterStore.value.length === 0) return true;
+      return envFilterStore.value.some((sel) => {
+        if (sel === EnvironmentType.DEVELOPMENT) {
+          return (
+            variable.environment === EnvironmentType.DEVELOPMENT ||
+            variable.environment === EnvironmentType.UNDEFINED
+          );
+        }
+        if (sel === EnvironmentType.PRODUCTION) {
+          return (
+            variable.environment === EnvironmentType.PRODUCTION ||
+            variable.environment === EnvironmentType.UNDEFINED
+          );
+        }
+        return false;
+      });
+    }),
+  );
 
-  function handleFilterChange(_key: string, selected: string | string[]) {
-    envFilter = selected as EnvironmentTypes[];
-  }
+  let sortedVariables = $derived(
+    [...filteredVariables].sort((a, b) => {
+      return new Date(b.updatedOn).getTime() - new Date(a.updatedOn).getTime();
+    }),
+  );
 
   function handleClearAllFilters() {
-    envFilter = [];
-    searchText = "";
+    searchTextStore.setter("");
+    envFilterStore.setter([]);
   }
 
-  $: emptyTextWhenNoVariables =
-    envFilter.length === 0
+  let emptyTextWhenNoVariables = $derived(
+    envFilterStore.value.length === 0
       ? "No environment variables"
-      : `No environment variables match the selected filters`;
+      : `No environment variables match the selected filters`,
+  );
 
-  $: filterGroups = [
+  let filterGroups = $derived<FilterGroup[]>([
     {
       label: "Environment",
       key: "environment",
@@ -122,11 +95,12 @@
         { value: EnvironmentType.PRODUCTION, label: "Production" },
         { value: EnvironmentType.DEVELOPMENT, label: "Development" },
       ],
-      selected: envFilter,
+      selectedStore: envFilterStore,
+      selected: envFilterStore.value,
       defaultValue: [],
       multiSelect: true,
     },
-  ];
+  ]);
 </script>
 
 <div class="flex flex-col w-full overflow-hidden">
@@ -152,12 +126,9 @@
           </p>
         </div>
         <TableToolbar
-          bind:searchText
-          searchDisabled={projectVariables.length === 0}
+          {searchTextStore}
           {filterGroups}
-          onFilterChange={handleFilterChange}
           onClearAllFilters={handleClearAllFilters}
-          showSort={false}
         >
           <Button type="primary" large onClick={() => (open = true)}>
             <Plus size="16px" /> New key

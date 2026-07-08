@@ -5,21 +5,15 @@
 
   let {
     filterGroups = [],
-    onFilterChange,
   }: {
     filterGroups: FilterGroup[];
-    onFilterChange?: (key: string, selected: string | string[]) => void;
   } = $props();
 
   function handleClick(group: FilterGroup, value: string) {
     if (group.multiSelect) {
-      const current = Array.isArray(group.selected) ? group.selected : [];
-      const next = current.includes(value)
-        ? current.filter((v) => v !== value)
-        : [...current, value];
-      onFilterChange?.(group.key, next);
+      group.selectedStore.toggle(value);
     } else {
-      onFilterChange?.(group.key, value);
+      group.selectedStore.setter(value);
     }
   }
 </script>
@@ -39,12 +33,11 @@
           <DropdownMenu.Label class="uppercase"
             >{group.label}</DropdownMenu.Label
           >
-          {#each group.options as option}
+          {#each group.options as option (option.value)}
             <DropdownMenu.CheckboxItem
               closeOnSelect={!group.multiSelect}
               checked={group.multiSelect
-                ? Array.isArray(group.selected) &&
-                  group.selected.includes(option.value)
+                ? group.selected.includes(option.value)
                 : group.selected === option.value}
               onclick={() => handleClick(group, option.value)}
             >

@@ -39,19 +39,15 @@
   import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
-    createUrlFilterSync,
-    parseArrayParam,
-    parseStringParam,
-  } from "@rilldata/web-common/lib/url-filter-sync";
-  import {
     GitBranchIcon,
     PlayIcon,
     StopCircleIcon,
     Trash2Icon,
   } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { onMount } from "svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
+  import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -120,41 +116,13 @@
       : null,
   );
 
-  // Toolbar state — synced to URL params `q` and `status` (multi-select array)
-  const filterSync = createUrlFilterSync([
-    { key: "q", type: "string" },
-    { key: "status", type: "array" },
-  ]);
-
-  let searchText = $state(parseStringParam(page.url.searchParams.get("q")));
-  let statusFilter = $state<string[]>(
-    parseArrayParam(page.url.searchParams.get("status")),
+  const searchTextStore = new DebouncedRuneStore(
+    UrlParamsState.createStringParam("q"),
+    500,
   );
-  let mounted = $state(false);
+  const statusFilterStore = UrlParamsState.createStringArrayParam("status");
 
-  onMount(() => {
-    filterSync.init(page.url);
-    mounted = true;
-  });
-
-  // URL → local state on external navigation (back/forward)
-  $effect(() => {
-    if (!mounted) return;
-    const url = page.url;
-    if (filterSync.hasExternalNavigation(url)) {
-      filterSync.markSynced(url);
-      searchText = parseStringParam(url.searchParams.get("q"));
-      statusFilter = parseArrayParam(url.searchParams.get("status"));
-    }
-  });
-
-  // Local state → URL
-  $effect(() => {
-    if (!mounted) return;
-    filterSync.syncToUrl({ q: searchText, status: statusFilter });
-  });
-
-  let filterGroups = $derived([
+  let filterGroups = $derived<FilterGroup[]>([
     {
       label: "Status",
       key: "status",
@@ -164,16 +132,22 @@
         { label: "Error", value: "errored" },
         { label: "Stopped", value: "stopped" },
       ],
-      selected: statusFilter,
+      selectedStore: statusFilterStore,
+      selected: statusFilterStore.value,
       defaultValue: [],
       multiSelect: true,
     },
-  ] satisfies FilterGroup[]);
+  ]);
+
+  function onClearAllFilters() {
+    searchTextStore.setter("");
+    statusFilterStore.setter([]);
+  }
 
   function statusMatches(d: V1Deployment): boolean {
-    if (statusFilter.length === 0) return true;
+    if (statusFilterStore.value.length === 0) return true;
     const s = d.status;
-    return statusFilter.some((sel) => {
+    return statusFilterStore.value.some((sel) => {
       switch (sel) {
         case "running":
           return s === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
@@ -196,7 +170,7 @@
   }
 
   let visibleDeployments = $derived.by(() => {
-    const q = searchText.trim().toLowerCase();
+    const q = searchTextStore.value.trim().toLowerCase();
     const active = ($allDeployments.data?.deployments ?? []).filter(
       (d: V1Deployment) =>
         d.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED &&
@@ -244,10 +218,6 @@
     branch: string;
     editable: boolean;
   } | null>(null);
-
-  function onFilterChange(key: string, selected: string[]) {
-    if (key === "status") statusFilter = selected;
-  }
 
   async function mutateDeployment(
     deploymentId: string,
@@ -315,16 +285,7 @@
 <section class="flex flex-col gap-y-5">
   <h2 class="text-lg font-medium">Branches</h2>
 
-  <TableToolbar
-    bind:searchText
-    {filterGroups}
-    {onFilterChange}
-    onClearAllFilters={() => {
-      statusFilter = [];
-      searchText = "";
-    }}
-    showSort={false}
-  />
+  <TableToolbar {searchTextStore} {filterGroups} {onClearAllFilters} />
 
   {#if $allDeployments.isLoading}
     <div class="empty-container">
