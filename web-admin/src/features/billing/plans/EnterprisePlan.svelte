@@ -10,8 +10,12 @@
 </script>
 
 <PlanContainer
-  badge={managed ? m.billing_plan_badge_managed() : m.billing_plan_badge_enterprise()}
-  description={managed ? m.billing_enterprise_desc_managed() : m.billing_enterprise_desc()}
+  badge={managed
+    ? m.billing_plan_badge_managed()
+    : m.billing_plan_badge_enterprise()}
+  description={managed
+    ? m.billing_enterprise_desc_managed()
+    : m.billing_enterprise_desc()}
 >
   {#snippet action()}
     <button class="contact-us-btn" onclick={handleContactSales}>

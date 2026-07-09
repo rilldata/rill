@@ -12,7 +12,9 @@
 </script>
 
 <div class="flex items-center gap-x-1.5 px-3 py-1.5 bg-popover-accent border-b">
-  <span class="text-xs text-fg-secondary flex-none">{m.explore_filter_label()}:</span>
+  <span class="text-xs text-fg-secondary flex-none"
+    >{m.explore_filter_label()}:</span
+  >
   <span class="truncate text-xs text-fg-primary font-medium flex-1 min-w-0">
     {tagName}
   </span>

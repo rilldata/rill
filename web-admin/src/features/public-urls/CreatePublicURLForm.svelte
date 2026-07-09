@@ -165,7 +165,9 @@
     <div class="mt-4" class:mb-4={!hasSomeFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="has-expiration" bind:checked={setExpiration} />
-        <Label class="text-xs" for="has-expiration">{m.public_url_set_expiration()}</Label>
+        <Label class="text-xs" for="has-expiration"
+          >{m.public_url_set_expiration()}</Label
+        >
       </div>
       {#if setExpiration}
         <div class="flex items-center gap-x-1 pl-[30px]">

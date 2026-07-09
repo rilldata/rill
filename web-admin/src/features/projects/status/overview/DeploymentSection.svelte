@@ -99,7 +99,9 @@
     return n >= 0 ? n : undefined;
   })();
   $: dataLabel =
-    !defaultOlapEntry || isManaged ? m.status_data_size() : m.status_data_accessible();
+    !defaultOlapEntry || isManaged
+      ? m.status_data_size()
+      : m.status_data_accessible();
 
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote

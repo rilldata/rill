@@ -20,7 +20,8 @@
   ];
 
   $: roleFilterLabel =
-    roleOptions.find((opt) => opt.value === roleFilter)?.label ?? m.users_filter_all_roles();
+    roleOptions.find((opt) => opt.value === roleFilter)?.label ??
+    m.users_filter_all_roles();
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -28,7 +29,13 @@
     class="min-w-[140px] flex flex-row justify-between gap-1 items-center rounded-sm border bg-input px-2 py-1"
   >
     <span class="capitalize"
-      >{filterSelection === "all" ? m.users_filter_all_users() : filterSelection === "members" ? m.users_filter_members() : filterSelection === "pending" ? m.users_filter_pending_invites() : filterSelection}</span
+      >{filterSelection === "all"
+        ? m.users_filter_all_users()
+        : filterSelection === "members"
+          ? m.users_filter_members()
+          : filterSelection === "pending"
+            ? m.users_filter_pending_invites()
+            : filterSelection}</span
     >
     {#if isDropdownOpen}
       <CaretUpIcon size="12px" />

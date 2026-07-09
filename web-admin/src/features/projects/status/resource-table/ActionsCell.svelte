@@ -48,9 +48,7 @@
   $: hasErroredPartitions = actions.includes("refreshErrored");
 
   $: refreshDisabled = isReconciling;
-  $: refreshTooltip = isReconciling
-    ? m.status_resource_reconciling()
-    : "";
+  $: refreshTooltip = isReconciling ? m.status_resource_reconciling() : "";
 </script>
 
 <DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
@@ -109,7 +107,9 @@
           >
             <div class="flex items-center">
               <AlertCircleIcon size="12px" />
-              <span class="ml-2">{m.status_action_refresh_errored_partitions()}</span>
+              <span class="ml-2"
+                >{m.status_action_refresh_errored_partitions()}</span
+              >
             </div>
           </DropdownMenu.Item>
           <TooltipContent slot="tooltip-content"

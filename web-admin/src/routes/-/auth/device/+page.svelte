@@ -79,9 +79,12 @@
 <CtaLayoutContainer>
   <CtaContentContainer>
     <RillLogoSquareNegative size="84px" />
-    <h1 class="text-xl font-normal text-fg-primary">{m.auth_authorize_rill_cli()}</h1>
+    <h1 class="text-xl font-normal text-fg-primary">
+      {m.auth_authorize_rill_cli()}
+    </h1>
     <p class="text-base text-fg-secondary text-center">
-      {m.auth_authenticating_as({ email: user.email })}<br />{m.auth_confirm_code_displayed()}
+      {m.auth_authenticating_as({ email: user.email })}<br
+      />{m.auth_confirm_code_displayed()}
     </p>
     <div
       class="px-2 py-1 rounded-sm text-4xl tracking-widest bg-gray-100 text-fg-primary mb-5 font-mono"

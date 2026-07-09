@@ -137,7 +137,9 @@
       bookmarkId: bookmark.resource.id,
     });
     eventBus.emit("notification", {
-      message: m.bookmark_deleted({ name: bookmark.resource.displayName ?? "" }),
+      message: m.bookmark_deleted({
+        name: bookmark.resource.displayName ?? "",
+      }),
     });
     return queryClient.refetchQueries({
       queryKey: getAdminServiceListBookmarksQueryKey({
@@ -221,8 +223,12 @@
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
         <DropdownMenuLabel class="text-fg-secondary">
-          <div class="text-[10px] h-4 uppercase">{m.bookmark_managed_bookmarks()}</div>
-          <div class="text-[11px] font-normal">{m.bookmark_created_by_admin()}</div>
+          <div class="text-[10px] h-4 uppercase">
+            {m.bookmark_managed_bookmarks()}
+          </div>
+          <div class="text-[11px] font-normal">
+            {m.bookmark_created_by_admin()}
+          </div>
         </DropdownMenuLabel>
         {#if filteredBookmarks.shared?.length}
           {#each filteredBookmarks.shared as bookmark (bookmark.resource.id)}

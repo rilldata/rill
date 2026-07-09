@@ -10,7 +10,10 @@
   } = $props();
 </script>
 
-<PlanContainer badge={m.billing_plan_badge_team()} description={m.billing_team_price_desc()}>
+<PlanContainer
+  badge={m.billing_plan_badge_team()}
+  description={m.billing_team_price_desc()}
+>
   {#snippet info()}
     {m.billing_team_info()}
   {/snippet}

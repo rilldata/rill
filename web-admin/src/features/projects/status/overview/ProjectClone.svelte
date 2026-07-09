@@ -24,7 +24,9 @@
 <Popover.Root bind:open>
   <Popover.Trigger>
     {#snippet child({ props })}
-      <Button {...props} type="secondary" {disabled}>{m.status_download_project()}</Button>
+      <Button {...props} type="secondary" {disabled}
+        >{m.status_download_project()}</Button
+      >
     {/snippet}
   </Popover.Trigger>
 

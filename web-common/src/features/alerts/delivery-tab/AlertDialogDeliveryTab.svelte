@@ -98,7 +98,10 @@
     <FormSection title={m.alert_form_slack_title()}>
       <svelte:fragment slot="description">
         <span class="text-sm text-fg-secondary">
-          {@html m.alert_form_slack_not_configured({ docsUrl: "https://docs.rilldata.com/guide/alerts#configuring-slack-targets" })}
+          {@html m.alert_form_slack_not_configured({
+            docsUrl:
+              "https://docs.rilldata.com/guide/alerts#configuring-slack-targets",
+          })}
         </span>
       </svelte:fragment>
     </FormSection>

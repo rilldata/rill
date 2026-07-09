@@ -38,7 +38,9 @@
 
 <div class="flex flex-col gap-y-4 w-full">
   <div class="flex flex-col gap-y-1">
-    <h1 class="text-fg-secondary text-lg font-bold">{m.alert_recent_history()}</h1>
+    <h1 class="text-fg-secondary text-lg font-bold">
+      {m.alert_recent_history()}
+    </h1>
     <p class="text-fg-secondary text-sm">{m.alert_showing_recent_checks()}</p>
   </div>
   {#if $alertQuery.error}

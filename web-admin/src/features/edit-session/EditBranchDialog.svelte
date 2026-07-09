@@ -287,7 +287,9 @@
     {/if}
 
     <Dialog.Footer>
-      <Button type="secondary" onClick={() => (open = false)}>{m.common_cancel()}</Button>
+      <Button type="secondary" onClick={() => (open = false)}
+        >{m.common_cancel()}</Button
+      >
       {#if hasOwnSessions && currentTab === "existing"}
         <Button
           type="primary"
