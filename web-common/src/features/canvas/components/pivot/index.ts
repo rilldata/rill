@@ -1,6 +1,6 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
-  commonOptions,
+  getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -52,6 +52,8 @@ export interface TableSpec
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
+
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export class PivotCanvasComponent extends BaseCanvasComponent<
   PivotSpec | TableSpec
@@ -116,7 +118,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       this.parent,
       derived(this.specStore, ($specStore) => $specStore.metrics_view),
       this.config,
-      this.visible,
+      this.dataEnabled,
     );
   }
 
@@ -163,31 +165,34 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
       return {
         options: {
-          metrics_view: { type: "metrics", label: "Metrics view" },
+          metrics_view: {
+            type: "metrics",
+            label: m.canvas_metrics_view_label(),
+          },
           measures: {
             type: "multi_fields",
             meta: { allowedTypes: ["measure"] },
-            label: "Measures",
+            label: m.canvas_measures_label(),
           },
           col_dimensions: {
             type: "multi_fields",
             meta: { allowedTypes: ["time", "dimension"] },
-            label: "Column dimensions",
+            label: m.canvas_column_dimensions_label(),
           },
           row_dimensions: {
             type: "multi_fields",
             meta: { allowedTypes: ["time", "dimension"] },
-            label: "Row dimensions",
+            label: m.canvas_row_dimensions_label(),
           },
           hide_totals_col: {
             type: "boolean",
-            label: "Hide total column",
+            label: m.canvas_hide_total_column_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalColumn,
           },
           hide_totals_row: {
             type: "boolean",
-            label: "Hide total row",
+            label: m.canvas_hide_total_row_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
@@ -205,7 +210,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
               ],
             },
           },
-          ...commonOptions,
+          ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
       };
@@ -223,19 +228,22 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
       return {
         options: {
-          metrics_view: { type: "metrics", label: "Metrics view" },
+          metrics_view: {
+            type: "metrics",
+            label: m.canvas_metrics_view_label(),
+          },
           columns: {
             type: "multi_fields",
-            label: "Columns",
+            label: m.canvas_columns_label(),
             meta: { allowedTypes: ["time", "dimension", "measure"] },
           },
           hide_totals_row: {
             type: "boolean",
-            label: "Hide total row",
+            label: m.canvas_hide_total_row_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
-          ...commonOptions,
+          ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
       };

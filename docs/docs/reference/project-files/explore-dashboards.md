@@ -138,7 +138,7 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
 ### `time_ranges`
 
-_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'
+_[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be a string or an object with a 'range' and optional 'comparison_offsets'.
   ```yaml
   time_ranges:
     - PT15M // Simplified syntax to specify only the range
@@ -152,13 +152,13 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
   ```
 
 
-  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
+  - **option 1** - _[string]_ - An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection.
 
   - **option 2** - _[object]_ - Object containing time range and comparison configuration
 
-    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection _(required)_
+    - **`range`** - _[string]_ - An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection. _(required)_
 
-    - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
+    - **`comparison_offsets`** - _[array of oneOf]_ - List of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions).
 
       - **option 1** - _[string]_ - Offset string only (range is inferred)
 
@@ -182,7 +182,7 @@ _[boolean]_ - Defaults to true, when set to false it will hide the ability to se
 
 ### `defaults`
 
-_[object]_ - defines the defaults YAML struct
+_[object]_ - Defines the defaults YAML struct.
   ```yaml
   defaults: #define all the defaults within here
     dimensions:
@@ -225,11 +225,11 @@ _[object]_ - defines the defaults YAML struct
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here
 
-  - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
+  - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions).
 
   - **`comparison_mode`** - _[string]_ - Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)
 
-  - **`comparison_dimension`** - _[string]_ - for dimension mode, specify the comparison dimension by name
+  - **`comparison_dimension`** - _[string]_ - For dimension mode, specify the comparison dimension by name.
 
 ### `embeds`
 
@@ -256,6 +256,10 @@ _[string]_ - Name is usually inferred from the filename, but can be specified ma
 ### `refs`
 
 _[array of string]_ - List of resource references
+
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
 ### `dev`
 

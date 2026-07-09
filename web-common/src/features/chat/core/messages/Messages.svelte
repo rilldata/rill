@@ -16,6 +16,7 @@
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
   import ErrorMessage from "@rilldata/web-common/features/chat/core/messages/error/ErrorMessage.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -117,13 +118,13 @@
     </div>
   {:else if hasConversationLoadError}
     <Error
-      headline="Unable to load conversation"
+      headline={m.chat_unable_to_load()}
       error={$conversationQueryError}
     />
   {:else if isConversationEmpty}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
-      <div class="chat-empty-title">How can I help you today?</div>
+      <div class="chat-empty-title">{m.chat_how_can_i_help()}</div>
       <div class="chat-empty-subtitle">
         {config.emptyChatLabel}
       </div>
@@ -156,7 +157,7 @@
     {/each}
   {/if}
   {#if hasStreamError}
-    <Error headline="Failed to generate response" error={$streamErrorStore} />
+    <Error headline={m.chat_failed_to_generate()} error={$streamErrorStore} />
   {/if}
 </div>
 

@@ -19,7 +19,7 @@ func (p *Parser) parseMigration(node *Node) error {
 	}
 
 	// Add resource
-	r, err := p.insertResource(ResourceKindMigration, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindMigration, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}

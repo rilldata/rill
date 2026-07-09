@@ -6,6 +6,7 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect");
@@ -15,26 +16,26 @@
 </script>
 
 <svelte:head>
-  <title>Connect to GitHub</title>
+  <title>{m.github_connect_to_github()}</title>
 </svelte:head>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <Github className="w-10 h-10 text-fg-primary" />
-    <CtaHeader>Connect to GitHub</CtaHeader>
+    <CtaHeader>{m.github_connect_to_github()}</CtaHeader>
     <CtaMessage>
-      Rill projects deploy continuously when you push changes to GitHub.
+      {m.github_deploy_continuously()}
     </CtaMessage>
     {#if remote}
       <CtaMessage>
-        Please grant access to your repository<br /><GithubRepoInline
+        {m.github_grant_access_to_repo()}<br /><GithubRepoInline
           gitRemote={remote}
         />
       </CtaMessage>
     {/if}
     <div class="mt-4 w-full flex justify-center">
       <CtaButton variant="primary" href={redirectURL} rel="external">
-        Connect to GitHub
+        {m.github_connect_to_github()}
       </CtaButton>
     </div>
   </CtaContentContainer>

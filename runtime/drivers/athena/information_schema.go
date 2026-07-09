@@ -115,43 +115,67 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	q := fmt.Sprintf(`
-SELECT
-	CASE t.table_type WHEN 'VIEW' THEN true ELSE false END AS view,
-	column_name,
-	data_type
-FROM %s.information_schema.columns c
-JOIN %s.information_schema.tables t
-	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-WHERE c.table_schema = ? AND c.table_name = ?
-ORDER BY c.ordinal_position
-`, sqlSafeName(database), sqlSafeName(database))
+	SELECT
+		CASE t.table_type WHEN 'VIEW' THEN true ELSE false END AS view,
+		column_name,
+		data_type
+	FROM %s.information_schema.columns c
+	JOIN %s.information_schema.tables t
+		ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+	WHERE c.table_schema = ? AND c.table_name = ?
+	ORDER BY c.ordinal_position
+	`, sqlSafeName(database), sqlSafeName(database))
 
 	rows, err := c.Query(ctx, &drivers.Statement{
 		Query: q,
-		Args:  []any{databaseSchema, table},
+		Args:  []any{databaseSchema, name},
 	})
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	res := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
+	var view bool
 	var col, typ string
+	fields := make([]*runtimev1.StructType_Field, 0)
 	for rows.Next() {
-		err = rows.Scan(&res.View, &col, &typ)
-		if err != nil {
+		if err := rows.Scan(&view, &col, &typ); err != nil {
 			return nil, err
 		}
-		res.Schema[col] = typ
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: col,
+			Type: athenaTypeToRuntimeType(typ),
+		})
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return res, nil
+
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           view,
+		Schema: &runtimev1.StructType{
+			Fields: fields,
+		},
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
+	}, rows.Err()
+}
+
+// All implements drivers.OLAPInformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.OLAPInformationSchema.
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	return nil // Not implemented
 }
 
 func (c *Connection) listCatalogs(ctx context.Context, client *athena.Client) ([]string, error) {
@@ -179,47 +203,6 @@ func (c *Connection) listCatalogs(ctx context.Context, client *athena.Client) ([
 	}
 
 	return catalogs, nil
-}
-
-// All implements drivers.OLAPInformationSchema.
-func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
-}
-
-// LoadPhysicalSize implements drivers.OLAPInformationSchema.
-func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
-	return nil
-}
-
-// LoadDDL implements drivers.OLAPInformationSchema.
-func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
-	return nil // Not implemented
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-	runtimeSchema := &runtimev1.StructType{
-		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
-	}
-	for name, typ := range meta.Schema {
-		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: athenaTypeToRuntimeType(typ),
-		})
-	}
-	return &drivers.OlapTable{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            runtimeSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
 
 func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.Client, catalog string) ([]*drivers.DatabaseSchemaInfo, error) {

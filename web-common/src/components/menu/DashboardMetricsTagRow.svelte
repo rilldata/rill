@@ -3,6 +3,7 @@
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { detectOverflow } from "@rilldata/web-common/lib/actions/detect-overflow";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { DimensionTag, TagVisibilityState } from "./tag-utils";
 
   type Props = {
@@ -40,7 +41,9 @@
     type="button"
     class="flex items-center gap-x-2 flex-1 min-w-0 text-left"
     onclick={onSelect}
-    aria-label={`${selected ? "Clear filter" : "Filter by"} ${tag.name}`}
+    aria-label={selected
+      ? m.explore_clear_filter_tag({ tag: tag.name })
+      : m.explore_filter_by_tag({ tag: tag.name })}
     aria-pressed={selected}
   >
     <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
@@ -86,7 +89,10 @@
     </Tooltip.Root>
     <span
       class="tabular-nums text-xs text-fg-secondary flex-none"
-      aria-label={`${visibility.visibleCount} of ${visibility.totalCount} shown`}
+      aria-label={m.explore_tag_shown_count({
+        visible: String(visibility.visibleCount),
+        total: String(visibility.totalCount),
+      })}
     >
       {visibility.visibleCount}/{visibility.totalCount}
     </span>
@@ -105,7 +111,7 @@
             e.stopPropagation();
             onShowOnly();
           }}
-          aria-label={`Only show ${tag.name}`}
+          aria-label={m.explore_only_show_tag({ tag: tag.name })}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="4.5" class="fill-current" />
@@ -123,7 +129,7 @@
         side="top"
         class="bg-popover text-fg-primary z-popover text-xs px-2 py-1"
       >
-        Only show this tag
+        {m.explore_only_show_this_tag()}
       </Tooltip.Content>
     </Tooltip.Root>
 
@@ -136,7 +142,7 @@
             e.stopPropagation();
             onShowAll();
           }}
-          aria-label={`Show all in ${tag.name}`}
+          aria-label={m.explore_show_all_in_named_tag({ tag: tag.name })}
         >
           <EyeIcon size="14px" color="currentColor" />
         </button>
@@ -145,7 +151,7 @@
         side="top"
         class="bg-popover text-fg-primary z-popover text-xs px-2 py-1"
       >
-        Show all in tag
+        {m.explore_show_all_in_tag()}
       </Tooltip.Content>
     </Tooltip.Root>
 
@@ -158,7 +164,7 @@
             e.stopPropagation();
             onHideAll();
           }}
-          aria-label={`Hide all in ${tag.name}`}
+          aria-label={m.explore_hide_all_in_named_tag({ tag: tag.name })}
         >
           <EyeOffIcon size="14px" color="currentColor" />
         </button>
@@ -167,7 +173,7 @@
         side="top"
         class="bg-popover text-fg-primary z-popover text-xs px-2 py-1"
       >
-        Hide all in tag
+        {m.explore_hide_all_in_tag()}
       </Tooltip.Content>
     </Tooltip.Root>
   </div>

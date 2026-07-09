@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getBillingStatsForOrg } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { organization }: { organization: string } = $props();
 
@@ -21,12 +22,12 @@
      billed amounts. Storage is estimated from current snapshot. -->
 <div class="flex items-center gap-4">
   <div class="stat-column">
-    <span class="stat-value">{fmtCredit($billingStats.prodDailyCost)}/day</span>
-    <span class="stat-label">{$billingStats.prodSlots} Prod Compute Units</span>
+    <span class="stat-value">{fmtCredit($billingStats.prodDailyCost)}/{m.billing_per_day()}</span>
+    <span class="stat-label">{m.billing_prod_compute_units({ count: String($billingStats.prodSlots) })}</span>
   </div>
   <div class="stat-column">
-    <span class="stat-value">{fmtCredit($billingStats.devDailyCost)}/day</span>
-    <span class="stat-label">{$billingStats.devSlots} Dev Compute Units</span>
+    <span class="stat-value">{fmtCredit($billingStats.devDailyCost)}/{m.billing_per_day()}</span>
+    <span class="stat-label">{m.billing_dev_compute_units({ count: String($billingStats.devSlots) })}</span>
   </div>
 </div>
 

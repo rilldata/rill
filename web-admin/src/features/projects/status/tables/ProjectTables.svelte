@@ -21,6 +21,7 @@
   import {
     filterTemporaryTables,
     applyTableFilters,
+    applyTagFilter,
     splitTablesByModel,
   } from "@rilldata/web-common/features/projects/status/tables/utils";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
@@ -33,6 +34,8 @@
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
 
@@ -47,6 +50,7 @@
   const filterSync = createUrlFilterSync([
     { key: "q", type: "string" },
     { key: "type", type: "array" },
+    { key: "tags", type: "array" },
   ]);
   filterSync.init($page.url);
 
@@ -86,6 +90,7 @@
   let typeFilter: string[] = parseArrayParam(
     $page.url.searchParams.get("type"),
   );
+  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   let mounted = false;
 
   // Sync URL → local state on external navigation (back/forward)
@@ -93,40 +98,81 @@
     filterSync.markSynced($page.url);
     searchText = parseStringParam($page.url.searchParams.get("q"));
     typeFilter = parseArrayParam($page.url.searchParams.get("type"));
+    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   }
 
   // Sync filter state → URL
   $: if (mounted) {
-    filterSync.syncToUrl({ q: searchText, type: typeFilter });
+    filterSync.syncToUrl({
+      q: searchText,
+      type: typeFilter,
+      tags: selectedTags,
+    });
   }
 
   onMount(() => {
     mounted = true;
   });
 
+  // Tags — collected from model resources only (external tables have no tags).
+  // `modelResources` indexes each resource twice (by result table and model name),
+  // so values() is deduped inside getAllTagsForResources via its Set.
+  $: availableTags = getAllTagsForResources([...modelResources.values()]);
+
   $: filterGroups = [
     {
-      label: "Type",
+      label: m.status_column_type(),
       key: "type",
       options: [
-        { label: "Table", value: "table" },
-        { label: "View", value: "view" },
+        { label: m.status_table_singular(), value: "table" },
+        { label: m.status_view_singular(), value: "view" },
       ],
       selected: typeFilter,
       defaultValue: [],
       multiSelect: true,
     },
+    ...(availableTags.length > 0
+      ? [
+          {
+            label: "Tags",
+            key: "tags",
+            options: availableTags.map((t) => ({
+              value: t.name,
+              label: t.name,
+            })),
+            selected: selectedTags,
+            defaultValue: [],
+            multiSelect: true,
+          },
+        ]
+      : []),
   ] satisfies FilterGroup[];
 
-  // Split once on unfiltered tables, then apply type filter per section
+  function onFilterChange(key: string, selected: string[] | string) {
+    if (key === "type") typeFilter = selected as string[];
+    if (key === "tags") selectedTags = selected as string[];
+  }
+
+  function clearFilters() {
+    typeFilter = [];
+    selectedTags = [];
+    searchText = "";
+  }
+
+  // Split once on unfiltered tables, then apply type + tag filters per section.
+  // Tag filter only applies to model tables; external tables are hidden entirely
+  // when a tag filter is active since they can't match.
   $: ({ modelTables: allModelTables, externalTables: allExternalTables } =
     splitTablesByModel(filteredTables, modelResources));
-  $: modelTables = applyTableFilters(allModelTables, typeFilter, isViewMap);
-  $: externalTables = applyTableFilters(
-    allExternalTables,
-    typeFilter,
-    isViewMap,
+  $: modelTables = applyTagFilter(
+    applyTableFilters(allModelTables, typeFilter, isViewMap),
+    modelResources,
+    selectedTags,
   );
+  $: externalTables =
+    selectedTags.length > 0
+      ? []
+      : applyTableFilters(allExternalTables, typeFilter, isViewMap);
 
   // Dialog states
   let specDialogOpen = false;
@@ -145,12 +191,6 @@
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
-
-  function onFilterChange(key: string, selected: string[]) {
-    if (key === "type") {
-      typeFilter = selected;
-    }
-  }
 
   // Handlers
   function handleModelInfoClick(resource: V1Resource) {
@@ -217,23 +257,20 @@
 
 <section class="flex flex-col gap-y-4 size-full">
   <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Tables</h2>
+    <h2 class="text-lg font-medium">{m.status_nav_tables()}</h2>
   </div>
 
   <TableToolbar
     bind:searchText
     {filterGroups}
     {onFilterChange}
-    onClearAllFilters={() => {
-      typeFilter = [];
-      searchText = "";
-    }}
+    onClearAllFilters={clearFilters}
     showSort={false}
   />
 
   {#if $tablesList.isError}
     <div class="text-red-500">
-      Error loading tables: {$tablesList.error?.message}
+      {m.status_error_loading_tables()}: {$tablesList.error?.message}
     </div>
   {:else}
     {@const isLoading =
@@ -242,7 +279,7 @@
     <!-- Models section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        Models{isLoading
+        {m.status_models_section()}{isLoading
           ? ""
           : ` (${modelTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
@@ -251,7 +288,7 @@
           class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-2 text-fg-secondary"
         >
           <DelayedSpinner isLoading={true} size="20px" />
-          <span class="text-sm">Loading models</span>
+          <span class="text-sm">{m.status_loading_models()}</span>
         </div>
       {:else if modelTables.length > 0}
         <ModelsTable
@@ -271,21 +308,21 @@
         >
           {#if allModelTables.length > 0}
             <span class="text-fg-secondary font-semibold text-sm">
-              No models match the current filters
+              {m.status_no_models_match_filters()}
             </span>
           {:else}
             <span class="text-fg-secondary font-semibold text-sm">
-              No models
+              {m.status_no_models()}
             </span>
             <span class="text-fg-muted text-sm">
-              Models are created in Rill Developer.
+              {m.status_models_created_in_developer()}
               <a
                 href="https://docs.rilldata.com/build/models/"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-primary-500 hover:text-primary-600"
               >
-                Learn more
+                {m.common_learn_more()}
               </a>
             </span>
           {/if}
@@ -296,7 +333,7 @@
     <!-- External Tables section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        External Tables{isLoading
+        {m.status_external_tables_section()}{isLoading
           ? ""
           : ` (${externalTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
@@ -305,7 +342,7 @@
           class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-2 text-fg-secondary"
         >
           <DelayedSpinner isLoading={true} size="20px" />
-          <span class="text-sm">Loading tables</span>
+          <span class="text-sm">{m.status_loading_tables()}</span>
         </div>
       {:else if externalTables.length > 0}
         <ExternalTablesTable tables={externalTables} isView={isViewMap} />
@@ -315,11 +352,12 @@
         >
           {#if allExternalTables.length > 0}
             <span class="text-fg-secondary font-semibold text-sm">
-              No external tables match the current filters
+              {m.status_no_external_tables_match_filters()}
+              {#if selectedTags.length > 0}({m.status_external_tables_no_tags()}){/if}
             </span>
           {:else}
             <span class="text-fg-secondary font-semibold text-sm">
-              No external tables
+              {m.status_no_external_tables()}
             </span>
             <span class="text-fg-muted text-sm">
               <a
@@ -328,7 +366,7 @@
                 rel="noopener noreferrer"
                 class="text-primary-500 hover:text-primary-600"
               >
-                Learn about connecting external OLAP engines
+                {m.status_learn_about_external_olap()}
               </a>
             </span>
           {/if}
@@ -343,9 +381,9 @@
           onClick={() => $tablesList.fetchNextPage()}
           disabled={$tablesList.isFetchingNextPage}
           loading={$tablesList.isFetchingNextPage}
-          loadingCopy="Loading..."
+          loadingCopy={m.status_loading()}
         >
-          Load more tables
+          {m.status_load_more_tables()}
         </Button>
       </div>
     {/if}

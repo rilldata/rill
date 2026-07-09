@@ -8,6 +8,7 @@
     pluralizeKind,
   } from "@rilldata/web-common/features/resources/overview-utils";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -17,9 +18,9 @@
   $: resourceCounts = countByKind(allResources);
 </script>
 
-<OverviewCard title="Resources" viewAllHref="{basePage}/resources">
+<OverviewCard title={m.status_nav_resources()} viewAllHref="{basePage}/resources">
   {#if $resources.isLoading}
-    <p class="text-sm text-fg-secondary">Loading resources...</p>
+    <p class="text-sm text-fg-secondary">{m.status_loading_resources()}</p>
   {:else if resourceCounts.length > 0}
     <div class="chips">
       {#each resourceCounts as { kind, label, count } (kind)}
@@ -33,7 +34,7 @@
       {/each}
     </div>
   {:else}
-    <p class="text-sm text-fg-secondary">No resources found.</p>
+    <p class="text-sm text-fg-secondary">{m.status_no_resources()}</p>
   {/if}
 </OverviewCard>
 

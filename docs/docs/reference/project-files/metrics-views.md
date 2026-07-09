@@ -92,17 +92,17 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`tags`** - _[array of string]_ - optional list of tags for categorizing the dimension (defaults to empty)
 
-  - **`type`** - _[string]_ - Dimension type: "geo" for geospatial dimensions, "time" for time dimensions or "categorical" for categorial dimensions. Default is undefined and the type will be inferred instead
+  - **`type`** - _[string]_ - Dimension type: "geo" for geospatial dimensions, "time" for time dimensions, or "categorical" for categorical dimensions. Default is undefined and the type will be inferred instead.
 
-  - **`column`** - _[string]_ - a categorical column
+  - **`column`** - _[string]_ - A categorical column.
 
-  - **`expression`** - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time
+  - **`expression`** - _[string]_ - A non-aggregate expression such as string_split(domain, '.'). One of column and expression is required, but cannot have both at the same time.
 
-  - **`unnest`** - _[boolean]_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match
+  - **`unnest`** - _[boolean]_ - If true, allows multi-valued dimensions to be unnested (such as lists), and filters will automatically switch to "contains" instead of exact match.
 
-  - **`uri`** - _[string, boolean]_ - enable if your dimension is a clickable URL to enable single click navigation (boolean or valid SQL expression)
+  - **`uri`** - _[string, boolean]_ - Enable if your dimension is a clickable URL to enable single-click navigation (boolean or valid SQL expression).
 
-  - **`lookup_table`** - _[string]_ - the name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details
+  - **`lookup_table`** - _[string]_ - The name of a ClickHouse dictionary to use for query-time lookups. Use `database.dictionary_name` for dictionaries in a non-default database. All three `lookup_*` fields (`lookup_table`, `lookup_key_column`, `lookup_value_column`) must be specified together. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details.
 
   - **`lookup_key_column`** - _[string]_ - the primary key column in the lookup dictionary that corresponds to the dimension's `column` in the fact table
 
@@ -152,7 +152,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
       - **`frame`** - _[string]_ - Defines the window frame boundaries for calculations, specifying which rows are included in the window relative to the current row.
 
-  - **`per`** - _[oneOf]_ - for per dimensions
+  - **`per`** - _[oneOf]_ - Dimensions to partition the measure by.
 
     - **option 1** - _[string]_ - Simple field name as a string.
 
@@ -166,7 +166,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions.
 
-  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/developers/build/metrics-view/measures/referencing) for more information.
+  - **`requires`** - _[oneOf]_ - Uses an available measure or dimension in your metrics view to set a required parameter. Cannot be used with simple measures. See [referencing measures](/developers/build/metrics-view/measures/referencing) for more information.
 
     - **option 1** - _[string]_ - Simple field name as a string.
 
@@ -180,7 +180,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions.
 
-  - **`valid_percent_of_total`** - _[boolean]_ - a boolean indicating whether percent-of-total values should be rendered for this measure
+  - **`valid_percent_of_total`** - _[boolean]_ - Indicates whether percent-of-total values should be rendered for this measure.
 
   - **`format_preset`** - _[string]_ - Controls the formatting of this measure using a predefined preset. Measures cannot have both `format_preset` and `format_d3`. If neither is supplied, the measure will be formatted using the `humanize` preset by default.
   
@@ -195,7 +195,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`format_d3`** - _[string]_ - Controls the formatting of this measure using a [d3-format](https://d3js.org/d3-format) string. If an invalid format string is supplied, the measure will fall back to `format_preset: humanize`. A measure cannot have both `format_preset` and `format_d3`. If neither is provided, the humanize preset is used by default. Example: `format_d3: ".2f"` formats using fixed-point notation with two decimal places. Example: `format_d3: ",.2r"` formats using grouped thousands with two significant digits. (optional)
 
-  - **`format_d3_locale`** - _[object]_ - locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's formatLocale.
+  - **`format_d3_locale`** - _[object]_ - Locale configuration passed through to D3, enabling changes to the currency symbol and other formatting options. For details, see the docs for D3's formatLocale.
     ```yaml
     format_d3: "$,"
     format_d3_locale:
@@ -204,11 +204,11 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
     ```
 
 
-    - **`grouping`** - _[array]_ - the grouping of the currency symbol
+    - **`grouping`** - _[array]_ - Grouping for the currency symbol.
 
     - **`currency`** - _[array]_ - the currency symbol
 
-  - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets.
+  - **`treat_nulls_as`** - _[string]_ - Configures the value to fill in for missing time buckets. This also works generally as COALESCE over non-empty time buckets.
 
   - **`lower_is_better`** - _[boolean]_ - When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
 
@@ -429,15 +429,15 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
         - **`variables`** - _[object]_ - Custom CSS variables for dark theme
 
-  - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'.
+  - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be a string or an object with a 'range' and optional 'comparison_offsets'.
 
-    - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
+    - **option 1** - _[string]_ - An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection.
 
     - **option 2** - _[object]_ - Object containing time range and comparison configuration
 
-      - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection _(required)_
+      - **`range`** - _[string]_ - An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection. _(required)_
 
-      - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
+      - **`comparison_offsets`** - _[array of oneOf]_ - List of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions).
 
         - **option 1** - _[string]_ - Offset string only (range is inferred)
 
@@ -502,6 +502,10 @@ _[string]_ - Name is usually inferred from the filename, but can be specified ma
 ### `refs`
 
 _[array of string]_ - List of resource references
+
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
 ### `dev`
 

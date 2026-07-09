@@ -92,7 +92,7 @@ _[string]_ - Raw SQL query to run against existing models in the project. _(requ
 
 ### `connector`
 
-_[string]_ - specifies the connector to use when running SQL or glob queries.
+_[string]_ - Specifies the connector to use when running SQL or glob queries.
 
 ```yaml
 type: api
@@ -138,7 +138,7 @@ Uses a file-matching pattern (glob) to query data from a connector.
 
 ### `glob`
 
-_[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
+_[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
   - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
@@ -152,7 +152,7 @@ _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options .
 
     - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
 
-    - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+    - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that prevents full re-listings each time.
 
     - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
 
@@ -191,7 +191,7 @@ Invokes multiple resolvers and returns the union of their results. Each entry in
 _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
 
 ```yaml
-# Exampe for union resolvers
+# Example for union resolvers
 type: api
 union:
     - connector: duckdb

@@ -84,7 +84,7 @@ curl -X POST --location 'https://api.rilldata.com/v1/orgs/<org-name>/projects/<p
 }'
 ```
   </TabItem>
-  <TabItem value="js" label="Javascript">
+  <TabItem value="js" label="JavaScript">
     JavaScript (Node.js) with Express.js
 
 ```js

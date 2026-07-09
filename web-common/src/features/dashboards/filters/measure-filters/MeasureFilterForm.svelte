@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as Popover from "@rilldata/web-common/components/popover/";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
@@ -42,21 +43,21 @@
   };
 
   const validationSchema = object().shape({
-    dimension: string().required("Required"),
+    dimension: string().required(m.common_required()),
     operation: mixed<MeasureFilterOperation>()
       .oneOf(Object.values(MeasureFilterOperation))
-      .required("Required"),
+      .required(m.common_required()),
     value1: string()
-      .required("Required")
-      .test("is-numeric", "Value must be a valid number", (value) => {
+      .required(m.common_required())
+      .test("is-numeric", m.common_must_be_number(), (value) => {
         return !isNaN(Number(value)) && value.trim() !== "";
       }),
     value2: string().when("operation", {
       is: (val: MeasureFilterOperation) => expressionIsBetween(val),
       then: (schema) =>
         schema
-          .required("Required")
-          .test("is-numeric", "Value must be a valid number", (value) => {
+          .required(m.common_required())
+          .test("is-numeric", m.common_must_be_number(), (value) => {
             return !isNaN(Number(value)) && value.trim() !== "";
           }),
       otherwise: (schema) => schema.optional(),
@@ -165,9 +166,9 @@
     <Select
       bind:value={$form["dimension"]}
       id="dimension"
-      label="By dimension"
+      label={m.measure_filter_by_dimension()}
       options={dimensionOptions}
-      placeholder="Select dimension to split by"
+      placeholder={m.measure_filter_select_dimension()}
     />
     <Select
       bind:value={$form["operation"]}
@@ -185,7 +186,7 @@
         }
       }}
       id="operation"
-      label="Threshold"
+      label={m.measure_filter_threshold()}
       options={MeasureFilterOperationOptions}
     />
     <Input
@@ -194,7 +195,9 @@
       id="value1"
       onEnter={submit}
       alwaysShowError
-      placeholder={isBetweenExpression ? "Lower value" : "Enter a number"}
+      placeholder={isBetweenExpression
+        ? m.measure_filter_lower_value()
+        : m.measure_filter_enter_number()}
     />
 
     {#if isBetweenExpression}
@@ -202,12 +205,14 @@
         bind:value={$form["value2"]}
         errors={$errors["value2"]}
         id="value2"
-        placeholder="Higher value"
+        placeholder={m.measure_filter_higher_value()}
         alwaysShowError
         onEnter={submit}
       />
     {/if}
 
-    <Button submitForm type="primary" form={$formId}>Apply</Button>
+    <Button submitForm type="primary" form={$formId}
+      >{m.measure_filter_apply()}</Button
+    >
   </form>
 </Popover.Content>

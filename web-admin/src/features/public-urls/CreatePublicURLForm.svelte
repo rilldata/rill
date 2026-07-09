@@ -28,6 +28,7 @@
   import CanvasFiltersSection from "./CanvasFiltersSection.svelte";
   import ExploreFiltersSection from "./ExploreFiltersSection.svelte";
   import { convertDateToMinutes } from "./form-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const queryClient = useQueryClient();
 
@@ -67,7 +68,7 @@
 
   const validationSchema = object({
     expiresAt: string().nullable(),
-    title: string().required("Title is required"),
+    title: string().required(m.public_url_title_required()),
   });
 
   const issueMagicAuthToken = createAdminServiceIssueMagicAuthToken();
@@ -150,21 +151,21 @@
     use:enhance
   >
     <h3 class="text-xs text-fg-primary font-normal">
-      Create a shareable public URL for this view.
+      {m.public_url_create_heading()}
     </h3>
 
     <div class="flex flex-col gap-y-1 mt-4">
       <Input
         id="name-input"
         bind:value={$form.title}
-        placeholder="Label this URL"
+        placeholder={m.public_url_label_placeholder()}
       />
     </div>
 
     <div class="mt-4" class:mb-4={!hasSomeFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="has-expiration" bind:checked={setExpiration} />
-        <Label class="text-xs" for="has-expiration">Set expiration</Label>
+        <Label class="text-xs" for="has-expiration">{m.public_url_set_expiration()}</Label>
       </div>
       {#if setExpiration}
         <div class="flex items-center gap-x-1 pl-[30px]">
@@ -176,7 +177,7 @@
           </label>
           <Popover bind:open={popoverOpen}>
             <PopoverTrigger>
-              <IconButton ariaLabel="Edit expiration date">
+              <IconButton ariaLabel={m.public_url_edit_expiration()}>
                 <Pencil size="14px" class="text-primary-600" />
               </IconButton>
             </PopoverTrigger>
@@ -244,7 +245,7 @@
       form={formId}
       submitForm
     >
-      Create
+      {m.public_url_create_button()}
     </Button>
 
     {#if allErrorsLength > 0}
@@ -257,7 +258,7 @@
   </form>
 {:else}
   <div class="flex flex-col gap-y-4">
-    <h3>Success! A public URL has been created.</h3>
+    <h3>{m.public_url_success_message()}</h3>
     <Button
       type="secondary"
       onClick={onCopy}
@@ -265,9 +266,9 @@
     >
       {#if copied}
         <Check size="16px" />
-        Copied URL
+        {m.public_url_copied_button()}
       {:else}
-        Copy Public URL
+        {m.public_url_copy_button()}
       {/if}
     </Button>
   </div>

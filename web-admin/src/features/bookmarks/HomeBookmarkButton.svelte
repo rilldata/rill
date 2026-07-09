@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import { Button } from "@rilldata/web-common/components/button";
@@ -83,7 +84,7 @@
               <div
                 class="text-xs font-medium text-fg-primary h-4 text-ellipsis overflow-hidden"
               >
-                Go to Home
+                {m.bookmark_go_to_home()}
               </div>
             </div>
           </a>
@@ -95,10 +96,10 @@
           <HomeBookmarkPlus size="16px" />
           <div>
             <div class="text-xs font-medium text-fg-primary h-4">
-              Bookmark current view as Home.
+              {m.bookmark_current_view_as_home()}
             </div>
             <div class="text-[11px] font-normal text-fg-secondary h-4">
-              This will be everyone’s main view for this dashboard.
+              {m.bookmark_home_description()}
             </div>
           </div>
         </div>
@@ -129,6 +130,6 @@
         </Button>
       {/snippet}
     </Tooltip.Trigger>
-    <Tooltip.Content side="bottom">Return to dashboard home</Tooltip.Content>
+    <Tooltip.Content side="bottom">{m.bookmark_return_to_home()}</Tooltip.Content>
   </Tooltip.Root>
 {/if}

@@ -12,6 +12,7 @@
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   type Option = {
     name: TimeComparisonOption;
     key: number;
@@ -53,9 +54,10 @@
   $: firstOption = timeComparisonOptionsState[0];
   $: label =
     TIME_COMPARISON[comparisonOption ?? firstOption?.name]?.label ??
-    "Custom range";
+    m.time_custom_range();
 
-  $: selectedLabel = comparisonOption ?? firstOption?.name ?? "Custom range";
+  $: selectedLabel =
+    comparisonOption ?? firstOption?.name ?? m.time_custom_range();
 
   function applyRange(range: Interval<true>) {
     onSelectComparisonRange(
@@ -104,12 +106,12 @@
         {...props}
         {disabled}
         aria-disabled={disabled}
-        aria-label="Select time comparison option"
+        aria-label={m.dashboard_select_time_comparison_aria()}
         type="button"
       >
         <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
           {#if !timeComparisonOptionsState.length && !showComparison}
-            <p>no comparison period</p>
+            <p>{m.time_no_comparison_period()}</p>
           {:else}
             <b class="line-clamp-1">{label}</b>
             {#if interval?.isValid && showFullRange}
@@ -165,7 +167,7 @@
               class:font-bold={comparisonOption ===
                 TimeComparisonOption.CUSTOM && showComparison}
             >
-              Custom
+              {m.time_custom()}
             </span>
           </DropdownMenu.Item>
         {/if}

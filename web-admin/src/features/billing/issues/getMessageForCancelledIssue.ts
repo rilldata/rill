@@ -1,6 +1,7 @@
 import { V1BillingIssueType } from "@rilldata/web-admin/client";
 import type { V1BillingIssue } from "@rilldata/web-admin/client";
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { DateTime } from "luxon";
 
 export function getNeverSubscribedIssue(issues: V1BillingIssue[]) {
@@ -24,21 +25,21 @@ export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
       new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
     );
     if (endDate.isValid && endDate.toMillis() > Date.now()) {
-      accessTimeout = `but you still have access until ${endDate.toLocaleString(DateTime.DATE_MED)}`;
+      accessTimeout = m.billing_access_until({ date: endDate.toLocaleString(DateTime.DATE_MED) });
     }
   }
   if (!accessTimeout) {
-    accessTimeout = "and your subscription has ended";
+    accessTimeout = m.billing_subscription_ended();
     ended = true;
   }
 
   return <BillingIssueMessage>{
     type: ended ? "error" : "warning",
-    title: `Your plan is cancelled ${accessTimeout}.`,
-    description: "To maintain access, renew your plan.",
+    title: m.billing_plan_cancelled({ accessTimeout }),
+    description: m.billing_renew_to_maintain_access(),
     iconType: "alert",
     cta: {
-      text: "Renew",
+      text: m.billing_renew(),
       type: "show-upgrade",
       teamPlanDialogType: "renew",
       teamPlanEndDate:

@@ -8,6 +8,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import APIIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
   import ProjectChat from "@rilldata/web-common/features/chat/ProjectChat.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -27,14 +28,14 @@
         class="w-full"
       >
         <APIIcon size="14px" className="!fill-current" />
-        Connect your own client
+        {m.chat_connect_client()}
       </Button>
     </svelte:fragment>
     <svelte:fragment slot="sidebar-collapsed-footer">
       <Button
         type="secondary"
         square
-        label="Connect your own client"
+        label={m.chat_connect_client()}
         onClick={() => (mcpDialogOpen = true)}
       >
         <APIIcon size="14px" className="!fill-current" />

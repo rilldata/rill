@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     createAdminServiceCreateBookmark,
     createAdminServiceRemoveBookmark,
@@ -114,7 +115,7 @@
     }
 
     eventBus.emit("notification", {
-      message: "Home bookmark created",
+      message: m.bookmark_home_created(),
     });
     return queryClient.refetchQueries({
       queryKey: getAdminServiceListBookmarksQueryKey({
@@ -136,7 +137,7 @@
       bookmarkId: bookmark.resource.id,
     });
     eventBus.emit("notification", {
-      message: `Bookmark ${bookmark.resource.displayName} deleted`,
+      message: m.bookmark_deleted({ name: bookmark.resource.displayName ?? "" }),
     });
     return queryClient.refetchQueries({
       queryKey: getAdminServiceListBookmarksQueryKey({
@@ -184,7 +185,7 @@
     <DropdownMenuItem onclick={() => (showDialog = true)}>
       <div class="flex flex-row gap-x-2 items-center">
         <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
-        <div class="text-xs">Bookmark current view</div>
+        <div class="text-xs">{m.bookmark_current_view()}</div>
       </div>
     </DropdownMenuItem>
     <DropdownMenuSeparator />
@@ -199,7 +200,7 @@
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
         <DropdownMenuLabel class="text-fg-secondary text-[10px] h-6 uppercase">
-          Your bookmarks
+          {m.bookmark_your_bookmarks()}
         </DropdownMenuLabel>
         {#if filteredBookmarks.personal?.length}
           {#each filteredBookmarks.personal as bookmark (bookmark.resource.id)}
@@ -213,15 +214,15 @@
           {/each}
         {:else}
           <div class="my-2 text-fg-muted text-center">
-            You have no bookmarks for this dashboard.
+            {m.bookmark_no_bookmarks()}
           </div>
         {/if}
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
         <DropdownMenuLabel class="text-fg-secondary">
-          <div class="text-[10px] h-4 uppercase">Managed bookmarks</div>
-          <div class="text-[11px] font-normal">Created by project admin</div>
+          <div class="text-[10px] h-4 uppercase">{m.bookmark_managed_bookmarks()}</div>
+          <div class="text-[11px] font-normal">{m.bookmark_created_by_admin()}</div>
         </DropdownMenuLabel>
         {#if filteredBookmarks.shared?.length}
           {#each filteredBookmarks.shared as bookmark (bookmark.resource.id)}
@@ -236,7 +237,7 @@
           {/each}
         {:else}
           <div class="my-2 text-fg-muted text-center">
-            There are no shared bookmarks for this dashboard.
+            {m.bookmark_no_shared()}
           </div>
         {/if}
       </DropdownMenuGroup>

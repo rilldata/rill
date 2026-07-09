@@ -1,6 +1,7 @@
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   V1TimeGrain,
   type V1TimeRange,
@@ -297,10 +298,10 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
   }
   switch (true) {
     case comparisonTimeRange.isoOffset === TimeRangePreset.ALL_TIME:
-      return "All time";
+      return m.time_all_time();
     case comparisonTimeRange.isoDuration === comparisonTimeRange.isoOffset ||
       comparisonTimeRange.expression?.toLowerCase()?.endsWith("offset pp"):
-      return "Previous period";
+      return m.time_comparison_previous_period();
     case comparisonTimeRange.isoOffset &&
       comparisonTimeRange.isoOffset in TIME_COMPARISON:
       return TIME_COMPARISON[comparisonTimeRange.isoOffset].label;
@@ -308,7 +309,13 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
       comparisonTimeRange.expression in TIME_COMPARISON:
       return TIME_COMPARISON[comparisonTimeRange.expression].label;
     default:
-      return `Last ${humaniseISODuration(comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "")}`;
+      return m.time_last_duration({
+        duration: humaniseISODuration(
+          comparisonTimeRange.isoOffset ??
+            comparisonTimeRange.expression ??
+            "",
+        ),
+      });
   }
 }
 

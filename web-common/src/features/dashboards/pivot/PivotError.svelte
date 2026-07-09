@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { PivotQueryError } from "./types";
@@ -45,16 +46,18 @@
 </script>
 
 <div class="flex flex-col items-center w-full h-full">
-  <span class="text-3xl font-normal m-2">Sorry, unexpected query error!</span>
+  <span class="text-3xl font-normal m-2"
+    >{m.pivot_unexpected_query_error()}</span
+  >
   {#if traceIds.length > 0}
     <div class="text-sm text-fg-primary mt-1">
-      <b>Trace ID{traceIds.length !== 1 ? "s" : ""}</b>: {traceIds.join(", ")}
+      <b>{m.pivot_trace_ids_label({ count: traceIds.length })}</b>: {traceIds.join(
+        ", ",
+      )}
     </div>
   {/if}
   <div class="text-base text-fg-secondary mt-4">
-    One or more APIs failed with the following error{uniqueErrors.length !== 1
-      ? "s"
-      : ""}:
+    {m.pivot_apis_failed({ count: uniqueErrors.length })}
   </div>
 
   {#each uniqueErrors as error}
@@ -68,8 +71,8 @@
       <button
         class="flex-shrink-0 p-1 hover:bg-surface-hover rounded transition-colors cursor-pointer"
         onclick={() => handleCopyError(error)}
-        title="Copy full error message"
-        aria-label="Copy error message to clipboard"
+        title={m.dashboard_copy_error()}
+        aria-label={m.dashboard_copy_error_to_clipboard_aria()}
       >
         <CopyIcon size="16px" color="#6B7280" />
       </button>

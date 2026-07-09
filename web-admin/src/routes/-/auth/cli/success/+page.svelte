@@ -4,16 +4,17 @@
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 </script>
 
 <svelte:head>
-  <title>Successfully authorized Rill CLI</title>
+  <title>{m.auth_cli_success_title()}</title>
 </svelte:head>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <RillLogoSquareNegative size="84px" />
-    <CtaHeader>Successfully authorized Rill CLI</CtaHeader>
-    <CtaMessage>Close this page and continue in the Rill CLI.</CtaMessage>
+    <CtaHeader>{m.auth_cli_success_title()}</CtaHeader>
+    <CtaMessage>{m.auth_cli_success_message()}</CtaMessage>
   </CtaContentContainer>
 </CtaLayoutContainer>

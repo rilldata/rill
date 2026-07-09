@@ -1,5 +1,6 @@
 import { fetchMagicAuthToken } from "@rilldata/web-admin/features/projects/selectors";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { error, redirect } from "@sveltejs/kit";
 
 export const load = async ({
@@ -9,13 +10,13 @@ export const load = async ({
   // Public URLs specify the resource in the token's metadata
   const tokenResp = await fetchMagicAuthToken(token).catch((e) => {
     console.error(e);
-    throw error(404, "Unable to find token");
+    throw error(404, m.route_error_token_not_found());
   });
 
   const { token: tokenMetadata } = tokenResp;
   if (!tokenMetadata?.resources) {
     console.error("Token does not have any associated resources");
-    throw error(404, "Unable to find the token's resource");
+    throw error(404, m.route_error_token_resource_not_found());
   }
 
   // Check for explore resource
@@ -30,7 +31,7 @@ export const load = async ({
 
   if (!exploreResource && !canvasResource) {
     console.error("Token does not have an associated explore or canvas");
-    throw error(404, "Unable to find a dashboard");
+    throw error(404, m.route_error_dashboard_not_found());
   }
 
   // Determine which resource type to redirect to

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -95,7 +96,7 @@
 
       <div class="divider">
         <div class="divider-line"></div>
-        <span class="vs-badge">vs</span>
+        <span class="vs-badge">{m.chart_vs()}</span>
       </div>
 
       <div class="period comparison">
