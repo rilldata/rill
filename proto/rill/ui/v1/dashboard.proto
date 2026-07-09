@@ -156,6 +156,9 @@ message DashboardState {
   repeated PivotElement pivot_row_all_dimensions = 35;
   // List of all dimensions selected for columns
   repeated PivotElement pivot_column_all_dimensions = 36;
+
+  // Per-measure conditional formatting (heatmap / data bar) for pivot cells.
+  repeated PivotConditionalFormat pivot_conditional_formatting = 44;
 }
 
 message DashboardTimeRange {
@@ -179,4 +182,15 @@ message PivotElement {
     rill.runtime.v1.TimeGrain pivot_time_dimension = 1;
     string pivot_dimension = 2;
   }
+}
+
+// Conditional formatting applied to a measure's cells in a pivot table.
+message PivotConditionalFormat {
+  string measure = 1;
+  // Formatting style: "heatmap" or "data_bar".
+  string mode = 2;
+  // Color scheme key (e.g. "theme-sequential", "greens", "redYellowGreen").
+  string scheme = 3;
+  // Flip the gradient direction (heatmap only).
+  bool reverse = 4;
 }

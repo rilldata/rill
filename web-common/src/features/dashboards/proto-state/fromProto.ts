@@ -7,6 +7,7 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import {
   type PivotChipData,
   PivotChipType,
+  type PivotMeasureFormatting,
   type PivotState,
   type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -437,7 +438,31 @@ function fromPivotProto(
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
     rowLimit: dashboard.pivotRowLimit,
+    measureFormatting: fromPivotConditionalFormattingProto(
+      dashboard.pivotConditionalFormatting,
+    ),
   };
+}
+
+function fromPivotConditionalFormattingProto(
+  formats: {
+    measure: string;
+    mode: string;
+    scheme: string;
+    reverse: boolean;
+  }[],
+): Record<string, PivotMeasureFormatting> | undefined {
+  if (!formats?.length) return undefined;
+  const measureFormatting: Record<string, PivotMeasureFormatting> = {};
+  for (const f of formats) {
+    if (f.mode !== "heatmap" && f.mode !== "data_bar") continue;
+    measureFormatting[f.measure] = {
+      mode: f.mode,
+      scheme: f.scheme,
+      reverse: f.reverse || undefined,
+    };
+  }
+  return Object.keys(measureFormatting).length ? measureFormatting : undefined;
 }
 
 function blankPivotState(): PivotState {

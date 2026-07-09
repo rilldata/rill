@@ -19,7 +19,8 @@ type CustomInputTypes =
   | "vega_spec"
   | "switcher_tab"
   | "ai_generate"
-  | "labels";
+  | "labels"
+  | "conditional_format";
 type PositionalInputTypes = "alignment";
 
 export type InputType =

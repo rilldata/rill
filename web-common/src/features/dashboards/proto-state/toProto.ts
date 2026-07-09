@@ -334,6 +334,14 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotRowLimit: pivotState.rowLimit,
     pivotShowTotalsColumn: pivotState.showTotalsColumn,
     pivotShowTotalsRow: pivotState.showTotalsRow,
+    pivotConditionalFormatting: Object.entries(
+      pivotState.measureFormatting ?? {},
+    ).map(([measure, fmt]) => ({
+      measure,
+      mode: fmt.mode,
+      scheme: fmt.scheme,
+      reverse: fmt.reverse ?? false,
+    })),
   };
 }
 

@@ -281,6 +281,13 @@ export class DashboardState extends Message<DashboardState> {
    */
   pivotColumnAllDimensions: PivotElement[] = [];
 
+  /**
+   * Per-measure conditional formatting (heatmap / data bar) for pivot cells.
+   *
+   * @generated from field: repeated rill.ui.v1.PivotConditionalFormat pivot_conditional_formatting = 44;
+   */
+  pivotConditionalFormatting: PivotConditionalFormat[] = [];
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -331,6 +338,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 43, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
+    { no: 44, name: "pivot_conditional_formatting", kind: "message", T: PivotConditionalFormat, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -726,6 +734,69 @@ export class PivotElement extends Message<PivotElement> {
 
   static equals(a: PivotElement | PlainMessage<PivotElement> | undefined, b: PivotElement | PlainMessage<PivotElement> | undefined): boolean {
     return proto3.util.equals(PivotElement, a, b);
+  }
+}
+
+/**
+ * Conditional formatting applied to a measure's cells in a pivot table.
+ *
+ * @generated from message rill.ui.v1.PivotConditionalFormat
+ */
+export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  /**
+   * Formatting style: "heatmap" or "data_bar".
+   *
+   * @generated from field: string mode = 2;
+   */
+  mode = "";
+
+  /**
+   * Color scheme key (e.g. "theme-sequential", "greens", "redYellowGreen").
+   *
+   * @generated from field: string scheme = 3;
+   */
+  scheme = "";
+
+  /**
+   * Flip the gradient direction (heatmap only).
+   *
+   * @generated from field: bool reverse = 4;
+   */
+  reverse = false;
+
+  constructor(data?: PartialMessage<PivotConditionalFormat>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.PivotConditionalFormat";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "scheme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "reverse", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PivotConditionalFormat {
+    return new PivotConditionalFormat().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PivotConditionalFormat {
+    return new PivotConditionalFormat().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PivotConditionalFormat {
+    return new PivotConditionalFormat().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PivotConditionalFormat | PlainMessage<PivotConditionalFormat> | undefined, b: PivotConditionalFormat | PlainMessage<PivotConditionalFormat> | undefined): boolean {
+    return proto3.util.equals(PivotConditionalFormat, a, b);
   }
 }
 

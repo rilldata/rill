@@ -20,6 +20,7 @@
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
   import LabelsInput from "./LabelsInput.svelte";
+  import PivotConditionalFormatInput from "./PivotConditionalFormatInput.svelte";
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
@@ -269,6 +270,13 @@
               localParamValues[key] = next;
               component.updateProperty(key, next);
             }}
+          />
+
+          <!-- PIVOT CONDITIONAL FORMATTING -->
+        {:else if config.type === "conditional_format" && component instanceof PivotCanvasComponent}
+          <PivotConditionalFormatInput
+            {component}
+            label={config.label ?? key}
           />
 
           <!-- COMPARISON OPTIONS INPUT -->

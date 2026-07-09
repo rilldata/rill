@@ -63,9 +63,24 @@ export interface PivotState {
   rowLimit?: number;
   outermostRowLimit?: number; // Local limit for outermost dimension only
   nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
+  // Per-measure conditional formatting, keyed by measure name. Measures not
+  // present here render without any cell formatting.
+  measureFormatting?: Record<string, PivotMeasureFormatting>;
 }
 
 export type PivotTableMode = "flat" | "nest";
+
+// Conditional formatting applied to a measure's cells in the pivot table. The
+// `mode` discriminant leaves room for additional styles (e.g. "text_color").
+export type PivotMeasureFormatting = {
+  mode: "heatmap" | "data_bar";
+  // For heatmap: the gradient color scheme. For data_bar: the source of the bar
+  // color. Keyed into PIVOT_HEATMAP_SCHEMES (e.g. "greens", "redYellowGreen",
+  // "theme-sequential").
+  scheme: string;
+  // For heatmap: flip the gradient direction.
+  reverse?: boolean;
+};
 
 export interface PivotDataRow {
   subRows?: PivotDataRow[];

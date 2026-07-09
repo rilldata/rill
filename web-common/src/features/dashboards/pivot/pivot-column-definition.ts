@@ -34,6 +34,7 @@ import {
   type MeasureType,
   type PivotDataRow,
   type PivotDataStoreConfig,
+  type PivotMeasureFormatting,
   type PivotTimeConfig,
 } from "./types";
 
@@ -141,6 +142,13 @@ function createColumnDefinitionForDimensions(
     config.rowDimensionNames.length &&
     config.colDimensionNames.length
   ) {
+    // The row-totals column reuses the leaf measure defs but holds aggregate
+    // values, so mark them to exclude from conditional formatting (their
+    // magnitudes would dominate the per-measure color domain).
+    const totalsLeafData: ColumnDef<PivotDataRow>[] = leafData.map((leaf) => ({
+      ...leaf,
+      meta: { ...leaf.meta, isRowTotal: true },
+    }));
     rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension) => {
       const { name } = dimension;
 
@@ -151,7 +159,7 @@ function createColumnDefinitionForDimensions(
       };
 
       return [headColumn];
-    }, leafData);
+    }, totalsLeafData);
   }
 
   // Start the recursion
@@ -206,6 +214,10 @@ export type MeasureColumnProps = Array<{
   type: MeasureType;
   lowerIsBetter: boolean;
   description?: string;
+  // Base measure name (without comparison suffix), used to key the color domain.
+  measureName: string;
+  // Conditional formatting for the main measure column (heatmap/data bar).
+  conditionalFormat?: PivotMeasureFormatting;
 }>;
 export function getMeasureColumnProps(
   config: PivotDataStoreConfig,
@@ -258,6 +270,13 @@ export function getMeasureColumnProps(
       icon,
       lowerIsBetter: measure?.lowerIsBetter ?? false,
       description: measure?.description,
+      measureName,
+      // Conditional formatting only applies to the main measure column, not its
+      // comparison delta/percent sub-columns.
+      conditionalFormat:
+        type === "measure"
+          ? config.pivot.measureFormatting?.[measureName]
+          : undefined,
     };
   });
 }
@@ -368,6 +387,8 @@ function getFlatColumnDef(
         icon: m.icon,
         tooltipFormatter: m.tooltipFormatter,
         description: m.description,
+        conditionalFormat: m.conditionalFormat,
+        measureName: m.measureName,
       },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
@@ -564,6 +585,8 @@ function getNestedColumnDef(
           icon: m.icon,
           tooltipFormatter: m.tooltipFormatter,
           description: m.description,
+          conditionalFormat: m.conditionalFormat,
+          measureName: m.measureName,
         },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;

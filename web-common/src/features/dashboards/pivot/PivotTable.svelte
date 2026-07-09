@@ -26,6 +26,7 @@
   import { derived } from "svelte/store";
   import {
     type ExpandedState,
+    type Row,
     type SortingState,
     type TableOptions,
     createSvelteTable,
@@ -33,6 +34,11 @@
     getExpandedRowModel,
   } from "tanstack-table-8-svelte-5";
   import NestedTable from "./NestedTable.svelte";
+  import {
+    type CellFormatter,
+    computeMeasureDomains,
+    makeCellFormatter,
+  } from "./pivot-conditional-formatting";
   import type {
     PivotDataRow,
     PivotDataStore,
@@ -141,6 +147,16 @@
     $config,
   );
 
+  // Per-measure conditional formatting. Domains are computed over leaf data
+  // cells only (excluding the totals row and the row-totals column), so
+  // aggregate magnitudes don't dominate the gradient. Recomputes when the row
+  // model or the formatting config changes.
+  $: cellFormatters = buildCellFormatters(
+    $table.getRowModel().flatRows,
+    $config.pivot.measureFormatting,
+    !!totalsRow,
+  );
+
   $: headerGroups = $table.getHeaderGroups();
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 
@@ -183,6 +199,43 @@
       ];
     }
     return [];
+  }
+
+  function buildCellFormatters(
+    flatRows: Row<PivotDataRow>[],
+    measureFormatting: PivotState["measureFormatting"],
+    hasTotalsRow: boolean,
+  ): Map<string, CellFormatter> {
+    const formatters = new Map<string, CellFormatter>();
+    if (!measureFormatting || Object.keys(measureFormatting).length === 0) {
+      return formatters;
+    }
+
+    const values: { measureName: string; value: number }[] = [];
+    for (const row of flatRows) {
+      // Skip aggregate rows: the prepended totals row and nested parent rows.
+      if (hasTotalsRow && row.id === "0") continue;
+      if (row.subRows.length > 0) continue;
+      for (const cell of row.getAllCells()) {
+        const meta = cell.column.columnDef.meta;
+        if (!meta?.conditionalFormat || meta.isRowTotal || !meta.measureName) {
+          continue;
+        }
+        const value = cell.getValue();
+        if (typeof value === "number") {
+          values.push({ measureName: meta.measureName, value });
+        }
+      }
+    }
+
+    const domains = computeMeasureDomains(values);
+    for (const [measureName, fmt] of Object.entries(measureFormatting)) {
+      const domain = domains.get(measureName);
+      if (domain) {
+        formatters.set(measureName, makeCellFormatter(domain, fmt));
+      }
+    }
+    return formatters;
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -368,6 +421,7 @@
       {rows}
       {virtualRows}
       {measures}
+      {cellFormatters}
       {totalsRow}
       {dataRows}
       {before}
@@ -403,6 +457,7 @@
       {hasColumnDimension}
       {dataRows}
       {measures}
+      {cellFormatters}
       {canShowDataViewer}
       {enableClickToFilter}
       {rowSelectionState}

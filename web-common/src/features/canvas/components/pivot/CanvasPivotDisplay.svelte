@@ -40,6 +40,14 @@
   $: schema = validateTableSchema(metricsViewSpec, tableSpec);
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
+  // Seed the shared pivot state with per-measure formatting from the YAML spec.
+  $: measureFormatting = Object.fromEntries(
+    (tableSpec.conditional_format ?? []).map((f) => [
+      f.measure,
+      { mode: f.mode, scheme: f.scheme, reverse: f.reverse },
+    ]),
+  );
+
   $: if ("columns" in tableSpec && schema.isValid) {
     const columns = tableSpec?.columns || [];
     pivotState.update((state) => ({
@@ -52,6 +60,7 @@
       columns: tableFieldMapper(columns, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      measureFormatting,
     }));
   } else if (!("columns" in tableSpec) && schema.isValid) {
     const measures = tableSpec.measures || [];
@@ -71,6 +80,7 @@
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      measureFormatting,
     }));
   }
 </script>

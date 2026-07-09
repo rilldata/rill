@@ -25,6 +25,15 @@ import type {
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
 import { createPivotConfig, usePivotForCanvas } from "./util";
 
+// Per-measure conditional formatting persisted in the canvas YAML. A list (not
+// a map) keeps the YAML readable and mirrors the proto representation.
+export interface PivotConditionalFormatSpec {
+  measure: string;
+  mode: "heatmap" | "data_bar";
+  scheme: string;
+  reverse?: boolean;
+}
+
 export interface PivotSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
@@ -34,6 +43,7 @@ export interface PivotSpec
   col_dimensions?: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  conditional_format?: PivotConditionalFormatSpec[];
 }
 
 export interface TableSpec
@@ -43,6 +53,7 @@ export interface TableSpec
   columns: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  conditional_format?: PivotConditionalFormatSpec[];
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
@@ -186,6 +197,11 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
+          conditional_format: {
+            type: "conditional_format",
+            label: "Conditional formatting",
+            showInUI: measureCount > 0,
+          },
           ...commonOptions,
         },
         filter: getFilterOptions(true, false),
@@ -215,6 +231,11 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: "Hide total row",
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
+          },
+          conditional_format: {
+            type: "conditional_format",
+            label: "Conditional formatting",
+            showInUI: measureCount > 0,
           },
           ...commonOptions,
         },

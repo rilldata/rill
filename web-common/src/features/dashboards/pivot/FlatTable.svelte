@@ -10,7 +10,12 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { writable } from "svelte/store";
-  import type { Column, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
+  import type {
+    Cell,
+    Column,
+    HeaderGroup,
+    Row,
+  } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
@@ -23,12 +28,14 @@
     dimKeyFromRow,
   } from "./pivot-click-selection";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
+  import type { CellFormatter } from "./pivot-conditional-formatting";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
   import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
   // State props
   export let assembled: boolean;
   export let measures: MeasureColumnProps;
+  export let cellFormatters: Map<string, CellFormatter> = new Map();
   export let dataRows: PivotDataRow[];
   export let hasMeasureContextColumns: boolean;
   export let canShowDataViewer = false;
@@ -106,6 +113,28 @@
   function getMeasureColumn(headerColumn: Column<PivotDataRow>) {
     const columnId = headerColumn.id;
     return measures.find((m) => m.name === columnId);
+  }
+
+  // Resolve heatmap/data-bar styling for a measure cell. Returns null for cells
+  // that should not be formatted (no config, the totals row, or non-numeric
+  // values).
+  function getCellFormatting(
+    cell: Cell<PivotDataRow, unknown>,
+    isTotalsRow: boolean,
+  ): { background: string; color: string } | null {
+    if (isTotalsRow) return null;
+    const meta = cell.column.columnDef.meta;
+    if (!meta?.conditionalFormat || meta.isRowTotal || !meta.measureName) {
+      return null;
+    }
+    const formatter = cellFormatters.get(meta.measureName);
+    if (!formatter) return null;
+    const value = cell.getValue();
+    if (typeof value !== "number" || !Number.isFinite(value)) return null;
+    return {
+      background: formatter.background(value),
+      color: formatter.textColor(value),
+    };
   }
 
   function isCellActive(rowId: string, columnId: string) {
@@ -254,8 +283,12 @@
           {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
             ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
             : cell.getValue()}
+          {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
           <td
             class="ui-copy-number cell truncate"
+            class:has-conditional-format={cellFmt !== null}
+            style:--cf-bg={cellFmt?.background ?? null}
+            style:--cf-color={cellFmt?.color ?? null}
             class:active-cell={cs.activeCell}
             class:selected-cell={cs.selectedCell}
             class:selected-context-cell={cs.selectedContextCell}
@@ -346,6 +379,14 @@
 
   .cell {
     @apply size-full p-1 px-2 text-fg-primary;
+  }
+
+  /* Conditional formatting (heatmap / data bar). Placed before the
+     selection/hover rules below so those win on equal specificity, keeping
+     selected and hovered cells legible. */
+  td.cell.has-conditional-format {
+    background: var(--cf-bg);
+    color: var(--cf-color);
   }
 
   tr > td {
