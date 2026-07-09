@@ -4,7 +4,6 @@
   import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ConnectClientHero from "../../connect/ConnectClientHero.svelte";
-  import { getConnectClientContext } from "../../connect/connect-client-context";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import FeedbackModal from "../feedback/FeedbackModal.svelte";
@@ -28,10 +27,6 @@
   let pendingFeedbackMessageId: string | null = null;
 
   const runtimeClient = useRuntimeClient();
-
-  // Connect-to-AI-client promo; only rendered when a shell wires the context
-  // (Rill Cloud). Disabled by default, so local and embedded chat show nothing.
-  const connectClient = getConnectClientContext();
 
   // Prefetch tools metadata for tool call display names
   const listToolsQueryOptionsStore = getRuntimeServiceListToolsQueryOptions(
@@ -133,9 +128,7 @@
       <div class="chat-empty-subtitle">
         {config.emptyChatLabel}
       </div>
-      {#if connectClient.enabled}
-        <ConnectClientHero />
-      {/if}
+      <ConnectClientHero />
     </div>
   {:else}
     {#each blocks as block (block.id)}

@@ -1,14 +1,11 @@
 <!--
   Wires the shared connect-client context for Rill Cloud and renders the
   MCPConnectDialog once for all descendant chat surfaces (global, dashboard,
-  developer). Rill Developer never mounts this, so its chat surfaces leave the
-  context disabled and show no connect CTA.
+  developer). Rill Developer and embedded dashboards never mount this, so their
+  chat surfaces have no provider and render no connect CTA.
 -->
 <script lang="ts">
-  import {
-    setConnectClientContext,
-    type ConnectClientProvider,
-  } from "@rilldata/web-common/features/chat/connect/connect-client-context";
+  import { setConnectClientContext } from "@rilldata/web-common/features/chat/connect/connect-client-context";
   import type { Snippet } from "svelte";
   import MCPConnectDialog from "./MCPConnectDialog.svelte";
 
@@ -25,23 +22,10 @@
   } = $props();
 
   let dialogOpen = $state(false);
-  let selectedProvider = $state<ConnectClientProvider | null>(null);
 
-  setConnectClientContext({
-    enabled: true,
-    open: (provider) => {
-      selectedProvider = provider ?? null;
-      dialogOpen = true;
-    },
-  });
+  setConnectClientContext({ open: () => (dialogOpen = true) });
 </script>
 
 {@render children()}
 
-<MCPConnectDialog
-  bind:open={dialogOpen}
-  {organization}
-  {project}
-  {isPublic}
-  provider={selectedProvider}
-/>
+<MCPConnectDialog bind:open={dialogOpen} {organization} {project} {isPublic} />

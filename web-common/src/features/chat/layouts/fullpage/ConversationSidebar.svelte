@@ -1,12 +1,11 @@
 <script lang="ts">
   import Button from "../../../../components/button/Button.svelte";
-  import APIIcon from "../../../../components/icons/APIIcon.svelte";
   import HideSidebar from "../../../../components/icons/HideSidebar.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import DelayedContent from "../../../entity-management/DelayedContent.svelte";
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
-  import { getConnectClientContext } from "../../connect/connect-client-context";
+  import ConnectClientButton from "../../connect/ConnectClientButton.svelte";
   import type { ConversationManager } from "../../core/conversation-manager";
 
   export let conversationManager: ConversationManager;
@@ -15,8 +14,6 @@
   export let onToggle: () => void = () => {};
   export let onConversationClick: () => void = () => {};
   export let onNewConversationClick: () => void = () => {};
-
-  const connectClient = getConnectClientContext();
 
   $: currentConversation = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversation?.getConversationQuery();
@@ -63,20 +60,7 @@
       </span>
     </div>
 
-    {#if connectClient.enabled}
-      <div class="collapsed-footer">
-        <span title="Connect your own client">
-          <Button
-            type="secondary"
-            square
-            label="Connect your own client"
-            onClick={() => connectClient.open()}
-          >
-            <APIIcon size="14px" className="!fill-current" />
-          </Button>
-        </span>
-      </div>
-    {/if}
+    <ConnectClientButton variant="square" />
   {:else}
     <!-- Expanded state: full sidebar -->
     <div class="conversation-sidebar-header">
@@ -132,18 +116,7 @@
       {/if}
     </div>
 
-    {#if connectClient.enabled}
-      <div class="conversation-sidebar-footer">
-        <Button
-          type="secondary"
-          onClick={() => connectClient.open()}
-          class="w-full"
-        >
-          <APIIcon size="14px" className="!fill-current" />
-          Connect your own client
-        </Button>
-      </div>
-    {/if}
+    <ConnectClientButton variant="full" />
   {/if}
 </div>
 
@@ -163,10 +136,6 @@
     @apply flex flex-col gap-2 p-3 items-center;
   }
 
-  .collapsed-footer {
-    @apply flex flex-col gap-2 p-3 items-center mt-auto;
-  }
-
   .conversation-sidebar-header {
     @apply p-3 border-b border-border;
   }
@@ -181,10 +150,6 @@
 
   .conversation-list {
     @apply flex-1 overflow-y-auto p-1 min-h-0;
-  }
-
-  .conversation-sidebar-footer {
-    @apply shrink-0 p-3 border-t border-border mt-auto;
   }
 
   .loading-conversations {

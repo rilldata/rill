@@ -5,8 +5,7 @@
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1Conversation } from "../../../../runtime-client";
-  import ConnectClientHeaderButton from "../../connect/ConnectClientHeaderButton.svelte";
-  import { getConnectClientContext } from "../../connect/connect-client-context";
+  import ConnectClientButton from "../../connect/ConnectClientButton.svelte";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
@@ -16,8 +15,6 @@
   export let onClose: () => void;
 
   const { adminServer } = featureFlags;
-
-  const connectClient = getConnectClientContext();
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -44,9 +41,7 @@
 <div class="chatbot-header">
   <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
   <div class="chatbot-header-actions">
-    {#if connectClient.enabled}
-      <ConnectClientHeaderButton />
-    {/if}
+    <ConnectClientButton variant="icon" />
 
     <IconButton
       ariaLabel="New conversation"

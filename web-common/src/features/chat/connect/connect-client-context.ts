@@ -1,39 +1,31 @@
-import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
-import { getContext, hasContext, setContext } from "svelte";
-
-/**
- * The external AI clients we surface as one-click entry points. "other" opens the
- * generic connect flow without preselecting a provider.
- */
-export type ConnectClientProvider = "claude" | "openai" | "gemini" | "other";
+import { getContext, setContext } from "svelte";
 
 export interface ConnectClientContext {
-  /**
-   * Whether a connect flow is wired on the current surface. Presentational CTAs
-   * self-hide when this is false, so surfaces that never provide the context
-   * (e.g. Rill Developer, embedded dashboards) render nothing.
-   */
-  enabled: boolean;
-  /** Open the connect dialog, optionally preselecting a provider. */
-  open: (provider?: ConnectClientProvider) => void;
+  /** Open the "connect your AI client" dialog. */
+  open: () => void;
 }
 
 const CONNECT_CLIENT_CONTEXT_KEY = Symbol("connect-client-context");
-
-/** Disabled default so the CTAs are inert unless a shell explicitly wires them. */
-const DISABLED_CONTEXT: ConnectClientContext = {
-  enabled: false,
-  open: () => {},
-};
 
 export function setConnectClientContext(context: ConnectClientContext): void {
   setContext(CONNECT_CLIENT_CONTEXT_KEY, context);
 }
 
+/**
+ * Returns the connect-client context, throwing if no provider is an ancestor.
+ * Connect CTAs render only on Rill Cloud, where ConnectClientProvider wraps every
+ * chat surface; callers must gate on that (via the `adminServer` flag) before
+ * calling this, so a missing provider surfaces as a real bug rather than a
+ * silently hidden CTA.
+ */
 export function getConnectClientContext(): ConnectClientContext {
-  // Never surface connect CTAs inside an embedded dashboard, regardless of
-  // whether a shell wired the context.
-  if (EmbedStore.isEmbedded()) return DISABLED_CONTEXT;
-  if (!hasContext(CONNECT_CLIENT_CONTEXT_KEY)) return DISABLED_CONTEXT;
-  return getContext<ConnectClientContext>(CONNECT_CLIENT_CONTEXT_KEY);
+  const context = getContext<ConnectClientContext | undefined>(
+    CONNECT_CLIENT_CONTEXT_KEY,
+  );
+  if (!context) {
+    throw new Error(
+      "getConnectClientContext() requires a ConnectClientProvider ancestor.",
+    );
+  }
+  return context;
 }
