@@ -706,6 +706,7 @@
   "dashboard_include_exclude_toggle": "Include exclude toggle",
   "dashboard_invalid_time_range": "Invalid time range",
   "dashboard_last_refreshed_ago": "Last refreshed {time}",
+  "dashboard_last_used_ago": "Last used {time}",
   "dashboard_latest_data": "latest data",
   "dashboard_latest_data_description": "Timestamp of latest data point",
   "dashboard_leaderboards_aria": "Leaderboards",

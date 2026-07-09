@@ -8,6 +8,7 @@
   import { Star } from "lucide-svelte";
   import { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import type { RecentlyUsedDashboards } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
 
   export let name: string;
   export let title: string;
@@ -20,6 +21,8 @@
   export let project: string;
   export let tags: string[] = [];
   export let dashboardFavourites: ArrayRuneStore<string> | undefined =
+    undefined;
+  export let recentlyUsedDashboards: RecentlyUsedDashboards | undefined =
     undefined;
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
@@ -34,14 +37,18 @@
     : ResourceKind.Canvas;
 
   $: favourites = dashboardFavourites?.value ?? [];
-  $: isFavourite = favourites.includes(name);
+  $: isFavourite = favourites.includes(name?.toLowerCase());
+
+  $: lastUsed =
+    recentlyUsedDashboards?.recentlyUsed?.value?.[name.toLowerCase()];
+  $: lastUsedDate = lastUsed ? new Date(lastUsed) : null;
 
   let hovered = false;
 
   function onDashboardFavouriteToggle(e: MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
-    dashboardFavourites?.toggle(name);
+    dashboardFavourites?.toggle(name?.toLowerCase());
   }
 </script>
 
@@ -87,6 +94,19 @@
         >
         <TooltipContent slot="tooltip-content">
           {lastRefreshedDate.toLocaleString()}
+        </TooltipContent>
+      </Tooltip>
+    {/if}
+    {#if lastUsedDate}
+      <span class="shrink-0">•</span>
+      <Tooltip distance={8}>
+        <span class="shrink-0"
+          >{m.dashboard_last_used_ago({
+            time: timeAgo(lastUsedDate),
+          })}</span
+        >
+        <TooltipContent slot="tooltip-content">
+          {lastUsedDate.toLocaleString()}
         </TooltipContent>
       </Tooltip>
     {/if}

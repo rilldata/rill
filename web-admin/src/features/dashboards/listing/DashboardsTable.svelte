@@ -17,7 +17,10 @@
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
   import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
-  import { getDashboardFavouritesStore } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
+  import {
+    getDashboardFavouritesStore,
+    RecentlyUsedDashboards,
+  } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
@@ -33,7 +36,7 @@
 
   const selectedTagsState = UrlParamsState.createStringArrayParam("tags");
 
-  const searchTextState = UrlParamsState.createStringParam("search");
+  const searchTextState = UrlParamsState.createStringParam("q");
   const throttler = new Throttler(500, 500);
   const throttledSearchSetter = (newValue: string) => {
     throttler.throttle(() => searchTextState.setter(newValue));
@@ -71,15 +74,28 @@
   let dashboardFavourites = $derived(
     getDashboardFavouritesStore(organization, project),
   );
+  let recentlyUsedDashboards = $derived(
+    new RecentlyUsedDashboards(organization, project),
+  );
 
   let validDashboardFavourites = $derived(
     dashboardFavourites.value.filter((f) =>
-      filteredDashboards.find((r) => r.meta?.name?.name === f),
+      filteredDashboards.find((r) => r.meta?.name?.name?.toLowerCase() === f),
     ),
   );
 
   let hasMoreDashboards = $derived(
     isPreview && filteredDashboards.length > previewLimit,
+  );
+
+  let displayData = $derived(
+    filteredDashboards.map((r) => ({
+      ...r,
+      lastUsed:
+        recentlyUsedDashboards.recentlyUsed.value[
+          r.meta?.name?.name?.toLowerCase()
+        ] ?? 0,
+    })) as V1Resource[],
   );
 
   const columns = [
@@ -112,6 +128,7 @@
           project,
           tags,
           dashboardFavourites,
+          recentlyUsedDashboards,
         });
       },
     },
@@ -144,6 +161,12 @@
         return isMetricsExplorer ? row.explore.spec.description : "";
       },
     },
+    {
+      id: "lastUsed",
+      accessorFn: (row: V1Resource) => {
+        return (row as any).lastUsed;
+      },
+    },
   ];
 
   const columnVisibility = {
@@ -151,9 +174,13 @@
     name: false,
     lastRefreshed: false,
     description: false,
+    lastUsed: false,
   };
 
-  const initialSorting = [{ id: "name", desc: false }];
+  const initialSorting = [
+    { id: "lastUsed", desc: true },
+    { id: "name", desc: false },
+  ];
 </script>
 
 {#if isLoading || isBuilding}
@@ -172,6 +199,7 @@
           bind:value={searchTextState.getter, throttledSearchSetter}
           rounded="lg"
           retainValueOnMount
+          large
         />
       </div>
     {/if}
@@ -196,7 +224,7 @@
       <div class="flex flex-col flex-grow">
         <ResourceList
           kind="dashboard"
-          data={filteredDashboards}
+          data={displayData}
           {columns}
           {columnVisibility}
           {initialSorting}

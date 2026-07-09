@@ -70,7 +70,10 @@
       rowPinning: {},
     },
     getRowId(originalRow, index) {
-      return (originalRow as V1Resource).meta?.name?.name ?? index.toString();
+      return (
+        (originalRow as V1Resource).meta?.name?.name?.toLowerCase() ??
+        index.toString()
+      );
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),

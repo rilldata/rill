@@ -706,6 +706,7 @@
   "dashboard_include_exclude_toggle": "Alternar incluir/excluir",
   "dashboard_invalid_time_range": "Rango de tiempo inválido",
   "dashboard_last_refreshed_ago": "Última actualización {time}",
+  "dashboard_last_used_ago": "Última actualización {time}",
   "dashboard_latest_data": "datos más recientes",
   "dashboard_latest_data_description": "Marca temporal del punto de datos más reciente",
   "dashboard_leaderboards_aria": "Rankings",

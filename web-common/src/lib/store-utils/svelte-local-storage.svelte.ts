@@ -53,8 +53,8 @@ export class SvelteLocalStorage<Val, DefaultVal>
     return new ArrayRuneStore<string>(
       SvelteLocalStorage.getInstance(
         key,
-        (value: string[]) => (value.length ? value.join(",") : null),
-        (value) => value?.split(",") ?? [],
+        (value: string[]) => (value.length ? JSON.stringify(value) : null),
+        (value) => (value ? JSON.parse(value) : []),
         [],
       ),
     );
