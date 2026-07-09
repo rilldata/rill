@@ -4,15 +4,21 @@
     resourceLabelMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import {
+    ResourceKind,
     resourceKindStyleName,
-    type ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let kind: ResourceKind;
   export let showIcon = true;
 
   $: icon = resourceIconMapping[kind];
-  $: label = resourceLabelMapping[kind];
+  $: label =
+    kind === ResourceKind.Canvas
+      ? m.resource_type_canvas()
+      : kind === ResourceKind.Explore
+        ? m.resource_type_explore()
+        : resourceLabelMapping[kind];
   $: styleName = resourceKindStyleName(kind);
 </script>
 

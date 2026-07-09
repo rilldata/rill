@@ -14,6 +14,7 @@
   import { page } from "$app/state";
   import { untrack } from "svelte";
   import type { Snippet } from "svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     branchPathPrefix,
     extractBranchFromPath,
@@ -257,7 +258,7 @@
   />
   <ErrorPage
     statusCode={error.response.status}
-    header="Error fetching deployment"
+    header={m.error_fetching_deployment()}
     body={error.response.data?.message}
   />
 {:else if projectData}
@@ -329,10 +330,10 @@
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
       <ErrorPage
         statusCode={500}
-        header="Deployment Error"
+        header={m.error_deployment_error()}
         body={projectData.deployment.statusMessage !== ""
           ? projectData.deployment.statusMessage
-          : "There was an error deploying your project. Please contact support."}
+          : m.error_deploying_project()}
       />
     {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED || deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
       <BranchDeploymentStopped

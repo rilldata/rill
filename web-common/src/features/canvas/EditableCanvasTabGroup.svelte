@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { Writable } from "svelte/store";
   import ComponentError from "../components/ComponentError.svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
@@ -182,7 +183,7 @@
                   <div class:pointer-events-none={!!dragComponent}>
                     <AddComponentDropdown
                       componentForm
-                      label="Add widget to tab"
+                      label={m.canvas_add_widget_to_tab()}
                       onItemClick={(type) =>
                         initializeRow($grid.length, type, target)}
                     />
@@ -232,7 +233,7 @@
     <ItemWrapper type="table" zIndex={0}>
       <AddComponentDropdown
         componentForm
-        label="Add widget below tabs"
+        label={m.canvas_add_widget_below_tabs()}
         onItemClick={(type) => initializeRow(blockIndex + 1, type)}
         onAddTabGroup={() => onAddTabGroup(blockIndex + 1)}
       />

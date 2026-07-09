@@ -1,6 +1,7 @@
 <script lang="ts">
   import Spinner from "web-common/src/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "web-common/src/features/entity-management/types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { billingPortalUrl }: { billingPortalUrl: string } = $props();
 
@@ -19,7 +20,7 @@
 <iframe
   {...iframeProps}
   src={billingPortalUrl}
-  title="Orb Billing Portal"
+  title={m.billing_orb_portal_title()}
   class="w-full h-[1000px]"
   onload={() => (iframeLoading = false)}
 ></iframe>

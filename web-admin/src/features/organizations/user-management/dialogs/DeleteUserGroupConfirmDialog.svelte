@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import {
     createAdminServiceDeleteUsergroup,
@@ -41,11 +42,11 @@
         ),
       });
 
-      eventBus.emit("notification", { message: "User group deleted" });
+      eventBus.emit("notification", { message: m.groups_deleted() });
     } catch (error) {
       console.error("Error deleting user group", error);
       eventBus.emit("notification", {
-        message: "Error deleting user group",
+        message: m.groups_error_deleting(),
         type: "error",
       });
     }
@@ -69,10 +70,10 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this user group?</AlertDialogTitle>
+      <AlertDialogTitle>{m.groups_delete_confirm_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          This user group will no longer be able to access the organization.
+          {m.groups_delete_confirm_desc()}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -81,9 +82,9 @@
         type="tertiary"
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.users_cancel()}</Button
       >
-      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
+      <Button type="destructive" onClick={handleDelete}>{m.groups_yes_delete()}</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

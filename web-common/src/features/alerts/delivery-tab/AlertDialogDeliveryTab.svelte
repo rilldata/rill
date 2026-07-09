@@ -1,11 +1,12 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
-  import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
+  import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -22,30 +23,30 @@
 </script>
 
 <div class="flex flex-col gap-y-3">
-  <FormSection title="Alert name">
+  <FormSection title={m.alert_form_name_title()}>
     <Input
       alwaysShowError
       errors={$errors["name"]}
       id="name"
-      title="Alert name"
-      placeholder="My alert"
+      title={m.alert_form_name_title()}
+      placeholder={m.alert_form_name_placeholder()}
       bind:value={$form["name"]}
     />
   </FormSection>
 
-  <FormSection title="Trigger">
+  <FormSection title={m.alert_form_trigger()}>
     <div class="grid grid-cols-2">
       <Button
         onClick={() => ($form["refreshWhenDataRefreshes"] = true)}
         active={$form["refreshWhenDataRefreshes"]}
       >
-        Whenever data refreshes
+        {m.alert_form_trigger_data_refresh()}
       </Button>
       <Button
         onClick={() => ($form["refreshWhenDataRefreshes"] = false)}
         active={!$form["refreshWhenDataRefreshes"]}
       >
-        Set schedule
+        {m.alert_form_trigger_set_schedule()}
       </Button>
     </div>
     {#if !$form["refreshWhenDataRefreshes"]}
@@ -54,26 +55,26 @@
   </FormSection>
 
   <FormSection
-    description="Set a snooze period to silence repeat notifications for the same alert."
-    title="Snooze"
+    description={m.alert_form_snooze_desc()}
+    title={m.alert_form_snooze_title()}
   >
     <Select
       bind:value={$form["snooze"]}
       id="snooze"
       label=""
-      options={SnoozeOptions}
+      options={getSnoozeOptions()}
     />
   </FormSection>
   {#if $hasSlackNotifier.data}
     <FormSection
       bind:enabled={$form["enableSlackNotification"]}
       showSectionToggle
-      title="Slack notifications"
+      title={m.alert_form_slack_title()}
     >
       <MultiInput
         id="slackChannels"
-        placeholder="# Enter a Slack channel name"
-        description="We’ll send alerts directly to these channels."
+        placeholder={m.alert_form_slack_placeholder()}
+        description={m.alert_form_slack_channels_desc()}
         contentClassName="relative"
         bind:values={$form.slackChannels}
         errors={$errors.slackChannels}
@@ -83,8 +84,8 @@
       />
       <MultiInput
         id="slackUsers"
-        placeholder="Enter an email address"
-        description="We’ll alert them with direct messages in Slack."
+        placeholder={m.alert_form_email_placeholder()}
+        description={m.alert_form_slack_users_desc()}
         contentClassName="relative"
         bind:values={$form.slackUsers}
         errors={$errors.slackUsers}
@@ -94,28 +95,23 @@
       />
     </FormSection>
   {:else}
-    <FormSection title="Slack notifications">
+    <FormSection title={m.alert_form_slack_title()}>
       <svelte:fragment slot="description">
         <span class="text-sm text-fg-secondary">
-          Slack has not been configured for this project. Read the <a
-            href="https://docs.rilldata.com/guide/alerts#configuring-slack-targets"
-            target="_blank"
-          >
-            docs
-          </a> to learn more.
+          {@html m.alert_form_slack_not_configured({ docsUrl: "https://docs.rilldata.com/guide/alerts#configuring-slack-targets" })}
         </span>
       </svelte:fragment>
     </FormSection>
   {/if}
   <FormSection
     bind:enabled={$form["enableEmailNotification"]}
-    description="We’ll email alerts to these addresses. Make sure they have access to your project."
+    description={m.alert_form_email_desc()}
     showSectionToggle
-    title="Email notifications"
+    title={m.alert_form_email_title()}
   >
     <MultiInput
       id="slackUsers"
-      placeholder="Enter an email address"
+      placeholder={m.alert_form_email_placeholder()}
       contentClassName="relative"
       bind:values={$form.emailRecipients}
       errors={$errors.emailRecipients}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import AnimatedDots from "@rilldata/web-common/features/chat/core/messages/AnimatedDots.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import {
@@ -38,14 +39,14 @@
   <div class="ai-generate">
     {#if isStreaming}
       <div class="status">
-        <AnimatedDots>AI is editing</AnimatedDots>
+        <AnimatedDots>{m.canvas_ai_is_editing()}</AnimatedDots>
       </div>
     {:else}
       <div class="input-row">
         <textarea
           class="ai-input"
           rows="2"
-          placeholder="Describe chart changes..."
+          placeholder={m.canvas_describe_chart_changes()}
           bind:value={prompt}
           onkeydown={handleKeydown}
         >
@@ -54,7 +55,7 @@
           class="generate-btn"
           onclick={handleGenerate}
           disabled={!prompt.trim()}
-          aria-label="Edit with AI"
+          aria-label={m.canvas_edit_with_ai()}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path
@@ -67,7 +68,7 @@
           </svg>
         </button>
       </div>
-      <div class="hint">Opens the AI assistant to edit this chart</div>
+      <div class="hint">{m.canvas_ai_hint()}</div>
     {/if}
   </div>
 {/if}

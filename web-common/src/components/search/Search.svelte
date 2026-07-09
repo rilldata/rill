@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onMount } from "svelte";
   import Search from "../icons/Search.svelte";
 
@@ -8,8 +9,8 @@
   /* Input value being searched */
   export let value: string | number;
   /* Aria label for input */
-  export let label = "Search";
-  export let placeholder = "Search";
+  export let label: string | undefined = undefined;
+  export let placeholder: string | undefined = undefined;
   export let multiline = false;
   export let border = true;
   export let background = true;
@@ -20,6 +21,9 @@
   export let theme = false;
   export let rounded: "sm" | "md" | "lg" = "sm";
   export let onSubmit: () => void = () => {};
+
+  $: resolvedLabel = label ?? m.common_search();
+  $: resolvedPlaceholder = placeholder ?? m.common_search();
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement | HTMLTextAreaElement;
@@ -85,10 +89,10 @@
       : ''}"
     class:h-full={large}
     {disabled}
-    {placeholder}
+    placeholder={resolvedPlaceholder}
     oninput={handleInput}
     onkeydown={handleKeyDown}
-    aria-label={label}
+    aria-label={resolvedLabel}
     role="textbox"
     tabindex="-1"
     {value}

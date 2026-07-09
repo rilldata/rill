@@ -28,6 +28,7 @@
     isPersonalFile,
   } from "@rilldata/web-admin/features/projects/status/selectors.ts";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: V1Resource[];
 
@@ -151,7 +152,7 @@
   const columns: ColumnDef<V1Resource, any>[] = [
     {
       accessorKey: "title",
-      header: "Type",
+      header: m.status_column_type(),
       accessorFn: (row) => row.meta.name.kind,
       cell: ({ row }) =>
         renderComponent(ResourceTypeBadge, {
@@ -160,7 +161,7 @@
     },
     {
       accessorFn: (row) => row.meta.name.name,
-      header: "Name",
+      header: m.status_column_name(),
       cell: ({ getValue, row }) =>
         renderComponent(NameCell, {
           name: getValue() as string,
@@ -171,7 +172,7 @@
     },
     {
       accessorFn: (row) => row.meta.reconcileStatus,
-      header: "Status",
+      header: m.status_label_status(),
       sortingFn: (rowA, rowB) => {
         return (
           getStatusPriority(rowB.original.meta.reconcileStatus) -
@@ -190,7 +191,7 @@
     },
     {
       accessorFn: (row) => row.meta.stateUpdatedOn,
-      header: "Last refresh",
+      header: m.status_column_last_refresh(),
       sortDescFirst: true,
       cell: (info) =>
         renderComponent(RefreshCell, {
@@ -199,7 +200,7 @@
     },
     {
       accessorFn: (row) => row.meta.reconcileOn,
-      header: "Next refresh",
+      header: m.status_column_next_refresh(),
       cell: (info) =>
         renderComponent(RefreshCell, {
           date: info.getValue() as string,
@@ -244,7 +245,7 @@
   {columns}
   columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
   containerHeight={550}
-  emptyText="No resources match the current filters"
+  emptyText={m.status_no_resources_match_filters()}
 />
 
 <RefreshResourceConfirmDialog

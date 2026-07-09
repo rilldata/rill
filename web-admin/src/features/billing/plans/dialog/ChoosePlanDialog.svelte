@@ -5,6 +5,9 @@
   import {
     resolvePlanHighlights,
     SELF_SERVE_PLANS,
+    getTranslatedPlanDisplayName,
+    getTranslatedPlanTagline,
+    getTranslatedPlanPriceUnit,
   } from "@rilldata/web-admin/features/billing/plans/plan-details.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
   import {
@@ -25,6 +28,7 @@
   } from "@rilldata/web-admin/client";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     open = $bindable(false),
@@ -41,25 +45,25 @@
   let title = $derived.by(() => {
     switch (type) {
       case "size":
-        return "Deploying more than 10 GB requires a paid plan";
+        return m.billing_dialog_title_size();
       case "org":
-        return "To create another organization, choose a plan";
+        return m.billing_dialog_title_org();
       case "proj":
-        return "To deploy a second project, choose a plan";
+        return m.billing_dialog_title_proj();
       case "renew":
-        return "Renew your plan";
+        return m.billing_dialog_title_renew();
       case "trial-expired":
-        return "Your trial has ended — choose a plan";
+        return m.billing_dialog_title_trial_expired();
       case "base":
       default:
-        return "Choose a plan";
+        return m.billing_choose_a_plan();
     }
   });
 
   let description = $derived(
     type === "renew"
-      ? `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}.`
-      : "Choosing a plan ends your trial and starts your billing cycle today.",
+      ? m.billing_cycle_will_resume({ resumeText: getSubscriptionResumedText(endDate) })
+      : m.billing_choosing_plan_ends_trial(),
   );
 
   let orgQuery = $derived(createAdminServiceGetOrganization(organization));
@@ -136,13 +140,13 @@
             >
               <div class="flex items-center justify-between">
                 <span class="text-lg font-semibold text-fg-primary">
-                  {plan.displayName}
+                  {getTranslatedPlanDisplayName(plan.name)}
                 </span>
                 {#if plan.recommended}
                   <span
                     class="text-xs font-semibold text-primary-600 bg-primary-50 rounded-full px-2 py-0.5"
                   >
-                    Recommended
+                    {m.billing_recommended()}
                   </span>
                 {/if}
               </div>
@@ -151,9 +155,9 @@
                 <span class="text-2xl font-semibold text-fg-primary">
                   {plan.price}
                 </span>
-                <span class="text-sm text-fg-tertiary">{plan.priceUnit}</span>
+                <span class="text-sm text-fg-tertiary">{getTranslatedPlanPriceUnit()}</span>
               </div>
-              <p class="text-sm text-fg-tertiary">{plan.tagline}</p>
+              <p class="text-sm text-fg-tertiary">{getTranslatedPlanTagline(plan.name)}</p>
 
               <ul class="flex flex-col gap-1.5 mt-1 grow">
                 {#each highlights as highlight (highlight)}
@@ -173,7 +177,7 @@
                 disabled={loadingPlan !== null || isCurrentPlan}
                 onClick={() => handleUpgradePlan(plan.name)}
               >
-                {#if isCurrentPlan}Current{:else}Choose {plan.displayName}{/if}
+                {#if isCurrentPlan}{m.billing_current()}{:else}{m.billing_choose_plan_name({ planName: getTranslatedPlanDisplayName(plan.name) })}{/if}
               </Button>
             </div>
           {/each}
@@ -182,7 +186,7 @@
     </div>
 
     <AlertDialogFooter class="mt-3">
-      <Button type="text" onClick={() => (open = false)}>Close</Button>
+      <Button type="text" onClick={() => (open = false)}>{m.billing_close()}</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

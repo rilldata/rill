@@ -18,6 +18,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { organization }: { organization: string } = $props();
 
@@ -64,7 +65,7 @@
         } catch (err) {
           const parsedErr = parseUpdateOrgError(err);
           if (parsedErr.duplicateOrg) {
-            form.errors.name = [`The name ${newOrg} is already taken`];
+            form.errors.name = [m.settings_name_already_taken({ name: newOrg })];
           }
           return;
         }
@@ -80,7 +81,7 @@
           });
         }
         eventBus.emit("notification", {
-          message: "Updated organization",
+          message: m.settings_updated_org_notification(),
         });
       },
       resetForm: false,
@@ -109,7 +110,7 @@
   );
 </script>
 
-<SettingsContainer title="Organization">
+<SettingsContainer title={m.settings_org_title()}>
   <form
     id="org-update-form"
     onsubmit={(e) => {
@@ -123,8 +124,8 @@
       bind:value={$form.name}
       errors={$errors?.name}
       id="name"
-      label="Name"
-      description={`Your org URL will be https://ui.rilldata.com/${sanitizeOrgName($form.name)}, to comply with our naming rules.`}
+      label={m.settings_name_label()}
+      description={m.settings_org_url_description({ slug: sanitizeOrgName($form.name) })}
       textClass="text-sm"
       alwaysShowError
       additionalClass="max-w-[520px]"
@@ -133,8 +134,8 @@
       bind:value={$form.description}
       errors={$errors?.description}
       id="description"
-      label="Description"
-      placeholder="Describe your organization"
+      label={m.settings_description_label()}
+      placeholder={m.settings_description_placeholder()}
       textClass="text-sm"
       additionalClass="max-w-[520px]"
     />
@@ -151,7 +152,7 @@
       loading={$updateOrgMutation.isPending}
       disabled={!changed}
     >
-      Save
+      {m.settings_save_button()}
     </Button>
   {/snippet}
 </SettingsContainer>

@@ -9,6 +9,7 @@ import {
   adminServiceUpdateBillingSubscription,
 } from "@rilldata/web-admin/client";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { triggerWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils.ts";
 import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations.ts";
 import { page } from "$app/stores";
@@ -42,7 +43,7 @@ export async function upgradeToPlan(
     });
     eventBus.emit("notification", {
       type: "success",
-      message: `Your ${plan.displayName} plan was renewed`,
+      message: m.billing_plan_renewed({ planName: plan.displayName ?? "" }),
     });
   } else {
     await adminServiceUpdateBillingSubscription(org, {
