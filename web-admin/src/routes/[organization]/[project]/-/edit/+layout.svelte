@@ -125,14 +125,15 @@
   };
 
   // Only surface the env notice once the project has a primary deployment.
+  // Fail closed: env becomes editable only once we've positively confirmed the
+  // project has no primary deployment. A failed or otherwise inconclusive lookup
+  // keeps the notice set, so a published project never exposes editable `.env`
+  // files while the deployment state is unknown.
   // `isLoading` blocks `<slot />` until `primaryProjectQuery` resolves, so this
   // has run before any file editor reads the notice.
   $: if (!$primaryProjectQuery.isPending) {
-    setCloudReadonlyNotice(
-      $primaryProjectQuery.data?.project?.primaryDeploymentId
-        ? envEditDisabled
-        : undefined,
-    );
+    const envEditable = $primaryProjectQuery.isSuccess && !hasPrimaryDeployment;
+    setCloudReadonlyNotice(envEditable ? undefined : envEditDisabled);
     fileArtifacts.recheckReadonlyStatus();
   }
 
