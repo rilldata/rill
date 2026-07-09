@@ -13,6 +13,7 @@
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { getAvailableModelActions } from "@rilldata/web-common/features/projects/status/tables/model-actions";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let resource: V1Resource | undefined;
   export let isReconciling: boolean = false;
@@ -32,7 +33,7 @@
 
   $: refreshDisabled = isReconciling;
   $: refreshTooltip = isReconciling
-    ? "Model is currently being reconciled"
+    ? m.status_model_reconciling()
     : "";
 </script>
 

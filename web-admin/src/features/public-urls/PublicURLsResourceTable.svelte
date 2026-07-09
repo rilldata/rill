@@ -10,6 +10,7 @@
   import FiltersCell from "./cells/FiltersCell.svelte";
   import DateCell from "./cells/DateCell.svelte";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   interface PublicURLRow extends V1MagicAuthToken {
     dashboardTitle: string;
@@ -29,10 +30,10 @@
     return label.includes(q) || dashboard.includes(q) || creator.includes(q);
   });
 
-  const columns: ColumnDef<PublicURLRow, any>[] = [
+  $: columns = [
     {
       accessorKey: "displayName",
-      header: "Label",
+      header: m.public_url_table_label_header(),
       cell: ({ row }) =>
         renderComponent(LabelCell, {
           displayName: row.original.displayName ?? "",
@@ -42,12 +43,12 @@
     },
     {
       accessorKey: "dashboardTitle",
-      header: "Dashboard",
+      header: m.public_url_table_dashboard_header(),
       enableSorting: false,
     },
     {
       accessorKey: "metricsViewFilters",
-      header: "Filters",
+      header: m.public_url_table_filters_header(),
       enableSorting: false,
       cell: ({ row }) =>
         renderComponent(FiltersCell, {
@@ -56,19 +57,19 @@
     },
     {
       accessorKey: "expiresOn",
-      header: "Expires on",
+      header: m.public_url_table_expires_header(),
       cell: ({ row }) =>
         renderComponent(DateCell, { value: row.original.expiresOn }),
     },
     {
       id: "createdBy",
-      header: "Created by",
+      header: m.public_url_table_created_by_header(),
       accessorFn: (row) => row.attributes?.name || "—",
       enableSorting: false,
     },
     {
       accessorKey: "usedOn",
-      header: "Last accessed",
+      header: m.public_url_table_last_accessed_header(),
       cell: ({ row }) =>
         renderComponent(DateCell, { value: row.original.usedOn }),
     },
@@ -83,7 +84,7 @@
           onDelete,
         }),
     },
-  ];
+  ] as ColumnDef<PublicURLRow, any>[];
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
@@ -102,15 +103,15 @@
       {#if data.length === 0}
         <ResourceListEmptyState
           icon={ExternalLinkIcon}
-          message="You don't have any public URLs yet"
+          message={m.public_url_no_urls_title()}
         >
           <span slot="action">
-            To create a public URL, click the Share button in a dashboard.
+            {m.public_url_no_urls_empty()}
           </span>
         </ResourceListEmptyState>
       {:else}
         <span class="text-fg-secondary text-sm font-semibold">
-          No public URLs match your search
+          {m.public_url_no_match_search()}
         </span>
       {/if}
     </div>

@@ -9,6 +9,7 @@
   import type { ConversationManager } from "../conversation-manager";
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ArrowUp } from "lucide-svelte";
 
   export let conversationManager: ConversationManager;
@@ -138,7 +139,7 @@
     <div>
       {#if canCancel}
         <IconButton
-          ariaLabel="Cancel streaming"
+          ariaLabel={m.chat_cancel_streaming()}
           disableHover
           onclick={cancelStream}
         >
@@ -149,7 +150,7 @@
       {:else}
         <Button
           type="primary"
-          label="Send message"
+          label={m.chat_send_message()}
           disabled={!canSend}
           square
           onClick={sendMessage}

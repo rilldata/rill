@@ -39,6 +39,7 @@
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "@rilldata/web-common/features/projects/status/overview/OverviewCard.svelte";
   import ClusterSize from "./ClusterSize.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -98,7 +99,7 @@
     return n >= 0 ? n : undefined;
   })();
   $: dataLabel =
-    !defaultOlapEntry || isManaged ? "Data size" : "Data accessible";
+    !defaultOlapEntry || isManaged ? m.status_data_size() : m.status_data_accessible();
 
   // Repo — only shown when the user connected their own GitHub
   $: githubUrl = projectData?.gitRemote
@@ -125,7 +126,7 @@
     isTrialPlan(planName) || isFreePlan(planName) || isProPlan(planName);
 </script>
 
-<OverviewCard title="Deployment">
+<OverviewCard title={m.status_deployment()}>
   <div slot="header-right" class="flex items-center gap-3">
     <!-- TODO: re-add "Upgrade to Pro" link when ready.
          Gate on: canManage && (isTrialPlan || isFreePlan || isTeamPlan) && !subscriptionQuery.isLoading
@@ -141,7 +142,7 @@
 
   <div class="info-grid">
     <div class="info-row">
-      <span class="info-label">Status</span>
+      <span class="info-label">{m.status_label_status()}</span>
       <span class="info-value flex items-center gap-2">
         {#if isTransitoryStatus(deploymentStatus)}
           <LoadingCircleOutline size="12px" />
@@ -153,7 +154,7 @@
     </div>
 
     <div class="info-row">
-      <span class="info-label">Environment</span>
+      <span class="info-label">{m.status_label_environment()}</span>
       <span class="info-value">
         {formatEnvironmentName(deployment?.environment)}
       </span>
@@ -161,7 +162,7 @@
 
     {#if !$subscriptionQuery?.isLoading && showSlots}
       <div class="info-row">
-        <span class="info-label">Cluster Size</span>
+        <span class="info-label">{m.status_label_cluster_size()}</span>
         <span class="info-value">
           <ClusterSize slots={currentSlots} />
         </span>
@@ -170,7 +171,7 @@
 
     {#if isGithubConnected}
       <div class="info-row">
-        <span class="info-label">Repo</span>
+        <span class="info-label">{m.status_label_repo()}</span>
         <span class="info-value">
           <a
             href={githubUrl}
@@ -186,7 +187,7 @@
 
     {#if isGithubConnected && (deployment?.branch || primaryBranch)}
       <div class="info-row">
-        <span class="info-label">Branch</span>
+        <span class="info-label">{m.status_label_branch()}</span>
         <span class="info-value">{deployment?.branch || primaryBranch}</span>
       </div>
     {/if}
@@ -202,7 +203,7 @@
     {:else}
       {#if lastUpdated}
         <div class="info-row">
-          <span class="info-label">Last synced</span>
+          <span class="info-label">{m.status_label_last_synced()}</span>
           <span class="info-value">
             {lastUpdated.toLocaleString(undefined, {
               year: "numeric",
@@ -217,18 +218,18 @@
 
       {#if version}
         <div class="info-row">
-          <span class="info-label">Runtime</span>
+          <span class="info-label">{m.status_label_runtime()}</span>
           <span class="info-value">{version}</span>
         </div>
       {/if}
 
       <div class="info-row">
-        <span class="info-label">OLAP Engine</span>
+        <span class="info-label">{m.status_label_olap_engine()}</span>
         <span class="info-value">{olapEngineLabel}</span>
       </div>
 
       <div class="info-row">
-        <span class="info-label">AI Connector</span>
+        <span class="info-label">{m.status_label_ai_connector()}</span>
         <span class="info-value">
           {#if aiConnector && aiConnector.name !== "admin"}
             {formatConnectorName(aiConnector.type)}
@@ -236,7 +237,7 @@
               >({aiConnector.name})</span
             >
           {:else}
-            Rill Managed
+            {m.status_rill_managed()}
           {/if}
         </span>
       </div>
