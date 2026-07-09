@@ -1,5 +1,6 @@
 import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { getParquetPreviewQueryKey } from "@rilldata/web-common/features/workspaces/parquet-preview";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { Throttler } from "@rilldata/web-common/lib/throttler";
@@ -57,10 +58,8 @@ export async function handleFileEvent(
         const artifact = fileArtifacts.getFileArtifact(event.path);
         if (artifact.isPreviewableDataFile) {
           // Data files (e.g. .parquet) have no editable text content; refresh
-          // their DuckDB-powered preview instead of fetching binary content.
-          void queryClient.invalidateQueries({
-            queryKey: getParquetPreviewQueryKey(instanceId, event.path),
-          });
+          // their data preview instead of fetching binary content.
+          invalidateDataFilePreview(queryClient, instanceId, event.path);
         } else {
           await artifact.fetchContent(true);
         }
@@ -109,6 +108,23 @@ export async function handleFileEvent(
         queryKey: getRuntimeServiceListFilesQueryKey(instanceId),
       }),
     );
+  }
+}
+
+// Refreshes the data-preview query for a rewritten data file. Keyed per
+// extension so each previewable file type (see
+// FileArtifact.isPreviewableDataFile) maps to its own preview query.
+function invalidateDataFilePreview(
+  queryClient: QueryClient,
+  instanceId: string,
+  path: string,
+) {
+  switch (extractFileExtension(path)) {
+    case ".parquet":
+      void queryClient.invalidateQueries({
+        queryKey: getParquetPreviewQueryKey(instanceId, path),
+      });
+      break;
   }
 }
 

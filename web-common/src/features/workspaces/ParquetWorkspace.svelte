@@ -1,21 +1,13 @@
 <script lang="ts">
-  import type { PartialMessage, Struct } from "@bufbuild/protobuf";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
-  import {
-    createRuntimeServiceGetInstance,
-    createRuntimeServiceQueryResolver,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getParquetPreviewQueryKey } from "./parquet-preview";
-
-  // Number of rows to preview. Parquet files can be large, so we cap the
-  // preview the same way the model results table does.
-  const PREVIEW_LIMIT = 150;
+  import { createParquetPreviewQuery } from "./parquet-preview";
 
   let { fileArtifact }: { fileArtifact: FileArtifact } = $props();
 
@@ -54,34 +46,19 @@
   });
 
   // Join the repo root and the file's project-relative path into an absolute
-  // path. Single quotes are escaped to keep the generated SQL valid.
+  // path for read_parquet.
   let absolutePath = $derived(
     repoRoot
       ? `${repoRoot.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`
       : "",
   );
-  let sql = $derived(
-    `SELECT * FROM read_parquet('${absolutePath.replaceAll("'", "''")}')`,
-  );
 
   let previewQuery = $derived(
-    createRuntimeServiceQueryResolver(
-      runtimeClient,
-      {
-        resolver: "sql",
-        resolverProperties: {
-          connector: duckDbConnector,
-          sql,
-          limit: PREVIEW_LIMIT,
-        } as unknown as PartialMessage<Struct>,
-      },
-      {
-        query: {
-          enabled: !!absolutePath && !!duckDbConnector,
-          queryKey: getParquetPreviewQueryKey(runtimeClient.instanceId, path),
-        },
-      },
-    ),
+    createParquetPreviewQuery(runtimeClient, {
+      path,
+      absolutePath,
+      connector: duckDbConnector,
+    }),
   );
 
   // While the instance is loading we don't yet know the repo root, so treat it

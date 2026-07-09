@@ -11,10 +11,10 @@ import ConnectorIcon from "../../components/icons/ConnectorIcon.svelte";
 import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
 import ModelIcon from "@rilldata/web-common/components/icons/ModelIcon.svelte";
 import File from "@rilldata/web-common/components/icons/File.svelte";
-import ParquetFileIcon from "@rilldata/web-common/components/icons/ParquetFileIcon.svelte";
 import SettingsIcon from "@rilldata/web-common/components/icons/SettingsIcon.svelte";
 import { isEnvFile } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { Sheet } from "lucide-svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
@@ -69,7 +69,7 @@ export function getIconComponent(
     return SettingsIcon;
   }
   if (extractFileExtension(filePath) === ".parquet") {
-    return ParquetFileIcon;
+    return Sheet;
   }
   return File;
 }

@@ -43,6 +43,9 @@ import type { EditorView } from "@codemirror/view";
 
 // Data files that can't be edited as text, but whose contents can be
 // previewed by querying them with DuckDB (see ParquetWorkspace).
+// NOTE: When adding an extension here, also map it to its preview query in
+// `invalidateDataFilePreview` (file-invalidators.ts) so edits on disk refresh
+// the preview.
 const PREVIEWABLE_DATA_EXTENSIONS = [".parquet"];
 
 const UNSUPPORTED_EXTENSIONS = [
