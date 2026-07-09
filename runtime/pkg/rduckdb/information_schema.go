@@ -41,7 +41,7 @@ func (d *db) DDL(ctx context.Context, database, schema, name string) (string, er
 	return *sqlStr, nil
 }
 
-func (d *db) Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error) {
+func (d *db) Schema(ctx context.Context, _, _, name, ilike string, pageSize uint32, pageToken string) ([]*Table, string, error) {
 	if ilike != "" && name != "" {
 		return nil, "", fmt.Errorf("cannot specify both `ilike` and `name`")
 	}
