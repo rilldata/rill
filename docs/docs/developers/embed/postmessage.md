@@ -92,6 +92,31 @@ iframe.contentWindow.postMessage({
 ```
 
 
+### `setValidState({ state, failOnError })`
+
+Like `setState`, but validates the state against the dashboard's metrics view and explore specs before applying it. Invalid parameters (for example, an unknown dimension or measure) are reported back, and the applied URL is canonicalized (defaults removed, parameters ordered) the same way it would be if the user navigated there directly. Validation is currently supported for explore dashboards; for other dashboard types the state is applied as-is.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 1,
+  method: "setValidState",
+  params: { state: "view=pivot&tr=PT24H&grain=hour", failOnError: true },
+}, "*");
+```
+
+**Parameters:**
+- `state` (string): A URL query string describing the dashboard view, filters, time range, etc. Uses the same format as the query strings in URLs on Rill Cloud.
+- `failOnError` (boolean, optional): When `true` (the default), the state is applied only if there are no validation errors. When `false`, the cleaned state is applied even when some parameters were invalid; the dropped parameters are still reported in `errors`.
+
+**Response:**
+
+```json
+{ "id": 1, "result": { "success": true, "errors": [] } }
+```
+
+`success` is `false` when `failOnError` is `true` and validation produced errors, in which case the state is not applied. `errors` contains a message for each invalid parameter.
+
+
 ### `getState()`
 
 Returns the iframe's dashboard's current UI state.

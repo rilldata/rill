@@ -1,8 +1,12 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { buildValidatedExploreUrl } from "@rilldata/web-common/features/dashboards/state-managers/loaders/build-validated-explore-url.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import type { PageContentResized } from "@rilldata/web-common/lib/event-bus/events.ts";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get } from "svelte/store";
 import {
   emitNotification,
@@ -20,7 +24,14 @@ const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
 const RESIZE_THROTTLE_TIMEOUT = 200;
 const AI_PANE_CHANGE_THROTTLE_TIMEOUT = 200;
 
-export default function initEmbedPublicAPI(): () => void {
+type SetValidStateParams = {
+  state: string;
+  // When true (the default) the state is only applied if there are no validation errors.
+  // When false the cleaned state is applied even if some params were invalid.
+  failOnError?: boolean;
+};
+
+export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
   const embedThemeStore = getEmbedThemeStoreInstance();
 
   const embedStore = EmbedStore.getInstance();
@@ -50,6 +61,51 @@ export default function initEmbedPublicAPI(): () => void {
     currentUrl.search = state;
     void goto(currentUrl, { replaceState: true });
     return true;
+  });
+
+  registerRPCMethod("setValidState", async (params: SetValidStateParams) => {
+    if (
+      typeof params !== "object" ||
+      params === null ||
+      typeof params.state !== "string"
+    ) {
+      throw new Error(
+        "Expected params to be an object with a string `state` property",
+      );
+    }
+    const { state, failOnError = true } = params;
+
+    const pageState = get(page);
+    const activeDashboard = getDashboardFromEmbedRoute(
+      pageState.route.id,
+      pageState.params,
+    );
+
+    // Upfront validation is only supported for explore dashboards.
+    // For anything else (e.g. canvas) fall back to applying the state as-is.
+    if (activeDashboard?.kind !== ResourceKind.Explore) {
+      const currentUrl = new URL(pageState.url);
+      currentUrl.search = state;
+      void goto(currentUrl, { replaceState: true });
+      return { success: true, errors: [] };
+    }
+
+    const { url, errors } = await buildValidatedExploreUrl(
+      client,
+      activeDashboard.name,
+      new URLSearchParams(state),
+      pageState.url,
+    );
+    const errorMessages = errors.map((error) => error.message);
+
+    if (errors.length > 0 && failOnError) {
+      return { success: false, errors: errorMessages };
+    }
+
+    const currentUrl = new URL(pageState.url);
+    currentUrl.search = url.toString();
+    void goto(currentUrl, { replaceState: true });
+    return { success: true, errors: errorMessages };
   });
 
   registerRPCMethod("getThemeMode", () => {
