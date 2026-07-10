@@ -1,3 +1,4 @@
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import type { V1Schedule } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 import {
@@ -134,7 +135,9 @@ export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {
     return [
       {
         value: userLocalIANA,
-        label: getAbbreviationForIANA(currentDate, userLocalIANA) + " (Local)",
+        label:
+          getAbbreviationForIANA(currentDate, userLocalIANA) +
+          m.report_form_local_suffix(),
       },
       {
         value: UTCIana,
@@ -160,7 +163,9 @@ export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {
   return Array.from(deduplicatedTimeZones).map(([abbreviation, value]) => {
     return {
       value: value,
-      label: abbreviation + (value === userLocalIANA ? " (Local)" : ""),
+      label:
+        abbreviation +
+        (value === userLocalIANA ? m.report_form_local_suffix() : ""),
     };
   });
 }

@@ -12,6 +12,7 @@
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   let viewAsMenuOpen = false;
@@ -32,7 +33,7 @@
         >
           <EyeIcon size={"16px"} />
           <div class="flex items-center gap-x-1">
-            <span>View as</span><CaretDownIcon />
+            <span>{m.dashboard_view_as()}</span><CaretDownIcon />
           </div>
         </button>
       {:else}
@@ -41,13 +42,13 @@
             removable
             slideDuration={0}
             active={viewAsMenuOpen}
-            removeTooltipText="Clear view"
+            removeTooltipText={m.dashboard_clear_view()}
             onRemove={() => {
               updateDevJWT(queryClient, client, null);
             }}
           >
             <div slot="body">
-              Viewing as <b>{$selectedMockUserStore.email}</b>
+              {m.dashboard_viewing_as()} <b>{$selectedMockUserStore.email}</b>
             </div>
           </Chip>
         </button>
@@ -57,7 +58,9 @@
 
   <DropdownMenu.Content align="start">
     {#if !$mockUsers.data || $mockUsers.data?.length === 0}
-      <DropdownMenu.Item disabled>No mock users</DropdownMenu.Item>
+      <DropdownMenu.Item disabled
+        >{m.dashboard_no_mock_users()}</DropdownMenu.Item
+      >
     {:else if $mockUsers.data?.length > 0}
       {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
@@ -82,7 +85,7 @@
       class="flex gap-x-2 items-center font-normal"
     >
       <Add size="16px" />
-      Add mock user
+      {m.dashboard_add_mock_user()}
     </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

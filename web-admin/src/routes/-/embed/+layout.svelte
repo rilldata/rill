@@ -21,6 +21,7 @@
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -123,9 +124,9 @@
 
 {#if missingRequireParams.length}
   <ErrorPage
-    header={`Missing required param(s) ${missingRequireParams
-      .map((p) => '"' + p + '"')
-      .join(",")}`}
+    header={m.embed_missing_required_params({
+      params: missingRequireParams.map((p) => '"' + p + '"').join(", "),
+    })}
     fatal
   />
 {:else}

@@ -13,6 +13,7 @@
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { groupErrorsByKind, pluralizeKind } from "./overview-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -48,7 +49,7 @@
   <div class="section section-error">
     <div class="section-header">
       <h3 class="section-title flex items-center gap-2">
-        Errors
+        {m.status_errors()}
         <span class="error-badge">{totalErrors}</span>
       </h3>
     </div>
@@ -58,7 +59,7 @@
         <a href="{basePage}/resources?status=error" class="error-chip">
           <AlertCircleOutline size="12px" />
           <span class="font-medium">{parseErrors.length}</span>
-          <span>Parse error{parseErrors.length !== 1 ? "s" : ""}</span>
+          <span>{m.status_parse_errors({ count: parseErrors.length })}</span>
         </a>
       {/if}
 
@@ -79,15 +80,17 @@
 {:else}
   <div class="section">
     <div class="section-header">
-      <h3 class="section-title flex items-center gap-2">Errors</h3>
+      <h3 class="section-title flex items-center gap-2">{m.status_errors()}</h3>
     </div>
 
     {#if $projectParserQuery.isError || $resourcesQuery.isError}
-      <p class="text-sm text-fg-secondary">Unable to check for errors.</p>
+      <p class="text-sm text-fg-secondary">
+        {m.status_unable_to_check_errors()}
+      </p>
     {:else if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
-      <p class="text-sm text-fg-secondary">Checking for errors...</p>
+      <p class="text-sm text-fg-secondary">{m.status_checking_errors()}</p>
     {:else}
-      <p class="text-sm text-fg-secondary">No errors detected.</p>
+      <p class="text-sm text-fg-secondary">{m.status_no_errors()}</p>
     {/if}
   </div>
 {/if}

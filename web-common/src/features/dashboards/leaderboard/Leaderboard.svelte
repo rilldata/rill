@@ -1,6 +1,7 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimension,
@@ -432,15 +433,15 @@
         class="transition-color text-fg-muted table-message"
         onclick={() => setPrimaryDimension(dimensionName)}
       >
-        <div class="pl-8 text-fg-muted">(Expand Table)</div>
+        <div class="pl-8 text-fg-muted">{m.leaderboard_expand_table()}</div>
       </button>
       <TooltipContent slot="tooltip-content">
-        Expand dimension to see more values
+        {m.leaderboard_expand_tooltip()}
       </TooltipContent>
     </Tooltip>
   {:else if noAvailableValues}
     <div class="table-message text-fg-muted">
-      <div class="pl-8">(No available values)</div>
+      <div class="pl-8">{m.leaderboard_no_available_values()}</div>
     </div>
   {/if}
 </div>

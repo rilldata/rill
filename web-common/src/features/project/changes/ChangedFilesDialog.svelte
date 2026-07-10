@@ -9,6 +9,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { inferResourceKind } from "@rilldata/web-common/features/entity-management/infer-resource-kind";
   import { getIconComponent } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { get } from "svelte/store";
 
@@ -96,11 +97,10 @@
   >
     <Dialog.Header class="px-4 py-3 border-b border-gray-200 text-left">
       <Dialog.Title class="text-sm font-semibold leading-none tracking-normal">
-        Review changes
+        {m.edit_changes_review_title()}
         {#if changedFiles.length > 0}
           <span class="font-normal text-fg-secondary"
-            >· {changedFiles.length}
-            {changedFiles.length === 1 ? "file" : "files"}</span
+            >· {m.edit_changes_file_count({ count: changedFiles.length })}</span
           >
         {/if}
       </Dialog.Title>
@@ -109,10 +109,10 @@
     {#if isFetching}
       <div class="state-message">
         <DelayedSpinner isLoading={true} size="16px" />
-        <span>Loading diff…</span>
+        <span>{m.edit_changes_loading_diff()}</span>
       </div>
     {:else if changedFiles.length === 0}
-      <div class="state-message">No changes to show</div>
+      <div class="state-message">{m.edit_changes_none_to_show()}</div>
     {:else}
       <div class="flex flex-1 min-h-0">
         <ul class="file-nav">
@@ -136,7 +136,7 @@
         <div class="diff-pane" bind:this={diffPane}>
           <Diff2HtmlView {diff} showFileHeaders>
             {#snippet empty()}
-              <div class="state-message">No diff to display</div>
+              <div class="state-message">{m.edit_changes_no_diff()}</div>
             {/snippet}
           </Diff2HtmlView>
         </div>
@@ -144,7 +144,9 @@
     {/if}
 
     <Dialog.Footer class="px-4 py-3 border-t border-gray-200">
-      <Button type="secondary" onClick={() => (open = false)}>Close</Button>
+      <Button type="secondary" onClick={() => (open = false)}
+        >{m.common_close()}</Button
+      >
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

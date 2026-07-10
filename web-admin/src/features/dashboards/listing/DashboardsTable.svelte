@@ -17,6 +17,8 @@
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
   import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   let {
     isEmbedded = false,
@@ -156,7 +158,7 @@
     {#if !isPreview}
       <div class="flex flex-row items-center gap-x-2">
         <Search
-          placeholder="Search"
+          placeholder={m.common_search()}
           autofocus={false}
           bind:value={searchTextStore.getter, searchTextStore.setter}
           rounded="lg"
@@ -195,16 +197,12 @@
           <ResourceListEmptyState
             slot="empty"
             icon={ExploreIcon}
-            message="You don't have any dashboards yet"
+            message={m.dashboard_list_empty()}
           >
             <span slot="action">
-              <a
-                href="https://docs.rilldata.com/developers/build/dashboards"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Create a dashboard</a
-              > to get started
+              {@html m.dashboard_list_create_to_start({
+                link: `<a href="https://docs.rilldata.com/developers/build/dashboards" target="_blank" rel="noopener noreferrer">${escapeHtml(m.dashboard_list_create())}</a>`,
+              })}
             </span>
           </ResourceListEmptyState>
         </ResourceList>
@@ -215,7 +213,7 @@
               href={`/${organization}/${project}/-/dashboards`}
               class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
             >
-              See all dashboards →
+              {m.dashboard_list_see_all()} →
             </a>
           </div>
         {/if}

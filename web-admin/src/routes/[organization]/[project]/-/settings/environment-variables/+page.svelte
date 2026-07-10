@@ -12,6 +12,12 @@
   } from "@rilldata/web-common/components/table-toolbar";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "@rilldata/web-common/lib/url-filter-sync";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Plus } from "lucide-svelte";
   import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
   import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
@@ -83,17 +89,20 @@
 
   let emptyTextWhenNoVariables = $derived(
     envFilterStore.value.length === 0
-      ? "No environment variables"
-      : `No environment variables match the selected filters`,
+      ? m.env_no_variables()
+      : m.env_no_match_filters(),
   );
 
   let filterGroups = $derived<FilterGroup[]>([
     {
-      label: "Environment",
+      label: m.env_environment_label(),
       key: "environment",
       options: [
-        { value: EnvironmentType.PRODUCTION, label: "Production" },
-        { value: EnvironmentType.DEVELOPMENT, label: "Development" },
+        { value: EnvironmentType.PRODUCTION, label: m.env_production_label() },
+        {
+          value: EnvironmentType.DEVELOPMENT,
+          label: m.env_development_label(),
+        },
       ],
       selectedStore: envFilterStore,
       selected: envFilterStore.value,
@@ -109,19 +118,21 @@
       <DelayedSpinner isLoading={$getProjectVariables.isLoading} size="1rem" />
     {:else if $getProjectVariables.isError}
       <div class="text-red-500">
-        Error loading environment variables: {$getProjectVariables.error}
+        {m.env_error_loading()}
+        {$getProjectVariables.error}
       </div>
     {:else if $getProjectVariables.isSuccess}
       <div class="flex flex-col gap-3 w-full overflow-hidden">
         <div class="flex flex-col">
-          <RadixLarge>Environment variables</RadixLarge>
+          <RadixLarge>{m.env_page_title()}</RadixLarge>
           <p class="text-sm text-fg-tertiary font-medium">
-            Manage your environment variables here. <a
+            {m.env_page_description()}
+            <a
               href="https://docs.rilldata.com/guide/administration/project-settings/variables-and-credentials"
               target="_blank"
               class="text-primary-600 hover:text-primary-700 active:text-primary-800"
             >
-              Learn more ->
+              {m.env_learn_more()}
             </a>
           </p>
         </div>
@@ -131,7 +142,8 @@
           onClearAllFilters={handleClearAllFilters}
         >
           <Button type="primary" large onClick={() => (open = true)}>
-            <Plus size="16px" /> New key
+            <Plus size="16px" />
+            {m.env_new_key_button()}
           </Button>
         </TableToolbar>
         <EnvironmentVariablesTable

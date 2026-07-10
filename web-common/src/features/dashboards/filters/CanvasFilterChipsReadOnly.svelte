@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import TimeRangeReadOnly from "./TimeRangeReadOnly.svelte";
   import DimensionFilterReadOnlyChip from "./dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import MeasureFilterReadOnlyChip from "./measure-filters/MeasureFilterReadOnlyChip.svelte";
@@ -10,7 +11,8 @@
   export let timeStart: string | undefined = undefined;
   export let timeEnd: string | undefined = undefined;
   export let col = true;
-  export let ariaLabel: string | undefined = "Readonly Filter Chips";
+  export let ariaLabel: string | undefined =
+    m.dashboard_readonly_filter_chips_aria();
 
   $: ({ dimensionFilters, measureFilters } = uiFilters);
 </script>

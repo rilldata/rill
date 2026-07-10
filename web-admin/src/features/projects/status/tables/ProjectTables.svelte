@@ -30,6 +30,7 @@
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
   import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
 
@@ -87,11 +88,11 @@
 
   let filterGroups = $derived<FilterGroup[]>([
     {
-      label: "Type",
+      label: m.status_column_type(),
       key: "type",
       options: [
-        { label: "Table", value: "table" },
-        { label: "View", value: "view" },
+        { label: m.status_table_singular(), value: "table" },
+        { label: m.status_view_singular(), value: "view" },
       ],
       selectedStore: selectedTypesStore,
       selected: selectedTagsStore.value,
@@ -227,7 +228,7 @@
 
 <section class="flex flex-col gap-y-4 size-full">
   <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Tables</h2>
+    <h2 class="text-lg font-medium">{m.status_nav_tables()}</h2>
   </div>
 
   <TableToolbar
@@ -238,7 +239,7 @@
 
   {#if $tablesList.isError}
     <div class="text-red-500">
-      Error loading tables: {$tablesList.error?.message}
+      {m.status_error_loading_tables()}: {$tablesList.error?.message}
     </div>
   {:else}
     {@const isLoading =
@@ -247,7 +248,7 @@
     <!-- Models section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        Models{isLoading
+        {m.status_models_section()}{isLoading
           ? ""
           : ` (${modelTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
@@ -256,7 +257,7 @@
           class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-2 text-fg-secondary"
         >
           <DelayedSpinner isLoading={true} size="20px" />
-          <span class="text-sm">Loading models</span>
+          <span class="text-sm">{m.status_loading_models()}</span>
         </div>
       {:else if modelTables.length > 0}
         <ModelsTable
@@ -276,21 +277,21 @@
         >
           {#if allModelTables.length > 0}
             <span class="text-fg-secondary font-semibold text-sm">
-              No models match the current filters
+              {m.status_no_models_match_filters()}
             </span>
           {:else}
             <span class="text-fg-secondary font-semibold text-sm">
-              No models
+              {m.status_no_models()}
             </span>
             <span class="text-fg-muted text-sm">
-              Models are created in Rill Developer.
+              {m.status_models_created_in_developer()}
               <a
                 href="https://docs.rilldata.com/build/models/"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-primary-500 hover:text-primary-600"
               >
-                Learn more
+                {m.common_learn_more()}
               </a>
             </span>
           {/if}
@@ -301,7 +302,7 @@
     <!-- External Tables section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        External Tables{isLoading
+        {m.status_external_tables_section()}{isLoading
           ? ""
           : ` (${externalTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
@@ -310,7 +311,7 @@
           class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-2 text-fg-secondary"
         >
           <DelayedSpinner isLoading={true} size="20px" />
-          <span class="text-sm">Loading tables</span>
+          <span class="text-sm">{m.status_loading_tables()}</span>
         </div>
       {:else if externalTables.length > 0}
         <ExternalTablesTable tables={externalTables} isView={isViewMap} />
@@ -320,13 +321,12 @@
         >
           {#if allExternalTables.length > 0}
             <span class="text-fg-secondary font-semibold text-sm">
-              No external tables match the current filters
-              {#if selectedTagsStore.value.length > 0}(External tables do not
-                carry tags){/if}
+              {m.status_no_external_tables_match_filters()}
+              {#if selectedTagsStore.value.length > 0}({m.status_external_tables_no_tags()}){/if}
             </span>
           {:else}
             <span class="text-fg-secondary font-semibold text-sm">
-              No external tables
+              {m.status_no_external_tables()}
             </span>
             <span class="text-fg-muted text-sm">
               <a
@@ -335,7 +335,7 @@
                 rel="noopener noreferrer"
                 class="text-primary-500 hover:text-primary-600"
               >
-                Learn about connecting external OLAP engines
+                {m.status_learn_about_external_olap()}
               </a>
             </span>
           {/if}
@@ -350,9 +350,9 @@
           onClick={() => $tablesList.fetchNextPage()}
           disabled={$tablesList.isFetchingNextPage}
           loading={$tablesList.isFetchingNextPage}
-          loadingCopy="Loading..."
+          loadingCopy={m.status_loading()}
         >
-          Load more tables
+          {m.status_load_more_tables()}
         </Button>
       </div>
     {/if}
