@@ -4,6 +4,7 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -30,10 +31,10 @@
         if (redirectURL && redirectURL !== "") {
           window.location.href = decodeURIComponent(redirectURL);
         } else {
-          successMsg = "User code confirmed, this page can be closed now";
+          successMsg = m.auth_device_code_confirmed();
         }
       } else {
-        errorMsg = "User code confirmation failed";
+        errorMsg = m.auth_device_code_confirmation_failed();
         response.body
           .getReader()
           .read()
@@ -56,9 +57,9 @@
       },
     ).then((response) => {
       if (response.ok) {
-        errorMsg = "User code rejected, this page can be closed now";
+        errorMsg = m.auth_device_code_rejected();
       } else {
-        errorMsg = "User code rejection failed";
+        errorMsg = m.auth_device_code_rejection_failed();
         response.body
           .getReader()
           .read()
@@ -72,17 +73,15 @@
 </script>
 
 <svelte:head>
-  <meta name="description" content="User code confirmation" />
+  <meta name="description" content={m.auth_device_meta_description()} />
 </svelte:head>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <RillLogoSquareNegative size="84px" />
-    <h1 class="text-xl font-normal text-fg-primary">Authorize Rill CLI</h1>
+    <h1 class="text-xl font-normal text-fg-primary">{m.auth_authorize_rill_cli()}</h1>
     <p class="text-base text-fg-secondary text-center">
-      You are authenticating into Rill as <span
-        class="font-medium text-fg-secondary">{user.email}</span
-      >.<br />Please confirm this is the code displayed in the Rill CLI.
+      {m.auth_authenticating_as({ email: user.email })}<br />{m.auth_confirm_code_displayed()}
     </p>
     <div
       class="px-2 py-1 rounded-sm text-4xl tracking-widest bg-gray-100 text-fg-primary mb-5 font-mono"
@@ -97,7 +96,7 @@
           actionTaken = true;
           confirmUserCode();
         }}
-        disabled={actionTaken}>Confirm code</CtaButton
+        disabled={actionTaken}>{m.auth_confirm_code()}</CtaButton
       >
       <CtaButton
         variant="secondary"
@@ -105,7 +104,7 @@
           actionTaken = true;
           rejectUserCode();
         }}
-        disabled={actionTaken}>Cancel</CtaButton
+        disabled={actionTaken}>{m.common_cancel()}</CtaButton
       >
     </div>
 

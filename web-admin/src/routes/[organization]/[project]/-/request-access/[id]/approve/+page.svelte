@@ -12,6 +12,8 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import type { AxiosError } from "axios";
 
   $: organization = $page.params.organization;
@@ -34,7 +36,11 @@
       });
       eventBus.emit("notification", {
         type: "success",
-        message: `${$requestAccess.data.email} has been added to ${project} as a ${role}`,
+        message: m.auth_user_added_to_project({
+          email: $requestAccess.data.email,
+          project,
+          role,
+        }),
         options: {
           persisted: true,
         },
@@ -71,11 +77,13 @@
 
 <AccessRequestContainer>
   <CheckCircle size="40px" className="text-primary-500" />
-  <h2 class="text-lg font-normal">Grant access to this project</h2>
+  <h2 class="text-lg font-normal">{m.auth_grant_access_title()}</h2>
   {#if $requestAccess.data}
     <div class="text-fg-secondary text-base">
-      Select a role for <b>{$requestAccess.data.email}</b> to access the project
-      <b>{project}</b>.
+      {@html m.auth_grant_access_description({
+        email: `<b>${escapeHtml($requestAccess.data.email)}</b>`,
+        project: `<b>${escapeHtml(project)}</b>`,
+      })}
     </div>
     <Select
       bind:value={role}
@@ -94,7 +102,7 @@
       loading={$approveAccess.isPending}
       disabled={requested}
     >
-      Grant access
+      {m.auth_grant_access()}
     </Button>
   {/if}
 </AccessRequestContainer>

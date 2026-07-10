@@ -51,8 +51,11 @@
     error: projectParserError,
     isLoading: projectParserLoading,
   } = $projectParserQuery);
+  // Optional chaining guards against (1) fresh empty projects where projectParser
+  // state is not yet available, and (2) the dev deployment runtime returning a
+  // different response shape than production (the global $runtime store issue; see #8590).
   $: hasParseErrors =
-    projectParserData?.projectParser.state.parseErrors.length > 0;
+    (projectParserData?.projectParser?.state?.parseErrors?.length ?? 0) > 0;
 </script>
 
 {#if hasResourceErrorsLoading || projectParserLoading}

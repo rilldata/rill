@@ -32,24 +32,26 @@ export function resolveSignalTimeField(value: unknown, temporalField?: string) {
 export function resolveSignalIntervalField(
   value: unknown,
 ): { start: Date; end: Date } | undefined {
+  const checkAndCreateTimeRange = (
+    arr: unknown,
+  ): { start: Date; end: Date } | undefined => {
+    if (Array.isArray(arr) && arr.length === 2) {
+      const [start, end] = arr;
+      return { start: new Date(start), end: new Date(end) };
+    }
+    return undefined;
+  };
+
+  // Handle raw [date1, date2] array (e.g. from view.signal() on a brush temporal signal)
+  if (Array.isArray(value)) {
+    return checkAndCreateTimeRange(value);
+  }
+
   /**
    * Time range fields can be either 'ts' or end with '_ts'
    * We check for both cases and return a TimeRange if a valid array of two timestamps is found.
    */
   if (typeof value === "object" && value !== null) {
-    const checkAndCreateTimeRange = (
-      arr: unknown,
-    ): { start: Date; end: Date } | undefined => {
-      if (Array.isArray(arr) && arr.length === 2) {
-        const [start, end] = arr;
-        return {
-          start: new Date(start),
-          end: new Date(end),
-        };
-      }
-      return undefined;
-    };
-
     // Check for 'ts' key first
     if ("ts" in value) {
       return checkAndCreateTimeRange(value["ts"]);

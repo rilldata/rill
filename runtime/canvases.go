@@ -10,13 +10,28 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 )
 
+// CollectCanvasComponentNames collects the names of all components referenced by the given rows,
+// descending into tab groups (one level deep, since tabs cannot be nested).
+func CollectCanvasComponentNames(rows []*runtimev1.CanvasRow, out map[string]bool) {
+	for _, row := range rows {
+		for _, item := range row.Items {
+			out[item.Component] = true
+		}
+		if tg := row.GetTabGroup(); tg != nil {
+			for _, tab := range tg.Tabs {
+				CollectCanvasComponentNames(tab.Rows, out)
+			}
+		}
+	}
+}
+
 type ResolveCanvasResult struct {
 	Canvas                 *runtimev1.Resource
 	ResolvedComponents     map[string]*runtimev1.Resource
 	ReferencedMetricsViews map[string]*runtimev1.Resource
 }
 
-func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, claims *SecurityClaims) (*ResolveCanvasResult, error) {
+func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, claims *SecurityClaims, unsafe bool) (*ResolveCanvasResult, error) {
 	// Find the canvas resource
 	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
@@ -36,8 +51,13 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 		return nil, ErrForbidden
 	}
 
-	// Exit early if the canvas is not valid
+	// Use the valid spec if available. If unsafe is set, fall back to the unvalidated spec.
+	// unsafe is only sent by the visual editor in Rill Developer; it must never be set by Rill Cloud,
+	// read-only previews, shared token access, or embedded viewers.
 	spec := res.GetCanvas().State.ValidSpec
+	if spec == nil && unsafe {
+		spec = res.GetCanvas().Spec
+	}
 	if spec == nil {
 		return &ResolveCanvasResult{
 			Canvas: res,
@@ -46,25 +66,22 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 
 	components := make(map[string]*runtimev1.Resource)
 
-	for _, row := range spec.Rows {
-		for _, item := range row.Items {
-			// Skip if already resolved.
-			if _, ok := components[item.Component]; ok {
-				continue
-			}
+	// Collect all referenced component names, descending into tab groups.
+	componentNames := make(map[string]bool)
+	CollectCanvasComponentNames(spec.Rows, componentNames)
 
-			// Get component resource.
-			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: item.Component}, false)
-			if err != nil {
-				if errors.Is(err, drivers.ErrResourceNotFound) {
-					return nil, fmt.Errorf("component %q in valid spec not found", item.Component)
-				}
-				return nil, err
+	for componentName := range componentNames {
+		// Get component resource.
+		cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: componentName}, false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				return nil, fmt.Errorf("component %q in valid spec not found", componentName)
 			}
-
-			// Add to map without resolving templates. Use ResolveTemplatedString RPC for template resolution.
-			components[item.Component] = cmp
+			return nil, err
 		}
+
+		// Add to map without resolving templates. Use ResolveTemplatedString RPC for template resolution.
+		components[componentName] = cmp
 	}
 
 	// Extract metrics view names from components
@@ -72,6 +89,9 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 	metricsViews := make(map[string]bool)
 	for _, cmp := range components {
 		validSpec := cmp.GetComponent().State.ValidSpec
+		if validSpec == nil && unsafe {
+			validSpec = cmp.GetComponent().Spec
+		}
 		if validSpec == nil || validSpec.RendererProperties == nil {
 			continue
 		}

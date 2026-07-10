@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceRequestProjectAccess,
@@ -9,6 +10,8 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
@@ -25,8 +28,13 @@
     const rpcError = ($requestAccess.error as unknown as AxiosError<RpcStatus>)
       .response.data;
     if (rpcError) {
-      // do not show error if already requested invite
-      if (rpcError.code !== 6) errorMessage = rpcError.message;
+      if (rpcError.code === 9) {
+        // FailedPrecondition: the user already has access, so send them to the project.
+        void goto(`/${organization}/${project}`);
+      } else if (rpcError.code !== 6) {
+        // do not show error if already requested invite (AlreadyExists)
+        errorMessage = rpcError.message;
+      }
     } else {
       errorMessage = $requestAccess.error.toString();
     }
@@ -51,9 +59,11 @@
     size="40px"
     className={requested ? "text-fg-secondary" : "text-primary-600"}
   />
-  <h2 class="text-lg font-normal">Request access to this project</h2>
+  <h2 class="text-lg font-normal">{m.auth_request_access_title()}</h2>
   <div class="text-fg-secondary text-base">
-    You can view <b>{project}</b> once your request is approved.
+    {@html m.auth_request_access_description({
+      project: `<b>${escapeHtml(project)}</b>`,
+    })}
   </div>
   <Button
     type="primary"
@@ -62,15 +72,15 @@
     loading={isPending}
     disabled={requested}
   >
-    {#if requested}<Check />Access requested{:else}Request access{/if}
+    {#if requested}<Check
+      />{m.auth_access_requested()}{:else}{m.auth_request_access()}{/if}
   </Button>
   {#if requested && !isPending}
     {#if errorMessage}
       <div>{errorMessage}</div>
     {:else}
       <div class="text-fg-secondary">
-        Your request has been sent to the project admin. You’ll get an email
-        when it’s approved.
+        {m.auth_request_sent()}
       </div>
     {/if}
   {/if}

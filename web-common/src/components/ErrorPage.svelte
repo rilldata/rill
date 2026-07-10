@@ -1,11 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import { isEmbedPage } from "../layout/navigation/navigation-utils";
   import AlertCircleOutline from "./icons/AlertCircleOutline.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let statusCode: number | null | undefined = undefined;
   export let header: string;
@@ -28,10 +29,13 @@
     {/if}
     <h2 class="header">{header}</h2>
     <CtaMessage>{body}</CtaMessage>
-    {#if !fatal && !onEmbedPage}
-      <a {href} class="back-link">
-        <CtaButton variant="secondary">Back to home</CtaButton>
-      </a>
+    {#if (!fatal && !onEmbedPage) || $$slots.cta}
+      <div class="cta-actions">
+        <slot name="cta" />
+        {#if !fatal && !onEmbedPage}
+          <Button type="ghost" {href}>{m.error_back_to_home()}</Button>
+        {/if}
+      </div>
     {/if}
     {#if detail}
       <section class="detail-section">
@@ -40,9 +44,9 @@
           onclick={() => (showDetail = !showDetail)}
         >
           {#if !showDetail}
-            Show details
+            {m.error_show_details()}
           {:else}
-            Hide details
+            {m.error_hide_details()}
           {/if}
         </button>
         {#if showDetail}
@@ -65,8 +69,8 @@
     @apply text-lg font-semibold;
   }
 
-  .back-link {
-    @apply no-underline;
+  .cta-actions {
+    @apply flex flex-col items-center gap-y-3;
   }
 
   .detail-section {

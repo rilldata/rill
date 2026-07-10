@@ -1,12 +1,15 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
+  import RenameAssetModal from "@rilldata/web-common/features/entity-management/actions/RenameAssetModal.svelte";
+  import {
+    navigateToFile,
+    navigateToHome,
+  } from "@rilldata/web-common/layout/navigation/editor-routing";
   import {
     deleteFileArtifact,
     duplicateFileArtifact,
     renameFileArtifact,
-  } from "@rilldata/web-common/features/entity-management/actions";
+  } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     getTopLevelFolder,
@@ -15,7 +18,6 @@
   import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmationDialog.svelte";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import { navEntryDragDropStore } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
-  import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -24,6 +26,11 @@
   import NavDirectory from "./NavDirectory.svelte";
   import { findDirectory, transformFileList } from "./transform-file-list";
   import QuickView from "@rilldata/web-common/features/resource-graph/quick-view/QuickView.svelte";
+  import {
+    isPinned,
+    isProtectedDirectory,
+    isManaged,
+  } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   export let hasUnsaved: boolean;
 
@@ -82,7 +89,7 @@
 
     try {
       const newFilePath = await duplicateFileArtifact(runtimeClient, filePath);
-      await goto(`/files${newFilePath}`);
+      await navigateToFile(newFilePath);
     } catch {
       eventBus.emit("notification", {
         message: `Failed to copy ${filePath}`,
@@ -106,7 +113,7 @@
     }
     await deleteFileArtifact(runtimeClient, filePath);
     if (isCurrentActivePage(filePath, isDir)) {
-      await goto("/");
+      await navigateToHome();
     }
   }
 
@@ -114,7 +121,7 @@
     await deleteFileArtifact(runtimeClient, forceDeletePath, true);
     // onForceDelete is only called on folders, so isDir is always true
     if (isCurrentActivePage(forceDeletePath, true)) {
-      await goto("/");
+      await navigateToHome();
     }
   }
 
@@ -129,16 +136,22 @@
 
     if (fromPath !== newFilePath) {
       const newTopLevelPath = getTopLevelFolder(newFilePath);
-      if (PROTECTED_DIRECTORIES.includes(newTopLevelPath)) {
+      if (isProtectedDirectory(newTopLevelPath)) {
         eventBus.emit("notification", {
           message: "cannot move to restricted directories",
+        });
+        return;
+      }
+      if (isPinned(newFilePath) || isManaged(newFilePath)) {
+        eventBus.emit("notification", {
+          message: "cannot rename to a restricted file",
         });
         return;
       }
       await renameFileArtifact(runtimeClient, fromPath, newFilePath);
 
       if (isCurrentFile) {
-        await goto(`/files${newFilePath}`);
+        await navigateToFile(newFilePath);
       }
     }
   }
@@ -176,6 +189,17 @@
       onMouseDown={(e, dragData) =>
         navEntryDragDropStore.onMouseDown(e, dragData)}
     />
+  {:else if $getFileTree.isLoading}
+    <div class="flex flex-col gap-y-1.5 w-full px-2 py-2">
+      {#each [0.7, 0.5, 0.8, 0.6, 0.55, 0.65] as width}
+        <div
+          class="h-5 bg-gray-200 animate-pulse rounded"
+          style:width="{width * 100}%"
+        ></div>
+      {/each}
+    </div>
+  {:else if $getFileTree.isError}
+    <div class="px-2 py-3 text-xs text-fg-muted">Failed to load files</div>
   {/if}
 </ul>
 

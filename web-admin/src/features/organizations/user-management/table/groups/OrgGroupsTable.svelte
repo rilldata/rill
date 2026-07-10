@@ -6,6 +6,7 @@
   import GroupCompositeCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupCompositeCell.svelte";
   import GroupProjectsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupProjectsCell.svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let data: V1MemberUsergroup[];
@@ -24,7 +25,7 @@
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
       accessorKey: "groupName",
-      header: "Group",
+      header: m.groups_table_header_group(),
       enableSorting: true,
       sortDescFirst: true,
       cell: ({ row }) =>
@@ -78,5 +79,5 @@
   {isFetchingNextPage}
   {onLoadMore}
   maxHeight={dynamicTableMaxHeight}
-  emptyStateMessage="No groups found"
+  emptyStateMessage={m.groups_table_empty()}
 />

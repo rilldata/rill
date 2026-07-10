@@ -83,6 +83,7 @@
     ? '10'
     : '4'} pr-5 pb-2 flex justify-between text-fg-secondary pt-1"
   class:flex-col={containerWidth < 325}
+  aria-label="Column profile for {objectName}"
 >
   <select bind:value={sortMethod} class={native_select} style:font-size="11px">
     <option value={sortByOriginalOrder}>show original order</option>

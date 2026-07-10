@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -30,8 +30,6 @@
 
   $: sourceName = extractFileName(sourcePath ?? "");
 
-  $: ({ instanceId } = runtimeClient);
-
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
     sourceQuery = fileArtifact.getResource(queryClient);
@@ -42,7 +40,6 @@
     sourcePath !== null
       ? useCreateMetricsViewWithCanvasAndExploreUIAction(
           runtimeClient,
-          instanceId,
           sinkConnector as string,
           "",
           "",
@@ -57,7 +54,7 @@
   }
 
   async function goToSource() {
-    await goto(`/files${sourcePath ?? ""}`);
+    await navigateToFile(sourcePath ?? "");
     close();
   }
 

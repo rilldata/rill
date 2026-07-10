@@ -49,7 +49,7 @@
     resourceKind={ResourceKind.Source}
     filePath={table}
   >
-    <svelte:fragment let:width={headerWidth} slot="cta">
+    {#snippet cta(headerWidth: number)}
       {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
         <Button onClick={createMetricsViewFromTable} type="primary">
@@ -63,6 +63,6 @@
           </ResponsiveButtonText>
         </Button>
       </PanelCTA>
-    </svelte:fragment>
+    {/snippet}
   </WorkspaceHeader>
 </div>

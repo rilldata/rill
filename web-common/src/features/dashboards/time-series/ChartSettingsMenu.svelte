@@ -7,11 +7,20 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
+  import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
+  import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let connectNulls: boolean;
-  export let forceLineChart: boolean;
   export let dynamicYAxisScale: boolean;
-  export let showForceLineChart = true;
+  export let showChartTypeSelector = true;
+  export let chartType: TDDChart = TDDChart.DEFAULT;
+  export let hasComparison = false;
+  export let exploreName = "";
+  export let onChartTypeChange: ((type: TDDChart) => void) | undefined =
+    undefined;
+  export let onDynamicYAxisScaleChange: ((value: boolean) => void) | undefined =
+    undefined;
 
   let open = false;
 </script>
@@ -25,33 +34,44 @@
   <PopoverContent
     align="start"
     side="bottom"
-    class="flex flex-col gap-y-2 w-[220px] px-3.5 py-2.5"
+    class="flex flex-col gap-y-2 w-[260px] px-3.5 py-2.5"
   >
-    <div class="flex flex-row items-center justify-between gap-x-2">
-      <span>Connect sparse data</span>
+    {#if showChartTypeSelector}
+      <div class="flex flex-col gap-y-2">
+        <span>{m.dashboard_always_show_as()}</span>
+        <ChartTypeSelector
+          {exploreName}
+          {chartType}
+          {hasComparison}
+          {onChartTypeChange}
+        />
+      </div>
+    {/if}
+    <div class="popover-item">
+      <span>{m.dashboard_connect_sparse_data()}</span>
       <Switch
         small
         checked={connectNulls}
         onCheckedChange={() => (connectNulls = !connectNulls)}
       />
     </div>
-    {#if showForceLineChart}
-      <div class="flex flex-row items-center justify-between gap-x-2">
-        <span>Always show as line chart</span>
-        <Switch
-          small
-          checked={forceLineChart}
-          onCheckedChange={() => (forceLineChart = !forceLineChart)}
-        />
-      </div>
-    {/if}
-    <div class="flex flex-row items-center justify-between gap-x-2">
-      <span>Dynamic Y-axis scale</span>
+    <div class="popover-item">
+      <span>{m.dashboard_dynamic_y_axis()}</span>
       <Switch
         small
         checked={dynamicYAxisScale}
-        onCheckedChange={() => (dynamicYAxisScale = !dynamicYAxisScale)}
+        onCheckedChange={() => {
+          dynamicYAxisScale = !dynamicYAxisScale;
+          onDynamicYAxisScaleChange?.(dynamicYAxisScale);
+        }}
       />
     </div>
   </PopoverContent>
 </Popover>
+
+<style lang="postcss">
+  .popover-item {
+    @apply flex flex-row items-center justify-between;
+    @apply gap-x-2 h-6;
+  }
+</style>

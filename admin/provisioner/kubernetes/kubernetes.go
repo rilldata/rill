@@ -10,9 +10,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/c2h5oh/datasize"
@@ -31,6 +33,12 @@ import (
 	netv1ac "k8s.io/client-go/applyconfigurations/networking/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+)
+
+var (
+	invalidChars    = regexp.MustCompile(`[^a-z0-9._-]+`)
+	leadingInvalid  = regexp.MustCompile(`^[^a-z0-9]+`)
+	trailingInvalid = regexp.MustCompile(`[^a-z0-9]+$`)
 )
 
 func init() {
@@ -110,6 +118,7 @@ func NewKubernetes(specJSON []byte, db database.DB, logger *zap.Logger) (provisi
 	funcMap := sprig.TxtFuncMap()
 	delete(funcMap, "env")
 	delete(funcMap, "expandenv")
+	funcMap["sanitizeLabel"] = sanitizeLabel
 
 	// Define template files
 	templateFiles := []string{
@@ -183,6 +192,12 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	// Create unique host
 	host := p.getHost(provisionID)
 
+	// Compute storage. If an override is provided on the project, it takes precedence over the slot-based default.
+	storageBytes := 40 * int64(args.Slots) * int64(datasize.GB)
+	if args.OverrideDiskGB != nil && *args.OverrideDiskGB > 0 {
+		storageBytes = *args.OverrideDiskGB * int64(datasize.GB)
+	}
+
 	// Define template data
 	data := &TemplateData{
 		ImageTag:     version,
@@ -191,7 +206,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 		Host:         strings.Split(host, "//")[1], // Remove protocol
 		CPU:          1 * args.Slots,
 		MemoryGB:     4 * args.Slots,
-		StorageBytes: 40 * int64(args.Slots) * int64(datasize.GB),
+		StorageBytes: storageBytes,
 		Slots:        args.Slots,
 		Names:        names,
 		Annotations:  opts.Annotations,
@@ -297,6 +312,50 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	}, nil
 }
 
+func (p *KubernetesProvisioner) Hibernate(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
+	// Parse the existing state
+	state, err := newRuntimeState(r.State)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get Kubernetes resource names
+	provisionID := getProvisionID(r.ID)
+	names := p.getResourceNames(provisionID)
+
+	// Common delete options
+	delPolicy := metav1.DeletePropagationForeground
+	delOptions := metav1.DeleteOptions{
+		PropagationPolicy: &delPolicy,
+	}
+
+	// Delete everything except the PVC.
+	err1 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Delete(ctx, names.HTTPIngress, delOptions)
+	err2 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Delete(ctx, names.GRPCIngress, delOptions)
+	err3 := p.clientset.CoreV1().Services(p.Spec.Namespace).Delete(ctx, names.Service, delOptions)
+	err4 := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Delete(ctx, names.Deployment, delOptions)
+
+	// We ignore not-found errors for idempotency.
+	errs := []error{err1, err2, err3, err4}
+	for i := range errs {
+		if k8serrs.IsNotFound(errs[i]) {
+			errs[i] = nil
+		}
+	}
+	if err := multierr.Combine(errs...); err != nil {
+		return nil, err
+	}
+
+	state.Hibernated = true
+
+	return &provisioner.Resource{
+		ID:     r.ID,
+		Type:   r.Type,
+		State:  state.AsMap(),
+		Config: r.Config,
+	}, nil
+}
+
 func (p *KubernetesProvisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
 	// Get Kubernetes resource names
 	provisionID := getProvisionID(r.ID)
@@ -383,9 +442,15 @@ func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisione
 		return nil, err
 	}
 
-	// Get the Kubernetes deployment
 	provisionID := getProvisionID(r.ID)
 	names := p.getResourceNames(provisionID)
+
+	// When hibernated, we skip the check.
+	if state.Hibernated {
+		return r, nil
+	}
+
+	// Get the Kubernetes deployment
 	depl, err := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -393,9 +458,10 @@ func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisione
 
 	// Determine if we should re-provision, and exit early if not
 	trigger := false
-	trigger = trigger || state.Version != opts.RillVersion                                                         // Version changed
-	trigger = trigger || depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum                  // Templates changed
-	trigger = trigger || depl.ObjectMeta.Annotations["organization_plan"] != opts.Annotations["organization_plan"] // Billing plan changed
+	trigger = trigger || state.Version != opts.RillVersion                                                                           // Version changed
+	trigger = trigger || depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum                                    // Templates changed
+	trigger = trigger || depl.ObjectMeta.Annotations["organization_plan"] != opts.Annotations["organization_plan"]                   // Billing plan changed
+	trigger = trigger || depl.ObjectMeta.Annotations["organization_custom_domain"] != opts.Annotations["organization_custom_domain"] // Custom domain changed
 
 	if !trigger {
 		return r, nil
@@ -434,8 +500,9 @@ func getProvisionID(resourceID string) string {
 
 // runtimeState describes the Kubernetes provisioner's state for a provisioned runtime resource.
 type runtimeState struct {
-	Slots   int    `mapstructure:"slots"`
-	Version string `mapstructure:"version"`
+	Slots      int    `mapstructure:"slots"`
+	Version    string `mapstructure:"version"`
+	Hibernated bool   `mapstructure:"hibernated,omitempty"`
 }
 
 func newRuntimeState(state map[string]any) (*runtimeState, error) {
@@ -454,4 +521,25 @@ func (r *runtimeState) AsMap() map[string]any {
 		panic(err)
 	}
 	return res
+}
+
+// sanitizeLabel takes an input string and transforms it into a valid Kubernetes label
+func sanitizeLabel(input string) string {
+	// Normalize case
+	v := strings.ToLower(input)
+
+	// Replace invalid chars
+	v = invalidChars.ReplaceAllString(v, "-")
+
+	// Truncate to 63 chars (safe for UTF-8)
+	if utf8.RuneCountInString(v) > 63 {
+		runes := []rune(v)
+		v = string(runes[:63])
+	}
+
+	// Strip leading/trailing non-alphanumeric
+	v = leadingInvalid.ReplaceAllString(v, "")
+	v = trailingInvalid.ReplaceAllString(v, "")
+
+	return v
 }

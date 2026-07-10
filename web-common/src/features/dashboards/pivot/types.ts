@@ -31,6 +31,7 @@ export interface PivotDataState {
   reachedEndForRowData?: boolean;
   totalsRowData?: PivotDataRow;
   activeCellFilters?: PivotFilter;
+  columnDimensionAxes?: Record<string, string[]>;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;
@@ -57,6 +58,8 @@ export interface PivotState {
   enableComparison: boolean;
   tableMode: PivotTableMode;
   activeCell: PivotCell | null;
+  showTotalsColumn: boolean;
+  showTotalsRow: boolean;
   rowLimit?: number;
   outermostRowLimit?: number; // Local limit for outermost dimension only
   nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
@@ -67,7 +70,7 @@ export type PivotTableMode = "flat" | "nest";
 export interface PivotDataRow {
   subRows?: PivotDataRow[];
 
-  [key: string]: string | number | PivotDataRow[] | undefined;
+  [key: string]: string | number | null | PivotDataRow[] | undefined;
 }
 
 export interface TimeFilters {
@@ -94,6 +97,7 @@ export interface PivotQueryError {
  * This is the config that is passed to the pivot data store methods
  */
 export interface PivotDataStoreConfig {
+  ready?: boolean;
   measureNames: string[];
   rowDimensionNames: string[];
   colDimensionNames: string[];

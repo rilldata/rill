@@ -78,27 +78,10 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, priority int) (float64, error) {
-	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
-	var qryString string
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
-		qryString = "SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s"
-	case drivers.DialectClickHouse:
-		qryString = "SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s)) AS iqr, uniq(%s) AS count, (max(%s) - min(%s)) AS range FROM %s"
-	case drivers.DialectStarRocks:
-		qryString = "SELECT (percentile_approx(%s, 0.75)-percentile_approx(%s, 0.25)) AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s)) AS `range` FROM %s"
-	default:
-		return 0, fmt.Errorf("unsupported dialect %v", olap.Dialect())
+	querySQL, err := olap.Dialect().ColumnNumericHistogramBucket(q.Database, q.DatabaseSchema, q.TableName, q.ColumnName)
+	if err != nil {
+		return 0, err
 	}
-	querySQL := fmt.Sprintf(qryString,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
-	)
-
 	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            querySQL,
 		Priority:         priority,
@@ -147,11 +130,11 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
+	if olap.Dialect().String() != drivers.DialectNameDuckDB && olap.Dialect().String() != drivers.DialectNameClickHouse && olap.Dialect().String() != drivers.DialectNameStarRocks {
 		return fmt.Errorf("not available for dialect %q", olap.Dialect())
 	}
 
-	if olap.Dialect() == drivers.DialectClickHouse {
+	if olap.Dialect().String() == drivers.DialectNameClickHouse {
 		// Returning early with empty results because this query tends to hang on ClickHouse.
 		return nil
 	}
@@ -176,7 +159,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 
 	// StarRocks uses CAST() function instead of ::TYPE syntax
 	var selectColumn string
-	if olap.Dialect() == drivers.DialectStarRocks {
+	if olap.Dialect().String() == drivers.DialectNameStarRocks {
 		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
@@ -187,7 +170,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	// StarRocks: CAST(column AS DOUBLE)
 	// DuckDB/ClickHouse: column::DOUBLE
 	var bucketColumn string
-	if olap.Dialect() == drivers.DialectStarRocks {
+	if olap.Dialect().String() == drivers.DialectNameStarRocks {
 		bucketColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", rangeNumbersCol(olap.Dialect()))
 	} else {
 		bucketColumn = rangeNumbersCol(olap.Dialect()) + "::DOUBLE"
@@ -200,10 +183,10 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
           WITH data_table AS (
             SELECT %[1]s as %[2]s
             FROM %[3]s
-            WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
+            WHERE `+olap.Dialect().IsNonNullFinite(q.ColumnName)+`
           ), `+valuesAlias+` AS (
             SELECT %[2]s as value from data_table
-            WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
+            WHERE `+olap.Dialect().IsNonNullFinite(q.ColumnName)+`
           ), buckets AS (
             SELECT
               `+bucketColumn+` as bucket,
@@ -290,11 +273,11 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
+	if olap.Dialect().String() != drivers.DialectNameDuckDB && olap.Dialect().String() != drivers.DialectNameClickHouse && olap.Dialect().String() != drivers.DialectNameStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if olap.Dialect() == drivers.DialectClickHouse {
+	if olap.Dialect().String() == drivers.DialectNameClickHouse {
 		// Returning early with empty results because this query tends to hang on ClickHouse.
 		return nil
 	}
@@ -322,7 +305,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 
 	// StarRocks uses implicit type conversion instead of ::TYPE syntax
 	var castDouble, castFloat string
-	if olap.Dialect() == drivers.DialectStarRocks {
+	if olap.Dialect().String() == drivers.DialectNameStarRocks {
 		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 		castDouble = ""
 		castFloat = ""
@@ -341,7 +324,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		WITH data_table AS (
 			SELECT %[1]s as %[2]s
 			FROM %[3]s
-			WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
+			WHERE `+olap.Dialect().IsNonNullFinite(q.ColumnName)+`
 		), S AS (
 			SELECT
 				min(%[2]s) as minVal,
@@ -440,7 +423,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 
 	// StarRocks uses CAST() instead of ::TYPE syntax
 	var selectColumn string
-	if olap.Dialect() == drivers.DialectStarRocks {
+	if olap.Dialect().String() == drivers.DialectNameStarRocks {
 		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
 		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -456,7 +439,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 				max(%[2]s) AS max,
 				max(%[2]s) - min(%[2]s) AS `+rangeAlias+`
 			FROM %[1]s
-			WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
+			WHERE `+olap.Dialect().IsNonNullFinite(columnName)+`
 		`,
 		olap.Dialect().EscapeTable(database, databaseSchema, tableName),
 		selectColumn,
@@ -489,19 +472,4 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 	minMaxRow.Close()
 
 	return minVal, maxVal, rng, nil
-}
-
-func isNonNullFinite(d drivers.Dialect, floatCol string) string {
-	switch d {
-	case drivers.DialectClickHouse:
-		return fmt.Sprintf("%s IS NOT NULL AND isFinite(%s)", floatCol, floatCol)
-	case drivers.DialectDuckDB:
-		return fmt.Sprintf("%s IS NOT NULL AND NOT isinf(%s)", floatCol, floatCol)
-	case drivers.DialectStarRocks:
-		// StarRocks doesn't have isinf(), use range check to filter Infinity
-		// -1e308 to 1e308 covers all finite DOUBLE values
-		return fmt.Sprintf("%s IS NOT NULL AND %s > -1e308 AND %s < 1e308", floatCol, floatCol, floatCol)
-	default:
-		return "1=1"
-	}
 }

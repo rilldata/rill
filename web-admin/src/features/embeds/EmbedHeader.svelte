@@ -6,11 +6,16 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    dashboardChatActions,
+    dashboardChatOpen,
+  } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
   import type {
     V1Resource,
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let activeResource: V1ResourceName;
   export let navigationEnabled: boolean = true;
@@ -56,7 +61,7 @@
           {#if !onProjectPage}
             <div class="flex gap-x-2">
               <a class="text-fg-muted hover:text-fg-secondary" href="/-/embed">
-                Home
+                {m.embed_home()}
               </a>
               <span class="text-fg-muted">/</span>
             </div>
@@ -87,7 +92,7 @@
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />
-        <ChatToggle />
+        <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       </div>
     {/if}
   </div>

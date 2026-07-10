@@ -1,0 +1,17 @@
+import { projectWelcomeStatus } from "@rilldata/web-admin/features/welcome/project/welcome-status.ts";
+import { redirect } from "@sveltejs/kit";
+import {
+  extractBranchFromPath,
+  injectBranchIntoPath,
+} from "@rilldata/web-admin/features/branches/branch-utils.ts";
+
+export const load = ({ params: { organization, project }, url }) => {
+  if (!projectWelcomeStatus.isProjectWelcomeStep(project)) {
+    const branch = extractBranchFromPath(url.pathname);
+    if (!branch) return;
+    throw redirect(
+      307,
+      injectBranchIntoPath(`/${organization}/${project}/-/edit`, branch),
+    );
+  }
+};

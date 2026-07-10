@@ -84,6 +84,23 @@ dimensions:
 
 **Naming**: Each dimension needs a `name` (stable identifier used in APIs and references), which defaults to `column:` if provided. The `display_name:` is optional, and defaults to a humanized version of `name` if not specified.
 
+**Type**: Rill can infer the dimension type (categorical, time, geo) from the underlying SQL data type. Do not set `type:` explicitly unless you have a specific reason to override the inferred type.
+
+**Clickable URLs**: The optional `uri:` property marks a dimension as a clickable link for single-click navigation. It accepts either a boolean (when the dimension's own value is already a URL) or a SQL expression that produces the URL. It is a distinct property from `column:` and `expression:` and can be combined with `column:`:
+
+```yaml
+dimensions:
+  # The column's values are already URLs
+  - name: page_url
+    column: page_url
+    uri: true
+
+  # Build the URL from another column while still grouping by that column
+  - name: user_uri
+    column: user_name
+    uri: concat('https://example.com/', user_name)
+```
+
 ### Measures
 
 Measures are aggregation expressions that compute numeric values when grouped by dimensions. They must use aggregate functions like `SUM()`, `COUNT()`, `AVG()`, `MIN()`, `MAX()`.

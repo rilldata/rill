@@ -6,7 +6,7 @@ import {
   wrapRetryAssertion,
 } from "./commonHelpers";
 import { createModel } from "./modelHelpers";
-import { uploadFile, waitForSource } from "./sourceHelpers";
+import { createSourceV2 } from "./sourceHelpers";
 
 export interface TimeSeriesValue {
   ts: string;
@@ -24,12 +24,8 @@ export const AD_BIDS_EXPLORE_PATH =
 
 export async function createAdBidsModel(page: Page) {
   await Promise.all([
-    waitForSource(page, "/models/AdBids.yaml", [
-      "publisher",
-      "domain",
-      "timestamp",
-    ]),
-    uploadFile(page, "AdBids.csv"),
+    waitForProfiling(page, "AdBids", ["publisher", "domain", "timestamp"]),
+    createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml"),
   ]);
 
   await createModel(page, "AdBids_model.sql");

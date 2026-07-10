@@ -189,6 +189,7 @@
 </script>
 
 <ProfileContainer
+  {columnName}
   {active}
   {compact}
   emphasize={active}

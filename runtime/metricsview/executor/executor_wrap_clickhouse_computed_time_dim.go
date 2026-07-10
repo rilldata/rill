@@ -15,7 +15,7 @@ import (
 // Another example, if there is an expression like date_trunc('day', "TIME_DIM") AS "TIME_DIM", and if "TIME_DIM" is used in where clause then it will use the underlying "TIME_DIM" column not the truncated one.
 // Relevant issue - https://github.com/ClickHouse/ClickHouse/issues/9715
 func (e *Executor) wrapClickhouseComputedTimeDim(ast *metricsview.AST) error {
-	if e.olap.Dialect() != drivers.DialectClickHouse {
+	if e.olap.Dialect().String() != drivers.DialectNameClickHouse {
 		return nil
 	}
 

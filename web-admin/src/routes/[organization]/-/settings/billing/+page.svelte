@@ -7,18 +7,45 @@
   import BillingContactSetting from "@rilldata/web-admin/features/billing/contact/BillingContactSetting.svelte";
   import Payment from "@rilldata/web-admin/features/billing/Payment.svelte";
   import Plan from "@rilldata/web-admin/features/billing/plans/Plan.svelte";
+  import {
+    isEnterprisePlan,
+    PaidPlanTypes,
+  } from "@rilldata/web-admin/features/billing/plans/utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { PageData } from "./$types";
+  import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
+  import PlanActions from "@rilldata/web-admin/features/billing/plans/PlanActions.svelte";
 
-  export let data: PageData;
+  let { data }: { data: PageData } = $props();
 
-  $: ({ organization, showUpgradeDialog } = data);
+  let organization = $derived(data.organization);
+  let categorisedIssues = $derived(
+    useCategorisedOrganizationBillingIssues(organization),
+  );
 
-  $: allStatus = mergedQueryStatus([
+  let showUpgradeDialog = $derived(data.showUpgradeDialog);
+  let billingPortalUrl = $derived(data.billingPortalUrl);
+  let subscriptionQuery = $derived(
     createAdminServiceGetBillingSubscription(organization),
-    createAdminServiceListOrganizationBillingIssues(organization),
-  ]);
+  );
+  let planType = $derived(
+    $subscriptionQuery?.data?.subscription?.plan?.planType,
+  );
+  let isPaidPlan = $derived(
+    PaidPlanTypes[planType] ||
+      // Enterprise plans are allowed to manage payment details only
+      isEnterprisePlan(
+        $subscriptionQuery?.data?.subscription?.plan?.name ?? "",
+      ),
+  );
+
+  let allStatus = $derived(
+    mergedQueryStatus([
+      subscriptionQuery,
+      createAdminServiceListOrganizationBillingIssues(organization),
+    ]),
+  );
 </script>
 
 <!-- Both the queries are used in both Plan and Payment.
@@ -26,7 +53,14 @@
 {#if $allStatus.isLoading}
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
-  <Plan {organization} {showUpgradeDialog} />
-  <Payment {organization} />
-  <BillingContactSetting {organization} />
+  <div class="flex flex-col gap-8">
+    {#if !$categorisedIssues.data?.neverSubscribed}
+      <Plan {organization} {showUpgradeDialog} {billingPortalUrl} />
+    {/if}
+    {#if isPaidPlan}
+      <Payment {organization} />
+    {/if}
+    <BillingContactSetting {organization} />
+    <PlanActions {organization} />
+  </div>
 {/if}

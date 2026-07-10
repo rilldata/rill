@@ -10,6 +10,39 @@ export interface HTTPError {
   traceId?: string;
 }
 
+const NetworkErrorMessages = [
+  "network error",
+  "failed to fetch",
+  "fetch failed",
+  "load failed",
+  "networkerror when attempting to fetch resource",
+];
+
+/**
+ * Returns true if the error looks like a client-side transport failure.
+ * Handles Axios network errors, fetch/TypeError failures, and ConnectRPC
+ * Unavailable errors that wrap browser fetch failures.
+ */
+export function isNetworkError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const e = error as Record<string, unknown>;
+
+  // Axios uses this code for transport failures with no HTTP response.
+  if (e.code === "ERR_NETWORK" && !e.response) return true;
+
+  // If the server responded, this is an HTTP/application error, not a browser
+  // transport failure.
+  if (e.response || typeof e.status === "number") return false;
+
+  // extractErrorMessage reads ConnectRPC rawMessage first, so a ConnectRPC
+  // Unavailable (code 14) that wraps a fetch failure is caught here too. We
+  // match on the fetch/network shaped message rather than code 14 itself so
+  // that normal server 503s are not treated as browser offline.
+  const message = extractErrorMessage(error).toLowerCase();
+  return NetworkErrorMessages.some((value) => message.includes(value));
+}
+
 export function isHTTPError(error: unknown): error is HTTPError {
   return (
     typeof error === "object" &&
@@ -42,6 +75,27 @@ export function isNotFoundError(error: unknown): boolean {
   )
     return true;
   return false;
+}
+
+const ControllerIsClosedError = "controller is closed";
+
+/**
+ * Returns true if the error is a ConnectRPC Unavailable error (code 14).
+ * Works for any error shape: ConnectError, Axios/REST, or plain objects.
+ */
+export function isControllerClosedError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  // ConnectError: { code: 14 }
+  if (e.code === 14)
+    return typeof e.message === "string"
+      ? e.message.includes(ControllerIsClosedError)
+      : false;
+  const respMessage = (e as { response: { data: { message: unknown } } })
+    .response?.data?.message;
+  return typeof respMessage === "string"
+    ? respMessage.includes(ControllerIsClosedError)
+    : false;
 }
 
 /**

@@ -10,10 +10,8 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import {
     ResourceKind,
     prettyResourceKind,
@@ -29,6 +27,8 @@
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
@@ -38,16 +38,16 @@
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
     { key: "status", type: "array" },
+    { key: "tags", type: "array" },
     { key: "q", type: "string" },
   ]);
   filterSync.init($page.url);
 
   let isConfirmDialogOpen = false;
-  let filterDropdownOpen = false;
-  let statusDropdownOpen = false;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
   let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
   let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   let mounted = false;
 
   // Sync URL → local state on external navigation (back/forward)
@@ -55,6 +55,7 @@
     filterSync.markSynced($page.url);
     selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
     selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
     searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
@@ -63,6 +64,7 @@
     filterSync.syncToUrl({
       kind: selectedTypes,
       status: selectedStatuses,
+      tags: selectedTags,
       q: searchText,
     });
   }
@@ -73,9 +75,9 @@
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
-    { label: "Error", value: "error" },
-    { label: "Warn", value: "warn" },
-    { label: "OK", value: "ok" },
+    { label: m.status_filter_error(), value: "error" },
+    { label: m.status_filter_warn(), value: "warn" },
+    { label: m.status_filter_ok(), value: "ok" },
   ];
 
   // Resource types available for filtering (excluding internal types)
@@ -114,33 +116,67 @@
 
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
-  // Filter resources by type, search text, and status
+  $: availableTags = getAllTagsForResources($resources.data?.resources ?? []);
+
+  $: filterGroups = [
+    {
+      label: m.status_column_type(),
+      key: "kind",
+      options: filterableTypes.map((t) => ({
+        value: t,
+        label: prettyResourceKind(t),
+      })),
+      selected: selectedTypes,
+      defaultValue: [],
+      multiSelect: true,
+    },
+    {
+      label: m.status_label_status(),
+      key: "status",
+      options: statusFilters.map((s) => ({
+        value: s.value,
+        label: s.label,
+      })),
+      selected: selectedStatuses,
+      defaultValue: [],
+      multiSelect: true,
+    },
+    ...(availableTags.length > 0
+      ? [
+          {
+            label: "Tags",
+            key: "tags",
+            options: availableTags.map((t) => ({
+              value: t.name,
+              label: t.name,
+            })),
+            selected: selectedTags,
+            defaultValue: [],
+            multiSelect: true,
+          },
+        ]
+      : []),
+  ] satisfies FilterGroup[];
+
+  // Filter resources by type, search text, status, and tags
   $: filteredResources = filterResources(
     $resources.data?.resources,
     selectedTypes,
     searchText,
     selectedStatuses,
+    selectedTags,
   );
 
-  function toggleType(type: string) {
-    if (selectedTypes.includes(type)) {
-      selectedTypes = selectedTypes.filter((t) => t !== type);
-    } else {
-      selectedTypes = [...selectedTypes, type];
-    }
-  }
-
-  function toggleStatus(status: string) {
-    if (selectedStatuses.includes(status)) {
-      selectedStatuses = selectedStatuses.filter((s) => s !== status);
-    } else {
-      selectedStatuses = [...selectedStatuses, status];
-    }
+  function onFilterChange(key: string, selected: string[] | string) {
+    if (key === "kind") selectedTypes = selected as string[];
+    if (key === "status") selectedStatuses = selected as string[];
+    if (key === "tags") selectedTags = selected as string[];
   }
 
   function clearFilters() {
     selectedTypes = [];
     selectedStatuses = [];
+    selectedTags = [];
     searchText = "";
   }
 
@@ -157,105 +193,15 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <h2 class="text-lg font-medium">Resources</h2>
+  <h2 class="text-lg font-medium">{m.status_nav_resources()}</h2>
 
-  <!-- Search, Filter, and Action Controls -->
-  <div class="flex flex-row items-center gap-x-4 min-h-9">
-    <div class="flex-1 min-w-0 min-h-9">
-      <Search
-        bind:value={searchText}
-        placeholder="Search"
-        large
-        autofocus={false}
-        showBorderOnFocus={false}
-        retainValueOnMount
-      />
-    </div>
-
-    <DropdownMenu.Root bind:open={filterDropdownOpen}>
-      <DropdownMenu.Trigger
-        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
-          ? 'bg-gray-200'
-          : 'hover:bg-surface-hover'} px-2 py-1"
-      >
-        <span class="text-fg-secondary font-medium">
-          {#if selectedTypes.length === 0}
-            All types
-          {:else if selectedTypes.length === 1}
-            {prettyResourceKind(selectedTypes[0])}
-          {:else}
-            {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length - 1} other{selectedTypes.length >
-            2
-              ? "s"
-              : ""}
-          {/if}
-        </span>
-        {#if filterDropdownOpen}
-          <CaretUpIcon size="12px" />
-        {:else}
-          <CaretDownIcon size="12px" />
-        {/if}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="w-48">
-        {#each filterableTypes as type}
-          <DropdownMenu.CheckboxItem
-            closeOnSelect={false}
-            checked={selectedTypes.includes(type)}
-            onCheckedChange={() => toggleType(type)}
-          >
-            {prettyResourceKind(type)}
-          </DropdownMenu.CheckboxItem>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-
-    <DropdownMenu.Root bind:open={statusDropdownOpen}>
-      <DropdownMenu.Trigger
-        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
-          ? 'bg-gray-200'
-          : 'hover:bg-surface-hover'} px-2 py-1"
-      >
-        <span class="text-fg-secondary font-medium">
-          {#if selectedStatuses.length === 0}
-            All statuses
-          {:else if selectedStatuses.length === 1}
-            {statusFilters.find((s) => s.value === selectedStatuses[0])
-              ?.label ?? selectedStatuses[0]}
-          {:else}
-            {statusFilters.find((s) => s.value === selectedStatuses[0])?.label},
-            +{selectedStatuses.length - 1} other{selectedStatuses.length > 2
-              ? "s"
-              : ""}
-          {/if}
-        </span>
-        {#if statusDropdownOpen}
-          <CaretUpIcon size="12px" />
-        {:else}
-          <CaretDownIcon size="12px" />
-        {/if}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="w-48">
-        {#each statusFilters as status}
-          <DropdownMenu.CheckboxItem
-            closeOnSelect={false}
-            checked={selectedStatuses.includes(status.value)}
-            onCheckedChange={() => toggleStatus(status.value)}
-          >
-            {status.label}
-          </DropdownMenu.CheckboxItem>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-
-    {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
-      <button
-        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        onclick={clearFilters}
-      >
-        Clear
-      </button>
-    {/if}
-
+  <TableToolbar
+    bind:searchText
+    {filterGroups}
+    {onFilterChange}
+    onClearAllFilters={clearFilters}
+    showSort={false}
+  >
     <Button
       type="secondary"
       large
@@ -265,16 +211,16 @@
       }}
       disabled={isRefreshButtonDisabled}
     >
-      <span class="hidden lg:inline">Refresh all sources and models</span>
-      <span class="lg:hidden">Refresh all</span>
+      <span class="hidden lg:inline">{m.status_refresh_all_sources_models()}</span>
+      <span class="lg:hidden">{m.status_refresh_all()}</span>
     </Button>
-  </div>
+  </TableToolbar>
 
   {#if $resources.isLoading}
     <DelayedSpinner isLoading={true} size="16px" />
   {:else if $resources.isError}
     <div class="text-red-500">
-      Error loading resources: {$resources.error?.message}
+      {m.status_error_loading_resources()}: {$resources.error?.message}
     </div>
   {:else if $resources.data}
     <ProjectResourcesTable data={filteredResources} />
@@ -282,13 +228,13 @@
 
   <div class="parse-errors">
     <h3 class="parse-errors-header">
-      Parse Errors
+      {m.status_parse_errors_title()}
       {#if parseErrors.length > 0}
         <span class="parse-errors-badge">{parseErrors.length}</span>
       {/if}
     </h3>
     {#if parseErrors.length === 0}
-      <p class="text-sm text-fg-secondary">No parse errors</p>
+      <p class="text-sm text-fg-secondary">{m.status_no_parse_errors()}</p>
     {:else}
       <div class="parse-errors-list">
         {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}

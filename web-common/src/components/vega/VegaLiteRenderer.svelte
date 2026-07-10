@@ -48,6 +48,17 @@
     void viewVL.runAsync();
   }
 
+  // Memoize colorMapping/hasComparison so they don't cause options to change
+  // (which triggers svelte-vega to recreate the entire view, losing brush state).
+  let stableColorMapping: ColorMapping = [];
+  let stableHasComparison = false;
+  $: if (JSON.stringify(colorMapping) !== JSON.stringify(stableColorMapping)) {
+    stableColorMapping = colorMapping;
+  }
+  $: if (hasComparison !== stableHasComparison) {
+    stableHasComparison = hasComparison;
+  }
+
   $: options = createEmbedOptions({
     client: runtimeClient,
     width,
@@ -56,18 +67,18 @@
     renderer,
     themeMode,
     expressionFunctions,
-    colorMapping,
-    hasComparison,
+    colorMapping: stableColorMapping,
+    hasComparison: stableHasComparison,
   });
 
   // Create a more efficient key for component remounting
   $: configKey = config ? Object.keys(config).sort().join(",") : "default";
   $: colorMappingKey =
-    colorMapping?.map((m) => `${m.value}:${m.color}`)?.join("|") ?? "";
+    stableColorMapping?.map((m) => `${m.value}:${m.color}`)?.join("|") ?? "";
   $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
 
-  const onError = (e: CustomEvent<{ error: Error }>) => {
-    error = e.detail.error.message;
+  const onError = (e: Error) => {
+    error = e.message;
   };
 
   const handleMouseLeave = () => {
@@ -106,7 +117,7 @@
         {signalListeners}
         {options}
         bind:view={viewVL}
-        on:onError={onError}
+        {onError}
       />
     {/key}
   {/if}

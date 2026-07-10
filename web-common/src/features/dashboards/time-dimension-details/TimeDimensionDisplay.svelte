@@ -4,6 +4,7 @@
     SortDirection,
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -14,16 +15,19 @@
   import { onDestroy } from "svelte";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
+  import { useTimeDimensionDataStore } from "./time-dimension-data-store";
   import {
-    tableInteractionStore,
-    useTimeDimensionDataStore,
-  } from "./time-dimension-data-store";
-  import { hoverIndex } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
+    chartHoverStore,
+    hoverIndex,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
   import type { TDDComparison, TableData } from "./types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let exploreName: string;
   export let expandedMeasureName: string;
   export let hideStartPivotButton = false;
+
+  $: isEmbedded = EmbedStore.isEmbedded();
 
   const stateManagers = getStateManagers();
   const {
@@ -62,9 +66,9 @@
     dimensionLabel =
       $allDimensions.find((d) => d.name === dimensionName)?.displayName ?? "";
   } else if (comparing === "time") {
-    dimensionLabel = "Time";
+    dimensionLabel = m.dashboard_tdd_time();
   } else if (comparing === "none") {
-    dimensionLabel = "No Comparison";
+    dimensionLabel = m.dashboard_tdd_no_comparison();
   }
 
   // Create a copy of the data to avoid flashing of table in transient states
@@ -101,7 +105,7 @@
   function highlightCell(x: number | undefined, y: number | undefined) {
     if (x === undefined || y === undefined) {
       hoverIndex.clear("table");
-      tableInteractionStore.set({
+      chartHoverStore.set({
         dimensionValue: undefined,
         time: undefined,
       });
@@ -115,7 +119,7 @@
     }
 
     hoverIndex.set(x, "table");
-    tableInteractionStore.set({
+    chartHoverStore.set({
       dimensionValue,
       time: time,
     });
@@ -141,7 +145,9 @@
       );
 
       eventBus.emit("notification", {
-        message: `Removed ${rowHeaderLabels.length} items from filter`,
+        message: m.dashboard_removed_items_filter({
+          count: rowHeaderLabels.length.toString(),
+        }),
       });
       return;
     } else {
@@ -151,7 +157,9 @@
       );
       selectItemsInFilter(dimensionName, rowHeaderLabels as (string | null)[]);
       eventBus.emit("notification", {
-        message: `Added ${newValuesSelected.length} items to filter`,
+        message: m.dashboard_added_items_filter({
+          count: newValuesSelected.length.toString(),
+        }),
       });
     }
   }
@@ -183,7 +191,7 @@
 
   onDestroy(() => {
     hoverIndex.clear("table");
-    tableInteractionStore.set({
+    chartHoverStore.set({
       dimensionValue: undefined,
       time: undefined,
     });
@@ -193,7 +201,7 @@
 <svelte:window onkeydown={handleKeyDown} />
 
 <div
-  class="h-full w-full flex flex-col border-t bg-surface-base"
+  class="h-full w-full flex flex-col bg-surface-base"
   aria-label="{expandedMeasureName} Time Dimension Display"
 >
   <TDDHeader
@@ -215,16 +223,18 @@
     >
       <div class="text-center">
         <div class="text-red-600 mt-1 text-lg">
-          We encountered an error while loading the data. Please try refreshing
-          the page.
+          {m.dashboard_tdd_error()}
         </div>
-        <div class="text-fg-secondary">
-          If the issue persists, please contact us on <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://discord.gg/2ubRfjC7Rh">Discord</a
-          >.
-        </div>
+        {#if !isEmbedded}
+          <div class="text-fg-secondary">
+            {m.dashboard_tdd_contact_discord()}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://discord.gg/2ubRfjC7Rh">Discord</a
+            >.
+          </div>
+        {/if}
       </div>
     </div>
   {:else if formattedData && comparisonCopy && measure}
@@ -257,17 +267,17 @@
       <div class="flex flex-col items-center justify-center h-full text-sm">
         <Compare size="32px" />
         <div class="font-semibold text-fg-secondary mt-1">
-          No comparison dimension selected
+          {m.dashboard_no_comparison_dimension()}
         </div>
         <div class="text-fg-secondary">
-          To see more values, select a comparison dimension above.
+          {m.dashboard_select_comparison_hint()}
         </div>
       </div>
     </div>
   {:else if comparing === "dimension" && formattedData?.rowCount === 1}
     <div class="w-full h-full">
       <div class="flex flex-col items-center h-full text-sm">
-        <div class="text-fg-secondary">No search results to show</div>
+        <div class="text-fg-secondary">{m.dashboard_no_search_results()}</div>
       </div>
     </div>
   {/if}

@@ -12,6 +12,7 @@ import {
   shouldFilterByPending,
   splitTablesByModel,
   applyTableFilters,
+  applyTagFilter,
 } from "@rilldata/web-common/features/projects/status/tables/utils";
 import type {
   V1OlapTableInfo,
@@ -331,12 +332,12 @@ describe("tables utils", () => {
     ]);
 
     it("returns all tables when type is 'all'", () => {
-      const result = applyTableFilters(tables, "all", viewMap);
+      const result = applyTableFilters(tables, [], viewMap);
       expect(result).toEqual(tables);
     });
 
     it("filters by type: table", () => {
-      const result = applyTableFilters(tables, "table", viewMap);
+      const result = applyTableFilters(tables, ["table"], viewMap);
       expect(result).toEqual([
         { name: "users", physicalSizeBytes: "1024" },
         { name: "orders", physicalSizeBytes: "2048" },
@@ -344,7 +345,7 @@ describe("tables utils", () => {
     });
 
     it("filters by type: view", () => {
-      const result = applyTableFilters(tables, "view", viewMap);
+      const result = applyTableFilters(tables, ["view"], viewMap);
       expect(result).toEqual([
         { name: "analytics_view", physicalSizeBytes: "0" },
       ]);
@@ -355,12 +356,12 @@ describe("tables utils", () => {
         { name: "view_a", physicalSizeBytes: "0" },
       ];
       const allViewMap = new Map<string, boolean>([["view_a", true]]);
-      const result = applyTableFilters(allViews, "table", allViewMap);
+      const result = applyTableFilters(allViews, ["table"], allViewMap);
       expect(result).toEqual([]);
     });
 
     it("handles empty viewMap gracefully (falls back to size heuristic)", () => {
-      const result = applyTableFilters(tables, "table", new Map());
+      const result = applyTableFilters(tables, ["table"], new Map());
       // With empty viewMap, isLikelyView falls back to physicalSizeBytes heuristic
       // analytics_view has physicalSizeBytes "0", so isLikelyView returns true → filtered out
       expect(result).toEqual([
@@ -379,15 +380,63 @@ describe("tables utils", () => {
 
       const tableResult = applyTableFilters(
         tablesWithUnknown,
-        "table",
+        ["table"],
         emptyMap,
       );
       expect(tableResult).toEqual(tablesWithUnknown);
 
-      const viewResult = applyTableFilters(tablesWithUnknown, "view", emptyMap);
+      const viewResult = applyTableFilters(
+        tablesWithUnknown,
+        ["view"],
+        emptyMap,
+      );
       expect(viewResult).toEqual([
         { name: "loading_table", physicalSizeBytes: undefined },
       ]);
+    });
+  });
+
+  describe("applyTagFilter", () => {
+    const tables: V1OlapTableInfo[] = [
+      { name: "finance_model" },
+      { name: "marketing_model" },
+      { name: "untagged_model" },
+    ];
+    const modelResources = new Map<string, V1Resource>([
+      ["finance_model", { meta: { tags: ["finance", "pii"] } }],
+      ["marketing_model", { meta: { tags: ["marketing"] } }],
+      ["untagged_model", { meta: {} }],
+    ]);
+
+    it("returns all tables when no tags selected", () => {
+      expect(applyTagFilter(tables, modelResources, [])).toEqual(tables);
+    });
+
+    it("filters to tables whose model has the tag", () => {
+      const result = applyTagFilter(tables, modelResources, ["finance"]);
+      expect(result).toEqual([{ name: "finance_model" }]);
+    });
+
+    it("ORs across selected tags", () => {
+      const result = applyTagFilter(tables, modelResources, [
+        "finance",
+        "marketing",
+      ]);
+      expect(result.map((t) => t.name)).toEqual([
+        "finance_model",
+        "marketing_model",
+      ]);
+    });
+
+    it("excludes tables whose model has no matching tag", () => {
+      const result = applyTagFilter(tables, modelResources, ["pii"]);
+      expect(result).toEqual([{ name: "finance_model" }]);
+    });
+
+    it("matches case-insensitively on table name", () => {
+      const upperTables: V1OlapTableInfo[] = [{ name: "Finance_Model" }];
+      const result = applyTagFilter(upperTables, modelResources, ["finance"]);
+      expect(result).toEqual([{ name: "Finance_Model" }]);
     });
   });
 });

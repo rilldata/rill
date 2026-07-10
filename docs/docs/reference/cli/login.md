@@ -10,12 +10,6 @@ Authenticate with the Rill API
 rill login [flags]
 ```
 
-### Flags
-
-```
-  -o, --org string   Organization to use
-```
-
 ### Global flags
 
 ```

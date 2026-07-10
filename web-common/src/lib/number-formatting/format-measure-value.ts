@@ -45,6 +45,15 @@ import {
   tooltipPercentOptions,
 } from "./strategies/per-range-tooltip-options";
 
+// D3's SI prefix for 10^9 is "G" (giga), which is correct in scientific/engineering
+// contexts but confusing in BI. Business users expect "B" for billions. Rill's own
+// humanizer already uses "B" — this aligns the D3 path with that convention.
+const SI_PREFIX_REMAP: Record<string, string> = { G: "B" };
+const SI_PREFIX_RE = /([yzafpnµmkMGTPEZY])$/;
+function remapSIPrefix(formatted: string): string {
+  return formatted.replace(SI_PREFIX_RE, (p) => SI_PREFIX_REMAP[p] ?? p);
+}
+
 /**
  * Coerce a value to a number for formatting.
  * INT256 and other large integer types from Snowflake arrive as strings;
@@ -287,7 +296,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
             return humanizer(coerced, FormatPreset.HUMANIZE);
           }
         }
-        return d3formatter(coerced);
+        return remapSIPrefix(d3formatter(coerced));
       };
     } catch (error) {
       console.warn("Invalid d3 format:", error);

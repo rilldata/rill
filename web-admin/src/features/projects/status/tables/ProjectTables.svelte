@@ -1,10 +1,8 @@
 <script lang="ts">
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import Search from "@rilldata/web-common/components/search/Search.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import type { FilterGroup } from "@rilldata/web-common/components/table-toolbar/types";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -23,6 +21,7 @@
   import {
     filterTemporaryTables,
     applyTableFilters,
+    applyTagFilter,
     splitTablesByModel,
   } from "@rilldata/web-common/features/projects/status/tables/utils";
   import ResourceSpecDialog from "@rilldata/web-common/features/projects/status/ResourceSpecDialog.svelte";
@@ -31,10 +30,12 @@
   import RefreshResourceConfirmDialog from "@rilldata/web-common/features/projects/status/RefreshResourceConfirmDialog.svelte";
   import {
     createUrlFilterSync,
-    parseEnumParam,
+    parseArrayParam,
     parseStringParam,
   } from "@rilldata/web-common/lib/url-filter-sync";
   import { onMount } from "svelte";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
 
@@ -45,14 +46,14 @@
   $: instance = $instanceQuery.data?.instance;
   $: connectorName = instance?.olapConnector ?? "";
 
-  // Filters — initialized from URL params
+  // Filters — initialized from URL params (type is multi-select array)
   const filterSync = createUrlFilterSync([
     { key: "q", type: "string" },
-    { key: "type", type: "enum", defaultValue: "all" },
+    { key: "type", type: "array" },
+    { key: "tags", type: "array" },
   ]);
   filterSync.init($page.url);
 
-  const typeValues = ["all", "table", "view"] as const;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
 
   // Debounce search for server-side filtering
@@ -86,50 +87,92 @@
   // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
   $: modelResourcesQuery = useModelResources(runtimeClient);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
-  let typeFilter: (typeof typeValues)[number] = parseEnumParam(
+  let typeFilter: string[] = parseArrayParam(
     $page.url.searchParams.get("type"),
-    typeValues,
-    "all",
   );
-  let typeDropdownOpen = false;
+  let selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   let mounted = false;
 
   // Sync URL → local state on external navigation (back/forward)
   $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
     filterSync.markSynced($page.url);
     searchText = parseStringParam($page.url.searchParams.get("q"));
-    typeFilter = parseEnumParam(
-      $page.url.searchParams.get("type"),
-      typeValues,
-      "all",
-    );
+    typeFilter = parseArrayParam($page.url.searchParams.get("type"));
+    selectedTags = parseArrayParam($page.url.searchParams.get("tags"));
   }
 
   // Sync filter state → URL
   $: if (mounted) {
-    filterSync.syncToUrl({ q: searchText, type: typeFilter });
+    filterSync.syncToUrl({
+      q: searchText,
+      type: typeFilter,
+      tags: selectedTags,
+    });
   }
 
   onMount(() => {
     mounted = true;
   });
 
-  type TypeOption = { label: string; value: "all" | "table" | "view" };
-  const typeOptions: TypeOption[] = [
-    { label: "All Types", value: "all" },
-    { label: "Table", value: "table" },
-    { label: "View", value: "view" },
-  ];
+  // Tags — collected from model resources only (external tables have no tags).
+  // `modelResources` indexes each resource twice (by result table and model name),
+  // so values() is deduped inside getAllTagsForResources via its Set.
+  $: availableTags = getAllTagsForResources([...modelResources.values()]);
 
-  // Split once on unfiltered tables, then apply type filter per section
+  $: filterGroups = [
+    {
+      label: m.status_column_type(),
+      key: "type",
+      options: [
+        { label: m.status_table_singular(), value: "table" },
+        { label: m.status_view_singular(), value: "view" },
+      ],
+      selected: typeFilter,
+      defaultValue: [],
+      multiSelect: true,
+    },
+    ...(availableTags.length > 0
+      ? [
+          {
+            label: "Tags",
+            key: "tags",
+            options: availableTags.map((t) => ({
+              value: t.name,
+              label: t.name,
+            })),
+            selected: selectedTags,
+            defaultValue: [],
+            multiSelect: true,
+          },
+        ]
+      : []),
+  ] satisfies FilterGroup[];
+
+  function onFilterChange(key: string, selected: string[] | string) {
+    if (key === "type") typeFilter = selected as string[];
+    if (key === "tags") selectedTags = selected as string[];
+  }
+
+  function clearFilters() {
+    typeFilter = [];
+    selectedTags = [];
+    searchText = "";
+  }
+
+  // Split once on unfiltered tables, then apply type + tag filters per section.
+  // Tag filter only applies to model tables; external tables are hidden entirely
+  // when a tag filter is active since they can't match.
   $: ({ modelTables: allModelTables, externalTables: allExternalTables } =
     splitTablesByModel(filteredTables, modelResources));
-  $: modelTables = applyTableFilters(allModelTables, typeFilter, isViewMap);
-  $: externalTables = applyTableFilters(
-    allExternalTables,
-    typeFilter,
-    isViewMap,
+  $: modelTables = applyTagFilter(
+    applyTableFilters(allModelTables, typeFilter, isViewMap),
+    modelResources,
+    selectedTags,
   );
+  $: externalTables =
+    selectedTags.length > 0
+      ? []
+      : applyTableFilters(allExternalTables, typeFilter, isViewMap);
 
   // Dialog states
   let specDialogOpen = false;
@@ -214,65 +257,20 @@
 
 <section class="flex flex-col gap-y-4 size-full">
   <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Tables</h2>
+    <h2 class="text-lg font-medium">{m.status_nav_tables()}</h2>
   </div>
 
-  <div class="flex flex-row items-center gap-x-4 min-h-9">
-    <div class="flex-1 min-w-0 min-h-9">
-      <Search
-        bind:value={searchText}
-        placeholder="Search"
-        large
-        autofocus={false}
-        showBorderOnFocus={false}
-        retainValueOnMount
-      />
-    </div>
-
-    <DropdownMenu.Root bind:open={typeDropdownOpen}>
-      <DropdownMenu.Trigger
-        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {typeDropdownOpen
-          ? 'bg-gray-200'
-          : 'hover:bg-surface-hover'} px-2 py-1"
-      >
-        <span class="text-fg-secondary font-medium">
-          {typeOptions.find((o) => o.value === typeFilter)?.label ?? "All"}
-        </span>
-        {#if typeDropdownOpen}
-          <CaretUpIcon size="12px" />
-        {:else}
-          <CaretDownIcon size="12px" />
-        {/if}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="w-32">
-        {#each typeOptions as option}
-          <DropdownMenu.Item
-            onclick={() => {
-              typeFilter = option.value;
-            }}
-          >
-            {option.label}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-
-    {#if typeFilter !== "all" || searchText}
-      <button
-        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
-        onclick={() => {
-          typeFilter = "all";
-          searchText = "";
-        }}
-      >
-        Clear
-      </button>
-    {/if}
-  </div>
+  <TableToolbar
+    bind:searchText
+    {filterGroups}
+    {onFilterChange}
+    onClearAllFilters={clearFilters}
+    showSort={false}
+  />
 
   {#if $tablesList.isError}
     <div class="text-red-500">
-      Error loading tables: {$tablesList.error?.message}
+      {m.status_error_loading_tables()}: {$tablesList.error?.message}
     </div>
   {:else}
     {@const isLoading =
@@ -281,7 +279,7 @@
     <!-- Models section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        Models{isLoading
+        {m.status_models_section()}{isLoading
           ? ""
           : ` (${modelTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
@@ -290,7 +288,7 @@
           class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-2 text-fg-secondary"
         >
           <DelayedSpinner isLoading={true} size="20px" />
-          <span class="text-sm">Loading models</span>
+          <span class="text-sm">{m.status_loading_models()}</span>
         </div>
       {:else if modelTables.length > 0}
         <ModelsTable
@@ -310,21 +308,21 @@
         >
           {#if allModelTables.length > 0}
             <span class="text-fg-secondary font-semibold text-sm">
-              No models match the current filters
+              {m.status_no_models_match_filters()}
             </span>
           {:else}
             <span class="text-fg-secondary font-semibold text-sm">
-              No models
+              {m.status_no_models()}
             </span>
             <span class="text-fg-muted text-sm">
-              Models are created in Rill Developer.
+              {m.status_models_created_in_developer()}
               <a
                 href="https://docs.rilldata.com/build/models/"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-primary-500 hover:text-primary-600"
               >
-                Learn more
+                {m.common_learn_more()}
               </a>
             </span>
           {/if}
@@ -335,7 +333,7 @@
     <!-- External Tables section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        External Tables{isLoading
+        {m.status_external_tables_section()}{isLoading
           ? ""
           : ` (${externalTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
@@ -344,7 +342,7 @@
           class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-2 text-fg-secondary"
         >
           <DelayedSpinner isLoading={true} size="20px" />
-          <span class="text-sm">Loading tables</span>
+          <span class="text-sm">{m.status_loading_tables()}</span>
         </div>
       {:else if externalTables.length > 0}
         <ExternalTablesTable tables={externalTables} isView={isViewMap} />
@@ -354,11 +352,12 @@
         >
           {#if allExternalTables.length > 0}
             <span class="text-fg-secondary font-semibold text-sm">
-              No external tables match the current filters
+              {m.status_no_external_tables_match_filters()}
+              {#if selectedTags.length > 0}({m.status_external_tables_no_tags()}){/if}
             </span>
           {:else}
             <span class="text-fg-secondary font-semibold text-sm">
-              No external tables
+              {m.status_no_external_tables()}
             </span>
             <span class="text-fg-muted text-sm">
               <a
@@ -367,7 +366,7 @@
                 rel="noopener noreferrer"
                 class="text-primary-500 hover:text-primary-600"
               >
-                Learn about connecting external OLAP engines
+                {m.status_learn_about_external_olap()}
               </a>
             </span>
           {/if}
@@ -382,9 +381,9 @@
           onClick={() => $tablesList.fetchNextPage()}
           disabled={$tablesList.isFetchingNextPage}
           loading={$tablesList.isFetchingNextPage}
-          loadingCopy="Loading..."
+          loadingCopy={m.status_loading()}
         >
-          Load more tables
+          {m.status_load_more_tables()}
         </Button>
       </div>
     {/if}

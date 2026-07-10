@@ -1,3 +1,5 @@
+import { WelcomeStatus } from "@rilldata/web-common/features/welcome/status.ts";
+
 export const ssr = false;
 
 import { redirect } from "@sveltejs/kit";
@@ -17,6 +19,7 @@ import {
   PREVIEW_ALLOWED_PREFIXES,
 } from "./route-constants";
 import { Settings } from "luxon";
+import { RuntimeFileIO } from "@rilldata/web-common/features/entity-management/file-io.ts";
 
 Settings.defaultLocale = "en";
 
@@ -24,7 +27,7 @@ Settings.defaultLocale = "en";
 let cachedMetadata: Awaited<ReturnType<typeof localServiceGetMetadata>> | null =
   null;
 
-export async function load({ url, depends, untrack }) {
+export async function load({ url, depends, untrack, route }) {
   depends("app:init");
 
   // Fetch metadata to check preview mode (cached after first load)
@@ -70,7 +73,7 @@ export async function load({ url, depends, untrack }) {
 
   // Set the client on fileArtifacts early so child page load functions
   // (e.g., files/[...file]/+page.ts) can access it before components render.
-  fileArtifacts.setClient(client);
+  fileArtifacts.setClient(client, new RuntimeFileIO());
 
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, {}),
@@ -82,10 +85,13 @@ export async function load({ url, depends, untrack }) {
   const firstDashboardFile = files.files?.find((file) =>
     file.path?.startsWith("/dashboards/"),
   );
+  const redirectPath = firstDashboardFile
+    ? `/files${firstDashboardFile?.path}`
+    : "/";
 
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
 
-  const redirectPath = untrack(() => {
+  const trackedRedirectPath = untrack(() => {
     if (!url.searchParams.get("redirect")) return false;
 
     // In preview mode, redirect to /dashboards instead of /files
@@ -93,16 +99,17 @@ export async function load({ url, depends, untrack }) {
       return url.pathname !== "/dashboards" && "/dashboards";
     }
 
-    return (
-      url.pathname !== `/files${firstDashboardFile?.path}` &&
-      `/files${firstDashboardFile?.path}`
-    );
+    return url.pathname !== redirectPath && redirectPath;
   });
 
   if (!initialized) {
     initialized = await handleUninitializedProject(client);
-  } else if (redirectPath) {
-    throw redirect(303, redirectPath);
+    if (!initialized && !route?.id?.startsWith("/(misc)/welcome")) {
+      WelcomeStatus.set(true);
+      throw redirect(303, "/welcome");
+    }
+  } else if (trackedRedirectPath) {
+    throw redirect(303, trackedRedirectPath);
   }
 
   return { initialized, previewMode, metadata };

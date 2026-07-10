@@ -72,6 +72,7 @@ export function createResolvedThemeStore(
         queryClient,
       );
       return themeQuery.subscribe(($themeQuery) => {
+        console.log(name, $themeQuery.data);
         if ($themeQuery.data?.theme?.spec) {
           set(new Theme($themeQuery.data.theme.spec));
         } else {

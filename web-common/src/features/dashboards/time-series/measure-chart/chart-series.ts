@@ -1,19 +1,23 @@
-import type {
-  TimeSeriesPoint,
-  DimensionSeriesData,
-  ChartSeries,
-  ChartMode,
-} from "./types";
-import {
-  MainLineColor,
-  MainAreaColorGradientDark,
-  MainAreaColorGradientLight,
-  TimeComparisonLineColor,
-} from "../chart-colors";
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import {
+  isAdaptiveChartType,
+  TDDChart,
+} from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
+import {
+  MainAreaColorGradientDark,
+  MainAreaColorGradientLight,
+  MainLineColor,
+  TimeComparisonLineColor,
+} from "../chart-colors";
 import { LINE_MODE_MIN_POINTS } from "./scales";
+import type {
+  ChartMode,
+  ChartSeries,
+  DimensionSeriesData,
+  TimeSeriesPoint,
+} from "./types";
 
 export function buildChartSeries(
   data: TimeSeriesPoint[],
@@ -56,8 +60,31 @@ export function buildChartSeries(
   return result;
 }
 
-export function determineMode(data: TimeSeriesPoint[]): ChartMode {
+export function determineMode(
+  chartType: TDDChart,
+  data: TimeSeriesPoint[],
+): ChartMode {
+  if (chartType === TDDChart.LINE) {
+    return "line";
+  }
   return data.length >= LINE_MODE_MIN_POINTS ? "line" : "bar";
+}
+
+export function resolveEffectiveChartType(
+  chartType: TDDChart,
+  hasDimensionComparison: boolean,
+): TDDChart {
+  if (isAdaptiveChartType(chartType) && hasDimensionComparison) {
+    return TDDChart.STACKED_BAR;
+  }
+  return chartType;
+}
+
+export function usesVegaRenderer(effectiveChartType: TDDChart): boolean {
+  return (
+    !isAdaptiveChartType(effectiveChartType) &&
+    effectiveChartType !== TDDChart.LINE
+  );
 }
 
 export function computeTooltipDelta(point: TimeSeriesPoint | null) {

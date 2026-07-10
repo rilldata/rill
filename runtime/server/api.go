@@ -34,6 +34,9 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	)
 	s.addInstanceRequestAttributes(ctx, instanceID)
 
+	// Tag as programmatic API access so the queries it triggers are attributed to the "api" source.
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAPI)
+
 	// Check if user has access to query for API data
 	claims := auth.GetClaims(ctx, instanceID)
 	if !claims.Can(runtime.ReadAPI) {

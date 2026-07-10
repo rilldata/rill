@@ -9,12 +9,18 @@
   import UploadImagePopover from "@rilldata/web-admin/features/organizations/settings/UploadImagePopover.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  export let organization: string;
-  export let organizationFaviconUrl: string | undefined;
+  let {
+    organization,
+    organizationFaviconUrl,
+  }: {
+    organization: string;
+    organizationFaviconUrl: string | undefined;
+  } = $props();
 
   const orgUpdater = createAdminServiceUpdateOrganization();
-  $: ({ error, isPending: isLoading, mutateAsync } = $orgUpdater);
+  let { error, isPending: isLoading, mutateAsync } = $derived($orgUpdater);
 
   async function onSave(assetId: string) {
     await mutateAsync({
@@ -43,11 +49,24 @@
   }
 </script>
 
-<SettingsContainer title="Favicon" suppressFooter={!organizationFaviconUrl}>
-  <div slot="body" class="flex flex-col gap-y-2">
+{#snippet removeAction()}
+  <Button
+    type="secondary"
+    onClick={onRemove}
+    loading={isLoading}
+    disabled={isLoading}
+  >
+    {m.settings_remove_button()}
+  </Button>
+{/snippet}
+
+<SettingsContainer
+  title={m.settings_favicon_title()}
+  action={organizationFaviconUrl ? removeAction : undefined}
+>
+  <div class="flex flex-col gap-y-2">
     <div>
-      Click to upload your favicon and customize Rill for your organization.
-      Upload a square icon to get the best results.
+      {m.settings_favicon_description()}
     </div>
     <UploadImagePopover
       imageUrl={organizationFaviconUrl}
@@ -62,16 +81,4 @@
       <img src="/favicon.png" alt="favicon" class="h-10" />
     </UploadImagePopover>
   </div>
-  <svelte:fragment slot="action">
-    {#if organizationFaviconUrl}
-      <Button
-        type="secondary"
-        onClick={onRemove}
-        loading={isLoading}
-        disabled={isLoading}
-      >
-        Remove
-      </Button>
-    {/if}
-  </svelte:fragment>
 </SettingsContainer>

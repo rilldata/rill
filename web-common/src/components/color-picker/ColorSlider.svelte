@@ -37,7 +37,7 @@
     min="0"
     max={mode === "hue" ? 360 : 100}
     bind:value
-    onchange={onChange}
+    oninput={onChange}
   />
 
   <input

@@ -83,6 +83,14 @@ curl "https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime
   -o openapi.json
 ```
 
+To download the spec for the deployment of a specific branch (e.g. a dev/preview deployment), insert `/branch/<branch-name>` before `/runtime`:
+
+```bash
+curl "https://api.rilldata.com/v1/orgs/<org>/projects/<project>/branch/<branch-name>/runtime/api/openapi" \
+  -H "Authorization: Bearer <token>" \
+  -o openapi.json
+```
+
 The generated spec includes all your custom APIs with their schemas, plus Rill's built-in API endpoints.
 
 ## Generating typed clients

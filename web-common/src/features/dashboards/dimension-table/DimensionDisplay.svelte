@@ -5,6 +5,7 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -17,7 +18,10 @@
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getComparisonRequestMeasures } from "../dashboard-utils";
+  import {
+    getComparisonRequestMeasures,
+    getURIRequestMeasure,
+  } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
@@ -107,6 +111,13 @@
     false,
   );
 
+  // Request the URI measure so the dimension values can be rendered as links.
+  // Added after filtering (it is not a real spec measure) and only on the
+  // grouped query, since the URI resolves per dimension value.
+  $: sortedMeasures = dimension.uri
+    ? [...filteredMeasures, getURIRequestMeasure(dimensionName)]
+    : filteredMeasures;
+
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     client,
     {
@@ -161,7 +172,7 @@
     {
       metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
-      measures: filteredMeasures,
+      measures: sortedMeasures,
       timeRange,
       comparisonTimeRange,
       sort,
@@ -234,7 +245,7 @@
   <div
     class="h-full flex flex-col w-full"
     style:min-width="365px"
-    aria-label="Dimension Display"
+    aria-label={m.dashboard_dimension_display_aria()}
   >
     <DimensionHeader
       {dimensionName}

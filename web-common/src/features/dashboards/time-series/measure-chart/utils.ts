@@ -69,3 +69,23 @@ export function barCenterX(
     singleBarWidth / 2
   );
 }
+
+/**
+ * Formats tick values ensuring all labels are visually distinct.
+ *
+ * Uses the primary formatter (axis) as the first pass. If any labels
+ * are duplicated, falls back to the secondary formatter (table),
+ * which uses higher precision from the same formatting system.
+ */
+export function formatUniqueTickLabels(
+  ticks: number[],
+  primaryFormatter: (n: number) => string,
+  fallbackFormatter: (n: number) => string,
+): string[] {
+  if (ticks.length <= 1) return ticks.map(primaryFormatter);
+
+  const labels = ticks.map(primaryFormatter);
+  if (new Set(labels).size === labels.length) return labels;
+
+  return ticks.map(fallbackFormatter);
+}

@@ -37,7 +37,7 @@ measures:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
-	srv, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	srv, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	res, err := srv.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{

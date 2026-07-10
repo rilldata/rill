@@ -6,6 +6,7 @@
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
   import type { ConversationManager } from "../../core/conversation-manager";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let conversationManager: ConversationManager;
   export let basePath: string;
@@ -47,7 +48,7 @@
           <HideSidebar side="left" open={false} size="16px" />
         </Button>
       </span>
-      <span title="New conversation">
+      <span title={m.chat_new_conversation()}>
         <Button
           type="secondary"
           square
@@ -57,6 +58,10 @@
           <PlusIcon size="14px" />
         </Button>
       </span>
+    </div>
+
+    <div class="collapsed-footer">
+      <slot name="collapsed-footer" />
     </div>
   {:else}
     <!-- Expanded state: full sidebar -->
@@ -74,7 +79,7 @@
           onClick={handleNewConversationButtonClick}
         >
           <PlusIcon size="12px" />
-          New conversation
+          {m.chat_new_conversation()}
         </Button>
       </div>
     </div>
@@ -102,13 +107,13 @@
             onclick={handleConversationItemClick}
           >
             <div class="conversation-title" data-testid="conversation-title">
-              {conversation.title || "New conversation"}
+              {conversation.title || m.chat_new_conversation()}
             </div>
           </a>
         {/each}
       {:else}
         <div class="no-conversations" data-testid="no-conversations">
-          No conversations yet
+          {m.chat_no_conversations()}
         </div>
       {/if}
     </div>
@@ -134,6 +139,10 @@
 
   .collapsed-actions {
     @apply flex flex-col gap-2 p-3 items-center;
+  }
+
+  .collapsed-footer {
+    @apply flex flex-col gap-2 p-3 items-center mt-auto;
   }
 
   .conversation-sidebar-header {

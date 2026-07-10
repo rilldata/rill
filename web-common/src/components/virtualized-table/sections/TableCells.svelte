@@ -34,6 +34,7 @@
       formattedValue: rows[virtRow.index]["__formatted_" + columnName],
       tooltipFormatter: column.tooltipFormatter,
       type: column.type,
+      lowerIsBetter: column.lowerIsBetter ?? false,
       barValue: column.max ? value / column.max : 0,
       rowSelected: selectedIndex.findIndex((tgt) => virtRow.index === tgt) >= 0,
       colSelected: column.highlight,

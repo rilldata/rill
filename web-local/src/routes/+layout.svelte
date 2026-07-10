@@ -11,10 +11,6 @@
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import {
-    initPosthog,
-    posthogIdentify,
-  } from "@rilldata/web-common/lib/analytics/posthog";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     errorEventHandler,
@@ -69,10 +65,6 @@
 
     if (shouldSendAnalytics) {
       await initMetrics(config, host); // Proxies events through the Rill "intake" service
-      initPosthog(config.version);
-      posthogIdentify(config.userId, {
-        installId: config.installId,
-      });
 
       removeJavascriptListeners =
         errorEventHandler.addJavascriptErrorListeners();
@@ -97,22 +89,22 @@
   $: onDeployPage = isDeployPage($page);
   $: isPreviewMode = $previewModeStore;
 
-  // Preview mode from store OR (viz) route group
-  $: mode =
-    isPreviewMode || route.id?.includes("(viz)") ? "Preview" : "Developer";
+  $: mode = isPreviewMode ? "Preview" : "Developer";
 
   $: shouldShowPreviewNav =
     isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
+
+  $: onWelcomePage = route.id?.startsWith("/(misc)/welcome");
 </script>
 
 <Tooltip.Provider>
   <QueryClientProvider client={queryClient}>
     <RuntimeProvider {host} {instanceId}>
-      <FileAndResourceWatcher {host} {instanceId}>
+      <FileAndResourceWatcher lifecycle="aggressive">
         <div
           class="body h-screen w-screen overflow-hidden absolute flex flex-col"
         >
-          {#if data.initialized}
+          {#if data.initialized && !onWelcomePage}
             <BannerCenter />
             <RepresentingUserBanner />
             <ApplicationHeader {mode} />

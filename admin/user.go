@@ -346,6 +346,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		QuotaSlotsPerDeployment:             deref(defaultQuotas.NumSlotsPerDeployment, -1),
 		QuotaOutstandingInvites:             deref(defaultQuotas.NumOutstandingInvites, -1),
 		QuotaStorageLimitBytesPerDeployment: deref(defaultQuotas.StorageLimitBytesPerDeployment, -1),
+		QuotaSeats:                          deref(defaultQuotas.NumSeats, -1),
 		BillingEmail:                        email,
 		BillingCustomerID:                   "", // Populated later
 		PaymentCustomerID:                   "", // Populated later
@@ -372,7 +373,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     org.ID,
 			Type:      database.BillingIssueTypeNeverSubscribed,
-			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
+			Metadata:  &database.BillingIssueMetadataNeverSubscribed{},
 			EventTime: org.CreatedOn,
 		})
 		if err != nil {

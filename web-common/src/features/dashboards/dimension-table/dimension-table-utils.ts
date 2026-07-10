@@ -1,5 +1,6 @@
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -32,6 +33,7 @@ import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/
 import type { SvelteComponent } from "svelte";
 import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 import { SortType } from "../proto-state/derived-types";
+import { URI_DIMENSION_SUFFIX } from "../dashboard-utils";
 import { getFiltersForOtherDimensions } from "../selectors";
 import type { DimensionTableRow } from "./dimension-table-types";
 import type { DimensionTableConfig } from "./DimensionTableConfig";
@@ -116,21 +118,21 @@ export function getComparisonProperties(
       component: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
-      description: "Percentage change over comparison period",
+      description: m.dashboard_percentage_change(),
     };
   } else if (measureName.includes("_delta")) {
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
       format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
-      description: "Change over comparison period",
+      description: m.dashboard_change_over_comparison(),
     };
   } else if (measureName.includes("_percent_of_total")) {
     return {
       component: PercentOfTotal,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
-      description: "Percent of total",
+      description: m.dashboard_percent_of_total(),
     };
   }
   throw new Error(
@@ -372,6 +374,7 @@ export function prepareVirtualizedDimTableColumns(
           description: comparison.description,
           enableResize: false,
           format: comparison.format,
+          lowerIsBetter: selectedMeasure?.lowerIsBetter ?? false,
           tooltipFormatter,
           highlight,
           sorted,
@@ -478,6 +481,13 @@ export function prepareDimensionTableRows(
         ...rawVals,
         ...formattedVals,
       ]);
+
+      // Carry through the resolved URI for clickable dimension values, if requested.
+      // This is not a spec measure, so it must be copied explicitly.
+      const uriKey = dimensionColumn + URI_DIMENSION_SUFFIX;
+      if (uriKey in row) {
+        rowOut[uriKey] = (row[uriKey] as string | null) ?? null;
+      }
 
       if (addDeltas) {
         // Process deltas for all measures that have comparison data

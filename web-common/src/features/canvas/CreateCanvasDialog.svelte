@@ -4,13 +4,14 @@
  -->
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
-  import { createResourceFile } from "../file-explorer/new-files";
+  import { createResourceFile } from "../entity-management/add/new-files.ts";
 
   export let open = false;
   export let metricsViews: V1Resource[];
@@ -40,19 +41,18 @@
 <AlertDialog.Root bind:open>
   <AlertDialog.Content>
     <AlertDialog.Title>
-      Which metrics view should this dashboard reference?
+      {m.canvas_which_metrics_view()}
     </AlertDialog.Title>
 
     <AlertDialog.Description>
-      This will determine the measures and dimensions you can explore on this
-      dashboard.
+      {m.canvas_metrics_view_description()}
     </AlertDialog.Description>
 
     <Select
       sameWidth
       options={metricsViewOptions}
       fontSize={14}
-      placeholder="Select a metrics view"
+      placeholder={m.canvas_select_metrics_view()}
       id="metrics-explore-selection"
       onChange={(value) => {
         selectedMetricsView = metricsViews.find(
@@ -64,7 +64,7 @@
     <AlertDialog.Footer>
       <AlertDialog.Cancel>
         {#snippet child({ props })}
-          <Button {...props} large type="secondary">Cancel</Button>
+          <Button {...props} large type="secondary">{m.common_cancel()}</Button>
         {/snippet}
       </AlertDialog.Cancel>
 
@@ -77,7 +77,7 @@
             type="primary"
             onClick={createResource}
           >
-            Continue
+            {m.common_continue()}
           </Button>
         {/snippet}
       </AlertDialog.Action>

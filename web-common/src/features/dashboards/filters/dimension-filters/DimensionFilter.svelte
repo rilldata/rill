@@ -30,6 +30,7 @@
   import type { DimensionFilterItem } from "../../state-managers/selectors/dimension-filters";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import PinButton from "../PinButton.svelte";
+  import RequiredButton from "../RequiredButton.svelte";
 
   type Actions = FilterManager["actions"];
 
@@ -50,6 +51,8 @@
   export let toggleDimensionFilterMode: Actions["toggleDimensionFilterMode"];
   export let toggleFilterPin: Actions["toggleFilterPin"] | undefined =
     undefined;
+  export let toggleFilterRequired: Actions["toggleFilterRequired"] | undefined =
+    undefined;
   export let isUrlTooLongAfterInListFilter: (
     values: string[],
   ) => boolean = () => false;
@@ -66,6 +69,8 @@
       ? (filterData.selectedValues ?? [])
       : [];
   let curPinned = filterData.pinned;
+  let curRequired = filterData.required;
+  let excludeModeDirty = false;
 
   const client = useRuntimeClient();
 
@@ -78,9 +83,23 @@
     isInclude,
     dimensions,
     pinned,
+    required,
+    missingRequired,
   } = filterData);
 
-  $: if (!open && filterData.mode !== curMode) {
+  $: if (
+    !open &&
+    excludeModeDirty &&
+    (isInclude === false) === curExcludeMode
+  ) {
+    excludeModeDirty = false;
+  }
+
+  $: if (
+    !open &&
+    (mode !== curMode ||
+      (!excludeModeDirty && (isInclude === false) !== curExcludeMode))
+  ) {
     resyncFilterData(filterData);
   }
 
@@ -222,24 +241,21 @@
   function checkSearchText(inputText: string) {
     inListTooLong = false;
 
-    // Do not check search text and possibly switch to InList when mode is Contains
-    if (curMode === DimensionFilterMode.Contains) return;
+    // Only InList mode parses bulk values. Other modes treat input as search text.
+    if (curMode !== DimensionFilterMode.InList) return;
 
     const values = splitDimensionSearchText(inputText);
 
     if (values.length <= 1) {
-      if (curMode === DimensionFilterMode.InList) {
-        searchedBulkValues = inputText === "" ? [] : values;
-      }
+      searchedBulkValues = inputText === "" ? [] : values;
       return;
     }
 
-    // When switching to InList mode, include both existing selected values and new search values
-    // This ensures the below-fold query can find existing selected values that might not be in top 250
-    const allRelevantValues = [...new Set([...selectedValues, ...values])];
-    searchedBulkValues = allRelevantValues;
-    curMode = DimensionFilterMode.InList;
-    inListTooLong = isUrlTooLongAfterInListFilter(values);
+    // Include both existing selected values and new search values so the
+    // below-fold query can find existing selected values that might not be
+    // in the top 250.
+    searchedBulkValues = [...new Set([...selectedValues, ...values])];
+    inListTooLong = isUrlTooLongAfterInListFilter(searchedBulkValues);
   }
 
   function handleModeChange(newMode: DimensionFilterMode) {
@@ -266,6 +282,9 @@
       if (pinned !== curPinned) {
         toggleFilterPin?.(name, metricsViewNames);
       }
+      if (required !== curRequired) {
+        toggleFilterRequired?.(name, metricsViewNames);
+      }
 
       // Apply proxy changes for Select mode when dropdown closes
       if (curMode === DimensionFilterMode.Select) {
@@ -284,8 +303,9 @@
     }
   }
 
-  function handleToggleExcludeMode() {
-    curExcludeMode = !curExcludeMode;
+  function handleToggleExcludeMode(checked: boolean) {
+    curExcludeMode = checked;
+    excludeModeDirty = true;
   }
 
   function onToggleSelectAll() {
@@ -390,12 +410,14 @@
     curMode = filterData.mode;
     curSearchText = filterData.inputText ?? "";
     curExcludeMode = filterData.isInclude === false;
+    excludeModeDirty = false;
     selectedValuesProxy = filterData.selectedValues ?? [];
     searchedBulkValues =
       filterData.mode === DimensionFilterMode.InList
         ? (filterData.selectedValues ?? [])
         : [];
     curPinned = filterData.pinned;
+    curRequired = filterData.required;
   }
 </script>
 
@@ -421,12 +443,13 @@
           {...props}
           type="dimension"
           gray={selectedValues.length === 0 && !inputText}
+          error={!!missingRequired}
           active={open}
           exclude={curExcludeMode}
           label={`${name} filter`}
           theme
           onRemove={() => removeDimensionFilter(name, metricsViewNames)}
-          removable={!readOnly && !curPinned}
+          removable={!readOnly && !curPinned && !required}
           {readOnly}
           removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
           1
@@ -452,9 +475,17 @@
           <TooltipContent maxWidth="400px">
             <TooltipTitle>
               <svelte:fragment slot="name">{name}</svelte:fragment>
-              <svelte:fragment slot="description">dimension</svelte:fragment>
+              <svelte:fragment slot="description"
+                >{required
+                  ? "required dimension"
+                  : "dimension"}</svelte:fragment
+              >
             </TooltipTitle>
-            Click to edit the the filters in this dimension
+            {#if missingRequired}
+              This filter is required. Select a value to load the dashboard.
+            {:else}
+              Click to edit the filters in this dimension
+            {/if}
           </TooltipContent>
         </div>
       </Tooltip>
@@ -469,18 +500,30 @@
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
-      {#if toggleFilterPin}
+      {#if toggleFilterPin || toggleFilterRequired}
         <div
           class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
         >
           <b>{label}</b>
 
-          <PinButton
-            pinned={!!curPinned}
-            onTogglePin={() => {
-              curPinned = !curPinned;
-            }}
-          />
+          <div class="flex flex-row items-center gap-x-1">
+            {#if toggleFilterRequired}
+              <RequiredButton
+                required={!!curRequired}
+                onToggleRequired={() => {
+                  curRequired = !curRequired;
+                }}
+              />
+            {/if}
+            {#if toggleFilterPin}
+              <PinButton
+                pinned={!!curPinned}
+                onTogglePin={() => {
+                  curPinned = !curPinned;
+                }}
+              />
+            {/if}
+          </div>
         </div>
       {/if}
       <div class="flex flex-row">

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
@@ -128,7 +129,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	q := `
 	SELECT
 		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS view,
@@ -146,26 +147,77 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		return nil, err
 	}
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
+	rows, err := db.QueryxContext(ctx, q, databaseSchema, name)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	res := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
+	var view bool
+	var col, typ string
+	fields := make([]*runtimev1.StructType_Field, 0)
 	for rows.Next() {
-		var colName, dataType string
-		if err := rows.Scan(&res.View, &colName, &dataType); err != nil {
+		if err := rows.Scan(&view, &col, &typ); err != nil {
 			return nil, err
 		}
-		res.Schema[colName] = dataType
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: col,
+			Type: databaseTypeToPB(typ, true),
+		})
+	}
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           view,
+		Schema: &runtimev1.StructType{
+			Fields: fields,
+		},
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
+	}, rows.Err()
+}
+
+// All implements drivers.OLAPInformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.OLAPInformationSchema.
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
+	// SHOW CREATE TABLE works for both tables and views in MySQL.
+	// For tables it returns columns: [Table, Create Table].
+	// For views it returns columns: [View, Create View, character_set_client, collation_connection].
+	// We extract the DDL by column name to avoid depending on column order or count.
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", c.Dialect().EscapeTable(table.Database, table.DatabaseSchema, table.Name)))
+	if err != nil {
+		return err
 	}
+	defer rows.Close()
 
-	return res, nil
+	if rows.Next() {
+		res := make(map[string]any)
+		if err := rows.MapScan(res); err != nil {
+			return err
+		}
+		for _, key := range []string{"Create Table", "Create View"} {
+			if v, ok := res[key]; ok && v != nil {
+				if b, ok := v.([]byte); ok {
+					table.DDL = string(b)
+				}
+				break
+			}
+		}
+	}
+	return rows.Err()
 }

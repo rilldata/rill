@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
@@ -84,7 +85,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 			table_name,
 			CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
 		FROM %s.INFORMATION_SCHEMA.TABLES
-		WHERE table_schema = ?`, sqlSafeName(database))
+		WHERE table_schema = ?`, DialectSnowflake.EscapeIdentifier(database))
 	var args []any
 	args = append(args, databaseSchema)
 	if pageToken != "" {
@@ -139,7 +140,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	q := fmt.Sprintf(`
 		SELECT
 			CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END as is_view,
@@ -150,38 +151,81 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		ON t.table_schema = c.table_schema AND t.table_name = c.table_name 
 		WHERE t.table_schema = ? AND t.table_name = ?
 		ORDER BY c.ordinal_position
-	`, sqlSafeName(database), sqlSafeName(database))
+	`, DialectSnowflake.EscapeIdentifier(database), DialectSnowflake.EscapeIdentifier(database))
 
 	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
+	rows, err := db.QueryxContext(ctx, q, databaseSchema, name)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	t := &drivers.TableMetadata{
-		Schema: make(map[string]string),
-	}
-	var (
-		colName, colType string
-		isView           bool
-	)
+	var view bool
+	var col, typ string
+	fields := make([]*runtimev1.StructType_Field, 0)
 	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
+		if err := rows.Scan(&view, &col, &typ); err != nil {
 			return nil, err
 		}
-		t.Schema[colName] = colType
-		t.View = isView
+		t, err := databaseTypeToPB(typ, 0, true) // add scale and nullability if needed
+		if err != nil {
+			return nil, err
+		}
+		fields = append(fields, &runtimev1.StructType_Field{
+			Name: col,
+			Type: t,
+		})
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+	return &drivers.OlapTable{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		Name:           name,
+		View:           view,
+		Schema: &runtimev1.StructType{
+			Fields: fields,
+		},
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
+	}, rows.Err()
+}
+
+// All implements drivers.OLAPInformationSchema.
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.OLAPInformationSchema.
+func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
 	}
 
-	return t, nil
+	// HACK: Since All and Lookup don't always return the correct casing, we uppercase the table name here as that's usually necessary in Snowflake.
+	// This is a workaround until we return correct casing from All and Lookup.
+	fqn := c.Dialect().EscapeTable(strings.ToUpper(table.Database), strings.ToUpper(table.DatabaseSchema), strings.ToUpper(table.Name))
+
+	objectType := "TABLE"
+	if table.View {
+		objectType = "VIEW"
+	}
+
+	var ddl string
+	err = db.QueryRowContext(ctx, fmt.Sprintf("SELECT GET_DDL('%s', ?)", objectType), fqn).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
 }
 
 func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, string, error) {
@@ -201,9 +245,4 @@ func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, strin
 		schemaName = currentSchema.String
 	}
 	return dbName, schemaName, nil
-}
-
-func sqlSafeName(name string) string {
-	escaped := strings.ReplaceAll(name, `"`, `""`)
-	return fmt.Sprintf("%q", escaped)
 }

@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
 
@@ -25,6 +26,7 @@
   export let instanceId: string;
   export let showBanner = false;
   export let projectId: string | undefined = undefined;
+  export let allowUnvalidatedSpec = false;
 
   const client = useRuntimeClient();
 
@@ -32,12 +34,16 @@
 
   $: ({ url } = $page);
 
-  $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
+  $: existingStore = getCanvasStoreUnguarded(
+    canvasName,
+    instanceId,
+    allowUnvalidatedSpec,
+  );
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
         client,
-        { canvas: canvasName },
+        { canvas: canvasName, unsafe: allowUnvalidatedSpec },
         {
           query: {
             retry: 5,
@@ -102,6 +108,8 @@
     });
   }
 
+  let release: (() => void) | undefined = undefined;
+
   onNavigate(() => {
     if (hasBanner) {
       eventBus.emit("remove-banner", DashboardBannerID);
@@ -144,22 +152,44 @@
         });
       }
 
-      const validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
+      const canvasSpec =
+        fetchedCanvas?.canvas?.canvas?.state?.validSpec ??
+        (allowUnvalidatedSpec
+          ? fetchedCanvas?.canvas?.canvas?.spec
+          : undefined);
 
-      if (validSpec) {
+      if (canvasSpec) {
         const processed = {
-          canvas: fetchedCanvas?.canvas?.canvas?.state?.validSpec,
+          canvas: canvasSpec,
           components: fetchedCanvas?.resolvedComponents,
           metricsViews,
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
         };
 
-        return setCanvasStore(canvasName, instanceId, processed, client);
+        const newStore = setCanvasStore(
+          canvasName,
+          instanceId,
+          processed,
+          client,
+          allowUnvalidatedSpec,
+        );
+        newStore.canvasEntity.acquire();
+        release?.(); // release our reference to the previous entity, if any
+        release = newStore.canvasEntity.release;
+        return newStore;
       }
     }
 
+    existingStore?.canvasEntity?.acquire();
+    release?.(); // release our reference to the previous entity, if any
+    release = existingStore?.canvasEntity?.release;
+
     return existingStore;
   }
+
+  onDestroy(() => {
+    release?.();
+  });
 </script>
 
 <svelte:head>

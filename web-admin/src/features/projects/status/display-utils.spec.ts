@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import {
+  formatConnectorName,
   formatEnvironmentName,
+  getOlapEngineLabel,
+} from "@rilldata/web-common/features/resources/display-utils";
+import {
   getStatusDotClass,
   getStatusLabel,
-  formatConnectorName,
-  getOlapEngineLabel,
   getResourceKindTagColor,
 } from "./display-utils";
 
@@ -233,7 +235,7 @@ describe("display-utils", () => {
           name: "my_olap",
           config: { path: "md:my_database" },
         }),
-      ).toBe("MotherDuck (Self-managed)");
+      ).toBe("MotherDuck");
     });
 
     it("detects MotherDuck via token", () => {
@@ -243,7 +245,38 @@ describe("display-utils", () => {
           name: "custom_name",
           config: { token: "abc123" },
         }),
-      ).toBe("MotherDuck (Self-managed)");
+      ).toBe("MotherDuck");
+    });
+
+    it("detects DuckLake via attach config", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "ducklake_analytics",
+          config: {
+            attach:
+              "'ducklake:metadata.ducklake' AS my_ducklake (DATA_PATH 'datafiles')",
+          },
+        }),
+      ).toBe("DuckLake");
+    });
+
+    it("detects DuckLake via connector name when config is redacted", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "ducklake_1",
+        }),
+      ).toBe("DuckLake");
+    });
+
+    it("detects DuckLake case-insensitively", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "duckdb",
+          name: "Ducklake_1",
+        }),
+      ).toBe("DuckLake");
     });
 
     it("shows Rill-managed for provisioned ClickHouse", () => {
@@ -256,10 +289,19 @@ describe("display-utils", () => {
       ).toBe("ClickHouse (Rill-managed)");
     });
 
-    it("shows Self-managed for non-provisioned ClickHouse", () => {
+    it("returns bare label for non-provisioned ClickHouse", () => {
       expect(
         getOlapEngineLabel({ type: "clickhouse", name: "clickhouse" }),
-      ).toBe("ClickHouse (Self-managed)");
+      ).toBe("ClickHouse");
+    });
+
+    it("does not mislabel a non-duckdb connector named 'ducklake_x' as DuckLake", () => {
+      expect(
+        getOlapEngineLabel({
+          type: "postgres",
+          name: "ducklake_meta",
+        }),
+      ).toBe("Postgres");
     });
   });
 

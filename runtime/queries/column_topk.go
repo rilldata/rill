@@ -61,8 +61,8 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 
 	// Build column name based on dialect
 	var columnName string
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectStarRocks:
+	switch olap.Dialect().String() {
+	case drivers.DialectNameDuckDB, drivers.DialectNameClickHouse, drivers.DialectNameStarRocks:
 		columnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())

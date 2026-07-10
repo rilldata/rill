@@ -31,14 +31,13 @@ func TestInformationSchema(t *testing.T) {
 		require.NoError(t, err)
 		testInformationSchemaSystemAllLike(t, conn)
 	})
-	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, conn) })
 	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, conn) })
 	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, conn) })
 	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, infoSchema) })
-	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema) })
-	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema) })
 	t.Run("testInformationSchemaListDatabaseSchemasPagination", func(t *testing.T) { testInformationSchemaListDatabaseSchemasPagination(t, infoSchema) })
+	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema) })
 	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema) })
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, conn) })
 	t.Run("testLoadDDL", func(t *testing.T) { testLoadDDL(t, conn) })
 }
 
@@ -102,29 +101,6 @@ func testInformationSchemaSystemAllLike(t *testing.T, conn drivers.Handle) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "bar", tables[0].Name)
-}
-
-func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {
-	olap, _ := conn.AsOLAP("")
-	ctx := context.Background()
-	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
-	require.NoError(t, err)
-	require.Equal(t, "foo", table.Name)
-	require.Equal(t, true, table.IsDefaultDatabaseSchema)
-
-	_, err = olap.InformationSchema().Lookup(ctx, "", "", "bad")
-	require.Equal(t, drivers.ErrNotFound, err)
-
-	table, err = olap.InformationSchema().Lookup(ctx, "", "", "model")
-	require.NoError(t, err)
-	require.Equal(t, "model", table.Name)
-	require.Equal(t, true, table.IsDefaultDatabaseSchema)
-
-	table, err = olap.InformationSchema().Lookup(ctx, "", "other", "foo")
-	require.NoError(t, err)
-	require.Equal(t, "foo", table.Name)
-	require.Equal(t, "other", table.DatabaseSchema)
-	require.Equal(t, false, table.IsDefaultDatabaseSchema)
 }
 
 func testInformationSchemaAllPagination(t *testing.T, conn drivers.Handle) {
@@ -208,60 +184,6 @@ func testInformationSchemaListDatabaseSchemas(t *testing.T, infoSchema drivers.I
 	require.Equal(t, "other", databaseSchemaInfo[2].DatabaseSchema)
 }
 
-func testInformationSchemaListTables(t *testing.T, infoSchema drivers.InformationSchema) {
-	tables, _, err := infoSchema.ListTables(context.Background(), "", "default", 0, "")
-	require.NoError(t, err)
-	require.Equal(t, len(tables), 3)
-
-	require.Equal(t, "bar", tables[0].Name)
-	require.Equal(t, false, tables[0].View)
-	require.Equal(t, "foo", tables[1].Name)
-	require.Equal(t, false, tables[1].View)
-	require.Equal(t, "model", tables[2].Name)
-	require.Equal(t, true, tables[2].View)
-
-	tables, _, err = infoSchema.ListTables(context.Background(), "", "other", 0, "")
-	require.NoError(t, err)
-	require.Equal(t, len(tables), 2)
-
-	require.Equal(t, "bar", tables[0].Name)
-	require.Equal(t, false, tables[0].View)
-	require.Equal(t, "foo", tables[1].Name)
-	require.Equal(t, false, tables[1].View)
-}
-
-func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema) {
-	ctx := context.Background()
-
-	// Existing table
-	foo, err := infoSchema.GetTable(ctx, "", "default", "foo")
-	require.NoError(t, err)
-	require.Len(t, foo.Schema, 2)
-	require.Equal(t, "STRING", foo.Schema["bar"])
-	require.Equal(t, "INT32", foo.Schema["baz"])
-	require.False(t, foo.View)
-
-	// Non-existent table
-	noTable, err := infoSchema.GetTable(ctx, "", "default", "nonexistent_table")
-	require.NoError(t, err)
-	require.Empty(t, noTable.Schema)
-
-	// View
-	model, err := infoSchema.GetTable(ctx, "", "default", "model")
-	require.NoError(t, err)
-	require.Equal(t, "UINT8", model.Schema["1"])
-	require.Equal(t, "UINT8", model.Schema["2"])
-	require.Equal(t, "UINT8", model.Schema["3"])
-	require.True(t, model.View)
-
-	ofoo, err := infoSchema.GetTable(ctx, "", "other", "foo")
-	require.NoError(t, err)
-	require.Equal(t, "STRING", ofoo.Schema["bar"])
-	require.Equal(t, "INT32", ofoo.Schema["baz"])
-	require.Equal(t, false, ofoo.View)
-
-}
-
 func testInformationSchemaListDatabaseSchemasPagination(t *testing.T, infoSchema drivers.InformationSchema) {
 	ctx := context.Background()
 	pageSize := 2
@@ -285,6 +207,28 @@ func testInformationSchemaListDatabaseSchemasPagination(t *testing.T, infoSchema
 	require.Empty(t, token)
 }
 
+func testInformationSchemaListTables(t *testing.T, infoSchema drivers.InformationSchema) {
+	tables, _, err := infoSchema.ListTables(context.Background(), "", "default", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, len(tables), 3)
+
+	require.Equal(t, "bar", tables[0].Name)
+	require.Equal(t, false, tables[0].View)
+	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, false, tables[1].View)
+	require.Equal(t, "model", tables[2].Name)
+	require.Equal(t, true, tables[2].View)
+
+	tables, _, err = infoSchema.ListTables(context.Background(), "", "other", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, len(tables), 2)
+
+	require.Equal(t, "bar", tables[0].Name)
+	require.Equal(t, false, tables[0].View)
+	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, false, tables[1].View)
+}
+
 func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.InformationSchema) {
 	ctx := context.Background()
 	pageSize := 2
@@ -306,6 +250,50 @@ func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(all), 3)
 	require.Empty(t, token)
+}
+
+func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("")
+	ctx := context.Background()
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
+	require.NoError(t, err)
+	require.Equal(t, "foo", table.Name)
+	require.Equal(t, true, table.IsDefaultDatabaseSchema)
+
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", "bad")
+	require.Equal(t, drivers.ErrNotFound, err)
+
+	table, err = olap.InformationSchema().Lookup(ctx, "", "", "model")
+	require.NoError(t, err)
+	require.Equal(t, "model", table.Name)
+	require.Equal(t, true, table.IsDefaultDatabaseSchema)
+
+	table, err = olap.InformationSchema().Lookup(ctx, "", "other", "foo")
+	require.NoError(t, err)
+	require.Equal(t, "foo", table.Name)
+	require.Equal(t, "other", table.DatabaseSchema)
+	require.Equal(t, false, table.IsDefaultDatabaseSchema)
+}
+
+func testLoadDDL(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("")
+	ctx := context.Background()
+
+	// Test DDL for a table
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(ctx, table)
+	require.NoError(t, err)
+	require.Contains(t, table.DDL, "CREATE TABLE")
+	require.Contains(t, table.DDL, "foo")
+
+	// Test DDL for a view
+	view, err := olap.InformationSchema().Lookup(ctx, "", "", "model")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(ctx, view)
+	require.NoError(t, err)
+	require.Contains(t, view.DDL, "CREATE VIEW")
+	require.Contains(t, view.DDL, "model")
 }
 
 func prepareConn(t *testing.T, conn drivers.Handle) {
@@ -374,25 +362,4 @@ func prepareConn(t *testing.T, conn drivers.Handle) {
 		)`,
 	})
 	require.NoError(t, err)
-}
-
-func testLoadDDL(t *testing.T, conn drivers.Handle) {
-	olap, _ := conn.AsOLAP("")
-	ctx := context.Background()
-
-	// Test DDL for a table
-	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
-	require.NoError(t, err)
-	err = olap.InformationSchema().LoadDDL(ctx, table)
-	require.NoError(t, err)
-	require.Contains(t, table.DDL, "CREATE TABLE")
-	require.Contains(t, table.DDL, "foo")
-
-	// Test DDL for a view
-	view, err := olap.InformationSchema().Lookup(ctx, "", "", "model")
-	require.NoError(t, err)
-	err = olap.InformationSchema().LoadDDL(ctx, view)
-	require.NoError(t, err)
-	require.Contains(t, view.DDL, "CREATE VIEW")
-	require.Contains(t, view.DDL, "model")
 }

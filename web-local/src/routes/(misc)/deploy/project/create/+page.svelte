@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ConnectError } from "@connectrpc/connect";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
+  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import {
     getIsOrgOnTrial,
@@ -15,12 +15,12 @@
   import {
     createLocalServiceDeploy,
     createLocalServiceGetCurrentProject,
-    createLocalServiceGitStatus,
   } from "@rilldata/web-common/runtime-client/local-service.ts";
+  import { createRuntimeServiceGitStatus } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DeployError from "@rilldata/web-common/features/project/deploy/DeployError.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { onMount } from "svelte";
   import { derived, get } from "svelte/store";
   import type { PageData } from "./$types";
@@ -28,10 +28,11 @@
   export let data: PageData;
   const { org: orgParam, useGit } = data;
 
+  const runtimeClient = useRuntimeClient();
   const projectQuery = createLocalServiceGetCurrentProject();
   const deployMutation = createLocalServiceDeploy();
-  const gitStatusQuery = createLocalServiceGitStatus();
-  const gitRepoStatusQuery = getLocalGitRepoStatus();
+  const gitStatusQuery = createRuntimeServiceGitStatus(runtimeClient, {});
+  const gitRepoStatusQuery = getLocalGitRepoStatus(runtimeClient);
 
   $: ({ legacyArchiveDeploy } = featureFlags);
 
@@ -114,9 +115,7 @@
 </script>
 
 {#if loading}
-  <div class="h-36">
-    <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
-  </div>
+  <LoadingSpinner />
   <CTAHeader variant="bold">
     Hang tight! We're deploying your project...
   </CTAHeader>

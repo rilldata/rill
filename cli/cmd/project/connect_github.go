@@ -12,11 +12,11 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -55,9 +55,13 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
 	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
+	deployCmd.Flags().IntVar(&opts.DevSlots, "dev-slots", local.DefaultDevSlots(ch), "Slots to allocate for dev deployments")
 	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
+			panic(err)
+		}
+		if err := deployCmd.Flags().MarkHidden("dev-slots"); err != nil {
 			panic(err)
 		}
 	}
@@ -116,7 +120,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Error if the repository is not in sync with the remote
-	ok, err := repoInSyncFlow(ch, localGitPath, opts.SubPath, opts.RemoteName)
+	ok, err := repoInSyncFlow(ctx, ch, localGitPath, opts.SubPath, opts.RemoteName)
 	if err != nil {
 		return err
 	}
@@ -166,6 +170,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Provisioner:   opts.Provisioner,
 		ProdVersion:   opts.ProdVersion,
 		ProdSlots:     int64(opts.Slots),
+		DevSlots:      int64(opts.DevSlots),
 		Subpath:       opts.SubPath,
 		PrimaryBranch: opts.PrimaryBranch,
 		Public:        opts.Public,
@@ -508,8 +513,8 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 	return res, err
 }
 
-func repoInSyncFlow(ch *cmdutil.Helper, gitPath, subpath, remoteName string) (bool, error) {
-	st, err := gitutil.RunGitStatus(gitPath, subpath, remoteName)
+func repoInSyncFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, subpath, remoteName string) (bool, error) {
+	st, err := gitutil.Status(ctx, gitPath, subpath, remoteName, "")
 	if err != nil {
 		return false, err
 	}

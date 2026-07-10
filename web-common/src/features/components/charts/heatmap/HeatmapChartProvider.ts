@@ -26,6 +26,7 @@ import {
   type Writable,
 } from "svelte/store";
 import {
+  canQueryWithTimeRange,
   getFilterWithNullHandling,
   vegaSortToAggregationSort,
 } from "../query-util";
@@ -89,7 +90,7 @@ export class HeatmapChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!config.x?.field &&
           config?.x?.type !== "temporal" &&
           !Array.isArray(config.x?.sort);
@@ -134,7 +135,7 @@ export class HeatmapChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!config.y?.field &&
           config?.y?.type !== "temporal" &&
           !Array.isArray(config.y?.sort);
@@ -185,7 +186,7 @@ export class HeatmapChartProvider {
 
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
             ? xTopNData !== undefined
             : true) &&

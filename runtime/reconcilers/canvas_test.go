@@ -347,7 +347,7 @@ rows:
           measures:
             - x
   - items:
-      - kpi_grid:
+      - custom_chart:
           metrics_sql: "SELECT bar, y FROM mv2"
   - items:
       - markdown:

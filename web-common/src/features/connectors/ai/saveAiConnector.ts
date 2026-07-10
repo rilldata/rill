@@ -1,18 +1,13 @@
-import { goto } from "$app/navigation";
 import type { QueryClient } from "@tanstack/query-core";
 import { runtimeServicePutFile } from "../../../runtime-client";
 import type { RuntimeClient } from "../../../runtime-client/v2";
-import {
-  compileConnectorYAML,
-  updateDotEnvWithSecrets,
-  updateRillYAMLWithAiConnector,
-} from "../code-utils";
+import { generateYAML, updateRillYAMLWithAiConnector } from "../code-utils";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
 import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
-import { beforeSubmitForm } from "../../sources/modal/submitAddDataForm";
+import { navigateToFile } from "../../../layout/navigation/editor-routing";
 import {
   getConnectorSchema,
   toConnectorDriver,
@@ -22,6 +17,8 @@ import {
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
+import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
 async function setAiConnectorInRillYAML(
   queryClient: QueryClient,
@@ -49,11 +46,12 @@ export async function saveAiConnector(
   queryClient: QueryClient,
   schemaName: string,
   formValues: Record<string, string>,
+  envEditSession: EnvEditSession,
 ): Promise<void> {
   const connector = toConnectorDriver(schemaName);
   if (!connector) throw new Error(`Unknown AI connector: ${schemaName}`);
 
-  await beforeSubmitForm(client, connector);
+  await maybeInitProject(client);
 
   const schema = getConnectorSchema(connector.name ?? "");
   const schemaFields = schema
@@ -76,34 +74,22 @@ export async function saveAiConnector(
     EntityType.Connector,
   );
 
-  // Write secrets to .env
-  const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
-    await updateDotEnvWithSecrets(client, queryClient, connector, formValues, {
-      secretKeys: schemaSecretKeys,
-      schema: schema ?? undefined,
-    });
-
-  await runtimeServicePutFile(client, {
-    path: ".env",
-    blob: newEnvBlob,
-    create: true,
-    createOnly: false,
+  const connectorYAML = generateYAML(connector, formValues, envEditSession, {
+    connectorInstanceName: newConnectorName,
+    orderedProperties: schemaFields,
+    secretKeys: schemaSecretKeys,
+    stringKeys: schemaStringKeys,
+    schema: schema ?? undefined,
+    fieldFilter: schemaFields
+      ? (property) => !("internal" in property && property.internal)
+      : undefined,
   });
+  await envEditSession.commit();
 
   // Write connector YAML
   await runtimeServicePutFile(client, {
     path: newConnectorFilePath,
-    blob: compileConnectorYAML(connector, formValues, {
-      connectorInstanceName: newConnectorName,
-      orderedProperties: schemaFields,
-      secretKeys: schemaSecretKeys,
-      stringKeys: schemaStringKeys,
-      schema: schema ?? undefined,
-      existingEnvBlob: envBlobForYaml,
-      fieldFilter: schemaFields
-        ? (property) => !("internal" in property && property.internal)
-        : undefined,
-    }),
+    blob: connectorYAML,
     create: true,
     createOnly: false,
   });
@@ -111,5 +97,5 @@ export async function saveAiConnector(
   // Register as the project's AI connector
   await setAiConnectorInRillYAML(queryClient, client, newConnectorName);
 
-  await goto(`/files/${newConnectorFilePath}`);
+  await navigateToFile(`/${newConnectorFilePath}`);
 }

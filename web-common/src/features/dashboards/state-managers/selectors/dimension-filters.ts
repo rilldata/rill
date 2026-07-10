@@ -140,6 +140,8 @@ export type DimensionFilterItem = {
   inputText?: string;
   isInclude?: boolean;
   pinned?: boolean;
+  required?: boolean;
+  missingRequired?: boolean;
 };
 
 export function getDimensionFilterItems(

@@ -1,12 +1,5 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
-import type { V1Connector } from "@rilldata/web-common/runtime-client";
-import { formatConnectorName } from "@rilldata/web-common/features/resources/display-utils";
-
-// Re-export shared utilities from web-common
-export {
-  formatConnectorName,
-  formatEnvironmentName,
-} from "@rilldata/web-common/features/resources/display-utils";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 /**
  * Returns the Tailwind CSS class for a deployment status indicator dot.
@@ -31,6 +24,18 @@ export function getStatusDotClass(status: V1DeploymentStatus): string {
 }
 
 /**
+ * Returns true for deployment statuses that represent in-progress transitions.
+ */
+export function isTransitoryStatus(status: V1DeploymentStatus): boolean {
+  return (
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING
+  );
+}
+
+/**
  * Returns a human-readable label for a deployment status.
  * @param status - The deployment status
  * @returns Human-readable status label (e.g., "Ready", "Pending", "Error")
@@ -38,55 +43,24 @@ export function getStatusDotClass(status: V1DeploymentStatus): string {
 export function getStatusLabel(status: V1DeploymentStatus): string {
   switch (status) {
     case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
-      return "Ready";
+      return m.status_deploy_ready();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
-      return "Pending";
+      return m.status_deploy_pending();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
-      return "Updating";
+      return m.status_deploy_updating();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
-      return "Stopping";
+      return m.status_deploy_stopping();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING:
-      return "Deleting";
+      return m.status_deploy_deleting();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
-      return "Error";
+      return m.status_deploy_error();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED:
-      return "Stopped";
+      return m.status_deploy_stopped();
     case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED:
-      return "Deleted";
+      return m.status_deploy_deleted();
     default:
-      return "Not deployed";
+      return m.status_deploy_not_deployed();
   }
-}
-
-/**
- * Returns the display label for the OLAP engine, including MotherDuck detection
- * and a management suffix (Rill-managed / Self-managed) where applicable.
- *
- * MotherDuck is detected by checking whether the connector's path starts with "md:"
- * or a token is configured — the connector name itself may be anything.
- *
- * @param connector - The OLAP connector from projectConnectors, or undefined
- * @returns Display label, e.g. "DuckDB", "MotherDuck (Self-managed)", "ClickHouse (Rill-managed)"
- */
-export function getOlapEngineLabel(connector: V1Connector | undefined): string {
-  if (!connector) return "DuckDB";
-
-  const isDuckDB = connector.type === "duckdb";
-  const isMotherDuck =
-    isDuckDB &&
-    (String(connector.config?.path ?? "").startsWith("md:") ||
-      !!connector.config?.token);
-
-  const name = formatConnectorName(
-    isMotherDuck ? "motherduck" : connector.type,
-  );
-
-  // Show management suffix for non-default-DuckDB connectors
-  const showSuffix = connector.provision || isMotherDuck || !isDuckDB;
-  if (!showSuffix) return name;
-
-  const suffix = connector.provision ? "Rill-managed" : "Self-managed";
-  return `${name} (${suffix})`;
 }
 
 /**

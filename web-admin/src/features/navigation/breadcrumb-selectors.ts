@@ -1,9 +1,10 @@
 import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
 import {
   createAdminServiceListOrganizations,
-  createAdminServiceListProjectsForOrganization,
   type V1Organization,
 } from "../../client";
+import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
+import { createQuery } from "@tanstack/svelte-query";
 
 /**
  * Query selector for organization breadcrumb paths.
@@ -43,19 +44,13 @@ export function useBreadcrumbProjectPaths(
   organization: string | undefined,
   readProjects: boolean,
 ) {
-  return createAdminServiceListProjectsForOrganization(
-    organization ?? "",
-    { pageSize: 100 },
-    {
-      query: {
-        enabled: !!organization && readProjects,
-        retry: 2,
-        refetchOnMount: true,
-        placeholderData: {},
-        select: (data) => buildProjectPathMap(data.projects ?? []),
-      },
-    },
-  );
+  return createQuery({
+    ...listProjectsForOrgQueryOptions(organization ?? ""),
+    enabled: !!organization && readProjects,
+    retry: 2,
+    placeholderData: {},
+    select: (data) => buildProjectPathMap(data.projects ?? []),
+  });
 }
 
 /**

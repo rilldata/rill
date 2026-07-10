@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";
+  import { getFileHref } from "../../layout/navigation/editor-routing";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import {
@@ -29,7 +30,9 @@
     class="border-accent-primary-action flex items-center border h-7 rounded-[2px] bg-transparent text-accent-primary-action"
   >
     <a
-      href={`/files/${removeLeadingSlash(firstResource.meta?.filePaths?.[0])}`}
+      href={getFileHref(
+        `/${removeLeadingSlash(firstResource.meta?.filePaths?.[0])}`,
+      )}
       class="text-inherit font-medium flex items-center border-r px-3 size-full hover:bg-surface-hover border-accent-primary-action hover:text-fg-accent"
     >
       Go to {firstResourceType}

@@ -64,11 +64,82 @@ const queryRefetchStateMap = new WeakMap<
 >();
 
 /**
+ * Creates a smart refetch interval function that only considers resources
+ * matching a predicate. Use this when the query fetches all resources but
+ * only a subset is relevant (e.g., useDashboards fetches everything but
+ * only cares about canvas/explore).
+ */
+export function createSmartRefetchInterval(
+  isRelevant: (resource: V1Resource) => boolean,
+) {
+  return function refetchInterval(
+    query: Query<
+      V1ListResourcesResponse,
+      ConnectError,
+      V1ListResourcesResponse,
+      readonly unknown[]
+    >,
+  ): number | false {
+    const resources = query.state.data?.resources;
+
+    // No data (query errored or hasn't resolved) or empty resource list
+    // (runtime just started, parser hasn't created resources yet): keep
+    // polling so we pick up resources once the runtime is ready.
+    if (!resources || resources.length === 0) {
+      return MAX_REFETCH_INTERVAL;
+    }
+
+    const relevantResources = resources.filter(isRelevant);
+
+    // When no relevant resources exist yet, we need to decide whether to
+    // keep polling (resources are still being built) or stop (project is
+    // genuinely empty). Three cases:
+    //
+    // 1. Relevant resources exist → only check those. This avoids
+    //    perpetual polling from ProjectParser, which stays RUNNING
+    //    indefinitely on dev/branch deployments (file watching).
+    //
+    // 2. No relevant resources, but non-parser resources are reconciling
+    //    or the parser is still creating resources → keep polling.
+    //    During startup the parser creates resources incrementally
+    //    (sources → models → explores), so explores may not exist yet.
+    //
+    // 3. Only ProjectParser exists (no non-parser resources yet) and
+    //    it's reconciling → poll at MAX_REFETCH_INTERVAL. We can't
+    //    distinguish "empty project" from "parser still creating
+    //    resources," so we poll conservatively. Once the parser creates
+    //    non-parser resources we move to case 2; if it finishes without
+    //    creating any, we stop.
+    let toCheck: V1Resource[];
+    if (relevantResources.length > 0) {
+      toCheck = relevantResources;
+    } else {
+      const nonParser = resources.filter((r) => !r.projectParser);
+      const parserReconciling = resources.some(
+        (r) => !!r.projectParser && isResourceReconciling(r),
+      );
+      if (nonParser.length === 0 && parserReconciling) {
+        return MAX_REFETCH_INTERVAL;
+      } else if (nonParser.length > 0 && parserReconciling) {
+        toCheck = resources;
+      } else {
+        toCheck = nonParser;
+      }
+    }
+
+    const currentState = queryRefetchStateMap.get(query) || {};
+    const updatedState = updateSmartRefetchMeta(toCheck, currentState);
+    queryRefetchStateMap.set(query, updatedState);
+
+    return updatedState.refetchInterval;
+  };
+}
+
+/**
  * A smart refetch interval function that uses a WeakMap to store state.
  * This approach keeps refetch state per query without mutating the query object.
- *
- * @param query The TanStack query object
- * @returns The refetch interval (number in ms or false to disable)
+ * Checks ALL resources in the response; use createSmartRefetchInterval
+ * when you need to scope to a subset.
  */
 export function smartRefetchIntervalFunc(
   query: Query<

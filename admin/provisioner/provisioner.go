@@ -38,6 +38,14 @@ type Provisioner interface {
 	//
 	// This means Provision should be idempotent for the resource's ID (or otherwise do appropriate garbage collection in calls to Check).
 	Provision(ctx context.Context, r *Resource, opts *ResourceOptions) (*Resource, error)
+	// Hibernate non-destructively scales down the resource in a way that preserves persistent state (e.g. disks).
+	// If the provisioner does not support hibernation, it should just implement this as a no-op, returning r unchanged.
+	//
+	// When/if the resource should be scaled up again, Provision will be called.
+	// You can/should update the Resource's State for bookkeeping the hibernation state.
+	//
+	// NOTE: This is not 1:1 related to project-level "hibernation". This is a lower-level, state-preserving teardown of provisioner resources.
+	Hibernate(ctx context.Context, r *Resource) (*Resource, error)
 	// Deprovision deprovisions a resource.
 	Deprovision(ctx context.Context, r *Resource) error
 	// AwaitReady waits for a resource to be ready.

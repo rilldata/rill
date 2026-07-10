@@ -11,6 +11,7 @@
   import {
     type Directory,
     getDirectoryHasErrors,
+    getDirectoryHasWarnings,
   } from "@rilldata/web-common/features/file-explorer/transform-file-list";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -21,7 +22,7 @@
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
   import { getName } from "../entity-management/name-utils";
-  import { PROTECTED_DIRECTORIES } from "./protected-paths";
+  import { isProtectedDirectory } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
   export let dir: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -40,9 +41,10 @@
   $: padding = getPaddingFromPath(dir.path);
   $: ({ instanceId } = runtimeClient);
   $: topLevelFolder = getTopLevelFolder(dir.path);
-  $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+  $: protectedDirectory = isProtectedDirectory(topLevelFolder);
 
   $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
+  $: hasWarnings = getDirectoryHasWarnings(queryClient, instanceId, dir);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     runtimeClient,
@@ -79,7 +81,7 @@
 
 <button
   class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center
-  {isProtectedDirectory
+  {protectedDirectory
     ? 'hover:text-fg-secondary text-fg-muted '
     : 'text-fg-primary hover:text-fg-primary'}
   font-medium hover:bg-surface-hover"
@@ -94,10 +96,14 @@
     className="flex-none text-fg-muted {expanded ? '' : 'transform -rotate-90'}"
     size="14px"
   />
-  <span class="truncate w-full" class:text-red-600={$hasErrors}>
+  <span
+    class="truncate w-full"
+    class:text-red-600={$hasErrors}
+    class:text-yellow-600={$hasWarnings && !$hasErrors}
+  >
     {dir.name}
   </span>
-  {#if !isProtectedDirectory}
+  {#if !protectedDirectory}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger>
         {#snippet child({ props })}

@@ -9,6 +9,25 @@ export const httpsSchema: MultiStepFormSchema = {
     "*": { "*": { idle: "Continue", loading: "Continuing..." } },
   },
   properties: {
+    auth_method: {
+      type: "string",
+      title: "Authentication method",
+      enum: ["with_headers", "public"],
+      default: "with_headers",
+      description: "Choose how to authenticate to GCS",
+      "x-display": "radio",
+      "x-enum-labels": ["Headers", "Public"],
+      "x-enum-descriptions": [
+        "Add headers for credentials.",
+        "Access publicly readable urls without credentials.",
+      ],
+      "x-ui-only": true,
+      "x-grouped-fields": {
+        with_headers: ["headers"],
+        public: [],
+      },
+      "x-step": "connector",
+    },
     headers: {
       title: "Headers",
       description: "HTTP headers to include in the request",
@@ -16,6 +35,7 @@ export const httpsSchema: MultiStepFormSchema = {
       "x-placeholder": "Header name",
       "x-hint": "e.g. Authorization: Bearer &lt;token&gt;",
       "x-step": "connector",
+      "x-visible-if": { auth_method: "with_headers" },
     },
     path: {
       type: "string",

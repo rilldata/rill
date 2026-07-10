@@ -25,33 +25,37 @@ initTmpDir() {
     cd "$TMP_DIR"
 }
 
-# Ensure that dependency is installed and executable, exit and print help message if not
-checkDependency() {
-    if ! [ -x "$(command -v "$1")" ]; then
-        printf "'%s' could not be found, this script depends on it, please install and try again.\n" "$1"
-        exit 1
+# Check all required dependencies, printing messages for each missing one before exiting
+checkDependencies() {
+    MISSING=false
+    if ! [ -x "$(command -v curl)" ]; then
+        printf "'curl' could not be found, this script depends on it, please install and try again.\n"
+        MISSING=true
     fi
-}
-
-# Ensure that 'git' is installed and executable, exit and print help message if not
-checkGitDependency() {
+    if ! [ -x "$(command -v unzip)" ]; then
+        printf "'unzip' could not be found, this script depends on it, please install and try again.\n"
+        MISSING=true
+    fi
     if ! [ -x "$(command -v git)" ]; then
         publishSyftEvent git_missing
-        printf "Git could not be found, Rill depends on it, please install and try again.\n\n"
-        printf "Helpful instructions: https://github.com/git-guides/install-git\n"
+        printf "'git' could not be found, this script depends on it, please install and try again (see instructions at https://github.com/git-guides/install-git).\n"
+        MISSING=true
+    fi
+    if ! [ -x "$(command -v shasum)" ] && ! [ -x "$(command -v sha256sum)" ]; then
+        printf "Neither 'shasum' nor 'sha256sum' could be found, this script depends on one of them, please install one of them and try again.\n"
+        MISSING=true
+    fi
+    if [ "$MISSING" = "true" ]; then
         exit 1
     fi
 }
 
-# Ensure that either 'shasum' or 'sha256sum' is installed and executable, exit and print help message if not
-resolveShasumDependency() {
+# Verify a checksums file using whichever SHA256 tool is available
+sha256Verify() {
     if [ -x "$(command -v shasum)" ]; then
-        sha256_verify="shasum --algorithm 256 --ignore-missing --check"
-    elif [ -x "$(command -v sha256sum)" ]; then
-        sha256_verify="sha256sum --ignore-missing --check"
+        shasum --algorithm 256 --ignore-missing --check "$1"
     else
-        printf "neither 'shasum' or 'sha256sum' could be found, this script depends on one of them, please install one of them and try again.\n"
-        exit 1
+        sha256sum --ignore-missing --check "$1"
     fi
 }
 
@@ -61,28 +65,30 @@ downloadBinary() {
 
     LATEST_URL="https://${CDN}/rill/latest.txt"
     if [ "${VERSION}" = "latest" ]; then
-        VERSION=$(curl --silent --show-error ${LATEST_URL})
+        VERSION=$(curl --silent --show-error "${LATEST_URL}")
     fi
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
+    printf "Downloading binary: %s\n" "$BINARY_URL"
     if [ "$NON_INTERACTIVE" = "true" ]; then
-        set -- "--silent" "--show-error"
+        curl --location --silent --show-error "${BINARY_URL}" --output "rill_${PLATFORM}.zip"
     else
-        set -- "--progress-bar"
+        curl --location --progress-bar "${BINARY_URL}" --output "rill_${PLATFORM}.zip"
     fi
 
-    printf "Downloading binary: %s\n" "$BINARY_URL"
-    curl --location "$@" "${BINARY_URL}" --output rill_${PLATFORM}.zip
-
     printf "\nDownloading checksum: %s\n" "$CHECKSUM_URL"
-    curl --location "$@" "${CHECKSUM_URL}" --output checksums.txt
+    if [ "$NON_INTERACTIVE" = "true" ]; then
+        curl --location --silent --show-error "${CHECKSUM_URL}" --output checksums.txt
+    else
+        curl --location --progress-bar "${CHECKSUM_URL}" --output checksums.txt
+    fi
 
     printf "\nVerifying the SHA256 checksum of the downloaded binary:\n"
-    ${sha256_verify} checksums.txt
+    sha256Verify checksums.txt
 
     printf "\nUnpacking rill_%s.zip\n" "$PLATFORM"
-    unzip -q rill_${PLATFORM}.zip
+    unzip -q "rill_${PLATFORM}.zip"
 }
 
 # Print install options
@@ -185,7 +191,7 @@ publishSyftEvent() {
     SYFT_URL=https://event.syftdata.com/log
     SYFT_ID=clp76quhs0006l908bux79l4v
     if [ -z "$RILL_INSTALL_DISABLE_TELEMETRY" ]; then
-        curl --silent --show-error --header "Authorization: ${SYFT_ID}" --header "Content-Type: application/json" --data "{\"event_name\":\"$1\"}" $SYFT_URL > /dev/null || true >&2
+        curl --silent --show-error --header "Authorization: ${SYFT_ID}" --header "Content-Type: application/json" --data "{\"event_name\":\"$1\"}" "$SYFT_URL" > /dev/null 2>&1 || true
     fi
 }
 
@@ -289,10 +295,7 @@ installRill() {
     if [ "$NON_INTERACTIVE" != "true" ]; then
         publishSyftEvent install
     fi
-    checkDependency curl
-    checkDependency unzip
-    checkGitDependency
-    resolveShasumDependency
+    checkDependencies
     initPlatform
     resolveInstallDir
     initTmpDir
@@ -308,7 +311,10 @@ installRill() {
 
 # Uninstall Rill from the system, this function is aware of both the privileged and unprivileged install methods
 uninstallRill() {
-    checkDependency sed
+    if ! [ -x "$(command -v sed)" ]; then
+        printf "'sed' could not be found, this script depends on it, please install and try again.\n"
+        exit 1
+    fi
     initPlatform
 
     if [ -f "/usr/local/bin/rill" ]
@@ -328,23 +334,18 @@ set -e
 # Default values
 INSTALL_DIR_EXPLICIT=false
 
-# Default to non-interactive if STDIN is not a terminal (usually indicates e.g. agent, CI, subprocess).
-# Backwards compatibility: Old versions of `rill upgrade` didn't pass STDIN through, so we stay interactive if the parent process is named `rill`.
-if ! [ -t 0 ]; then
-    # Get parent process name
-    PARENT_NAME=""
-    if [ -n "$PPID" ]; then
-        if [ -f "/proc/$PPID/comm" ]; then
-            PARENT_NAME=$(basename "$(cat "/proc/$PPID/comm" 2>/dev/null)" 2>/dev/null)
-        elif command -v ps >/dev/null 2>&1; then
-            PARENT_NAME=$(basename "$(ps -o comm= -p "$PPID" 2>/dev/null)" 2>/dev/null)
-        fi
-    fi
-
-    # Apply the default
-    if [ "$PARENT_NAME" != "rill" ]; then
-        NON_INTERACTIVE=${NON_INTERACTIVE:-true}
-    fi
+# Detect non-interactive environments (CI, Docker, agents, subprocesses).
+# When the script is piped (e.g. "curl | sh"), stdin is not a terminal, but a human may still be present.
+# We check /dev/tty to distinguish: in a real terminal, /dev/tty is a terminal device; in CI/Docker/agents, it either doesn't exist or isn't a real terminal.
+if [ -t 0 ]; then
+    # Stdin is a terminal; definitely interactive.
+    NON_INTERACTIVE=${NON_INTERACTIVE:-false}
+elif [ -e /dev/tty ] && sh -c 'exec 3</dev/tty && test -t 3' 2>/dev/null; then
+    # Stdin is piped but /dev/tty is a real terminal; likely "curl | sh" in an interactive session.
+    NON_INTERACTIVE=${NON_INTERACTIVE:-false}
+else
+    # Stdin is not a terminal and /dev/tty is not available; default to non-interactive.
+    NON_INTERACTIVE=${NON_INTERACTIVE:-true}
 fi
 NON_INTERACTIVE=${NON_INTERACTIVE:-false}
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/chcol"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
@@ -121,6 +122,12 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(v2), nil
 	case duckdb.Map:
 		return ToValue(map[any]any(v), t)
+	case duckdb.OrderedMap:
+		m := make(map[any]any, len(v.Keys()))
+		for i, k := range v.Keys() {
+			m[k] = v.Values()[i]
+		}
+		return ToValue(m, t)
 	case *chcol.JSON:
 		return ToValue(v.NestedMap(), t)
 	case chcol.JSON:
@@ -158,6 +165,15 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			case runtimev1.Type_CODE_DECIMAL:
 				// Evil cast to float until frontend can deal with bigs:
 				v2, ok := new(big.Float).SetString(v)
+				if ok {
+					f, _ := v2.Float64()
+					return structpb.NewNumberValue(f), nil
+				}
+			case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256:
+				// Snowflake returns integers as strings when scanned into interface{}.
+				// All ints have same size i.e. 256 in Snowflake.
+				// Evil cast to float until frontend can deal with bigs:
+				v2, ok := new(big.Int).SetString(v, 10)
 				if ok {
 					f, _ := v2.Float64()
 					return structpb.NewNumberValue(f), nil
@@ -200,6 +216,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return nil, err
 		}
 		return structpb.NewListValue(st), nil
+	case civil.Date:
+		return structpb.NewStringValue(v.String()), nil
+	case civil.DateTime:
+		return structpb.NewStringValue(v.String()), nil
 	default:
 	}
 	if t != nil && t.ArrayElementType != nil {

@@ -33,6 +33,8 @@ export const methodOverrides: Record<
     watchResources: "skip",
     completeStreaming: "skip",
     // Explicitly classified as queries (despite not matching Get/List prefix)
+    gitStatus: "query",
+    gitDiff: "query",
     issueDevJWT: "query",
     analyzeConnectors: "query",
     analyzeVariables: "query",

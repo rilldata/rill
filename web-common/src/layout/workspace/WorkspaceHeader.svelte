@@ -15,41 +15,66 @@
   import { workspaces } from "./workspace-stores";
   import ConnectorRefreshButton from "@rilldata/web-common/features/connectors/ConnectorRefreshButton.svelte";
   import ConnectorAddModelButton from "@rilldata/web-common/features/connectors/ConnectorAddModelButton.svelte";
+  import type { Snippet } from "svelte";
 
-  export let resourceKind: ResourceKind | undefined;
-  export let titleInput: string;
-  export let editable = true;
-  export let showInspectorToggle = true;
-  export let showTableToggle = false;
-  export let hasUnsavedChanges: boolean;
-  export let filePath: string;
-  export let codeToggle = false;
-  export let resource: V1Resource | undefined = undefined;
-  export let onTitleChange: (title: string) => void = () => {};
+  let {
+    resourceKind,
+    resource = undefined,
+    titleInput,
+    editable = true,
+    showInspectorToggle = true,
+    showTableToggle = false,
+    hasUnsavedChanges,
+    filePath,
+    codeToggle = false,
+    showBreadcrumbs = true,
+    onTitleChange,
+    workspaceControls,
+    cta,
+  }: {
+    resourceKind: ResourceKind | undefined;
+    resource?: V1Resource | undefined;
+    titleInput: string;
+    editable?: boolean;
+    showInspectorToggle?: boolean;
+    showTableToggle?: boolean;
+    hasUnsavedChanges: boolean;
+    filePath: string;
+    codeToggle?: boolean;
+    showBreadcrumbs?: boolean;
+    onTitleChange?: (title: string) => void;
+    workspaceControls?: Snippet<[number]>;
+    cta?: Snippet<[number]>;
+  } = $props();
 
-  let width: number;
-  let editing = false;
+  let width: number = $state(0);
+  let editing = $state(false);
 
-  $: value = titleInput;
-  $: workspaceLayout = workspaces.get(filePath);
-  $: inspectorVisible = workspaceLayout.inspector.visible;
-  $: tableVisible = workspaceLayout.table.visible;
-  $: view = workspaceLayout.view;
+  let value = $derived(titleInput);
+  let workspaceLayout = $derived(workspaces.get(filePath));
+  let inspectorVisible = $derived(workspaceLayout.inspector.visible);
+  let tableVisible = $derived(workspaceLayout.table.visible);
+  let view = $derived(workspaceLayout.view);
 
   // Check if it's a connector by resourceKind or by file path.
   // File path fallback is needed when reconcile fails and resourceKind is unavailable.
-  $: isConnector =
+  let isConnector = $derived(
     resourceKind === ResourceKind.Connector ||
-    (filePath && filePath.startsWith("/connectors/"));
+      (filePath && filePath.startsWith("/connectors/")),
+  );
+
+  let IconComponent = $derived(getIconComponent(resourceKind, filePath));
 </script>
 
 <header bind:clientWidth={width}>
-  <div
-    class="slide pl-3.5 h-7 flex items-center"
-    class:!pl-10={!$navigationOpen}
-  >
-    <WorkspaceBreadcrumbs {resource} {filePath} />
-  </div>
+  {#if showBreadcrumbs}
+    <div
+      class="slide pl-3.5 h-7 flex items-center"
+      class:!pl-10={!$navigationOpen}
+    >
+      <WorkspaceBreadcrumbs {resource} {filePath} />
+    </div>
+  {/if}
 
   <div class="second-level-wrapper">
     <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>
@@ -57,10 +82,7 @@
         <CodeToggle bind:selectedView={$view} {resourceKind} />
       {:else}
         <span class="flex-none">
-          <svelte:component
-            this={getIconComponent(resourceKind, filePath)}
-            size="19px"
-          />
+          <IconComponent size="19px" />
         </span>
       {/if}
 
@@ -82,9 +104,9 @@
         <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
       {/if}
 
-      <slot name="workspace-controls" {width} />
+      {@render workspaceControls?.(width)}
       <div class="flex-none">
-        <slot name="cta" {width} />
+        {@render cta?.(width)}
       </div>
 
       {#if showTableToggle}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import type { ChartDataPoint } from "@rilldata/web-common/components/time-series-chart/types";
@@ -105,6 +106,22 @@
         : null,
     percent: comparisonPercChange,
   } as const;
+  $: isDeltaPositive =
+    computedValues.delta !== null && computedValues.delta > 0;
+  $: isDeltaNegative =
+    computedValues.delta !== null && computedValues.delta < 0;
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+  // When comparisonVal < 0, dividing delta by a negative denominator flips the percentage sign,
+  // so "positive %" actually means "value went lower". We flip lowerIsBetter to compensate.
+  $: lowerIsBetterForPerc =
+    comparisonVal != null && comparisonVal < 0 ? !lowerIsBetter : lowerIsBetter;
+  $: comparisonDeltaColorClass = (
+    lowerIsBetter ? isDeltaNegative : isDeltaPositive
+  )
+    ? "text-kpi-positive"
+    : (lowerIsBetter ? isDeltaPositive : isDeltaNegative)
+      ? "text-kpi-negative"
+      : "text-fg-secondary";
 
   // Get value based on hover type
   function getValueForType(type: typeof hoveredValue) {
@@ -249,7 +266,7 @@
 
                 {#if comparisonOptions?.includes("delta")}
                   <span
-                    class="comparison-value"
+                    class="comparison-value {comparisonDeltaColorClass}"
                     class:ui-copy-disabled-faint={computedValues.delta === null}
                     class:italic={computedValues.delta === null}
                     class:text-sm={computedValues.delta === null}
@@ -261,7 +278,9 @@
                     onblur={handleLeaveOrBlur}
                   >
                     {#if computedValues.delta != null}
-                      {getFormattedDiff(computedValues.delta)}
+                      <span class={comparisonDeltaColorClass}
+                        >{getFormattedDiff(computedValues.delta)}</span
+                      >
                     {:else}
                       no change
                     {/if}
@@ -270,8 +289,11 @@
 
                 {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
                   <span
-                    class="w-fit font-semibold text-fg-disabled"
-                    class:text-red-500={computedValues.percent < 0}
+                    class="w-fit {(
+                      lowerIsBetter ? isDeltaNegative : isDeltaPositive
+                    )
+                      ? 'font-semibold'
+                      : ''} {comparisonDeltaColorClass}"
                     role="button"
                     tabindex="0"
                     onmouseover={() => handleHoverOrFocus("percent")}
@@ -283,6 +305,7 @@
                       color="text-fg-secondary"
                       showPosSign
                       tabularNumber={false}
+                      lowerIsBetter={lowerIsBetterForPerc}
                       value={formatMeasurePercentageDifference(
                         computedValues.percent,
                       )}
@@ -294,7 +317,7 @@
 
             {#if comparisonLabel}
               <p class="text-sm text-fg-secondary break-words">
-                vs {comparisonLabel?.toLowerCase()}
+                {m.kpi_vs_comparison({ comparison: comparisonLabel?.toLowerCase() ?? "" })}
               </p>
             {/if}
           {/if}

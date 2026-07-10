@@ -211,6 +211,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	// Merge opts.Variables with some local overrides of the defaults in runtime/drivers.InstanceConfig.
+	// Not set in system variables since it should be okay to override these on local to test.
 	vars := map[string]string{
 		"rill.download_limit_bytes": "0", // 0 means unlimited
 		"rill.stage_changes":        "false",
@@ -307,12 +308,19 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		frontendURL = "http://localhost:3001"
 	}
 
+	// init local admin service
+	// internally it registers a `local_admin` connector driver that's hard-coded to the local project config.
+	// the admin service token can't be simply passed since a user may login after the instance is created.
+	// the `local_admin` connector will read the token using the helper just like the CLI does
+	initLocalAdminService(opts.Ch, projectPath, opts.Environment, frontendURL)
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:                               DefaultInstanceID,
 		Environment:                      opts.Environment,
 		OLAPConnector:                    olapConnector.Name,
 		RepoConnector:                    repoConnector.Name,
+		AdminConnector:                   "local_admin",
 		AIConnector:                      aiConnector.Name,
 		CatalogConnector:                 catalogConnector.Name,
 		Connectors:                       connectors,
@@ -436,7 +444,7 @@ func (a *App) Serve(opts ServeOptions) error {
 		AllowedOrigins:  a.allowedOrigins,
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, runtimeOpts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx), newLocalAdminService(a.ch, a.ProjectPath))
+	runtimeServer, err := runtimeserver.NewServer(ctx, runtimeOpts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx))
 	if err != nil {
 		return err
 	}

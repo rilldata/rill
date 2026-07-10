@@ -9,20 +9,20 @@
   export let plotWidth: number;
   export let plotTop: number;
   export let plotHeight: number;
-  export let axisFormatter: (value: number) => string;
+  export let yTickLabels: string[];
 
   const DASH = "1,1.5";
 </script>
 
 <g class="y-axis">
-  {#each yTicks as tick (tick)}
+  {#each yTicks as tick, i (tick)}
     <text
       class="fill-fg-muted text-[11px]"
       text-anchor="start"
       x={plotLeft + plotWidth + 4}
       y={yScale(tick) + 4}
     >
-      {axisFormatter(tick)}
+      {yTickLabels[i]}
     </text>
     <line
       class="stroke-gray-300"

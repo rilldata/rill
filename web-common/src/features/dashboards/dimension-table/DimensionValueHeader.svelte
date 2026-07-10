@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import { getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
@@ -10,6 +11,7 @@
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { VirtualItem } from "@tanstack/svelte-virtual";
+  import { makeDimensionHref } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import type { DimensionTableRow } from "./dimension-table-types";
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -56,6 +58,7 @@
       suppressTooltip: scrolling,
       barValue: 0,
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
+      href: makeDimensionHref(rows[row.index], column.name, value as string),
     };
   };
 </script>
@@ -103,7 +106,7 @@
       bgClass="bg-surface-background"
     >
       <Cell
-        label="Filter dimension value"
+        label={m.dashboard_filter_dimension_value()}
         positionStatic
         {row}
         column={{ start: 0, size: width }}

@@ -175,14 +175,36 @@ export function splitTablesByModel(
  */
 export function applyTableFilters(
   tables: V1OlapTableInfo[],
-  type: "all" | "table" | "view",
+  types: string[],
   viewMap: Map<string, boolean>,
 ): V1OlapTableInfo[] {
-  if (type === "all") return tables;
+  if (types.length === 0) return tables;
+  const wantTable = types.includes("table");
+  const wantView = types.includes("view");
+  if (wantTable && wantView) return tables;
   return tables.filter((t) => {
     const name = t.name ?? "";
     const likelyView = isLikelyView(viewMap.get(name), t.physicalSizeBytes);
     if (likelyView === undefined) return true;
-    return (type === "view" && likelyView) || (type === "table" && !likelyView);
+    return (wantView && likelyView) || (wantTable && !likelyView);
+  });
+}
+
+/**
+ * Filters model-backed tables by tags on their backing Model resource.
+ * OR semantics: a table matches if its model has at least one of the selected tags.
+ * External tables can't match (they have no backing resource), so callers should
+ * hide the external-tables section when a tag filter is active.
+ */
+export function applyTagFilter(
+  tables: V1OlapTableInfo[],
+  modelResources: Map<string, V1Resource>,
+  tags: string[],
+): V1OlapTableInfo[] {
+  if (tags.length === 0) return tables;
+  return tables.filter((t) => {
+    const resource = modelResources.get((t.name ?? "").toLowerCase());
+    const resourceTags = resource?.meta?.tags ?? [];
+    return tags.some((tag) => resourceTags.includes(tag));
   });
 }

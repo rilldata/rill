@@ -7,6 +7,7 @@
   } from "@rilldata/web-common/layout/config";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
 
+  export let columnName: string;
   export let active = false;
   export let emphasize = false;
   export let type;
@@ -27,6 +28,8 @@
   } else {
     columns = `${summarySize}px ${COLUMN_PROFILE_CONFIG.nullPercentageWidth}px`;
   }
+
+  $: label = `${columnName} profile${isFetching ? " loading" : ""}`;
 </script>
 
 <div>
@@ -48,6 +51,7 @@
       shift: onShiftClick,
       click: onSelect,
     })}
+    aria-label={label}
   >
     <div class="flex gap-2 items-baseline flex-1" style:min-width="0px">
       <div class="self-center flex items-center text-fg-secondary-muted">

@@ -10,7 +10,7 @@ import (
 
 func DeleteIssueCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org, issueType string
-	errors := []string{"on-trial", "trial-ended", "no-payment-method", "no-billable-address", "payment-failed", "subscription-cancelled", "never-subscribed"}
+	errors := []string{"on-trial", "trial-ended", "no-payment-method", "no-billable-address", "payment-failed", "subscription-cancelled", "never-subscribed", "on-credit-trial", "trial-credits-depleted"}
 	setCmd := &cobra.Command{
 		Use:   "delete-issue",
 		Short: "Delete billing issue of a type for an organization",
@@ -53,6 +53,10 @@ func DeleteIssueCmd(ch *cmdutil.Helper) *cobra.Command {
 				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
 			case "never-subscribed":
 				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+			case "on-credit-trial":
+				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+			case "trial-credits-depleted":
+				t = adminv1.BillingIssueType_BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
 			default:
 				return fmt.Errorf("invalid error type %q", issueType)
 			}

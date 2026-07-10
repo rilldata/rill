@@ -4,6 +4,7 @@
 // IntervalStore and MetricsTimeControls are WIP references, but are not currently being used
 // The functions below UTILS are being used
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
   overrideRillTimeRef,
@@ -49,19 +50,43 @@ export const RILL_TO_LABEL: Record<
   RillPeriodToDate | RillPreviousPeriod | AllTime | CustomRange,
   string
 > = {
-  inf: "All Time",
-  CUSTOM: "Custom",
-  "rill-PDC": "Yesterday",
-  "rill-PWC": "Previous week",
-  "rill-PMC": "Previous month",
-  "rill-PQC": "Previous quarter",
-  "rill-PYC": "Previous year",
-  "rill-TD": "Today",
-  "rill-WTD": "Week to date",
-  "rill-MTD": "Month to date",
-  "rill-QTD": "Quarter to date",
-  "rill-YTD": "Year to date",
-};
+  get inf() {
+    return m.time_all_time();
+  },
+  get CUSTOM() {
+    return m.time_custom();
+  },
+  get "rill-PDC"() {
+    return m.time_yesterday();
+  },
+  get "rill-PWC"() {
+    return m.time_previous_week();
+  },
+  get "rill-PMC"() {
+    return m.time_previous_month();
+  },
+  get "rill-PQC"() {
+    return m.time_previous_quarter();
+  },
+  get "rill-PYC"() {
+    return m.time_previous_year();
+  },
+  get "rill-TD"() {
+    return m.time_today();
+  },
+  get "rill-WTD"() {
+    return m.time_week_to_date();
+  },
+  get "rill-MTD"() {
+    return m.time_month_to_date();
+  },
+  get "rill-QTD"() {
+    return m.time_quarter_to_date();
+  },
+  get "rill-YTD"() {
+    return m.time_year_to_date();
+  },
+} as any;
 
 export const RILL_PERIOD_TO_DATE = [
   "rill-TD",
@@ -500,11 +525,11 @@ export function getDurationLabel(isoDuration: string): string {
     throw new Error("Invalid ISO duration");
   }
 
-  return `Last ${humaniseISODuration(isoDuration)}`;
+  return m.time_last_duration({ duration: humaniseISODuration(isoDuration) });
 }
 
 export function getRangeLabel(range: string | undefined): string {
-  if (!range) return "Custom";
+  if (!range) return m.time_custom();
   if (isRillPeriodToDate(range) || isRillPreviousPeriod(range)) {
     return RILL_TO_LABEL[range];
   }
@@ -525,7 +550,7 @@ export function getRangeLabel(range: string | undefined): string {
     return label;
   } catch (e) {
     console.error("Error parsing RillTime", e);
-    return "Custom";
+    return m.time_custom();
   }
 }
 
@@ -548,11 +573,26 @@ const defaultBuckets: RangeBuckets = {
 const previousPeriodRegex =
   /-\d+[sSmMhHdDwWqQYy]\/[sSmMhHdDwWqQYy]\s+to\s+ref\/[sSmMhHdDwWqQYy]/;
 
+// rangeWithinCap returns true unless the range can be statically sized to more than maxRange.
+// rill-time expressions and unparseable inputs pass through; the backend has the final say.
+function rangeWithinCap(range: string, maxRange: Duration): boolean {
+  if (range === "inf") return false;
+  if (!range.startsWith("P") && !range.startsWith("p")) return true;
+  const d = Duration.fromISO(range);
+  if (!d.isValid) return true;
+  return d.as("milliseconds") <= maxRange.as("milliseconds");
+}
+
 export function bucketYamlRanges(
   yamlRanges: V1ExploreTimeRange[],
   minTimeGrain: V1TimeGrain | undefined,
   usingRillTime: boolean,
+  maxQueryTimeRange?: Duration,
 ): RangeBuckets {
+  const capped = maxQueryTimeRange
+    ? maxQueryTimeRange.as("milliseconds") > 0
+    : false;
+
   const showDefaults = !yamlRanges.length;
 
   if (!minTimeGrain) {
@@ -560,11 +600,28 @@ export function bucketYamlRanges(
   }
 
   if (showDefaults) {
-    if (!usingRillTime) return defaultBuckets;
+    if (!usingRillTime) {
+      if (!capped) return defaultBuckets;
+      return {
+        ...defaultBuckets,
+        latest: RILL_LATEST.filter((r) =>
+          rangeWithinCap(r, maxQueryTimeRange!),
+        ).map((r) => parseRillTime(r)),
+        allTime: false,
+      };
+    }
 
     const timeGrainOptions = getAllowedGrains(minTimeGrain);
 
-    return getDefaultRangeBuckets(timeGrainOptions);
+    const buckets = getDefaultRangeBuckets(timeGrainOptions);
+    if (!capped) return buckets;
+    return {
+      ...buckets,
+      latest: buckets.latest.filter((p) =>
+        rangeWithinCap(p.toString(), maxQueryTimeRange!),
+      ),
+      allTime: false,
+    };
   }
 
   const skeleton: RangeBuckets = {
@@ -579,9 +636,11 @@ export function bucketYamlRanges(
     if (!range) return;
 
     if (range === "inf") {
-      skeleton.allTime = true;
+      if (!capped) skeleton.allTime = true;
       return;
     }
+
+    if (capped && !rangeWithinCap(range, maxQueryTimeRange!)) return;
 
     try {
       const parsed = parseRillTime(range);

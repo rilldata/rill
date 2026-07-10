@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import type {
     V1OrganizationMemberUser,
@@ -31,13 +32,13 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { PROJECT_ROLES_OPTIONS } from "@rilldata/web-admin/features/projects/constants";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import { SLUG_REGEX } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
+  import { getProjectRolesOptions } from "@rilldata/web-admin/features/projects/user-management/constants.ts";
 
   export let open = false;
   export let groupName: string;
@@ -80,8 +81,9 @@
   );
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
 
+  const projectRolesOptions = getProjectRolesOptions();
   $: selectedRoleLabel =
-    PROJECT_ROLES_OPTIONS.find((o) => o.value === selectedRole)?.label ??
+    projectRolesOptions.find((o) => o.value === selectedRole)?.label ??
     "Viewer";
 
   $: selectedProjectsLabel = (() => {
@@ -185,7 +187,7 @@
       selectedRole = ProjectUserRoles.Viewer;
       open = false;
 
-      eventBus.emit("notification", { message: "User group created" });
+      eventBus.emit("notification", { message: m.groups_created() });
     } catch (error) {
       eventBus.emit("notification", {
         message: `Error: ${error.response.data.message}`,
@@ -250,7 +252,7 @@
       });
 
       eventBus.emit("notification", {
-        message: "User group changes saved successfully",
+        message: m.groups_changes_saved(),
       });
     } catch (error) {
       eventBus.emit("notification", {
@@ -356,7 +358,7 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
     <DialogHeader>
-      <DialogTitle>Create a group</DialogTitle>
+      <DialogTitle>{m.groups_create_a_group()}</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
@@ -372,8 +374,8 @@
         <Input
           bind:value={$form.name}
           id="create-user-group-name"
-          label="Name"
-          placeholder="Untitled"
+          label={m.users_form_name()}
+          placeholder={m.users_form_untitled()}
           errors={$errors.name}
           alwaysShowError={true}
         />
@@ -447,7 +449,7 @@
               {/if}
             </Dropdown.Trigger>
             <Dropdown.Content align="start" sameWidth>
-              {#each PROJECT_ROLES_OPTIONS as option}
+              {#each projectRolesOptions as option}
                 <Dropdown.Item
                   class="font-normal flex flex-col items-start py-2 {selectedRole ===
                   option.value
@@ -471,12 +473,12 @@
             for="user-group-users"
             class="line-clamp-1 text-sm font-medium text-fg-primary"
           >
-            Users
+            {m.users_form_users()}
           </label>
           <Combobox
             bind:searchValue={searchInput}
             options={coercedUsersToOptions}
-            placeholder="Search to add/remove users"
+            placeholder={m.org_search_add_remove_users()}
             {getMetadata}
             enableClientFiltering={false}
             loadMore={loadMoreUsers}
@@ -515,7 +517,7 @@
       {#if selectedUsers.length > 0}
         <div class="flex flex-row items-center gap-x-1">
           <div class="text-xs font-semibold uppercase text-fg-secondary">
-            {selectedUsers.length} User{selectedUsers.length === 1 ? "" : "s"}
+            {m.users_user_count({ count: selectedUsers.length })}
           </div>
         </div>
       {/if}
@@ -534,7 +536,7 @@
                 type="destructive"
                 onClick={() => handleRemove(user.userEmail)}
               >
-                Remove
+                {m.users_remove()}
               </Button>
             </div>
           {/each}
@@ -543,14 +545,14 @@
     </div>
 
     <DialogFooter>
-      <Button type="tertiary" onClick={handleClose}>Cancel</Button>
+      <Button type="tertiary" onClick={handleClose}>{m.users_cancel()}</Button>
       <Button
         type="primary"
         disabled={$submitting || $form.name.trim() === "" || !!$errors.name}
         form={formId}
         submitForm
       >
-        Create
+        {m.users_create()}
       </Button>
     </DialogFooter>
   </DialogContent>

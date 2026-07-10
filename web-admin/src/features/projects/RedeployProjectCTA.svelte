@@ -2,6 +2,7 @@
   import {
     createAdminServiceRedeployProject,
     getAdminServiceGetProjectQueryKey,
+    type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { Button } from "@rilldata/web-common/components/button";
@@ -14,6 +15,7 @@
   import MoonCircleOutline from "@rilldata/web-common/components/icons/MoonCircleOutline.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
   export let organization: string;
@@ -24,6 +26,8 @@
   // Track waking state: true when mutation is pending OR has succeeded (waiting for refetch)
   $: isWaking = $redeployMutation.isPending || $redeployMutation.isSuccess;
 
+  const REFETCH_INTERVAL = 2000;
+
   async function handleWakeProject() {
     try {
       await $redeployMutation.mutateAsync({
@@ -31,14 +35,25 @@
         project: project,
       });
 
-      void queryClient.refetchQueries({
-        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
-        exact: true,
-      });
+      while (true) {
+        await queryClient.refetchQueries({
+          queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+          exact: true,
+        });
+        const projectQueryResp = queryClient.getQueryData<V1GetProjectResponse>(
+          getAdminServiceGetProjectQueryKey(organization, project),
+        );
+        // If there is a deployment, project refetch logic will handle the rest.
+        if (projectQueryResp.deployment) {
+          break;
+        }
+        // Refetch until a deployment is created.
+        await new Promise((resolve) => setTimeout(resolve, REFETCH_INTERVAL));
+      }
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Failed to wake project: ${getRpcErrorMessage(err)}`,
+        message: m.project_failed_to_wake({ error: getRpcErrorMessage(err) }),
       });
     }
   }
@@ -68,18 +83,18 @@
         </div>
         <CtaHeader variant="bold">
           {isWaking
-            ? "Waking up your project..."
-            : "Your project is hibernating"}
+            ? m.project_waking_up()
+            : m.project_is_hibernating()}
         </CtaHeader>
         <Button
           type="primary"
           wide
           disabled={isWaking}
           loading={isWaking}
-          loadingCopy="Waking..."
+          loadingCopy={m.project_waking()}
           onClick={handleWakeProject}
         >
-          Wake project
+          {m.project_wake()}
         </Button>
         <CtaNeedHelp />
       </svelte:fragment>
@@ -89,9 +104,9 @@
           className="text-gray-300"
           gradientStopColor="slate-200"
         />
-        <CtaHeader variant="bold">This project is hibernating</CtaHeader>
+        <CtaHeader variant="bold">{m.project_this_is_hibernating()}</CtaHeader>
         <CtaMessage>
-          Contact the project's administrator to redeploy the project.
+          {m.project_contact_admin_to_redeploy()}
         </CtaMessage>
         <CtaNeedHelp />
       </svelte:fragment>

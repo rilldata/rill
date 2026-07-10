@@ -30,6 +30,7 @@ type Claims interface {
 	OwnerID() string
 	AuthTokenID() string
 	AuthTokenModel() any
+	AssumedByUserID() (string, bool) // returns the id of superuser who assumed the token
 	Superuser(ctx context.Context) bool
 	OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions
 	ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions
@@ -47,6 +48,12 @@ func GetClaims(ctx context.Context) Claims {
 	}
 
 	return claims
+}
+
+// WithClaims returns a copy of ctx with the provided Claims attached.
+// Outside of this package, it should only be used for tests; the auth middleware is responsible for setting claims in production paths.
+func WithClaims(ctx context.Context, claims Claims) context.Context {
+	return context.WithValue(ctx, claimsContextKey{}, claims)
 }
 
 // anonClaims represents claims for an unauthenticated user.
@@ -69,6 +76,10 @@ func (c anonClaims) AuthTokenID() string {
 
 func (c anonClaims) AuthTokenModel() any {
 	return nil
+}
+
+func (c anonClaims) AssumedByUserID() (string, bool) {
+	return "", false
 }
 
 func (c anonClaims) Superuser(ctx context.Context) bool {
@@ -132,6 +143,14 @@ func (c *authTokenClaims) AuthTokenID() string {
 
 func (c *authTokenClaims) AuthTokenModel() any {
 	return c.token.TokenModel()
+}
+
+func (c *authTokenClaims) AssumedByUserID() (string, bool) {
+	uat, ok := c.token.TokenModel().(*database.UserAuthToken)
+	if !ok || uat.RepresentingUserID == nil {
+		return "", false
+	}
+	return uat.UserID, true
 }
 
 func (c *authTokenClaims) Superuser(ctx context.Context) bool {

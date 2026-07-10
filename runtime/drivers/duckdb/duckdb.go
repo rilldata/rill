@@ -503,25 +503,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
-	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
-	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
-	if !c.config.AllowHostAccess {
-		extensionDir, err := extensions.ExtensionsDir()
-		if err != nil {
-			return err
-		}
-
-		secretDir, err := c.storage.DataDir("secrets")
-		if err != nil {
-			return err
-		}
-		dbInitQueries = append(dbInitQueries,
-			"SET GLOBAL preserve_insertion_order TO false",
-			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
-			fmt.Sprintf("SET secret_directory=%s", safeSQLString(secretDir)), // should be set before `InitSQL` is set because it can have secrets
-		)
-	}
-
 	if c.driverName == "motherduck" || c.config.isMotherduck() {
 		dbInitQueries = append(dbInitQueries,
 			"INSTALL 'motherduck'",
@@ -565,6 +546,20 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		return err
 	}
 
+	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
+	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
+	if !c.config.AllowHostAccess {
+		extensionDir, err := extensions.ExtensionsDir()
+		if err != nil {
+			return err
+		}
+
+		dbInitQueries = append(dbInitQueries,
+			"SET GLOBAL preserve_insertion_order TO false",
+			fmt.Sprintf("SET extension_directory=%s", safeSQLString(extensionDir)),
+		)
+	}
+
 	// Add init SQL if provided
 	if c.config.ConnInitSQL != "" {
 		connInitQueries = append(connInitQueries, c.config.ConnInitSQL)
@@ -572,7 +567,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	connInitQueries = append(connInitQueries, "SET max_expression_depth TO 250")
 
 	// Create new DB
-	if c.config.Path != "" || c.config.Attach != "" {
+	if c.config.hasExternalConfig() {
 		settings := make(map[string]string)
 		maps.Copy(settings, c.config.readSettings())
 		maps.Copy(settings, c.config.writeSettings())

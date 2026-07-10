@@ -115,10 +115,15 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
 
       const domainValues = getDomainValues();
       const hasComparison = $timeAndFilterStore.showTimeComparison;
+      const waitingForTimeState =
+        $timeAndFilterStore.hasTimeSeries === undefined ||
+        ($timeAndFilterStore.hasTimeSeries === true &&
+          (!$timeAndFilterStore.timeRange?.start ||
+            !$timeAndFilterStore.timeRange?.end));
 
       return {
         data: data || [],
-        isFetching: chartData?.isFetching ?? false,
+        isFetching: waitingForTimeState || (chartData?.isFetching ?? false),
         error: chartData?.error,
         fields: fieldSpecMap,
         domainValues,

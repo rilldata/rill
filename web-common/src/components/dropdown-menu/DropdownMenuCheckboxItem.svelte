@@ -30,6 +30,7 @@
 <svelte:element
   this={href ? "a" : "div"}
   {href}
+  class="font-normal text-inherit"
   rel="noopener noreferrer"
   data-sveltekit-preload-data={preloadData ? "hover" : "false"}
 >

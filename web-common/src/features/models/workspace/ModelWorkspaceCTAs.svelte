@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
@@ -13,6 +13,7 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
   import ModelRefreshButton from "../incremental/ModelRefreshButton.svelte";
@@ -80,15 +81,14 @@
         {#each availableMetricsViews as resource (resource?.meta?.name?.name)}
           <DropdownMenu.Item
             onclick={async () => {
-              if (resource?.meta?.filePaths?.[0]) {
-                await goto(
-                  `/files/${removeLeadingSlash(resource.meta.filePaths[0])}`,
-                );
+              const filePath = resource?.meta?.filePaths?.[0];
+              if (filePath) {
+                await navigateToFile(`/${removeLeadingSlash(filePath)}`);
               }
             }}
           >
             <MetricsViewIcon size="16" />
-            {resource?.meta?.name?.name ?? "Loading..."}
+            {resource?.meta?.name?.name ?? m.common_loading()}
           </DropdownMenu.Item>
         {/each}
         <DropdownMenu.Separator />

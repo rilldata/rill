@@ -5,16 +5,8 @@ import (
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/santhosh-tekuri/jsonschema/v5"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	_ "embed"
 )
-
-//go:embed data/component-template-v1.json
-var componentTemplateSpec string
-
-var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/parser/data/component-template-v1.json", componentTemplateSpec)
 
 type ComponentYAML struct {
 	commonYAML  `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
@@ -72,7 +64,7 @@ func (p *Parser) parseComponent(node *Node) error {
 	node.Refs = append(node.Refs, refs...)
 
 	// Track component
-	r, err := p.insertResource(ResourceKindComponent, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindComponent, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -108,11 +100,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		var props map[string]any
 		for renderer, props = range tmp.Other {
 			break
-		}
-
-		// nolint // TODO: Activate validation later when in production
-		if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
-			// return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
 		}
 
 		propsPB, err := structpb.NewStruct(props)

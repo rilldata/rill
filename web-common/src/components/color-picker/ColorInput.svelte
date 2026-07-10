@@ -18,7 +18,18 @@
 
   let open = false;
 
-  $: ({ h: hue, s: saturation, l: lightness } = stringColorToHsl(stringColor));
+  // Use a reactive block (not destructuring assignment) so that hue/saturation/lightness
+  // are plain state variables, not derived. Derived values are read-only in Svelte 5 compat
+  // and can't be updated via bind:value on the sliders.
+  let hue = 0;
+  let saturation = 100;
+  let lightness = 50;
+  $: {
+    const parsed = stringColorToHsl(stringColor);
+    hue = parsed.h;
+    saturation = parsed.s;
+    lightness = parsed.l;
+  }
 
   $: hsl = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 

@@ -22,7 +22,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 
 	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.ResourceKind, req.ResourceName, claims.OwnerID())
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	dtos := make([]*adminv1.Bookmark, len(bookmarks))
@@ -46,7 +46,7 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 
 	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
@@ -101,11 +101,11 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		// only one default bookmark can exist for a project/dashboard combo
 		res, err := s.admin.DB.FindDefaultBookmark(ctx, req.ProjectId, req.ResourceKind, req.ResourceName)
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		if res != nil {
-			return nil, status.Error(codes.InvalidArgument, "default bookmark already exists")
+			return nil, status.Error(codes.AlreadyExists, "default bookmark already exists")
 		}
 	}
 
@@ -140,7 +140,7 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 
 	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
@@ -184,7 +184,7 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 
 	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
@@ -205,7 +205,7 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 
 	err = s.admin.DB.DeleteBookmark(ctx, req.BookmarkId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RemoveBookmarkResponse{}, nil

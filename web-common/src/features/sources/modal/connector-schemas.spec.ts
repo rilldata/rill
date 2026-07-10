@@ -6,7 +6,6 @@ import {
   isMultiStepConnector,
   hasExplorerStep,
   getFormHeight,
-  shouldShowSkipLink,
   toConnectorDriver,
   multiStepFormSchemas,
 } from "./connector-schemas";
@@ -169,44 +168,6 @@ describe("connector-schemas", () => {
     it("returns default height for null schema", () => {
       const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
       expect(getFormHeight(null)).toBe(FORM_HEIGHT_DEFAULT);
-    });
-  });
-
-  describe("shouldShowSkipLink", () => {
-    it("returns true for non-OLAP connector on connector step", () => {
-      expect(shouldShowSkipLink("connector", "postgres", null, false)).toBe(
-        true,
-      );
-      expect(shouldShowSkipLink("connector", "s3", null, false)).toBe(true);
-    });
-
-    it("returns false for OLAP connectors", () => {
-      expect(shouldShowSkipLink("connector", "clickhouse", null, true)).toBe(
-        false,
-      );
-      expect(shouldShowSkipLink("connector", "duckdb", null, true)).toBe(false);
-    });
-
-    it("returns false when not on connector step", () => {
-      expect(shouldShowSkipLink("source", "postgres", null, false)).toBe(false);
-      expect(shouldShowSkipLink("explorer", "postgres", null, false)).toBe(
-        false,
-      );
-    });
-
-    it("returns false when connectorInstanceName is set", () => {
-      expect(
-        shouldShowSkipLink("connector", "postgres", "my-connector", false),
-      ).toBe(false);
-    });
-
-    it("returns false for excluded connectors (salesforce, sqlite)", () => {
-      expect(shouldShowSkipLink("connector", "salesforce", null, false)).toBe(
-        false,
-      );
-      expect(shouldShowSkipLink("connector", "sqlite", null, false)).toBe(
-        false,
-      );
     });
   });
 

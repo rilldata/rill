@@ -27,13 +27,24 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import { getFilterWithNullHandling } from "../query-util";
+import {
+  canQueryWithTimeRange,
+  getFilterWithNullHandling,
+} from "../query-util";
+import {
+  OTHER_VALUE,
+  OTHER_VALUE_DOMAIN_KEY,
+  TOTAL_DOMAIN_KEY,
+  type LabelsConfig,
+} from "./constants";
 
 export type CircularChartSpec = {
   metrics_view: string;
   measure?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal">;
   innerRadius?: number;
+  show_other?: boolean;
+  labels?: LabelsConfig;
 };
 
 export type CircularChartDefaultOptions = {
@@ -51,8 +62,10 @@ export class CircularChartProvider {
 
   customColorValues: string[] = [];
   totalsValue: number | undefined = undefined;
+  otherValue: number | undefined = undefined;
 
   combinedWhere: Writable<V1Expression | undefined> = writable(undefined);
+  isTruncated: Writable<boolean> = writable(false);
 
   constructor(
     spec: Readable<CircularChartSpec>,
@@ -83,10 +96,10 @@ export class CircularChartProvider {
     let colorSort: V1MetricsViewAggregationSort | undefined;
     let limit: number;
     const colorDimensionName = config.color?.field;
-    const showTotal = config.measure?.showTotal;
+    const showOther = !!colorDimensionName && config.show_other === true;
 
     if (colorDimensionName) {
-      limit = config.color?.limit || this.defaultColorLimit;
+      limit = config.color?.limit ?? this.defaultColorLimit;
       dimensions = [{ name: colorDimensionName }];
       colorSort = this.getColorSort(config);
     }
@@ -98,12 +111,15 @@ export class CircularChartProvider {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!colorDimensionName &&
           config.color?.type === "nominal" &&
           !Array.isArray(config.color?.sort);
 
         const topNWhere = getFilterWithNullHandling(where, config.color);
+
+        // drives the "Other" UI affordance
+        const probeLimit = limit ? limit + 1 : undefined;
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
           client,
@@ -114,7 +130,7 @@ export class CircularChartProvider {
             sort: colorSort ? [colorSort] : undefined,
             where: topNWhere,
             timeRange,
-            limit: limit?.toString(),
+            limit: probeLimit?.toString(),
           },
           {
             query: {
@@ -127,14 +143,15 @@ export class CircularChartProvider {
 
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
+    // The total query feeds the optional center-label total AND the
+    // percent-of-total tooltip entry
     const totalQueryOptionsStore = derived(
       [timeAndFilterStore, visibleStore],
       ([$timeAndFilterStore, $visible]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           $visible &&
-          !!showTotal &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!config.measure?.field;
 
         const totalWhere = getFilterWithNullHandling(where, config.color);
@@ -158,14 +175,82 @@ export class CircularChartProvider {
 
     const totalQuery = createQuery(totalQueryOptionsStore);
 
+    const otherQueryOptionsStore = derived(
+      [timeAndFilterStore, topNColorQuery, visibleStore],
+      ([$timeAndFilterStore, $topNColorQuery, $visible]) => {
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+        const topNData = $topNColorQuery?.data?.data;
+        const customSortValues = Array.isArray(config.color?.sort)
+          ? config.color.sort
+          : undefined;
+
+        const visibleValues = customSortValues
+          ? customSortValues
+          : topNData
+            ? topNData
+                .slice(0, limit)
+                .map((d) => d[colorDimensionName!] as string)
+            : undefined;
+
+        const enabled =
+          $visible &&
+          showOther &&
+          !!visibleValues &&
+          visibleValues.length > 0 &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          !!config.measure?.field &&
+          !!colorDimensionName;
+
+        const baseWhere = getFilterWithNullHandling(where, config.color);
+        let otherWhere = baseWhere;
+        if (enabled && colorDimensionName && visibleValues) {
+          const notInExpr = createInExpression(
+            colorDimensionName,
+            visibleValues,
+            true,
+          );
+          otherWhere = mergeFilters(baseWhere, notInExpr);
+        }
+
+        return getQueryServiceMetricsViewAggregationQueryOptions(
+          client,
+          {
+            metricsView: config.metrics_view,
+            measures,
+            where: otherWhere,
+            timeRange,
+          },
+          {
+            query: {
+              enabled,
+            },
+          },
+        );
+      },
+    );
+
+    const otherQuery = createQuery(otherQueryOptionsStore);
+
     const queryOptionsStore = derived(
-      [timeAndFilterStore, topNColorQuery, totalQuery, visibleStore],
-      ([$timeAndFilterStore, $topNColorQuery, $totalQuery, $visible]) => {
+      [
+        timeAndFilterStore,
+        topNColorQuery,
+        totalQuery,
+        otherQuery,
+        visibleStore,
+      ],
+      ([
+        $timeAndFilterStore,
+        $topNColorQuery,
+        $totalQuery,
+        $otherQuery,
+        $visible,
+      ]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
-          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
           !!measures?.length &&
           (config.color?.type === "nominal" &&
           !Array.isArray(config.color?.sort)
@@ -178,10 +263,14 @@ export class CircularChartProvider {
         // Apply topN filter for color dimension
         if (Array.isArray(config.color?.sort)) {
           topColorValues = config.color.sort;
-        } else if (topNColorData?.length && colorDimensionName) {
-          topColorValues = topNColorData.map(
-            (d) => d[colorDimensionName] as string,
-          );
+          this.isTruncated.set(false);
+        } else if (topNColorData && colorDimensionName) {
+          // topN was queried with limit+1; if we got the extra row back,
+          // there are more values than the limit and the chart is truncated
+          this.isTruncated.set(topNColorData.length > limit);
+          topColorValues = topNColorData
+            .slice(0, limit)
+            .map((d) => d[colorDimensionName] as string);
         }
 
         if (colorDimensionName) {
@@ -215,10 +304,18 @@ export class CircularChartProvider {
           },
         );
 
-        if (showTotal && config.measure?.field) {
+        if (config.measure?.field) {
           this.totalsValue = $totalQuery?.data?.data?.[0]?.[
             config.measure?.field
           ] as number;
+
+          const otherRaw = $otherQuery?.data?.data?.[0]?.[
+            config.measure?.field
+          ] as number | null | undefined;
+          this.otherValue =
+            showOther && typeof otherRaw === "number" ? otherRaw : undefined;
+        } else {
+          this.otherValue = undefined;
         }
 
         return queryOptions;
@@ -270,14 +367,21 @@ export class CircularChartProvider {
     const result: Record<string, string[] | number[] | undefined> = {};
 
     if (isFieldConfig(config.color)) {
+      const baseValues =
+        this.customColorValues.length > 0 ? [...this.customColorValues] : [];
+      if (this.otherValue !== undefined) {
+        baseValues.push(OTHER_VALUE);
+      }
       result[config.color.field] =
-        this.customColorValues.length > 0
-          ? [...this.customColorValues]
-          : undefined;
+        baseValues.length > 0 ? baseValues : undefined;
     }
 
-    if (config.measure?.showTotal && this.totalsValue) {
-      result["total"] = [this.totalsValue];
+    if (this.totalsValue !== undefined) {
+      result[TOTAL_DOMAIN_KEY] = [this.totalsValue];
+    }
+
+    if (this.otherValue !== undefined) {
+      result[OTHER_VALUE_DOMAIN_KEY] = [this.otherValue];
     }
 
     return result;

@@ -91,7 +91,6 @@ export async function fetchTimeRanges({
     expressions: rillTimes,
     timeZone,
     executionTime: executionTime as any,
-    priority: 100,
     timeDimension,
   };
 

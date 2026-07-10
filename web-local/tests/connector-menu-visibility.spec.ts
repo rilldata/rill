@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "./setup/base";
-import { uploadFile } from "./utils/sourceHelpers";
+import { createSourceV2 } from "./utils/sourceHelpers";
 
 test.describe("Connector Table Menu Visibility", () => {
   test.use({ project: "Blank" });
@@ -8,9 +8,7 @@ test.describe("Connector Table Menu Visibility", () => {
   test("should show correct menu items for OLAP connector", async ({
     page,
   }) => {
-    await uploadFile(page, "AdBids.csv");
-
-    await page.getByText("View this source").click();
+    await createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml");
 
     await page.locator(".database-schema-entry-header").first().click();
     await page.locator(".table-entry-header").first().click();

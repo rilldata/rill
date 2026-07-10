@@ -10,13 +10,13 @@ When you create models and dashboards, these objects are represented as object f
 
 :::info Working with resources outside their native folders
 
-It is possible to define resources (such as [models](models.md), [metrics-views](metrics-views.md), [dashboards](explore-dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+It is possible to define resources (such as [models](models.md), [metrics-views](metrics-views.md), [dashboards](explore-dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is imperative that the `type` property is appropriately defined within the underlying resource configuration, or Rill will not be able to resolve the resource type correctly!
 
 :::
 
 Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics view configurations. The result is a set of functioning exploratory dashboards.
 
-You can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).
+You can see a few different example projects by visiting our [example GitHub repository](https://github.com/rilldata/rill-examples).
 
 :::tip
 

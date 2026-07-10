@@ -4,11 +4,28 @@ import { schemasafe } from "sveltekit-superforms/adapters";
 import type { ValidationAdapter } from "sveltekit-superforms/adapters";
 
 import { getFieldLabel, isStepMatch } from "../../templates/schema-utils";
+import { validateDuckLakeAttach } from "../../templates/schemas/ducklake-utils";
 import type {
   JSONSchemaConditional,
   JSONSchemaConstraint,
+  JSONSchemaField,
   MultiStepFormSchema,
 } from "../../templates/schemas/types";
+import { validateFileSize } from "@rilldata/web-common/features/sources/upload-utils.ts";
+
+/**
+ * Registry of named validators referenced via `"x-custom-validator"` on a
+ * schema field. Each validator runs against the raw field value and returns
+ * a list of user-facing error messages; an empty list means the value is
+ * structurally valid.
+ */
+const CUSTOM_VALIDATORS: Record<
+  string,
+  (value: unknown, prop: JSONSchemaField) => string[]
+> = {
+  "ducklake-attach": validateDuckLakeAttach,
+  "file-upload": validateFileSize,
+};
 
 const DEFAULT_SCHEMASAFE_OPTIONS: ValidatorOptions = {
   includeErrors: true,
@@ -90,16 +107,40 @@ export function createSchemasafeValidator(
     async validate(data: Record<string, unknown> = {}) {
       const pruned = pruneEmptyFields(data);
       const isValid = validator(pruned as any);
-      if (isValid) {
+
+      const customIssues = checkCustomValidators(stepSchema, data);
+
+      if (isValid && customIssues.length === 0) {
         return { data: pruned, success: true };
       }
 
-      const issues = (validator.errors ?? []).map((error) =>
+      const schemaIssues = (validator.errors ?? []).map((error) =>
         toIssue(error, schema),
       );
-      return { success: false, issues };
+      return {
+        success: false,
+        issues: [...schemaIssues, ...customIssues],
+      };
     },
   };
+}
+
+function checkCustomValidators(
+  schema: MultiStepFormSchema,
+  data: Record<string, unknown>,
+): Array<{ path: string[]; message: string }> {
+  const issues: Array<{ path: string[]; message: string }> = [];
+  for (const [key, prop] of Object.entries(schema.properties ?? {})) {
+    const validatorKey = prop["x-custom-validator"];
+    if (!validatorKey) continue;
+    const validator = CUSTOM_VALIDATORS[validatorKey];
+    if (!validator) continue;
+    const messages = validator(data[key], prop);
+    for (const message of messages) {
+      issues.push({ path: [key], message });
+    }
+  }
+  return issues;
 }
 
 function pruneEmptyFields(

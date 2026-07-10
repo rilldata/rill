@@ -1,12 +1,16 @@
-import { goto } from "$app/navigation";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
+import { previewModeStore } from "../../layout/preview-mode-store";
 import { waitUntil } from "../../lib/waitUtils";
 import type { V1Resource } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "../entity-management/file-artifacts";
 import { ResourceKind } from "../entity-management/resource-selectors";
-import { createResourceFile } from "../file-explorer/new-files";
+import { createResourceFile } from "../entity-management/add/new-files.ts";
+import {
+  navigateToExplore,
+  navigateToFile,
+} from "../../layout/navigation/editor-routing";
 
 export async function createAndPreviewExplore(
   client: RuntimeClient,
@@ -32,5 +36,6 @@ export async function createAndPreviewExplore(
   const name = get(resource).data?.meta?.name?.name;
   if (!name) throw new Error("Failed to create an Explore resource");
 
-  await goto(`/files${filePath}`);
+  const isPreview = get(previewModeStore);
+  await (isPreview ? navigateToExplore(name) : navigateToFile(filePath));
 }

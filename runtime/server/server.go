@@ -63,8 +63,6 @@ type Server struct {
 	limiter  ratelimit.Limiter
 	activity *activity.Client
 	ai       *ai.Runner
-	// set for local runtimes
-	adminOverride drivers.AdminService
 }
 
 var (
@@ -75,7 +73,7 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client, adminOverride drivers.AdminService) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient *activity.Client) (*Server, error) {
 	// The runtime doesn't actually set cookies, but we use securecookie to encode/decode ephemeral tokens.
 	// If no session key pairs are provided, we generate a random one for the duration of the process.
 	var codec *securetoken.Codec
@@ -86,14 +84,13 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 	}
 
 	srv := &Server{
-		runtime:       rt,
-		opts:          opts,
-		logger:        logger,
-		codec:         codec,
-		limiter:       limiter,
-		activity:      activityClient,
-		ai:            ai.NewRunner(rt, activityClient),
-		adminOverride: adminOverride,
+		runtime:  rt,
+		opts:     opts,
+		logger:   logger,
+		codec:    codec,
+		limiter:  limiter,
+		activity: activityClient,
+		ai:       ai.NewRunner(rt, activityClient),
 	}
 
 	if opts.AuthEnable {
@@ -194,10 +191,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/health", observability.Middleware("runtime", s.logger, httputil.Handler(s.healthCheckHandler)))
 
 	// Add HTTP handler for query export downloads
-	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler))))
+	observability.MuxHandle(httpMux, "/v1/download", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceUI)(http.HandlerFunc(s.downloadHandler)))))
 
 	// Add handler for dynamic APIs, i.e. APIs backed by resolvers (such as custom APIs defined in YAML).
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.apiHandler))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/{name...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceAPI)(httputil.Handler(s.apiHandler)))))
 
 	// Add handler for combined OpenAPI spec of custom APIs
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/openapi", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.combinedOpenAPISpec))))
@@ -212,7 +209,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/sse", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler))))       // Deprecated: Use /sse?streams=files
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/resources/-/watch", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.SSEHandler)))) // Deprecated: Use /sse?streams=resources
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler))))
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/ai/complete/stream", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceChat)(http.HandlerFunc(s.CompleteStreamingHandler)))))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -221,7 +218,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Adds the MCP server handlers.
 	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
-	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.mcpHandler()))
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, middleware.ActivityHTTPMiddleware(s.activity, runtime.RequestSourceMCP)(s.mcpHandler())))
 	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
 	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility
@@ -263,6 +260,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Wrap mux with CORS middleware
 	handler := cors.New(corsOpts).Handler(httpMux)
+	handler = middleware.CacheControlMiddleware(handler)
 
 	return handler, nil
 }
@@ -300,7 +298,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName || fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
-		return time.Minute * 10
+		return time.Minute * 59 // Hard cap. Actual timeout is configured using config variable rill.ai.completion_timeout_seconds.
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Health_FullMethodName || fullMethodName == runtimev1.RuntimeService_InstanceHealth_FullMethodName {
@@ -331,20 +329,34 @@ func mapGRPCError(err error) error {
 	if err == nil {
 		return nil
 	}
+
 	// Extract trace data if present (will be attached after error mapping)
 	var te *traceError
 	errors.As(err, &te)
 
-	if errors.Is(err, context.DeadlineExceeded) {
-		err = status.Error(codes.DeadlineExceeded, err.Error())
-	} else if errors.Is(err, context.Canceled) {
-		err = status.Error(codes.Canceled, err.Error())
-	} else if errors.Is(err, queries.ErrForbidden) {
-		err = ErrForbidden
-	} else if errors.Is(err, runtime.ErrForbidden) {
-		err = ErrForbidden
-	} else if errors.Is(err, metricsview.ErrForbidden) {
-		err = ErrForbidden
+	// Map known non-gRPC errors to gRPC status errors
+	if _, ok := status.FromError(err); !ok {
+		if errors.Is(err, context.DeadlineExceeded) {
+			err = status.Error(codes.DeadlineExceeded, err.Error())
+		} else if errors.Is(err, context.Canceled) {
+			err = status.Error(codes.Canceled, err.Error())
+		} else if errors.Is(err, queries.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, runtime.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, metricsview.ErrForbidden) {
+			err = ErrForbidden
+		} else if errors.Is(err, drivers.ErrResourceNotFound) {
+			err = status.Error(codes.NotFound, err.Error())
+		} else if errors.Is(err, drivers.ErrResourceAlreadyExists) {
+			err = status.Error(codes.AlreadyExists, err.Error())
+		} else if errors.Is(err, drivers.ErrNotFound) {
+			err = status.Error(codes.NotFound, err.Error())
+		} else if errors.Is(err, runtime.ErrAINotConfigured) {
+			err = status.Error(codes.FailedPrecondition, err.Error())
+		} else if errors.Is(err, runtime.ErrControllerClosed) {
+			err = status.Error(codes.Unavailable, err.Error())
+		}
 	}
 
 	// Attach trace details to the gRPC status after error mapping
@@ -362,6 +374,21 @@ func mapGRPCError(err error) error {
 	}
 
 	return err
+}
+
+// mapGRPCErrorWithFallback maps the error using the same logic as mapGRPCError.
+// If the error type isn't recognized, it returns a gRPC error with the provided fallback code instead.
+// Use this only in handlers where the middleware's behavior of running mapGRPCError and then falling back to codes.Unknown is not acceptable.
+// (E.g. for errors which if unknown are very likely to correspond to a specific code, such as InvalidArgument.)
+func mapGRPCErrorWithFallback(err error, fallback codes.Code) error {
+	if err == nil {
+		return nil
+	}
+	mapped := mapGRPCError(err)
+	if _, ok := status.FromError(mapped); ok {
+		return mapped
+	}
+	return status.Error(fallback, err.Error())
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {

@@ -26,10 +26,11 @@ type ValidationResult struct {
 }
 
 type ValidationSummary struct {
-	TotalResources  int `json:"total_resources"`
-	ParseErrors     int `json:"parse_errors"`
-	ParseWarnings   int `json:"parse_warnings"`
-	ReconcileErrors int `json:"reconcile_errors"`
+	TotalResources    int `json:"total_resources"`
+	ParseErrors       int `json:"parse_errors"`
+	ParseWarnings     int `json:"parse_warnings"`
+	ReconcileErrors   int `json:"reconcile_errors"`
+	ReconcileWarnings int `json:"reconcile_warnings"`
 }
 
 // ParseError represents a parse error (serializable version of runtimev1.ParseError)
@@ -45,6 +46,7 @@ type ResourceStatus struct {
 	Name     string `json:"name" header:"name"`
 	Status   string `json:"status" header:"status"`
 	Error    string `json:"error" header:"error"`
+	Warning  string `json:"warning" header:"warning"`
 	FilePath string `json:"file_path" header:"file_path"`
 	Timeout  bool   `json:"timeout" header:"timeout"`
 }
@@ -86,7 +88,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			var projectPath string
 			if len(args) > 0 {
 				var err error
-				projectPath, err = start.ResolveProjectPath(args[0])
+				projectPath, err = start.ResolveProjectPath(cmd.Context(), args[0])
 				if err != nil {
 					return err
 				}
@@ -219,6 +221,10 @@ func buildValidationResult(resources []*runtimev1.Resource) *ValidationResult {
 			if strings.Contains(r.Meta.ReconcileError, "context deadline exceeded") {
 				resourceStatus.Timeout = true
 			}
+		}
+		if len(r.Meta.ReconcileWarnings) > 0 {
+			result.Summary.ReconcileWarnings++
+			resourceStatus.Warning = strings.Join(r.Meta.ReconcileWarnings, "; ")
 		}
 
 		result.Resources = append(result.Resources, resourceStatus)

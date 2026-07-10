@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
@@ -12,15 +13,13 @@
 
   const metadataQuery = createLocalServiceGetMetadata();
 
-  $: ({ data } = $metadataQuery);
-
-  $: version = data?.version;
-  $: commitHash = data?.buildCommit;
+  $: version = $metadataQuery?.data?.version ?? null;
+  $: commitHash = $metadataQuery?.data?.buildCommit ?? null;
 
   const lineItems = [
     {
       icon: Github,
-      label: "Report an issue",
+      label: m.footer_report_issue(),
       href: "https://github.com/rilldata/rill/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
       className: "fill-fg-secondary",
       shrinkIcon: true,
@@ -72,11 +71,13 @@
         >
           <TooltipContent>
             <TooltipTitle>
-              <svelte:fragment slot="name">Rill Developer</svelte:fragment>
+              <svelte:fragment slot="name"
+                >{m.footer_rill_developer()}</svelte:fragment
+              >
             </TooltipTitle>
             <TooltipShortcutContainer>
-              <div>View documentation</div>
-              <Shortcut>Click</Shortcut>
+              <div>{m.footer_view_documentation()}</div>
+              <Shortcut>{m.footer_shortcut_click()}</Shortcut>
             </TooltipShortcutContainer>
           </TooltipContent>
         </div>
@@ -84,7 +85,8 @@
     </span>
 
     <span class="truncate">
-      version {version || "unknown (built from source)"}{commitHash
+      {m.footer_version()}
+      {version || m.footer_unknown_version()}{commitHash
         ? ` – ${commitHash}`
         : ""}
     </span>

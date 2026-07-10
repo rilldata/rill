@@ -31,13 +31,17 @@
   $: timeDimension = getTimeDimensionForMetricView(metricName);
 
   $: isTimeSelected = $timeDimension && selectedItem === $timeDimension;
+  $: effectiveExcludedValues =
+    type === "dimension" && !includeTime && $timeDimension
+      ? [...(excludedValues ?? []), $timeDimension]
+      : excludedValues;
   $: fieldData = useMetricFieldData(
     ctx,
     metricName,
     [type],
     searchableItems,
     searchValue,
-    excludedValues,
+    effectiveExcludedValues,
   );
 </script>
 

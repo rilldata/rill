@@ -3,7 +3,6 @@ import type {
   V1ConnectorDriver,
   V1Source,
 } from "@rilldata/web-common/runtime-client";
-import { makeEnvVarKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 import { getConnectorSchema } from "./modal/connector-schemas";
 import {
@@ -11,6 +10,7 @@ import {
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../templates/schema-utils";
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
 
 // Helper text that we put at the top of every Model YAML file
 function sourceModelFileTop(driverName: string) {
@@ -21,15 +21,16 @@ type: model
 materialize: true`;
 }
 
-export function compileSourceYAML(
+export function generateSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  envEditSession: EnvEditSession,
   opts?: {
     secretKeys?: string[];
     stringKeys?: string[];
     connectorInstanceName?: string;
     originalDriverName?: string;
-    existingEnvBlob?: string;
+    outputConnector?: string;
   },
 ) {
   const schema = getConnectorSchema(connector.name ?? "");
@@ -38,6 +39,7 @@ export function compileSourceYAML(
   const secretPropertyKeys =
     opts?.secretKeys ??
     (schema ? getSchemaSecretKeys(schema, { step: "source" }) : []);
+  envEditSession.startEdit();
 
   // Get the string property keys
   const stringPropertyKeys =
@@ -60,6 +62,8 @@ export function compileSourceYAML(
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
+      // Filter out file types. These should be uploaded and converted to paths.
+      if (value instanceof File || value instanceof FileList) return false;
       return true;
     })
     .map((key) => {
@@ -67,13 +71,9 @@ export function compileSourceYAML(
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
+        const entry = envEditSession.acquire(key, String(value));
         // For source files, we include secret properties
-        return `${key}: "{{ .env.${makeEnvVarKey(
-          connector.name as string,
-          key,
-          opts?.existingEnvBlob,
-          schema ?? undefined,
-        )} }}"`; // uses standard Go template syntax
+        return `${key}: "{{ .env.${entry.mappedEnvVarName} }}"`; // uses standard Go template syntax
       }
 
       if (key === "sql") {
@@ -105,15 +105,25 @@ export function compileSourceYAML(
   const connectorName = opts?.connectorInstanceName || connector.name;
 
   const driverName = opts?.originalDriverName || connector.name || "duckdb";
+  const outputBlock = opts?.outputConnector
+    ? `\n\noutput:\n  connector: ${opts.outputConnector}`
+    : "";
   return (
     `${sourceModelFileTop(driverName)}\n\nconnector: ${connectorName}\n\n` +
     compiledKeyValues +
-    devSection
+    devSection +
+    outputBlock
   );
 }
 
-export function compileLocalFileSourceYAML(path: string) {
-  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
+export function compileLocalFileSourceYAML(
+  path: string,
+  outputConnector?: string,
+) {
+  const outputBlock = outputConnector
+    ? `\n\noutput:\n  connector: ${outputConnector}`
+    : "";
+  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"${outputBlock}`;
 }
 
 export function buildDuckDbQuery(
@@ -222,15 +232,12 @@ export function maybeRewriteToDuckDb(
     case "gcs":
     case "azure":
       // Ensure DuckDB creates a temporary secret for the original connector.
-      if (secretConnectorName) {
-        if (connectorInstanceName) {
-          if (!formValues.create_secrets_from_connectors) {
-            formValues.create_secrets_from_connectors = secretConnectorName;
-          }
-        } else {
-          // When skipping connector creation, force the default driver name.
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
     // falls through to rewrite as DuckDB
     case "local_file":
@@ -243,10 +250,12 @@ export function maybeRewriteToDuckDb(
     case "https": {
       // HTTP sources are typically public; avoid surfacing secret wiring unless
       // the user is explicitly targeting a configured connector instance.
-      if (connectorInstanceName && secretConnectorName) {
-        if (!formValues.create_secrets_from_connectors) {
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
+      if (
+        connectorInstanceName &&
+        secretConnectorName &&
+        !formValues.create_secrets_from_connectors
+      ) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
 
       connectorCopy.name = "duckdb";

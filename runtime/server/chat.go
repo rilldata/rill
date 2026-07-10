@@ -133,10 +133,10 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 	}
 	msg, ok := session.LatestMessage(preds...)
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
+		return nil, status.Errorf(codes.NotFound, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
 	}
 	if req.UntilMessageId != "" && !(msg.Tool == ai.RouterAgentName && msg.Type == ai.MessageTypeResult) {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation as message with id %q is not a router agent result message", req.UntilMessageId)
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot share incomplete conversation as message with id %q is not a router agent result message", req.UntilMessageId)
 	}
 
 	// now save the session with the shared until message id and flush immediately
@@ -210,6 +210,18 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		return nil, ErrForbidden
 	}
 
+	// Apply configured timeout for AI completions
+	cfg, err := s.runtime.InstanceConfig(ctx, req.InstanceId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load instance config: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
+	defer cancel()
+
+	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
+	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
 		return nil, status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
@@ -238,10 +250,6 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 			resErr = errors.Join(resErr, err)
 		}
 	}()
-
-	// Context
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
@@ -321,6 +329,18 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return ErrForbidden
 	}
 
+	// Apply configured timeout for AI completions
+	cfg, err := s.runtime.InstanceConfig(stream.Context(), req.InstanceId)
+	if err != nil {
+		return fmt.Errorf("failed to load instance config: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(stream.Context(), time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
+	defer cancel()
+
+	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
+	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
 		return status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
@@ -334,7 +354,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	userAgent := fmt.Sprintf("rill/%s", version)
 
 	// Open the AI session
-	session, err := s.ai.Session(stream.Context(), &ai.SessionOptions{
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
 		InstanceID: req.InstanceId,
 		SessionID:  req.ConversationId,
 		Claims:     claims,
@@ -344,15 +364,11 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return err
 	}
 	defer func() {
-		err := session.Flush(stream.Context())
+		err := session.Flush(ctx)
 		if err != nil {
 			resErr = errors.Join(resErr, err)
 		}
 	}()
-
-	// Context
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
 
 	// Open subscription for session messages and stream them to the client in the background
 	subCh := session.Subscribe()
@@ -446,12 +462,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.
 // This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
 func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Request) {
-	// Add timeout for AI completion
-	ctx, cancel := context.WithTimeout(req.Context(), time.Minute*5)
-	defer cancel()
-	req = req.WithContext(ctx) // Replace request context with the timed context
-
 	// Observability
+	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
@@ -462,6 +474,16 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}
+
+	// Apply configured timeout for AI chat
+	cfg, err := s.runtime.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to load instance config: %v", err), http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
 
 	// Build request. Note we try to support both GET and POST.
 	completeReq := &runtimev1.CompleteStreamingRequest{}
@@ -545,12 +567,12 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 		Claims:     claims,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "failed to find the conversation: %q", req.ConversationId)
+		return nil, err
 	}
 
 	msg, ok := session.Message(ai.FilterByID(req.MessageId))
 	if !ok {
-		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.MessageId)
+		return nil, status.Errorf(codes.NotFound, "message %q not found in conversation %q", req.MessageId, req.ConversationId)
 	}
 
 	pbMsg, err := messageToPB(session, msg)
@@ -558,8 +580,19 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 		return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
 	}
 
+	var resPbMsg *runtimev1.Message
+	resMsg, ok := session.Message(ai.FilterByParent(req.MessageId), ai.FilterByType(ai.MessageTypeResult))
+	// Don't throw if there is no result message.
+	if ok {
+		resPbMsg, err = messageToPB(session, resMsg)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
+		}
+	}
+
 	return &runtimev1.GetAIMessageResponse{
 		Message: pbMsg,
+		Result:  resPbMsg,
 	}, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -216,7 +217,7 @@ func (c *catalogCache) list(kind, path string, withDeleted, clone bool) []*runti
 // It will error if a resource with the same name already exists.
 // If a soft-deleted resource exists with the same name, it will be overwritten (no longer deleted).
 // The passed resource should only have its spec populated. The meta and state fields will be populated by this function.
-func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, hidden bool, r *runtimev1.Resource) error {
+func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, hidden bool, r *runtimev1.Resource) error {
 	existing, _ := c.get(name, true, false)
 	if existing != nil {
 		if existing.Meta.DeletedOn == nil {
@@ -229,6 +230,7 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 		Refs:            refs,
 		Owner:           owner,
 		FilePaths:       paths,
+		Tags:            tags,
 		Hidden:          hidden,
 		Version:         1,
 		SpecVersion:     1,
@@ -294,7 +296,7 @@ func (c *catalogCache) clearRenamedFrom(name *runtimev1.ResourceName) error {
 }
 
 // updateMeta updates the meta fields of a resource.
-func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string) error {
+func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string) error {
 	r, err := c.get(name, false, true)
 	if err != nil {
 		return err
@@ -303,6 +305,7 @@ func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev
 	r.Meta.Refs = refs
 	r.Meta.Owner = owner
 	r.Meta.FilePaths = paths
+	r.Meta.Tags = tags
 	r.Meta.Version++
 	r.Meta.SpecVersion++
 	r.Meta.SpecUpdatedOn = timestamppb.Now()
@@ -354,8 +357,8 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 	return nil
 }
 
-// updateError updates the reconcile_error field of a resource.
-func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr error) error {
+// updateErrorAndWarning updates both reconcile_error and reconcile_warnings of a resource.
+func (c *catalogCache) updateErrorAndWarning(name *runtimev1.ResourceName, reconcileErr error, warnings []string) error {
 	r, err := c.get(name, true, true)
 	if err != nil {
 		return err
@@ -364,12 +367,13 @@ func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr er
 	if reconcileErr != nil {
 		errStr = reconcileErr.Error()
 	}
-	if r.Meta.ReconcileError == errStr {
+	if r.Meta.ReconcileError == errStr && slices.Equal(r.Meta.ReconcileWarnings, warnings) {
 		// Since bumping the state version usually invalidates derived things, we don't want to do it redundantly.
 		return nil
 	}
 	c.unlink(r)
 	r.Meta.ReconcileError = errStr
+	r.Meta.ReconcileWarnings = warnings
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()
@@ -553,6 +557,7 @@ func resourceFromDriver(r drivers.Resource) *runtimev1.Resource {
 	// Reset ephemeral fields.
 	res.Meta.ReconcileStatus = runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE
 	res.Meta.ReconcileError = ""
+	res.Meta.ReconcileWarnings = nil
 	res.Meta.ReconcileOn = nil
 	res.Meta.RenamedFrom = nil
 

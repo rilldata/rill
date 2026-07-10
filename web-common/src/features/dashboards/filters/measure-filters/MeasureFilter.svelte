@@ -11,6 +11,7 @@
   import MeasureFilterForm from "./MeasureFilterForm.svelte";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import type { MeasureFilterItem } from "../../state-managers/selectors/measure-filters";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let filterData: MeasureFilterItem;
   export let openOnMount = false;
@@ -18,6 +19,9 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let toggleFilterPin:
     | FilterManager["actions"]["toggleFilterPin"]
+    | undefined = undefined;
+  export let toggleFilterRequired:
+    | FilterManager["actions"]["toggleFilterRequired"]
     | undefined = undefined;
   export let onRemove: () => void;
   export let onApply: (params: {
@@ -28,8 +32,18 @@
 
   let open = openOnMount && !filterData.filter;
   let curPinned = filterData.pinned;
+  let curRequired = filterData.required;
 
-  $: ({ filter, pinned, label, measures, dimensionName, name } = filterData);
+  $: ({
+    filter,
+    pinned,
+    label,
+    measures,
+    dimensionName,
+    name,
+    required,
+    missingRequired,
+  } = filterData);
 
   $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
 </script>
@@ -39,6 +53,9 @@
   onOpenChange={() => {
     if (open && pinned !== curPinned) {
       toggleFilterPin?.(name, metricsViewNames);
+    }
+    if (open && required !== curRequired) {
+      toggleFilterRequired?.(name, metricsViewNames);
     }
   }}
 >
@@ -57,10 +74,11 @@
           active={open}
           {label}
           gray={!filter}
+          error={!!missingRequired}
           theme
           {onRemove}
-          removable={!curPinned}
-          removeTooltipText="Remove {label}"
+          removable={!curPinned && !required}
+          removeTooltipText={m.dashboard_remove_label({ label })}
         >
           <MeasureFilterBody
             dimensionName={allDimensions.find((d) => {
@@ -75,11 +93,20 @@
           <TooltipContent maxWidth="400px">
             <TooltipTitle>
               <svelte:fragment slot="name">{name}</svelte:fragment>
-              <svelte:fragment slot="description">{label || ""}</svelte:fragment
+              <svelte:fragment slot="description"
+                >{required
+                  ? m.dashboard_required_measure()
+                  : label || ""}</svelte:fragment
               >
             </TooltipTitle>
 
-            <slot name="body-tooltip-content">Click to edit the values</slot>
+            {#if missingRequired}
+              {m.dashboard_filter_required_set_value()}
+            {:else}
+              <slot name="body-tooltip-content"
+                >{m.dashboard_click_to_edit_values()}</slot
+              >
+            {/if}
           </TooltipContent>
         </div>
       </Tooltip>
@@ -98,10 +125,15 @@
         if (pinned !== curPinned) {
           toggleFilterPin?.(name, metricsViewNames);
         }
+        if (required !== curRequired) {
+          toggleFilterRequired?.(name, metricsViewNames);
+        }
         onApply(params);
       }}
       bind:pinned={curPinned}
+      bind:required={curRequired}
       showPinControl={!!toggleFilterPin}
+      showRequiredControl={!!toggleFilterRequired}
       {side}
     />
   {/if}

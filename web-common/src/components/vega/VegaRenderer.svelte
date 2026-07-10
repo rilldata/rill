@@ -94,11 +94,10 @@
     expressionFunctions,
     colorMapping: stableColorMapping,
     hasComparison: stableHasComparison,
-    useExpressionInterpreter: false,
   });
 
-  const onError = (e: CustomEvent<{ error: Error }>) => {
-    error = e.detail.error.message;
+  const onError = (e: Error) => {
+    error = e.message;
   };
 
   const handleMouseLeave = () => {
@@ -137,13 +136,6 @@
       {error}
     </div>
   {:else}
-    <Vega
-      {data}
-      {spec}
-      {signalListeners}
-      {options}
-      bind:view
-      on:onError={onError}
-    />
+    <Vega {data} {spec} {signalListeners} {options} bind:view {onError} />
   {/if}
 </div>

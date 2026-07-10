@@ -21,11 +21,16 @@
     initPylonChat,
     type UserLike,
   } from "@rilldata/web-common/features/help/initPylonChat";
-  import { posthogIdentify } from "@rilldata/web-common/lib/analytics/posthog";
-  import { createAdminServiceGetCurrentUser } from "../../client";
-  import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
+  import {
+    createAdminServiceGetCurrentUser,
+    type V1ProjectPermissions,
+  } from "../../client";
+  import LanguageSwitcher from "@rilldata/web-common/components/i18n/LanguageSwitcher.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
+
+  export let projectPermissions: V1ProjectPermissions | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -67,9 +72,6 @@
 
   $: if ($user.data?.user) {
     // Actions to take when the user is known
-    posthogIdentify($user.data.user.id, {
-      email: $user.data.user.email,
-    });
     initPylonChat($user.data.user as UserLike);
   }
 
@@ -84,51 +86,47 @@
   <DropdownMenu.Trigger class="flex-none">
     <div bind:this={imgContainer} class="h-7 w-7"></div>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content>
-    {#if params.organization && params.project}
-      <ProjectAccessControls
-        organization={params.organization}
-        project={params.project}
-      >
-        <svelte:fragment slot="manage-project">
-          <DropdownMenu.Sub bind:open={subMenuOpen}>
-            <DropdownMenu.SubTrigger
-              onclick={() => {
-                subMenuOpen = !subMenuOpen;
+  <DropdownMenu.Content align="end">
+    {#if params.organization && params.project && projectPermissions}
+      {#if projectPermissions.manageProject}
+        <DropdownMenu.Sub bind:open={subMenuOpen}>
+          <DropdownMenu.SubTrigger
+            onclick={() => {
+              subMenuOpen = !subMenuOpen;
+            }}
+          >
+            {m.avatar_view_as()}
+          </DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent
+            class="flex flex-col min-w-[150px] max-w-[300px]"
+          >
+            <ViewAsUserPopover
+              organization={params.organization}
+              project={params.project}
+              onSelectUser={() => {
+                subMenuOpen = false;
+                primaryMenuOpen = false;
               }}
-            >
-              View as
-            </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent
-              class="flex flex-col min-w-[150px] max-w-[300px]"
-            >
-              <ViewAsUserPopover
-                organization={params.organization}
-                project={params.project}
-                onSelectUser={() => {
-                  subMenuOpen = false;
-                  primaryMenuOpen = false;
-                }}
-              />
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-        </svelte:fragment>
-      </ProjectAccessControls>
+            />
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
+      {/if}
       {#if params.dashboard}
         <DropdownMenu.Item
           href={`/${params.organization}/${params.project}/-/alerts`}
         >
-          Alerts
+          {m.nav_tab_alerts()}
         </DropdownMenu.Item>
         <DropdownMenu.Item
           href={`/${params.organization}/${params.project}/-/reports`}
         >
-          Reports
+          {m.nav_tab_reports()}
         </DropdownMenu.Item>
       {/if}
     {/if}
 
     <ThemeToggle />
+    <LanguageSwitcher />
     <DropdownMenu.Separator />
 
     <DropdownMenu.Item
@@ -136,18 +134,20 @@
       target="_blank"
       rel="noreferrer noopener"
     >
-      Documentation
+      {m.avatar_documentation()}
     </DropdownMenu.Item>
     <DropdownMenu.Item
       href="https://discord.gg/2ubRfjC7Rh"
       target="_blank"
       rel="noreferrer noopener"
     >
-      Join us on Discord
+      {m.avatar_join_discord()}
     </DropdownMenu.Item>
     <DropdownMenu.Item onclick={handlePylon}>
-      Contact Rill support
+      {m.avatar_contact_support()}
     </DropdownMenu.Item>
-    <DropdownMenu.Item onclick={redirectToLogout}>Logout</DropdownMenu.Item>
+    <DropdownMenu.Item onclick={redirectToLogout}
+      >{m.avatar_logout()}</DropdownMenu.Item
+    >
   </DropdownMenu.Content>
 </DropdownMenu.Root>

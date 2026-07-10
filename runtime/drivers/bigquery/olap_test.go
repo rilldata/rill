@@ -1,9 +1,12 @@
 package bigquery_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
@@ -138,17 +141,21 @@ func TestExec(t *testing.T) {
 	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
+	name := "test_exec" + uuid.New().String()[:8]
+	t.Cleanup(func() {
+		// drop table
+		err := olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE IF EXISTS `rilldata.integration_test." + name + "`"})
+		require.NoError(t, err)
+	})
+
 	// create table with dry run
-	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE `rilldata.integration_test.exec_test` (id INT64, name STRING)", DryRun: true})
+	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE `rilldata.integration_test." + name + "` (id INT64, name STRING)", DryRun: true})
 	require.NoError(t, err)
 
 	// create table actually
-	err = olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE OR REPLACE TABLE `rilldata.integration_test.exec_test` (id INT64, name STRING)"})
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE OR REPLACE TABLE `rilldata.integration_test." + name + "` (id INT64, name STRING)"})
 	require.NoError(t, err)
 
-	// drop table
-	err = olap.Exec(t.Context(), &drivers.Statement{Query: "DROP TABLE `rilldata.integration_test.exec_test`"})
-	require.NoError(t, err)
 }
 
 func TestLoadDDL(t *testing.T) {
@@ -299,6 +306,89 @@ func TestScan(t *testing.T) {
 		require.Contains(t, structVal, `"b":"test"`)
 		require.Equal(t, "[1,2,3]", arrayVal)
 	})
+}
+
+func TestQuerySchema(t *testing.T) {
+	testmode.Expensive(t)
+	_, olap := acquireTestBigQuery(t)
+
+	schema, err := olap.QuerySchema(t.Context(), "SELECT * FROM `rilldata.integration_test.all_datatypes`", nil)
+	require.NoError(t, err)
+	require.NotNil(t, schema)
+	require.Len(t, schema.Fields, 34)
+
+	type fieldExpectation struct {
+		name string
+		code runtimev1.Type_Code
+	}
+	expected := []fieldExpectation{
+		{"int_col", runtimev1.Type_CODE_INT64},
+		{"float_col", runtimev1.Type_CODE_FLOAT64},
+		{"numeric_col", runtimev1.Type_CODE_STRING},
+		{"bignumeric_col", runtimev1.Type_CODE_STRING},
+		{"bool_col", runtimev1.Type_CODE_BOOL},
+		{"string_col", runtimev1.Type_CODE_STRING},
+		{"bytes_col", runtimev1.Type_CODE_BYTES},
+		{"date_col", runtimev1.Type_CODE_DATE},
+		{"datetime_col", runtimev1.Type_CODE_TIMESTAMP},
+		{"time_col", runtimev1.Type_CODE_STRING},
+		{"timestamp_col", runtimev1.Type_CODE_TIMESTAMP},
+		{"json_col", runtimev1.Type_CODE_JSON},
+		{"geography_col", runtimev1.Type_CODE_STRING},
+		{"range_date_col", runtimev1.Type_CODE_STRING},
+		{"range_datetime_col", runtimev1.Type_CODE_STRING},
+		{"range_timestamp_col", runtimev1.Type_CODE_STRING},
+		{"array_int_col", runtimev1.Type_CODE_ARRAY},
+		{"array_float_col", runtimev1.Type_CODE_ARRAY},
+		{"array_numeric_col", runtimev1.Type_CODE_ARRAY},
+		{"array_bignumeric_col", runtimev1.Type_CODE_ARRAY},
+		{"array_bool_col", runtimev1.Type_CODE_ARRAY},
+		{"array_string_col", runtimev1.Type_CODE_ARRAY},
+		{"array_bytes_col", runtimev1.Type_CODE_ARRAY},
+		{"array_date_col", runtimev1.Type_CODE_ARRAY},
+		{"array_datetime_col", runtimev1.Type_CODE_ARRAY},
+		{"array_time_col", runtimev1.Type_CODE_ARRAY},
+		{"array_timestamp_col", runtimev1.Type_CODE_ARRAY},
+		{"array_json_col", runtimev1.Type_CODE_ARRAY},
+		{"array_geography_col", runtimev1.Type_CODE_ARRAY},
+		{"array_range_date_col", runtimev1.Type_CODE_ARRAY},
+		{"array_range_datetime_col", runtimev1.Type_CODE_ARRAY},
+		{"array_range_timestamp_col", runtimev1.Type_CODE_ARRAY},
+		{"array_struct_col", runtimev1.Type_CODE_ARRAY},
+		{"struct_col", runtimev1.Type_CODE_JSON},
+	}
+
+	for i, e := range expected {
+		f := schema.Fields[i]
+		require.Equal(t, e.name, f.Name, "field %d name mismatch", i)
+		require.Equal(t, e.code, f.Type.Code, "field %d (%s) type mismatch", i, e.name)
+	}
+}
+
+func TestAllDatatypesRowCount(t *testing.T) {
+	testmode.Expensive(t)
+	_, olap := acquireTestBigQuery(t)
+
+	// all_datatypes has 3 rows
+	tests := []struct {
+		limit    int
+		expected int
+	}{
+		{3, 3},  // LIMIT equal to total rows
+		{10, 3}, // LIMIT greater than total rows
+		{2, 2},  // LIMIT less than total rows
+	}
+	for _, tc := range tests {
+		rows, err := olap.Head(t.Context(), "rilldata", "integration_test", "all_datatypes", int64(tc.limit))
+		require.NoError(t, err)
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		require.NoError(t, rows.Err())
+		rows.Close()
+		require.Equal(t, tc.expected, count)
+	}
 }
 
 func acquireTestBigQuery(t *testing.T) (drivers.Handle, drivers.OLAPStore) {

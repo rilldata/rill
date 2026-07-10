@@ -1,10 +1,10 @@
-import { goto } from "$app/navigation";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
-import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
-import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
+import { developerChatActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions/actions.ts";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -12,6 +12,7 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
+  runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get, writable } from "svelte/store";
@@ -21,7 +22,7 @@ import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import OptionToCancelAIGeneration from "../../metrics-views/ai-generation/OptionToCancelAIGeneration.svelte";
 
-export const generatingCanvas = writable(false);
+export const generatingCanvasFilePath = writable<string | null>(null);
 
 /**
  * Creates a metrics view from a table.
@@ -142,7 +143,7 @@ export async function createCanvasDashboardFromMetricsView(
     }
 
     // Navigate to the Canvas file
-    await goto(`/files${canvasFilePath}`);
+    await navigateToFile(canvasFilePath);
   } catch (err) {
     eventBus.emit("notification", {
       message: "Failed to create Canvas dashboard for " + metricsViewName,
@@ -173,11 +174,22 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
   const prompt = `Create a canvas dashboard at ${canvasFilePath} based on the "${metricsViewName}" metrics view. Include appropriate visualizations like KPI grids, charts, and leaderboards based on the available measures and dimensions.`;
 
   try {
+    // Set generating state and create a placeholder file so it appears in the
+    // left nav with a loading spinner before the agent has written anything.
+    generatingCanvasFilePath.set(canvasFilePath);
+    await runtimeServicePutFile(client, {
+      path: canvasFilePath,
+      blob: "type: canvas\n",
+      create: true,
+      createOnly: true,
+    });
+
     // 3. Set up file creation detection
     // Get conversation manager and start a new conversation
     const conversationManager = getConversationManager(client, {
       conversationState: "browserStorage",
       agent: ToolName.DEVELOPER_AGENT,
+      surface: "developer",
     });
 
     // Start a new conversation instead of continuing existing one
@@ -187,11 +199,8 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
       conversationManager.getCurrentConversation(),
     );
 
-    // Set generating state
-    generatingCanvas.set(true);
-
     // 4. Start the chat with the generation prompt
-    sidebarActions.startChat(prompt);
+    developerChatActions.startChat(prompt);
 
     // Wait for the stream to start async through the sidebar action.
     await waitUntil(() => get(currentConversation.isStreaming));
@@ -205,7 +214,7 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
       detail: err instanceof Error ? err.message : String(err),
     });
   } finally {
-    generatingCanvas.set(false);
+    generatingCanvasFilePath.set(null);
   }
 }
 

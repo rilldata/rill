@@ -5,7 +5,7 @@ import {
   getLinkStateForTimeDimensionDetail,
 } from "@rilldata/web-common/features/canvas/components/charts/util";
 import {
-  commonOptions,
+  getCommonOptions,
   createComponent,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
@@ -34,12 +34,19 @@ import type {
   CommonChartProperties,
   FieldConfig,
 } from "../../../components/charts/types";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import {
+  rowColFromPath,
+  type CanvasEntity,
+  type ComponentPath,
+} from "../../stores/canvas-entity";
+import { namePrefixFromPath } from "../../layout-util";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
 import Chart from "./CanvasChart.svelte";
+
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 // Base interface for all chart configurations
 export type BaseChartConfig = ComponentFilterProperties &
@@ -65,7 +72,10 @@ export abstract class BaseChart<
     };
     super(resource, parent, path, baseSpec as TConfig);
 
-    this.type = resource.component?.state?.validSpec?.renderer as ChartType;
+    this.type = (resource.component?.state?.validSpec?.renderer ??
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.renderer
+        : undefined)) as ChartType;
     this.chartType = writable(this.type);
   }
 
@@ -80,11 +90,15 @@ export abstract class BaseChart<
   inputParams(): InputParams<TConfig> {
     return {
       options: {
-        metrics_view: { type: "metrics", label: "Metrics view" },
-        tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
+        metrics_view: { type: "metrics", label: m.canvas_metrics_view_label() },
+        tooltip: {
+          type: "tooltip",
+          label: m.canvas_tooltip_label(),
+          showInUI: false,
+        },
         vl_config: { type: "config", showInUI: false },
         ...this.getChartSpecificOptions(),
-        ...commonOptions,
+        ...getCommonOptions(),
       },
       filter: getFilterOptions(this.supportsComparison()),
     };
@@ -126,10 +140,18 @@ export abstract class BaseChart<
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
     const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);
 
+    const comparisonChartTypes: ChartType[] = [
+      "bar_chart",
+      "line_chart",
+      "stacked_bar",
+      "stacked_bar_normalized",
+    ];
+    const passComparison = comparisonChartTypes.includes(this.type);
+
     return {
       whereFilter: dimensionFilters,
       dimensionThresholdFilters,
-      showTimeComparison: false,
+      ...(passComparison ? {} : { showTimeComparison: false }),
       activePage: tddLink.canLink
         ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
         : DashboardState_ActivePage.PIVOT,
@@ -176,13 +198,15 @@ export abstract class BaseChart<
       ...commonProps,
     };
 
+    const { row, col } = rowColFromPath(this.pathInYAML);
     const newResource = this.parent.createOptimisticResource({
       type: key,
-      row: this.pathInYAML[1],
-      column: this.pathInYAML[3],
+      row,
+      column: col,
       metricsViewName: currentSpec.metrics_view,
       metricsViewSpec,
       spec: mergedSpec,
+      namePrefix: namePrefixFromPath(this.pathInYAML),
     });
 
     const newComponent = createComponent(
@@ -192,7 +216,7 @@ export abstract class BaseChart<
     );
 
     this.parent.componentsStore.set(newComponent.id, newComponent);
-    this.parent.selectedComponent.set(newComponent.id);
+    this.parent.setSelectedComponent(newComponent.id);
     this.parent._rows.refresh();
 
     // Preserve the width from the current chart

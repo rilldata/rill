@@ -7,7 +7,7 @@
     V1ExploreTimeRange,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Duration, Interval } from "luxon";
   import {
     bucketYamlRanges,
     type ISODurationString,
@@ -34,6 +34,7 @@
   export let canPanRight: boolean = !hidePan;
   export let lockTimeZone = false;
   export let allowCustomTimeRange = true;
+  export let maxQueryTimeRange: Duration | undefined = undefined;
   export let showFullRange = true;
   export let complete: boolean;
   export let context = "dashboard";
@@ -44,7 +45,11 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let primaryTimeDimension: string | undefined = undefined;
   export let selectedTimeDimension: string | undefined = undefined;
-  export let timeDimensions: { value: string; label: string }[] = [];
+  export let timeDimensions: {
+    value: string;
+    label: string;
+    description?: string;
+  }[] = [];
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
@@ -56,7 +61,12 @@
 
   const newPicker = featureFlags.rillTime;
 
-  $: rangeBuckets = bucketYamlRanges(timeRanges, minTimeGrain, $newPicker);
+  $: rangeBuckets = bucketYamlRanges(
+    timeRanges,
+    minTimeGrain,
+    $newPicker,
+    maxQueryTimeRange,
+  );
 
   $: v2TimeString = normalizeRangeString(selectedRangeAlias);
 
@@ -86,6 +96,7 @@
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
       {allowCustomTimeRange}
+      {maxQueryTimeRange}
       timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}

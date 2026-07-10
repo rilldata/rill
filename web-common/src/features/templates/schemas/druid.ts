@@ -3,7 +3,7 @@ import type { MultiStepFormSchema } from "./types";
 export const druidSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
-  title: "Apache Druid",
+  title: "Druid",
   "x-category": "olap",
   "x-form-width": "wide",
   properties: {

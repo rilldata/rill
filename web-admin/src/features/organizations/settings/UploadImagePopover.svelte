@@ -2,7 +2,7 @@
   import { createAdminServiceCreateAsset } from "@rilldata/web-admin/client";
   import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import { Button } from "@rilldata/web-common/components/button/index.js";
-  import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
+  import ImageInput from "@rilldata/web-common/components/forms/ImageInput.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import {
     Popover,
@@ -10,6 +10,7 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover/index.js";
   import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   export let imageUrl: string;
   export let accept: string;
   export let label: string;
@@ -102,15 +103,15 @@
     side="bottom"
     class="flex flex-col gap-y-2 w-[400px] p-4"
   >
-    <div class="text-base font-medium">Upload org {label}</div>
-    <FileInput bind:value={url} {accept} {uploadFile} />
+    <div class="text-base font-medium">{m.settings_upload_org_image_title({ label })}</div>
+    <ImageInput bind:value={url} {accept} {uploadFile} />
     {#if error}
       <div class="text-red-600 text-xs">
         {error}
       </div>
     {/if}
     <div class="flex flex-row justify-end gap-x-2">
-      <Button type="secondary" onClick={onCancel}>Cancel</Button>
+      <Button type="secondary" onClick={onCancel}>{m.settings_cancel_button()}</Button>
       {#if imageUrl}
         <Button
           type="secondary"
@@ -118,7 +119,7 @@
           {loading}
           disabled={loading}
         >
-          Remove
+          {m.settings_remove_button()}
         </Button>
       {/if}
       <Button
@@ -127,7 +128,7 @@
         {loading}
         disabled={loading || !assetId}
       >
-        Save
+        {m.settings_save_button()}
       </Button>
     </div>
   </PopoverContent>

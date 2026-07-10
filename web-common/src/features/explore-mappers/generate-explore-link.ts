@@ -4,6 +4,7 @@ import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mapp
 import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing.ts";
 
 /**
  * Generates the explore page URL with proper search parameters
@@ -58,7 +59,7 @@ export function getUrlForExplore(
     );
   } else {
     url = new URL(
-      `/explore/${encodeURIComponent(exploreName)}`,
+      withEditorPrefix(`/explore/${encodeURIComponent(exploreName)}`),
       window.location.origin,
     );
   }

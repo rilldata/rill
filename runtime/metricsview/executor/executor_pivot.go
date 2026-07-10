@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"go.uber.org/zap"
 )
@@ -60,7 +62,7 @@ func (e *Executor) rewriteQueryForPivot(qry *metricsview.Query) (*pivotAST, bool
 	// Determine dialect for the PIVOT (in practice, this currently always becomes DuckDB because it's the only OLAP that supports pivoting)
 	dialect := e.olap.Dialect()
 	if !dialect.CanPivot() {
-		dialect = drivers.DialectDuckDB
+		dialect = duckdb.DialectDuckDB
 	}
 
 	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query)
@@ -133,7 +135,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		args = nil
 
 		// Check for consistency with rewriteQueryForPivot
-		if pivot.dialect != drivers.DialectDuckDB {
+		if pivot.dialect.String() != drivers.DialectNameDuckDB {
 			return "", fmt.Errorf("cannot execute pivot: the pivot AST fell back to dialect %q, not DuckDB", pivot.dialect.String())
 		}
 	}
@@ -145,6 +147,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		return "", fmt.Errorf("failed to acquire OLAP for serving pivot: %w", err)
 	}
 	defer release()
+
 	var path string
 	err = olap.WithConnection(ctx, e.priority, func(wrappedCtx context.Context, ensuredCtx context.Context) error {
 		// Stage the underlying data in a temporary table
@@ -175,6 +178,13 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 			}
 		}()
 
+		// Guard against pivots that would generate too many columns.
+		// A pivot produces one column per distinct combination of the pivoted dimension values, times the number of measures.
+		// Pivots are executed in DuckDB, an overly wide pivot fails with an opaque error; we detect it up front to return a clear, actionable message instead.
+		if err := e.checkPivotColumns(wrappedCtx, olap, alias, pivot); err != nil {
+			return err
+		}
+
 		// Build the PIVOT query
 		pivotSQL, err := pivot.SQL(ast, alias)
 		if err != nil {
@@ -186,6 +196,11 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 			"sql": pivotSQL,
 		}, headers)
 		if err != nil {
+			// Backstop for wide pivots that slip past checkPivotColumns (e.g. wide column types overflow the block size
+			// at a lower column count than the limit). DuckDB reports this as a "tuple width exceeds block size" error.
+			if strings.Contains(err.Error(), "tuple width exceeds block size") {
+				return fmt.Errorf("pivot produced too many columns to export; reduce the number of pivoted dimensions or filter the data to fewer values")
+			}
 			return fmt.Errorf("failed to execute pivot export: %w", err)
 		}
 
@@ -195,6 +210,53 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		return "", err
 	}
 	return path, nil
+}
+
+// checkPivotColumns returns an error if the pivot would produce more columns than the configured limit.
+// The staged data in tableName is queried for the number of distinct combinations of the pivoted dimensions,
+// which is multiplied by the number of measures to estimate the resulting column count.
+// The limit is a conservative safety cap (configurable via rill.metrics.pivot_export_column_limit); a limit of 0 disables the check.
+func (e *Executor) checkPivotColumns(ctx context.Context, olap drivers.OLAPStore, tableName string, pivot *pivotAST) error {
+	limit := e.instanceCfg.MetricsPivotExportColumnLimit
+	if limit <= 0 || len(pivot.on) == 0 {
+		return nil
+	}
+
+	var cols strings.Builder
+	for i, on := range pivot.on {
+		if i > 0 {
+			cols.WriteString(", ")
+		}
+		cols.WriteString(pivot.dialect.EscapeIdentifier(on))
+	}
+
+	res, err := olap.Query(ctx, &drivers.Statement{
+		Query:           fmt.Sprintf("SELECT count(*) FROM (SELECT DISTINCT %s FROM %s)", cols.String(), tableName),
+		QueryAttributes: e.queryAttributes,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to check pivot cardinality: %w", err)
+	}
+	defer res.Close()
+
+	if !res.Next() {
+		return errors.New("failed to check pivot cardinality: no rows returned")
+	}
+	var distinctCombinations int64
+	if err := res.Scan(&distinctCombinations); err != nil {
+		return fmt.Errorf("failed to check pivot cardinality: %w", err)
+	}
+
+	measures := int64(len(pivot.using))
+	if measures < 1 {
+		measures = 1
+	}
+	columns := distinctCombinations * measures
+	if columns > limit {
+		return fmt.Errorf("pivot would produce %d columns (%d distinct combinations of the pivoted dimensions times %d measures), which exceeds the limit of %d; reduce the number of pivoted dimensions or filter the data to fewer values", columns, distinctCombinations, measures, limit)
+	}
+
+	return nil
 }
 
 // pivotAST represents config for generating a PIVOT query.
@@ -233,7 +295,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			b.WriteString(a.dialect.EscapeIdentifier(f.Name))
 			if f.DisplayName != "" {
 				b.WriteString(" AS ")
-				b.WriteString(a.dialect.EscapeAlias(f.DisplayName))
+				b.WriteString(a.dialect.EscapeAlias(a.dialect.SanitizeDisplayName(f.DisplayName)))
 			}
 			b.WriteString(", ")
 		}
@@ -281,7 +343,7 @@ func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (
 			b.WriteString(")")
 			b.WriteString(" AS ")
 			if a.useDisplayNames && f.DisplayName != "" {
-				b.WriteString(a.dialect.EscapeAlias(f.DisplayName))
+				b.WriteString(a.dialect.EscapeAlias(a.dialect.SanitizeDisplayName(f.DisplayName)))
 			} else {
 				b.WriteString(a.dialect.EscapeAlias(f.Name))
 			}

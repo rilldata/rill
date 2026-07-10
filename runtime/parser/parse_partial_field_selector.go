@@ -76,7 +76,7 @@ func (y *FieldSelectorYAML) UnmarshalYAML(v *yaml.Node) error {
 			return errors.New("expected one of '*', list of names, `regex` field, `expr` field or `exclude` field")
 		}
 	default:
-		return fmt.Errorf("expected one of '*', list of names, `regex` field, `expr` field or `exclude` field, got type %q", v.Kind)
+		return fmt.Errorf("expected one of '*', list of names, `regex` field, `expr` field or `exclude` field, got %s", v.Tag)
 	}
 	return nil
 }

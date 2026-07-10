@@ -22,7 +22,7 @@
     type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Duration, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -49,6 +49,7 @@
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const { rillTime } = featureFlags;
 
@@ -108,6 +109,14 @@
   $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
 
   $: watermark = timeRangeSummary?.watermark;
+
+  $: maxQueryTimeRangeMillis = Number(
+    $timeRangeQuery.data?.maxQueryTimeRangeMillis ?? 0,
+  );
+  $: maxQueryTimeRange =
+    maxQueryTimeRangeMillis > 0
+      ? Duration.fromMillis(maxQueryTimeRangeMillis)
+      : undefined;
 
   $: ({
     selectedTimeRange,
@@ -192,7 +201,8 @@
   $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
     return {
       value: timeDim.name!,
-      label: timeDim.name!,
+      label: timeDim.displayName || timeDim.name!,
+      description: timeDim.description,
     };
   });
 
@@ -453,6 +463,7 @@
           {timeEnd}
           lockTimeZone={exploreSpec.lockTimeZone}
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
+          {maxQueryTimeRange}
           {activeTimeGrain}
           {activeTimeZone}
           canPanLeft={$canPanLeft}
@@ -482,7 +493,8 @@
         <Tooltip.Root delayDuration={0}>
           <Tooltip.Trigger>
             <span class="text-fg-secondary italic">
-              as of <Timestamp
+              {m.dashboard_as_of()}
+              <Timestamp
                 id="filter-bar-as-of"
                 italic
                 suppress
@@ -517,7 +529,7 @@
           class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
-          No filters selected
+          {m.dashboard_no_filters_selected()}
         </div>
       {:else}
         {#each allDimensionFilters as filterData (filterData.name)}
@@ -578,7 +590,9 @@
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasFilters}
-          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}
+            >{m.dashboard_clear_filters()}</Button
+          >
         {/if}
       {/if}
     </div>

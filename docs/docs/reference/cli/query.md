@@ -4,23 +4,30 @@ title: rill query
 ---
 ## rill query
 
-Query a resolver within a project
+Query data in a project
 
 ### Synopsis
 
-Query a resolver within a project.
+Query data in a project.
 
-You can query a resolver by providing a SQL query, a resolver name, or a connector name.
+You can query data by providing a SQL query and optional connector name.
+As an advanced option, you can also query other resolvers such as metrics_sql.
 
-Example Usage:
-
-Query a resolver by providing a SQL query:
-rill query my-project --sql "SELECT * FROM my-table"
-rill query --sql "SELECT * FROM my-table" --limit 10
+Note that large results are automatically truncated (use --limit to override).
 
 
 ```
 rill query [<project>] [flags]
+```
+
+### Examples
+
+```
+  # SQL query against a Rill Cloud project
+  rill query my-project --sql "SELECT * FROM my-table"
+
+  # SQL query against a local Rill project running with 'rill start'
+  rill query --local --sql "SELECT * FROM my-table"
 ```
 
 ### Flags

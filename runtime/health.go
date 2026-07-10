@@ -100,6 +100,9 @@ func (r *Runtime) Health(ctx context.Context, fullStatus bool) (*Health, error) 
 }
 
 func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error) {
+	// Tag the health-check probe queries with the "health" source so they're identifiable and excluded from billing.
+	ctx = WithRequestSource(ctx, RequestSourceHealth)
+
 	res := &InstanceHealth{}
 
 	inst, err := r.Instance(ctx, instanceID)

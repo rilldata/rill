@@ -7,6 +7,7 @@
   import DatabaseEntry from "./DatabaseEntry.svelte";
   import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
@@ -35,7 +36,7 @@
   {#if hasError}
     <span class="message pl-6">Error: {connector.errorMessage}</span>
   {:else if isLoading && queryEnabled}
-    <span class="message pl-6">Loading tables...</span>
+    <span class="message pl-6">{m.status_loading_tables_short()}</span>
   {:else if error && queryEnabled}
     <span class="message pl-6">Error: {extractErrorMessage(error)}</span>
   {:else if data}
@@ -53,7 +54,7 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply flex flex-col overflow-y-auto;
+    @apply flex flex-col flex-1 min-h-0 overflow-y-auto;
   }
 
   .message {

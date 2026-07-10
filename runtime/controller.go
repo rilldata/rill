@@ -29,8 +29,8 @@ const reconcileCancelationTimeout = 10 * time.Minute
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
 
-// errControllerClosed is returned from controller functions that require the controller to be running
-var errControllerClosed = errors.New("controller is closed")
+// ErrControllerClosed is returned from controller functions that require the controller to be running
+var ErrControllerClosed = errors.New("controller is closed")
 
 // dependencyError is returned when a resource can not be reconciled due to a dependency error.
 type dependencyError struct {
@@ -46,6 +46,10 @@ func NewDependencyError(err error) error {
 
 func (d dependencyError) Error() string {
 	return fmt.Sprintf("dependency error: %v", d.err)
+}
+
+func (d dependencyError) Unwrap() error {
+	return d.err
 }
 
 // Reconciler implements reconciliation logic for all resources of a specific kind.
@@ -65,6 +69,7 @@ type Reconciler interface {
 // ReconcileResult propagates results from a reconciler invocation
 type ReconcileResult struct {
 	Err       error
+	Warnings  []string // Non-fatal; stored in reconcile_warnings, does not block downstream
 	Retrigger time.Time
 }
 
@@ -476,7 +481,7 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 	for {
 		select {
 		case <-c.closedCh:
-			return errControllerClosed
+			return ErrControllerClosed
 		case <-ctx.Done():
 			return ctx.Err()
 		}
@@ -485,7 +490,8 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 
 // Create creates a resource and enqueues it for reconciliation.
 // If a resource with the same name is currently being deleted, the deletion will be cancelled.
-func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, hidden bool, r *runtimev1.Resource) error {
+// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, hidden bool, r *runtimev1.Resource) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -510,7 +516,7 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 		requeued = true
 	}
 
-	err := c.catalog.create(name, refs, owner, paths, hidden, r)
+	err := c.catalog.create(name, refs, owner, paths, tags, hidden, r)
 	if err != nil {
 		return err
 	}
@@ -523,7 +529,8 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 
 // UpdateMeta updates a resource's meta fields and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
-func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string) error {
+// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -543,7 +550,7 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 		return err
 	}
 
-	err = c.catalog.updateMeta(name, refs, owner, paths)
+	err = c.catalog.updateMeta(name, refs, owner, paths, tags)
 	if err != nil {
 		return err
 	}
@@ -559,7 +566,8 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 
 // UpdateName renames a resource and updates annotations, and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
-func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths []string) error {
+// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths, tags []string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -594,7 +602,7 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	}
 	c.enqueue(newName)
 
-	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths)
+	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths, tags)
 	if err != nil {
 		return err
 	}
@@ -661,9 +669,9 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 	return nil
 }
 
-// UpdateError updates a resource's error.
+// UpdateErrorAndWarning updates a resource's error and warnings.
 // Unlike UpdateMeta and UpdateSpec, it does not cancel or enqueue reconciliation for the resource.
-func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceName, reconcileErr error) error {
+func (c *Controller) UpdateErrorAndWarning(ctx context.Context, name *runtimev1.ResourceName, reconcileErr error, warnings []string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -673,7 +681,7 @@ func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceNa
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
-	err := c.catalog.updateError(name, reconcileErr)
+	err := c.catalog.updateErrorAndWarning(name, reconcileErr, warnings)
 	if err != nil {
 		return err
 	}
@@ -845,7 +853,7 @@ func (c *Controller) reconciler(resourceKind string) Reconciler {
 // checkRunning panics if called when the Controller is not running.
 func (c *Controller) checkRunning() error {
 	if c.closed.Load() {
-		return errControllerClosed
+		return ErrControllerClosed
 	}
 	return nil
 }
@@ -963,7 +971,7 @@ func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
 	}
 
 	// Create a new resource with the old name, so we can delete it separately.
-	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Hidden, r)
+	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Hidden, r)
 	if err != nil {
 		return err
 	}
@@ -1022,7 +1030,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 		return err
 	}
 
-	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Hidden, r)
+	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Hidden, r)
 	if err != nil {
 		return err
 	}
@@ -1115,8 +1123,8 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 		return true, nil
 	}
 
-	// Not running - clear error and mark pending
-	err = c.catalog.updateError(n, nil)
+	// Not running - clear error/warning and mark pending
+	err = c.catalog.updateErrorAndWarning(n, nil, nil)
 	if err != nil {
 		return false, err
 	}
@@ -1132,7 +1140,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 
 	// If resource is cyclic, set error and skip it
 	if c.catalog.isCyclic(n) {
-		err = c.catalog.updateError(n, errCyclicDependency)
+		err = c.catalog.updateErrorAndWarning(n, errCyclicDependency, nil)
 		if err != nil {
 			return false, err
 		}
@@ -1157,8 +1165,8 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 		}
 		switch dr.Meta.ReconcileStatus {
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-			// Clear error and mark it pending
-			err = c.catalog.updateError(n, nil)
+			// Clear error/warning and mark it pending
+			err = c.catalog.updateErrorAndWarning(n, nil, nil)
 			if err != nil {
 				return fmt.Errorf("error updating dag node %q: %w", ds, err)
 			}
@@ -1305,6 +1313,9 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
+	// Tag all reconcile-driven queries as "internal" so they're excluded from billing. This propagates to every nested
+	// Query/Resolve call; user-facing execution paths (e.g. alert/report query evaluation) override the source deeper.
+	ctx = WithRequestSource(ctx, RequestSourceInternal)
 	go func() {
 		defer func() {
 			// Catch panics and set as error
@@ -1386,8 +1397,16 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 			errorLevel = false
 		}
 	}
+	if len(inv.result.Warnings) > 0 {
+		errorLevel = true // still logged as warn
+		logArgs = append(logArgs, zap.Any("warnings", inv.result.Warnings))
+	}
 	if errorLevel {
-		c.Logger.Warn("Reconcile failed", logArgs...)
+		if inv.result.Err != nil {
+			c.Logger.Warn("Reconcile failed", logArgs...)
+		} else {
+			c.Logger.Warn("Reconciled resource with warnings", logArgs...)
+		}
 	} else {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
@@ -1489,7 +1508,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		if err != nil {
 			return err
 		}
-		err = c.catalog.updateError(r.Meta.Name, inv.result.Err)
+		err = c.catalog.updateErrorAndWarning(r.Meta.Name, inv.result.Err, inv.result.Warnings)
 		if err != nil {
 			return err
 		}

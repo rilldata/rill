@@ -398,6 +398,28 @@ describe("generateServiceFile", () => {
       expect(code).not.toContain("createMutation");
       expect(code).not.toContain("CreateMutationOptions");
     });
+
+    it("imports proto response types when no Orval counterpart exists", () => {
+      // With no Orval types, response types must be imported from _pb.ts
+      // so PartialMessage<FakeResponse> resolves in TypeScript
+      expect(output).toContain("FakeResponse,");
+      expect(output).toContain("FakePaginatedResponse,");
+      expect(output).toContain("PartialMessage");
+    });
+
+    it("does not import proto response types when Orval counterpart exists", () => {
+      const orvalTypes = new Set([
+        "V1FakeRequestWithInstanceId",
+        "V1FakeRequestWithoutInstanceId",
+        "V1FakeResponse",
+        "V1FakePaginatedRequest",
+        "V1FakePaginatedResponse",
+      ]);
+      const { code } = generateServiceFile(mockService, orvalTypes);
+      // Response types should come from Orval, not proto
+      expect(code).toContain("V1FakeResponse");
+      expect(code).not.toContain("PartialMessage");
+    });
   });
 });
 

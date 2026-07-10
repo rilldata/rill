@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getPivotExportQuery } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -6,12 +7,22 @@
   import ExportMenu from "@rilldata/web-common/features/exports/ExportMenu.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import {
+    DEFAULT_PIVOT_SIDEBAR_WIDTH,
+    DEFAULT_PIVOT_SIDEBAR_WIDTH_NO_TAGS,
+    MAX_PIVOT_SIDEBAR_WIDTH,
+    MIN_PIVOT_SIDEBAR_WIDTH,
+    pivotSidebarWidth,
+  } from "@rilldata/web-common/features/dashboards/workspace/dashboard-layout-store";
   import { derived } from "svelte/store";
+  import { slide } from "svelte/transition";
   import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
   import { getPivotConfig } from "./pivot-data-config";
   import { usePivotForExplore } from "./pivot-data-store";
   import PivotEmpty from "./PivotEmpty.svelte";
   import PivotHeader from "./PivotHeader.svelte";
+  import type { PivotChipData } from "./types";
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
@@ -22,8 +33,10 @@
   const {
     exploreName,
     dashboardStore,
+    validSpecStore,
     selectors: {
       pivot: { columns, measures, dimensions },
+      tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
     },
     timeRangeSummaryStore,
   } = stateManagers;
@@ -55,6 +68,32 @@
 
   $: ({ isFetching, assembled } = $pivotDataStore);
 
+  // Build a description lookup from the metricsView so pivot chips get
+  // descriptions even when the metricsView loads after the pivot state
+  // is deserialized (e.g. public URL first load).
+  $: descriptionMap = new Map<string, string | undefined>([
+    ...($validSpecStore.data?.metricsView?.dimensions ?? []).map(
+      (d) => [d.name, d.description] as [string, string | undefined],
+    ),
+    ...($validSpecStore.data?.metricsView?.measures ?? []).map(
+      (m) => [m.name, m.description] as [string, string | undefined],
+    ),
+  ]);
+
+  function enrichDescriptions(chips: PivotChipData[]): PivotChipData[] {
+    return chips.map((chip) => {
+      if (chip.description) return chip;
+      const desc = descriptionMap.get(chip.id);
+      return desc ? { ...chip, description: desc } : chip;
+    });
+  }
+
+  $: enrichedPivotState = {
+    ...$dashboardStore.pivot,
+    rows: enrichDescriptions($dashboardStore.pivot.rows),
+    columns: enrichDescriptions($dashboardStore.pivot.columns),
+  };
+
   $: hasColumnAndNoMeasure =
     $columns.dimension.length > 0 && $columns.measure.length === 0;
 
@@ -62,16 +101,49 @@
     if (!$dashboardStore.pivot.activeCell) return;
     metricsExplorerStore.removePivotActiveCell($exploreName);
   }
+
+  $: widthScopeKey = `explore:${$exploreName}`;
+
+  // Until the user explicitly drags the divider (stored width is null), fall
+  // back to the legacy tag-aware default (240px without tags, 400px with).
+  $: pivotHasTags = ($combinedTagIndex?.tags?.length ?? 0) > 0;
+  $: sidebarWidth =
+    $pivotSidebarWidth ??
+    (pivotHasTags
+      ? DEFAULT_PIVOT_SIDEBAR_WIDTH
+      : DEFAULT_PIVOT_SIDEBAR_WIDTH_NO_TAGS);
 </script>
 
 <div class="layout" class:h-full={!$dynamicHeight}>
   {#if showPanels}
-    <PivotSidebar
-      pivotState={$dashboardStore.pivot}
-      measures={$measures}
-      dimensions={$dimensions}
-      {timeControlsForPillActions}
-    />
+    <div
+      class="sidebar-pane"
+      style="width: {sidebarWidth}px"
+      transition:slide={{ axis: "x" }}
+    >
+      <Resizer
+        direction="EW"
+        side="right"
+        min={MIN_PIVOT_SIDEBAR_WIDTH}
+        max={MAX_PIVOT_SIDEBAR_WIDTH}
+        basis={0}
+        dimension={sidebarWidth}
+        onUpdate={(d) => pivotSidebarWidth.set(d === 0 ? null : d)}
+      />
+      <PivotSidebar
+        pivotState={enrichedPivotState}
+        measures={$measures}
+        dimensions={$dimensions}
+        combinedTagIndex={$combinedTagIndex}
+        dimensionTagIndex={$dimensionTagIndex}
+        measureTagIndex={$measureTagIndex}
+        setRows={(rows) =>
+          metricsExplorerStore.setPivotRows($exploreName, rows)}
+        setColumns={(columns) =>
+          metricsExplorerStore.setPivotColumns($exploreName, columns)}
+        {timeControlsForPillActions}
+      />
+    </div>
   {/if}
   <div
     class="flex flex-col overflow-hidden"
@@ -80,7 +152,7 @@
   >
     {#if showPanels}
       <PivotHeader
-        pivotState={$dashboardStore.pivot}
+        pivotState={enrichedPivotState}
         setRows={(rows) =>
           metricsExplorerStore.setPivotRows($exploreName, rows)}
         setColumns={(columns) =>
@@ -96,7 +168,7 @@
       }}
     >
       <PivotToolbar
-        pivotState={$dashboardStore.pivot}
+        pivotState={enrichedPivotState}
         setTableMode={(tableMode, rows, columns) =>
           metricsExplorerStore.setPivotTableMode(
             $exploreName,
@@ -106,6 +178,12 @@
           )}
         setRowLimit={(limit) =>
           metricsExplorerStore.setPivotRowLimit($exploreName, limit)}
+        setShowTotals={(totals) =>
+          metricsExplorerStore.setPivotTotals(
+            $exploreName,
+            totals.showTotalsColumn,
+            totals.showTotalsRow,
+          )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
         {isFetching}
@@ -114,7 +192,7 @@
         <svelte:fragment slot="export-menu">
           {#if $exports}
             <ExportMenu
-              label="Export pivot data"
+              label={m.dashboard_export_pivot_data()}
               includeScheduledReport={$adminServer && exploreHasTimeDimension}
               getQuery={(isScheduled) =>
                 getPivotExportQuery(stateManagers, isScheduled)}
@@ -135,6 +213,7 @@
         />
       {:else}
         <PivotTable
+          {widthScopeKey}
           {pivotDataStore}
           overscan={60}
           config={pivotConfig}
@@ -169,6 +248,10 @@
 <style lang="postcss">
   .layout {
     @apply flex box-border overflow-hidden size-full;
+  }
+
+  .sidebar-pane {
+    @apply relative flex-none h-full;
   }
 
   .content {

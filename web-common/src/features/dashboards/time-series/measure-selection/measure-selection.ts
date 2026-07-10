@@ -3,7 +3,7 @@ import {
   type InlineContext,
   convertContextToInlinePrompt,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
+import { dashboardChatActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { get, writable } from "svelte/store";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
@@ -96,14 +96,14 @@ export class MeasureSelection {
       `Explain what drives ${measureMention}, ${timeRangeMention}. ` +
       `Which visible dimensions have noticeably changed, as compared to other time windows?`;
 
-    sidebarActions.startChat(prompt);
+    dashboardChatActions.startChat(prompt);
   }
 
   public getEnabledStore() {
     return derived(
-      [featureFlags.dashboardChat, getExploreNameStore()],
-      ([dashboardChat, exploreName]) => {
-        return Boolean(dashboardChat && exploreName);
+      [featureFlags.ai, featureFlags.dashboardChat, getExploreNameStore()],
+      ([ai, dashboardChat, exploreName]) => {
+        return Boolean(ai && dashboardChat && exploreName);
       },
     );
   }

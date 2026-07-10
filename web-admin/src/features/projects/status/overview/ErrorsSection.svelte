@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     ResourceKind,
@@ -14,11 +13,12 @@
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { groupErrorsByKind, pluralizeKind } from "./overview-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
-  // Parse errors
+  // Parse errors (file-level YAML/SQL errors)
   $: projectParserQuery = createRuntimeServiceGetResource(
     runtimeClient,
     {
@@ -33,6 +33,8 @@
     $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 
   // Resource errors grouped by kind
+  // Note: parser reconcile errors (e.g. git branch not found) are surfaced
+  // in the Deployment card, not here, to avoid redundancy.
   $: resourcesQuery = useResources(runtimeClient);
   $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
   $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
@@ -41,32 +43,13 @@
 
   // Total
   $: totalErrors = parseErrors.length + erroredResources.length;
-
-  function handleSectionClick(e: MouseEvent | KeyboardEvent) {
-    // Don't navigate if the click was on a chip link
-    if ((e.target as HTMLElement).closest(".error-chip")) return;
-    if (totalErrors > 0) {
-      void goto(`${basePage}/resources?status=error`);
-    }
-  }
 </script>
 
 {#if totalErrors > 0}
-  <div
-    class="section section-error section-clickable"
-    role="button"
-    tabindex="0"
-    onclick={handleSectionClick}
-    onkeydown={(e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        handleSectionClick(e);
-      }
-    }}
-  >
+  <div class="section section-error">
     <div class="section-header">
       <h3 class="section-title flex items-center gap-2">
-        Errors
+        {m.status_errors()}
         <span class="error-badge">{totalErrors}</span>
       </h3>
     </div>
@@ -76,7 +59,7 @@
         <a href="{basePage}/resources?status=error" class="error-chip">
           <AlertCircleOutline size="12px" />
           <span class="font-medium">{parseErrors.length}</span>
-          <span>Parse error{parseErrors.length !== 1 ? "s" : ""}</span>
+          <span>{m.status_parse_errors({ count: parseErrors.length })}</span>
         </a>
       {/if}
 
@@ -97,15 +80,17 @@
 {:else}
   <div class="section">
     <div class="section-header">
-      <h3 class="section-title flex items-center gap-2">Errors</h3>
+      <h3 class="section-title flex items-center gap-2">{m.status_errors()}</h3>
     </div>
 
     {#if $projectParserQuery.isError || $resourcesQuery.isError}
-      <p class="text-sm text-fg-secondary">Unable to check for errors.</p>
+      <p class="text-sm text-fg-secondary">
+        {m.status_unable_to_check_errors()}
+      </p>
     {:else if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
-      <p class="text-sm text-fg-secondary">Checking for errors...</p>
+      <p class="text-sm text-fg-secondary">{m.status_checking_errors()}</p>
     {:else}
-      <p class="text-sm text-fg-secondary">No errors detected.</p>
+      <p class="text-sm text-fg-secondary">{m.status_no_errors()}</p>
     {/if}
   </div>
 {/if}
@@ -114,14 +99,8 @@
   .section {
     @apply block border border-border rounded-lg p-5;
   }
-  .section-clickable {
-    @apply cursor-pointer;
-  }
   .section-error {
     @apply border-red-500;
-  }
-  .section-clickable:hover {
-    @apply border-red-600;
   }
   .section-header {
     @apply flex items-center justify-between mb-4;

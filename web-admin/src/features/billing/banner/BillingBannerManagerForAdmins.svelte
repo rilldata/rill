@@ -4,7 +4,7 @@
     type BillingIssueMessage,
     useBillingIssueMessage,
   } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
-  import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
+  import ChoosePlanDialog from "@rilldata/web-admin/features/billing/plans/dialog/ChoosePlanDialog.svelte";
   import {
     BillingBannerID,
     BillingBannerPriority,
@@ -29,7 +29,7 @@
       priority: BillingBannerPriority,
       message: {
         type: message.type,
-        message: message.title + " " + message.description,
+        message: [message.title, message.description].filter(Boolean).join(" "),
         iconType: message.iconType,
         ...(message.cta
           ? {
@@ -42,6 +42,7 @@
               },
             }
           : {}),
+        dismissible: message.dismissible,
       },
     });
   }
@@ -49,7 +50,7 @@
   $: showBillingIssueBanner($billingIssueMessage.data);
 </script>
 
-<StartTeamPlanDialog
+<ChoosePlanDialog
   bind:open={$showStartTeamPlanDialog}
   type={$startTeamPlanType}
   endDate={$teamPlanEndDate}

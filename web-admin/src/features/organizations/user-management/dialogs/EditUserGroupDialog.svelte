@@ -31,7 +31,6 @@
   import { capitalize } from "@rilldata/web-common/components/table/utils";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { PROJECT_ROLES_OPTIONS } from "@rilldata/web-admin/features/projects/constants";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -39,6 +38,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
   import { SLUG_REGEX } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
+  import { getProjectRolesOptions } from "@rilldata/web-admin/features/projects/user-management/constants.ts";
 
   export let open = false;
   export let groupName: string;
@@ -305,6 +305,8 @@
   const formId = "edit-user-group-form";
   const initialValues = { newName: groupName };
 
+  const projectRolesOptions = getProjectRolesOptions();
+
   const schema = yup(
     object({
       newName: string()
@@ -451,7 +453,7 @@
                           strategy="fixed"
                           class="min-w-[200px]"
                         >
-                          {#each PROJECT_ROLES_OPTIONS as opt (opt.value)}
+                          {#each projectRolesOptions as opt (opt.value)}
                             <DropdownMenu.Item
                               class="font-normal flex flex-col items-start py-2 {project.role ===
                               opt.value

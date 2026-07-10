@@ -7,9 +7,11 @@
   } from "@rilldata/web-admin/client";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import PublicURLsResourceTable from "@rilldata/web-admin/features/public-urls/PublicURLsResourceTable.svelte";
+  import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const runtimeClient = useRuntimeClient();
@@ -94,10 +96,10 @@
         ),
       });
 
-      eventBus.emit("notification", { message: "Public URL deleted" });
+      eventBus.emit("notification", { message: m.public_url_deleted_notification() });
     } catch {
       eventBus.emit("notification", {
-        message: "Error deleting public URL",
+        message: m.public_url_delete_error_notification(),
         type: "error",
       });
     }
@@ -113,11 +115,25 @@
       />
     </div>
   {:else if $magicAuthTokensInfiniteQuery.isError}
-    <p class="text-red-500">Error loading public URLs</p>
+    <p class="text-red-500">{m.public_url_error_loading()}</p>
   {:else}
-    <PublicURLsResourceTable
-      data={sortedAllRowsWithDashboardTitle}
-      onDelete={handleDelete}
-    />
+    <div class="flex flex-col gap-3 w-full overflow-hidden">
+      <div class="flex flex-col">
+        <RadixLarge>{m.public_url_page_title()}</RadixLarge>
+        <p class="text-sm text-fg-tertiary font-medium">
+          {m.public_url_page_description()} <a
+            href="https://docs.rilldata.com/guide/dashboards/public-urls"
+            target="_blank"
+            class="text-primary-600 hover:text-primary-700 active:text-primary-800"
+          >
+            {m.public_url_learn_more()}
+          </a>
+        </p>
+      </div>
+      <PublicURLsResourceTable
+        data={sortedAllRowsWithDashboardTitle}
+        onDelete={handleDelete}
+      />
+    </div>
   {/if}
 </div>

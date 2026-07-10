@@ -1,9 +1,9 @@
 package clickhouse
 
-import (
-	"github.com/rilldata/rill/runtime/drivers"
-)
-
 func safeSQLName(name string) string {
-	return drivers.DialectClickHouse.EscapeIdentifier(name)
+	return DialectClickhouse.EscapeIdentifier(name)
+}
+
+func localTableName(name string) string {
+	return name + "_local"
 }

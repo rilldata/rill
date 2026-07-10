@@ -4,15 +4,11 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/admin/client"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 )
 
 var errProjectNotFound = errors.New("not connected to a rill project")
@@ -98,37 +94,23 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 	return c.gitConfig, nil
 }
 
-func (c *connection) gitSignature(ctx context.Context, client *client.Client, path string) (*object.Signature, error) {
-	repo, err := git.PlainOpen(path)
-	if err == nil {
-		cfg, err := repo.ConfigScoped(config.SystemScope)
-		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-			// user has git properly configured use that
-			return &object.Signature{
-				Name:  cfg.User.Name,
-				Email: cfg.User.Email,
-				When:  time.Now(),
-			}, nil
+func (c *connection) gitSignature(ctx context.Context, client *client.Client, path string) (gitutil.Signature, error) {
+	if gitutil.IsGitRepo(path) {
+		// User has git properly configured, use that.
+		if sig, err := gitutil.UserSignature(ctx, path); err == nil {
+			return sig, nil
 		}
 	}
 
 	if client == nil {
-		return &object.Signature{
-			Name:  "Rill Runtime",
-			Email: "runtime@rilldata.com",
-			When:  time.Now(),
-		}, nil
+		return gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"}, nil
 	}
 	userResp, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
-		return nil, err
+		return gitutil.Signature{}, err
 	}
 
-	return &object.Signature{
-		Name:  userResp.User.DisplayName,
-		Email: userResp.User.Email,
-		When:  time.Now(),
-	}, nil
+	return gitutil.Signature{Name: userResp.User.DisplayName, Email: userResp.User.Email}, nil
 }
 
 func (c *connection) getAdminClient() (*client.Client, error) {

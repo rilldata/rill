@@ -293,6 +293,18 @@ function toExploreUrlParams(
     (value) => (value ? "true" : "false"),
   );
 
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "dynamicYAxisScale",
+    (value) => (value ? "true" : "false"),
+  );
+
+  if (partialExploreState.tdd?.chartType) {
+    const chartType = ToURLParamTDDChartMap[partialExploreState.tdd.chartType];
+    searchParams.set(ExploreStateURLParams.ChartType, chartType ?? "");
+  }
+
   return searchParams;
 }
 
@@ -362,6 +374,14 @@ function toTimeDimensionUrlParams(partialExploreState: Partial<ExploreState>) {
 
   // TODO: pin
   // TODO: what should be done when chartType is set but expandedMeasureName is not
+
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "dynamicYAxisScale",
+    (value) => (value ? "true" : "false"),
+  );
+
   return searchParams;
 }
 
@@ -419,6 +439,14 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
       ExploreStateURLParams.PivotRowLimit,
       partialExploreState.pivot.rowLimit.toString(),
     );
+  }
+
+  if (partialExploreState.pivot.showTotalsColumn === false) {
+    searchParams.set(ExploreStateURLParams.PivotShowTotalsColumn, "false");
+  }
+
+  if (partialExploreState.pivot.showTotalsRow === false) {
+    searchParams.set(ExploreStateURLParams.PivotShowTotalsRow, "false");
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

@@ -7,7 +7,7 @@ sidebar_position: 10
 
 # Dashboard URL Parameters
 
-Rill dashboards encode their full state in the URL query string. These parameters can be used in browser URLs, shared links, bookmarks, and the [Embed Iframe API](/developers/embed/iframe-api) `setState` method.
+Rill dashboards encode their full state in the URL query string. These parameters can be used in browser URLs, shared links, bookmarks, and the [Embed Iframe API](/developers/embed/postmessage) `setState` method.
 
 ## Global Parameters
 

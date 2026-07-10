@@ -5,6 +5,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { InfoIcon, X } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
@@ -23,6 +24,9 @@
     disabled?: boolean;
     tooltip?: string;
     icon?: ComponentType<SvelteComponent>;
+    /** Optional section heading; a heading is rendered above the first
+     * option of each consecutive group. */
+    group?: string;
   }[];
   export let optionsLoading: boolean = false;
   export let onAddNew: (() => void) | null = null;
@@ -40,11 +44,15 @@
   export let sameWidth = false;
   export let ringFocus = true;
   export let truncate = false;
+  export let outline = true;
   export let enableSearch = false;
   export let lockable = false;
   export let forcedTriggerStyle = "";
   /** When true, shows an X button to clear the selection back to empty */
   export let clearable = false;
+  /** Optional icon rendered inside the trigger, before the label. */
+  export let leadingIcon: ComponentType<SvelteComponent> | undefined =
+    undefined;
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
@@ -82,7 +90,7 @@
         {label}
       </span>
       {#if optional}
-        <span class="text-fg-secondary">(optional)</span>
+        <span class="text-fg-secondary">{m.form_optional()}</span>
       {/if}
       {#if tooltip}
         <Tooltip.Root>
@@ -129,9 +137,14 @@
           `min-w-[${minWidth}px]`} {ringFocus &&
           'focus:ring-2 focus:ring-primary-100'} {truncate
           ? 'break-all overflow-hidden'
-          : ''} {forcedTriggerStyle}"
+          : ''} {forcedTriggerStyle} {outline ? '' : 'border-0'}"
         aria-label={label || ariaLabel}
       >
+        {#if leadingIcon}
+          <span class="flex-none">
+            <svelte:component this={leadingIcon} size="14px" />
+          </span>
+        {/if}
         <span
           class="text-[{fontSize}px] {!selected
             ? 'text-fg-secondary'
@@ -173,7 +186,14 @@
             </div>
           </div>
         {:else}
-          {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon } (value)}
+          {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon, group }, i (value)}
+            {#if group && group !== filteredOptions[i - 1]?.group}
+              <div
+                class="px-2 pt-2 pb-1 text-fg-secondary text-[11px] font-semibold uppercase tracking-wide"
+              >
+                {group}
+              </div>
+            {/if}
             <Select.Item
               {value}
               {label}
@@ -183,7 +203,9 @@
             >
               {#if tooltip}
                 <Tooltip.Root>
-                  <Tooltip.Trigger class="select-tooltip cursor-default">
+                  <Tooltip.Trigger
+                    class="inline-flex items-center gap-x-2 cursor-default text-left"
+                  >
                     {#if icon}
                       <svelte:component this={icon} size="16px" />
                     {:else if type}
@@ -205,7 +227,9 @@
               {/if}
             </Select.Item>
           {:else}
-            <div class="px-2.5 py-1.5 text-fg-secondary">No results found</div>
+            <div class="px-2.5 py-1.5 text-fg-secondary">
+              {m.common_no_results()}
+            </div>
           {/each}
           {#if onAddNew}
             <SelectSeparator />

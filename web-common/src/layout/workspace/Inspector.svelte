@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { slide } from "svelte/transition";
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
@@ -7,6 +8,7 @@
   export let resizable = true;
   export let fixedWidth: number | undefined = undefined;
   export let minWidth = 320;
+  export let maxWidth = 420;
 
   let resizing = false;
 
@@ -22,7 +24,7 @@
     class="inspector-wrapper"
     style:width="{width + 8}px"
     transition:slide={{ axis: "x", duration: 500 }}
-    aria-label="Inspector Panel"
+    aria-label={m.layout_inspector_panel_aria()}
   >
     <Resizer
       disabled={!resizable}
@@ -30,7 +32,7 @@
       direction="EW"
       side="left"
       min={fixedWidth ?? minWidth}
-      max={fixedWidth ?? 420}
+      max={fixedWidth ?? maxWidth}
       dimension={fixedWidth ?? width}
       onUpdate={(newWidth) => {
         widthStore.set(newWidth);

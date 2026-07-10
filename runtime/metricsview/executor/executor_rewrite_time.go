@@ -11,8 +11,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
-// rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
-func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) error {
+// RewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
+func (e *Executor) RewriteQueryTimeRanges(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) error {
 	if e.metricsView.TimeDimension == "" && (qry.TimeRange == nil || qry.TimeRange.TimeDimension == "") {
 		return nil
 	}

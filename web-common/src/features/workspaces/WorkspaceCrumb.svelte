@@ -3,7 +3,7 @@
   import { type V1Resource } from "@rilldata/web-common/runtime-client";
   import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { ResourceKindMap } from "../file-explorer/new-files";
+  import { ResourceKindMap } from "../entity-management/add/new-files.ts";
   import CrumbTrigger from "./CrumbTrigger.svelte";
   import {
     ResourceKind,
@@ -11,6 +11,7 @@
   } from "../entity-management/resource-selectors";
   import { GitBranch } from "lucide-svelte";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import { getFileHref as getWorkspaceFileHref } from "../../layout/navigation/editor-routing";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -59,7 +60,7 @@
         resourceKind !== ResourceKind.Explore));
 
   function getFileHref(filePaths: string[] | undefined): string {
-    return `/files${filePaths?.[0] ?? filePath}`;
+    return getWorkspaceFileHref(filePaths?.[0] ?? filePath);
   }
 
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();

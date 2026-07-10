@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { type DimensionFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
@@ -15,19 +16,18 @@ import {
 import {
   derived,
   get,
+  writable,
   type Readable,
   type Writable,
-  writable,
 } from "svelte/store";
-import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { goto } from "$app/navigation";
-import { FilterState } from "./filter-state";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
-import type { ParsedFilters } from "./filter-state";
 import {
   createAndExpression,
   flattenInExpressionValues,
 } from "../../dashboards/stores/filter-utils";
+import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import type { ParsedFilters } from "./filter-state";
+import { FilterState } from "./filter-state";
 
 export type UIFilters = {
   dimensionFilters: Map<string, DimensionFilterItem>;
@@ -35,6 +35,12 @@ export type UIFilters = {
   complexFilters: V1Expression[];
   hasFilters: boolean;
   hasClearableFilters: boolean;
+};
+
+export type MissingRequiredFilter = {
+  key: string;
+  name: string;
+  label: string;
 };
 
 export type MetricsViewName = string;
@@ -61,13 +67,20 @@ export class FilterManager {
   metricsViewFilters = new StoreOfStores<FilterState>();
   pinnedFilterKeysStore = writable<Set<string>>(new Set());
   defaultPinnedFilterKeysStore = writable<Set<string>>(new Set());
+  requiredFilterKeysStore = writable<Set<string>>(new Set());
+  defaultRequiredFilterKeysStore = writable<Set<string>>(new Set());
   temporaryFilterKeysStore = writable<Map<string, boolean>>(new Map());
+
+  // Fires when a global filter mutation is committed (via actions or clearAllFilters).
+  onFilterChange?: () => void;
 
   allDimensionsStore = writable<DimensionLookup>(new Map());
   allMeasuresStore = writable<MeasureLookup>(new Map());
 
   activeUIFiltersStore: Readable<UIFilters>;
   defaultUIFiltersStore: Readable<UIFilters>;
+
+  missingRequiredFiltersStore: Readable<MissingRequiredFilter[]>;
 
   filterMapStore: Readable<Map<MetricsViewName, V1Expression>>;
 
@@ -89,8 +102,14 @@ export class FilterManager {
     public instanceId: string,
     pinnedFilters?: string[],
     defaultFilters?: V1CanvasPresetFilterExpr,
+    requiredFilters?: string[],
   ) {
-    this.updateConfig(metricsViews, pinnedFilters, defaultFilters);
+    this.updateConfig(
+      metricsViews,
+      pinnedFilters,
+      defaultFilters,
+      requiredFilters,
+    );
 
     this.defaultUIFiltersStore = derived(
       [this.metricsViewFilters],
@@ -134,6 +153,7 @@ export class FilterManager {
           [
             this.pinnedFilterKeysStore,
             this.temporaryFilterKeysStore,
+            this.requiredFilterKeysStore,
             this.allMeasuresStore,
             this.allDimensionsStore,
             ...stores,
@@ -141,6 +161,7 @@ export class FilterManager {
           ([
             pinnedFilters,
             temporaryFilterKeys,
+            requiredFilters,
             allMeasures,
             allDimensions,
             ...filters
@@ -151,6 +172,7 @@ export class FilterManager {
               pinnedFilters,
               allMeasures,
               allDimensions,
+              requiredFilters,
             );
           },
         ).subscribe(set);
@@ -174,6 +196,37 @@ export class FilterManager {
         }).subscribe(set);
       },
     );
+
+    this.missingRequiredFiltersStore = derived(
+      [this.requiredFilterKeysStore, this.activeUIFiltersStore],
+      ([requiredKeys, activeUIFilters]) => {
+        if (requiredKeys.size === 0) return [];
+
+        const missing: MissingRequiredFilter[] = [];
+        requiredKeys.forEach((key) => {
+          const name = key.split(NAME_SEPARATOR)[1] ?? key;
+          const dimItem = activeUIFilters.dimensionFilters.get(key);
+          if (dimItem) {
+            if (isDimensionItemEmpty(dimItem)) {
+              missing.push({ key, name, label: dimItem.label || name });
+            }
+            return;
+          }
+
+          const measureItem = activeUIFilters.measureFilters.get(key);
+          if (measureItem) {
+            if (isMeasureItemEmpty(measureItem)) {
+              missing.push({ key, name, label: measureItem.label || name });
+            }
+            return;
+          }
+
+          // Required filter has no entry in the UI filter map at all => unsatisfied.
+          missing.push({ key, name, label: name });
+        });
+        return missing;
+      },
+    );
   }
 
   createLocalFilterStore = (metricsViewName: string) => {
@@ -195,6 +248,7 @@ export class FilterManager {
     metricsViews: Record<string, V1MetricsView | undefined>,
     pinnedFilters?: string[],
     defaultFilters?: V1CanvasPresetFilterExpr,
+    requiredFilters?: string[],
   ): void => {
     const dimensionNameToMetricsViewNames: Map<
       DimensionName,
@@ -268,34 +322,42 @@ export class FilterManager {
       "all",
     );
 
-    if (pinnedFilters) {
-      const pinnedKeys = new Set<string>();
-
-      pinnedFilters.forEach((filterName) => {
-        const metricsViewNames = new Set<MetricsViewName>();
-
-        this.metricsViewFilters.forEach((_, metricsViewName) => {
-          const dimensionsForView = exhaustiveDimensions.get(metricsViewName);
-          const measuresForView = exhaustiveMeasures.get(metricsViewName);
-
-          if (dimensionsForView?.has(filterName)) {
-            metricsViewNames.add(metricsViewName);
-          }
-
-          if (measuresForView?.has(filterName)) {
-            metricsViewNames.add(metricsViewName);
-          }
-        });
-
-        if (metricsViewNames.size > 0) {
-          const filterKey = getLookupKey(
-            Array.from(metricsViewNames),
-            filterName,
-          );
-          pinnedKeys.add(filterKey);
+    const resolveFilterKey = (filterName: string): string | undefined => {
+      const metricsViewNames = new Set<MetricsViewName>();
+      this.metricsViewFilters.forEach((_, metricsViewName) => {
+        const dimensionsForView = exhaustiveDimensions.get(metricsViewName);
+        const measuresForView = exhaustiveMeasures.get(metricsViewName);
+        if (dimensionsForView?.has(filterName)) {
+          metricsViewNames.add(metricsViewName);
+        }
+        if (measuresForView?.has(filterName)) {
+          metricsViewNames.add(metricsViewName);
         }
       });
+      if (metricsViewNames.size === 0) return undefined;
+      return getLookupKey(Array.from(metricsViewNames), filterName);
+    };
 
+    const requiredKeys = new Set<string>();
+    if (requiredFilters) {
+      requiredFilters.forEach((filterName) => {
+        const key = resolveFilterKey(filterName);
+        if (key) requiredKeys.add(key);
+      });
+    }
+    this.requiredFilterKeysStore.set(requiredKeys);
+    this.defaultRequiredFilterKeysStore.set(new Set(requiredKeys));
+
+    // Pinned and required are tracked independently. convertToUIFilters renders
+    // a filter as visible whenever it's pinned OR required, so we don't fold
+    // required into the pinned set here. Doing so would mean toggling required
+    // off in the UI also drops the pin.
+    if (pinnedFilters) {
+      const pinnedKeys = new Set<string>();
+      pinnedFilters.forEach((filterName) => {
+        const key = resolveFilterKey(filterName);
+        if (key) pinnedKeys.add(key);
+      });
       this.pinnedFilterKeysStore.set(pinnedKeys);
       this.defaultPinnedFilterKeysStore.set(new Set(pinnedKeys));
     }
@@ -333,6 +395,7 @@ export class FilterManager {
       get(this.pinnedFilterKeysStore),
       get(this.allMeasuresStore),
       get(this.allDimensionsStore),
+      get(this.requiredFilterKeysStore),
     );
   };
 
@@ -342,6 +405,7 @@ export class FilterManager {
     pinnedFilters: Set<string>,
     allMeasures: MeasureLookup,
     allDimensions: DimensionLookup,
+    requiredFilters: Set<string> = new Set(),
   ): UIFilters => {
     const parsedMap = new Map<string, ParsedFilters>(
       parsedFilters.map((p) => [p.metricsViewName, p]),
@@ -369,6 +433,7 @@ export class FilterManager {
 
       const pinned = pinnedFilters.has(key);
       const temporary = temporaryFilterKeys.has(key);
+      const required = requiredFilters.has(key);
 
       const metricsViewNames = measureMap ? Array.from(measureMap.keys()) : [];
       const measureSpecs = Array.from(measureMap?.values() || []);
@@ -381,7 +446,7 @@ export class FilterManager {
 
         const measureFilter = parsed.measureFilters.get(measure.name as string);
         if (!measureFilter) {
-          if (pinned || temporary) {
+          if (pinned || temporary || required) {
             filters.push({
               dimensionName: "",
               dimensions:
@@ -389,6 +454,7 @@ export class FilterManager {
               name: measureName,
               label: measureSpecs[0].displayName ?? "",
               pinned: pinned,
+              required: required,
               measures: measureMap,
               metricsViewNames: metricsViewNames,
             });
@@ -399,6 +465,7 @@ export class FilterManager {
           } else {
             measureFilter.pinned = false;
           }
+          measureFilter.required = required;
           filters.push({
             ...measureFilter,
             dimensions:
@@ -409,10 +476,12 @@ export class FilterManager {
 
       if (filters.length === 0) return;
 
-      merged.measureFilters.set(key, {
+      const item: MeasureFilterItem = {
         ...filters[0],
         measures: measureMap,
-      });
+      };
+      item.missingRequired = required && isMeasureItemEmpty(item);
+      merged.measureFilters.set(key, item);
     });
 
     // can improve efficiency at a later date - bgh
@@ -424,6 +493,7 @@ export class FilterManager {
 
       const pinned = pinnedFilters.has(key);
       const temporary = temporaryFilterKeys.has(key);
+      const required = requiredFilters.has(key);
 
       // iterate through the merged dimensions under this unique key
       dimensionMap.forEach((dimension, metricsViewName) => {
@@ -434,8 +504,8 @@ export class FilterManager {
         const dimFilter = parsed.dimensionFilters.get(dimension.name as string);
 
         if (!dimFilter) {
-          if (pinned || temporary) {
-            const tempData = {
+          if (pinned || temporary || required) {
+            const tempData: DimensionFilterItem = {
               name: firstDimension.name || "",
               label: getDimensionDisplayName(firstDimension),
               mode: DimensionFilterMode.Select,
@@ -444,6 +514,7 @@ export class FilterManager {
               isInclude: true,
               inputText: undefined,
               pinned: pinned,
+              required: required,
             };
 
             filters.push(tempData);
@@ -454,6 +525,7 @@ export class FilterManager {
           } else {
             dimFilter.pinned = false;
           }
+          dimFilter.required = required;
           filters.push(dimFilter);
         }
       });
@@ -465,10 +537,12 @@ export class FilterManager {
             f.isInclude === filters[0].isInclude && f.mode === filters[0].mode,
         )
       ) {
-        merged.dimensionFilters.set(key, {
+        const item: DimensionFilterItem = {
           ...filters[0],
           dimensions: dimensionMap,
-        });
+        };
+        item.missingRequired = required && isDimensionItemEmpty(item);
+        merged.dimensionFilters.set(key, item);
       } else {
         // mixed filters - need to resolve
       }
@@ -485,12 +559,15 @@ export class FilterManager {
 
     // Sorting to ensure that pills don't jump around unnecessarily in the UI
     // Can be optimized - bgh
+    const stickyKeys = Array.from(
+      new Set([...requiredFilters, ...pinnedFilters]),
+    );
     const sortedDimensionMap = new Map(
       Array.from(merged.dimensionFilters.entries()).sort((a, b) => {
         return sortMeasuresOrDimensions(
           a[0],
           b[0],
-          Array.from(pinnedFilters),
+          stickyKeys,
           Array.from(temporaryFilterKeys.keys()),
           fullFilterString,
         );
@@ -502,7 +579,7 @@ export class FilterManager {
         return sortMeasuresOrDimensions(
           a[0],
           b[0],
-          Array.from(pinnedFilters),
+          stickyKeys,
           Array.from(temporaryFilterKeys.keys()),
           fullFilterString,
         );
@@ -521,6 +598,7 @@ export class FilterManager {
       searchText: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
       const map = new Map<string, string | null>();
 
@@ -540,6 +618,7 @@ export class FilterManager {
       dimensionName: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
       this.checkPinnedFilter(dimensionName, metricsViewNames);
 
@@ -573,6 +652,7 @@ export class FilterManager {
       dimensionName: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
 
       const map = new Map<string, string | null>();
@@ -595,6 +675,7 @@ export class FilterManager {
       values: string[],
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
       const map = new Map<string, string | null>();
 
@@ -619,6 +700,7 @@ export class FilterManager {
       keepPillVisible?: boolean,
       isExclusiveFilter?: boolean,
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
 
       const newFilters = new Map<string, string | null>();
@@ -646,6 +728,7 @@ export class FilterManager {
       oldDimension: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(filter.measure, metricsViewNames);
 
       const newFilters = new Map<string, string | null>();
@@ -671,6 +754,7 @@ export class FilterManager {
       measureName: string,
       metricsViewNames: string[],
     ) => {
+      this.onFilterChange?.();
       this.checkTemporaryFilter(measureName, metricsViewNames);
       this.checkPinnedFilter(measureName, metricsViewNames);
 
@@ -712,6 +796,23 @@ export class FilterManager {
         return pinned;
       });
     },
+    toggleFilterRequired: (name: string, metricsViewNames: string[]) => {
+      const key = getLookupKey(metricsViewNames, name);
+      this.requiredFilterKeysStore.update((required) => {
+        if (required.has(key)) {
+          required.delete(key);
+        } else {
+          required.add(key);
+        }
+        return required;
+      });
+      // Required pills render via either pinned or required, so clear any
+      // temporary-flag state so the pill doesn't accidentally collapse.
+      this.temporaryFilterKeysStore.update((tempFilters) => {
+        tempFilters.delete(key);
+        return tempFilters;
+      });
+    },
   };
 
   checkTemporaryFilter = (
@@ -743,6 +844,7 @@ export class FilterManager {
   // Unclear on what this actually should do - bgh
   // Go to defaults or truly clear all filters?
   clearAllFilters = async () => {
+    this.onFilterChange?.();
     this.temporaryFilterKeysStore.set(new Map());
     const existingParams = new URLSearchParams(window.location.search);
     const filterParamsToDelete = Array.from(existingParams.keys()).filter(
@@ -797,27 +899,27 @@ export class FilterManager {
 
 /**
  * Sorts filter items with the following priority:
- * 1. Pinned items, following the order of the yaml
+ * 1. Sticky items (required or pinned), following their order in stickyKeys
  * 2. Regular filter items, following their appearance in the full filter string
  * 3. Temporary items
  */
 function sortMeasuresOrDimensions(
   aKey: string,
   bKey: string,
-  pinnedFilters: string[],
+  stickyKeys: string[],
   temporaryFilterKeys: string[],
   fullFilterString: string,
 ): number {
-  const isAPinned = pinnedFilters.includes(aKey);
-  const isBPinned = pinnedFilters.includes(bKey);
+  const isASticky = stickyKeys.includes(aKey);
+  const isBSticky = stickyKeys.includes(bKey);
   const isATemporary = temporaryFilterKeys.includes(aKey);
   const isBTemporary = temporaryFilterKeys.includes(bKey);
 
-  if (isAPinned && isBPinned) {
-    return pinnedFilters.indexOf(aKey) - pinnedFilters.indexOf(bKey);
+  if (isASticky && isBSticky) {
+    return stickyKeys.indexOf(aKey) - stickyKeys.indexOf(bKey);
   }
-  if (isAPinned !== isBPinned) {
-    return isAPinned ? -1 : 1;
+  if (isASticky !== isBSticky) {
+    return isASticky ? -1 : 1;
   }
 
   if (isATemporary && isBTemporary) {
@@ -836,6 +938,16 @@ function sortMeasuresOrDimensions(
   const bIndex = fullFilterString.indexOf(bName);
 
   return aIndex - bIndex;
+}
+
+function isDimensionItemEmpty(item: DimensionFilterItem): boolean {
+  const hasSelectedValues = (item.selectedValues?.length ?? 0) > 0;
+  const hasInputText = !!item.inputText && item.inputText.length > 0;
+  return !hasSelectedValues && !hasInputText;
+}
+
+function isMeasureItemEmpty(item: MeasureFilterItem): boolean {
+  return !item.filter;
 }
 
 // This should be deprecated eventually in favor of better support for variously formatted expressions

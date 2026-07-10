@@ -35,6 +35,22 @@ Connectors enable Rill to connect to various data sources and OLAP engines. You 
 ### `.gitignore`
 Specifies which files and directories should be ignored by Git version control. Rill automatically generates this file with appropriate rules to exclude sensitive files like `.env`, temporary files, and build artifacts from being committed to your repository.
 
+## Preview Mode
+
+Preview mode starts Rill Developer with a dashboard-only interface — no file editor, no code. It's designed for sharing a local Rill instance with stakeholders who don't need the development environment.
+
+```bash
+rill start my-project --preview
+```
+
+![Preview Mode](/img/get-started/preview-mode.png)
+
+Preview mode sets the application to **read-only**, so dashboards cannot be modified through the UI.
+
+:::tip
+For a full team deployment with authentication and access controls, [deploy to Rill Cloud](/developers/deploy/deploy-dashboard).
+:::
+
 ## Next Steps
 
 Now that you understand the basics, you can:

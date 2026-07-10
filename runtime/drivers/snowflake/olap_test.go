@@ -16,6 +16,7 @@ import (
 )
 
 func TestOLAP(t *testing.T) {
+	t.Skip("skipping due to inactive Snowflake account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestSnowflake(t)
@@ -102,6 +103,7 @@ func TestOLAP(t *testing.T) {
 }
 
 func TestEmptyRows(t *testing.T) {
+	t.Skip("skipping due to inactive Snowflake account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestSnowflake(t)
@@ -118,6 +120,7 @@ func TestEmptyRows(t *testing.T) {
 }
 
 func TestComplexTypes(t *testing.T) {
+	t.Skip("skipping due to inactive Snowflake account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestSnowflake(t)
@@ -155,6 +158,7 @@ func TestComplexTypes(t *testing.T) {
 }
 
 func TestLoadDDL(t *testing.T) {
+	t.Skip("skipping due to inactive Snowflake account")
 	testmode.Expensive(t)
 	_, olap := acquireTestSnowflake(t)
 
@@ -167,6 +171,7 @@ func TestLoadDDL(t *testing.T) {
 }
 
 func TestDryRun(t *testing.T) {
+	t.Skip("skipping due to inactive Snowflake account")
 	testmode.Expensive(t)
 
 	_, olap := acquireTestSnowflake(t)

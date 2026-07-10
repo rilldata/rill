@@ -15,9 +15,7 @@
   </Alert.Trigger>
   <Alert.Content class="min-w-[600px]">
     <Alert.Header>
-      <Alert.Title>
-        Are you sure you want to overwrite this project?
-      </Alert.Title>
+      <Alert.Title>Overwrite this project?</Alert.Title>
       <Alert.Description>
         {#if rillManagedProject}
           Existing project files will be replaced with new ones and cannot be
