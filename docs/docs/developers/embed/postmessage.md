@@ -94,7 +94,7 @@ iframe.contentWindow.postMessage({
 
 ### `setValidState({ state, failOnError })`
 
-Like `setState`, but validates the state against the dashboard's metrics view and explore specs before applying it. Invalid parameters (for example, an unknown dimension or measure) are reported back, and the applied URL is canonicalized (defaults removed, parameters ordered) the same way it would be if the user navigated there directly. Validation is currently supported for explore dashboards; for other dashboard types the state is applied as-is.
+Like `setState`, but validates the state against the dashboard's metrics view and explore specs before applying it. Invalid parameters (for example, an unknown dimension or measure) are reported back, and the applied URL is canonicalized (defaults removed, parameters ordered) the same way it would be if the user navigated there directly. The applied state is returned in `appliedState`. Validation is currently supported for explore dashboards; for other dashboard types the state is applied as-is.
 
 ```js
 iframe.contentWindow.postMessage({
@@ -111,10 +111,10 @@ iframe.contentWindow.postMessage({
 **Response:**
 
 ```json
-{ "id": 1, "result": { "success": true, "errors": [] } }
+{ "id": 1, "result": { "success": true, "appliedState": "view=pivot&tr=PT24H&grain=hour", "errors": [] } }
 ```
 
-`success` is `false` when `failOnError` is `true` and validation produced errors, in which case the state is not applied. `errors` contains a message for each invalid parameter.
+`success` is `false` when `failOnError` is `true` and validation produced errors, in which case the state is not applied and `appliedState` is omitted. `appliedState` is the canonicalized query string that was actually applied to the dashboard. `errors` contains a message for each invalid parameter.
 
 
 ### `getState()`
