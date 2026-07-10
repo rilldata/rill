@@ -5,6 +5,7 @@
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createParquetPreviewQuery } from "./parquet-preview";
@@ -66,12 +67,9 @@
   let isLoading = $derived($instanceQuery.isLoading || $previewQuery.isLoading);
   let error = $derived.by(() => {
     if ($instanceQuery.isLoading) return null;
-    if (!repoRoot)
-      return new Error(
-        "Could not resolve the project directory for this file.",
-      );
+    if (!repoRoot) return new Error(m.parquet_preview_no_project_dir());
     if (!duckDbConnector)
-      return new Error("Previewing Parquet files requires a DuckDB connector.");
+      return new Error(m.parquet_preview_requires_duckdb());
     return $previewQuery.error;
   });
   let data = $derived($previewQuery.data);
@@ -107,9 +105,9 @@
       <div
         class="flex flex-col size-full items-center justify-center text-fg-secondary gap-y-1"
       >
-        <p class="font-semibold">Unable to read Parquet file</p>
+        <p class="font-semibold">{m.parquet_preview_read_error_title()}</p>
         <p class="text-sm">
-          {error.message ?? "Unknown error"}
+          {error.message ?? m.parquet_preview_unknown_error()}
         </p>
       </div>
     {:else}
