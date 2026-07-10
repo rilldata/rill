@@ -105,7 +105,11 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     const currentUrl = new URL(pageState.url);
     currentUrl.search = url.toString();
     void goto(currentUrl, { replaceState: true });
-    return { success: true, errors: errorMessages };
+    return {
+      success: true,
+      appliedState: currentUrl.search,
+      errors: errorMessages,
+    };
   });
 
   registerRPCMethod("getThemeMode", () => {
