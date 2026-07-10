@@ -33,6 +33,7 @@
   import ChangedFilesList from "@rilldata/web-common/features/project/changes/ChangedFilesList.svelte";
   import ChangedFilesDialog from "@rilldata/web-common/features/project/changes/ChangedFilesDialog.svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -138,7 +139,7 @@
         force: false,
       });
     } catch (err) {
-      errorMessage = extractErrorMessage(err) || "Failed to merge";
+      errorMessage = extractErrorMessage(err) || m.edit_failed_to_merge();
       isMerging = false;
       return;
     } finally {
@@ -212,7 +213,7 @@
       void goto(targetUrl);
       eventBus.emit("notification", {
         type: "error",
-        message: "Pop-up was blocked.",
+        message: m.edit_popup_blocked(),
       });
     }
   }
@@ -308,7 +309,7 @@
           small
           disabled={isMerging}
           loading={isMerging}
-          loadingCopy="Merging..."
+          loadingCopy={m.edit_merging()}
           onClick={handleMerge}
         >
           Merge

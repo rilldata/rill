@@ -1,6 +1,7 @@
 <script lang="ts">
   import IconSwitcher from "@rilldata/web-common/components/forms/IconSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type {
     ComponentAlignment,
     HoritzontalAlignment,
@@ -28,16 +29,16 @@
     position = defaultAlignment;
   }
 
-  const horizontalOptions = [
-    { id: "left", Icon: AlignStartVertical, tooltip: "Align left" },
-    { id: "center", Icon: AlignCenterVertical, tooltip: "Align center" },
-    { id: "right", Icon: AlignEndVertical, tooltip: "Align right" },
+  $: horizontalOptions = [
+    { id: "left", Icon: AlignStartVertical, tooltip: m.canvas_align_left() },
+    { id: "center", Icon: AlignCenterVertical, tooltip: m.canvas_align_center() },
+    { id: "right", Icon: AlignEndVertical, tooltip: m.canvas_align_right() },
   ];
 
-  const verticalOptions = [
-    { id: "top", Icon: AlignStartHorizontal, tooltip: "Align top" },
-    { id: "middle", Icon: AlignCenterHorizontal, tooltip: "Align middle" },
-    { id: "bottom", Icon: AlignEndHorizontal, tooltip: "Align bottom" },
+  $: verticalOptions = [
+    { id: "top", Icon: AlignStartHorizontal, tooltip: m.canvas_align_top() },
+    { id: "middle", Icon: AlignCenterHorizontal, tooltip: m.canvas_align_middle() },
+    { id: "bottom", Icon: AlignEndHorizontal, tooltip: m.canvas_align_bottom() },
   ];
 
   const updatePosition = (

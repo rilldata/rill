@@ -6,6 +6,7 @@
   } from "@rilldata/web-admin/client";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let userId: string;
@@ -43,7 +44,7 @@
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
       <span class="capitalize">
-        {projectCount} Project{projectCount !== 1 ? "s" : ""}
+        {m.users_project_count({ count: projectCount })}
       </span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
@@ -53,9 +54,9 @@
     </Dropdown.Trigger>
     <Dropdown.Content align="start">
       {#if isPending}
-        Loading...
+        {m.users_loading()}
       {:else if error}
-        Error
+        {m.users_error()}
       {:else}
         {#each projects as project (project.id)}
           <Dropdown.Item href={getProjectShareUrl(project.name)}>
@@ -66,5 +67,5 @@
     </Dropdown.Content>
   </Dropdown.Root>
 {:else}
-  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">No projects</div>
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">{m.users_no_projects()}</div>
 {/if}

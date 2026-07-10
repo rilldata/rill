@@ -303,7 +303,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	case *runtimev1.Query_TableRowsRequest:
 		r := v.TableRowsRequest
-		if !auth.GetClaims(req.Context(), r.InstanceId).Can(runtime.ReadOLAP) {
+		if !claims.Can(runtime.ReadOLAP) {
 			http.Error(w, "action not allowed", http.StatusUnauthorized)
 			return
 		}

@@ -11,6 +11,7 @@
   import MeasureFilterForm from "./MeasureFilterForm.svelte";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import type { MeasureFilterItem } from "../../state-managers/selectors/measure-filters";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let filterData: MeasureFilterItem;
   export let openOnMount = false;
@@ -77,7 +78,7 @@
           theme
           {onRemove}
           removable={!curPinned && !required}
-          removeTooltipText="Remove {label}"
+          removeTooltipText={m.dashboard_remove_label({ label })}
         >
           <MeasureFilterBody
             dimensionName={allDimensions.find((d) => {
@@ -93,14 +94,18 @@
             <TooltipTitle>
               <svelte:fragment slot="name">{name}</svelte:fragment>
               <svelte:fragment slot="description"
-                >{required ? "required measure" : label || ""}</svelte:fragment
+                >{required
+                  ? m.dashboard_required_measure()
+                  : label || ""}</svelte:fragment
               >
             </TooltipTitle>
 
             {#if missingRequired}
-              This filter is required. Set a value to load the dashboard.
+              {m.dashboard_filter_required_set_value()}
             {:else}
-              <slot name="body-tooltip-content">Click to edit the values</slot>
+              <slot name="body-tooltip-content"
+                >{m.dashboard_click_to_edit_values()}</slot
+              >
             {/if}
           </TooltipContent>
         </div>

@@ -44,6 +44,7 @@
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
   import { Clock, Check } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let timeString: string | undefined;
   export let interval: Interval<true> | undefined;
@@ -243,13 +244,13 @@
               {...tooltipProps}
               {...popoverProps}
               class="flex gap-x-1.5"
-              aria-label="Select time range"
+              aria-label={m.dashboard_select_time_range()}
               type="button"
             >
               {#if timeString}
                 <b class="line-clamp-1 flex-none">
                   {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
-                    Custom
+                    {m.dashboard_custom()}
                   {:else}
                     {selectedLabel}
                   {/if}
@@ -387,7 +388,7 @@
               class="truncate text-fg-primary w-full text-left gap-x-1 pr-1 hover:bg-popover-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
-              <div class="mr-auto">Custom</div>
+              <div class="mr-auto">{m.dashboard_custom()}</div>
 
               <CaretDownIcon
                 className="-rotate-90 text-fg-secondary"
@@ -411,7 +412,9 @@
                 <div class="flex-none">
                   <Globe size="14px" className="text-fg-primary" />
                 </div>
-                <div class="mr-auto text-fg-primary">Time zone</div>
+                <div class="mr-auto text-fg-primary">
+                  {m.dashboard_time_zone()}
+                </div>
                 <div class="sr-only group-hover:not-sr-only">
                   <SyntaxElement range={zoneAbbreviation} />
                 </div>
@@ -455,13 +458,13 @@
                 onclick={() => {
                   showCalendarPicker = false;
                 }}
-                aria-label="Select time axis"
+                aria-label={m.dashboard_select_time_axis()}
                 class="group h-7 overflow-hidden hover:bg-surface-hover flex-none rounded-sm w-full select-none flex items-center truncate text-left gap-x-1 pr-1 pl-2"
               >
                 <div class="flex-none">
                   <Clock size="14px" />
                 </div>
-                <div class="mr-auto">Time axis</div>
+                <div class="mr-auto">{m.dashboard_time_axis()}</div>
                 {#if activeTimeDimension}
                   <div class="sr-only group-hover:not-sr-only">
                     <SyntaxElement range={activeTimeDimension.label} />
@@ -483,7 +486,9 @@
                         <button
                           {...props}
                           class="item"
-                          aria-label="Select {label} time dimension"
+                          aria-label={m.dashboard_select_time_dimension({
+                            label,
+                          })}
                           onclick={() => {
                             onTimeDimensionSelect(value);
                             closeMenu();

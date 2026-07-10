@@ -2,6 +2,7 @@
   import { createRuntimeServiceGitDiff } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ChevronDown, ChevronRight, Eye } from "lucide-svelte";
   import FileChangeBadge from "./FileChangeBadge.svelte";
 
@@ -42,7 +43,7 @@
 {#if isFetching}
   <div class="loading">
     <DelayedSpinner isLoading={true} size="14px" />
-    <span>Checking for changes…</span>
+    <span>{m.edit_changes_checking()}</span>
   </div>
 {:else if count > 0}
   <div class="changed-files">
@@ -57,11 +58,11 @@
         {:else}
           <ChevronRight size="14" />
         {/if}
-        <span>{count} {count === 1 ? "file" : "files"} changed</span>
+        <span>{m.edit_changes_files_changed({ count })}</span>
       </button>
       <button type="button" class="view-diff" onclick={() => onViewDiff()}>
         <Eye size="13" />
-        View diff
+        {m.edit_changes_view_diff()}
       </button>
     </div>
     {#if expanded}

@@ -12,6 +12,7 @@
   import { parseDocument } from "yaml";
   import ComponentError from "../components/ComponentError.svelte";
   import type { FileArtifact } from "../entity-management/file-artifact";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
@@ -867,7 +868,7 @@
               onAddTabGroup={addTabGroupAction}
             />
           {:else if canvasData}
-            <ComponentError error="No valid metrics view in project" />
+            <ComponentError error={m.canvas_no_valid_metrics_view()} />
           {/if}
         </ItemWrapper>
       </RowWrapper>
@@ -914,10 +915,10 @@
     }}
   >
     <AlertDialog.Content>
-      <AlertDialog.Title>Delete widget?</AlertDialog.Title>
+      <AlertDialog.Title>{m.canvas_delete_widget()}</AlertDialog.Title>
 
       <AlertDialog.Description>
-        This widget and its configuration will be permanently removed.
+        {m.canvas_delete_widget_description()}
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
@@ -931,7 +932,7 @@
                 pendingComponentDelete = undefined;
               }}
             >
-              Cancel
+              {m.canvas_cancel()}
             </Button>
           {/snippet}
         </AlertDialog.Cancel>
@@ -952,7 +953,7 @@
                 pendingComponentDelete = undefined;
               }}
             >
-              Delete
+              {m.canvas_delete()}
             </Button>
           {/snippet}
         </AlertDialog.Action>

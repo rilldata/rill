@@ -5,6 +5,8 @@
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import {
     getOptionsFromSmallestToLargest,
+    translateGrainName,
+    translateV1TimeGrain,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -16,6 +18,7 @@
   import { onDestroy, onMount } from "svelte";
   import SyntaxElement from "../components/SyntaxElement.svelte";
   import { RillTimeLabel } from "../../../url-state/time-ranges/RillTime";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let dateTimeAnchor: DateTime;
   export let grain: V1TimeGrain | undefined;
@@ -85,22 +88,21 @@
   $: options = [
     {
       id: RillTimeLabel.Watermark,
-      label: "complete data",
+      label: m.dashboard_complete_data(),
       timestamp: watermark,
-      description:
-        "Timestamp prior to which data frames are considered complete, also known as the watermark",
+      description: m.dashboard_complete_data_description(),
     },
     {
       id: RillTimeLabel.Latest,
-      label: "latest data",
+      label: m.dashboard_latest_data(),
       timestamp: latest,
-      description: "Timestamp of latest data point",
+      description: m.dashboard_latest_data_description(),
     },
     {
       id: RillTimeLabel.Now,
-      label: "current time",
+      label: m.dashboard_current_time(),
       timestamp: now,
-      description: "Server clock in selected timezone",
+      description: m.dashboard_current_time_description(),
     },
   ];
 
@@ -123,13 +125,13 @@
   ): string {
     switch (ref) {
       case RillTimeLabel.Watermark:
-        if (grain) return "complete";
-        return "complete data";
+        if (grain) return m.time_ref_complete();
+        return m.time_ref_complete_data();
       case RillTimeLabel.Latest:
-        return "latest";
+        return m.time_ref_latest();
       case RillTimeLabel.Now:
-        if (grain) return "current";
-        return "now";
+        if (grain) return m.time_ref_current();
+        return m.time_ref_now();
       default:
         try {
           const dt = DateTime.fromISO(ref as string).setZone(zone);
@@ -142,21 +144,22 @@
 
   function getColloquialOffset(date: DateTime): string {
     const inFuture = date > DateTime.now();
-    return (
-      Duration.fromObject(
-        Object.fromEntries(
-          Object.entries(
-            DateTime.now().setZone(date.zone).diff(date).rescale().toObject(),
-          )
-            .filter(([, value]) => value !== 0)
-            .slice(0, 2),
-        ),
-      ).toHuman({
-        listStyle: "narrow",
-        maximumFractionDigits: 0,
-        signDisplay: "never",
-      }) + (inFuture ? " from now" : " ago")
-    );
+    const durationStr = Duration.fromObject(
+      Object.fromEntries(
+        Object.entries(
+          DateTime.now().setZone(date.zone).diff(date).rescale().toObject(),
+        )
+          .filter(([, value]) => value !== 0)
+          .slice(0, 2),
+      ),
+    ).toHuman({
+      listStyle: "narrow",
+      maximumFractionDigits: 0,
+      signDisplay: "never",
+    });
+    return inFuture
+      ? m.time_from_now({ duration: durationStr })
+      : m.time_ago({ duration: durationStr });
   }
 </script>
 
@@ -169,22 +172,22 @@
           id="truncation-selector-trigger"
           type="button"
           class="flex gap-x-1 items-center flex-none truncate"
-          aria-label="Select reference time and grain"
+          aria-label={m.dashboard_select_ref_time_grain()}
           data-state={open ? "open" : "closed"}
         >
           <p>
-            as of
+            {m.dashboard_as_of_ref()}
             <b>
               {humanizedRef}
               {#if dateTimeUnit}
-                {dateTimeUnit}
+                {translateGrainName(dateTimeUnit)}
               {/if}
             </b>
             {#if grain}
               {#if snapToEnd || ref === RillTimeLabel.Watermark}
-                end
+                {m.dashboard_end()}
               {:else}
-                start
+                {m.dashboard_start()}
               {/if}
             {/if}
           </p>
@@ -213,7 +216,7 @@
   <DropdownMenu.Content align="start" class="w-52 flex flex-col p-0">
     <DropdownMenu.Group class="p-1">
       <h3 class="mt-1 px-2 uppercase text-fg-secondary font-semibold">
-        Reference
+        {m.dashboard_reference()}
       </h3>
       {#each options as { id, label, description, timestamp } (id)}
         {#if id !== RillTimeLabel.Watermark || (id === RillTimeLabel.Watermark && !!timestamp)}
@@ -272,7 +275,9 @@
     <DropdownMenu.Separator class="my-0" />
 
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-fg-secondary font-semibold">Grain</h3>
+      <h3 class="mt-1 px-2 uppercase text-fg-secondary font-semibold">
+        {m.dashboard_grain()}
+      </h3>
 
       {#each grainOptions as option, i (i)}
         <DropdownMenu.CheckboxItem
@@ -283,11 +288,11 @@
             onSelectEnding(option);
           }}
         >
-          {V1TimeGrainToDateTimeUnit[option]}
+          {translateV1TimeGrain(option)}
         </DropdownMenu.CheckboxItem>
       {:else}
         <div class="px-2 py-1 text-fg-secondary flex justify-center italic">
-          No valid grains available.
+          {m.dashboard_no_valid_grains()}
         </div>
       {/each}
     </DropdownMenu.Group>
@@ -295,7 +300,7 @@
     {#if dateTimeUnit}
       <div class="bg-popover-footer border-t rounded-b-sm">
         <div class="flex justify-between items-center p-2">
-          <span>Anchor to period end</span>
+          <span>{m.dashboard_anchor_period_end()}</span>
 
           <Switch
             disabled={ref === RillTimeLabel.Watermark}

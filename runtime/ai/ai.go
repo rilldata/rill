@@ -1604,9 +1604,9 @@ func NewTextCompletionMessage(role Role, content string) *aiv1.CompletionMessage
 // It's a simple placeholder strategy. In the future, we'll enhance this with AI summarization.
 func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.CompletionMessage {
 	const (
-		maxMessages = 20 // Keep up to 20 messages total
-		keepFirst   = 4  // Always keep first 4 messages for context
-		keepLast    = 16 // Keep last 16 messages
+		maxMessages = 100 // Keep up to 100 messages total
+		keepFirst   = 4   // Always keep first 4 messages for context
+		keepLast    = 16  // Keep last 16 messages
 	)
 
 	if len(messages) <= maxMessages {

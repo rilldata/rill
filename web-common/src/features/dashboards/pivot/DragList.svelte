@@ -55,6 +55,8 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
   export let zone: Zone;
@@ -338,7 +340,7 @@
     orientation: "horizontal",
   }}
   bind:this={container}
-  aria-label="Drag list {zone}"
+  aria-label={m.dashboard_drag_list_zone({ zone })}
 >
   {#each items as item, index (item.id)}
     <div
@@ -399,12 +401,13 @@
               <button
                 class="icon-wrapper"
                 onclick={() => handleRowClick(item)}
-                aria-label="Add Row"
+                aria-label={m.dashboard_add_row()}
                 type="button"
               >
                 <Row size="16px" />
               </button>
-              <TooltipContent slot="tooltip-content">Add to rows</TooltipContent
+              <TooltipContent slot="tooltip-content"
+                >{m.dashboard_add_to_rows()}</TooltipContent
               >
             </Tooltip>
           {/if}
@@ -413,13 +416,13 @@
             <button
               class="icon-wrapper"
               onclick={() => handleColumnClick(item)}
-              aria-label="Add Column"
+              aria-label={m.dashboard_add_column()}
               type="button"
             >
               <Column size="16px" />
             </button>
             <TooltipContent slot="tooltip-content">
-              Add to columns
+              {m.dashboard_add_to_columns()}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -445,7 +448,7 @@
           onUpdate([]);
         }}
       >
-        Clear
+        {m.dashboard_clear()}
       </Button>
     {/if}
   {/if}

@@ -18,6 +18,7 @@
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import TableIcon from "../../canvas/icons/TableIcon.svelte";
   import type { PivotChipData, PivotState, PivotTableMode } from "./types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let pivotState: PivotState;
   export let showPanels = true;
@@ -60,7 +61,7 @@
       value: limit.toString(),
       label: limit.toString(),
     })),
-    { value: "all", label: "All" },
+    { value: "all", label: m.dashboard_all() },
   ];
 
   // Convert rowLimit to string for Select component binding
@@ -124,7 +125,7 @@
       <PivotPanel size="18px" open={showPanels} colorClass="fill-theme-800" />
     </Button>
     <TooltipContent slot="tooltip-content">
-      {showPanels ? "Hide panels" : "Show panels"}
+      {showPanels ? m.dashboard_hide_panels() : m.dashboard_show_panels()}
     </TooltipContent>
   </Tooltip>
 
@@ -132,7 +133,7 @@
     <div
       class="flex h-6 overflow-hidden rounded-sm border border-gray-200 bg-input pointer-events-auto"
       role="group"
-      aria-label="Table mode"
+      aria-label={m.dashboard_table_mode()}
     >
       <Tooltip location="bottom" alignment="start" distance={8}>
         <button
@@ -146,10 +147,10 @@
           }}
         >
           <Pivot size="16px" />
-          <span>Pivot</span>
+          <span>{m.dashboard_pivot()}</span>
         </button>
         <TooltipContent slot="tooltip-content">
-          {!isFlat ? "Currently showing pivot view" : "Switch to pivot view"}
+          {!isFlat ? m.dashboard_currently_pivot() : m.dashboard_switch_pivot()}
         </TooltipContent>
       </Tooltip>
       <Tooltip location="bottom" alignment="start" distance={8}>
@@ -164,10 +165,10 @@
           }}
         >
           <TableIcon size="16px" color="currentColor" />
-          <span>Flat</span>
+          <span>{m.dashboard_flat()}</span>
         </button>
         <TooltipContent slot="tooltip-content">
-          {isFlat ? "Currently showing flat view" : "Switch to flat view"}
+          {isFlat ? m.dashboard_currently_flat() : m.dashboard_switch_flat()}
         </TooltipContent>
       </Tooltip>
     </div>
@@ -178,15 +179,15 @@
       disabled={Object.keys(expanded).length === 0}
     >
       <Collapse size="16px" />
-      Collapse All
+      {m.dashboard_collapse_all()}
     </Button>
 
     {#if !isFlat}
       <div class="flex items-center gap-x-2 pointer-events-auto">
         <Tooltip location="bottom" alignment="start" distance={8}>
-          <span class="text-fg-secondary pl-2">Row limit</span>
+          <span class="text-fg-secondary pl-2">{m.dashboard_row_limit()}</span>
           <TooltipContent slot="tooltip-content">
-            Only up to top N child rows are shown under each dimension
+            {m.dashboard_row_limit_tooltip()}
           </TooltipContent>
         </Tooltip>
         <Select
@@ -196,7 +197,7 @@
           onChange={handleRowLimitChange}
           size="sm"
           width={80}
-          placeholder="Row limit"
+          placeholder={m.dashboard_row_limit()}
         />
       </div>
     {/if}
@@ -213,7 +214,7 @@
                 showTotalsRow: Boolean(checked),
               });
             }}
-            label="Total row"
+            label={m.dashboard_total_row()}
             labelClass="text-xs leading-snug font-normal text-fg-secondary"
           />
         {/if}
@@ -227,7 +228,7 @@
                 showTotalsRow,
               });
             }}
-            label="Total column"
+            label={m.dashboard_total_column()}
             labelClass="text-xs leading-snug font-normal text-fg-secondary"
           />
         {/if}

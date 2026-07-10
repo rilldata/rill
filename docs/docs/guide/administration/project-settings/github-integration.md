@@ -27,9 +27,9 @@ In some cases, you will need to change the repository that your project is synce
 2. Select the dropdown next to the repository name
 3. Choose **Disconnect** to remove the current connection
 
-![Disconnect Github](/img/manage/project-management/disconnect-github.png)
+![Disconnect GitHub](/img/manage/project-management/disconnect-github.png)
 
-This action has no effect on your current deployment and will not require a source re-ingest. After disconnecting, you can follow the same steps as [connecting to a GitHub repository](#connecting-to-a-github-repository) to re-connect your project to a new repository.
+This action has no effect on your current deployment and will not require a source re-ingest. After disconnecting, you can follow the same steps as [connecting to a GitHub repository](#connecting-to-a-github-repository) to reconnect your project to a new repository.
 
 ## Deploying from a Branch Other Than `main`
 
@@ -37,7 +37,7 @@ By default, Rill Cloud deploys from the `main` branch of your connected reposito
 
 ### Via Rill Cloud UI
 
-If you have already [setup your connection to GitHub](/developers/deploy/deploy-dashboard/#syncing-your-github-repository), you can edit the branch from the project settings:
+If you have already [set up your connection to GitHub](/developers/deploy/deploy-dashboard/#syncing-your-github-repository), you can edit the branch from the project settings:
 
 ![Main Branch](/img/manage/project-management/main-branch.png)
 
@@ -61,4 +61,3 @@ To manually refresh data sources without pushing code changes (or redeploying yo
 rill project refresh [--source/model] (source_name or model_name)
 ```
 :::
-

@@ -1,10 +1,14 @@
+<script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+</script>
+
 <a
   class="pricing-link"
   href="https://www.rilldata.com/pricing"
   target="_blank"
   rel="noreferrer noopener"
 >
-  See pricing details
+  {m.billing_see_pricing_details()}
   <svg
     class="w-3 h-3"
     viewBox="0 0 12 12"

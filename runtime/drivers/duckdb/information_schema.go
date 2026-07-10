@@ -24,7 +24,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 	defer func() { _ = release() }()
 	var q string
-	if c.config.Path != "" || c.config.Attach != "" {
+	if c.config.hasExternalConfig() {
 		// for generic duckdb implementation, we use the current schema from the connection.
 		q = "SELECT current_database() as database, current_schema() as schema"
 	} else {
@@ -49,7 +49,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	var args []any
 	var q string
-	if c.config.Path != "" || c.config.Attach != "" {
+	if c.config.hasExternalConfig() {
 		// for generic duckdb implementation, we use the current schema from the connection.
 		q = `
         SELECT
@@ -130,7 +130,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.OlapTable, error) {
+func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
@@ -138,7 +138,7 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ol
 	}
 	defer func() { _ = release() }()
 
-	rows, _, err := db.Schema(ctx, "", name, 0, "")
+	rows, _, err := db.Schema(ctx, database, databaseSchema, name, "", 0, "")
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
@@ -163,7 +163,7 @@ func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pag
 	}
 	defer func() { _ = release() }()
 
-	rows, nextToken, err := db.Schema(ctx, ilike, "", pageSize, pageToken)
+	rows, nextToken, err := db.Schema(ctx, "", "", "", ilike, pageSize, pageToken)
 	if err != nil {
 		return nil, "", c.checkErr(err)
 	}

@@ -1,6 +1,6 @@
 ---
 title: "Managing Projects in Rill Cloud"
-description: Basic managment from projects 
+description: Basic management for projects
 sidebar_position: 20
 ---
 
@@ -25,7 +25,7 @@ After deploying to Rill Cloud, you can navigate to the status page to monitor yo
 
 ### Resources
 
-The Resources tab lists all project resources (sources, models, metrics views, explores, etc.) with their current reconciliation status. You can search, filter by resource type or status (OK, Error, Warn), and trigger a full refresh of all sources and models. Parse errors are also surfaced here. You can filter the type of resource and it's status to get quick information about the status of your project.
+The Resources tab lists all project resources (sources, models, metrics views, explores, etc.) with their current reconciliation status. You can search, filter by resource type or status (OK, Error, Warn), and trigger a full refresh of all sources and models. Parse errors are also surfaced here. You can filter by resource type and status to get quick information about the status of your project.
 
 ![Resources](<https://cdn.rilldata.com/docs/screenshots/guide/administration/project-status-error-filter.png>)
 
@@ -51,11 +51,11 @@ The Logs tab streams live runtime logs from your deployment via a real-time conn
 
 
 ### Managing Project settings
-You can also manage project objects in the settings page including public URLs (created in an explore dashboard) and environmental variables. For more information on managing variables, see [variables and credentials]( /guide/administration/project-settings/variables-and-credentials).
+You can also manage project objects on the settings page, including public URLs (created in an Explore dashboard) and environment variables. For more information on managing variables, see [variables and credentials](/guide/administration/project-settings/variables-and-credentials).
 
 ![Project Settings](<https://cdn.rilldata.com/docs/screenshots/guide/administration/project-settings-general.png>)
 
-## Managing Rill project from CLI
+## Managing a Rill project from the CLI
 Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, public access, etc. Run `rill project -h` for an overview of available commands.
 
 ### Refreshing the deployment
@@ -89,4 +89,3 @@ rill project edit --public=true
 **Warning**: If you make a project public, make sure it does not expose any confidential data.
 
 :::
-

@@ -53,13 +53,13 @@ olap_connector: clickhouse
 In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [model](models.md), [metrics_view](metrics-views.md), and [explore](explore-dashboards.md)
 
 :::note Use plurals when specifying project-wide defaults
-In your `rill.yaml`, the top level property for the resource type needs to be **plural**, such as `models`, `metrics_views` and `explores`.
+In your `rill.yaml`, the top-level property for the resource type needs to be **plural**, such as `models`, `metrics_views`, and `explores`.
 :::
 
 :::info Hierarchy of inheritance and property overrides
-As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [models](models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object level properties (e.g. `models.yaml` or `explore-dashboards.yaml`)
-2. [Environment](/developers/build/models/templating) level properties (e.g. a specific property that have been set for `dev`)
+As a general rule of thumb, properties that have been specified at a more _granular_ level will supersede or override higher-level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
+1. Individual [models](models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object-level properties (e.g. `models.yaml` or `explore-dashboards.yaml`)
+2. [Environment](/developers/build/models/templating) level properties (e.g. a specific property that has been set for `dev`)
 3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
 :::
 
@@ -81,7 +81,7 @@ _[object]_ - Defines project-wide default settings for explores. Unless overridd
 _[object]_ - Defines project-wide default settings for canvases. Unless overridden, individual canvases will inherit these defaults.
 
 ```yaml
-# For complete examples, see: 
+# For complete examples, see:
 # https://docs.rilldata.com/developers/build/rill-project-file#dashboard-defaults
 models:
     refresh:
@@ -109,7 +109,7 @@ canvases:
 
 ## Setting variables
 
-Primarily useful for [templating](/developers/build/connectors/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/developers/build/connectors/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer.
 :::info Overriding variables locally
 Variables also follow an order of precedence and can be overridden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 ```bash
@@ -190,7 +190,7 @@ env:
 
 The public_paths and ignore_paths properties in the rill.yaml file provide control over which files and directories are processed or exposed by Rill. The public_paths property defines a list of file or directory paths to expose over HTTP. By default, it includes ['./public']. The ignore_paths property specifies a list of files or directories that Rill excludes during ingestion and parsing. This prevents unnecessary or incompatible content from affecting the project.
 :::tip
-Don't forget the leading `/` when specifying the path for `ignore_paths` and this path is also assuming the relative path from your project root.
+Don't forget the leading `/` when specifying the path for `ignore_paths`. This path is relative to your project root.
 :::
 
 
@@ -210,9 +210,9 @@ ignore_paths:
 
 ## Testing access policies
 
-During development, it is always a good idea to check if your [access policies](/developers/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/developers/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users, which enables a drop-down in the dashboard preview to view as a specific user.
 :::info The View as selector is not visible in my dashboard, why?
-This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by every user.
+This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and its contents are viewable by every user.
 :::
 
 
