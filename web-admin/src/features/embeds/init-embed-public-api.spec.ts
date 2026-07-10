@@ -149,7 +149,11 @@ describe("initEmbedPublicAPI", () => {
 
       const response = await callSetValidState({ state: "foo=bar" });
 
-      expect(response.result).toEqual({ success: true, errors: [] });
+      expect(response.result).toEqual({
+        success: true,
+        appliedState: "foo=bar",
+        errors: [],
+      });
       expect(harness.lastGoto()?.url.search).toBe("?foo=bar");
       expect(harness.lastGoto()?.opts).toEqual({ replaceState: true });
     });
@@ -163,7 +167,7 @@ describe("initEmbedPublicAPI", () => {
 
       expect(response.result).toEqual({
         success: true,
-        appliedState: "?measures=impressions&dims=publisher",
+        appliedState: "measures=impressions&dims=publisher",
         errors: [],
       });
       // Params matching rill defaults (sort etc.) are stripped, leaving the canonical url.
@@ -173,12 +177,13 @@ describe("initEmbedPublicAPI", () => {
       expect(harness.lastGoto()?.opts).toEqual({ replaceState: true });
     });
 
-    it("does not navigate on validation errors when failOnError defaults to true", async () => {
+    it("does not navigate on validation errors when failOnError is true", async () => {
       onExploreRoute();
       const gotoCountBefore = harness.gotoCalls.length;
 
       const response = await callSetValidState({
         state: "measures=does_not_exist",
+        failOnError: true,
       });
 
       expect(response.result).toEqual({
@@ -189,19 +194,18 @@ describe("initEmbedPublicAPI", () => {
       expect(harness.gotoCalls.length).toBe(gotoCountBefore);
     });
 
-    it("applies the cleaned url despite errors when failOnError is false", async () => {
+    it("applies the cleaned url despite errors when failOnError defaults to false", async () => {
       onExploreRoute();
 
       const response = await callSetValidState({
         state: "dims=publisher&measures=does_not_exist",
-        failOnError: false,
       });
 
       // The invalid measure is dropped and its error reported, but the valid
       // dimension survives and the cleaned url is applied.
       expect(response.result).toEqual({
         success: true,
-        appliedState: "?dims=publisher",
+        appliedState: "dims=publisher",
         errors: ['Selected measure: "does_not_exist" is not valid.'],
       });
       expect(harness.lastGoto()?.url.search).toBe("?dims=publisher");

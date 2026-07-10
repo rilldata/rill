@@ -73,7 +73,7 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
         "Expected params to be an object with a string `state` property",
       );
     }
-    const { state, failOnError = true } = params;
+    const { state, failOnError = false } = params;
 
     const pageState = get(page);
     const activeDashboard = getDashboardFromEmbedRoute(
@@ -87,7 +87,7 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
       const currentUrl = new URL(pageState.url);
       currentUrl.search = state;
       void goto(currentUrl, { replaceState: true });
-      return { success: true, errors: [] };
+      return { success: true, appliedState: state, errors: [] };
     }
 
     const { url, errors } = await buildValidatedExploreUrl(
@@ -107,7 +107,7 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     void goto(currentUrl, { replaceState: true });
     return {
       success: true,
-      appliedState: currentUrl.search,
+      appliedState: currentUrl.search.replace(/^\?/, ""),
       errors: errorMessages,
     };
   });
