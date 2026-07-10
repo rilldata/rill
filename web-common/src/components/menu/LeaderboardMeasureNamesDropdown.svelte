@@ -9,6 +9,7 @@
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { writable } from "svelte/store";
 
   export let disabled = false;
@@ -38,7 +39,7 @@
 
   $: showingMeasuresText =
     selectedMeasureNames.length > 1
-      ? `${selectedMeasureNames.length} measures`
+      ? m.explore_n_measures({ count: String(selectedMeasureNames.length) })
       : getMeasureDisplayText(leaderboardSortByMeasureName);
 
   function onToggleOff() {
@@ -136,7 +137,7 @@
           <div
             class="flex items-center gap-x-0.5 px-1 text-fg-muted hover:text-inherit"
           >
-            Showing <strong> {showingMeasuresText}</strong>
+            {m.explore_showing()} <strong> {showingMeasuresText}</strong>
             <span
               class="transition-transform"
               class:hidden={disabled}
@@ -155,7 +156,7 @@
           <div class="px-3 pt-3 pb-1">
             <Search
               bind:value={searchText}
-              label="Search measures"
+              label={m.explore_search_measures()}
               showBorderOnFocus={false}
             />
           </div>
@@ -183,7 +184,7 @@
               {/each}
             {:else}
               <div class="text-fg-disabled p-2 w-full">
-                No matching leaderboard measures shown
+                {m.explore_no_matching_leaderboard_measures()}
               </div>
             {/if}
           </div>
@@ -202,7 +203,7 @@
                 <InputLabel
                   small
                   capitalize={false}
-                  label="Multi-select"
+                  label={m.explore_multi_select()}
                   id="multi-measure-select"
                 />
               </div>
@@ -212,7 +213,7 @@
 
         <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
           <TooltipContent maxWidth="400px">
-            Choose measures to display
+            {m.explore_choose_measures()}
           </TooltipContent>
         </div>
       </Tooltip>

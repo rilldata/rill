@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GitDiffResponse_GitFileStatus } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { status }: { status: GitDiffResponse_GitFileStatus | undefined } =
     $props();
@@ -12,22 +13,22 @@
     GIT_FILE_STATUS_ADDED: {
       letter: "A",
       class: "badge-added",
-      label: "Added",
+      label: m.edit_changes_status_added(),
     },
     GIT_FILE_STATUS_MODIFIED: {
       letter: "M",
       class: "badge-modified",
-      label: "Modified",
+      label: m.edit_changes_status_modified(),
     },
     GIT_FILE_STATUS_DELETED: {
       letter: "D",
       class: "badge-deleted",
-      label: "Deleted",
+      label: m.edit_changes_status_deleted(),
     },
     GIT_FILE_STATUS_RENAMED: {
       letter: "R",
       class: "badge-renamed",
-      label: "Renamed",
+      label: m.edit_changes_status_renamed(),
     },
   };
 

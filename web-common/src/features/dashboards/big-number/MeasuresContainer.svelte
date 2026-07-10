@@ -6,6 +6,7 @@
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let metricsViewName: string;
   export let exploreContainerWidth: number;
@@ -155,8 +156,8 @@
   >
     <div class="bg-surface-subtle sticky top-0">
       <DashboardVisibilityDropdown
-        category="Measures"
-        tooltipText="Choose measures to display"
+        category={m.measures_label()}
+        tooltipText={m.measures_choose_tooltip()}
         onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
         selectableItems={$allMeasures.map(({ name, displayName }) => ({
           name: name || "",
