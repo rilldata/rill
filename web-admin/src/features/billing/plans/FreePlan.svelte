@@ -24,7 +24,10 @@
   let { usedCredit, availableCredit, creditPercent } = $derived($planCredits);
 </script>
 
-<PlanContainer badge={m.billing_plan_badge_pro_trial()} description={m.billing_free_credit_desc()}>
+<PlanContainer
+  badge={m.billing_plan_badge_pro_trial()}
+  description={m.billing_free_credit_desc()}
+>
   {#snippet info()}
     {m.billing_no_time_limit()}<br />
     {PricingDetailsCompact}<br />
@@ -32,7 +35,9 @@
   {/snippet}
 
   {#snippet action()}
-    <button class="subscribe-btn" onclick={upgrade}>{m.billing_upgrade_to_pro()}</button>
+    <button class="subscribe-btn" onclick={upgrade}
+      >{m.billing_upgrade_to_pro()}</button
+    >
   {/snippet}
 
   <div class="credit-section">

@@ -25,7 +25,9 @@ export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
       new Date(cancelledSubIssue.metadata.subscriptionCancelled.endDate),
     );
     if (endDate.isValid && endDate.toMillis() > Date.now()) {
-      accessTimeout = m.billing_access_until({ date: endDate.toLocaleString(DateTime.DATE_MED) });
+      accessTimeout = m.billing_access_until({
+        date: endDate.toLocaleString(DateTime.DATE_MED),
+      });
     }
   }
   if (!accessTimeout) {

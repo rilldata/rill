@@ -317,7 +317,9 @@
 
             {#if comparisonLabel}
               <p class="text-sm text-fg-secondary break-words">
-                {m.kpi_vs_comparison({ comparison: comparisonLabel?.toLowerCase() ?? "" })}
+                {m.kpi_vs_comparison({
+                  comparison: comparisonLabel?.toLowerCase() ?? "",
+                })}
               </p>
             {/if}
           {/if}

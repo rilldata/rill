@@ -84,7 +84,9 @@
           open = false;
         }}>{m.users_cancel()}</Button
       >
-      <Button type="destructive" onClick={handleDelete}>{m.groups_yes_delete()}</Button>
+      <Button type="destructive" onClick={handleDelete}
+        >{m.groups_yes_delete()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

@@ -5,6 +5,7 @@
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ExportProgress, PdfExportRunOptions } from "./types";
+  import type { LocalizedString } from "@inlang/paraglide-js";
 
   // Surface-agnostic PDF export form (title, options, and action). The caller
   // supplies `runExport` (bound to the canvas or explore orchestrator), so this
@@ -18,7 +19,7 @@
   let exporting = false;
   let progressLabel = m.export_pdf_button();
 
-  const PROGRESS_COPY: Record<ExportProgress["phase"], string> = {
+  const PROGRESS_COPY: Record<ExportProgress["phase"], LocalizedString> = {
     preparing: m.export_pdf_rendering_charts(),
     capturing: m.export_pdf_capturing(),
     assembling: m.export_pdf_building(),

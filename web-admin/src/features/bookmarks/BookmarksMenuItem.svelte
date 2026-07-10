@@ -120,7 +120,9 @@
             </Tooltip.Trigger>
             {#if showDeleteTooltip}
               <Tooltip.Content side="bottom">
-                {bookmark.resource.default ? m.bookmark_delete_home_bookmark() : m.bookmark_delete_bookmark()}
+                {bookmark.resource.default
+                  ? m.bookmark_delete_home_bookmark()
+                  : m.bookmark_delete_bookmark()}
               </Tooltip.Content>
             {/if}
           </Tooltip.Root>

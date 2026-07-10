@@ -103,7 +103,9 @@
         <svelte:fragment slot="read-project"
           >{m.project_role_viewer()}</svelte:fragment
         >
-        <svelte:fragment slot="manage-project">{m.project_role_admin()}</svelte:fragment>
+        <svelte:fragment slot="manage-project"
+          >{m.project_role_admin()}</svelte:fragment
+        >
       </ProjectAccessControls>
     </Tag>
     <!-- Public vs Private indicator -->

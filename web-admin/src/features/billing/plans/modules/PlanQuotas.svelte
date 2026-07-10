@@ -38,7 +38,10 @@
   <div class="quota-entry">
     <div class="quota-entry-title">{m.billing_projects()}</div>
     <div class="quota-entry-body">
-      {m.billing_x_of_y({ current: String($projects.data?.projects?.length ?? 0), total: String(projectQuota) })}
+      {m.billing_x_of_y({
+        current: String($projects.data?.projects?.length ?? 0),
+        total: String(projectQuota),
+      })}
     </div>
   </div>
 

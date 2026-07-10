@@ -118,10 +118,7 @@
       <DelayedSpinner isLoading={$getConversationQuery.isLoading} size="24px" />
     </div>
   {:else if hasConversationLoadError}
-    <Error
-      headline={m.chat_unable_to_load()}
-      error={$conversationQueryError}
-    />
+    <Error headline={m.chat_unable_to_load()} error={$conversationQueryError} />
   {:else if isConversationEmpty}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->

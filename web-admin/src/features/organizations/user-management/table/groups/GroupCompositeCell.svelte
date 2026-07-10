@@ -115,7 +115,9 @@
       </div>
       <TooltipContent slot="tooltip-content">
         {#if (usersCount ?? 0) === 0}
-          <div class="text-xs text-gray-300 px-1 py-0.5">{m.users_no_users()}</div>
+          <div class="text-xs text-gray-300 px-1 py-0.5">
+            {m.users_no_users()}
+          </div>
         {:else if $listUsergroupMemberUsers.isLoading}
           <div class="px-1 py-0.5">
             <Spinner
@@ -147,7 +149,11 @@
               </div>
             {/each}
             {#if (usersCount ?? 0) > visiblePreviewCount}
-              <li>{m.users_and_more({ count: (usersCount ?? 0) - visiblePreviewCount })}</li>
+              <li>
+                {m.users_and_more({
+                  count: (usersCount ?? 0) - visiblePreviewCount,
+                })}
+              </li>
             {/if}
           </ul>
         {/if}

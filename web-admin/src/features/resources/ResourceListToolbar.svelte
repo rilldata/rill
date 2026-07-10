@@ -19,8 +19,4 @@
   beforeNavigate(() => (filter = "")); // resets filter when changing projects
 </script>
 
-<Search
-  autofocus={false}
-  bind:value={filter}
-  rounded="lg"
-/>
+<Search autofocus={false} bind:value={filter} rounded="lg" />

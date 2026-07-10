@@ -48,7 +48,9 @@
       });
 
       eventBus.emit("notification", {
-        message: m.billing_contact_assigned({ name: selectedBillingContactLabel }),
+        message: m.billing_contact_assigned({
+          name: selectedBillingContactLabel,
+        }),
       });
     } catch (error) {
       console.error("Error assigning user as billing contact", error);
@@ -90,7 +92,9 @@
       </Dialog.Description>
     </Dialog.Header>
     <Dialog.Footer class="mt-3">
-      <Button type="secondary" onClick={() => (open = false)}>{m.billing_cancel()}</Button>
+      <Button type="secondary" onClick={() => (open = false)}
+        >{m.billing_cancel()}</Button
+      >
       <Button
         type="primary"
         onClick={handleAssignAsBillingContact}

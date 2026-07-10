@@ -95,7 +95,9 @@
         <div class="flex items-center">
           <RefreshCcwIcon size="12px" />
           <span class="ml-2"
-            >{isLoading ? m.status_refreshing() : m.status_action_full_refresh()}</span
+            >{isLoading
+              ? m.status_refreshing()
+              : m.status_action_full_refresh()}</span
           >
         </div>
       </DropdownMenu.Item>

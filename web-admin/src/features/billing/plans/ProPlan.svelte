@@ -14,7 +14,10 @@
   } = $props();
 </script>
 
-<PlanContainer badge={m.billing_plan_badge_pro()} description={m.billing_usage_based_pricing()}>
+<PlanContainer
+  badge={m.billing_plan_badge_pro()}
+  description={m.billing_usage_based_pricing()}
+>
   {#snippet action()}
     <DetailedUsageLink {billingPortalUrl} />
   {/snippet}

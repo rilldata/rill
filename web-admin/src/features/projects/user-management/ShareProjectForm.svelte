@@ -319,7 +319,9 @@
 
 <div class="flex flex-col p-4">
   <div class="flex flex-row items-center mb-4">
-    <div class="text-sm font-medium">{m.project_share_heading({ project })}</div>
+    <div class="text-sm font-medium">
+      {m.project_share_heading({ project })}
+    </div>
     <div class="grow"></div>
   </div>
   <UserAndGroupInviteForm {organization} {project} {searchList} />
@@ -421,7 +423,9 @@
             </div>
           {/each}
           {#if autogroupMembersTotalCount > 6}
-            <li>{m.users_and_more({ count: autogroupMembersTotalCount - 6 })}</li>
+            <li>
+              {m.users_and_more({ count: autogroupMembersTotalCount - 6 })}
+            </li>
           {/if}
         </ul>
       </TooltipContent>

@@ -59,7 +59,9 @@
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label="Alert filters">
-  <MetadataLabel>{m.alert_filters_label({ count: String(filtersLength) })}</MetadataLabel>
+  <MetadataLabel
+    >{m.alert_filters_label({ count: String(filtersLength) })}</MetadataLabel
+  >
   <div class="flex flex-wrap gap-2">
     {#if filtersLength}
       {#if hasTimeRange}

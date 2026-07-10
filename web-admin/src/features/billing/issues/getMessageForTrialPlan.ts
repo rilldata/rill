@@ -72,7 +72,9 @@ export function getMessageForTrialPlan(
       ? gracePeriodDate.diff(today)
       : null;
     if (gracePeriodDiff && gracePeriodDiff.milliseconds > 0) {
-      message.description = m.billing_upgrade_within_to_maintain({ duration: humanizeDuration(gracePeriodDiff) });
+      message.description = m.billing_upgrade_within_to_maintain({
+        duration: humanizeDuration(gracePeriodDiff),
+      });
       message.type = "warning";
     } else {
       message.title = m.billing_trial_expired_hibernating();
@@ -111,7 +113,9 @@ function getMessageForCreditsTrial(trialIssue: V1BillingIssue) {
   } else {
     message.type = "default";
     message.title = m.billing_welcome_to_rill();
-    message.description = m.billing_free_trial_with_credits({ amount: String(onCreditTrial.creditAllocation ?? 0) });
+    message.description = m.billing_free_trial_with_credits({
+      amount: String(onCreditTrial.creditAllocation ?? 0),
+    });
     message.dismissible = {
       key: trialIssue.org ?? "",
       id: `${trialIssue.type ?? ""}`,

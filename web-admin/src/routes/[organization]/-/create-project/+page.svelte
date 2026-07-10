@@ -59,7 +59,9 @@
       >
         Upgrade
       </Button>
-      <Button type="secondary" noStroke href="/{organization}">{m.common_back()}</Button>
+      <Button type="secondary" noStroke href="/{organization}"
+        >{m.common_back()}</Button
+      >
     {:else}
       <RillLogoSquareNegative size="36px" />
       <div class="text-2xl font-extrabold text-fg-accent text-center">

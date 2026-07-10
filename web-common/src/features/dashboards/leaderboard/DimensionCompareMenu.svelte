@@ -20,7 +20,9 @@
   <Tooltip location="left" distance={8}>
     <Compare isColored={isBeingCompared} />
     <TooltipContent slot="tooltip-content">
-      {isBeingCompared ? m.leaderboard_remove_comparison() : m.leaderboard_compare()}
+      {isBeingCompared
+        ? m.leaderboard_remove_comparison()
+        : m.leaderboard_compare()}
     </TooltipContent>
   </Tooltip>
 </IconButton>

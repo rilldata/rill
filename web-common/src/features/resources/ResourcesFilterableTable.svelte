@@ -241,7 +241,10 @@
           {:else if selectedTypes.length === 1}
             {prettyResourceKind(selectedTypes[0])}
           {:else}
-            {m.status_levels_selected({ first: prettyResourceKind(selectedTypes[0]), count: selectedTypes.length - 1 })}
+            {m.status_levels_selected({
+              first: prettyResourceKind(selectedTypes[0]),
+              count: selectedTypes.length - 1,
+            })}
           {/if}
         </span>
         {#if filterDropdownOpen}
@@ -275,7 +278,12 @@
             {statusFilters.find((s) => s.value === selectedStatuses[0])
               ?.label ?? selectedStatuses[0]}
           {:else}
-            {m.status_levels_selected({ first: statusFilters.find((s) => s.value === selectedStatuses[0])?.label ?? selectedStatuses[0], count: selectedStatuses.length - 1 })}
+            {m.status_levels_selected({
+              first:
+                statusFilters.find((s) => s.value === selectedStatuses[0])
+                  ?.label ?? selectedStatuses[0],
+              count: selectedStatuses.length - 1,
+            })}
           {/if}
         </span>
         {#if statusDropdownOpen}
