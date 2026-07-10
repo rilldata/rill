@@ -138,7 +138,8 @@
                 rel="noopener noreferrer"
               >
                 {m.dashboard_create_a_dashboard()}</a
-              > {m.dashboard_to_get_started()}
+              >
+              {m.dashboard_to_get_started()}
             </span>
           </ResourceListEmptyState>
         </slot>

@@ -96,7 +96,9 @@
         ),
       });
 
-      eventBus.emit("notification", { message: m.public_url_deleted_notification() });
+      eventBus.emit("notification", {
+        message: m.public_url_deleted_notification(),
+      });
     } catch {
       eventBus.emit("notification", {
         message: m.public_url_delete_error_notification(),
@@ -121,7 +123,8 @@
       <div class="flex flex-col">
         <RadixLarge>{m.public_url_page_title()}</RadixLarge>
         <p class="text-sm text-fg-tertiary font-medium">
-          {m.public_url_page_description()} <a
+          {m.public_url_page_description()}
+          <a
             href="https://docs.rilldata.com/guide/dashboards/public-urls"
             target="_blank"
             class="text-primary-600 hover:text-primary-700 active:text-primary-800"

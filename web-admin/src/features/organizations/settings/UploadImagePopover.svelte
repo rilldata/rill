@@ -103,7 +103,9 @@
     side="bottom"
     class="flex flex-col gap-y-2 w-[400px] p-4"
   >
-    <div class="text-base font-medium">{m.settings_upload_org_image_title({ label })}</div>
+    <div class="text-base font-medium">
+      {m.settings_upload_org_image_title({ label })}
+    </div>
     <ImageInput bind:value={url} {accept} {uploadFile} />
     {#if error}
       <div class="text-red-600 text-xs">
@@ -111,7 +113,9 @@
       </div>
     {/if}
     <div class="flex flex-row justify-end gap-x-2">
-      <Button type="secondary" onClick={onCancel}>{m.settings_cancel_button()}</Button>
+      <Button type="secondary" onClick={onCancel}
+        >{m.settings_cancel_button()}</Button
+      >
       {#if imageUrl}
         <Button
           type="secondary"

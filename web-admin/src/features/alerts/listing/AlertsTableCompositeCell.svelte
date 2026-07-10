@@ -41,7 +41,8 @@
     {#if !lastTrigger}
       <span class="shrink-0">{m.alert_not_checked_yet()}</span>
     {:else}
-      <span class="shrink-0">{m.alert_last_checked({ time: timeAgo(new Date(lastTrigger)) })}</span
+      <span class="shrink-0"
+        >{m.alert_last_checked({ time: timeAgo(new Date(lastTrigger)) })}</span
       >
     {/if}
     <ProjectAccessControls {organization} {project}>

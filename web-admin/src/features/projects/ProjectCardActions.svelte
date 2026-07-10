@@ -33,20 +33,24 @@
   <Dropdown.Content class="w-48" align="start" side="right">
     {#if canEdit}
       <Dropdown.Item class="text-sm" onclick={() => onEdit?.()}>
-        <FeatherEditIcon /> {m.project_edit()}
+        <FeatherEditIcon />
+        {m.project_edit()}
       </Dropdown.Item>
     {/if}
     <Dropdown.Item class="text-sm" onclick={onRename}>
-      <PencilIcon /> {m.project_rename()}
+      <PencilIcon />
+      {m.project_rename()}
     </Dropdown.Item>
     <Dropdown.Item
       href="/{organization}/{project}/-/dashboards?share=true"
       class="text-sm"
     >
-      <ShareIcon size={14} /> {m.project_share()}
+      <ShareIcon size={14} />
+      {m.project_share()}
     </Dropdown.Item>
     <Dropdown.Item class="text-sm text-destructive" onclick={onDelete}>
-      <Trash /> {m.project_delete()}
+      <Trash />
+      {m.project_delete()}
     </Dropdown.Item>
   </Dropdown.Content>
 </Dropdown.Root>

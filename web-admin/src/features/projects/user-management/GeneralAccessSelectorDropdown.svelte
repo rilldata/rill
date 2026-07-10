@@ -199,7 +199,9 @@
     >
       <div class="flex items-start gap-2">
         <Lock size="20px" color="#374151" />
-        <span class="text-xs font-medium text-fg-primary">{m.users_invite_only()}</span>
+        <span class="text-xs font-medium text-fg-primary"
+          >{m.users_invite_only()}</span
+        >
       </div>
       <div class="flex flex-row items-center gap-2">
         <div class="w-[20px]"></div>
@@ -229,7 +231,8 @@
       </div>
       <div class="flex flex-row items-center gap-2">
         <div class="w-[20px]"></div>
-        <span class="text-[11px] text-fg-secondary">{m.users_org_members_access()}</span
+        <span class="text-[11px] text-fg-secondary"
+          >{m.users_org_members_access()}</span
         >
       </div>
     </DropdownMenu.Item>

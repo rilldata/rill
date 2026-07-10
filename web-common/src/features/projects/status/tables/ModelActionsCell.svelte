@@ -78,7 +78,9 @@
         >
           <div class="flex items-center">
             <AlertCircleIcon size="12px" />
-            <span class="ml-2">{m.status_action_refresh_errored_partitions()}</span>
+            <span class="ml-2"
+              >{m.status_action_refresh_errored_partitions()}</span
+            >
           </div>
         </DropdownMenu.Item>
       {/if}

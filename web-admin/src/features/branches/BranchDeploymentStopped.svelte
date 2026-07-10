@@ -76,7 +76,9 @@
       <CtaHeader variant="bold">{m.project_hibernating()}</CtaHeader>
     {:else}
       <CtaHeader variant="bold">{m.project_branch_hibernated()}</CtaHeader>
-      <p class="text-sm text-fg-secondary">{m.project_branch_is_hibernated()}</p>
+      <p class="text-sm text-fg-secondary">
+        {m.project_branch_is_hibernated()}
+      </p>
       {#if canManage}
         <Button
           type="primary"

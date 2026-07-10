@@ -67,7 +67,9 @@
     {/each}
   </div>
   <div class="mx-auto pt-12 pb-24">
-    <Button type="primary" onClick={handleContinue} large>{m.common_continue()}</Button>
+    <Button type="primary" onClick={handleContinue} large
+      >{m.common_continue()}</Button
+    >
   </div>
 </div>
 

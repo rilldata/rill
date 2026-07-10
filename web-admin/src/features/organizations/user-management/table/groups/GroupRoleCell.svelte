@@ -143,8 +143,7 @@
       onclick={() => handleRoleSelect(OrgUserRoles.Editor)}
     >
       <span class="font-medium">{m.role_editor()}</span>
-      <span class="text-xs text-fg-secondary"
-        >{m.role_org_editor_detail()}</span
+      <span class="text-xs text-fg-secondary">{m.role_org_editor_detail()}</span
       >
     </DropdownMenu.Item>
     <DropdownMenu.Item
@@ -154,8 +153,7 @@
       onclick={() => handleRoleSelect(OrgUserRoles.Viewer)}
     >
       <span class="font-medium">{m.role_viewer()}</span>
-      <span class="text-xs text-fg-secondary"
-        >{m.role_org_viewer_detail()}</span
+      <span class="text-xs text-fg-secondary">{m.role_org_viewer_detail()}</span
       >
     </DropdownMenu.Item>
     {#if role}

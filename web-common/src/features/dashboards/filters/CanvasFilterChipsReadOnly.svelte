@@ -11,7 +11,8 @@
   export let timeStart: string | undefined = undefined;
   export let timeEnd: string | undefined = undefined;
   export let col = true;
-  export let ariaLabel: string | undefined = m.dashboard_readonly_filter_chips_aria();
+  export let ariaLabel: string | undefined =
+    m.dashboard_readonly_filter_chips_aria();
 
   $: ({ dimensionFilters, measureFilters } = uiFilters);
 </script>

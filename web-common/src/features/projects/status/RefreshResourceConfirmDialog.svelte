@@ -43,7 +43,9 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>
-        {refreshType === "full" ? m.status_action_full_refresh() : m.status_action_incremental_refresh()}
+        {refreshType === "full"
+          ? m.status_action_full_refresh()
+          : m.status_action_incremental_refresh()}
         <span class="font-semibold" title={name}>{truncateName(name)}</span>?
       </AlertDialogTitle>
       <AlertDialogDescription>
