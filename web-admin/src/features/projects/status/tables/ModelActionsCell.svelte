@@ -32,9 +32,7 @@
   $: hasErroredPartitions = actions.includes("refreshErrored");
 
   $: refreshDisabled = isReconciling;
-  $: refreshTooltip = isReconciling
-    ? m.status_model_reconciling()
-    : "";
+  $: refreshTooltip = isReconciling ? m.status_model_reconciling() : "";
 </script>
 
 {#if resource}

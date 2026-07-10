@@ -130,6 +130,8 @@
         </Button>
       {/snippet}
     </Tooltip.Trigger>
-    <Tooltip.Content side="bottom">{m.bookmark_return_to_home()}</Tooltip.Content>
+    <Tooltip.Content side="bottom"
+      >{m.bookmark_return_to_home()}</Tooltip.Content
+    >
   </Tooltip.Root>
 {/if}

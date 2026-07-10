@@ -29,7 +29,13 @@
     { label: m.settings_nav_general(), route: "", hasPermission: true },
     { label: m.settings_nav_billing(), route: "/billing", hasPermission: true },
     ...(isPaidPlan
-      ? [{ label: m.settings_nav_usage(), route: "/usage", hasPermission: showUsageSettings }]
+      ? [
+          {
+            label: m.settings_nav_usage(),
+            route: "/usage",
+            hasPermission: showUsageSettings,
+          },
+        ]
       : []),
   ]);
 </script>

@@ -111,9 +111,7 @@
   }
 
   $: emptyTextWhenNoVariables =
-    envFilter.length === 0
-      ? m.env_no_variables()
-      : m.env_no_match_filters();
+    envFilter.length === 0 ? m.env_no_variables() : m.env_no_match_filters();
 
   $: filterGroups = [
     {
@@ -121,7 +119,10 @@
       key: "environment",
       options: [
         { value: EnvironmentType.PRODUCTION, label: m.env_production_label() },
-        { value: EnvironmentType.DEVELOPMENT, label: m.env_development_label() },
+        {
+          value: EnvironmentType.DEVELOPMENT,
+          label: m.env_development_label(),
+        },
       ],
       selected: envFilter,
       defaultValue: [],
@@ -136,14 +137,16 @@
       <DelayedSpinner isLoading={$getProjectVariables.isLoading} size="1rem" />
     {:else if $getProjectVariables.isError}
       <div class="text-red-500">
-        {m.env_error_loading()} {$getProjectVariables.error}
+        {m.env_error_loading()}
+        {$getProjectVariables.error}
       </div>
     {:else if $getProjectVariables.isSuccess}
       <div class="flex flex-col gap-3 w-full overflow-hidden">
         <div class="flex flex-col">
           <RadixLarge>{m.env_page_title()}</RadixLarge>
           <p class="text-sm text-fg-tertiary font-medium">
-            {m.env_page_description()} <a
+            {m.env_page_description()}
+            <a
               href="https://docs.rilldata.com/guide/administration/project-settings/variables-and-credentials"
               target="_blank"
               class="text-primary-600 hover:text-primary-700 active:text-primary-800"
@@ -161,7 +164,8 @@
           showSort={false}
         >
           <Button type="primary" large onClick={() => (open = true)}>
-            <Plus size="16px" /> {m.env_new_key_button()}
+            <Plus size="16px" />
+            {m.env_new_key_button()}
           </Button>
         </TableToolbar>
         <EnvironmentVariablesTable

@@ -3,7 +3,10 @@
 
   export let variant: "normal" | "enterprise" = "normal";
 
-  $: text = variant === "normal" ? m.billing_contact_us_link() : m.billing_contact_support();
+  $: text =
+    variant === "normal"
+      ? m.billing_contact_us_link()
+      : m.billing_contact_support();
 
   function onClick() {
     window.Pylon("show");

@@ -115,7 +115,10 @@
     const first = filterableLevels.find(
       (l) => l.value === selectedLevels[0],
     )?.label;
-    return m.status_levels_selected({ first: first ?? "", count: selectedLevels.length - 1 });
+    return m.status_levels_selected({
+      first: first ?? "",
+      count: selectedLevels.length - 1,
+    });
   })();
 
   let unsubs: (() => void)[] = [];
@@ -316,8 +319,12 @@
   <div class="logs-container" bind:this={logsContainer}>
     {#if hasConnectionError}
       <div class="error-state">
-        <span class="text-red-600">{m.status_logs_connection_failed()}: {connectionError}</span>
-        <button class="retry-button" onclick={retryConnection}> {m.status_logs_retry()} </button>
+        <span class="text-red-600"
+          >{m.status_logs_connection_failed()}: {connectionError}</span
+        >
+        <button class="retry-button" onclick={retryConnection}>
+          {m.status_logs_retry()}
+        </button>
       </div>
     {:else if totalLogs === 0}
       <div class="empty-state">{m.status_logs_waiting()}</div>

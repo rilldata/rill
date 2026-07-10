@@ -117,7 +117,9 @@
           <div class="grow"></div>
           <div>
             {formattedTimeRange}
-            {#if formattedComparisonRange}{m.kpi_vs_comparison({ comparison: formattedComparisonRange })}{/if}
+            {#if formattedComparisonRange}{m.kpi_vs_comparison({
+                comparison: formattedComparisonRange,
+              })}{/if}
           </div>
         </header>
 

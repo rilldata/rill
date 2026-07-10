@@ -18,7 +18,10 @@
   $: resourceCounts = countByKind(allResources);
 </script>
 
-<OverviewCard title={m.status_nav_resources()} viewAllHref="{basePage}/resources">
+<OverviewCard
+  title={m.status_nav_resources()}
+  viewAllHref="{basePage}/resources"
+>
   {#if $resources.isLoading}
     <p class="text-sm text-fg-secondary">{m.status_loading_resources()}</p>
   {:else if resourceCounts.length > 0}

@@ -62,7 +62,9 @@
 
   let description = $derived(
     type === "renew"
-      ? m.billing_cycle_will_resume({ resumeText: getSubscriptionResumedText(endDate) })
+      ? m.billing_cycle_will_resume({
+          resumeText: getSubscriptionResumedText(endDate),
+        })
       : m.billing_choosing_plan_ends_trial(),
   );
 
@@ -155,9 +157,13 @@
                 <span class="text-2xl font-semibold text-fg-primary">
                   {plan.price}
                 </span>
-                <span class="text-sm text-fg-tertiary">{getTranslatedPlanPriceUnit()}</span>
+                <span class="text-sm text-fg-tertiary"
+                  >{getTranslatedPlanPriceUnit()}</span
+                >
               </div>
-              <p class="text-sm text-fg-tertiary">{getTranslatedPlanTagline(plan.name)}</p>
+              <p class="text-sm text-fg-tertiary">
+                {getTranslatedPlanTagline(plan.name)}
+              </p>
 
               <ul class="flex flex-col gap-1.5 mt-1 grow">
                 {#each highlights as highlight (highlight)}
@@ -177,7 +183,9 @@
                 disabled={loadingPlan !== null || isCurrentPlan}
                 onClick={() => handleUpgradePlan(plan.name)}
               >
-                {#if isCurrentPlan}{m.billing_current()}{:else}{m.billing_choose_plan_name({ planName: getTranslatedPlanDisplayName(plan.name) })}{/if}
+                {#if isCurrentPlan}{m.billing_current()}{:else}{m.billing_choose_plan_name(
+                    { planName: getTranslatedPlanDisplayName(plan.name) },
+                  )}{/if}
               </Button>
             </div>
           {/each}
@@ -186,7 +194,9 @@
     </div>
 
     <AlertDialogFooter class="mt-3">
-      <Button type="text" onClick={() => (open = false)}>{m.billing_close()}</Button>
+      <Button type="text" onClick={() => (open = false)}
+        >{m.billing_close()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

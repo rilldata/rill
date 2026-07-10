@@ -46,7 +46,9 @@
     {#if !lastRun}
       <span class="shrink-0">{m.report_hasnt_run_yet()}</span>
     {:else}
-      <span class="shrink-0">{m.report_last_run({ time: formatRunDate(lastRun, timeZone) })}</span>
+      <span class="shrink-0"
+        >{m.report_last_run({ time: formatRunDate(lastRun, timeZone) })}</span
+      >
     {/if}
     <span class="shrink-0">•</span>
     <span class="shrink-0 truncate">{humanReadableFrequency}</span>

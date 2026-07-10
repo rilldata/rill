@@ -72,7 +72,8 @@
     />
   {:else if $listOrganizationMemberUsergroups.isError}
     <div class="text-red-500">
-      {m.groups_error_loading()} {$listOrganizationMemberUsergroups.error}
+      {m.groups_error_loading()}
+      {$listOrganizationMemberUsergroups.error}
     </div>
   {:else if $listOrganizationMemberUsergroups.isSuccess}
     <div class="flex flex-col">

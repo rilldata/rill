@@ -7,7 +7,11 @@
 </script>
 
 <div class="flex flex-col gap-y-3">
-  <MetadataLabel>{m.report_recipients({ count: String(emailRecipients.length) })}</MetadataLabel>
+  <MetadataLabel
+    >{m.report_recipients({
+      count: String(emailRecipients.length),
+    })}</MetadataLabel
+  >
   <div class="flex flex-wrap gap-2">
     {#each emailRecipients as recipient}
       <Tag>

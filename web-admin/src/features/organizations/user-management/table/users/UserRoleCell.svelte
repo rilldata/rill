@@ -165,7 +165,9 @@
             : ''}"
           onclick={() => handleSetRole(OrgUserRoles.Admin)}
         >
-          <span class="text-xs font-medium text-fg-primary">{m.role_admin()}</span>
+          <span class="text-xs font-medium text-fg-primary"
+            >{m.role_admin()}</span
+          >
           <span class="text-[11px] text-fg-secondary"
             >{m.role_org_admin_detail()}</span
           >
@@ -178,7 +180,9 @@
           : ''}"
         onclick={() => handleSetRole(OrgUserRoles.Editor)}
       >
-        <span class="text-xs font-medium text-fg-primary">{m.role_editor()}</span>
+        <span class="text-xs font-medium text-fg-primary"
+          >{m.role_editor()}</span
+        >
         <span class="text-[11px] text-fg-secondary"
           >{m.role_org_editor_detail()}</span
         >
@@ -190,7 +194,9 @@
           : ''}"
         onclick={() => handleSetRole(OrgUserRoles.Viewer)}
       >
-        <span class="text-xs font-medium text-fg-primary">{m.role_viewer()}</span>
+        <span class="text-xs font-medium text-fg-primary"
+          >{m.role_viewer()}</span
+        >
         <span class="text-[11px] text-fg-secondary"
           >{m.role_org_viewer_detail()}</span
         >

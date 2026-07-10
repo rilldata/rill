@@ -311,9 +311,7 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
     default:
       return m.time_last_duration({
         duration: humaniseISODuration(
-          comparisonTimeRange.isoOffset ??
-            comparisonTimeRange.expression ??
-            "",
+          comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "",
         ),
       });
   }

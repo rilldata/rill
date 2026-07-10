@@ -13,7 +13,9 @@ export const PaymentBillingIssueTypes: Partial<
   [V1BillingIssueType.BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS]: true,
 };
 
-function getPaymentIssueShortText(type: V1BillingIssueType | undefined): string {
+function getPaymentIssueShortText(
+  type: V1BillingIssueType | undefined,
+): string {
   switch (type) {
     case V1BillingIssueType.BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD:
       return m.billing_payment_method_short();
@@ -83,9 +85,7 @@ export function getMessageForPaymentIssues(
     description: "",
     iconType: "alert",
   };
-  const overdueTitleSuffix = overdue
-    ? m.billing_projects_hibernating()
-    : "";
+  const overdueTitleSuffix = overdue ? m.billing_projects_hibernating() : "";
   if (isCustomPlan) {
     message.title = m.billing_invoice_past_due({ suffix: overdueTitleSuffix });
     message.description = overdue
@@ -96,7 +96,9 @@ export function getMessageForPaymentIssues(
       text: m.billing_contact_us_cta(),
     };
   } else {
-    message.title = m.billing_subscription_past_due({ suffix: overdueTitleSuffix });
+    message.title = m.billing_subscription_past_due({
+      suffix: overdueTitleSuffix,
+    });
     const methods = issueTexts.length
       ? issueTexts.join(` ${m.billing_or()} `)
       : m.billing_payment_method_short();

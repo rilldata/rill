@@ -149,9 +149,7 @@
     {#snippet child({ props })}
       <Button {...props} type="text" theme label={tooltipText}>
         <div class="flex items-center gap-x-0.5 px-1">
-          <strong
-            >{buttonLabel}</strong
-          >
+          <strong>{buttonLabel}</strong>
           <span class="transition-transform" class:-rotate-180={active}>
             <CaretDownIcon />
           </span>
@@ -352,7 +350,9 @@
                             class:pointer-events-none={selectedItems.length ===
                               1}
                             class:opacity-50={selectedItems.length === 1}
-                            aria-label={m.explore_hide_item({ name: displayName })}
+                            aria-label={m.explore_hide_item({
+                              name: displayName,
+                            })}
                             data-testid="toggle-visibility-button"
                             type="button"
                           >
@@ -482,7 +482,9 @@
                                 e.stopPropagation();
                                 handleHiddenItemClick({ item });
                               }}
-                              aria-label={m.explore_show_item({ name: displayName })}
+                              aria-label={m.explore_show_item({
+                                name: displayName,
+                              })}
                               data-testid="toggle-visibility-button"
                               type="button"
                             >
@@ -509,7 +511,9 @@
                             e.stopPropagation();
                             handleHiddenItemClick({ item });
                           }}
-                          aria-label={m.explore_show_item({ name: displayName })}
+                          aria-label={m.explore_show_item({
+                            name: displayName,
+                          })}
                           data-testid="toggle-visibility-button"
                           type="button"
                         >
