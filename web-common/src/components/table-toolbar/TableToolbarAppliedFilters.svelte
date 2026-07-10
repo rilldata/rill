@@ -20,24 +20,24 @@
   let appliedFilters = $derived(
     filterGroups.flatMap((g): AppliedChip[] => {
       if (g.multiSelect) {
-        return g.selected.map((val) => ({
+        return g.selectedStore.value.map((val) => ({
           key: g.key,
           value: val,
           label: g.options.find((o) => o.value === val)?.label ?? val,
         }));
       }
+      const selected = g.selectedStore.value;
       if (
-        typeof g.selected === "string" &&
-        g.selected &&
-        g.selected !== g.defaultValue
+        typeof selected === "string" &&
+        selected &&
+        selected !== g.defaultValue
       ) {
         return [
           {
             key: g.key,
-            value: g.selected,
+            value: selected,
             label:
-              g.options.find((o) => o.value === g.selected)?.label ??
-              g.selected,
+              g.options.find((o) => o.value === selected)?.label ?? selected,
           },
         ];
       }
@@ -60,12 +60,13 @@
 
 {#if hasFilters}
   <div class="overflow-hidden" in:slide out:slide>
-    <hr class="border-t mt-2" />
-    <div class="flex flex-row items-center justify-between gap-x-2 h-9">
-      <div class="flex flex-row items-center gap-2 flex-wrap">
+    <div
+      class="flex flex-row items-center justify-between gap-x-2.5 bg-surface-subtle rounded-b-sm p-2"
+    >
+      <div class="flex flex-row items-center gap-2.5 flex-1 min-w-0 flex-wrap">
         {#each appliedFilters as filter (`${filter.key}:${filter.value}`)}
           <span
-            class="inline-flex items-center gap-x-1 h-7 px-2 rounded-sm border bg-surface-background text-xs font-medium text-fg-primary"
+            class="inline-flex items-center gap-x-1 h-7 px-2 rounded-sm border bg-surface-background shadow-xs text-sm font-medium text-fg-primary"
           >
             {filter.label}
             <button
@@ -81,7 +82,7 @@
       </div>
       <button
         type="button"
-        class="text-sm text-fg-secondary hover:text-fg-primary whitespace-nowrap cursor-pointer"
+        class="text-sm font-medium text-fg-accent hover:text-fg-primary whitespace-nowrap cursor-pointer px-4 py-2 shrink-0"
         onclick={onClearAllFilters}
       >
         Clear all

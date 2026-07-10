@@ -105,7 +105,6 @@
         },
       ],
       selectedStore: envFilterStore,
-      selected: envFilterStore.value,
       defaultValue: [],
       multiSelect: true,
     },

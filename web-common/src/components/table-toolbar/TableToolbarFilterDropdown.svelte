@@ -9,6 +9,17 @@
     filterGroups: FilterGroup[];
   } = $props();
 
+  let hasActiveFilters = $derived(
+    filterGroups.some((g) => {
+      if (g.multiSelect) {
+        return g.selectedStore.value.length > 0;
+      }
+      return (
+        g.selectedStore.value !== "" && g.selectedStore.value !== g.defaultValue
+      );
+    }),
+  );
+
   function handleClick(group: FilterGroup, value: string) {
     if (group.multiSelect) {
       group.selectedStore.toggle(value);
@@ -21,25 +32,27 @@
 {#if filterGroups.length > 0}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger
-      class="flex flex-row items-center gap-x-1.5 h-9 px-2 text-sm font-medium text-fg-primary cursor-pointer"
+      class="flex flex-row items-center gap-x-2 h-9 px-4 border rounded-[2px] shadow-xs text-sm font-medium cursor-pointer {hasActiveFilters
+        ? 'bg-surface-hover border-border text-fg-accent'
+        : 'bg-white border-border text-fg-primary hover:bg-surface-hover'}"
       aria-label="Filter options"
     >
-      <FilterOutlined size="14" />
+      <FilterOutlined size="16" />
       <span>Filter</span>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       {#each filterGroups as group, i (group.key)}
         <DropdownMenu.Group>
-          <DropdownMenu.Label class="uppercase"
-            >{group.label}</DropdownMenu.Label
-          >
+          <DropdownMenu.Label class="uppercase">
+            {group.label}
+          </DropdownMenu.Label>
           {#each group.options as option (option.value)}
             <DropdownMenu.CheckboxItem
               closeOnSelect={!group.multiSelect}
               checked={group.multiSelect
-                ? group.selected.includes(option.value)
-                : group.selected === option.value}
-              onclick={() => handleClick(group, option.value)}
+                ? group.selectedStore.value.includes(option.value)
+                : group.selectedStore.value === option.value}
+              onCheckedChange={() => handleClick(group, option.value)}
             >
               {option.label}
             </DropdownMenu.CheckboxItem>

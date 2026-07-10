@@ -98,7 +98,6 @@
         label: prettyResourceKind(t),
       })),
       selectedStore: selectedTypesStore,
-      selected: selectedTypesStore.value,
       defaultValue: [],
       multiSelect: true,
     },
@@ -110,21 +109,19 @@
         label: s.label,
       })),
       selectedStore: selectedStatusesStore,
-      selected: selectedStatusesStore.value,
       defaultValue: [],
       multiSelect: true,
     },
     ...(availableTags.length > 0
       ? [
           <FilterGroup>{
-            label: "Tags",
+            label: m.dashboard_tags(),
             key: "tags",
             options: availableTags.map((t) => ({
               value: t.name,
               label: t.name,
             })),
             selectedStore: selectedTagsStore,
-            selected: selectedTagsStore.value,
             defaultValue: [],
             multiSelect: true,
           },
@@ -175,9 +172,9 @@
       }}
       disabled={isRefreshButtonDisabled}
     >
-      <span class="hidden lg:inline"
-        >{m.status_refresh_all_sources_models()}</span
-      >
+      <span class="hidden lg:inline">
+        {m.status_refresh_all_sources_models()}
+      </span>
       <span class="lg:hidden">{m.status_refresh_all()}</span>
     </Button>
   </TableToolbar>

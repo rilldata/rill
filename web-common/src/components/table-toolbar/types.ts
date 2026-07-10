@@ -2,8 +2,7 @@ import type {
   ArrayRuneStore,
   RuneStore,
 } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
-
-export type SortDirection = "newest" | "oldest";
+import type { ColumnSort } from "tanstack-table-8-svelte-5";
 
 export type ViewMode = "list" | "grid";
 
@@ -19,14 +18,18 @@ export type FilterGroup = {
 } & (
   | {
       selectedStore: RuneStore<string>;
-      selected: string;
       defaultValue: string;
       multiSelect?: false;
     }
   | {
       selectedStore: ArrayRuneStore<string>;
-      selected: string[];
       defaultValue: string[];
       multiSelect: true;
     }
 );
+
+export type SortOption = {
+  value: string;
+  label: string;
+  sort: ColumnSort;
+};

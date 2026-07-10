@@ -134,7 +134,6 @@
         { label: m.branch_status_stopped(), value: "stopped" },
       ],
       selectedStore: statusFilterStore,
-      selected: statusFilterStore.value,
       defaultValue: [],
       multiSelect: true,
     },
