@@ -245,7 +245,10 @@ export class RillPeriodToGrainInterval implements RillTimeInterval {
 
   public getLabel(): [label: string, supported: boolean] {
     const grain = grainAliasToDateTimeUnit(this.grain as any);
-    return [m.time_range_grain_to_date({ grain: translateGrainName(grain) }), true];
+    return [
+      m.time_range_grain_to_date({ grain: translateGrainName(grain) }),
+      true,
+    ];
   }
 
   public getGrain() {
@@ -370,10 +373,7 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
       if (numDiff === 1) {
         return endOffsetAmount === 1
           ? [m.time_range_this_grain({ grain: translatedSingular }), true]
-          : [
-              m.time_range_previous_grain({ grain: translatedSingular }),
-              true,
-            ];
+          : [m.time_range_previous_grain({ grain: translatedSingular }), true];
       }
       return [
         m.time_range_last_n_grains({

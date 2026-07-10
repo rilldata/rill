@@ -77,7 +77,9 @@
             err as AxiosError<RpcStatus>,
           );
           if (parsedErr.duplicateProject) {
-            form.errors.name = [m.settings_name_already_taken({ name: newProject })];
+            form.errors.name = [
+              m.settings_name_already_taken({ name: newProject }),
+            ];
           }
           return;
         }
@@ -146,7 +148,10 @@
     errors={$errors?.name}
     id="name"
     label={m.settings_name_label()}
-    description={m.settings_project_url_description({ org: organization, slug: sanitizeSlug($form.name) })}
+    description={m.settings_project_url_description({
+      org: organization,
+      slug: sanitizeSlug($form.name),
+    })}
     textClass="text-sm"
     alwaysShowError
     additionalClass="max-w-[520px]"

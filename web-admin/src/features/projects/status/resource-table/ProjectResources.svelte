@@ -211,7 +211,9 @@
       }}
       disabled={isRefreshButtonDisabled}
     >
-      <span class="hidden lg:inline">{m.status_refresh_all_sources_models()}</span>
+      <span class="hidden lg:inline"
+        >{m.status_refresh_all_sources_models()}</span
+      >
       <span class="lg:hidden">{m.status_refresh_all()}</span>
     </Button>
   </TableToolbar>

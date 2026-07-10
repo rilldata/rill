@@ -28,7 +28,8 @@
     class="fill-fg-muted"
     style:font-style={tooltipComparisonValue === null ? "italic" : "normal"}
   >
-    {m.chart_vs()} {valueFormatter(tooltipComparisonValue)}
+    {m.chart_vs()}
+    {valueFormatter(tooltipComparisonValue)}
   </tspan>
   {#if showDelta}
     <tspan class={deltaIsFavorable ? "fill-green-600" : "fill-red-600"}>

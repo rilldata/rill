@@ -22,12 +22,24 @@
      billed amounts. Storage is estimated from current snapshot. -->
 <div class="flex items-center gap-4">
   <div class="stat-column">
-    <span class="stat-value">{fmtCredit($billingStats.prodDailyCost)}/{m.billing_per_day()}</span>
-    <span class="stat-label">{m.billing_prod_compute_units({ count: String($billingStats.prodSlots) })}</span>
+    <span class="stat-value"
+      >{fmtCredit($billingStats.prodDailyCost)}/{m.billing_per_day()}</span
+    >
+    <span class="stat-label"
+      >{m.billing_prod_compute_units({
+        count: String($billingStats.prodSlots),
+      })}</span
+    >
   </div>
   <div class="stat-column">
-    <span class="stat-value">{fmtCredit($billingStats.devDailyCost)}/{m.billing_per_day()}</span>
-    <span class="stat-label">{m.billing_dev_compute_units({ count: String($billingStats.devSlots) })}</span>
+    <span class="stat-value"
+      >{fmtCredit($billingStats.devDailyCost)}/{m.billing_per_day()}</span
+    >
+    <span class="stat-label"
+      >{m.billing_dev_compute_units({
+        count: String($billingStats.devSlots),
+      })}</span
+    >
   </div>
 </div>
 

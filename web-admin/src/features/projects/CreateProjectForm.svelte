@@ -45,10 +45,7 @@
     object({
       name: string()
         .required(m.project_name_required())
-        .matches(
-          /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/,
-          m.project_name_format_error(),
-        )
+        .matches(/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/, m.project_name_format_error())
         .min(1, m.project_name_min_length())
         .max(40, m.project_name_max_length()),
     }),

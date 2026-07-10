@@ -19,7 +19,10 @@
   <title>{project} overview - Rill</title>
 </svelte:head>
 
-<ContentContainer maxWidth={hasSomeTag ? 1000 : 800} title={m.project_dashboards_title()}>
+<ContentContainer
+  maxWidth={hasSomeTag ? 1000 : 800}
+  title={m.project_dashboards_title()}
+>
   <div class="flex flex-col items-center gap-y-4">
     <DashboardsTable />
   </div>

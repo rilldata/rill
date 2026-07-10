@@ -83,7 +83,9 @@
   >
     <Dialog.Header>
       <Dialog.Title>{m.users_convert_to_member()}</Dialog.Title>
-      <div class="text-sm">{m.users_convert_user_to_role({ user: userName, role })}</div>
+      <div class="text-sm">
+        {m.users_convert_user_to_role({ user: userName, role })}
+      </div>
     </Dialog.Header>
     <Dialog.Description class="flex flex-col gap-y-2">
       <div class="flex flex-row items-center gap-x-2">
@@ -97,7 +99,9 @@
       <div>{projectRolesDescriptions[role]}</div>
     </Dialog.Description>
     <Dialog.Footer>
-      <Button type="tertiary" onClick={() => (open = false)}>{m.users_cancel()}</Button>
+      <Button type="tertiary" onClick={() => (open = false)}
+        >{m.users_cancel()}</Button
+      >
       <Button
         type="primary"
         onClick={handleUpgrade}

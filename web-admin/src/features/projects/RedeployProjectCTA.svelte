@@ -82,9 +82,7 @@
           </div>
         </div>
         <CtaHeader variant="bold">
-          {isWaking
-            ? m.project_waking_up()
-            : m.project_is_hibernating()}
+          {isWaking ? m.project_waking_up() : m.project_is_hibernating()}
         </CtaHeader>
         <Button
           type="primary"

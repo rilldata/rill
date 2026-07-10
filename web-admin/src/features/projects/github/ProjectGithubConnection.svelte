@@ -57,7 +57,8 @@
         </div>
         {#if lastUpdated}
           <span class="text-fg-secondary text-[11px] leading-4">
-            {m.github_synced()} {lastUpdated.toLocaleString(undefined, {
+            {m.github_synced()}
+            {lastUpdated.toLocaleString(undefined, {
               month: "short",
               day: "numeric",
               hour: "numeric",

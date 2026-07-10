@@ -55,7 +55,8 @@
       const axiosError = err as AxiosError<RpcStatus>;
       eventBus.emit("notification", {
         message:
-          axiosError.response?.data?.message ?? m.settings_hibernate_failed_notification(),
+          axiosError.response?.data?.message ??
+          m.settings_hibernate_failed_notification(),
         type: "error",
       });
     }
@@ -80,7 +81,9 @@
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{m.settings_hibernate_confirm_title()}</AlertDialogTitle>
+          <AlertDialogTitle
+            >{m.settings_hibernate_confirm_title()}</AlertDialogTitle
+          >
           <AlertDialogDescription>
             {m.settings_hibernate_confirm_description()}
           </AlertDialogDescription>

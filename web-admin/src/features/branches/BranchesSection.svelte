@@ -338,7 +338,9 @@
     </div>
   {:else if visibleDeployments.length === 0}
     <div class="empty-container">
-      <span class="text-fg-secondary font-semibold text-sm">{m.branch_no_branches()}</span>
+      <span class="text-fg-secondary font-semibold text-sm"
+        >{m.branch_no_branches()}</span
+      >
     </div>
   {:else}
     <div class="table-wrapper">

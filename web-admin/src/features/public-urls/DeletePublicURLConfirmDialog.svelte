@@ -47,7 +47,9 @@
           open = false;
         }}>{m.public_url_cancel_button()}</Button
       >
-      <Button type="destructive" onClick={handleDelete}>{m.public_url_yes_delete_button()}</Button>
+      <Button type="destructive" onClick={handleDelete}
+        >{m.public_url_yes_delete_button()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
