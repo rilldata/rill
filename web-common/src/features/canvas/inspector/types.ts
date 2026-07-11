@@ -9,6 +9,7 @@ type SemanticInputTypes =
   | "measure"
   | "dimension"
   | "multi_fields"
+  | "multi_fields_format"
   | "metrics_sql";
 type NativeInputTypes = "text" | "number" | "boolean" | "textarea" | "select";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
@@ -19,8 +20,7 @@ type CustomInputTypes =
   | "vega_spec"
   | "switcher_tab"
   | "ai_generate"
-  | "labels"
-  | "conditional_format";
+  | "labels";
 type PositionalInputTypes = "alignment";
 
 export type InputType =

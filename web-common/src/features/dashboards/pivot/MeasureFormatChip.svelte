@@ -14,6 +14,7 @@
     item: PivotChipData;
     removable?: boolean;
     grab?: boolean;
+    fullWidth?: boolean;
     fmt: PivotMeasureFormatting | undefined;
     onFormatChange: (fmt: PivotMeasureFormatting | null) => void;
     onRemove?: () => void;
@@ -24,6 +25,7 @@
     item,
     removable = false,
     grab = false,
+    fullWidth = false,
     fmt,
     onFormatChange,
     onRemove = () => {},
@@ -37,7 +39,7 @@
   <PopoverTrigger>
     {#snippet child({ props })}
       <div {...props}>
-        <PivotChip {item} {removable} {grab} {onmousedown} {onRemove}>
+        <PivotChip {item} {removable} {grab} {fullWidth} {onmousedown} {onRemove}>
           <div class="format-dropdown flex items-center gap-x-1" slot="body">
             {#if fmt}
               <Palette size="12px" />

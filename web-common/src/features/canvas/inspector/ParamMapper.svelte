@@ -17,10 +17,10 @@
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
+  import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
   import LabelsInput from "./LabelsInput.svelte";
-  import PivotConditionalFormatInput from "./PivotConditionalFormatInput.svelte";
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
@@ -130,6 +130,18 @@
             onMultiSelect={(field) => {
               component.updateProperty(key, field);
             }}
+          />
+
+          <!-- MULTIPLE FIELDS WITH PER-MEASURE CONDITIONAL FORMATTING -->
+        {:else if metricsView && config.type === "multi_fields_format" && component instanceof PivotCanvasComponent}
+          <MultiFieldFormatInput
+            {component}
+            {canvasName}
+            label={config.label ?? key}
+            metricName={metricsView}
+            id={key}
+            types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
+            selectedItems={localParamValues[key]}
           />
 
           <!-- BOOLEAN SWITCH -->
@@ -270,13 +282,6 @@
               localParamValues[key] = next;
               component.updateProperty(key, next);
             }}
-          />
-
-          <!-- PIVOT CONDITIONAL FORMATTING -->
-        {:else if config.type === "conditional_format" && component instanceof PivotCanvasComponent}
-          <PivotConditionalFormatInput
-            {component}
-            label={config.label ?? key}
           />
 
           <!-- COMPARISON OPTIONS INPUT -->

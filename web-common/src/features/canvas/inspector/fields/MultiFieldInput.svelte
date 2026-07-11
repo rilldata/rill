@@ -2,6 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { PivotMeasureFormatting } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
@@ -16,6 +17,14 @@
   export let selectedItems: string[] = [];
   export let types: FieldType[];
   export let onMultiSelect: (items: string[]) => void = () => {};
+  // When provided, measure chips expose per-measure conditional formatting
+  // controls in a dropdown on the chip.
+  export let measureFormatting:
+    | Record<string, PivotMeasureFormatting>
+    | undefined = undefined;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -57,5 +66,7 @@
     items={selectedItems}
     displayMap={$fieldData.displayMap}
     onUpdate={onMultiSelect}
+    {measureFormatting}
+    {setMeasureFormatting}
   />
 </div>

@@ -208,6 +208,22 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       activePage: DashboardState_ActivePage.PIVOT,
     };
   }
+
+  /** Update a single measure's conditional formatting in the YAML; pass null to clear it. */
+  setMeasureFormatting(measureName: string, fmt: PivotMeasureFormatting | null) {
+    const measureFormatting = conditionalFormatSpecToMeasureFormatting(
+      get(this.specStore).conditional_format,
+    );
+    if (fmt) {
+      measureFormatting[measureName] = fmt;
+    } else {
+      delete measureFormatting[measureName];
+    }
+    this.updateProperty(
+      "conditional_format",
+      measureFormattingToConditionalFormatSpec(measureFormatting),
+    );
+  }
   inputParams(type: "pivot" | "table"): InputParams<PivotSpec | TableSpec> {
     const spec = get(this.specStore);
 
@@ -227,7 +243,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
         options: {
           metrics_view: { type: "metrics", label: "Metrics view" },
           measures: {
-            type: "multi_fields",
+            type: "multi_fields_format",
             meta: { allowedTypes: ["measure"] },
             label: "Measures",
           },
@@ -253,11 +269,6 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
-          conditional_format: {
-            type: "conditional_format",
-            label: "Conditional formatting",
-            showInUI: measureCount > 0,
-          },
           ...commonOptions,
         },
         filter: getFilterOptions(true, false),
@@ -278,7 +289,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
         options: {
           metrics_view: { type: "metrics", label: "Metrics view" },
           columns: {
-            type: "multi_fields",
+            type: "multi_fields_format",
             label: "Columns",
             meta: { allowedTypes: ["time", "dimension", "measure"] },
           },
@@ -287,11 +298,6 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: "Hide total row",
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
-          },
-          conditional_format: {
-            type: "conditional_format",
-            label: "Conditional formatting",
-            showInUI: measureCount > 0,
           },
           ...commonOptions,
         },
