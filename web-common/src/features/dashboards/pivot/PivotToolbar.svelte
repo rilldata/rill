@@ -7,29 +7,17 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
-  import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-  } from "@rilldata/web-common/components/popover";
   import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { Palette } from "lucide-svelte";
   import { writable } from "svelte/store";
   import Collapse from "../../../components/icons/Collapse.svelte";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import TableIcon from "../../canvas/icons/TableIcon.svelte";
-  import PivotFormattingPicker from "./PivotFormattingPicker.svelte";
-  import type {
-    PivotChipData,
-    PivotMeasureFormatting,
-    PivotState,
-    PivotTableMode,
-  } from "./types";
+  import type { PivotChipData, PivotState, PivotTableMode } from "./types";
 
   export let pivotState: PivotState;
   export let showPanels = true;
@@ -43,9 +31,6 @@
   export let setShowTotals: (
     totals: Pick<PivotState, "showTotalsColumn" | "showTotalsRow">,
   ) => void;
-  export let setMeasureFormatting:
-    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
-    | undefined = undefined;
   export let collapseAll: () => void;
 
   $: ({
@@ -247,31 +232,6 @@
           />
         {/if}
       </div>
-    {/if}
-
-    {#if setMeasureFormatting && measureCount > 0}
-      <Popover>
-        <PopoverTrigger class="pointer-events-auto">
-          <Button type="toolbar">
-            <Palette size="16px" />
-            Formatting
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          side="bottom"
-          class="w-[280px] px-3.5 py-3"
-        >
-          <PivotFormattingPicker
-            measures={splitColumns.measure.map((m) => ({
-              name: m.id,
-              label: m.title,
-            }))}
-            measureFormatting={pivotState.measureFormatting}
-            onChange={setMeasureFormatting}
-          />
-        </PopoverContent>
-      </Popover>
     {/if}
 
     <slot name="export-menu" />

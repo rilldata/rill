@@ -749,7 +749,7 @@ export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
   measure = "";
 
   /**
-   * Formatting style: "heatmap" or "data_bar".
+   * Formatting style: "heatmap", "data_bar" or "rules".
    *
    * @generated from field: string mode = 2;
    */
@@ -757,6 +757,7 @@ export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
 
   /**
    * Color scheme key (e.g. "theme-sequential", "greens", "redYellowGreen").
+   * Only for "heatmap" and "data_bar" modes.
    *
    * @generated from field: string scheme = 3;
    */
@@ -768,6 +769,13 @@ export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
    * @generated from field: bool reverse = 4;
    */
   reverse = false;
+
+  /**
+   * Ordered threshold rules; first match wins. Only for "rules" mode.
+   *
+   * @generated from field: repeated rill.ui.v1.PivotFormatRule rules = 5;
+   */
+  rules: PivotFormatRule[] = [];
 
   constructor(data?: PartialMessage<PivotConditionalFormat>) {
     super();
@@ -781,6 +789,7 @@ export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
     { no: 2, name: "mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "scheme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "reverse", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "rules", kind: "message", T: PivotFormatRule, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PivotConditionalFormat {
@@ -797,6 +806,69 @@ export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
 
   static equals(a: PivotConditionalFormat | PlainMessage<PivotConditionalFormat> | undefined, b: PivotConditionalFormat | PlainMessage<PivotConditionalFormat> | undefined): boolean {
     return proto3.util.equals(PivotConditionalFormat, a, b);
+  }
+}
+
+/**
+ * A single threshold rule for "rules" mode conditional formatting.
+ *
+ * @generated from message rill.ui.v1.PivotFormatRule
+ */
+export class PivotFormatRule extends Message<PivotFormatRule> {
+  /**
+   * Comparison operator: "gt", "gte", "lt", "lte", "eq" or "between".
+   *
+   * @generated from field: string operator = 1;
+   */
+  operator = "";
+
+  /**
+   * @generated from field: double value = 2;
+   */
+  value = 0;
+
+  /**
+   * Upper bound (inclusive), only for "between".
+   *
+   * @generated from field: optional double value2 = 3;
+   */
+  value2?: number;
+
+  /**
+   * Semantic color key (e.g. "positive") or hex string.
+   *
+   * @generated from field: string color = 4;
+   */
+  color = "";
+
+  constructor(data?: PartialMessage<PivotFormatRule>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.PivotFormatRule";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "operator", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 3, name: "value2", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+    { no: 4, name: "color", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PivotFormatRule {
+    return new PivotFormatRule().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PivotFormatRule {
+    return new PivotFormatRule().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PivotFormatRule {
+    return new PivotFormatRule().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PivotFormatRule | PlainMessage<PivotFormatRule> | undefined, b: PivotFormatRule | PlainMessage<PivotFormatRule> | undefined): boolean {
+    return proto3.util.equals(PivotFormatRule, a, b);
   }
 }
 

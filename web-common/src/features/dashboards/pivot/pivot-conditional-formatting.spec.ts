@@ -3,7 +3,11 @@ import {
   computeMeasureDomains,
   getSchemeStops,
   makeCellFormatter,
+  PIVOT_RULE_COLORS,
+  resolveRuleColor,
+  ruleMatches,
 } from "./pivot-conditional-formatting";
+import type { PivotFormatRule } from "./types";
 
 describe("computeMeasureDomains", () => {
   it("computes per-measure min/max independently", () => {
@@ -44,50 +48,143 @@ describe("getSchemeStops", () => {
 
 describe("makeCellFormatter — heatmap", () => {
   it("maps domain endpoints to the scheme's end colors", () => {
-    const fmt = makeCellFormatter([0, 100], {
-      mode: "heatmap",
-      scheme: "greens",
-    });
+    const fmt = makeCellFormatter(
+      { mode: "heatmap", scheme: "greens" },
+      [0, 100],
+    );
     const stops = getSchemeStops("greens");
-    expect(fmt.background(0).toLowerCase()).toBe(stops[0].toLowerCase());
-    expect(fmt.background(100).toLowerCase()).toBe(
+    expect(fmt(0)?.background.toLowerCase()).toBe(stops[0].toLowerCase());
+    expect(fmt(100)?.background.toLowerCase()).toBe(
       stops[stops.length - 1].toLowerCase(),
     );
   });
 
   it("uses light text on dark backgrounds and inherits on light", () => {
-    const fmt = makeCellFormatter([0, 100], {
-      mode: "heatmap",
-      scheme: "greens",
-    });
-    expect(fmt.textColor(0)).toBe("inherit"); // light end
-    expect(fmt.textColor(100)).toBe("#ffffff"); // dark end
+    const fmt = makeCellFormatter(
+      { mode: "heatmap", scheme: "greens" },
+      [0, 100],
+    );
+    expect(fmt(0)?.color).toBe("inherit"); // light end
+    expect(fmt(100)?.color).toBe("#ffffff"); // dark end
   });
 
   it("does not throw on a degenerate domain", () => {
-    const fmt = makeCellFormatter([5, 5], { mode: "heatmap", scheme: "blues" });
-    expect(() => fmt.background(5)).not.toThrow();
+    const fmt = makeCellFormatter({ mode: "heatmap", scheme: "blues" }, [5, 5]);
+    expect(() => fmt(5)).not.toThrow();
   });
 });
 
 describe("makeCellFormatter — data bar", () => {
   it("produces a gradient whose length is proportional to magnitude", () => {
-    const fmt = makeCellFormatter([0, 200], {
-      mode: "data_bar",
-      scheme: "blues",
-    });
-    expect(fmt.background(0)).toContain("0%");
-    expect(fmt.background(100)).toContain("50%");
-    expect(fmt.background(200)).toContain("100%");
-    expect(fmt.textColor(100)).toBe("inherit");
+    const fmt = makeCellFormatter(
+      { mode: "data_bar", scheme: "blues" },
+      [0, 200],
+    );
+    expect(fmt(0)?.background).toContain("0%");
+    expect(fmt(100)?.background).toContain("50%");
+    expect(fmt(200)?.background).toContain("100%");
+    expect(fmt(100)?.color).toBe("inherit");
   });
 
   it("clamps to 100% and uses magnitude for negative values", () => {
-    const fmt = makeCellFormatter([-100, 50], {
-      mode: "data_bar",
-      scheme: "blues",
-    });
+    const fmt = makeCellFormatter(
+      { mode: "data_bar", scheme: "blues" },
+      [-100, 50],
+    );
     // absMax is 100, so -100 fills the full bar.
-    expect(fmt.background(-100)).toContain("100%");
+    expect(fmt(-100)?.background).toContain("100%");
+  });
+});
+
+describe("ruleMatches", () => {
+  it("evaluates each operator", () => {
+    expect(ruleMatches({ operator: "gt", value: 5, color: "x" }, 6)).toBe(true);
+    expect(ruleMatches({ operator: "gt", value: 5, color: "x" }, 5)).toBe(
+      false,
+    );
+    expect(ruleMatches({ operator: "gte", value: 5, color: "x" }, 5)).toBe(
+      true,
+    );
+    expect(ruleMatches({ operator: "lt", value: 5, color: "x" }, 4)).toBe(true);
+    expect(ruleMatches({ operator: "lte", value: 5, color: "x" }, 5)).toBe(
+      true,
+    );
+    expect(ruleMatches({ operator: "eq", value: 5, color: "x" }, 5)).toBe(true);
+    expect(ruleMatches({ operator: "eq", value: 5, color: "x" }, 5.1)).toBe(
+      false,
+    );
+  });
+
+  it("treats between as inclusive of both bounds", () => {
+    const rule: PivotFormatRule = {
+      operator: "between",
+      value: 0,
+      value2: 10,
+      color: "x",
+    };
+    expect(ruleMatches(rule, 0)).toBe(true);
+    expect(ruleMatches(rule, 10)).toBe(true);
+    expect(ruleMatches(rule, 10.1)).toBe(false);
+    expect(ruleMatches(rule, -0.1)).toBe(false);
+  });
+});
+
+describe("resolveRuleColor", () => {
+  it("resolves semantic keys to their paired fill and text colors", () => {
+    const positive = PIVOT_RULE_COLORS.find((c) => c.key === "positive")!;
+    expect(resolveRuleColor("positive")).toEqual({
+      fill: positive.fill,
+      text: positive.text,
+    });
+  });
+
+  it("accepts raw hex with or without the leading #", () => {
+    expect(resolveRuleColor("#00441b").fill).toBe("#00441b");
+    expect(resolveRuleColor("00441b").fill).toBe("#00441b");
+    // Dark fill gets light text.
+    expect(resolveRuleColor("00441b").text).toBe("#ffffff");
+  });
+
+  it("falls back to neutral for invalid colors", () => {
+    const neutral = PIVOT_RULE_COLORS.find((c) => c.key === "neutral")!;
+    expect(resolveRuleColor("not-a-color")).toEqual({
+      fill: neutral.fill,
+      text: neutral.text,
+    });
+  });
+});
+
+describe("makeCellFormatter — rules", () => {
+  const rules: PivotFormatRule[] = [
+    { operator: "lt", value: 0, color: "negative" },
+    { operator: "gte", value: 0.4, color: "positive" },
+  ];
+
+  it("applies the first matching rule and leaves other values unformatted", () => {
+    const fmt = makeCellFormatter({ mode: "rules", rules });
+    const negative = PIVOT_RULE_COLORS.find((c) => c.key === "negative")!;
+    const positive = PIVOT_RULE_COLORS.find((c) => c.key === "positive")!;
+    expect(fmt(-1)).toEqual({
+      background: negative.fill,
+      color: negative.text,
+    });
+    expect(fmt(0.5)).toEqual({
+      background: positive.fill,
+      color: positive.text,
+    });
+    expect(fmt(0.2)).toBeNull();
+  });
+
+  it("respects rule order: first match wins", () => {
+    const fmt = makeCellFormatter({
+      mode: "rules",
+      rules: [
+        { operator: "gt", value: 0, color: "warning" },
+        { operator: "gt", value: 10, color: "positive" },
+      ],
+    });
+    const warning = PIVOT_RULE_COLORS.find((c) => c.key === "warning")!;
+    // 20 matches both rules; the earlier one wins.
+    expect(fmt(20)?.background).toBe(warning.fill);
   });
 });

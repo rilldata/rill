@@ -7,6 +7,7 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import {
   type PivotChipData,
   PivotChipType,
+  type PivotFormatRule,
   type PivotMeasureFormatting,
   type PivotState,
   type PivotTableMode,
@@ -444,23 +445,40 @@ function fromPivotProto(
   };
 }
 
-function fromPivotConditionalFormattingProto(
+export function fromPivotConditionalFormattingProto(
   formats: {
     measure: string;
     mode: string;
     scheme: string;
     reverse: boolean;
+    rules: {
+      operator: string;
+      value: number;
+      value2?: number;
+      color: string;
+    }[];
   }[],
 ): Record<string, PivotMeasureFormatting> | undefined {
   if (!formats?.length) return undefined;
   const measureFormatting: Record<string, PivotMeasureFormatting> = {};
   for (const f of formats) {
-    if (f.mode !== "heatmap" && f.mode !== "data_bar") continue;
-    measureFormatting[f.measure] = {
-      mode: f.mode,
-      scheme: f.scheme,
-      reverse: f.reverse || undefined,
-    };
+    if (f.mode === "heatmap" || f.mode === "data_bar") {
+      measureFormatting[f.measure] = {
+        mode: f.mode,
+        scheme: f.scheme,
+        reverse: f.reverse || undefined,
+      };
+    } else if (f.mode === "rules" && f.rules.length) {
+      measureFormatting[f.measure] = {
+        mode: "rules",
+        rules: f.rules.map((r) => ({
+          operator: r.operator as PivotFormatRule["operator"],
+          value: r.value,
+          value2: r.value2,
+          color: r.color,
+        })),
+      };
+    }
   }
   return Object.keys(measureFormatting).length ? measureFormatting : undefined;
 }

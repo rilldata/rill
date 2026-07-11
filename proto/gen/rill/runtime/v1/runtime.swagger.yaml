@@ -5356,6 +5356,11 @@ definitions:
         type: boolean
       pivotShowTotalsRow:
         type: boolean
+      pivotFormatting:
+        type: string
+        description: |-
+          Per-measure pivot conditional formatting, serialized in the URL param
+          format (frontend-only; persisted in URL state).
       chartDynamicYAxis:
         type: boolean
         title: Chart display settings (frontend-only; persisted in URL state)

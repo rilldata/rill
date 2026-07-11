@@ -211,28 +211,43 @@
       return formatters;
     }
 
+    // Rules formatters don't depend on the value domain, so only scan the row
+    // model when a scale-mode (heatmap/data bar) measure needs one.
+    const needsDomains = Object.values(measureFormatting).some(
+      (fmt) => fmt.mode !== "rules",
+    );
     const values: { measureName: string; value: number }[] = [];
-    for (const row of flatRows) {
-      // Skip aggregate rows: the prepended totals row and nested parent rows.
-      if (hasTotalsRow && row.id === "0") continue;
-      if (row.subRows.length > 0) continue;
-      for (const cell of row.getAllCells()) {
-        const meta = cell.column.columnDef.meta;
-        if (!meta?.conditionalFormat || meta.isRowTotal || !meta.measureName) {
-          continue;
-        }
-        const value = cell.getValue();
-        if (typeof value === "number") {
-          values.push({ measureName: meta.measureName, value });
+    if (needsDomains) {
+      for (const row of flatRows) {
+        // Skip aggregate rows: the prepended totals row and nested parent rows.
+        if (hasTotalsRow && row.id === "0") continue;
+        if (row.subRows.length > 0) continue;
+        for (const cell of row.getAllCells()) {
+          const meta = cell.column.columnDef.meta;
+          if (
+            !meta?.conditionalFormat ||
+            meta.isRowTotal ||
+            !meta.measureName
+          ) {
+            continue;
+          }
+          const value = cell.getValue();
+          if (typeof value === "number") {
+            values.push({ measureName: meta.measureName, value });
+          }
         }
       }
     }
 
     const domains = computeMeasureDomains(values);
     for (const [measureName, fmt] of Object.entries(measureFormatting)) {
+      if (fmt.mode === "rules") {
+        formatters.set(measureName, makeCellFormatter(fmt));
+        continue;
+      }
       const domain = domains.get(measureName);
       if (domain) {
-        formatters.set(measureName, makeCellFormatter(domain, fmt));
+        formatters.set(measureName, makeCellFormatter(fmt, domain));
       }
     }
     return formatters;

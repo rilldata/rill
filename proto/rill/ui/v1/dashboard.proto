@@ -187,10 +187,24 @@ message PivotElement {
 // Conditional formatting applied to a measure's cells in a pivot table.
 message PivotConditionalFormat {
   string measure = 1;
-  // Formatting style: "heatmap" or "data_bar".
+  // Formatting style: "heatmap", "data_bar" or "rules".
   string mode = 2;
   // Color scheme key (e.g. "theme-sequential", "greens", "redYellowGreen").
+  // Only for "heatmap" and "data_bar" modes.
   string scheme = 3;
   // Flip the gradient direction (heatmap only).
   bool reverse = 4;
+  // Ordered threshold rules; first match wins. Only for "rules" mode.
+  repeated PivotFormatRule rules = 5;
+}
+
+// A single threshold rule for "rules" mode conditional formatting.
+message PivotFormatRule {
+  // Comparison operator: "gt", "gte", "lt", "lte", "eq" or "between".
+  string operator = 1;
+  double value = 2;
+  // Upper bound (inclusive), only for "between".
+  optional double value2 = 3;
+  // Semantic color key (e.g. "positive") or hex string.
+  string color = 4;
 }

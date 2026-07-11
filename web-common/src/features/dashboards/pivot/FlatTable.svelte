@@ -115,9 +115,9 @@
     return measures.find((m) => m.name === columnId);
   }
 
-  // Resolve heatmap/data-bar styling for a measure cell. Returns null for cells
-  // that should not be formatted (no config, the totals row, or non-numeric
-  // values).
+  // Resolve conditional-formatting styling for a measure cell. Returns null for
+  // cells that should not be formatted (no config, the totals row, non-numeric
+  // values, or no matching threshold rule).
   function getCellFormatting(
     cell: Cell<PivotDataRow, unknown>,
     isTotalsRow: boolean,
@@ -131,10 +131,7 @@
     if (!formatter) return null;
     const value = cell.getValue();
     if (typeof value !== "number" || !Number.isFinite(value)) return null;
-    return {
-      background: formatter.background(value),
-      color: formatter.textColor(value),
-    };
+    return formatter(value);
   }
 
   function isCellActive(rowId: string, columnId: string) {

@@ -6,6 +6,8 @@ import {
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   PivotDataStoreConfig,
+  PivotFormatRule,
+  PivotMeasureFormatting,
   PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -29,9 +31,63 @@ import { createPivotConfig, usePivotForCanvas } from "./util";
 // a map) keeps the YAML readable and mirrors the proto representation.
 export interface PivotConditionalFormatSpec {
   measure: string;
-  mode: "heatmap" | "data_bar";
-  scheme: string;
+  mode: "heatmap" | "data_bar" | "rules";
+  // Color scheme; only for "heatmap" and "data_bar" modes.
+  scheme?: string;
   reverse?: boolean;
+  // Ordered threshold rules (first match wins); only for "rules" mode.
+  rules?: {
+    operator: PivotFormatRule["operator"];
+    value: number;
+    value2?: number;
+    color: string;
+  }[];
+}
+
+const DEFAULT_FORMAT_SCHEME = "theme-sequential";
+
+/**
+ * Map the YAML conditional_format list to the per-measure formatting config
+ * consumed by the pivot renderer. Malformed entries are skipped.
+ */
+export function conditionalFormatSpecToMeasureFormatting(
+  specs: PivotConditionalFormatSpec[] | undefined,
+): Record<string, PivotMeasureFormatting> {
+  const measureFormatting: Record<string, PivotMeasureFormatting> = {};
+  for (const spec of specs ?? []) {
+    if (spec.mode === "heatmap" || spec.mode === "data_bar") {
+      measureFormatting[spec.measure] = {
+        mode: spec.mode,
+        scheme: spec.scheme ?? DEFAULT_FORMAT_SCHEME,
+        reverse: spec.reverse,
+      };
+    } else if (spec.mode === "rules" && spec.rules?.length) {
+      measureFormatting[spec.measure] = {
+        mode: "rules",
+        rules: spec.rules,
+      };
+    }
+  }
+  return measureFormatting;
+}
+
+/**
+ * Inverse of conditionalFormatSpecToMeasureFormatting, used when writing the
+ * inspector state back to the YAML.
+ */
+export function measureFormattingToConditionalFormatSpec(
+  measureFormatting: Record<string, PivotMeasureFormatting>,
+): PivotConditionalFormatSpec[] {
+  return Object.entries(measureFormatting).map(([measure, fmt]) =>
+    fmt.mode === "rules"
+      ? { measure, mode: fmt.mode, rules: fmt.rules }
+      : {
+          measure,
+          mode: fmt.mode,
+          scheme: fmt.scheme,
+          ...(fmt.reverse ? { reverse: true } : {}),
+        },
+  );
 }
 
 export interface PivotSpec

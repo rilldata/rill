@@ -9,6 +9,7 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
+  import MeasureFormatChip from "./MeasureFormatChip.svelte";
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
@@ -16,6 +17,7 @@
   import {
     type PivotChipData,
     PivotChipType,
+    type PivotMeasureFormatting,
     type PivotTableMode,
   } from "./types";
   import {
@@ -60,6 +62,14 @@
   export let zone: Zone;
   export let tableMode: PivotTableMode = "nest";
   export let onUpdate: (items: PivotChipData[]) => void = () => {};
+  // When provided, measure chips in drop zones expose per-measure conditional
+  // formatting controls in a dropdown on the chip.
+  export let measureFormatting:
+    | Record<string, PivotMeasureFormatting>
+    | undefined = undefined;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
 
   const isDropLocation = zone === "columns" || zone === "rows";
   const DRAG_START_THRESHOLD_PX = 4;
@@ -113,7 +123,11 @@
 
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     const target = e.target as HTMLElement;
-    if (target.closest(".grain-dropdown") || target.closest(".grain-label"))
+    if (
+      target.closest(".grain-dropdown") ||
+      target.closest(".grain-label") ||
+      target.closest(".format-dropdown")
+    )
       return;
 
     if (e.button !== 0) return;
@@ -373,6 +387,20 @@
             onTimeGrainSelect={(timeGrain) =>
               handleTimeGrainSelect(item, timeGrain)}
             onmousedown={(e) => handleMouseDown(e, item)}
+            onRemove={() => {
+              items = items.filter((i) => i.id !== item.id);
+              onUpdate(items);
+            }}
+          />
+        {:else if isDropLocation && item.type === PivotChipType.Measure && setMeasureFormatting}
+          <MeasureFormatChip
+            {item}
+            grab
+            removable
+            fmt={measureFormatting?.[item.id]}
+            onFormatChange={(fmt: PivotMeasureFormatting | null) =>
+              setMeasureFormatting?.(item.id, fmt)}
+            onmousedown={(e: MouseEvent) => handleMouseDown(e, item)}
             onRemove={() => {
               items = items.filter((i) => i.id !== item.id);
               onUpdate(items);

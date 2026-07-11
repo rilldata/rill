@@ -156,6 +156,12 @@
           metricsExplorerStore.setPivotRows($exploreName, rows)}
         setColumns={(columns) =>
           metricsExplorerStore.setPivotColumns($exploreName, columns)}
+        setMeasureFormatting={(measureName, fmt) =>
+          metricsExplorerStore.setPivotMeasureFormatting(
+            $exploreName,
+            measureName,
+            fmt,
+          )}
       />
     {/if}
     <div
@@ -182,12 +188,6 @@
             $exploreName,
             totals.showTotalsColumn,
             totals.showTotalsRow,
-          )}
-        setMeasureFormatting={(measureName, fmt) =>
-          metricsExplorerStore.setPivotMeasureFormatting(
-            $exploreName,
-            measureName,
-            fmt,
           )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}

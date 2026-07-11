@@ -1,8 +1,9 @@
 <script lang="ts">
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import type {
-    PivotCanvasComponent,
-    PivotConditionalFormatSpec,
+  import {
+    conditionalFormatSpecToMeasureFormatting,
+    measureFormattingToConditionalFormatSpec,
+    type PivotCanvasComponent,
   } from "@rilldata/web-common/features/canvas/components/pivot";
   import PivotFormattingPicker from "@rilldata/web-common/features/dashboards/pivot/PivotFormattingPicker.svelte";
   import type { PivotMeasureFormatting } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -29,12 +30,7 @@
       name,
   }));
 
-  $: measureFormatting = Object.fromEntries(
-    cfArray.map((f) => [
-      f.measure,
-      { mode: f.mode, scheme: f.scheme, reverse: f.reverse },
-    ]),
-  ) as Record<string, PivotMeasureFormatting>;
+  $: measureFormatting = conditionalFormatSpecToMeasureFormatting(cfArray);
 
   function onChange(measureName: string, fmt: PivotMeasureFormatting | null) {
     const next = { ...measureFormatting };
@@ -43,15 +39,10 @@
     } else {
       delete next[measureName];
     }
-    const updated: PivotConditionalFormatSpec[] = Object.entries(next).map(
-      ([measure, f]) => ({
-        measure,
-        mode: f.mode,
-        scheme: f.scheme,
-        ...(f.reverse ? { reverse: true } : {}),
-      }),
+    component.updateProperty(
+      "conditional_format",
+      measureFormattingToConditionalFormatSpec(next),
     );
-    component.updateProperty("conditional_format", updated);
   }
 </script>
 

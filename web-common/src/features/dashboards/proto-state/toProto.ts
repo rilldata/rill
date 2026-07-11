@@ -336,12 +336,25 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotShowTotalsRow: pivotState.showTotalsRow,
     pivotConditionalFormatting: Object.entries(
       pivotState.measureFormatting ?? {},
-    ).map(([measure, fmt]) => ({
-      measure,
-      mode: fmt.mode,
-      scheme: fmt.scheme,
-      reverse: fmt.reverse ?? false,
-    })),
+    ).map(([measure, fmt]) =>
+      fmt.mode === "rules"
+        ? {
+            measure,
+            mode: fmt.mode,
+            rules: fmt.rules.map((r) => ({
+              operator: r.operator,
+              value: r.value,
+              value2: r.value2,
+              color: r.color,
+            })),
+          }
+        : {
+            measure,
+            mode: fmt.mode,
+            scheme: fmt.scheme,
+            reverse: fmt.reverse ?? false,
+          },
+    ),
   };
 }
 

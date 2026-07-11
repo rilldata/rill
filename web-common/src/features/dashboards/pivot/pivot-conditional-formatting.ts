@@ -3,7 +3,7 @@ import {
   getSequentialColorsAsHex,
 } from "@rilldata/web-common/features/themes/palette-store";
 import chroma from "chroma-js";
-import type { PivotMeasureFormatting } from "./types";
+import type { PivotFormatRule, PivotMeasureFormatting } from "./types";
 
 /**
  * Conditional formatting color schemes available per measure. Theme-aware
@@ -82,25 +82,96 @@ export function computeMeasureDomains(
   return domains;
 }
 
-export interface CellFormatter {
-  background: (value: number) => string;
-  textColor: (value: number) => string;
+// Semantic rule colors, modeled on the classic Excel conditional-formatting
+// fills so thresholds read instantly as good/bad/caution. Each pairs a light
+// fill with a legible dark text color.
+export interface PivotRuleColor {
+  key: string;
+  label: string;
+  fill: string;
+  text: string;
 }
+
+export const PIVOT_RULE_COLORS: PivotRuleColor[] = [
+  { key: "positive", label: "Positive", fill: "#c6efce", text: "#006100" },
+  { key: "negative", label: "Negative", fill: "#ffc7ce", text: "#9c0d07" },
+  { key: "warning", label: "Warning", fill: "#ffeb9c", text: "#9c6500" },
+  { key: "info", label: "Info", fill: "#cfe2f3", text: "#0b5394" },
+  { key: "neutral", label: "Neutral", fill: "#e5e7eb", text: "#374151" },
+];
+
+/**
+ * Resolve a rule's stored color (semantic key or raw hex, with or without "#")
+ * to fill and text hex colors. Unknown/invalid values fall back to the neutral
+ * semantic color so a malformed URL never breaks rendering.
+ */
+export function resolveRuleColor(color: string): {
+  fill: string;
+  text: string;
+} {
+  const semantic = PIVOT_RULE_COLORS.find((c) => c.key === color);
+  if (semantic) return { fill: semantic.fill, text: semantic.text };
+  const hex = color.startsWith("#") ? color : `#${color}`;
+  if (!chroma.valid(hex)) {
+    const neutral = PIVOT_RULE_COLORS.find((c) => c.key === "neutral")!;
+    return { fill: neutral.fill, text: neutral.text };
+  }
+  return {
+    fill: hex,
+    text:
+      chroma(hex).luminance() < LIGHT_TEXT_LUMINANCE ? "#ffffff" : "inherit",
+  };
+}
+
+export function ruleMatches(rule: PivotFormatRule, value: number): boolean {
+  switch (rule.operator) {
+    case "gt":
+      return value > rule.value;
+    case "gte":
+      return value >= rule.value;
+    case "lt":
+      return value < rule.value;
+    case "lte":
+      return value <= rule.value;
+    case "eq":
+      return value === rule.value;
+    case "between":
+      return value >= rule.value && value <= (rule.value2 ?? rule.value);
+  }
+}
+
+export interface CellFormat {
+  background: string;
+  color: string;
+}
+
+// Returns the style for a cell value, or null when the value should render
+// unformatted (e.g. no threshold rule matched).
+export type CellFormatter = (value: number) => CellFormat | null;
 
 // Below this background luminance, switch to light text for legibility. Mirrors
 // the threshold used by the canvas heatmap (charts/heatmap/spec.ts).
 const LIGHT_TEXT_LUMINANCE = 0.4;
 
 /**
- * Build a background/text-color formatter for a single measure given its value
- * domain and formatting config. Handles both heatmap (solid gradient color) and
- * data-bar (proportional in-cell bar) modes.
+ * Build a cell formatter for a single measure. Scale modes (heatmap, data_bar)
+ * color across the measure's value domain; rules mode applies the first
+ * matching threshold rule and needs no domain.
  */
 export function makeCellFormatter(
-  domain: [number, number],
   fmt: PivotMeasureFormatting,
+  domain?: [number, number],
 ): CellFormatter {
-  const [min, max] = domain;
+  if (fmt.mode === "rules") {
+    return (value: number) => {
+      const match = fmt.rules.find((rule) => ruleMatches(rule, value));
+      if (!match) return null;
+      const { fill, text } = resolveRuleColor(match.color);
+      return { background: fill, color: text };
+    };
+  }
+
+  const [min, max] = domain ?? [0, 1];
   const stops = getSchemeStops(fmt.scheme, fmt.reverse);
 
   if (fmt.mode === "data_bar") {
@@ -112,12 +183,12 @@ export function makeCellFormatter(
     const barColor = chroma(stops[stops.length - 1])
       .luminance(0.72)
       .hex();
-    return {
-      background: (value: number) => {
-        const pct = Math.min(100, (Math.abs(value) / absMax) * 100);
-        return `linear-gradient(to right, ${barColor} ${pct}%, transparent ${pct}%)`;
-      },
-      textColor: () => "inherit",
+    return (value: number) => {
+      const pct = Math.min(100, (Math.abs(value) / absMax) * 100);
+      return {
+        background: `linear-gradient(to right, ${barColor} ${pct}%, transparent ${pct}%)`,
+        color: "inherit",
+      };
     };
   }
 
@@ -126,9 +197,9 @@ export function makeCellFormatter(
   const scale = chroma
     .scale(stops)
     .domain(min === max ? [min, min + 1] : [min, max]);
-  return {
-    background: (value: number) => scale(value).hex(),
-    textColor: (value: number) =>
+  return (value: number) => ({
+    background: scale(value).hex(),
+    color:
       scale(value).luminance() < LIGHT_TEXT_LUMINANCE ? "#ffffff" : "inherit",
-  };
+  });
 }

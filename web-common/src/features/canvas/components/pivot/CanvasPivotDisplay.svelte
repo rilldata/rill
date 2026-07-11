@@ -1,5 +1,8 @@
 <script lang="ts">
-  import type { PivotCanvasComponent } from "@rilldata/web-common/features/canvas/components/pivot";
+  import {
+    conditionalFormatSpecToMeasureFormatting,
+    type PivotCanvasComponent,
+  } from "@rilldata/web-common/features/canvas/components/pivot";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
@@ -41,11 +44,8 @@
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
   // Seed the shared pivot state with per-measure formatting from the YAML spec.
-  $: measureFormatting = Object.fromEntries(
-    (tableSpec.conditional_format ?? []).map((f) => [
-      f.measure,
-      { mode: f.mode, scheme: f.scheme, reverse: f.reverse },
-    ]),
+  $: measureFormatting = conditionalFormatSpecToMeasureFormatting(
+    tableSpec.conditional_format,
   );
 
   $: if ("columns" in tableSpec && schema.isValid) {

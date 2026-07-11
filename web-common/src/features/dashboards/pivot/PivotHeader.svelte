@@ -6,13 +6,21 @@
   import DragList from "./DragList.svelte";
   import PivotAutoArrangeZone from "./PivotAutoArrangeZone.svelte";
   import { lastNestState } from "./PivotToolbar.svelte";
-  import { PivotChipType, type PivotChipData, type PivotState } from "./types";
+  import {
+    PivotChipType,
+    type PivotChipData,
+    type PivotMeasureFormatting,
+    type PivotState,
+  } from "./types";
 
   export let pivotState: PivotState;
   export let setRows: (items: PivotChipData[]) => void;
   export let setColumns: (items: PivotChipData[]) => void;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
 
-  $: ({ rows, columns, tableMode } = pivotState);
+  $: ({ rows, columns, tableMode, measureFormatting } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: fullColumns = splitColumns.dimension.concat(splitColumns.measure);
   $: isFlat = tableMode === "flat";
@@ -63,6 +71,8 @@
       items={columnsForList}
       placeholder="Drag dimensions or measures here"
       onUpdate={updateColumn}
+      {measureFormatting}
+      {setMeasureFormatting}
     />
   </div>
 </div>
