@@ -4,7 +4,7 @@ import {
   type ComponentCommonProperties,
   type ComponentFilterProperties,
 } from "@rilldata/web-common/features/canvas/components/types";
-import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
+import { getCommonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   CanvasEntity,
@@ -21,6 +21,8 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 import CanvasCustomChart from "./CanvasCustomChart.svelte";
+
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export interface CustomChart
   extends ComponentCommonProperties,
@@ -161,10 +163,16 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
   inputParams(): InputParams<CustomChart> {
     return {
       options: {
-        prompt: { type: "ai_generate", label: "Edit with AI" },
-        metrics_sql: { type: "metrics_sql", label: "Metrics SQL" },
-        vega_spec: { type: "vega_spec", label: "Vega Lite Spec" },
-        ...commonOptions,
+        prompt: { type: "ai_generate", label: m.canvas_edit_with_ai() },
+        metrics_sql: {
+          type: "metrics_sql",
+          label: m.canvas_metrics_sql_label(),
+        },
+        vega_spec: {
+          type: "vega_spec",
+          label: m.canvas_vega_lite_spec_label(),
+        },
+        ...getCommonOptions(),
       },
       filter: {},
     };

@@ -34,6 +34,13 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   leaderboard: 300,
 };
 
+// Minimum heights a component can shrink to, when smaller than its initial
+// height. Used as the CSS floor so components like pivots (whose content can be
+// short, e.g. a low row limit) don't reserve their full initial height.
+export const minHeights: Partial<Record<CanvasComponentType, number>> = {
+  pivot: 224,
+};
+
 export const MIN_HEIGHT = 40;
 export const MIN_WIDTH = 3;
 export const COLUMN_COUNT = 12;
@@ -556,6 +563,10 @@ function itemExists<T>(item: T | null | undefined): item is T {
 
 export function getInitialHeight(id: string | undefined) {
   return initialHeights[id as CanvasComponentType] ?? MIN_HEIGHT;
+}
+
+export function getMinHeight(id: string | undefined) {
+  return minHeights[id as CanvasComponentType] ?? getInitialHeight(id);
 }
 
 export function initComponentSpec(

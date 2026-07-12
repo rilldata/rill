@@ -4,6 +4,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let value: string;
 
@@ -48,11 +49,11 @@
           class:cursor-pointer={showValue}
           title={value}
         >
-          {value || "Empty"}
+          {value || m.env_empty_value()}
         </span>
       </button>
       <TooltipContent slot="tooltip-content">
-        {copied ? "Copied!" : "Click to copy"}
+        {copied ? m.env_copied_tooltip() : m.env_click_to_copy_tooltip()}
       </TooltipContent>
     </Tooltip>
   {:else}

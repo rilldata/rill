@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { User } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     name,
@@ -29,7 +30,7 @@
         <User class="mr-1" size={14} />
       </Tooltip.Trigger>
       <Tooltip.Content side="bottom" sideOffset={8}>
-        Owned by {isCurrentUser ? "you" : "another user"}
+        {isCurrentUser ? m.status_owned_by_you() : m.status_owned_by_other()}
       </Tooltip.Content>
     </Tooltip.Root>
   {/if}

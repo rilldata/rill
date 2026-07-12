@@ -31,6 +31,7 @@
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   /** All resources (unfiltered). Filtering is handled internally. */
   export let resources: V1Resource[];
@@ -221,7 +222,6 @@
     <div class="flex-1 min-w-0 min-h-9">
       <Search
         bind:value={searchText}
-        placeholder="Search"
         large
         autofocus={false}
         showBorderOnFocus={false}
@@ -237,14 +237,14 @@
       >
         <span class="text-fg-secondary font-medium">
           {#if selectedTypes.length === 0}
-            All types
+            {m.status_all_types()}
           {:else if selectedTypes.length === 1}
             {prettyResourceKind(selectedTypes[0])}
           {:else}
-            {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length - 1} other{selectedTypes.length >
-            2
-              ? "s"
-              : ""}
+            {m.status_levels_selected({
+              first: prettyResourceKind(selectedTypes[0]),
+              count: selectedTypes.length - 1,
+            })}
           {/if}
         </span>
         {#if filterDropdownOpen}
@@ -278,10 +278,12 @@
             {statusFilters.find((s) => s.value === selectedStatuses[0])
               ?.label ?? selectedStatuses[0]}
           {:else}
-            {statusFilters.find((s) => s.value === selectedStatuses[0])?.label},
-            +{selectedStatuses.length - 1} other{selectedStatuses.length > 2
-              ? "s"
-              : ""}
+            {m.status_levels_selected({
+              first:
+                statusFilters.find((s) => s.value === selectedStatuses[0])
+                  ?.label ?? selectedStatuses[0],
+              count: selectedStatuses.length - 1,
+            })}
           {/if}
         </span>
         {#if statusDropdownOpen}

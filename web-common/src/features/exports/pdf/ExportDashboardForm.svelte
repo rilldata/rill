@@ -3,7 +3,9 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ExportProgress, PdfExportRunOptions } from "./types";
+  import type { LocalizedString } from "@inlang/paraglide-js";
 
   // Surface-agnostic PDF export form (title, options, and action). The caller
   // supplies `runExport` (bound to the canvas or explore orchestrator), so this
@@ -15,12 +17,12 @@
   let includeFilters = true;
 
   let exporting = false;
-  let progressLabel = "Export PDF";
+  let progressLabel = m.export_pdf_button();
 
-  const PROGRESS_COPY: Record<ExportProgress["phase"], string> = {
-    preparing: "Rendering charts…",
-    capturing: "Capturing dashboard…",
-    assembling: "Building PDF…",
+  const PROGRESS_COPY: Record<ExportProgress["phase"], LocalizedString> = {
+    preparing: m.export_pdf_rendering_charts(),
+    capturing: m.export_pdf_capturing(),
+    assembling: m.export_pdf_building(),
   };
 
   async function onExport() {
@@ -38,30 +40,30 @@
       });
       eventBus.emit("notification", {
         type: "success",
-        message: "Dashboard exported as PDF",
+        message: m.export_pdf_success(),
       });
       onComplete();
     } catch (e) {
       eventBus.emit("notification", {
         type: "error",
-        message: extractErrorMessage(e) || "Failed to export PDF",
+        message: extractErrorMessage(e) || m.export_pdf_failed(),
       });
     } finally {
       exporting = false;
-      progressLabel = "Export PDF";
+      progressLabel = m.export_pdf_button();
     }
   }
 </script>
 
 <div class="flex flex-col gap-y-4">
   <h3 class="text-xs text-fg-primary font-normal">
-    Export this dashboard as a PDF.
+    {m.export_pdf_description()}
   </h3>
 
   <Checkbox
     id="pdf-include-filters"
     bind:checked={includeFilters}
-    label="Include filters"
+    label={m.export_pdf_include_filters()}
   />
 
   <Button
@@ -70,7 +72,7 @@
     loadingCopy={progressLabel}
     onClick={onExport}
   >
-    Export PDF
+    {m.export_pdf_button()}
   </Button>
 </div>
 
