@@ -69,6 +69,7 @@
           <img
             src={themeOption.image}
             alt={m.welcome_theme_preview_alt({ theme: themeOption.label })}
+            class="w-20 sm:w-auto"
           />
         </div>
         <div class="text-sm font-semibold text-fg-primary">
