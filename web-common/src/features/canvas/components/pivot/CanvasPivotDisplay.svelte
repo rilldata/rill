@@ -37,10 +37,10 @@
   $: _metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
   $: metricsViewSpec = $_metricViewSpec.metricsView;
 
-  $: schema = validateTableSchema(metricsViewSpec, tableSpec);
+  $: schema = validateTableSchema($_metricViewSpec, tableSpec);
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
-  $: if ("columns" in tableSpec && schema.isValid) {
+  $: if ("columns" in tableSpec && schema.isValid && !schema.isLoading) {
     const columns = tableSpec?.columns || [];
     pivotState.update((state) => ({
       ...state,
@@ -53,7 +53,7 @@
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
     }));
-  } else if (!("columns" in tableSpec) && schema.isValid) {
+  } else if (!("columns" in tableSpec) && schema.isValid && !schema.isLoading) {
     const measures = tableSpec.measures || [];
     const colDimensions = tableSpec.col_dimensions || [];
     const rowDimensions = tableSpec.row_dimensions || [];
