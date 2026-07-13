@@ -17,7 +17,7 @@
   <SelectPrimitive.Content
     {sideOffset}
     class={cn(
-      "relative z-50 min-w-[8rem] overflow-hidden rounded-[2px] border bg-popover text-popover-foreground shadow-md focus:outline-none",
+      "dashboard-theme-boundary relative z-50 min-w-[8rem] overflow-hidden rounded-[2px] border bg-popover text-popover-foreground shadow-md focus:outline-none",
       sameWidth && "w-[var(--bits-select-anchor-width)]",
       className,
     )}
