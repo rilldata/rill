@@ -7,10 +7,13 @@ import {
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getKeyForSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
+import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import initEmbedPublicAPI from "./init-embed-public-api";
+import { EmbedStorageNamespacePrefix } from "./constants.ts";
 import {
   EmbedPublicAPIHarness,
   type HoistedEmbedPage,
@@ -125,6 +128,7 @@ describe("initEmbedPublicAPI", () => {
 
     beforeEach(() => {
       queryClient.clear();
+      sessionStorage.clear();
       mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
       mocks.mockMetricsExplore(AD_BIDS_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
         ...AD_BIDS_EXPLORE_INIT,
@@ -209,6 +213,24 @@ describe("initEmbedPublicAPI", () => {
         errors: ['Selected measure: "does_not_exist" is not valid.'],
       });
       expect(harness.lastGoto()?.url.search).toBe("?dims=publisher");
+    });
+
+    it("clears prior embed session storage before applying the validated state", async () => {
+      onExploreRoute();
+
+      const sessionKey = getKeyForSessionStore(
+        AD_BIDS_EXPLORE_NAME,
+        EmbedStorageNamespacePrefix,
+        ExploreUrlWebView.Explore,
+      );
+      // Simulate a filter left over from a prior interaction. Without clearing, applying an
+      // empty / view-only url lets handleURLChange restore this stale state instead of the
+      // validated state we just returned in `appliedState`.
+      sessionStorage.setItem(sessionKey, "f=publisher+IN+%28%27Google%27%29");
+
+      await callSetValidState({ state: "" });
+
+      expect(sessionStorage.getItem(sessionKey)).toBeNull();
     });
 
     it("returns a JSON-RPC error when params is not an object with a string state", async () => {

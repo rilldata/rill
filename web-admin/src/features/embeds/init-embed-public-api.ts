@@ -1,8 +1,10 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
+import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { buildValidatedExploreUrl } from "@rilldata/web-common/features/dashboards/state-managers/loaders/build-validated-explore-url.ts";
+import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import type { PageContentResized } from "@rilldata/web-common/lib/event-bus/events.ts";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
@@ -26,8 +28,8 @@ const AI_PANE_CHANGE_THROTTLE_TIMEOUT = 200;
 
 type SetValidStateParams = {
   state: string;
-  // When true (the default) the state is only applied if there are no validation errors.
-  // When false the cleaned state is applied even if some params were invalid.
+  // When false (the default) the cleaned state is applied even if some params were invalid.
+  // When true the state is only applied if there are no validation errors.
   failOnError?: boolean;
 };
 
@@ -101,6 +103,13 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     if (errors.length > 0 && failOnError) {
       return { success: false, errors: errorMessages };
     }
+
+    // Clear any prior embed session state for this explore before navigating.
+    // buildValidatedExploreUrl intentionally ignores session storage,
+    // but applying the url via goto triggers handleURLChange which re-merges session storage for empty / view-only urls.
+    // Without this, resetting the dashboard (e.g. setValidState({ state: "" })) would restore the previous session filters
+    // instead of the validated state we just computed and returned.
+    clearExploreSessionStore(activeDashboard.name, EmbedStorageNamespacePrefix);
 
     const currentUrl = new URL(pageState.url);
     currentUrl.search = url.toString();

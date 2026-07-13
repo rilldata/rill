@@ -106,7 +106,7 @@ iframe.contentWindow.postMessage({
 
 **Parameters:**
 - `state` (string): A URL query string describing the dashboard view, filters, time range, etc. Uses the same format as the query strings in URLs on Rill Cloud.
-- `failOnError` (boolean, optional): When `true` (the default), the state is applied only if there are no validation errors. When `false`, the cleaned state is applied even when some parameters were invalid; the dropped parameters are still reported in `errors`.
+- `failOnError` (boolean, optional): When `false` (the default), the cleaned state is applied even when some parameters were invalid; the dropped parameters are still reported in `errors`. When `true`, the state is applied only if there are no validation errors.
 
 **Response:**
 
