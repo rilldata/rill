@@ -154,15 +154,19 @@
   };
 </script>
 
-<InfiniteScrollTable
-  data={safeData}
-  {columns}
-  hasNextPage={usersQuery.hasNextPage || invitesQuery.hasNextPage}
-  isFetchingNextPage={usersQuery.isFetchingNextPage ||
-    invitesQuery.isFetchingNextPage}
-  onLoadMore={handleLoadMore}
-  maxHeight={dynamicTableMaxHeight}
-  emptyStateMessage={m.users_table_empty()}
-  {headerIcons}
-  {scrollToTopTrigger}
-/>
+<!-- Wrap in a horizontal scroll container: InfiniteScrollTable's own scroll-container
+     only handles overflow-y, so wide columns would otherwise overflow the viewport. -->
+<div class="overflow-x-auto">
+  <InfiniteScrollTable
+    data={safeData}
+    {columns}
+    hasNextPage={usersQuery.hasNextPage || invitesQuery.hasNextPage}
+    isFetchingNextPage={usersQuery.isFetchingNextPage ||
+      invitesQuery.isFetchingNextPage}
+    onLoadMore={handleLoadMore}
+    maxHeight={dynamicTableMaxHeight}
+    emptyStateMessage={m.users_table_empty()}
+    {headerIcons}
+    {scrollToTopTrigger}
+  />
+</div>

@@ -75,7 +75,7 @@
     {/snippet}
   </Dialog.Trigger>
   <Dialog.Content
-    class="translate-y-[-200px] md:w-[425px] w-[425px]"
+    class="translate-y-[-200px] w-[min(425px,calc(100vw-2rem))]"
     onInteractOutside={(e) => {
       e.preventDefault();
       open = false;
