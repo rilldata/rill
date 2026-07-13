@@ -68,8 +68,7 @@
   let error = $derived.by(() => {
     if ($instanceQuery.isLoading) return null;
     if (!repoRoot) return new Error(m.parquet_preview_no_project_dir());
-    if (!duckDbConnector)
-      return new Error(m.parquet_preview_requires_duckdb());
+    if (!duckDbConnector) return new Error(m.parquet_preview_requires_duckdb());
     return $previewQuery.error;
   });
   let data = $derived($previewQuery.data);
