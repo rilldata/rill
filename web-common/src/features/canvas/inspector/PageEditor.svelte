@@ -191,6 +191,7 @@
     </div>
     <div class="page-param">
       <TagInput
+        size="sm"
         tags={resourceTags}
         suggestions={tagSuggestions}
         onChange={updateResourceTags}
