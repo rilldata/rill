@@ -215,6 +215,78 @@ test.describe("Embeds", () => {
       await recorder.expectContaining(`{"id":1338,"result":true}`);
     });
 
+    test("setValidState changes embedded explore", async ({ embedPage }) => {
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
+      const frame = embedPage.frameLocator("iframe");
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1337,
+            method: "setValidState",
+            params: {
+              state:
+                "tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
+            },
+          },
+          "*",
+        );
+      });
+      await expect(
+        frame.getByRole("row", { name: "Instacart $2.1k" }),
+      ).toBeVisible();
+      await recorder.expectContaining(
+        `{"id":1337,"result":{"success":true,"appliedState":"tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29","errors":[]}}`,
+      );
+
+      // Set new rill syntax that includes `+` in the syntax.
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1338,
+            method: "setValidState",
+            params: {
+              state:
+                "tr=2D+as+of+latest%2FD%2B1D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
+            },
+          },
+          "*",
+        );
+      });
+      await expect(
+        frame.getByRole("row", { name: "Instacart $1.1k" }),
+      ).toBeVisible();
+      await recorder.expectContaining(
+        `{"id":1338,"result":{"success":true,"appliedState":"tr=2D+as+of+latest%2FD%2B1D&grain=hour&f=advertiser_name+IN+%28%27Instacart%27%29","errors":[]}}`,
+      );
+
+      // Set with invalid filter.
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1338,
+            method: "setValidState",
+            params: {
+              state:
+                "tr=P7D&grain=day&f=advertiser_name_invalid+IN+%28%27Instacart%27%29",
+            },
+          },
+          "*",
+        );
+      });
+      // Filter was removed
+      await expect(
+        frame.getByRole("row", { name: "Instacart $2.1k" }),
+      ).toBeVisible();
+      await recorder.expectContaining(
+        `[{"id":1338,"result":{"success":true,"appliedState":"tr=P7D&grain=day","errors":["Selected filter dimension: \\"advertiser_name_invalid\\" is not valid."]}}]`,
+      );
+    });
+
     test("getThemeMode returns current theme mode", async ({ embedPage }) => {
       const recorder = new EmbedMessageRecorder(embedPage);
       await recorder.waitForReady();
