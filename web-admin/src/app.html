@@ -46,10 +46,12 @@
       crossorigin
     />
     <meta charset="utf-8" />
-    <!-- Set the mobile viewport width -->
+    <!-- maximum-scale suppresses the iOS auto-zoom on sub-16px inputs; since
+         iOS 10 Safari ignores it for user-initiated pinch zoom, so it does
+         not restrict accessibility. -->
     <meta
       name="viewport"
-      content="width=1024, initial-scale=1.0, user-scalable=yes"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
     />
     <!-- Set the og image for thumbnail previews -->
     <meta
