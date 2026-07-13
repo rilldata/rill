@@ -68,6 +68,7 @@ export class DebouncedRuneStore<Val, DefaultVal = Val>
   }
 
   public immediateSetter(newValue: Val) {
+    (this.setter as ReturnType<typeof debounce>).cancel();
     this.store.setter(newValue);
   }
 }
