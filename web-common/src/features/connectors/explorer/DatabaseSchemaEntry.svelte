@@ -175,7 +175,9 @@
               small
               disabled={isFetchingNextPage}
               loading={isFetchingNextPage}
-              loadingCopy={isNarrow ? m.common_loading() : m.status_loading_tables_short()}
+              loadingCopy={isNarrow
+                ? m.common_loading()
+                : m.status_loading_tables_short()}
               class="w-full"
               onClick={() => fetchNextPage()}
             >

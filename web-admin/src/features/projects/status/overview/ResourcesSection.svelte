@@ -18,13 +18,16 @@
   $: resourceCounts = countByKind(allResources);
 </script>
 
-<OverviewCard title={m.status_nav_resources()} viewAllHref="{basePage}/resources">
+<OverviewCard
+  title={m.status_nav_resources()}
+  viewAllHref="{basePage}/resources"
+>
   {#if $resources.isLoading}
     <p class="text-sm text-fg-secondary">{m.status_loading_resources()}</p>
   {:else if resourceCounts.length > 0}
     <div class="chips">
       {#each resourceCounts as { kind, label, count } (kind)}
-        <a href="{basePage}/resources?kind={kind}" class="chip">
+        <a href="{basePage}/resources?type={kind}" class="chip">
           {#if resourceIconMapping[kind]}
             <svelte:component this={resourceIconMapping[kind]} size="12px" />
           {/if}

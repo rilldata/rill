@@ -74,7 +74,7 @@ func (y *ModelOutputYAML) UnmarshalYAML(v *yaml.Node) error {
 		y.Connector = tmp.Connector
 		y.Properties = tmp.Properties
 	default:
-		return fmt.Errorf("expected connector name or mapping of output properties, got type %q", v.Kind)
+		return fmt.Errorf("expected connector name or mapping of output properties, got %s", v.Tag)
 	}
 	return nil
 }

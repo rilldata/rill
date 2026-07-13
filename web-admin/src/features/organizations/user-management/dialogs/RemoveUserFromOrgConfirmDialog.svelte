@@ -47,7 +47,9 @@
           open = false;
         }}>{m.users_cancel()}</Button
       >
-      <Button type="destructive" onClick={handleRemove}>{m.users_yes_remove()}</Button>
+      <Button type="destructive" onClick={handleRemove}
+        >{m.users_yes_remove()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

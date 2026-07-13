@@ -59,11 +59,15 @@
             <p class="text-sm font-medium text-fg-primary">
               {m.billing_payment_method_on_file()}
             </p>
-            <p class="text-xs text-fg-tertiary">{m.billing_manage_cards_via_stripe()}</p>
+            <p class="text-xs text-fg-tertiary">
+              {m.billing_manage_cards_via_stripe()}
+            </p>
           </div>
         </div>
       {:else}
-        <span class="text-sm text-fg-tertiary">{m.billing_no_payment_method()}</span>
+        <span class="text-sm text-fg-tertiary"
+          >{m.billing_no_payment_method()}</span
+        >
       {/if}
     </div>
     {#if hasPaymentCustomer}

@@ -119,8 +119,8 @@
     />
   {:else if $orgMemberUsersInfiniteQuery.isError || $orgInvitesInfiniteQuery.isError}
     <div class="text-red-500">
-      {m.users_error_loading_members()} {$orgMemberUsersInfiniteQuery.error ??
-        $orgInvitesInfiniteQuery.error}
+      {m.users_error_loading_members()}
+      {$orgMemberUsersInfiniteQuery.error ?? $orgInvitesInfiniteQuery.error}
     </div>
   {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
     <div class="flex flex-col">

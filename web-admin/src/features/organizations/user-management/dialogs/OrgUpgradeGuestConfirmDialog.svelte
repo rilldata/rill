@@ -34,7 +34,9 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>{m.users_upgrade_confirm_title({ role: newRole })}</AlertDialogTitle>
+      <AlertDialogTitle
+        >{m.users_upgrade_confirm_title({ role: newRole })}</AlertDialogTitle
+      >
       <AlertDialogDescription>
         <div class="mt-1">
           {m.users_upgrade_confirm_desc({ role: newRole })}
@@ -48,7 +50,9 @@
           open = false;
         }}>{m.users_cancel()}</Button
       >
-      <Button type="primary" onClick={handleUpgrade}>{m.users_yes_upgrade()}</Button>
+      <Button type="primary" onClick={handleUpgrade}
+        >{m.users_yes_upgrade()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

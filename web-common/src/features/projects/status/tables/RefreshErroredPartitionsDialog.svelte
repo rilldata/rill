@@ -53,7 +53,8 @@
         type="primary"
         onClick={handleRefresh}
         disabled={isRefreshing}
-        loading={isRefreshing}>{m.status_action_refresh_errored_partitions()}</Button
+        loading={isRefreshing}
+        >{m.status_action_refresh_errored_partitions()}</Button
       >
     </AlertDialogFooter>
   </AlertDialogContent>

@@ -268,6 +268,8 @@ _[object]_ - (no description)
 
   - **`hide_totals_col`** - _[boolean]_ - Whether to hide the totals column. Defaults to false.
 
+  - **`row_limit`** - _[string]_ - Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
+
   - **`comparison_range`** - _[string]_ - Comparison time range
 
   - **`filter`** - _[string]_ - Filter expression

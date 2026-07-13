@@ -67,5 +67,7 @@
     </Dropdown.Content>
   </Dropdown.Root>
 {:else}
-  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">{m.users_no_projects()}</div>
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">
+    {m.users_no_projects()}
+  </div>
 {/if}

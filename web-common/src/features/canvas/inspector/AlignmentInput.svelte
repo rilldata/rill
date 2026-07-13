@@ -31,14 +31,26 @@
 
   $: horizontalOptions = [
     { id: "left", Icon: AlignStartVertical, tooltip: m.canvas_align_left() },
-    { id: "center", Icon: AlignCenterVertical, tooltip: m.canvas_align_center() },
+    {
+      id: "center",
+      Icon: AlignCenterVertical,
+      tooltip: m.canvas_align_center(),
+    },
     { id: "right", Icon: AlignEndVertical, tooltip: m.canvas_align_right() },
   ];
 
   $: verticalOptions = [
     { id: "top", Icon: AlignStartHorizontal, tooltip: m.canvas_align_top() },
-    { id: "middle", Icon: AlignCenterHorizontal, tooltip: m.canvas_align_middle() },
-    { id: "bottom", Icon: AlignEndHorizontal, tooltip: m.canvas_align_bottom() },
+    {
+      id: "middle",
+      Icon: AlignCenterHorizontal,
+      tooltip: m.canvas_align_middle(),
+    },
+    {
+      id: "bottom",
+      Icon: AlignEndHorizontal,
+      tooltip: m.canvas_align_bottom(),
+    },
   ];
 
   const updatePosition = (

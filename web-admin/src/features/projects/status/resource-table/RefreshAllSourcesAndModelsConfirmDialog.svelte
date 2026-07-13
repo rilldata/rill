@@ -45,7 +45,9 @@
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" onClick={handleRefresh}>{m.status_yes_refresh()}</Button>
+      <Button type="primary" onClick={handleRefresh}
+        >{m.status_yes_refresh()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

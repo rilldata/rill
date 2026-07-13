@@ -65,7 +65,9 @@
         } catch (err) {
           const parsedErr = parseUpdateOrgError(err);
           if (parsedErr.duplicateOrg) {
-            form.errors.name = [m.settings_name_already_taken({ name: newOrg })];
+            form.errors.name = [
+              m.settings_name_already_taken({ name: newOrg }),
+            ];
           }
           return;
         }
@@ -125,7 +127,9 @@
       errors={$errors?.name}
       id="name"
       label={m.settings_name_label()}
-      description={m.settings_org_url_description({ slug: sanitizeOrgName($form.name) })}
+      description={m.settings_org_url_description({
+        slug: sanitizeOrgName($form.name),
+      })}
       textClass="text-sm"
       alwaysShowError
       additionalClass="max-w-[520px]"

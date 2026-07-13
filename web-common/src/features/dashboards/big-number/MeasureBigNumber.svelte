@@ -341,7 +341,8 @@
       {:else if value === null}
         <span class="text-fg-muted italic text-sm">{m.kpi_no_data()}</span>
       {:else if value === undefined}
-        <span class="text-fg-muted italic text-sm">{m.kpi_not_available()}</span>
+        <span class="text-fg-muted italic text-sm">{m.kpi_not_available()}</span
+        >
       {/if}
     </div>
   </svelte:element>

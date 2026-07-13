@@ -19,6 +19,7 @@
     emitNotification,
   } from "@rilldata/web-common/lib/rpc";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { getRuntimeClient } from "@rilldata/web-common/runtime-client/v2/context";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { onMount } from "svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -110,7 +111,14 @@
     createIframeRPCHandler();
     void waitUntil(() => VegaLiteTooltipHandler.resetElement(), 5000, 100);
 
-    return initEmbedPublicAPI();
+    // Returns the same cached client that RuntimeProvider uses for this host+instanceId.
+    const client = getRuntimeClient({
+      host: runtimeHost,
+      instanceId,
+      jwt: accessToken,
+      authContext: "embed",
+    });
+    return initEmbedPublicAPI(client);
   });
 </script>
 

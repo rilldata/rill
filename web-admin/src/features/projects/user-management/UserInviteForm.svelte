@@ -96,7 +96,10 @@
 
         eventBus.emit("notification", {
           type: "success",
-          message: m.users_invited_success({ count: succeeded.length, role: values.role }),
+          message: m.users_invited_success({
+            count: succeeded.length,
+            role: values.role,
+          }),
         });
         onInvite();
         if (errored) {

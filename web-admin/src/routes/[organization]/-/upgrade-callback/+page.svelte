@@ -53,7 +53,9 @@
     if (paymentIssues.length) {
       eventBus.emit("notification", {
         type: "error",
-        message: m.billing_fix_payment_issues({ details: getPaymentIssueErrorText(paymentIssues) }),
+        message: m.billing_fix_payment_issues({
+          details: getPaymentIssueErrorText(paymentIssues),
+        }),
         link: {
           text: m.billing_update_payment(),
           href: await fetchPaymentsPortalURL(

@@ -16,7 +16,11 @@ export function formatUsageVsQuota(
     usageInBytes > quota
       ? "100+"
       : Math.round((usageInBytes * 100) / quota) + "";
-  return m.billing_usage_of_quota({ usage: formattedUsage, quota: formattedQuota, percent });
+  return m.billing_usage_of_quota({
+    usage: formattedUsage,
+    quota: formattedQuota,
+    percent,
+  });
 }
 
 // Mapping of externalID/planName to a type.
@@ -76,7 +80,9 @@ export function getSubscriptionResumedText(endDate: string) {
     return m.billing_today();
   }
   const resumeDate = date.plus({ day: 1 });
-  return m.billing_on_date({ date: resumeDate.toLocaleString(DateTime.DATE_MED) });
+  return m.billing_on_date({
+    date: resumeDate.toLocaleString(DateTime.DATE_MED),
+  });
 }
 
 // Since this could be triggered in a route that could be navigated from,

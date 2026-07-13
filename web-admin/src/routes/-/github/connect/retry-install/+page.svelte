@@ -27,13 +27,13 @@
     <GithubFail />
     <CtaHeader>{m.github_could_not_connect()}</CtaHeader>
     <CtaMessage>
-      {m.github_did_not_grant_access()} <GithubRepoInline
-        gitRemote={remote}
-      />
+      {m.github_did_not_grant_access()}
+      <GithubRepoInline gitRemote={remote} />
     </CtaMessage>
     <CtaMessage>
       {m.github_click_to_retry()}
-      <KeyboardKey label="Control" /> + <KeyboardKey label="C" /> {m.github_cancel_in_cli()}
+      <KeyboardKey label="Control" /> + <KeyboardKey label="C" />
+      {m.github_cancel_in_cli()}
     </CtaMessage>
     <CtaButton
       variant="primary"
