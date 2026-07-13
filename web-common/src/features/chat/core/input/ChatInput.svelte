@@ -214,4 +214,11 @@
   .chat-input-footer {
     @apply flex flex-row;
   }
+
+  /* Comfortable touch targets on mobile; desktop sizing is unchanged. */
+  @media (max-width: 640px) {
+    .chat-input-footer :global(button) {
+      @apply inline-flex items-center justify-center min-h-[44px] min-w-[44px];
+    }
+  }
 </style>
