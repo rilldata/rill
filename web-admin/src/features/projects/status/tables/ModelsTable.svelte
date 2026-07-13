@@ -121,9 +121,11 @@
   ] as ColumnDef<V1OlapTableInfo, unknown>[];
 </script>
 
-<VirtualizedTable
-  tableId="models-table"
-  data={tables}
-  {columns}
-  columnLayout="minmax(80px, 0.4fr) minmax(120px, 1.5fr) minmax(120px, 1.5fr) 64px minmax(90px, 0.8fr) 56px"
-/>
+<div class="overflow-x-auto">
+  <VirtualizedTable
+    tableId="models-table"
+    data={tables}
+    {columns}
+    columnLayout="minmax(80px, 0.4fr) minmax(120px, 1.5fr) minmax(120px, 1.5fr) 64px minmax(90px, 0.8fr) 56px"
+  />
+</div>
