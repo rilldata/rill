@@ -47,7 +47,7 @@
     <Breadcrumbs {pathParts} {currentPath} />
   {/if}
 
-  <div class="flex gap-x-2 items-center ml-auto">
+  <div class="flex gap-x-2 items-center ml-auto shrink-0">
     {#if $user.isSuccess}
       {#if $user.data?.user}
         <AvatarButton />
