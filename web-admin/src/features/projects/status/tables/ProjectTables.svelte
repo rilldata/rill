@@ -45,7 +45,7 @@
     UrlParamsState.createStringParam("q"),
     500,
   );
-  const selectedTypesStore = UrlParamsState.createStringArrayParam("kind");
+  const selectedTypesStore = UrlParamsState.createStringArrayParam("type");
   const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
 
   let searchPattern = $derived(
@@ -118,7 +118,7 @@
   function clearFilters() {
     selectedTypesStore.setter([]);
     selectedTagsStore.setter([]);
-    searchTextStore.setter("");
+    searchTextStore.immediateSetter("");
   }
 
   // Split once on unfiltered tables, then apply type + tag filters per section.

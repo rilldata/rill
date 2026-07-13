@@ -9,8 +9,8 @@
     searchTextStore?: RuneStore<string>;
   } = $props();
 
-  function handleInput(event) {
-    searchTextStore?.setter(event.target?.value);
+  function handleInput(event: Event & { currentTarget: HTMLInputElement }) {
+    searchTextStore?.setter(event.currentTarget?.value);
   }
 </script>
 

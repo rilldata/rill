@@ -12,11 +12,6 @@
   } from "@rilldata/web-common/components/table-toolbar";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import {
-    createUrlFilterSync,
-    parseArrayParam,
-    parseStringParam,
-  } from "@rilldata/web-common/lib/url-filter-sync";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Plus } from "lucide-svelte";
   import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
@@ -83,7 +78,7 @@
   );
 
   function handleClearAllFilters() {
-    searchTextStore.setter("");
+    searchTextStore.immediateSetter("");
     envFilterStore.setter([]);
   }
 

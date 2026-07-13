@@ -35,7 +35,7 @@
     UrlParamsState.createStringParam("q"),
     500,
   );
-  const selectedTypesStore = UrlParamsState.createStringArrayParam("kind");
+  const selectedTypesStore = UrlParamsState.createStringArrayParam("type");
   const selectedStatusesStore = UrlParamsState.createStringArrayParam("status");
   const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
 
@@ -144,7 +144,7 @@
     selectedTypesStore.setter([]);
     selectedStatusesStore.setter([]);
     selectedTagsStore.setter([]);
-    searchTextStore.setter("");
+    searchTextStore.immediateSetter("");
   }
 
   function refreshAllSourcesAndModels() {

@@ -140,7 +140,7 @@
   ]);
 
   function onClearAllFilters() {
-    searchTextStore.setter("");
+    searchTextStore.immediateSetter("");
     statusFilterStore.setter([]);
   }
 

@@ -15,13 +15,11 @@ export class InMemoryRuneStore<Val, DefaultVal = Val>
     this.value = $state(defaultValue);
   }
 
-  getter(): Val | DefaultVal {
-    return this.value;
-  }
+  public getter = () => this.value;
 
-  setter(newValue: Val): void {
+  public setter = (newValue: Val) => {
     this.value = newValue;
-  }
+  };
 }
 
 /**
@@ -60,9 +58,16 @@ export class DebouncedRuneStore<Val, DefaultVal = Val>
   public getter: () => Val;
   public setter: (newValue: Val) => void;
 
-  public constructor(store: RuneStore<Val>, timeout: number) {
+  public constructor(
+    private readonly store: RuneStore<Val>,
+    timeout: number,
+  ) {
     this.value = $derived(store.value);
     this.getter = store.getter;
     this.setter = debounce(store.setter, timeout);
+  }
+
+  public immediateSetter(newValue: Val) {
+    this.store.setter(newValue);
   }
 }

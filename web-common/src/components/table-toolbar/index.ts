@@ -2,6 +2,6 @@ export { default as TableToolbar } from "./TableToolbar.svelte";
 export type {
   FilterGroup,
   FilterOption,
-  SortDirection,
+  SortOption,
   ViewMode,
 } from "./types";

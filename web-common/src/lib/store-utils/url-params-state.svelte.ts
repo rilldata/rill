@@ -59,6 +59,13 @@ export class UrlParamsState<Val, DefaultVal>
 
   public setter = (newValue: Val) => {
     const newParamValue = this.serializer(newValue);
+    // Update local state optimistically so in-tick reads see the new value
+    // (e.g. two `ArrayRuneStore.toggle` calls in the same tick).
+    // The URL write is batched and the constructor's `$effect` reconciles
+    // against the actual URL if navigation lands differently.
+    this.paramValue = newParamValue;
+    this.value = newValue;
+
     const hasParam = newParams.length > 0;
     newParams.push([this.param, newParamValue]);
     if (!hasParam) void tick().then(flushParams);
@@ -68,7 +75,7 @@ export class UrlParamsState<Val, DefaultVal>
 function flushParams() {
   if (newParams.length === 0) return;
 
-  const newUrl = new SvelteURL(window.location.href);
+  const newUrl = new SvelteURL(page.url);
   newParams.forEach(([key, value]) => {
     if (value === null) {
       newUrl.searchParams.delete(key);
