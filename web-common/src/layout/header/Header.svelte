@@ -3,7 +3,7 @@
 </script>
 
 <header
-  class="flex items-center w-full pr-4 pl-2 py-1 bg-surface-base border-b"
+  class="flex flex-wrap gap-y-1 sm:flex-nowrap items-center w-full pr-4 pl-2 py-1 bg-surface-base border-b"
   class:border-transparent={!borderBottom}
 >
   <slot />
