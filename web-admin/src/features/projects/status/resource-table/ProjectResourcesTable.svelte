@@ -240,13 +240,15 @@
   $: tableData = data;
 </script>
 
-<VirtualizedTable
-  data={tableData}
-  {columns}
-  columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
-  containerHeight={550}
-  emptyText={m.status_no_resources_match_filters()}
-/>
+<div class="overflow-x-auto">
+  <VirtualizedTable
+    data={tableData}
+    {columns}
+    columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
+    containerHeight={550}
+    emptyText={m.status_no_resources_match_filters()}
+  />
+</div>
 
 <RefreshResourceConfirmDialog
   bind:open={isConfirmDialogOpen}
