@@ -198,7 +198,10 @@ func (w *DeleteOrgWorker) Work(ctx context.Context, job *river.Job[DeleteOrgArgs
 
 		// try to delete the customer from billing provider, will succeed in test env or if there are no invoices meaning customer never subscribed
 		err = w.admin.Biller.DeleteCustomer(ctx, org.BillingCustomerID)
-		if err == nil && org.PaymentCustomerID != "" {
+		if err != nil {
+			// Log and continue
+			w.logger.Warn("failed to delete customer from billing provider", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+		} else if org.PaymentCustomerID != "" {
 			// delete the customer from payment provider
 			_ = w.admin.PaymentProvider.DeleteCustomer(ctx, org.PaymentCustomerID)
 		}
