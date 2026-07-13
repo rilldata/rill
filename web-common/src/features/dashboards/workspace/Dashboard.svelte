@@ -1,6 +1,10 @@
 <script lang="ts">
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     extractErrorStatusCode,
     isNotFoundError,
@@ -165,16 +169,22 @@
   >
     <div
       id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-surface-subtle slide"
+      class="border-b w-full sm:w-fit min-w-full flex flex-col bg-surface-subtle slide"
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}
         <div class="mb-3"></div>
       {:else}
         {#key exploreName}
-          <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
+          <!-- On phones the tab bar leaves the corner overlay (it would sit on
+               top of wrapped filter chips) and flows below the filters. -->
+          <section
+            class="flex flex-col sm:flex-row relative justify-between gap-x-4 gap-y-2 py-4 pb-2 sm:pb-6 px-4"
+          >
             <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
-            <div class="absolute bottom-0 flex flex-col right-0">
+            <div
+              class="self-end sm:absolute sm:bottom-0 sm:right-0 flex flex-col"
+            >
               <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
             </div>
           </section>
@@ -190,20 +200,31 @@
         body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
       />
     {:else if $showPivot}
-      <PivotDisplay {isEmbedded} />
+      <!-- The pivot's table and config sidebar don't fit phones; below sm a
+           notice takes its place and the tab bar above leads back to Explore. -->
+      <div class="hidden sm:contents">
+        <PivotDisplay {isEmbedded} />
+      </div>
+      <div class="flex sm:hidden flex-1 items-center justify-center p-8">
+        <CtaContentContainer>
+          <CtaHeader>{m.pivot_desktop_only_title()}</CtaHeader>
+          <CtaMessage>{m.pivot_desktop_only_message()}</CtaMessage>
+        </CtaContentContainer>
+      </div>
     {:else}
       <div
-        class="flex gap-x-1 overflow-hidden slide pb-0"
-        class:gap-y-2={showTimeDimensionDetail}
-        class:flex-col={showTimeDimensionDetail}
-        class:flex-row={!showTimeDimensionDetail}
+        class="flex flex-col gap-x-1 overflow-hidden slide pb-0 {showTimeDimensionDetail
+          ? 'gap-y-2'
+          : 'sm:flex-row'}"
         class:left-shift={extraLeftPadding}
         class:w-full={$dynamicHeight}
         class:size-full={!$dynamicHeight}
         bind:clientHeight={exploreContainerHeight}
       >
         <div
-          class="flex-none pl-4"
+          class="flex-none pl-4 max-w-full {showTimeDimensionDetail
+            ? ''
+            : 'h-[50vh] overflow-y-auto sm:h-auto sm:overflow-y-visible'}"
           class:pt-2={!showTimeDimensionDetail}
           style:width={showTimeDimensionDetail
             ? "auto"
@@ -246,7 +267,7 @@
             hideStartPivotButton={hidePivot}
           />
         {:else}
-          <div class="relative flex-none bg-border w-[1px]">
+          <div class="relative flex-none bg-border w-[1px] hidden sm:block">
             <Resizer
               dimension={$exploreTimeseriesWidth}
               min={MIN_TIMESERIES_WIDTH}
@@ -259,7 +280,7 @@
               }}
             />
           </div>
-          <div class="pt-2 pl-1 overflow-auto w-full">
+          <div class="pt-2 pl-1 overflow-auto w-full min-h-0">
             {#if showDimensionTable && selectedDimension}
               <DimensionDisplay
                 dimension={selectedDimension}
@@ -297,6 +318,8 @@
 
 <style lang="postcss">
   .left-shift {
-    @apply pl-8;
+    /* Clears the floating nav-toggle button; phones have no room to spare
+       for the indent and the toggle overlays content anyway. */
+    @apply sm:pl-8;
   }
 </style>

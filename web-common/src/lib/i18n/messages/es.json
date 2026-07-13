@@ -1445,6 +1445,8 @@
   "pivot_auto": "Automático",
   "pivot_chip_aria": "Chip de pivote {title}",
   "pivot_collapse_row": "Contraer fila",
+  "pivot_desktop_only_message": "Cambia a una pantalla más grande para usar la vista de pivote.",
+  "pivot_desktop_only_title": "El pivote está disponible en escritorio",
   "pivot_dim_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

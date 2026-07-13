@@ -309,13 +309,19 @@
       }}
     />
 
+    <!-- With the calendar open the side-by-side panels need 456px; on phones
+         they stack (short scrolling list on top, calendar below) instead of
+         the calendar being squeezed by the fixed-width list. -->
     <div
-      class="flex w-56 max-h-fit"
-      class:!w-[456px]={showCalendarPicker}
+      class="flex flex-col sm:flex-row max-h-fit {showCalendarPicker
+        ? '!w-[min(456px,calc(100vw-2rem))]'
+        : 'w-56'}"
       style:height="470px"
     >
       <div
-        class="flex flex-col w-56 overflow-y-auto overflow-x-hidden flex-none py-1"
+        class="flex flex-col w-full sm:w-56 overflow-y-auto overflow-x-hidden flex-none py-1 {showCalendarPicker
+          ? 'max-sm:h-40'
+          : ''}"
       >
         <div class="overflow-x-hidden">
           {#if showDefaultItem && defaultTimeRange}
@@ -521,7 +527,9 @@
       </div>
 
       {#if showCalendarPicker}
-        <div class="bg-surface-overlay border-l p-3 size-full overflow-y-auto">
+        <div
+          class="bg-surface-overlay border-t sm:border-t-0 sm:border-l p-3 size-full overflow-y-auto"
+        >
           <CalendarPlusDateInput
             {interval}
             {zone}
