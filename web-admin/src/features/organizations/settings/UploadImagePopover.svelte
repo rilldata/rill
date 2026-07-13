@@ -101,7 +101,7 @@
   <PopoverContent
     align="start"
     side="bottom"
-    class="flex flex-col gap-y-2 w-[400px] p-4"
+    class="flex flex-col gap-y-2 w-[min(400px,calc(100vw-2rem))] p-4"
   >
     <div class="text-base font-medium">
       {m.settings_upload_org_image_title({ label })}
