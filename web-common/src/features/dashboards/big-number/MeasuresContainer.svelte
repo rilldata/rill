@@ -144,7 +144,7 @@
 
 <svelte:window onresize={() => calculateGridColumns()} />
 <div
-  class="overflow-y-scroll"
+  class="overflow-y-scroll max-w-full"
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:width={containerWidths[numColumns]}
   bind:clientHeight={metricsContainerHeight}

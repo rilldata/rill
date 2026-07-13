@@ -1431,6 +1431,8 @@
   "pivot_auto": "Auto",
   "pivot_chip_aria": "{title} pivot chip",
   "pivot_collapse_row": "Collapse row",
+  "pivot_desktop_only_message": "Switch to a larger screen to use the pivot view.",
+  "pivot_desktop_only_title": "Pivot is available on desktop",
   "pivot_dim_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
