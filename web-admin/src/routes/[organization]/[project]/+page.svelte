@@ -66,7 +66,7 @@
           </DelayedContent>
         {:else if isErrorDisplayName}
           <h1
-            class="text-4xl font-semibold text-fg-secondary"
+            class="text-3xl sm:text-4xl font-semibold text-fg-secondary break-words"
             aria-label={m.home_project_title_label()}
           >
             {@html m.home_welcome_to({
@@ -75,7 +75,7 @@
           </h1>
         {:else}
           <h1
-            class="text-4xl font-semibold text-fg-secondary"
+            class="text-3xl sm:text-4xl font-semibold text-fg-secondary break-words"
             aria-label={m.home_project_title_label()}
           >
             {@html m.home_welcome_to({

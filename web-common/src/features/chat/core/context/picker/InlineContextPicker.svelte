@@ -156,7 +156,8 @@
   }
 
   .dropdown-content {
-    @apply flex flex-col w-[400px] max-h-[500px] overflow-auto;
+    /* Cap the popover width to the viewport so it never overflows on narrow screens. */
+    @apply flex flex-col w-[min(400px,calc(100vw-2rem))] max-h-[500px] overflow-auto;
   }
 
   .inline-chat-navigation {
