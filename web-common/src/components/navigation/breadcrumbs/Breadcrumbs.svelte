@@ -11,9 +11,9 @@
   $: currentPage = currentPath.findLastIndex(Boolean);
 </script>
 
-<nav class="flex gap-x-2 items-center">
+<nav class="flex gap-x-2 items-center min-w-0">
   <slot name="icon" />
-  <ol class="flex flex-row items-center">
+  <ol class="flex flex-row items-center min-w-0 overflow-hidden">
     {#each pathParts as pathOptions, depth (depth)}
       {@const current = currentPath[depth]}
       {#if current && pathOptions?.options}
