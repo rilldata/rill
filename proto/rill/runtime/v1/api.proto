@@ -330,6 +330,15 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/diff"};
   }
 
+  // GitRevert discards local changes for the given files, resetting them to the comparison branch's state.
+  // If no paths are provided, all local changes are reverted.
+  rpc GitRevert(GitRevertRequest) returns (GitRevertResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/revert",
+      body: "*"
+    };
+  }
+
   rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
   }
@@ -1367,6 +1376,21 @@ message GitDiffResponse {
   // diff is the combined unified patch across all changed_files; only set when include_diff is true.
   // Individual files whose diff is very large are elided to a "Binary files differ" placeholder.
   string diff = 2;
+}
+
+message GitRevertRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // remote_branch is the branch to compare against. Same semantics as GitDiffRequest:
+  // if empty, the upstream of the current local branch is used.
+  string remote_branch = 2;
+  // paths are the files to revert, relative to the project subpath, matching the paths returned by
+  // GitDiff. Paths that are not actually changed are ignored. If empty, all changed files are reverted.
+  repeated string paths = 3;
+}
+
+message GitRevertResponse {
+  // reverted_paths lists the files that were reverted, relative to the project subpath.
+  repeated string reverted_paths = 1;
 }
 
 message ListGitBranchesRequest {

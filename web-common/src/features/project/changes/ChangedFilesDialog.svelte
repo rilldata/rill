@@ -9,9 +9,13 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { inferResourceKind } from "@rilldata/web-common/features/entity-management/infer-resource-kind";
   import { getIconComponent } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { RotateCcw } from "lucide-svelte";
   import { get } from "svelte/store";
+  import RevertConfirmDialog from "./RevertConfirmDialog.svelte";
+  import { revertFiles } from "./revert";
 
   // initialPath, when set, scrolls the diff to that file once the dialog has rendered.
   let {
@@ -89,13 +93,73 @@
     return (get(artifact.resourceName)?.kind ??
       get(artifact.inferredResourceKind)) as ResourceKind | null | undefined;
   }
+
+  function allPaths(): string[] {
+    return changedFiles.map((f) => f.path).filter((p): p is string => !!p);
+  }
+
+  // Multi-select: `selected` holds the checked subpath-relative paths. It is reset whenever the
+  // dialog opens so a prior session's selection does not carry over.
+  let selected = $state<string[]>([]);
+  let lastOpen = false;
+  $effect(() => {
+    if (open && !lastOpen) selected = [];
+    lastOpen = open;
+  });
+  let allSelected = $derived(
+    changedFiles.length > 0 && selected.length === changedFiles.length,
+  );
+
+  function toggle(path: string | undefined, checked: boolean) {
+    if (!path) return;
+    selected = checked
+      ? [...selected, path]
+      : selected.filter((p) => p !== path);
+  }
+
+  function toggleAll(checked: boolean) {
+    selected = checked ? allPaths() : [];
+  }
+
+  // Revert state. revertTargets holds the subpath-relative paths queued for the confirm dialog.
+  let revertOpen = $state(false);
+  let revertTargets = $state<string[]>([]);
+  let isReverting = $state(false);
+
+  function openRevert(paths: string[]) {
+    if (paths.length === 0) return;
+    revertTargets = paths;
+    revertOpen = true;
+  }
+
+  async function handleRevert() {
+    isReverting = true;
+    try {
+      const reverted = await revertFiles(client, remoteBranch, revertTargets);
+      eventBus.emit("notification", {
+        type: "success",
+        message: m.edit_changes_reverted({ count: reverted }),
+      });
+      selected = selected.filter((p) => !revertTargets.includes(p));
+      revertOpen = false;
+    } catch {
+      eventBus.emit("notification", {
+        type: "error",
+        message: m.edit_changes_revert_failed(),
+      });
+    } finally {
+      isReverting = false;
+    }
+  }
 </script>
 
 <Dialog.Root bind:open>
   <Dialog.Content
     class="flex flex-col gap-0 p-0 w-[90vw] max-w-screen-xl h-[85vh] max-h-[85vh]"
   >
-    <Dialog.Header class="px-4 py-3 border-b border-gray-200 text-left">
+    <Dialog.Header
+      class="px-4 py-3 border-b border-gray-200 flex-row items-center justify-between space-y-0 text-left"
+    >
       <Dialog.Title class="text-sm font-semibold leading-none tracking-normal">
         {m.edit_changes_review_title()}
         {#if changedFiles.length > 0}
@@ -104,6 +168,24 @@
           >
         {/if}
       </Dialog.Title>
+      {#if changedFiles.length > 0}
+        <!-- mr-8 keeps the buttons clear of the dialog's absolutely positioned close icon -->
+        <div class="flex items-center gap-x-2 mr-8">
+          <Button
+            type="secondary-destructive"
+            disabled={selected.length === 0}
+            onClick={() => openRevert(selected)}
+          >
+            {m.edit_changes_revert_selected({ count: selected.length })}
+          </Button>
+          <Button
+            type="secondary-destructive"
+            onClick={() => openRevert(allPaths())}
+          >
+            {m.edit_changes_discard_all()}
+          </Button>
+        </div>
+      {/if}
     </Dialog.Header>
 
     {#if isFetching}
@@ -115,24 +197,50 @@
       <div class="state-message">{m.edit_changes_none_to_show()}</div>
     {:else}
       <div class="flex flex-1 min-h-0">
-        <ul class="file-nav">
-          {#each changedFiles as file (file.path)}
-            {@const IconComponent = getIconComponent(
-              getFileKind(file.path ?? "") ?? undefined,
-              "/" + (file.path ?? ""),
-            )}
-            <li>
-              <button
-                type="button"
-                class="file-row"
-                onclick={() => scrollToFile(file.path)}
-              >
-                <IconComponent />
-                <span class="file-path" title={file.path}>{file.path}</span>
-              </button>
-            </li>
-          {/each}
-        </ul>
+        <div class="file-nav">
+          <label class="select-all">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onchange={(e) => toggleAll(e.currentTarget.checked)}
+            />
+            {m.edit_changes_select_all()}
+          </label>
+          <ul class="file-nav-list">
+            {#each changedFiles as file (file.path)}
+              {@const IconComponent = getIconComponent(
+                getFileKind(file.path ?? "") ?? undefined,
+                "/" + (file.path ?? ""),
+              )}
+              <li class="file-row">
+                <input
+                  type="checkbox"
+                  class="file-check"
+                  checked={selected.includes(file.path ?? "")}
+                  onchange={(e) => toggle(file.path, e.currentTarget.checked)}
+                  aria-label={file.path}
+                />
+                <button
+                  type="button"
+                  class="file-info"
+                  onclick={() => scrollToFile(file.path)}
+                >
+                  <IconComponent />
+                  <span class="file-path" title={file.path}>{file.path}</span>
+                </button>
+                <button
+                  type="button"
+                  class="revert-btn"
+                  title={m.edit_changes_revert()}
+                  aria-label={m.edit_changes_revert()}
+                  onclick={() => openRevert(file.path ? [file.path] : [])}
+                >
+                  <RotateCcw size="13" />
+                </button>
+              </li>
+            {/each}
+          </ul>
+        </div>
         <div class="diff-pane" bind:this={diffPane}>
           <Diff2HtmlView {diff} showFileHeaders>
             {#snippet empty()}
@@ -143,13 +251,22 @@
       </div>
     {/if}
 
-    <Dialog.Footer class="px-4 py-3 border-t border-gray-200">
+    <Dialog.Footer
+      class="px-4 py-3 border-t border-gray-200 flex items-center justify-end"
+    >
       <Button type="secondary" onClick={() => (open = false)}
         >{m.common_close()}</Button
       >
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
+
+<RevertConfirmDialog
+  bind:open={revertOpen}
+  files={revertTargets}
+  loading={isReverting}
+  onConfirm={handleRevert}
+/>
 
 <style lang="postcss">
   .state-message {
@@ -160,17 +277,44 @@
   .file-nav {
     @apply flex-none w-60 overflow-y-auto;
     @apply border-r border-gray-200 bg-surface-subtle;
-    @apply flex flex-col gap-y-0.5 p-2;
+    @apply flex flex-col p-2 gap-y-1;
+  }
+
+  .select-all {
+    @apply flex items-center gap-x-2 px-2 py-1;
+    @apply text-xs text-fg-secondary cursor-pointer;
+  }
+
+  .file-nav-list {
+    @apply flex flex-col gap-y-0.5;
   }
 
   .file-row {
-    @apply flex items-center gap-x-2 w-full text-left;
-    @apply px-2 py-1 rounded text-xs text-fg-secondary;
-    @apply hover:bg-gray-100 hover:text-fg-primary;
+    @apply flex items-center gap-x-1 w-full rounded;
+    @apply hover:bg-gray-100;
+  }
+
+  .file-check {
+    @apply flex-none ml-1;
+  }
+
+  .file-info {
+    @apply flex items-center gap-x-2 flex-1 min-w-0 text-left;
+    @apply px-1 py-1 text-xs text-fg-secondary;
+    @apply hover:text-fg-primary;
   }
 
   .file-path {
     @apply truncate;
+  }
+
+  .revert-btn {
+    @apply flex-none p-1 rounded text-fg-secondary opacity-0;
+    @apply hover:bg-gray-200 hover:text-fg-primary;
+  }
+
+  .file-row:hover .revert-btn {
+    @apply opacity-100;
   }
 
   .diff-pane {

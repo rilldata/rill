@@ -266,6 +266,101 @@ func Diff(ctx context.Context, path, subpath, remoteName, remoteBranch string) (
 	return orderAndCapDiffSections(b.String()), nil
 }
 
+// Revert discards local changes for the given files, resetting them to the target-branch state,
+// i.e. the merge base of HEAD and `<remoteName>/<remoteBranch>` (the same comparison ref used by
+// ChangedFiles and Diff). It mirrors ChangedFiles: a file reverts to the state it has on the
+// target branch, undoing committed, staged, and untracked local changes to it.
+//
+// paths are subpath-relative, matching the paths returned by ChangedFiles. Paths that are not
+// actually changed relative to the target branch are silently skipped. If paths is empty, all
+// changed files are reverted. The subpath-relative paths that were reverted are returned.
+//
+// The revert is applied per file according to its change status:
+//   - Modified/Deleted: restored from the merge base (content and index).
+//   - Added: removed from the index (if staged) and deleted from the working tree.
+//   - Renamed: the old path is restored from the merge base and the new path is removed.
+func Revert(ctx context.Context, path, subpath, remoteName, remoteBranch string, paths []string) ([]string, error) {
+	changed, err := ChangedFiles(ctx, path, subpath, remoteName, remoteBranch)
+	if err != nil {
+		return nil, err
+	}
+	byPath := make(map[string]ChangedFile, len(changed))
+	for _, c := range changed {
+		byPath[c.Path] = c
+	}
+
+	var targets []ChangedFile
+	if len(paths) == 0 {
+		targets = changed
+	} else {
+		for _, p := range paths {
+			if c, ok := byPath[p]; ok {
+				targets = append(targets, c)
+			}
+		}
+	}
+	if len(targets) == 0 {
+		return nil, nil
+	}
+
+	compareBranch := remoteBranch
+	if compareBranch == "" {
+		branch, err := Run(ctx, path, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return nil, err
+		}
+		compareBranch = branch
+	}
+	ref := fmt.Sprintf("%s/%s", remoteName, compareBranch)
+
+	mergeBase, err := Run(ctx, path, "merge-base", "HEAD", ref)
+	if err != nil {
+		return nil, err
+	}
+	mergeBase = strings.TrimSpace(mergeBase)
+
+	// Partition the targets into files to restore from the merge base and files to remove.
+	var restorePaths, removePaths, reverted []string
+	for _, t := range targets {
+		reverted = append(reverted, t.Path)
+		full := joinSubpath(subpath, t.Path)
+		switch t.Status {
+		case ChangedFileStatusModified, ChangedFileStatusDeleted:
+			restorePaths = append(restorePaths, full)
+		case ChangedFileStatusAdded:
+			removePaths = append(removePaths, full)
+		case ChangedFileStatusRenamed:
+			// Bring back the pre-rename file and drop the renamed-to file.
+			restorePaths = append(restorePaths, joinSubpath(subpath, t.OldPath))
+			removePaths = append(removePaths, full)
+		}
+	}
+
+	if len(restorePaths) > 0 {
+		args := append([]string{"restore", "--source", mergeBase, "--staged", "--worktree", "--"}, restorePaths...)
+		if _, err := Run(ctx, path, args...); err != nil {
+			return nil, err
+		}
+	}
+
+	if len(removePaths) > 0 {
+		// Unstage any staged additions (`--ignore-unmatch` makes this a no-op for untracked files),
+		// then delete the file from the working tree.
+		args := append([]string{"rm", "--cached", "--ignore-unmatch", "--"}, removePaths...)
+		if _, err := Run(ctx, path, args...); err != nil {
+			return nil, err
+		}
+		for _, rp := range removePaths {
+			if err := os.Remove(filepath.Join(path, filepath.FromSlash(rp))); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("failed to remove %q: %w", rp, err)
+			}
+		}
+	}
+
+	sort.Strings(reverted)
+	return reverted, nil
+}
+
 // Fetch fetches the latest changes from the remote described by config, updating the
 // remote-tracking refs under `refs/remotes/<remote-name>/`.
 // If config is nil or carries no credentials, it fetches from origin relying on git's own
@@ -474,6 +569,16 @@ func countAheadBehind(ctx context.Context, path, subpath, local, remote string) 
 
 func trimSubpath(file, subpath string) string {
 	return strings.TrimPrefix(strings.TrimPrefix(file, subpath), "/")
+}
+
+// joinSubpath is the inverse of trimSubpath: it prefixes a subpath-relative file with subpath so
+// it can be used as a git pathspec relative to the repo root. It uses a forward slash regardless
+// of platform, matching git's pathspec convention.
+func joinSubpath(subpath, file string) string {
+	if subpath == "" {
+		return file
+	}
+	return subpath + "/" + file
 }
 
 // changedFileStatusFromCode maps a `git diff --name-status` status code to a ChangedFileStatus.
