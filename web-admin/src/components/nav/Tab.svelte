@@ -23,6 +23,12 @@
     position.set(left);
   }
 
+  // When the tab row overflows (narrow viewports), keep the selected tab
+  // visible; "nearest" makes this a no-op when it already is.
+  $: if (selected && element) {
+    element.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+
   function measure() {
     if (!element) return;
     left = element.offsetLeft;

@@ -23,6 +23,7 @@
   import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
   import type { PdfExportRunOptions } from "@rilldata/web-common/features/exports/pdf/types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { Share } from "lucide-svelte";
   import { readable } from "svelte/store";
 
   export let createMagicAuthTokens: boolean;
@@ -71,16 +72,24 @@
   <PopoverTrigger>
     {#snippet child({ props })}
       <Tooltip distance={8} suppress={isOpen}>
-        <Button {...props} type="secondary" selected={isOpen}
-          >{m.avatar_share()}</Button
+        <!-- On phones the label costs too much header width, so the button
+             collapses to its icon; the aria-label keeps the accessible name. -->
+        <Button
+          {...props}
+          type="secondary"
+          selected={isOpen}
+          label={m.avatar_share()}
         >
+          <Share size="16px" class="sm:hidden" />
+          <span class="hidden sm:inline">{m.avatar_share()}</span>
+        </Button>
         <TooltipContent slot="tooltip-content"
           >{m.avatar_share_dashboard()}</TooltipContent
         >
       </Tooltip>
     {/snippet}
   </PopoverTrigger>
-  <PopoverContent align="end" class="w-[402px] p-0">
+  <PopoverContent align="end" class="w-[min(402px,calc(100vw-2rem))] p-0">
     <Tabs>
       <TabsList>
         <TabsTrigger value="tab1">{m.avatar_copy_url()}</TabsTrigger>

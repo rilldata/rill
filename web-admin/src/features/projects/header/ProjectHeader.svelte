@@ -214,7 +214,15 @@
     </Breadcrumbs>
   {/if}
 
-  <div class="flex gap-x-2 items-center ml-auto">
+  <!-- max-w-full bounds the cluster so its flex-wrap can engage on narrow
+       viewports (a bare shrink-0 leaves the width unbounded and the row
+       never wraps); from sm up it keeps to one row as before. grow works
+       around WebKit sizing a wrapping flex item below its single-line
+       max-content (the row wrapped despite free space); with justify-end
+       the extra width is invisible. -->
+  <div
+    class="flex flex-wrap justify-end gap-y-1 gap-x-2 items-center ml-auto grow max-w-full sm:shrink-0"
+  >
     {#if editContext}
       {#if $developerChat && !onEditDashboardPreview}
         <ChatToggle open={developerChatOpen} actions={developerChatActions} />
