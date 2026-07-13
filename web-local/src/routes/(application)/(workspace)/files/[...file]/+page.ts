@@ -27,6 +27,14 @@ export const load = async ({ params: { file }, parent }) => {
     );
   }
 
+  // Data files like .parquet have no editable text content to fetch; they are
+  // rendered as a queryable data preview instead.
+  if (fileArtifact.isPreviewableDataFile) {
+    return {
+      fileArtifact,
+    };
+  }
+
   try {
     await fileArtifact.fetchContent();
 
