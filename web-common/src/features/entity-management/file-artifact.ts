@@ -91,10 +91,10 @@ export class FileArtifact {
   readonly autoSave: Writable<boolean>;
   // Path is locked: file can't be renamed or deleted, and other files can't
   // be renamed onto this path.
-  readonly pinned: boolean;
+  pinned: boolean;
   // Content is managed outside of editors.
   // Currently **/.*.env files are managed from project settings page on cloud editor
-  readonly managed: boolean;
+  managed: boolean;
   readonly snapshot: Writable<{
     scroll?: ReturnType<EditorView["scrollSnapshot"]>;
     selection?: EditorSelection;
@@ -410,6 +410,11 @@ export class FileArtifact {
       this.getAllWarnings(queryClient),
       (warnings) => warnings.length > 0,
     );
+  }
+
+  recheckReadonlyStatus() {
+    this.pinned = isPinned(this.path);
+    this.managed = isManaged(this.path);
   }
 
   private updateResourceNameIfChanged(resource: V1Resource) {

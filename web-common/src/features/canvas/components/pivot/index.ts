@@ -4,6 +4,7 @@ import {
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import type {
   PivotDataStoreConfig,
   PivotState,
@@ -23,7 +24,11 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
-import { createPivotConfig, usePivotForCanvas } from "./util";
+import {
+  createPivotConfig,
+  ROW_LIMIT_ALL_VALUE,
+  usePivotForCanvas,
+} from "./util";
 
 export interface PivotSpec
   extends ComponentCommonProperties,
@@ -34,6 +39,7 @@ export interface PivotSpec
   col_dimensions?: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  row_limit?: string;
 }
 
 export interface TableSpec
@@ -137,9 +143,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   }
 
   getExploreTransformerProperties(): Partial<ExploreState> {
-    const pivotState = get(this.pivotState);
     return {
-      pivot: pivotState,
+      pivot: get(this.pivotState),
       activePage: DashboardState_ActivePage.PIVOT,
     };
   }
@@ -190,6 +195,20 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: m.canvas_hide_total_row_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
+          },
+          row_limit: {
+            type: "select",
+            label: "Row limit",
+            meta: {
+              default: ROW_LIMIT_ALL_VALUE,
+              options: [
+                ...PIVOT_ROW_LIMIT_OPTIONS.map((limit) => ({
+                  value: limit.toString(),
+                  label: limit.toString(),
+                })),
+                { value: ROW_LIMIT_ALL_VALUE, label: "All" },
+              ],
+            },
           },
           ...getCommonOptions(),
         },

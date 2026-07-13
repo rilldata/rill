@@ -239,6 +239,7 @@ describe("nestedCellState", () => {
     hasCrossSelection: false,
     isAncestorOfSelectedHeader: false,
     isTotalsRow: false,
+    isShowMore: false,
     canShowDataViewer: false,
     enableClickToFilter: false,
   };
@@ -331,6 +332,17 @@ describe("nestedCellState", () => {
     expect(
       nestedCellState({ ...base, enableClickToFilter: true }).interactiveCell,
     ).toBe(true);
+  });
+
+  it("suppresses interactiveCell for show-more rows", () => {
+    expect(
+      nestedCellState({
+        ...base,
+        isShowMore: true,
+        enableClickToFilter: true,
+        canShowDataViewer: true,
+      }).interactiveCell,
+    ).toBe(false);
   });
 
   it("returns cellSelectedColDimGroupBody for sibling measures in clicked row's col-dim group", () => {
@@ -536,6 +548,7 @@ describe("3-dimension nested table: row header click styling by depth", () => {
       hasCrossSelection,
       isAncestorOfSelectedHeader,
       isTotalsRow: false,
+      isShowMore: false,
       canShowDataViewer: false,
       enableClickToFilter: true,
     });
