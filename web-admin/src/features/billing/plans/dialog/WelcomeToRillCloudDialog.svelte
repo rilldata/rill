@@ -31,7 +31,9 @@
       <div {...props} class="hidden"></div>
     {/snippet}
   </AlertDialogTrigger>
-  <AlertDialogContent class="flex flex-row gap-x-2 min-w-[600px]">
+  <AlertDialogContent
+    class="flex flex-row gap-x-2 min-w-[min(600px,calc(100vw-2rem))]"
+  >
     <Champagne size="150px" className="min-w-[150px]" />
     <div class="flex flex-col gap-x-2">
       <AlertDialogHeader>
