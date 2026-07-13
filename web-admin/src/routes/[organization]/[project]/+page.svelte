@@ -15,6 +15,11 @@
   import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
+  import TableToolbarSort from "@rilldata/web-common/components/table-toolbar/TableToolbarSort.svelte";
+  import {
+    DashboardTableSort,
+    DashboardTableSortOptions,
+  } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.svelte.ts";
 
   const { chat, personalCanvases } = featureFlags;
 
@@ -42,6 +47,7 @@
     ($personalCanvasesQuery.data?.length ?? 0) === 0;
 
   const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
+  const sortStore = new DashboardTableSort();
 </script>
 
 <svelte:head>
@@ -99,9 +105,18 @@
     {/if}
 
     <div class="flex flex-col gap-y-4">
-      <h2 class="flex text-xl font-semibold text-fg-secondary justify-between">
-        <div class="flex flex-row w-full items-center justify-between">
+      <h2
+        class="flex flex-row gap-x-2 items-center text-xl font-semibold text-fg-secondary"
+      >
+        <div class="flex flex-row w-full gap-x-2 items-center grow">
           <span>{m.home_dashboards_heading()}</span>
+          <TableToolbarSort
+            {sortStore}
+            sortOptions={DashboardTableSortOptions}
+            size="sm"
+            noOutline
+          />
+          <div class="grow"></div>
           <DashboardsTagFilter align="end" {selectedTagsStore} />
         </div>
         {#if $personalCanvases && hasNoPersonalCanvases}

@@ -9,7 +9,7 @@
     getTagFilterLabel,
   } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import type { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
-  import { getDashboardTagFavouritesStore } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
+  import { getDashboardTagFavouritesStore } from "./dashboard-favourites.svelte.ts";
   import { page } from "$app/state";
 
   let {

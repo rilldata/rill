@@ -23,25 +23,20 @@
   export let kind: string;
   export let toolbar: boolean = true;
   export let fixedRowHeight: boolean = true;
-  export let initialSorting: SortingState = [];
+  export let sorting: SortingState = [];
   export let pinnedRows: string[] = [];
   export let maxRows: number | undefined = undefined;
 
-  let sorting: SortingState = initialSorting;
-  function setSorting(updater) {
-    if (updater instanceof Function) {
-      sorting = updater(sorting);
-    } else {
-      sorting = updater;
-    }
+  function setSorting(newSorting: SortingState) {
     options.update((old) => ({
       ...old,
       state: {
         ...old.state,
-        sorting,
+        sorting: newSorting,
       },
     }));
   }
+  $: setSorting(sorting);
 
   function setPinned(newPinnedRows: string[]) {
     options.update((old) => ({
@@ -75,7 +70,6 @@
         index.toString()
       );
     },
-    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),

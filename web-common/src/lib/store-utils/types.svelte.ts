@@ -39,15 +39,39 @@ export class ArrayRuneStore<Val> implements RuneStore<Val[]> {
   }
 
   public toggle = (value: Val) => {
-    const newTags = this.value.includes(value)
+    const newValue = this.value.includes(value)
       ? this.value.filter((v) => v !== value)
       : [...this.value, value];
-    this.setter(newTags);
+    this.setter(newValue);
   };
 
   public delete = (value: Val) => {
-    const newTags = this.value.filter((v) => v !== value);
-    this.setter(newTags);
+    const newValue = this.value.filter((v) => v !== value);
+    this.setter(newValue);
+  };
+}
+
+export class RecordRuneStore<Val> implements RuneStore<Record<string, Val>> {
+  public value: Record<string, Val>;
+  public getter: () => Record<string, Val>;
+  public setter: (newValue: Record<string, Val>) => void;
+
+  public constructor(store: RuneStore<Record<string, Val>>) {
+    this.value = $derived(store.value);
+    this.getter = store.getter;
+    this.setter = store.setter;
+  }
+
+  public set = (key: string, value: Val | null) => {
+    const newValue = {
+      ...this.value,
+    };
+    if (value === null) {
+      delete newValue[key];
+    } else {
+      newValue[key] = value;
+    }
+    this.setter(newValue);
   };
 }
 

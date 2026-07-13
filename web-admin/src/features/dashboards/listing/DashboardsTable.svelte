@@ -17,12 +17,18 @@
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
   import {
+    DashboardTableSort,
+    DashboardTableSortOptions,
     getDashboardFavouritesStore,
     RecentlyUsedDashboards,
-  } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.ts";
+  } from "./dashboard-favourites.svelte.ts";
   import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
+  import {
+    type SortOption,
+    TableToolbar,
+  } from "@rilldata/web-common/components/table-toolbar";
 
   let {
     isEmbedded = false,
@@ -39,6 +45,14 @@
   const searchTextStore = new DebouncedRuneStore(
     UrlParamsState.createStringParam("q"),
     500,
+  );
+
+  const sortStore = new DashboardTableSort();
+  let sorting = $derived(
+    Object.entries(sortStore.value).map(([key, value]) => ({
+      id: key,
+      desc: value,
+    })),
   );
 
   const runtimeClient = useRuntimeClient();
@@ -175,11 +189,6 @@
     description: false,
     lastUsed: false,
   };
-
-  const initialSorting = [
-    { id: "lastUsed", desc: true },
-    { id: "name", desc: false },
-  ];
 </script>
 
 {#if isLoading || isBuilding}
@@ -191,16 +200,11 @@
 {:else if isSuccess}
   <div class="flex flex-col w-full gap-y-3">
     {#if !isPreview}
-      <div class="flex flex-row items-center gap-x-2">
-        <Search
-          placeholder={m.common_search()}
-          autofocus={false}
-          bind:value={searchTextStore.getter, searchTextStore.setter}
-          rounded="lg"
-          retainValueOnMount
-          large
-        />
-      </div>
+      <TableToolbar
+        {searchTextStore}
+        {sortStore}
+        sortOptions={DashboardTableSortOptions}
+      />
     {/if}
 
     <div class="flex flex-row flex-1 w-full gap-x-2 overflow-hidden">
@@ -226,7 +230,7 @@
           data={displayData}
           {columns}
           {columnVisibility}
-          {initialSorting}
+          {sorting}
           toolbar={false}
           pinnedRows={validDashboardFavourites}
           maxRows={previewLimit}
