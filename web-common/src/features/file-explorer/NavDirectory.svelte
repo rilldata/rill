@@ -14,7 +14,8 @@
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
-  $: expanded = $directoryState[directory.path];
+  // Directories are expanded by default; only explicitly collapsed ones are false.
+  $: expanded = $directoryState[directory.path] ?? true;
   const { dragData, dropDirs } = navEntryDragDropStore;
   $: isDragDropHover =
     $dragData && $dropDirs[$dropDirs.length - 1] === directory.path;
