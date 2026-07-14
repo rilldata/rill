@@ -69,7 +69,8 @@
         {item.title}
       </span>
       <span class="text-xs text-fg-secondary">
-        Conditional formatting{#if fmt?.mode === "rules"} · {fmt.rules.length}
+        Conditional formatting{#if fmt?.mode === "rules"}
+          · {fmt.rules.length}
           {fmt.rules.length === 1 ? "rule" : "rules"}{/if}
       </span>
     </div>
