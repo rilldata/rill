@@ -764,13 +764,6 @@ export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
   scheme = "";
 
   /**
-   * Flip the gradient direction (heatmap only).
-   *
-   * @generated from field: bool reverse = 4;
-   */
-  reverse = false;
-
-  /**
    * Ordered threshold rules; first match wins. Only for "rules" mode.
    *
    * @generated from field: repeated rill.ui.v1.PivotFormatRule rules = 5;
@@ -788,7 +781,6 @@ export class PivotConditionalFormat extends Message<PivotConditionalFormat> {
     { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "scheme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "reverse", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "rules", kind: "message", T: PivotFormatRule, repeated: true },
   ]);
 

@@ -161,6 +161,7 @@ const LIGHT_TEXT_LUMINANCE = 0.4;
 export function makeCellFormatter(
   fmt: PivotMeasureFormatting,
   domain?: [number, number],
+  lowerIsBetter = false,
 ): CellFormatter {
   if (fmt.mode === "rules") {
     return (value: number) => {
@@ -172,7 +173,11 @@ export function makeCellFormatter(
   }
 
   const [min, max] = domain ?? [0, 1];
-  const stops = getSchemeStops(fmt.scheme, fmt.reverse);
+  // Data bars encode magnitude only, so direction doesn't apply to them.
+  const stops = getSchemeStops(
+    fmt.scheme,
+    fmt.mode === "heatmap" && lowerIsBetter,
+  );
 
   if (fmt.mode === "data_bar") {
     // Bar length is proportional to magnitude relative to the largest absolute

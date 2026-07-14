@@ -33,6 +33,15 @@
 
   $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: fieldData = useMetricFieldData(ctx, metricName, types);
+
+  $: metricsViewStore =
+    ctx.canvasEntity.metricsView.getMetricsViewFromName(metricName);
+  $: lowerIsBetterMap = Object.fromEntries(
+    ($metricsViewStore.metricsView?.measures ?? []).map((m) => [
+      m.name as string,
+      m.lowerIsBetter ?? false,
+    ]),
+  );
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">
@@ -68,5 +77,6 @@
     onUpdate={onMultiSelect}
     {measureFormatting}
     {setMeasureFormatting}
+    {lowerIsBetterMap}
   />
 </div>

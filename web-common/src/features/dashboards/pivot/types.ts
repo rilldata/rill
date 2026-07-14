@@ -84,8 +84,6 @@ export type PivotScaleFormatting = {
   // color. Keyed into PIVOT_FORMATTING_SCHEMES (e.g. "greens", "redYellowGreen",
   // "theme-sequential").
   scheme: string;
-  // For heatmap: flip the gradient direction.
-  reverse?: boolean;
 };
 
 // Threshold-based formatting: an ordered rule list where the first matching

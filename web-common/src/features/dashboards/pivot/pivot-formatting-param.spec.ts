@@ -6,15 +6,15 @@ import {
 import type { PivotMeasureFormatting } from "./types";
 
 describe("pivot formatting url param codec", () => {
-  it("serializes scale modes with optional reverse", () => {
+  it("serializes scale modes", () => {
     expect(
       toPivotFormattingParam({
         revenue: { mode: "heatmap", scheme: "greens" },
-        orders: { mode: "heatmap", scheme: "blues", reverse: true },
+        orders: { mode: "heatmap", scheme: "blues" },
         margin: { mode: "data_bar", scheme: "theme-sequential" },
       }),
     ).toBe(
-      "revenue:heatmap:greens;orders:heatmap:blues:reverse;margin:data_bar:theme-sequential",
+      "revenue:heatmap:greens;orders:heatmap:blues;margin:data_bar:theme-sequential",
     );
   });
 
@@ -40,7 +40,7 @@ describe("pivot formatting url param codec", () => {
 
   it("round-trips every mode", () => {
     const config: Record<string, PivotMeasureFormatting> = {
-      revenue: { mode: "heatmap", scheme: "greens", reverse: true },
+      revenue: { mode: "heatmap", scheme: "greens" },
       orders: { mode: "data_bar", scheme: "blues" },
       margin: {
         mode: "rules",
@@ -71,11 +71,12 @@ describe("pivot formatting url param codec", () => {
         "margin:rules:noop,1,red", // unknown operator
         "profit:rules:lt,abc,red", // non-numeric value
         "cost:sparkles:greens", // unknown mode
+        "tax:heatmap:blues:reverse", // trailing extra part
         "sales:rules:between,1,2,blue", // valid
       ].join(";"),
     );
     expect(Object.keys(measureFormatting ?? {})).toEqual(["revenue", "sales"]);
-    expect(invalidEntries).toHaveLength(4);
+    expect(invalidEntries).toHaveLength(5);
   });
 
   it("rejects rules with a wrong number of parts", () => {

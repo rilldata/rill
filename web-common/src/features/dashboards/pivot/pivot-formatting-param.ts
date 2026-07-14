@@ -10,8 +10,7 @@ import type {
  *
  * Grammar:
  *   param  := entry (";" entry)*
- *   entry  := measure ":" "heatmap" ":" scheme [":reverse"]
- *           | measure ":" "data_bar" ":" scheme
+ *   entry  := measure ":" ("heatmap" | "data_bar") ":" scheme
  *           | measure ":" "rules" ":" rule ("|" rule)*
  *   rule   := op "," value ["," value2] "," color
  *
@@ -38,9 +37,7 @@ export function toPivotFormattingParam(
         const rules = fmt.rules.map(ruleToString).join("|");
         return `${measure}:rules:${rules}`;
       }
-      const parts = [measure, fmt.mode, fmt.scheme];
-      if (fmt.reverse) parts.push("reverse");
-      return parts.join(":");
+      return [measure, fmt.mode, fmt.scheme].join(":");
     })
     .join(";");
 }
@@ -86,18 +83,9 @@ function parseEntry(
   if (!measure || rest.length === 0) return undefined;
 
   if (mode === "heatmap" || mode === "data_bar") {
-    const [scheme, reverse] = rest;
-    if (!scheme || (reverse !== undefined && reverse !== "reverse")) {
-      return undefined;
-    }
-    return {
-      measure,
-      fmt: {
-        mode,
-        scheme,
-        reverse: reverse === "reverse" || undefined,
-      },
-    };
+    const [scheme] = rest;
+    if (!scheme || rest.length > 1) return undefined;
+    return { measure, fmt: { mode, scheme } };
   }
 
   if (mode === "rules") {

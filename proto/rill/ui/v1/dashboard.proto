@@ -192,8 +192,6 @@ message PivotConditionalFormat {
   // Color scheme key (e.g. "theme-sequential", "greens", "redYellowGreen").
   // Only for "heatmap" and "data_bar" modes.
   string scheme = 3;
-  // Flip the gradient direction (heatmap only).
-  bool reverse = 4;
   // Ordered threshold rules; first match wins. Only for "rules" mode.
   repeated PivotFormatRule rules = 5;
 }

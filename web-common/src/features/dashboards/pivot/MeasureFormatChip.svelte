@@ -16,6 +16,7 @@
     grab?: boolean;
     fullWidth?: boolean;
     fmt: PivotMeasureFormatting | undefined;
+    lowerIsBetter?: boolean;
     onFormatChange: (fmt: PivotMeasureFormatting | null) => void;
     onRemove?: () => void;
     onmousedown?: (e: MouseEvent) => void;
@@ -27,6 +28,7 @@
     grab = false,
     fullWidth = false,
     fmt,
+    lowerIsBetter = false,
     onFormatChange,
     onRemove = () => {},
     onmousedown = undefined,
@@ -39,7 +41,14 @@
   <PopoverTrigger>
     {#snippet child({ props })}
       <div {...props}>
-        <PivotChip {item} {removable} {grab} {fullWidth} {onmousedown} {onRemove}>
+        <PivotChip
+          {item}
+          {removable}
+          {grab}
+          {fullWidth}
+          {onmousedown}
+          {onRemove}
+        >
           <div class="format-dropdown flex items-center gap-x-1" slot="body">
             {#if fmt}
               <Palette size="12px" />
@@ -59,7 +68,12 @@
       <span class="text-xs font-medium truncate" title={item.title}>
         {item.title}
       </span>
-      <MeasureFormattingControls id={item.id} {fmt} onChange={onFormatChange} />
+      <MeasureFormattingControls
+        id={item.id}
+        {fmt}
+        {lowerIsBetter}
+        onChange={onFormatChange}
+      />
     </div>
   </PopoverContent>
 </Popover>

@@ -450,7 +450,6 @@ export function fromPivotConditionalFormattingProto(
     measure: string;
     mode: string;
     scheme: string;
-    reverse: boolean;
     rules: {
       operator: string;
       value: number;
@@ -466,7 +465,6 @@ export function fromPivotConditionalFormattingProto(
       measureFormatting[f.measure] = {
         mode: f.mode,
         scheme: f.scheme,
-        reverse: f.reverse || undefined,
       };
     } else if (f.mode === "rules" && f.rules.length) {
       measureFormatting[f.measure] = {

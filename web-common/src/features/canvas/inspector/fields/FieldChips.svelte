@@ -13,6 +13,7 @@
   export let setMeasureFormatting:
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 </script>
 
 {#if items?.length > 0}
@@ -25,6 +26,7 @@
         {orientation}
         {measureFormatting}
         {setMeasureFormatting}
+        {lowerIsBetterMap}
       />
     {/if}
   </div>

@@ -1,6 +1,5 @@
 <script lang="ts">
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import FormattingRulesEditor from "./FormattingRulesEditor.svelte";
   import {
     getSchemeStops,
@@ -12,11 +11,12 @@
     // Unique per rendered instance, used to build stable input ids.
     id: string;
     fmt: PivotMeasureFormatting | undefined;
+    lowerIsBetter?: boolean;
     // Emits the new config, or null to clear formatting.
     onChange: (fmt: PivotMeasureFormatting | null) => void;
   };
 
-  let { id, fmt, onChange }: Props = $props();
+  let { id, fmt, lowerIsBetter = false, onChange }: Props = $props();
 
   const DEFAULT_SCHEME = "theme-sequential";
 
@@ -36,7 +36,6 @@
   let scheme = $derived(
     fmt && fmt.mode !== "rules" ? fmt.scheme : DEFAULT_SCHEME,
   );
-  let reverse = $derived((fmt && fmt.mode !== "rules" && fmt.reverse) ?? false);
   let rules = $derived(fmt?.mode === "rules" ? fmt.rules : []);
 
   function swatchGradient(schemeKey: string, reversed: boolean): string {
@@ -55,11 +54,7 @@
           : [{ operator: "gt", value: 0, color: "positive" }],
       });
     } else {
-      onChange({
-        mode: newMode as "heatmap" | "data_bar",
-        scheme,
-        reverse: reverse || undefined,
-      });
+      onChange({ mode: newMode as "heatmap" | "data_bar", scheme });
     }
   }
 
@@ -89,28 +84,20 @@
     <div class="flex items-center gap-x-2">
       <div
         class="swatch"
-        style:background={swatchGradient(scheme, reverse)}
+        style:background={swatchGradient(
+          scheme,
+          mode === "heatmap" && lowerIsBetter,
+        )}
       ></div>
       <Select
         id="pivot-format-scheme-{id}"
         value={scheme}
         options={schemeOptions}
-        onChange={(v: string) => onChange({ mode, scheme: v, reverse })}
+        onChange={(v: string) => onChange({ mode, scheme: v })}
         size="sm"
         full
       />
     </div>
-    {#if mode === "heatmap"}
-      <div class="flex items-center justify-between gap-x-2">
-        <span class="text-fg-secondary text-xs">Reverse colors</span>
-        <Switch
-          small
-          checked={reverse}
-          onCheckedChange={(checked) =>
-            onChange({ mode, scheme, reverse: Boolean(checked) })}
-        />
-      </div>
-    {/if}
   {:else if mode === "rules"}
     <FormattingRulesEditor {rules} onChange={handleRulesChange} />
   {/if}

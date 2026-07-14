@@ -72,6 +72,19 @@ describe("makeCellFormatter — heatmap", () => {
     const fmt = makeCellFormatter({ mode: "heatmap", scheme: "blues" }, [5, 5]);
     expect(() => fmt(5)).not.toThrow();
   });
+
+  it("flips the gradient for lower-is-better measures", () => {
+    const fmt = makeCellFormatter(
+      { mode: "heatmap", scheme: "greens" },
+      [0, 100],
+      true,
+    );
+    const stops = getSchemeStops("greens");
+    expect(fmt(0)?.background.toLowerCase()).toBe(
+      stops[stops.length - 1].toLowerCase(),
+    );
+    expect(fmt(100)?.background.toLowerCase()).toBe(stops[0].toLowerCase());
+  });
 });
 
 describe("makeCellFormatter — data bar", () => {
@@ -93,6 +106,19 @@ describe("makeCellFormatter — data bar", () => {
     );
     // absMax is 100, so -100 fills the full bar.
     expect(fmt(-100)?.background).toContain("100%");
+  });
+
+  it("ignores lower-is-better: bars encode magnitude, not direction", () => {
+    const fmt = makeCellFormatter(
+      { mode: "data_bar", scheme: "blues" },
+      [0, 200],
+    );
+    const fmtLowerIsBetter = makeCellFormatter(
+      { mode: "data_bar", scheme: "blues" },
+      [0, 200],
+      true,
+    );
+    expect(fmtLowerIsBetter(100)).toEqual(fmt(100));
   });
 });
 

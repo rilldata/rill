@@ -88,6 +88,13 @@
     });
   }
 
+  $: lowerIsBetterMap = Object.fromEntries(
+    ($validSpecStore.data?.metricsView?.measures ?? []).map((m) => [
+      m.name as string,
+      m.lowerIsBetter ?? false,
+    ]),
+  );
+
   $: enrichedPivotState = {
     ...$dashboardStore.pivot,
     rows: enrichDescriptions($dashboardStore.pivot.rows),
@@ -163,6 +170,7 @@
             measureName,
             fmt,
           )}
+        {lowerIsBetterMap}
       />
     {/if}
     <div

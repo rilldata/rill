@@ -20,6 +20,7 @@
   export let setMeasureFormatting:
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 
   $: ({ rows, columns, tableMode, measureFormatting } = pivotState);
   $: splitColumns = splitPivotChips(columns);
@@ -76,6 +77,7 @@
       onUpdate={updateColumn}
       {measureFormatting}
       {setMeasureFormatting}
+      {lowerIsBetterMap}
     />
   </div>
 </div>

@@ -72,6 +72,7 @@
   export let setMeasureFormatting:
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 
   const isDropLocation = zone === "columns" || zone === "rows";
   const DRAG_START_THRESHOLD_PX = 4;
@@ -400,6 +401,7 @@
             grab
             removable
             fmt={measureFormatting?.[item.id]}
+            lowerIsBetter={lowerIsBetterMap[item.id] ?? false}
             onFormatChange={(fmt: PivotMeasureFormatting | null) =>
               setMeasureFormatting?.(item.id, fmt)}
             onmousedown={(e: MouseEvent) => handleMouseDown(e, item)}

@@ -157,6 +157,7 @@
     $table.getRowModel().flatRows,
     $config.pivot.measureFormatting,
     !!totalsRow,
+    $config.allMeasures,
   );
 
   $: headerGroups = $table.getHeaderGroups();
@@ -209,6 +210,7 @@
     flatRows: Row<PivotDataRow>[],
     measureFormatting: PivotState["measureFormatting"],
     hasTotalsRow: boolean,
+    allMeasures: PivotDataStoreConfig["allMeasures"],
   ): Map<string, CellFormatter> {
     const formatters = new Map<string, CellFormatter>();
     if (!measureFormatting || Object.keys(measureFormatting).length === 0) {
@@ -251,7 +253,15 @@
       }
       const domain = domains.get(measureName);
       if (domain) {
-        formatters.set(measureName, makeCellFormatter(fmt, domain));
+        // Heatmap gradients flip for lower-is-better measures so low values
+        // get the "good" end of the scheme.
+        const lowerIsBetter =
+          allMeasures.find((m) => m.name === measureName)?.lowerIsBetter ??
+          false;
+        formatters.set(
+          measureName,
+          makeCellFormatter(fmt, domain, lowerIsBetter),
+        );
       }
     }
     return formatters;

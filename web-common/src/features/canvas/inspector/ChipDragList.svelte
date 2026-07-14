@@ -25,6 +25,7 @@
   export let setMeasureFormatting:
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 
   // Distinguish click (open the format dropdown) from drag (reorder): the drag
   // only begins once the pointer moves past this threshold.
@@ -204,6 +205,7 @@
           grab
           fullWidth
           fmt={measureFormatting?.[item]}
+          lowerIsBetter={lowerIsBetterMap[item] ?? false}
           onFormatChange={(fmt: PivotMeasureFormatting | null) =>
             setMeasureFormatting?.(item, fmt)}
           onRemove={() => handleRemove(item)}

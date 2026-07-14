@@ -352,7 +352,6 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
             measure,
             mode: fmt.mode,
             scheme: fmt.scheme,
-            reverse: fmt.reverse ?? false,
           },
     ),
   };

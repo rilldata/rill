@@ -39,7 +39,6 @@ export interface PivotConditionalFormatSpec {
   mode: "heatmap" | "data_bar" | "rules";
   // Color scheme; only for "heatmap" and "data_bar" modes.
   scheme?: string;
-  reverse?: boolean;
   // Ordered threshold rules (first match wins); only for "rules" mode.
   rules?: {
     operator: PivotFormatRule["operator"];
@@ -64,7 +63,6 @@ export function conditionalFormatSpecToMeasureFormatting(
       measureFormatting[spec.measure] = {
         mode: spec.mode,
         scheme: spec.scheme ?? DEFAULT_FORMAT_SCHEME,
-        reverse: spec.reverse,
       };
     } else if (spec.mode === "rules" && spec.rules?.length) {
       measureFormatting[spec.measure] = {
@@ -86,12 +84,7 @@ export function measureFormattingToConditionalFormatSpec(
   return Object.entries(measureFormatting).map(([measure, fmt]) =>
     fmt.mode === "rules"
       ? { measure, mode: fmt.mode, rules: fmt.rules }
-      : {
-          measure,
-          mode: fmt.mode,
-          scheme: fmt.scheme,
-          ...(fmt.reverse ? { reverse: true } : {}),
-        },
+      : { measure, mode: fmt.mode, scheme: fmt.scheme },
   );
 }
 
@@ -217,7 +210,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   }
 
   /** Update a single measure's conditional formatting in the YAML; pass null to clear it. */
-  setMeasureFormatting(measureName: string, fmt: PivotMeasureFormatting | null) {
+  setMeasureFormatting(
+    measureName: string,
+    fmt: PivotMeasureFormatting | null,
+  ) {
     const measureFormatting = conditionalFormatSpecToMeasureFormatting(
       get(this.specStore).conditional_format,
     );
