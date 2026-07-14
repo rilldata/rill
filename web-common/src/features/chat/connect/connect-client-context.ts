@@ -12,20 +12,13 @@ export function setConnectClientContext(context: ConnectClientContext): void {
 }
 
 /**
- * Returns the connect-client context, throwing if no provider is an ancestor.
- * The context is set only on Rill Cloud's AI chat page layout, which owns the
- * MCPConnectDialog; callers must gate on that (via the `adminServer` flag) before
- * calling this, so a missing provider surfaces as a real bug rather than a
- * silently hidden CTA.
+ * Returns the connect-client context, or undefined if no provider is an ancestor.
+ * The context is set only on Rill Cloud chat surfaces that own an MCPConnectDialog
+ * (the AI chat page and dashboard/canvas layouts); chat surfaces without a
+ * provider (Rill Developer, embeds, edit mode) render no connect CTA.
  */
-export function getConnectClientContext(): ConnectClientContext {
-  const context = getContext<ConnectClientContext | undefined>(
+export function getConnectClientContext(): ConnectClientContext | undefined {
+  return getContext<ConnectClientContext | undefined>(
     CONNECT_CLIENT_CONTEXT_KEY,
   );
-  if (!context) {
-    throw new Error(
-      "getConnectClientContext() requires an ancestor that calls setConnectClientContext().",
-    );
-  }
-  return context;
 }

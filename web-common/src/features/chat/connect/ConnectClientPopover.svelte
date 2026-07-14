@@ -10,16 +10,13 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { get } from "svelte/store";
   import { getConnectClientContext } from "./connect-client-context";
 
-  const { adminServer } = featureFlags;
-  // The MCPConnectDialog is wired only on Rill Cloud's AI chat page, whose
-  // layout sets the connect-client context. Elsewhere there is nothing to open,
-  // so the popover renders nothing.
-  const connectClient = get(adminServer) ? getConnectClientContext() : null;
+  // The MCPConnectDialog is wired only on Rill Cloud chat surfaces whose layout
+  // sets the connect-client context. Elsewhere there is nothing to open, so the
+  // popover renders nothing.
+  const connectClient = getConnectClientContext();
 
   let isOpen = false;
 
