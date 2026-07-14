@@ -98,7 +98,8 @@ rows:
         validSpec: {
           renderer: "custom_chart",
           rendererProperties: {
-            metrics_sql: "SELECT {{ .params.measure }} FROM {{ .params.metrics_view }}",
+            metrics_sql:
+              "SELECT {{ .params.measure }} FROM {{ .params.metrics_view }}",
             vega_spec: "{}",
           },
           params: [

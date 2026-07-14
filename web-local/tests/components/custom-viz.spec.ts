@@ -29,9 +29,9 @@ test.describe("custom viz components", () => {
 
     // The workspace opens in the visual view by default; the preview renders a
     // chart against the auto-selected metrics view and test bindings.
-    await expect(page.locator(".vega-embed svg, .vega-embed canvas")).toBeVisible(
-      { timeout: 15_000 },
-    );
+    await expect(
+      page.locator(".vega-embed svg, .vega-embed canvas"),
+    ).toBeVisible({ timeout: 15_000 });
 
     // Switching to the code view shows the starter YAML.
     await page.getByLabel("Switch to code editor").click();

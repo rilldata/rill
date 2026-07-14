@@ -128,9 +128,12 @@ describe("missingSelectedParamsError", () => {
     expect(missingSelectedParamsError(PARAMS, undefined)).toBeNull();
     expect(missingSelectedParamsError(PARAMS, { vega_spec: "{}" })).toBeNull();
     expect(
-      missingSelectedParamsError([{ name: "metrics_view", type: "metrics_view" }], {
-        metrics_sql: "SELECT a FROM {{ .params.metrics_view }}",
-      }),
+      missingSelectedParamsError(
+        [{ name: "metrics_view", type: "metrics_view" }],
+        {
+          metrics_sql: "SELECT a FROM {{ .params.metrics_view }}",
+        },
+      ),
     ).toBeNull();
   });
 });

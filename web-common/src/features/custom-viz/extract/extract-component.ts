@@ -177,7 +177,11 @@ function replaceItem(
     ...(width !== undefined ? { width } : {}),
   });
 
-  parent.fileArtifact.updateEditorContent(parsedDocument.toString(), false, true);
+  parent.fileArtifact.updateEditorContent(
+    parsedDocument.toString(),
+    false,
+    true,
+  );
 }
 
 function sanitizeParamName(name: string): string {

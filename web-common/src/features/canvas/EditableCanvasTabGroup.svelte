@@ -5,7 +5,6 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasTabStrip from "./CanvasTabStrip.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import type { CanvasComponentType } from "./components/types";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { AddableItem, EditTarget } from "./layout-util";

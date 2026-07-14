@@ -115,7 +115,8 @@ export function parameterizeExampleSpec(
   if (hasTransforms(spec) || layers.some(hasTransforms)) return null;
   for (const layer of layers) {
     if (layer.layer || layer.data) return null; // Nested layers / per-layer data: out of scope.
-    if (layer.encoding) encodings.push(layer.encoding as Record<string, unknown>);
+    if (layer.encoding)
+      encodings.push(layer.encoding as Record<string, unknown>);
   }
 
   // Map each encoded field to the param that will replace it. Params are named
@@ -221,7 +222,8 @@ function hasTransforms(node: Record<string, unknown>): boolean {
 const DENSE_MARKS = new Set(["point", "circle", "square", "rect", "tick"]);
 
 function markType(spec: Record<string, unknown>): string | undefined {
-  const mark = spec.mark ?? (spec.layer as Record<string, unknown>[])?.[0]?.mark;
+  const mark =
+    spec.mark ?? (spec.layer as Record<string, unknown>[])?.[0]?.mark;
   if (typeof mark === "string") return mark;
   const type = (mark as Record<string, unknown> | undefined)?.type;
   return typeof type === "string" ? type : undefined;
@@ -406,7 +408,14 @@ export async function importVegaExample(
   return filePath;
 }
 
-const COMPOSITE_KEYS = ["hconcat", "vconcat", "concat", "facet", "repeat", "spec"];
+const COMPOSITE_KEYS = [
+  "hconcat",
+  "vconcat",
+  "concat",
+  "facet",
+  "repeat",
+  "spec",
+];
 
 function normalizeSize(spec: Record<string, unknown>) {
   // Composite specs manage their own layout; leave them untouched.

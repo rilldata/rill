@@ -104,7 +104,9 @@ export interface FilterInputParam {
   meta?: Record<string, any>;
 }
 
-export type AllKeys<T> = T extends any ? keyof T : never;
+// Extract<..., string> keeps specs with a string index signature (e.g.
+// ComponentRefSpec) from widening keys to string | number.
+export type AllKeys<T> = T extends any ? Extract<keyof T, string> : never;
 
 export interface InputParams<T> {
   options: Partial<Record<AllKeys<T>, ComponentInputParam>>;

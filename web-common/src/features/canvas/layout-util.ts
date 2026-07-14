@@ -9,10 +9,7 @@ import type {
 import { writable } from "svelte/store";
 import { YAMLMap, YAMLSeq } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
-import {
-  buildDefaultArgs,
-  getDeclaredParams,
-} from "../custom-viz/params";
+import { buildDefaultArgs, getDeclaredParams } from "../custom-viz/params";
 import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
 

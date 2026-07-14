@@ -52,7 +52,9 @@
     if (!/^[a-zA-Z0-9_-]+$/.test(candidate)) {
       return m.component_extract_name_invalid();
     }
-    if (existingNames.some((n) => n.toLowerCase() === candidate.toLowerCase())) {
+    if (
+      existingNames.some((n) => n.toLowerCase() === candidate.toLowerCase())
+    ) {
       return m.component_extract_name_taken();
     }
     return undefined;

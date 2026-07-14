@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
+  import type { EditorView } from "@codemirror/view";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -37,6 +38,7 @@
   const { developerChat } = featureFlags;
 
   let aiPrompt = "";
+  let editor: EditorView | null = null;
 
   function askAI() {
     const prompt = aiPrompt.trim();
@@ -143,6 +145,7 @@
         >
           {#if selectedView === "code"}
             <Editor
+              bind:editor
               {fileArtifact}
               extensions={[customYAMLwithJSONandSQL]}
               bind:autoSave={$autoSave}
@@ -168,22 +171,22 @@
         disableHorizontalPadding
         title={m.component_preview_title()}
       >
-      {#if $developerChat}
-        <div class="flex flex-col gap-y-1 px-5 py-3 border-b">
-          <textarea
-            class="w-full p-2 text-sm border border-gray-300 rounded-sm"
-            rows="2"
-            placeholder={m.component_ai_placeholder()}
-            bind:value={aiPrompt}
-            onkeydown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                askAI();
-              }
-            }}
-          ></textarea>
-        </div>
-      {/if}
+        {#if $developerChat}
+          <div class="flex flex-col gap-y-1 px-5 py-3 border-b">
+            <textarea
+              class="w-full p-2 text-sm border border-gray-300 rounded-sm"
+              rows="2"
+              placeholder={m.component_ai_placeholder()}
+              bind:value={aiPrompt}
+              onkeydown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  askAI();
+                }
+              }}
+            ></textarea>
+          </div>
+        {/if}
         <TestBindingsPanel {resource} {argsStore} />
         <UsedByPanel {componentName} {argsStore} />
       </SidebarWrapper>

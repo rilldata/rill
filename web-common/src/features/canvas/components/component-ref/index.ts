@@ -28,10 +28,12 @@ import CanvasComponentRef from "./CanvasComponentRef.svelte";
  * The flattened spec of a canvas item that references an externally defined component:
  * the component name plus the values bound to its declared params spread at the top
  * level, so the generated inspector inputs can bind to them like ordinary spec keys.
+ * Param bindings are scalars only (enforced by the canvas parser), which also keeps
+ * indexed access on the ComponentSpec union usable by the shared inspector widgets.
  */
 export interface ComponentRefSpec {
   component: string;
-  [param: string]: unknown;
+  [param: string]: string | number | boolean | undefined;
 }
 
 /**
@@ -62,7 +64,11 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
     this.syncMetricsViewName();
   }
 
-  override update(resource: V1Resource, path: ComponentPath, item?: V1CanvasItem) {
+  override update(
+    resource: V1Resource,
+    path: ComponentPath,
+    item?: V1CanvasItem,
+  ) {
     super.update(resource, path);
     if (item?.component) this.componentName = item.component;
     this.specStore.set(this.specFromItem(item));
@@ -71,7 +77,10 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
 
   /** The referenced component's declared params. */
   get declaredParams(): V1ComponentParam[] {
-    return getDeclaredParams(get(this.resource), this.parent.allowUnvalidatedSpec);
+    return getDeclaredParams(
+      get(this.resource),
+      this.parent.allowUnvalidatedSpec,
+    );
   }
 
   /**

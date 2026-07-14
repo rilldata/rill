@@ -187,11 +187,15 @@ describe("vega-examples snapshot", async () => {
         ]).toContain(param.type);
         // Field params and order_by never carry defaults; the limit param must.
         if (param.type === "number") {
-          expect(param.default, `param ${param.name} of ${example.name}`)
-            .toBeTypeOf("number");
+          expect(
+            param.default,
+            `param ${param.name} of ${example.name}`,
+          ).toBeTypeOf("number");
         } else {
-          expect(param.default, `param ${param.name} of ${example.name}`)
-            .toBeUndefined();
+          expect(
+            param.default,
+            `param ${param.name} of ${example.name}`,
+          ).toBeUndefined();
         }
       }
       expect(parsed.custom_chart.metrics_sql[0]).toContain(

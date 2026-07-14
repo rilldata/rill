@@ -18,7 +18,6 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import type { CanvasComponentType } from "./components/types";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
@@ -543,11 +542,7 @@
     if (convertRowToTabGroup(contents, rowIndex)) updateContents();
   }
 
-  function initializeRow(
-    row: number,
-    item: AddableItem,
-    target?: EditTarget,
-  ) {
+  function initializeRow(row: number, item: AddableItem, target?: EditTarget) {
     if (!defaultMetrics) return;
 
     const { namePrefix } = resolveTarget(target);

@@ -35,8 +35,7 @@
 
   function commitScalarInput(event: Event) {
     const target = event.currentTarget as HTMLInputElement;
-    const raw =
-      param.type === "number" ? target.valueAsNumber : target.value;
+    const raw = param.type === "number" ? target.valueAsNumber : target.value;
     clearTimeout(commitTimer);
     commitTimer = setTimeout(() => {
       if (param.type === "number") {

@@ -75,7 +75,11 @@ export async function importVegaExampleWithAgent(
     // few attempts. The user is already on the file and sees the workspace appear
     // once it reconciles cleanly.
     for (let attempt = 0; ; attempt++) {
-      const error = await waitForReconcileOutcome(client, componentName, filePath);
+      const error = await waitForReconcileOutcome(
+        client,
+        componentName,
+        filePath,
+      );
       if (!error) break;
 
       if (attempt >= MAX_FIX_ATTEMPTS) {

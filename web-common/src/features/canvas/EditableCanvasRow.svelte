@@ -6,7 +6,6 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import DropZone from "./components/DropZone.svelte";
-  import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import {
@@ -48,7 +47,7 @@
   // Optional: insert a tab group at a given top-level index (top-level rows only).
   export let onAddTabGroup: ((index: number) => void) | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
-  export let initializeRow: (row: number, type: CanvasComponentType) => void;
+  export let initializeRow: (row: number, type: AddableItem) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
   export let updateComponentWidths: (
     index: number,

@@ -187,10 +187,7 @@ describe("orderByOptions", () => {
   });
 
   it("skips unbound field params", () => {
-    const options = orderByOptions(
-      [{ name: "x_axis", type: "dimension" }],
-      {},
-    );
+    const options = orderByOptions([{ name: "x_axis", type: "dimension" }], {});
     expect(options).toEqual([]);
   });
 });

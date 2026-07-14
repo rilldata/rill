@@ -104,7 +104,9 @@ export function orderByOptions(
  * The mapping targets the existing ParamMapper switchboard, so generated
  * param forms render with the same widgets as built-in components.
  */
-export function paramToInputParam(param: V1ComponentParam): ComponentInputParam {
+export function paramToInputParam(
+  param: V1ComponentParam,
+): ComponentInputParam {
   const common = {
     label: prettyParamLabel(param.name),
     optional: !param.required,

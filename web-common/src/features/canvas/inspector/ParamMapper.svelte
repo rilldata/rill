@@ -52,8 +52,9 @@
       : undefined,
   ).options;
 
-  $: metricsView =
-    "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
+  $: metricsView = (
+    "metrics_view" in localParamValues ? localParamValues.metrics_view : null
+  ) as string | null;
 
   $: entries = Object.entries(inputParams) as [
     AllKeys<ComponentSpec>,

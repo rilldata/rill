@@ -65,16 +65,24 @@
   function normalizeMetricsSQL(value: unknown): string[] {
     if (typeof value === "string") return [value];
     if (Array.isArray(value)) {
-      return value.filter((entry): entry is string => typeof entry === "string");
+      return value.filter(
+        (entry): entry is string => typeof entry === "string",
+      );
     }
     return [];
   }
 </script>
 
 {#if !componentSpec}
-  <ComponentError error={m.canvas_component_ref_missing({ name: componentName })} />
+  <ComponentError
+    error={m.canvas_component_ref_missing({ name: componentName })}
+  />
 {:else if renderer !== "custom_chart"}
-  <ComponentError error={m.canvas_component_ref_unsupported_renderer({ renderer: renderer ?? "" })} />
+  <ComponentError
+    error={m.canvas_component_ref_unsupported_renderer({
+      renderer: renderer ?? "",
+    })}
+  />
 {:else if $resolvedQuery.error && !optimisticProps}
   <ComponentError error={$resolvedQuery.error.message} />
 {:else}

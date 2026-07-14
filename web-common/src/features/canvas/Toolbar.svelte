@@ -89,7 +89,8 @@
         {/if}
         {#if canDetach}
           <DropdownMenu.Item
-            onclick={() => detachComponentRef(component as ComponentRefComponent)}
+            onclick={() =>
+              detachComponentRef(component as ComponentRefComponent)}
           >
             <PackageOpen size="14px" />
             {m.component_detach_menu_item()}
