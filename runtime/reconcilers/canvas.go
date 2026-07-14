@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -115,6 +117,9 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if validateErr == nil {
 		validateErr = r.validateRequiredFilters(ctx, c.Spec, components)
 	}
+	if validateErr == nil {
+		validateErr = r.validateItemParamBindings(ctx, c.Spec, components)
+	}
 
 	// Capture the valid spec in the state
 	if validateErr == nil {
@@ -187,15 +192,34 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		return nil, fmt.Errorf("failed to get controller: %w", err)
 	}
 
-	// Collect all component names referenced by the canvas (including those nested in tab groups)
-	componentNames := make(map[string]bool)
-	runtime.CollectCanvasComponentNames(spec.Rows, componentNames)
+	// Collect all items referenced by the canvas (including those nested in tab groups)
+	var items []*runtimev1.CanvasItem
+	runtime.CollectCanvasItems(spec.Rows, &items)
 
-	// Process each component
-	for componentName := range componentNames {
+	// Process each item
+	seenComponents := make(map[string]bool, len(items))
+	for _, item := range items {
+		// Track metrics views bound to the item's params.
+		// The component parser enforces that params of type "metrics_view" are named
+		// "metrics_view" or end with "_metrics_view", which makes this extraction complete.
+		if item.Params != nil {
+			for k, v := range item.Params.AsMap() {
+				if k == "metrics_view" || strings.HasSuffix(k, "_metrics_view") {
+					if name, ok := v.(string); ok && name != "" && !strings.Contains(name, "{{") {
+						refs.metricsViews[name] = true
+					}
+				}
+			}
+		}
+
+		if seenComponents[item.Component] {
+			continue
+		}
+		seenComponents[item.Component] = true
+
 		componentRef := &runtimev1.ResourceName{
 			Kind: runtime.ResourceKindComponent,
-			Name: componentName,
+			Name: item.Component,
 		}
 		// Allow access to the component itself
 		conditionResources = append(conditionResources, componentRef)
@@ -212,6 +236,16 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		if componentSpec == nil {
 			componentSpec = componentRes.GetComponent().Spec
 		}
+
+		// Track metrics views set as defaults of the component's declared metrics_view params.
+		for _, p := range componentSpec.Params {
+			if p.Type == "metrics_view" && p.Default != nil {
+				if name, ok := p.Default.AsInterface().(string); ok && name != "" && !strings.Contains(name, "{{") {
+					refs.metricsViews[name] = true
+				}
+			}
+		}
+
 		if componentSpec.RendererProperties == nil {
 			continue
 		}
@@ -365,6 +399,74 @@ func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *ru
 	return nil
 }
 
+// validateItemParamBindings validates the param values that canvas items bind to their referenced
+// components' declared params, including that field-typed params reference fields that exist in
+// the bound metrics views.
+func (r *CanvasReconciler) validateItemParamBindings(ctx context.Context, spec *runtimev1.CanvasSpec, components map[string]*runtimev1.Resource) error {
+	var items []*runtimev1.CanvasItem
+	runtime.CollectCanvasItems(spec.Rows, &items)
+
+	// Cache of valid metrics view specs bound to params, shared across items.
+	mvs := make(map[string]*runtimev1.MetricsViewSpec)
+
+	for _, item := range items {
+		cmp := components[item.Component]
+		if cmp == nil {
+			// Missing components are reported by checkRefs.
+			continue
+		}
+		componentSpec := cmp.GetComponent().State.ValidSpec
+		if componentSpec == nil {
+			componentSpec = cmp.GetComponent().Spec
+		}
+
+		var bound map[string]any
+		if item.Params != nil {
+			bound = item.Params.AsMap()
+		}
+		if len(bound) == 0 && len(componentSpec.Params) == 0 {
+			continue
+		}
+		if len(bound) > 0 && len(componentSpec.Params) == 0 {
+			return fmt.Errorf("item passes params to component %q, which does not declare any params", item.Component)
+		}
+
+		// Fetch the specs of the metrics views bound to params.
+		// It is safe to fetch them here because the parser added them as refs of the canvas, so DAG ordering holds.
+		for _, p := range componentSpec.Params {
+			if p.Type != "metrics_view" {
+				continue
+			}
+			v, ok := bound[p.Name]
+			if !ok && p.Default != nil {
+				v = p.Default.AsInterface()
+			}
+			name, ok := v.(string)
+			if !ok || name == "" || strings.Contains(name, "{{") {
+				continue
+			}
+			if _, ok := mvs[name]; ok {
+				continue
+			}
+			res, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+			if err != nil {
+				// Not found or invalid; ValidateParamBindings reports it as an invalid metrics view.
+				continue
+			}
+			if mvSpec := res.GetMetricsView().State.ValidSpec; mvSpec != nil {
+				mvs[name] = mvSpec
+			}
+		}
+
+		err := canvas.ValidateParamBindings(componentSpec.Params, bound, mvs)
+		if err != nil {
+			return fmt.Errorf("invalid params for component %q: %w", item.Component, err)
+		}
+	}
+
+	return nil
+}
+
 // rendererRefs tracks all metrics views found in canvas component renderer properties.
 // It currently only tracks metrics views, but in the future we may want to add an option to also track metrics view fields and filters.
 // We did that previously, but removed it since such granular security was considered too strict (it also impacts ability to filter by fields not present on the canvas).
@@ -408,9 +510,13 @@ func (r *rendererRefs) populateRendererRefs(ctx context.Context, renderer string
 }
 
 // metricsView registers a metrics view reference.
+// Templated values (e.g. {{ .params.metrics_view }}) are skipped; the metrics views bound to
+// params are tracked from the canvas items' params instead.
 func (r *rendererRefs) metricsView(mv any) error {
 	if mv, ok := mv.(string); ok {
-		r.metricsViews[mv] = true
+		if !strings.Contains(mv, "{{") {
+			r.metricsViews[mv] = true
+		}
 		return nil
 	}
 	return fmt.Errorf("metrics view field is not a string")

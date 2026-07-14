@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -13,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -665,4 +668,172 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func TestResolveComponentWithParams(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+			"trend.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: limit
+    type: number
+    default: 500
+  - name: smooth
+    type: boolean
+    default: false
+custom_chart:
+  metrics_sql: "SELECT country, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}"
+  vega_spec: '{"mark": "line", "params": [{"name": "smooth", "value": true, "bind": {"input": "checkbox"}}]}'
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	args, err := structpb.NewStruct(map[string]any{
+		"metrics_view": "mv1",
+		"measure":      "count",
+		"smooth":       false,
+	})
+	require.NoError(t, err)
+
+	res, err := server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.NoError(t, err)
+
+	// Templating should resolve provided args and declared defaults.
+	props := res.RendererProperties.AsMap()
+	require.Equal(t, "SELECT country, count AS value FROM mv1 LIMIT 500", props["metrics_sql"])
+
+	// Scalar params should be injected as native Vega-Lite params:
+	// the author-declared "smooth" param keeps its bind but gets the bound value,
+	// and the "limit" param is appended with its default.
+	var vegaSpec map[string]any
+	require.NoError(t, json.Unmarshal([]byte(props["vega_spec"].(string)), &vegaSpec))
+	vegaParams := vegaSpec["params"].([]any)
+	require.Len(t, vegaParams, 2)
+	smooth := vegaParams[0].(map[string]any)
+	require.Equal(t, "smooth", smooth["name"])
+	require.Equal(t, false, smooth["value"])
+	require.Equal(t, map[string]any{"input": "checkbox"}, smooth["bind"])
+	limit := vegaParams[1].(map[string]any)
+	require.Equal(t, "limit", limit["name"])
+	require.Equal(t, float64(500), limit["value"])
+
+	// The resolved args should contain the merged defaults and provided args.
+	require.Equal(t, map[string]any{
+		"metrics_view": "mv1",
+		"measure":      "count",
+		"limit":        float64(500),
+		"smooth":       false,
+	}, res.ResolvedArgs.AsMap())
+
+	// Missing required arg should return InvalidArgument.
+	args, err = structpb.NewStruct(map[string]any{"metrics_view": "mv1"})
+	require.NoError(t, err)
+	_, err = server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.Error(t, err)
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+	require.ErrorContains(t, err, `missing value for required param "measure"`)
+
+	// Unknown arg should return InvalidArgument.
+	args, err = structpb.NewStruct(map[string]any{"metrics_view": "mv1", "measure": "count", "nope": 1})
+	require.NoError(t, err)
+	_, err = server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.Error(t, err)
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+	require.ErrorContains(t, err, `unknown param "nope"`)
+}
+
+func TestResolveCanvasWithParamBoundMetricsView(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+			"trend.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+custom_chart:
+  metrics_sql: "SELECT country, {{ .params.measure }} AS value FROM {{ .params.metrics_view }}"
+  vega_spec: '{"mark": "line"}'
+`,
+			"c1.yaml": `
+type: canvas
+rows:
+- items:
+  - component: trend
+    params:
+      metrics_view: mv1
+      measure: count
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c1",
+	})
+	require.NoError(t, err)
+
+	// The referenced component should be returned, and the param-bound metrics view
+	// should be included in the referenced metrics views.
+	require.Contains(t, res.ResolvedComponents, "trend")
+	require.Contains(t, res.ReferencedMetricsViews, "mv1")
+
+	// The canvas item should carry the param bindings.
+	items := res.Canvas.GetCanvas().State.ValidSpec.Rows[0].Items
+	require.Len(t, items, 1)
+	require.Equal(t, map[string]any{"metrics_view": "mv1", "measure": "count"}, items[0].Params.AsMap())
 }

@@ -966,3 +966,127 @@ leaderboard:
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
+
+func TestValidateCustomChart(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: static metrics_sql string and a JSON vega_spec.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: metrics_sql as a list of queries.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql:
+  - SELECT foo, y FROM mv1
+  - SELECT bar, z FROM mv1
+  vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: incomplete drafts are allowed; the visual editor persists custom charts with
+	// missing or empty properties while the user is still building them.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: metrics_sql of the wrong type.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: 42
+  vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
+
+	// Invalid: untemplated vega_spec that is not valid JSON.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec: 'not json'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "not a valid JSON object")
+
+	// Valid: a parameterized component with templated properties reconciles,
+	// including a vega_spec that only becomes valid JSON after templates resolve.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+custom_chart:
+  metrics_sql: SELECT foo, {{ .params.measure }} AS value FROM {{ .params.metrics_view }}
+  vega_spec: '{"mark": "bar", "title": "{{ .params.measure }}"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: a parameterized component still gets structural checks despite templated properties.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+custom_chart:
+  metrics_sql: 42
+  vega_spec: '{"mark": "bar", "title": "{{ .params.metrics_view }}"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
+}
+
+func TestValidateUnknownRendererWithParams(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// A parameterized component skips field validation, but an unknown renderer
+	// (e.g. an erroneous `renderer:` wrapper around the real block) must still fail.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+renderer:
+  custom_chart:
+    metrics_sql: SELECT foo, y FROM {{ .params.metrics_view }}
+    vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `unsupported renderer "renderer"`)
+}

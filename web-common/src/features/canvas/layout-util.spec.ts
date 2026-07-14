@@ -1,3 +1,4 @@
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect } from "vitest";
 import { parseDocument } from "yaml";
 import { generateNewAssets, mapGuard, rowsGuard } from "./layout-util";
@@ -77,5 +78,164 @@ describe("generateNewAssets with a tab group present", () => {
     expect(
       specTabRow?.tabGroup?.tabs?.[0]?.rows?.[0]?.items?.[0]?.component,
     ).toBe("d1--component-g1-t0-0-0");
+  });
+});
+
+describe("generateNewAssets with component references", () => {
+  const REF_CANVAS = `type: canvas
+rows:
+  - items:
+      - component: trend
+        params:
+          metrics_view: mv1
+          measure: total
+`;
+
+  const trendResource = {
+    meta: { name: { name: "trend", kind: "rill.runtime.v1.Component" } },
+    component: {
+      state: {
+        validSpec: {
+          renderer: "custom_chart",
+          rendererProperties: {
+            metrics_sql: "SELECT {{ .params.measure }} FROM {{ .params.metrics_view }}",
+            vega_spec: "{}",
+          },
+          params: [
+            { name: "metrics_view", type: "metrics_view", required: true },
+            {
+              name: "measure",
+              type: "measure",
+              required: true,
+              metricsViewParam: "metrics_view",
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const metricsViewSpec: V1MetricsViewSpec = {
+    timeDimension: "ts",
+    dimensions: [{ name: "country", type: "DIMENSION_TYPE_CATEGORICAL" }],
+    measures: [{ name: "total" }],
+  };
+
+  it("adds a reference item with default param bindings", () => {
+    const doc = parseDocument(REF_CANVAS);
+    const yamlRows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+    const specRows = [
+      {
+        items: [
+          {
+            component: "trend",
+            definedInCanvas: false,
+            params: { metrics_view: "mv1", measure: "total" },
+          },
+        ],
+      },
+    ];
+
+    const { newYamlRows, newSpecRows, newResolvedComponents } =
+      generateNewAssets({
+        transaction: {
+          operations: [
+            {
+              type: "add",
+              insertRow: true,
+              componentType: "component_ref",
+              componentName: "trend",
+              destination: { row: 1, col: 0 },
+            },
+          ],
+        },
+        yamlRows,
+        specRows,
+        resolvedComponents: { trend: trendResource },
+        canvasName: "d1",
+        defaultMetrics: { metricsViewName: "mv1", metricsViewSpec },
+        componentResources: { trend: trendResource },
+      });
+
+    // The new YAML item references the component with default bindings.
+    expect(newYamlRows).toHaveLength(2);
+    expect(newYamlRows[1].items?.[0]).toEqual({
+      component: "trend",
+      params: { metrics_view: "mv1", measure: "total" },
+      // The touched row's widths are normalized across its (single) item.
+      width: 12,
+    });
+
+    // Both spec items keep the real component name (no positional rename).
+    expect(newSpecRows[0].items?.[0]?.component).toBe("trend");
+    expect(newSpecRows[1].items?.[0]?.component).toBe("trend");
+    expect(newSpecRows[1].items?.[0]?.definedInCanvas).toBe(false);
+    expect(newSpecRows[1].items?.[0]?.params).toEqual({
+      metrics_view: "mv1",
+      measure: "total",
+    });
+
+    // The optimistic resolved components map is keyed by the real resource name.
+    expect(newResolvedComponents["trend"]?.meta?.name?.name).toBe("trend");
+  });
+
+  it("keeps reference names intact when inline items are repositioned", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - component: trend
+        params:
+          metrics_view: mv1
+      - markdown:
+          content: Hi
+`);
+    const yamlRows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+    const specRows = [
+      {
+        items: [
+          {
+            component: "trend",
+            definedInCanvas: false,
+            params: { metrics_view: "mv1" },
+          },
+          { component: "d1--component-0-1", definedInCanvas: true },
+        ],
+      },
+    ];
+
+    const { newSpecRows } = generateNewAssets({
+      transaction: {
+        operations: [
+          {
+            type: "move",
+            source: { row: 0, col: 1 },
+            destination: { row: 0, col: 0 },
+          },
+        ],
+      },
+      yamlRows,
+      specRows,
+      resolvedComponents: {
+        trend: trendResource,
+        "d1--component-0-1": {
+          meta: { name: { name: "d1--component-0-1" } },
+          component: {
+            state: {
+              validSpec: {
+                renderer: "markdown",
+                rendererProperties: { content: "Hi" },
+              },
+            },
+          },
+        },
+      },
+      canvasName: "d1",
+      defaultMetrics: { metricsViewName: "mv1", metricsViewSpec },
+    });
+
+    // The inline item was renamed to its new position; the reference kept its name.
+    expect(newSpecRows[0].items?.[0]?.component).toBe("d1--component-0-0");
+    expect(newSpecRows[0].items?.[1]?.component).toBe("trend");
+    expect(newSpecRows[0].items?.[1]?.params).toEqual({ metrics_view: "mv1" });
   });
 });

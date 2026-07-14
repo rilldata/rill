@@ -3,6 +3,7 @@ import type {
   V1CanvasTab,
 } from "@rilldata/web-common/runtime-client";
 import { get, writable } from "svelte/store";
+import { canvasItemInstanceId, namePrefixFromPath } from "../layout-util";
 import type { CanvasEntity } from "./canvas-entity";
 import { Grid } from "./grid";
 
@@ -37,7 +38,10 @@ export class Tab {
     this.name = tab.name ?? this.name;
     this.displayName = tab.displayName ?? this.displayName;
     this.yamlPathPrefix = yamlPathPrefix;
-    this.grid.updateFromCanvasRows(tab.rows ?? []);
+    const namePrefix = namePrefixFromPath(yamlPathPrefix);
+    this.grid.updateFromCanvasRows(tab.rows ?? [], (item, row, col) =>
+      canvasItemInstanceId(item, row, col, namePrefix),
+    );
   }
 }
 

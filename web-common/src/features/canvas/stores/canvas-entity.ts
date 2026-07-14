@@ -34,6 +34,7 @@ import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
   COMPONENT_CLASS_MAP,
   createComponent,
+  getComponentInstanceType,
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
@@ -46,7 +47,11 @@ import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
+import {
+  canvasItemInstanceId,
+  DEFAULT_DASHBOARD_WIDTH,
+  namePrefixFromPath,
+} from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
@@ -738,23 +743,32 @@ export class CanvasEntity {
           const componentName = item.component;
           if (!componentName) return;
 
-          set.add(componentName);
+          // Items referencing an externally defined component get a positional
+          // instance id, so multiple references to the same component (with
+          // different params) each have their own instance and state.
+          const instanceId = canvasItemInstanceId(
+            item,
+            rowIndex,
+            columnIndex,
+            namePrefixFromPath(prefix),
+          );
+          set.add(instanceId);
 
           const newResource = newComponents?.[componentName];
           if (!newResource) {
             throw new Error("No component found: " + componentName);
           }
 
-          const newType = (newResource.component?.state?.validSpec?.renderer ??
-            (this.allowUnvalidatedSpec
-              ? newResource.component?.spec?.renderer
-              : undefined)) as CanvasComponentType;
-          const existingClass =
-            this.componentsStore.getNonReactive(componentName);
+          const newType = getComponentInstanceType(
+            newResource,
+            item,
+            this.allowUnvalidatedSpec,
+          );
+          const existingClass = this.componentsStore.getNonReactive(instanceId);
           const path = constructPath(rowIndex, columnIndex, newType, prefix);
 
           if (existingClass && areSameType(newType, existingClass.type)) {
-            existingClass.update(newResource, path);
+            existingClass.update(newResource, path, item);
           } else {
             createdNewComponent = true;
             // Tear down the replaced instance's spec subscription before
@@ -762,8 +776,8 @@ export class CanvasEntity {
             // filter/time state.
             existingClass?.destroy();
             this.componentsStore.set(
-              componentName,
-              createComponent(newResource, this, path),
+              instanceId,
+              createComponent(newResource, this, path, item),
             );
           }
         });
@@ -797,6 +811,9 @@ export class CanvasEntity {
   // while each tab group owns a grid per tab.
   private processLayout = (rows: V1CanvasRow[]): boolean => {
     const freeRows: V1CanvasRow[] = [];
+    // The spec row index of each free row, so instance ids match the ones computed
+    // in processRows (which walks the full spec, including tab groups).
+    const freeRowSpecIndices: number[] = [];
     const blocks: LayoutBlock[] = [];
     const seenGroupNames = new Set<string>();
 
@@ -813,6 +830,7 @@ export class CanvasEntity {
         blocks.push({ kind: "tab-group", rowIndex, group });
       } else {
         blocks.push({ kind: "row", rowIndex, freeRowIndex: freeRows.length });
+        freeRowSpecIndices.push(rowIndex);
         freeRows.push(row);
       }
     });
@@ -822,7 +840,15 @@ export class CanvasEntity {
       if (!seenGroupNames.has(name)) this.tabGroups.delete(name);
     }
 
-    const didUpdateRowCount = this._rows.updateFromCanvasRows(freeRows);
+    const didUpdateRowCount = this._rows.updateFromCanvasRows(
+      freeRows,
+      (item, rowIndex, columnIndex) =>
+        canvasItemInstanceId(
+          item,
+          freeRowSpecIndices[rowIndex] ?? rowIndex,
+          columnIndex,
+        ),
+    );
     this.layout.set(blocks);
 
     // In view mode, spec updates follow the URL. In the editor, URL changes are

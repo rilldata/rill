@@ -111,6 +111,8 @@
             metricName={metricsView}
             id={key}
             type={config.type}
+            includeTime={config.meta?.includeTime ?? false}
+            searchableItems={config.meta?.searchableItems}
             selectedItem={localParamValues[key]}
             onSelect={(field) => {
               component.updateProperty(key, field);

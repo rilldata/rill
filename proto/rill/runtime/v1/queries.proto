@@ -1091,6 +1091,8 @@ message ResolveComponentRequest {
 message ResolveComponentResponse {
   // Renderer properties with templating resolved for the provided args
   google.protobuf.Struct renderer_properties = 2;
+  // The effective args used for resolution: the component's declared param defaults merged with the provided args.
+  google.protobuf.Struct resolved_args = 3;
 }
 
 message ResolveTemplatedStringRequest {

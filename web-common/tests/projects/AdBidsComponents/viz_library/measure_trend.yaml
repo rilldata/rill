@@ -1,0 +1,33 @@
+type: component
+display_name: Measure trend
+description: Line chart of any measure over a time dimension.
+
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: time_dim
+    type: time_dimension
+    required: true
+
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.time_dim }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.time_dim }}
+  vega_spec: |
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": {"type": "fit"},
+      "data": {"name": "query1"},
+      "mark": "line",
+      "encoding": {
+        "x": {"field": "{{ .params.time_dim }}", "type": "temporal"},
+        "y": {"field": "{{ .params.measure }}", "type": "quantitative"}
+      }
+    }

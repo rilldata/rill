@@ -4430,6 +4430,11 @@ definitions:
       definedInCanvas:
         type: boolean
         description: Indicates if the component was defined inline as part of the canvas YAML.
+      params:
+        type: object
+        description: |-
+          Values bound to the referenced component's declared params.
+          Only set for items that reference an externally defined component.
       width:
         type: integer
         format: int64
@@ -4955,6 +4960,34 @@ definitions:
         $ref: '#/definitions/v1ComponentSpec'
       state:
         $ref: '#/definitions/v1ComponentState'
+  v1ComponentParam:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Param name. Must be a valid identifier; referenced in templates as {{ .params.<name> }}.
+      type:
+        type: string
+        description: 'Param type. One of: "string", "number", "boolean", "metrics_view", "measure", "dimension", "time_dimension".'
+      description:
+        type: string
+        description: Human-facing description of the param.
+      required:
+        type: boolean
+        description: If true, a canvas item referencing this component must bind a value for the param.
+      default:
+        description: Default value used when the param is not bound. Mutually exclusive with required=true.
+      metricsViewParam:
+        type: string
+        description: |-
+          For "measure", "dimension" and "time_dimension" params:
+          the name of a sibling param of type "metrics_view" whose bound metrics view the field must belong to.
+          May be omitted when exactly one "metrics_view" param is declared, in which case the parser fills it in.
+      options:
+        type: array
+        items: {}
+        description: 'For scalar params: allowed values. Renders as a select input in visual editors.'
+    description: ComponentParam declares a typed, validated parameter of a component.
   v1ComponentSpec:
     type: object
     properties:
@@ -4966,6 +4999,14 @@ definitions:
         type: string
       rendererProperties:
         type: object
+      params:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentParam'
+        description: |-
+          Declared parameters that canvases can bind values to when referencing this component.
+          Bound values are available in the renderer properties' templating as {{ .params.<name> }}.
       input:
         type: array
         items:
@@ -7787,6 +7828,9 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
+      resolvedArgs:
+        type: object
+        description: 'The effective args used for resolution: the component''s declared param defaults merged with the provided args.'
   v1ResolveTemplatedStringResponse:
     type: object
     properties:

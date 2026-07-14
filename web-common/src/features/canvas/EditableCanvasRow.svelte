@@ -15,6 +15,7 @@
     MIN_WIDTH,
     mousePosition,
     normalizeSizeArray,
+    type AddableItem,
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
@@ -33,7 +34,7 @@
   export let selectedComponent: Writable<string | null>;
   export let addItems: (
     position: { row: number; column: number },
-    items: CanvasComponentType[],
+    items: AddableItem[],
   ) => void;
   export let spreadEvenly: (index: number) => void;
   export let onComponentMouseDown: (params: {

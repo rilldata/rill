@@ -27,6 +27,7 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors.ts";
   import { directoryState } from "../../file-explorer/directory-store.ts";
+  import VegaExamplesDialog from "@rilldata/web-common/features/custom-viz/examples/VegaExamplesDialog.svelte";
   import { createResourceAndNavigate } from "./new-files.ts";
   import AddAiConnectorDialog from "../../connectors/ai/AddAiConnectorDialog.svelte";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
@@ -46,6 +47,7 @@
   let showExploreDialog = false;
   let generateDataDialog = false;
   let showAiConnectorDialog = false;
+  let showVegaExamplesDialog = false;
   let addDataModalOpen = false;
   let addDataConnector = "";
   let addDataTargetResource: ResourceKind | undefined;
@@ -57,7 +59,7 @@
   const createFile = createRuntimeServicePutFileMutation(runtimeClient);
   const createFolder =
     createRuntimeServiceCreateDirectoryMutation(runtimeClient);
-  const { developerChat } = featureFlags;
+  const { developerChat, customComponents } = featureFlags;
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
@@ -243,6 +245,18 @@
         </div>
       </div>
     </DropdownMenu.Item>
+    {#if $customComponents}
+      <DropdownMenu.Item
+        class="flex gap-x-2 items-center"
+        onclick={() => (showVegaExamplesDialog = true)}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Component]}
+          size="16px"
+        />
+        Custom viz
+      </DropdownMenu.Item>
+    {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
@@ -323,6 +337,10 @@
 <AddAiConnectorDialog bind:open={showAiConnectorDialog} />
 
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />
+
+{#if $customComponents}
+  <VegaExamplesDialog bind:open={showVegaExamplesDialog} />
+{/if}
 
 <AddDataModal
   config={{

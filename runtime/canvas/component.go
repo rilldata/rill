@@ -1,6 +1,7 @@
 package canvas
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -13,11 +14,26 @@ import (
 // The provided metricsViews should contain every valid metrics view referenced by the component (as determined in the parser).
 // If the renderer properties reference a metrics view not in metricsViews, assume the metrics view is invalid or does not exist (don't look it up separately in the catalog).
 //
+// allowTemplated should be true when the component declares params. In that case, properties may contain
+// unresolved template placeholders (e.g. {{ .params.measure }}), which makes field-membership validation
+// impossible here; only structural checks run, and the fully-bound instance is validated by the canvas
+// reconciler (ValidateParamBindings) and at resolve time instead.
+//
 // Note: metrics views referenced through markdown content cannot be validated here.
 // This is because the upstream parser can't extract refs from templates, so the metrics views cannot be passed through to here.
 // Warning: if you try to fix this, note that the refs must be added in the parser, not looked up dynamically here;
 // a dynamic lookup will have a race condition where the metrics view may not have been reconciled yet.
-func ValidateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
+func ValidateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec, allowTemplated bool) error {
+	if allowTemplated && hasTemplatedString(props) {
+		if renderer == "custom_chart" {
+			return validateCustomChart(props)
+		}
+		// Skip field-membership validation, but still reject unknown renderers.
+		if !knownRenderers[renderer] {
+			return fmt.Errorf("unsupported renderer %q", renderer)
+		}
+		return nil
+	}
 	switch renderer {
 	case "line_chart", "bar_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
 		return validateCartesianChart(props, metricsViews)
@@ -46,11 +62,90 @@ func ValidateRendererProperties(renderer string, props map[string]any, metricsVi
 	case "leaderboard":
 		return validateLeaderboard(props, metricsViews)
 	case "custom_chart":
-		// TODO: Implement
-		return nil
+		return validateCustomChart(props)
 	default:
 		return fmt.Errorf("unsupported renderer %q", renderer)
 	}
+}
+
+// knownRenderers mirrors the cases of ValidateRendererProperties' switch;
+// keep the two in sync when adding renderers.
+var knownRenderers = map[string]bool{
+	"line_chart":             true,
+	"bar_chart":              true,
+	"area_chart":             true,
+	"stacked_bar":            true,
+	"stacked_bar_normalized": true,
+	"donut_chart":            true,
+	"pie_chart":              true,
+	"scatter_plot":           true,
+	"funnel_chart":           true,
+	"heatmap":                true,
+	"combo_chart":            true,
+	"markdown":               true,
+	"image":                  true,
+	"kpi":                    true,
+	"kpi_grid":               true,
+	"table":                  true,
+	"pivot":                  true,
+	"leaderboard":            true,
+	"custom_chart":           true,
+}
+
+// validateCustomChart validates properties for custom_chart.
+// It only rejects malformed values, not incomplete ones: the visual editor persists draft custom
+// charts with empty properties, so completeness is enforced at render time instead.
+// metrics_sql queries are validated at query time, and vega_spec is validated as JSON only when
+// it contains no template placeholders.
+func validateCustomChart(props map[string]any) error {
+	if raw, ok := pathutil.GetPath(props, "metrics_sql"); ok {
+		switch v := raw.(type) {
+		case string:
+			// Nothing to check.
+		case []any:
+			for i, e := range v {
+				if _, ok := e.(string); !ok {
+					return fmt.Errorf("renderer property 'metrics_sql' entry at index %d must be a string", i)
+				}
+			}
+		default:
+			return errors.New("renderer property 'metrics_sql' must be a string or an array of strings")
+		}
+	}
+
+	vegaSpec, ok, err := getOptionalPathString(props, "vega_spec")
+	if err != nil {
+		return err
+	}
+	if ok && strings.TrimSpace(vegaSpec) != "" && !strings.Contains(vegaSpec, "{{") {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(vegaSpec), &m); err != nil {
+			return fmt.Errorf("renderer property 'vega_spec' is not a valid JSON object: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// hasTemplatedString reports whether any string nested in the value contains template placeholders.
+func hasTemplatedString(val any) bool {
+	switch val := val.(type) {
+	case string:
+		return strings.Contains(val, "{{")
+	case map[string]any:
+		for _, v := range val {
+			if hasTemplatedString(v) {
+				return true
+			}
+		}
+	case []any:
+		for _, v := range val {
+			if hasTemplatedString(v) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // validateCartesianChart validates properties for line_chart, bar_chart, area_chart, stacked_bar, and stacked_bar_normalized.

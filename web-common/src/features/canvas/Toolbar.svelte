@@ -2,8 +2,14 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { Copy, Columns } from "lucide-svelte";
+  import { Copy, Columns, PackageOpen, Save } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import SaveAsComponentDialog from "@rilldata/web-common/features/custom-viz/extract/SaveAsComponentDialog.svelte";
+  import { detachComponentRef } from "@rilldata/web-common/features/custom-viz/extract/extract-component";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import { CustomChartComponent } from "./components/charts/custom-chart";
+  import { ComponentRefComponent } from "./components/component-ref";
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
 
@@ -16,6 +22,15 @@
   export let editable = false;
   export let component: BaseCanvasComponent;
   export let navigationEnabled: boolean = true;
+
+  const { customComponents } = featureFlags;
+
+  let saveAsComponentOpen = false;
+
+  $: canSaveAsComponent =
+    $customComponents && component instanceof CustomChartComponent;
+  $: canDetach =
+    $customComponents && component instanceof ComponentRefComponent;
 
   // Component types that support link to explore functionality
   const EXPLORE_SUPPORTED_TYPES = [
@@ -66,6 +81,20 @@
           <Copy size="14px" />
           Duplicate
         </DropdownMenu.Item>
+        {#if canSaveAsComponent}
+          <DropdownMenu.Item onclick={() => (saveAsComponentOpen = true)}>
+            <Save size="14px" />
+            {m.component_extract_menu_item()}
+          </DropdownMenu.Item>
+        {/if}
+        {#if canDetach}
+          <DropdownMenu.Item
+            onclick={() => detachComponentRef(component as ComponentRefComponent)}
+          >
+            <PackageOpen size="14px" />
+            {m.component_detach_menu_item()}
+          </DropdownMenu.Item>
+        {/if}
         {#if onConvertToTabGroup}
           <DropdownMenu.Item onclick={onConvertToTabGroup}>
             <Columns size="14px" />
@@ -91,3 +120,10 @@
     <ExploreLink component={exploreComponent} mode="icon-button" />
   {/if}
 </div>
+
+{#if canSaveAsComponent}
+  <SaveAsComponentDialog
+    bind:open={saveAsComponentOpen}
+    component={component as CustomChartComponent}
+  />
+{/if}

@@ -5,6 +5,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -74,16 +75,27 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		return nil, err
 	}
 
-	// Parse args
+	// Parse args and validate them against the component's declared params.
+	// Components without declared params accept arbitrary args for backwards compatibility.
 	args := req.Args.AsMap()
+	if len(spec.Params) > 0 {
+		if err := canvas.ValidateParamBindings(spec.Params, args, nil); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
 
-	// Setup templating data
+	// Merge the declared param defaults (and legacy input variable defaults) under the provided args.
+	effectiveArgs := canvas.EffectiveArgs(spec, args)
+
+	// Setup templating data.
+	// The effective args are exposed both as .params (canonical, matching the YAML key) and .args (legacy alias).
 	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        claims.UserAttributes,
 		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
-			"args": args,
+			"args":   effectiveArgs,
+			"params": effectiveArgs,
 		},
 	}
 
@@ -100,14 +112,31 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 			return nil, status.Errorf(codes.Internal, "failed to convert resolved renderer properties to map: %v", v)
 		}
 
+		// For custom charts, inject scalar param values as native Vega-Lite params into the vega_spec.
+		if spec.Renderer == "custom_chart" {
+			if vegaSpec, ok := props["vega_spec"].(string); ok {
+				injected, err := canvas.InjectVegaParams(vegaSpec, spec.Params, effectiveArgs)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "failed to inject params into vega_spec: %s", err.Error())
+				}
+				props["vega_spec"] = injected
+			}
+		}
+
 		rendererProps, err = structpb.NewStruct(props)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert renderer properties to struct: %s", err.Error())
 		}
 	}
 
+	resolvedArgs, err := structpb.NewStruct(effectiveArgs)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert resolved args to struct: %s", err.Error())
+	}
+
 	// Return the response
 	return &runtimev1.ResolveComponentResponse{
 		RendererProperties: rendererProps,
+		ResolvedArgs:       resolvedArgs,
 	}, nil
 }

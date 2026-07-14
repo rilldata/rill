@@ -29,7 +29,8 @@
     .filter(isString);
 
   $: metricsView =
-    "metrics_view" in $spec ? $spec.metrics_view : metricsViewNames[0];
+    (key in $spec ? ($spec[key] as string | undefined) : undefined) ??
+    ("metrics_view" in $spec ? $spec.metrics_view : metricsViewNames[0]);
 </script>
 
 <Select

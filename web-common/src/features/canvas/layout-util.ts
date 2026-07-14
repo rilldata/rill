@@ -9,6 +9,10 @@ import type {
 import { writable } from "svelte/store";
 import { YAMLMap, YAMLSeq } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
+import {
+  buildDefaultArgs,
+  getDeclaredParams,
+} from "../custom-viz/params";
 import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
 
@@ -32,6 +36,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   table: 300,
   pivot: 300,
   leaderboard: 300,
+  component_ref: 320,
 };
 
 // Minimum heights a component can shrink to, when smaller than its initial
@@ -169,8 +174,15 @@ interface DeleteItemTransaction {
 interface AddItemTransaction extends BaseTransaction {
   type: "add";
   componentType: CanvasComponentType;
+  // When set, the new item references this externally defined component
+  // (componentType is "component_ref") instead of creating an inline component.
+  componentName?: string;
   destination: Position;
 }
+
+// An addable canvas item: a built-in component type (inline component) or a
+// reference to an externally defined component.
+export type AddableItem = CanvasComponentType | { componentName: string };
 
 export type TransactionOperation =
   | MoveItemTransaction
@@ -332,6 +344,29 @@ export function generateId(
   return `${canvasName}--component-${namePrefix}${row ?? 0}-${column ?? 0}`;
 }
 
+/**
+ * The client-side instance id for a canvas item. Inline components use their resource
+ * name, which the parser already derives from the item's position. Items referencing an
+ * externally defined component get a positional suffix, so multiple items can reference
+ * the same component (with different params) without sharing state.
+ */
+export function canvasItemInstanceId(
+  item: V1CanvasItem,
+  row: number,
+  column: number,
+  namePrefix = "",
+): string {
+  if (!item.component) return "";
+  if (item.definedInCanvas) return item.component;
+  return `${item.component}::${namePrefix}${row}-${column}`;
+}
+
+/** Extracts the referenced component's resource name from an instance id. */
+export function componentNameFromInstanceId(id: string): string {
+  const separator = id.indexOf("::");
+  return separator === -1 ? id : id.slice(0, separator);
+}
+
 export function generateNewAssets(params: {
   transaction: Transaction;
   yamlRows: YAMLRow[];
@@ -344,6 +379,9 @@ export function generateNewAssets(params: {
     metricsViewName: string;
     metricsViewSpec: V1MetricsViewSpec | undefined;
   };
+  // Project component resources by name; used to compute default param bindings
+  // and optimistic resources for added component references.
+  componentResources?: Record<string, V1Resource | undefined>;
 }) {
   const {
     yamlRows,
@@ -353,17 +391,41 @@ export function generateNewAssets(params: {
     namePrefix = "",
     resolvedComponents,
     transaction,
+    componentResources,
   } = params;
 
   const mover = generateArrayRearrangeFunction(transaction);
   const addedComponentSpecs = transaction.operations.map((op) => {
-    if (op.type !== "add") return undefined;
+    if (op.type !== "add" || op.componentName) return undefined;
 
     return {
       type: op.componentType,
       spec: createComponentSpec(op.componentType, defaultMetrics),
     };
   });
+
+  // For added component references: the smart default param bindings.
+  const addedRefParams = transaction.operations.map((op) => {
+    if (op.type !== "add" || !op.componentName) return undefined;
+    return buildDefaultArgs(
+      getDeclaredParams(componentResources?.[op.componentName]),
+      defaultMetrics.metricsViewName,
+      defaultMetrics.metricsViewSpec,
+    );
+  });
+
+  // Returns the referenced component name and default params for an "add" operation
+  // that adds a component reference, or undefined for inline adds.
+  const refAdd = (operationIndex: number) => {
+    const op = transaction.operations[operationIndex];
+    if (op?.type === "add" && op.componentName) {
+      return {
+        name: op.componentName,
+        params: addedRefParams[operationIndex] ?? {},
+      };
+    }
+    return undefined;
+  };
 
   const resolvedComponentsArray = specRows.map((row) => {
     // Preserve tab group rows (no items) so this array stays index-aligned with the spec
@@ -380,6 +442,14 @@ export function generateNewAssets(params: {
   const updatedYamlRows = mover<YAMLItem, YAMLRow>(
     yamlRows,
     (_, type, operationIndex) => {
+      const ref = refAdd(operationIndex);
+      if (ref) {
+        return {
+          component: ref.name,
+          ...(Object.keys(ref.params).length ? { params: ref.params } : {}),
+          width: 0,
+        };
+      }
       const spec = getAddedComponentSpec(
         addedComponentSpecs,
         operationIndex,
@@ -410,7 +480,17 @@ export function generateNewAssets(params: {
 
   const updatedSpecRows = mover<V1CanvasItem, V1CanvasRow>(
     specRows,
-    () => {
+    (_, __, operationIndex) => {
+      const ref = refAdd(operationIndex);
+      if (ref) {
+        return {
+          component: ref.name,
+          params: ref.params,
+          width: 0,
+          widthUnit: "px",
+          definedInCanvas: false,
+        };
+      }
       return {
         component: undefined,
         width: 0,
@@ -420,7 +500,11 @@ export function generateNewAssets(params: {
     },
     (row, index, touched) => {
       const updatedItems = row.items?.map((item, col) => {
-        item.component = generateId(index, col, canvasName, namePrefix);
+        // Items referencing an externally defined component keep their name;
+        // only inline components have positional names that track their location.
+        if (item.definedInCanvas || !item.component) {
+          item.component = generateId(index, col, canvasName, namePrefix);
+        }
 
         return {
           ...item,
@@ -438,6 +522,14 @@ export function generateNewAssets(params: {
   const updatedResolvedComponents = mover<V1Resource, { items?: V1Resource[] }>(
     resolvedComponentsArray,
     (pos, type, operationIndex) => {
+      const ref = refAdd(operationIndex);
+      if (ref) {
+        const resource = componentResources?.[ref.name];
+        if (resource) return structuredClone(resource);
+        return {
+          meta: { name: { name: ref.name, kind: ResourceKind.Component } },
+        };
+      }
       const spec = getAddedComponentSpec(
         addedComponentSpecs,
         operationIndex,
@@ -453,6 +545,11 @@ export function generateNewAssets(params: {
     (row, index) => {
       const updatedItems = row.items?.map((item, col) => {
         if (!item?.meta?.name) return item;
+        // Referenced components keep their real resource name (see updatedSpecRows).
+        const specItem = updatedSpecRows[index]?.items?.[col];
+        if (specItem && !specItem.definedInCanvas && specItem.component) {
+          return item;
+        }
         item.meta.name.name = generateId(index, col, canvasName, namePrefix);
         return item;
       });

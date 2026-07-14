@@ -20,6 +20,24 @@ _[string]_ - Refers to the display name for the component
 
 _[string]_ - Detailed description of the component's purpose and functionality
 
+### `params`
+
+_[array of object]_ - List of typed parameters that canvases can bind values to when referencing this component. Bound values are available in the renderer properties' templating as `{{ .params.<name> }}`.
+
+  - **`name`** - _[string]_ - Param name. Must be a valid identifier; referenced in the renderer properties' templating as `{{ .params.<name> }}`. _(required)_
+
+  - **`type`** - _[string]_ - Param type. Params of type `metrics_view` must be named `metrics_view` or end with `_metrics_view`. _(required)_
+
+  - **`description`** - _[string]_ - Human-facing description of the param
+
+  - **`required`** - _[boolean]_ - If true, a canvas item referencing this component must bind a value for the param. Mutually exclusive with `default`.
+
+  - **`default`** - _[string, number, boolean]_ - Default value used when the param is not bound
+
+  - **`metrics_view`** - _[string]_ - For `measure`, `dimension` and `time_dimension` params, the name of a sibling param of type `metrics_view` whose bound metrics view the field must belong to. May be omitted when exactly one `metrics_view` param is declared.
+
+  - **`options`** - _[array]_ - For scalar params, the allowed values. Renders as a select input in visual editors.
+
 ### `input`
 
 _[array of object]_ - List of input variables that can be passed to the component
