@@ -13,8 +13,8 @@ export function setConnectClientContext(context: ConnectClientContext): void {
 
 /**
  * Returns the connect-client context, throwing if no provider is an ancestor.
- * Connect CTAs render only on Rill Cloud, where ConnectClientProvider wraps every
- * chat surface; callers must gate on that (via the `adminServer` flag) before
+ * The context is set only on Rill Cloud's AI chat page layout, which owns the
+ * MCPConnectDialog; callers must gate on that (via the `adminServer` flag) before
  * calling this, so a missing provider surfaces as a real bug rather than a
  * silently hidden CTA.
  */
@@ -24,7 +24,7 @@ export function getConnectClientContext(): ConnectClientContext {
   );
   if (!context) {
     throw new Error(
-      "getConnectClientContext() requires a ConnectClientProvider ancestor.",
+      "getConnectClientContext() requires an ancestor that calls setConnectClientContext().",
     );
   }
   return context;

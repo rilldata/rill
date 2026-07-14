@@ -59,6 +59,10 @@
         </Button>
       </span>
     </div>
+
+    <div class="collapsed-footer">
+      <slot name="collapsed-footer" />
+    </div>
   {:else}
     <!-- Expanded state: full sidebar -->
     <div class="conversation-sidebar-header">
@@ -113,6 +117,11 @@
         </div>
       {/if}
     </div>
+
+    <!-- Footer slot for additional actions (e.g., MCP config button) -->
+    <div class="conversation-sidebar-footer">
+      <slot name="footer" />
+    </div>
   {/if}
 </div>
 
@@ -132,6 +141,10 @@
     @apply flex flex-col gap-2 p-3 items-center;
   }
 
+  .collapsed-footer {
+    @apply flex flex-col gap-2 p-3 items-center mt-auto;
+  }
+
   .conversation-sidebar-header {
     @apply p-3 border-b border-border;
   }
@@ -146,6 +159,10 @@
 
   .conversation-list {
     @apply flex-1 overflow-y-auto p-1 min-h-0;
+  }
+
+  .conversation-sidebar-footer {
+    @apply shrink-0 p-3 border-t border-border mt-auto;
   }
 
   .loading-conversations {

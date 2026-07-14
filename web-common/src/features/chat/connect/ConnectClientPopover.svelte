@@ -16,9 +16,9 @@
   import { getConnectClientContext } from "./connect-client-context";
 
   const { adminServer } = featureFlags;
-  // The MCPConnectDialog is wired only on Rill Cloud, where ConnectClientProvider
-  // is an ancestor of every chat surface. Elsewhere there is nothing to open, so
-  // the popover renders nothing.
+  // The MCPConnectDialog is wired only on Rill Cloud's AI chat page, whose
+  // layout sets the connect-client context. Elsewhere there is nothing to open,
+  // so the popover renders nothing.
   const connectClient = get(adminServer) ? getConnectClientContext() : null;
 
   let isOpen = false;

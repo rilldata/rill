@@ -37,10 +37,9 @@
     isPublicURLPage,
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
-  import ConnectClientProvider from "@rilldata/web-admin/features/ai/mcp/ConnectClientProvider.svelte";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
-  import ProjectHeader from "@rilldata/web-admin/features/projects/header/ProjectHeader.svelte";
+  import ProjectHeader from "../../../features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
@@ -189,8 +188,6 @@
   let projectData = $derived($projectQuery.data);
   let error = $derived($projectQuery.error as HTTPError);
 
-  let isPublic = $derived(projectData?.project?.public ?? true);
-
   let deploymentStatus = $derived(projectData?.deployment?.status);
   let isProjectAvailable = $derived(
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
@@ -251,8 +248,29 @@
   });
 </script>
 
-<ConnectClientProvider {organization} {project} {isPublic}>
-  {#if error}
+{#if error}
+  <SlimProjectHeader
+    {organization}
+    {project}
+    readProjects={organizationPermissions?.readProjects}
+    {planDisplayName}
+    {organizationLogoUrl}
+  />
+  <ErrorPage
+    statusCode={error.response.status}
+    header={m.error_fetching_deployment()}
+    body={error.response.data?.message}
+  />
+{:else if projectData}
+  {#if onEditPage}
+    <!-- Edit layout manages its own runtime and header -->
+    {@render children()}
+  {:else if onInvitePage}
+    <!-- Invite is admin-server-only and doesn't depend on the runtime, so we
+         render it immediately and let users invite teammates while the
+         deployment provisions. Otherwise the layout would briefly show
+         `ProjectBuilding` here while the just-created prod deployment is
+         still PENDING. -->
     <SlimProjectHeader
       {organization}
       {project}
@@ -260,97 +278,74 @@
       {planDisplayName}
       {organizationLogoUrl}
     />
-    <ErrorPage
-      statusCode={error.response.status}
-      header={m.error_fetching_deployment()}
-      body={error.response.data?.message}
-    />
-  {:else if projectData}
-    {#if onEditPage}
-      <!-- Edit layout manages its own runtime and header -->
-      {@render children()}
-    {:else if onInvitePage}
-      <!-- Invite is admin-server-only and doesn't depend on the runtime, so we
-         render it immediately and let users invite teammates while the
-         deployment provisions. Otherwise the layout would briefly show
-         `ProjectBuilding` here while the just-created prod deployment is
-         still PENDING. -->
-      <SlimProjectHeader
-        {organization}
-        {project}
-        readProjects={organizationPermissions?.readProjects}
-        {planDisplayName}
-        {organizationLogoUrl}
-      />
-      {@render children()}
-    {:else if isProjectAvailable && runtime.host != null && runtime.instanceId}
-      <!-- Re-key on host::instanceId to force RuntimeProvider to tear down and
+    {@render children()}
+  {:else if isProjectAvailable && runtime.host != null && runtime.instanceId}
+    <!-- Re-key on host::instanceId to force RuntimeProvider to tear down and
          reconnect when the deployment changes (e.g. branch switch, View As). -->
-      {#key `${runtime.host}::${runtime.instanceId}`}
-        <RuntimeProvider
-          host={runtime.host}
-          instanceId={runtime.instanceId}
-          jwt={runtime.jwt}
-          authContext={runtime.authContext}
-        >
-          {#if !onWelcomePage}
-            <ProjectHeader
-              {organization}
-              {project}
+    {#key `${runtime.host}::${runtime.instanceId}`}
+      <RuntimeProvider
+        host={runtime.host}
+        instanceId={runtime.instanceId}
+        jwt={runtime.jwt}
+        authContext={runtime.authContext}
+      >
+        {#if !onWelcomePage}
+          <ProjectHeader
+            {organization}
+            {project}
+            projectPermissions={runtime.projectPermissions}
+            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+            manageOrgMembers={organizationPermissions?.manageOrgMembers}
+            readProjects={organizationPermissions?.readProjects}
+            primaryBranch={projectData?.project?.primaryBranch}
+            {planDisplayName}
+            {organizationLogoUrl}
+          />
+          {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+            <ProjectTabs
               projectPermissions={runtime.projectPermissions}
-              manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-              manageOrgMembers={organizationPermissions?.manageOrgMembers}
-              readProjects={organizationPermissions?.readProjects}
-              primaryBranch={projectData?.project?.primaryBranch}
-              {planDisplayName}
-              {organizationLogoUrl}
+              {organization}
+              pathname={page.url.pathname}
+              {project}
+              {branchPrefix}
             />
-            {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-              <ProjectTabs
-                projectPermissions={runtime.projectPermissions}
-                {organization}
-                pathname={page.url.pathname}
-                {project}
-                {branchPrefix}
-              />
-            {/if}
           {/if}
-          {@render children()}
-        </RuntimeProvider>
-      {/key}
-    {:else}
-      <SlimProjectHeader
+        {/if}
+        {@render children()}
+      </RuntimeProvider>
+    {/key}
+  {:else}
+    <SlimProjectHeader
+      {organization}
+      {project}
+      readProjects={organizationPermissions?.readProjects}
+      {planDisplayName}
+      {organizationLogoUrl}
+    />
+    {#if !projectData.deployment}
+      <!-- No deployment = the project is "hibernating" -->
+      <RedeployProjectCta {organization} {project} />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+      <ProjectBuilding branch={activeBranch} />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
+      <ErrorPage
+        statusCode={500}
+        header={m.error_deployment_error()}
+        body={projectData.deployment.statusMessage !== ""
+          ? projectData.deployment.statusMessage
+          : m.error_deploying_project()}
+      />
+    {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED || deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
+      <BranchDeploymentStopped
         {organization}
         {project}
-        readProjects={organizationPermissions?.readProjects}
-        {planDisplayName}
-        {organizationLogoUrl}
+        deploymentId={projectData.deployment.id}
+        status={deploymentStatus}
+        canManage={!!runtime.projectPermissions?.manageDev}
+        branch={activeBranch}
       />
-      {#if !projectData.deployment}
-        <!-- No deployment = the project is "hibernating" -->
-        <RedeployProjectCta {organization} {project} />
-      {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
-        <ProjectBuilding branch={activeBranch} />
-      {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
-        <ErrorPage
-          statusCode={500}
-          header={m.error_deployment_error()}
-          body={projectData.deployment.statusMessage !== ""
-            ? projectData.deployment.statusMessage
-            : m.error_deploying_project()}
-        />
-      {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED || deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING}
-        <BranchDeploymentStopped
-          {organization}
-          {project}
-          deploymentId={projectData.deployment.id}
-          status={deploymentStatus}
-          canManage={!!runtime.projectPermissions?.manageDev}
-          branch={activeBranch}
-        />
-      {:else}
-        <ProjectBuilding branch={activeBranch} />
-      {/if}
+    {:else}
+      <ProjectBuilding branch={activeBranch} />
     {/if}
   {/if}
-</ConnectClientProvider>
+{/if}
