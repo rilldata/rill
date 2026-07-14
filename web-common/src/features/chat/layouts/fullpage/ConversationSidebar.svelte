@@ -5,7 +5,6 @@
   import DelayedContent from "../../../entity-management/DelayedContent.svelte";
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
-  import ConnectClientButton from "../../connect/ConnectClientButton.svelte";
   import type { ConversationManager } from "../../core/conversation-manager";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -60,8 +59,6 @@
         </Button>
       </span>
     </div>
-
-    <ConnectClientButton variant="square" />
   {:else}
     <!-- Expanded state: full sidebar -->
     <div class="conversation-sidebar-header">
@@ -116,8 +113,6 @@
         </div>
       {/if}
     </div>
-
-    <ConnectClientButton variant="full" />
   {/if}
 </div>
 

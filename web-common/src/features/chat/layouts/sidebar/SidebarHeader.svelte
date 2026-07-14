@@ -6,7 +6,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { type V1Conversation } from "../../../../runtime-client";
-  import ConnectClientButton from "../../connect/ConnectClientButton.svelte";
+  import ConnectClientPopover from "../../connect/ConnectClientPopover.svelte";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
@@ -42,7 +42,7 @@
 <div class="chatbot-header">
   <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
   <div class="chatbot-header-actions">
-    <ConnectClientButton variant="icon" />
+    <ConnectClientPopover />
 
     <IconButton
       ariaLabel={m.chat_new_conversation()}

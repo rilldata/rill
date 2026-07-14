@@ -3,7 +3,6 @@
   import { afterUpdate } from "svelte";
   import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import ConnectClientHero from "../../connect/ConnectClientHero.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import FeedbackModal from "../feedback/FeedbackModal.svelte";
@@ -126,7 +125,6 @@
       <div class="chat-empty-subtitle">
         {config.emptyChatLabel}
       </div>
-      <ConnectClientHero />
     </div>
   {:else}
     {#each blocks as block (block.id)}

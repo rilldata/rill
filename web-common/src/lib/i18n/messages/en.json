@@ -518,6 +518,8 @@
   "chat_cancel_streaming": "Cancel streaming",
   "chat_close": "Close chat",
   "chat_connect_client": "Connect your own client",
+  "chat_connect_client_description": "Query your Rill metrics from your favorite AI client.",
+  "chat_connect_client_other": "Other client",
   "chat_conversation_history": "Conversation history",
   "chat_diff_new_badge": "new",
   "chat_downvote_aria": "Downvote response",

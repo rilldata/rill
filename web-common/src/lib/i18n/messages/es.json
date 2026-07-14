@@ -518,6 +518,8 @@
   "chat_cancel_streaming": "Cancelar transmisión",
   "chat_close": "Cerrar chat",
   "chat_connect_client": "Conecta tu propio cliente",
+  "chat_connect_client_description": "Consulta tus métricas de Rill desde tu cliente de IA favorito.",
+  "chat_connect_client_other": "Otro cliente",
   "chat_conversation_history": "Historial de conversaciones",
   "chat_diff_new_badge": "nuevo",
   "chat_downvote_aria": "Valorar negativamente",
