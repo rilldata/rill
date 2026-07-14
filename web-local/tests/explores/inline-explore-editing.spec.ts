@@ -67,9 +67,7 @@ test.describe("inline explore editing", () => {
     await expect(
       page.getByRole("button", { name: "Generate Explore Dashboard" }),
     ).toHaveCount(0);
-    await expect(
-      page.getByRole("link", { name: "Go to dashboard" }),
-    ).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Go to/ })).toHaveCount(0);
   });
 });
 
@@ -88,7 +86,7 @@ test.describe("inline explore go-to-dashboard CTA", () => {
 
     // The header CTA links to the metrics view's canvas dashboards
     await expect(
-      page.getByRole("link", { name: "Go to dashboard" }),
+      page.getByRole("link", { name: "Go to canvas dashboard" }),
     ).toBeVisible({ timeout: 10_000 });
     await page.getByRole("button", { name: "Create resource menu" }).click();
     await expect(

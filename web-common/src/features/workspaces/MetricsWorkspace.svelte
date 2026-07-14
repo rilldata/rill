@@ -169,6 +169,7 @@
             {:else if exploreEnabled}
               <GoToDashboardButton {resource} hasInlineExplore />
               <PreviewButton
+                label="Preview Explore"
                 href={withEditorPrefix(`/explore/${inlineExploreName}`)}
                 disabled={!!parseError ||
                   !!reconcileError ||

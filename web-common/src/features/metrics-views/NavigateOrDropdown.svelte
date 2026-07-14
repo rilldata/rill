@@ -20,10 +20,14 @@
   } = $props();
 
   let firstResource = $derived(resources?.[0]);
+  // Spell out "canvas dashboard" to distinguish the target from the metrics
+  // view's own explore dashboard (displayResourceKind flattens both to "dashboard").
   let firstResourceType = $derived(
-    displayResourceKind(
-      firstResource?.meta?.name?.kind as ResourceKind | undefined,
-    ),
+    firstResource?.meta?.name?.kind === ResourceKind.Canvas
+      ? "canvas dashboard"
+      : displayResourceKind(
+          firstResource?.meta?.name?.kind as ResourceKind | undefined,
+        ),
   );
 </script>
 
