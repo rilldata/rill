@@ -7,7 +7,7 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { MapColorConfig } from ".";
   import type { ColorRangeMapping } from "@rilldata/web-common/features/components/charts/types";
 
@@ -16,10 +16,10 @@
   export let colorConfig: string | MapColorConfig;
   export let onChange: (updatedConfig: string | MapColorConfig) => void;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
   $: ({
     canvasEntity: { theme },
-  } = getCanvasStore(canvasName, instanceId));
+  } = getCanvasStore(canvasName, client.instanceId));
 
   $: isThemeModeDark = $themeControl === "dark";
   $: resolvedTheme = resolveThemeColors($theme?.spec, isThemeModeDark);

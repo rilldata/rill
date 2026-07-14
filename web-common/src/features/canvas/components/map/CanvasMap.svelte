@@ -6,11 +6,12 @@
   import "mapbox-gl/dist/mapbox-gl.css";
   import {
     getQueryServiceMetricsViewAggregationQueryOptions,
-    type V1MetricsViewAggregationResponse,
-    type V1MetricsViewAggregationResponseDataItem,
+    type V1MetricsViewAggregationDimension,
+    type V1MetricsViewAggregationMeasure,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createQuery } from "@tanstack/svelte-query";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { canQueryWithTimeRange } from "@rilldata/web-common/features/components/charts/query-util";
+  import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
@@ -43,10 +44,13 @@
   let mapReady = false;
   let currentMapStyle: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+  $: ({ instanceId } = runtimeClient);
 
   const {
     specStore,
+    timeAndFilterStore,
+    dataEnabled: visible,
     parent: {
       name: canvasName,
       metricsView: { getMetricsViewFromName },
@@ -94,31 +98,40 @@
   };
 
   const queryOptionsStore = derived(
-    [runtime, specStore],
-    ([runtimeVal, specVal]) => {
+    [specStore, timeAndFilterStore, visible],
+    ([specVal, $timeAndFilterStore, $visible]) => {
       const spec = specVal ?? ({} as Partial<import(".").MapSpec>);
       const mv = spec.metrics_view ?? "";
       const gd = spec.geo_dimension ?? "";
 
-      const dims: { name: string }[] = [{ name: gd }];
-      if (spec.tooltip_dimension) dims.push({ name: spec.tooltip_dimension });
+      const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
 
-      const meas: { name: string }[] = [];
+      const dimensions: V1MetricsViewAggregationDimension[] = [{ name: gd }];
+      if (spec.tooltip_dimension) {
+        dimensions.push({ name: spec.tooltip_dimension });
+      }
+
+      const measures: V1MetricsViewAggregationMeasure[] = [];
       const cm = isMapColorConfig(spec.color) ? spec.color.measure : null;
-      if (cm) meas.push({ name: cm });
-      if (spec.size_measure) meas.push({ name: spec.size_measure });
+      if (cm) measures.push({ name: cm });
+      if (spec.size_measure) measures.push({ name: spec.size_measure });
+
+      const enabled =
+        $visible && !!mv && !!gd && canQueryWithTimeRange(hasTimeSeries, timeRange);
 
       return getQueryServiceMetricsViewAggregationQueryOptions(
-        runtimeVal.instanceId,
-        mv || "_",
+        runtimeClient,
         {
-          dimensions: dims,
-          ...(meas.length > 0 ? { measures: meas } : {}),
-          priority: 50,
+          metricsView: mv,
+          dimensions,
+          measures,
+          where,
+          timeRange: hasTimeSeries ? timeRange : undefined,
         },
         {
           query: {
-            enabled: !!(runtimeVal.instanceId && mv && gd),
+            enabled,
+            placeholderData: keepPreviousData,
           },
         },
       );
@@ -128,9 +141,7 @@
   const mapDataQuery = createQuery(queryOptionsStore);
 
   $: queryResult = $mapDataQuery;
-  $: rows =
-    ((queryResult?.data as V1MetricsViewAggregationResponse | undefined)
-      ?.data as V1MetricsViewAggregationResponseDataItem[]) ?? [];
+  $: rows = queryResult?.data?.data ?? [];
 
   $: geoJsonOpts = {
     geoDimension: geo_dimension,
@@ -324,7 +335,7 @@
     {component}
   />
   <div class="relative flex-1 min-h-[300px]">
-    <div bind:this={mapContainer} class="size-full" />
+    <div bind:this={mapContainer} class="size-full"></div>
   </div>
 </div>
 

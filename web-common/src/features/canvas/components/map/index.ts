@@ -1,6 +1,6 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
-  commonOptions,
+  getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -90,7 +90,7 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
           optional: true,
           label: "Tooltip dimension",
         },
-        ...commonOptions,
+        ...getCommonOptions(),
       },
       filter: getFilterOptions(),
     };
