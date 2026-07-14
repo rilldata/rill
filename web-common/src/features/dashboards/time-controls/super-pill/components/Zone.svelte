@@ -76,7 +76,11 @@
     {/snippet}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" {side} class="w-80">
+  <DropdownMenu.Content
+    align="start"
+    {side}
+    class="dashboard-theme-boundary w-80"
+  >
     <div class="p-1.5 pb-1 flex items-center gap-x-2">
       <Search bind:value={searchValue} autofocus={false} />
     </div>

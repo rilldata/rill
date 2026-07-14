@@ -130,7 +130,11 @@
     {/snippet}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
+  <DropdownMenu.Content
+    align="start"
+    {side}
+    class="dashboard-theme-boundary p-0 overflow-hidden"
+  >
     <div class="flex">
       <div class="flex flex-col border-r w-48 p-1">
         {#each timeComparisonOptionsState as option (option.name)}

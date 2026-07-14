@@ -34,7 +34,7 @@
     {strategy}
     {...$$restProps}
     class={cn(
-      "dashboard-theme-boundary z-50 w-72 rounded-md border bg-popover text-popover-foreground shadow-md outline-none",
+      "z-50 w-72 rounded-md border bg-popover text-popover-foreground shadow-md outline-none",
       overflowY && `overflow-y-${overflowY}`,
       overflowX && `overflow-x-${overflowX}`,
       minHeight && `min-h-[${minHeight}]`,
