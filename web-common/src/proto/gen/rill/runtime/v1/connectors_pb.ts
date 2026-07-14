@@ -125,6 +125,8 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
   bucket = "";
 
   /**
+   * Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
+   *
    * @generated from field: string path = 4;
    */
   path = "";
@@ -135,12 +137,19 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
   delimiter = "";
 
   /**
-   * @generated from field: uint32 page_size = 6;
+   * Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
+   *
+   * @generated from field: string glob = 6;
+   */
+  glob = "";
+
+  /**
+   * @generated from field: uint32 page_size = 7;
    */
   pageSize = 0;
 
   /**
-   * @generated from field: string page_token = 7;
+   * @generated from field: string page_token = 8;
    */
   pageToken = "";
 
@@ -157,8 +166,9 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
     { no: 3, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 7, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "glob", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 8, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListObjectsRequest {

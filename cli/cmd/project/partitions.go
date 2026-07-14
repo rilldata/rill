@@ -10,7 +10,7 @@ import (
 
 func PartitionsCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, branch, model string
-	var pending, errored, local bool
+	var pending, errored, skipped, local bool
 	var pageSize uint32
 	var pageToken string
 
@@ -26,9 +26,9 @@ func PartitionsCmd(ch *cmdutil.Helper) *cobra.Command {
 				model = args[1]
 			}
 
-			if !local && !cmd.Flags().Changed("project") && len(args) <= 1 && ch.Interactive {
+			if !local && project == "" {
 				var err error
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name or --local to target a local Rill process")
 				if err != nil {
 					return err
 				}
@@ -44,6 +44,7 @@ func PartitionsCmd(ch *cmdutil.Helper) *cobra.Command {
 				Model:      model,
 				Pending:    pending,
 				Errored:    errored,
+				Skipped:    skipped,
 				PageSize:   pageSize,
 				PageToken:  pageToken,
 			})
@@ -69,7 +70,8 @@ func PartitionsCmd(ch *cmdutil.Helper) *cobra.Command {
 	partitionsCmd.Flags().StringVar(&model, "model", "", "Model Name")
 	partitionsCmd.Flags().BoolVar(&pending, "pending", false, "Only fetch pending partitions")
 	partitionsCmd.Flags().BoolVar(&errored, "errored", false, "Only fetch errored partitions")
-	partitionsCmd.MarkFlagsMutuallyExclusive("pending", "errored")
+	partitionsCmd.Flags().BoolVar(&skipped, "skipped", false, "Only fetch skipped partitions")
+	partitionsCmd.MarkFlagsMutuallyExclusive("pending", "errored", "skipped")
 	partitionsCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
 	partitionsCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of partitions to return per page")
 	partitionsCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")

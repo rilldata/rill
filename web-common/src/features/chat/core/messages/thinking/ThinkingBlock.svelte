@@ -3,7 +3,6 @@
   Messages are displayed in the exact order they were received.
 -->
 <script lang="ts">
-  import { builderActions, getAttrs } from "bits-ui";
   import * as Collapsible from "../../../../../components/collapsible";
   import Brain from "../../../../../components/icons/Brain.svelte";
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
@@ -13,6 +12,7 @@
   import AnimatedDots from "../AnimatedDots.svelte";
   import ToolCall from "../tools/ToolCall.svelte";
   import type { ThinkingBlock } from "./thinking-block";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let block: ThinkingBlock;
   export let tools: V1Tool[] | undefined = undefined;
@@ -31,18 +31,13 @@
   }
 
   function formatDuration(seconds: number): string {
-    if (seconds < 1) return "less than a second";
-    if (seconds === 1) return "1 second";
-    if (seconds < 60) return `${seconds} seconds`;
-
+    if (seconds < 1) return m.chat_duration_less_than_second();
+    if (seconds < 60) return m.chat_duration_seconds({ count: seconds });
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-
-    if (remainingSeconds === 0) {
-      return minutes === 1 ? "1 minute" : `${minutes} minutes`;
-    }
-
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ${remainingSeconds} ${remainingSeconds === 1 ? "second" : "seconds"}`;
+    if (remainingSeconds === 0)
+      return m.chat_duration_minutes({ count: minutes });
+    return `${m.chat_duration_minutes({ count: minutes })} ${m.chat_duration_seconds({ count: remainingSeconds })}`;
   }
 
   function onUserInteraction() {
@@ -51,31 +46,28 @@
 </script>
 
 <Collapsible.Root bind:open={isExpanded} class="w-full max-w-full self-start">
-  <Collapsible.Trigger asChild let:builder>
-    <button
-      class="thinking-header"
-      {...getAttrs([builder])}
-      use:builderActions={{ builders: [builder] }}
-      on:click={onUserInteraction}
-    >
-      <div class="thinking-icon">
-        {#if isExpanded}
-          <CaretDownIcon size="14" />
-        {:else}
-          <Brain />
-        {/if}
-      </div>
-      <div class="thinking-title">
-        {#if block.isComplete}
-          Thought for {formatDuration(block.duration)}
-        {:else}
-          <AnimatedDots>Thinking</AnimatedDots>
-        {/if}
-      </div>
-    </button>
+  <Collapsible.Trigger>
+    {#snippet child({ props })}
+      <button {...props} class="thinking-header" onclick={onUserInteraction}>
+        <div class="thinking-icon">
+          {#if isExpanded}
+            <CaretDownIcon size="14" />
+          {:else}
+            <Brain />
+          {/if}
+        </div>
+        <div class="thinking-title">
+          {#if block.isComplete}
+            {m.chat_thought_for({ duration: formatDuration(block.duration) })}
+          {:else}
+            <AnimatedDots>{m.chat_thinking()}</AnimatedDots>
+          {/if}
+        </div>
+      </button>
+    {/snippet}
   </Collapsible.Trigger>
 
-  <Collapsible.Content transition={undefined} class="pl-5 flex flex-col gap-0">
+  <Collapsible.Content class="pl-5 flex flex-col gap-0">
     {#each block.messages as msg (msg.id)}
       {#if msg.type === MessageType.PROGRESS}
         {#if msg.contentData}

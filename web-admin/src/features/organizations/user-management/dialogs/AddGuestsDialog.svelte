@@ -1,12 +1,15 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import {
     createAdminServiceAddProjectMemberUser,
-    createAdminServiceListProjectsForOrganization,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1Project,
   } from "@rilldata/web-admin/client";
+  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
+  import { getOrgRolesOptions } from "@rilldata/web-admin/features/organizations/constants";
+  import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     Dialog,
@@ -17,17 +20,15 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
+  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
-  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
-  import { ORG_ROLES_OPTIONS } from "@rilldata/web-admin/features/organizations/constants";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
@@ -56,28 +57,22 @@
   }
 
   // Projects list
-  $: projectsQuery = createAdminServiceListProjectsForOrganization(
-    organization,
-    undefined,
-    {
-      query: {
-        enabled: !!organization,
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
+  $: projectsQuery = createQuery({
+    ...listProjectsForOrgQueryOptions(organization),
+    refetchOnWindowFocus: true,
+  });
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
   $: projectsErrorMessage =
     getRpcErrorMessage($projectsQuery?.error) ?? $projectsQuery?.error?.message;
 
+  $: orgRolesOptions = getOrgRolesOptions();
   $: selectedRoleLabel =
-    ORG_ROLES_OPTIONS.find((o) => o.value === selectedRole)?.label ?? "";
+    orgRolesOptions.find((o) => o.value === selectedRole)?.label ?? "";
 
   $: selectedProjectsLabel = (() => {
-    if (selectedProjects.length === 0) return "Select projects";
+    if (selectedProjects.length === 0) return m.users_select_projects();
     if (selectedProjects.length === 1) return selectedProjects[0];
-    return `${selectedProjects.length} Project${selectedProjects.length > 1 ? "s" : ""}`;
+    return m.users_project_count({ count: selectedProjects.length });
   })();
 
   $: if (open && !hasAutoSelectedProject && projects.length > 0) {
@@ -120,7 +115,7 @@
       emails: array(
         string().matches(RFC5322EmailRegex, {
           excludeEmptyString: true,
-          message: "Invalid email",
+          message: m.users_invalid_email(),
         }),
       ),
     }),
@@ -161,7 +156,10 @@
         if (succeeded.length > 0) {
           eventBus.emit("notification", {
             type: "success",
-            message: `Invited ${succeeded.length} guest${succeeded.length > 1 ? "s" : ""} as ${selectedRole}`,
+            message: m.users_guests_invited_success({
+              count: succeeded.length,
+              role: selectedRole,
+            }),
           });
         }
 
@@ -190,42 +188,48 @@
     (e, i) => e.length > 0 && $errors.emails?.[i] !== undefined,
   );
 
-  // role label is derived from ORG_ROLES_OPTIONS
+  // role label is derived from orgRolesOptions
 </script>
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-    resetDialogState();
-  }}
   onOpenChange={(dialogOpen) => {
     if (!dialogOpen) {
       resetDialogState();
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={(e) => {
+      e.preventDefault();
+      open = false;
+      resetDialogState();
+    }}
+  >
     <DialogHeader>
-      <DialogTitle>Add guest users</DialogTitle>
+      <DialogTitle>{m.users_add_guests_title()}</DialogTitle>
     </DialogHeader>
     <DialogDescription>
-      Guests can only access provisioned projects with assigned roles. They do
-      not have organization-wide access.
+      {m.users_add_guests_description()}
     </DialogDescription>
     <form
       id={formId}
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       class="w-full"
       use:enhance
     >
       <MultiInput
         id="emails"
-        placeholder="Add emails, separated by commas"
+        placeholder={m.users_email_placeholder()}
         contentClassName="relative"
         bind:values={$form.emails}
         errors={$errors.emails}
@@ -235,27 +239,24 @@
 
       <!-- Project multi-select -->
       <div class="mt-3">
-        <div class="text-xs font-medium mb-1">Project access</div>
+        <div class="text-xs font-medium mb-1">{m.users_project_access()}</div>
         {#if $projectsQuery?.isLoading}
           <DelayedSpinner isLoading={$projectsQuery?.isLoading} size="1rem" />
         {:else if $projectsQuery?.error}
           <div class="flex items-center gap-2">
             <div class="text-xs text-red-500">
-              Failed to load projects{projectsErrorMessage
+              {m.users_failed_load_projects()}{projectsErrorMessage
                 ? `: ${projectsErrorMessage}`
                 : ""}
             </div>
             <Button type="tertiary" onClick={() => $projectsQuery?.refetch()}
-              >Retry</Button
+              >{m.users_retry()}</Button
             >
           </div>
         {:else if projects.length === 0}
-          <div class="text-xs text-fg-secondary">No projects</div>
+          <div class="text-xs text-fg-secondary">{m.users_no_projects()}</div>
         {:else}
-          <Dropdown.Root
-            bind:open={projectDropdownOpen}
-            closeOnItemClick={false}
-          >
+          <Dropdown.Root bind:open={projectDropdownOpen}>
             <Dropdown.Trigger
               class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
                 ? 'bg-gray-200'
@@ -273,6 +274,7 @@
             <Dropdown.Content align="start" class="w-[260px]">
               {#each projects as p (p.id)}
                 <Dropdown.CheckboxItem
+                  closeOnSelect={false}
                   class="font-normal flex items-center overflow-hidden"
                   checked={selectedProjects.includes(p.name)}
                   onCheckedChange={() => toggleProjectSelection(p.name)}
@@ -287,7 +289,7 @@
 
       <!-- Access level selector -->
       <div class="mt-3">
-        <div class="text-xs font-medium mb-1">Access level</div>
+        <div class="text-xs font-medium mb-1">{m.users_access_level()}</div>
         <Dropdown.Root bind:open={roleDropdownOpen}>
           <Dropdown.Trigger
             class="min-w-[180px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
@@ -302,7 +304,7 @@
             {/if}
           </Dropdown.Trigger>
           <Dropdown.Content align="start" class="w-[180px]">
-            {#each ORG_ROLES_OPTIONS as option}
+            {#each orgRolesOptions as option}
               <Dropdown.CheckboxItem
                 checked={selectedRole === option.value}
                 onCheckedChange={(checked) => {
@@ -318,14 +320,17 @@
 
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {failedInvites.length === 1
-            ? `Failed to invite ${failedInvites[0]}`
-            : `Failed to invite: ${failedInvites.join(", ")}`}
+          {m.users_failed_invite({
+            emails: failedInvites.join(", "),
+            count: failedInvites.length,
+          })}
         </div>
       {/if}
     </form>
     <DialogFooter>
-      <Button type="tertiary" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="tertiary" onClick={() => (open = false)}
+        >{m.users_cancel()}</Button
+      >
       <Button
         type="primary"
         submitForm
@@ -335,7 +340,7 @@
           $form.emails.every((e) => !e.trim()) ||
           selectedProjects.length === 0}
       >
-        Add guests
+        {m.users_add_guests_button()}
       </Button>
     </DialogFooter>
   </DialogContent>

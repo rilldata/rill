@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { QueryObserverResult } from "@tanstack/svelte-query";
   import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
-  import type { RpcStatus } from "@rilldata/web-common/runtime-client";
+  import type { ConnectError } from "@connectrpc/connect";
   import type { Readable } from "svelte/store";
 
   export let validSpecQuery: Readable<
-    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, ConnectError>
   >;
 </script>
 

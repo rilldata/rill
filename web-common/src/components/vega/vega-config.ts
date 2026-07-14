@@ -1,9 +1,9 @@
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { definedLightModeColors } from "@rilldata/web-common/features/themes/colors";
 import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/palette-store";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
 import type { Config } from "vega-lite";
-import { definedLightModeColors } from "@rilldata/web-common/features/themes/colors";
 
 function resolveCSSVariable(
   cssVar: string,
@@ -26,10 +26,9 @@ const colors = {
 };
 
 export const getRillTheme: (
-  isCanvasDashboard: boolean,
   isDarkMode?: boolean,
   theme?: Record<string, string>,
-) => Config = (isCanvasDashboard, isDarkMode = false, theme) => {
+) => Config = (isDarkMode = false, theme) => {
   const gridColor = isDarkMode ? colors.dark.grid : colors.light.grid;
   const axisLabelColor = isDarkMode
     ? colors.dark.axisLabel
@@ -77,9 +76,6 @@ export const getRillTheme: (
       type: "fit-x",
     },
     background: "transparent",
-    mark: {
-      tooltip: isCanvasDashboard,
-    },
     arc: { fill: lineColor },
     area: {
       line: { stroke: lineColor, strokeWidth: 1 },
@@ -105,7 +101,6 @@ export const getRillTheme: (
     },
     bar: {
       fill: barColor,
-      ...(!isCanvasDashboard && { opacity: 0.8 }),
     },
     line: { stroke: lineColor, strokeWidth: 1.5, strokeOpacity: 1 },
     path: { stroke: lineColor },
@@ -125,9 +120,7 @@ export const getRillTheme: (
     axisY: {
       orient: "left",
       gridColor: gridColor,
-      ...(!isCanvasDashboard && {
-        gridDash: [2],
-      }),
+      gridDash: [1],
       tickColor: gridColor,
       domain: false,
       tickSize: 0,
@@ -144,9 +137,7 @@ export const getRillTheme: (
       labelOverlap: false,
     },
     axisX: {
-      ...(isCanvasDashboard && {
-        grid: false,
-      }),
+      grid: false,
       gridColor: gridColor,
       gridDash: [2],
       tickColor: gridColor,
@@ -165,12 +156,15 @@ export const getRillTheme: (
       titleFontWeight: 500,
       titlePadding: 10,
     },
+    axisXTemporal: {
+      grid: false,
+    },
     view: {
       strokeWidth: 0,
     },
     range: {
       category: (() => {
-        const defaultColors = COMPARIONS_COLORS.map((color) =>
+        const defaultColors = COMPARISON_COLORS.map((color) =>
           color.startsWith("var(")
             ? resolveCSSVariable(color, isDarkMode)
             : color,

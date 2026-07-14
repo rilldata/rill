@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -48,7 +49,7 @@ type sqlArgs struct {
 // It supports the use of templating in the SQL string to inject user attributes and args into the SQL query.
 func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &sqlProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
 
@@ -61,7 +62,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	props.SQL = strings.TrimSuffix(strings.TrimSpace(props.SQL), ";")
 
 	args := &sqlArgs{}
-	if err := mapstructure.Decode(opts.Args, args); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
 	}
 
@@ -82,7 +83,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	}
 
 	// For DuckDB, we can do ref inference using the SQL AST (similar to the parser).
-	if olap.Dialect() == drivers.DialectDuckDB {
+	if olap.Dialect().String() == drivers.DialectNameDuckDB {
 		ast, err := duckdbsql.Parse(sql)
 		if err != nil {
 			return nil, err
@@ -120,7 +121,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 
 	// Wrap the SQL with an outer SELECT to apply the limit.
 	if limit > 0 {
-		if olap.Dialect() == drivers.DialectMySQL {
+		if olap.Dialect().String() == drivers.DialectNameMySQL {
 			// subqueries in MySQL require an alias
 			sql = fmt.Sprintf("SELECT * FROM (\n%s\n) AS subquery LIMIT %d", sql, limit)
 		} else {
@@ -144,7 +145,7 @@ func (r *sqlResolver) Close() error {
 }
 
 func (r *sqlResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	if r.olap.Dialect() == drivers.DialectDuckDB || r.olap.Dialect() == drivers.DialectClickHouse {
+	if r.olap.Dialect().String() == drivers.DialectNameDuckDB || r.olap.Dialect().String() == drivers.DialectNameClickHouse {
 		return []byte(r.sql), len(r.refs) != 0, nil
 	}
 	return nil, false, nil
@@ -155,11 +156,7 @@ func (r *sqlResolver) Refs() []*runtimev1.ResourceName {
 }
 
 func (r *sqlResolver) Validate(ctx context.Context) error {
-	_, err := r.olap.Query(ctx, &drivers.Statement{
-		Query:  r.sql,
-		DryRun: true,
-	})
-	return err
+	return nil
 }
 
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
@@ -187,13 +184,13 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 
 	filename := "api_export_" + time.Now().Format("2006-01-02T15-04-05.000Z")
 
-	switch r.olap.Dialect() {
-	case drivers.DialectDuckDB:
+	switch r.olap.Dialect().String() {
+	case drivers.DialectNameDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			return queries.DuckDBCopyExport(ctx, w, exportOpts, r.sql, nil, filename, r.olap, opts.Format)
 		}
 		return r.generalExport(ctx, w, filename, exportOpts)
-	case drivers.DialectDruid, drivers.DialectClickHouse:
+	case drivers.DialectNameDruid, drivers.DialectNameClickHouse:
 		return r.generalExport(ctx, w, filename, exportOpts)
 	default:
 		return fmt.Errorf("export not available for dialect %q", r.olap.Dialect().String())
@@ -282,7 +279,7 @@ func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Inst
 
 			// Return the escaped identifier
 			// TODO: As of now it is using `DialectDuckDB` in all cases since in certain cases like metrics_sql it is not possible to identify OLAP connector before template resolution.
-			return drivers.DialectDuckDB.EscapeIdentifier(ref.Name), nil
+			return duckdb.DialectDuckDB.EscapeIdentifier(ref.Name), nil
 		},
 	}, false)
 	if err != nil {

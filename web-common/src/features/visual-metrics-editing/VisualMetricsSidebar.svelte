@@ -18,6 +18,7 @@
   import { FileArtifact } from "../entity-management/file-artifact";
   import { YAMLDimension, YAMLMeasure, type MenuOption } from "./lib";
   import SimpleSqlExpression from "./SimpleSQLExpression.svelte";
+  import TagInput from "@rilldata/web-common/components/forms/TagInput.svelte";
 
   export let item: YAMLMeasure | YAMLDimension;
   export let fileArtifact: FileArtifact;
@@ -143,6 +144,19 @@
             key: "valid_percent_of_total",
             hint: "Values can be added to yield a valid sum",
             label: "Summable metric",
+            boolean: true,
+          },
+        ],
+        selected: 0,
+      },
+      {
+        label: "Lower is better",
+        optional: true,
+        fields: [
+          {
+            key: "lower_is_better",
+            hint: "When enabled, increases are highlighted red and decreases use the default color, instead of the other way around",
+            label: "Lower is better",
             boolean: true,
           },
         ],
@@ -282,6 +296,39 @@
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
 
+  // Suggestions: existing tags across all dimensions and measures in this file.
+  $: tagSuggestions = (() => {
+    try {
+      const doc = parseDocument($editorContent ?? "");
+      const seen = new Set<string>();
+      for (const section of ["dimensions", "measures"] as const) {
+        const seq = doc.get(section);
+        if (!(seq instanceof YAMLSeq)) continue;
+        for (const node of seq.items) {
+          if (!(node instanceof YAMLMap)) continue;
+          const t = node.get("tags");
+          if (!(t instanceof YAMLSeq)) continue;
+          for (const tagNode of t.items) {
+            const raw =
+              typeof tagNode === "string"
+                ? tagNode
+                : tagNode &&
+                    typeof tagNode === "object" &&
+                    "value" in tagNode &&
+                    typeof (tagNode as { value: unknown }).value === "string"
+                  ? (tagNode as { value: string }).value
+                  : "";
+            const value = raw.trim();
+            if (value) seen.add(value);
+          }
+        }
+      }
+      return Array.from(seen);
+    } catch {
+      return [];
+    }
+  })();
+
   $: requiredPropertiesUnfilled = properties[type]
     .filter(({ optional, fields, selected }) => {
       const field = fields[selected];
@@ -291,11 +338,14 @@
     })
     .map(({ label }) => label);
 
-  $: unsavedChanges = Object.keys(editingClone).some(
-    (key) =>
-      editingClone[key] !== item?.[key] ||
-      (item?.["format_preset"] && item?.["format_d3"]),
-  );
+  $: unsavedChanges = Object.keys(editingClone).some((key) => {
+    const a = editingClone[key];
+    const b = item?.[key];
+    if (Array.isArray(a) && Array.isArray(b)) {
+      return a.length !== b.length || a.some((v, i) => v !== b[i]);
+    }
+    return a !== b || (item?.["format_preset"] && item?.["format_d3"]);
+  });
 
   async function saveChanges() {
     const parsedDocument = parseDocument($editorContent ?? "");
@@ -333,6 +383,12 @@
         newItem.set(key, editingClone[key]);
     });
 
+    if (Array.isArray(editingClone.tags) && editingClone.tags.length > 0) {
+      newItem.set("tags", parsedDocument.createNode(editingClone.tags));
+    } else {
+      newItem.delete("tags");
+    }
+
     if (editing) {
       items[index] = newItem;
     } else {
@@ -348,7 +404,7 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Escape") onCancel(unsavedChanges);
   }}
 />
@@ -421,13 +477,22 @@
       {/if}
     {/each}
 
-    <span />
+    <TagInput
+      tags={editingClone.tags ?? []}
+      suggestions={tagSuggestions}
+      onChange={(next) => {
+        editingClone.tags = next;
+        editingClone = editingClone;
+      }}
+    />
+
+    <span></span>
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
     <p class="text-fg-muted">
       For more options,
-      <button on:click={switchView} class="text-primary-600 font-medium">
+      <button onclick={switchView} class="text-primary-600 font-medium">
         edit in YAML
       </button>
     </p>
@@ -467,8 +532,10 @@
 </div>
 
 <Alert.Root bind:open={showTypeMismatchModal}>
-  <Alert.Trigger asChild>
-    <div class="hidden"></div>
+  <Alert.Trigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </Alert.Trigger>
   <Alert.Content noCancel>
     <Alert.Header>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -26,17 +27,19 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild>
-    <div class="hidden"></div>
+  <AlertDialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Upgrade guest to {newRole}?</AlertDialogTitle>
+      <AlertDialogTitle
+        >{m.users_upgrade_confirm_title({ role: newRole })}</AlertDialogTitle
+      >
       <AlertDialogDescription>
         <div class="mt-1">
-          Upgrading a guest to {newRole} will grant this user access to all open
-          projects in the organization. Would you like to upgrade this guest user
-          to {newRole}?
+          {m.users_upgrade_confirm_desc({ role: newRole })}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -45,9 +48,11 @@
         type="tertiary"
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.users_cancel()}</Button
       >
-      <Button type="primary" onClick={handleUpgrade}>Yes, upgrade</Button>
+      <Button type="primary" onClick={handleUpgrade}
+        >{m.users_yes_upgrade()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

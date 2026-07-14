@@ -42,10 +42,20 @@ func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequ
 	if !ok {
 		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
 	}
-	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Path, req.Delimiter, req.PageSize, req.PageToken)
-	if err != nil {
-		return nil, err
+	var objects []drivers.ObjectStoreEntry
+	var nextToken string
+	if req.Glob != "" {
+		objects, nextToken, err = os.ListObjectsForGlob(ctx, req.Bucket, req.Glob, req.PageSize, req.PageToken, "", "")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		objects, nextToken, err = os.ListObjects(ctx, req.Bucket, req.Path, req.Delimiter, req.PageSize, req.PageToken)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	pbObjects := make([]*runtimev1.Object, len(objects))
 	for i, obj := range objects {
 		pbObjects[i] = &runtimev1.Object{
@@ -184,12 +194,27 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
-	tableMetadata, err := is.GetTable(ctx, req.Database, req.DatabaseSchema, req.Table)
+	table, err := is.Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
 		return nil, err
 	}
+	size := len(table.Schema.Fields)
+	if table.UnsupportedCols != nil {
+		size += len(table.UnsupportedCols)
+	}
+	schema := make(map[string]string, size)
+	for _, field := range table.Schema.Fields {
+		typ := field.Type.RawType
+		if field.Type.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			typ = fmt.Sprintf("UNKNOWN(%s)", typ)
+		}
+		schema[field.Name] = typ
+	}
+	for name, typ := range table.UnsupportedCols {
+		schema[name] = fmt.Sprintf("UNKNOWN(%s)", typ)
+	}
 
 	return &runtimev1.GetTableResponse{
-		Schema: tableMetadata.Schema,
+		Schema: schema,
 	}, nil
 }

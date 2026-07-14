@@ -40,8 +40,6 @@ const (
 	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
 	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
 	RuntimeService_GenerateCanvasFile_FullMethodName      = "/rill.runtime.v1.RuntimeService/GenerateCanvasFile"
-	RuntimeService_GenerateResolver_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateResolver"
-	RuntimeService_GenerateRenderer_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateRenderer"
 	RuntimeService_QueryResolver_FullMethodName           = "/rill.runtime.v1.RuntimeService/QueryResolver"
 	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
 	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
@@ -50,6 +48,7 @@ const (
 	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
 	RuntimeService_GetExplore_FullMethodName              = "/rill.runtime.v1.RuntimeService/GetExplore"
 	RuntimeService_GetModelPartitions_FullMethodName      = "/rill.runtime.v1.RuntimeService/GetModelPartitions"
+	RuntimeService_SkipModelPartitions_FullMethodName     = "/rill.runtime.v1.RuntimeService/SkipModelPartitions"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
@@ -61,10 +60,12 @@ const (
 	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
+	RuntimeService_GetAIMessage_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetAIMessage"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
 	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
+	RuntimeService_GitDiff_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitDiff"
 	RuntimeService_ListGitBranches_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListGitBranches"
 	RuntimeService_GitCommit_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitCommit"
 	RuntimeService_RestoreGitCommit_FullMethodName        = "/rill.runtime.v1.RuntimeService/RestoreGitCommit"
@@ -72,6 +73,7 @@ const (
 	RuntimeService_GitSwitchBranch_FullMethodName         = "/rill.runtime.v1.RuntimeService/GitSwitchBranch"
 	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
 	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
+	RuntimeService_PushEnv_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PushEnv"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -125,10 +127,6 @@ type RuntimeServiceClient interface {
 	GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error)
 	// GenerateCanvasFile generates a canvas YAML file from a metrics view
 	GenerateCanvasFile(ctx context.Context, in *GenerateCanvasFileRequest, opts ...grpc.CallOption) (*GenerateCanvasFileResponse, error)
-	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
-	GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error)
-	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-	GenerateRenderer(ctx context.Context, in *GenerateRendererRequest, opts ...grpc.CallOption) (*GenerateRendererResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(ctx context.Context, in *QueryResolverRequest, opts ...grpc.CallOption) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -145,6 +143,9 @@ type RuntimeServiceClient interface {
 	GetExplore(ctx context.Context, in *GetExploreRequest, opts ...grpc.CallOption) (*GetExploreResponse, error)
 	// GetModelPartitions returns the partitions of a model
 	GetModelPartitions(ctx context.Context, in *GetModelPartitionsRequest, opts ...grpc.CallOption) (*GetModelPartitionsResponse, error)
+	// SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+	// Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+	SkipModelPartitions(ctx context.Context, in *SkipModelPartitionsRequest, opts ...grpc.CallOption) (*SkipModelPartitionsResponse, error)
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
@@ -172,6 +173,8 @@ type RuntimeServiceClient interface {
 	Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error)
 	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
 	CompleteStreaming(ctx context.Context, in *CompleteStreamingRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamingResponse], error)
+	// GetAIMessage returns a message in a conversaion.
+	GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -179,6 +182,8 @@ type RuntimeServiceClient interface {
 	ListGitCommits(ctx context.Context, in *ListGitCommitsRequest, opts ...grpc.CallOption) (*ListGitCommitsResponse, error)
 	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	// GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+	GitDiff(ctx context.Context, in *GitDiffRequest, opts ...grpc.CallOption) (*GitDiffResponse, error)
 	ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
@@ -197,6 +202,8 @@ type RuntimeServiceClient interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
+	// PushEnv pushes local environment variables to admin service
+	PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -426,26 +433,6 @@ func (c *runtimeServiceClient) GenerateCanvasFile(ctx context.Context, in *Gener
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateResolverResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GenerateResolver_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) GenerateRenderer(ctx context.Context, in *GenerateRendererRequest, opts ...grpc.CallOption) (*GenerateRendererResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateRendererResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GenerateRenderer_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *runtimeServiceClient) QueryResolver(ctx context.Context, in *QueryResolverRequest, opts ...grpc.CallOption) (*QueryResolverResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryResolverResponse)
@@ -538,6 +525,16 @@ func (c *runtimeServiceClient) GetModelPartitions(ctx context.Context, in *GetMo
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetModelPartitionsResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GetModelPartitions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) SkipModelPartitions(ctx context.Context, in *SkipModelPartitionsRequest, opts ...grpc.CallOption) (*SkipModelPartitionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SkipModelPartitionsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_SkipModelPartitions_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -663,6 +660,16 @@ func (c *runtimeServiceClient) CompleteStreaming(ctx context.Context, in *Comple
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type RuntimeService_CompleteStreamingClient = grpc.ServerStreamingClient[CompleteStreamingResponse]
 
+func (c *runtimeServiceClient) GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAIMessageResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetAIMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IssueDevJWTResponse)
@@ -697,6 +704,16 @@ func (c *runtimeServiceClient) GitStatus(ctx context.Context, in *GitStatusReque
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GitStatusResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GitStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitDiff(ctx context.Context, in *GitDiffRequest, opts ...grpc.CallOption) (*GitDiffResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitDiffResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitDiff_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -773,6 +790,16 @@ func (c *runtimeServiceClient) GitPush(ctx context.Context, in *GitPushRequest, 
 	return out, nil
 }
 
+func (c *runtimeServiceClient) PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PushEnvResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_PushEnv_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility.
@@ -824,10 +851,6 @@ type RuntimeServiceServer interface {
 	GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error)
 	// GenerateCanvasFile generates a canvas YAML file from a metrics view
 	GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error)
-	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
-	GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error)
-	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-	GenerateRenderer(context.Context, *GenerateRendererRequest) (*GenerateRendererResponse, error)
 	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
@@ -844,6 +867,9 @@ type RuntimeServiceServer interface {
 	GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error)
 	// GetModelPartitions returns the partitions of a model
 	GetModelPartitions(context.Context, *GetModelPartitionsRequest) (*GetModelPartitionsResponse, error)
+	// SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+	// Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+	SkipModelPartitions(context.Context, *SkipModelPartitionsRequest) (*SkipModelPartitionsResponse, error)
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
@@ -871,6 +897,8 @@ type RuntimeServiceServer interface {
 	Complete(context.Context, *CompleteRequest) (*CompleteResponse, error)
 	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
 	CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error
+	// GetAIMessage returns a message in a conversaion.
+	GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -878,6 +906,8 @@ type RuntimeServiceServer interface {
 	ListGitCommits(context.Context, *ListGitCommitsRequest) (*ListGitCommitsResponse, error)
 	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	// GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+	GitDiff(context.Context, *GitDiffRequest) (*GitDiffResponse, error)
 	ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
@@ -896,6 +926,8 @@ type RuntimeServiceServer interface {
 	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
 	// It only pushes the changes to the existing remote repo.
 	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
+	// PushEnv pushes local environment variables to admin service
+	PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -969,12 +1001,6 @@ func (UnimplementedRuntimeServiceServer) GenerateMetricsViewFile(context.Context
 func (UnimplementedRuntimeServiceServer) GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateCanvasFile not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateResolver not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GenerateRenderer(context.Context, *GenerateRendererRequest) (*GenerateRendererResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateRenderer not implemented")
-}
 func (UnimplementedRuntimeServiceServer) QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryResolver not implemented")
 }
@@ -998,6 +1024,9 @@ func (UnimplementedRuntimeServiceServer) GetExplore(context.Context, *GetExplore
 }
 func (UnimplementedRuntimeServiceServer) GetModelPartitions(context.Context, *GetModelPartitionsRequest) (*GetModelPartitionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetModelPartitions not implemented")
+}
+func (UnimplementedRuntimeServiceServer) SkipModelPartitions(context.Context, *SkipModelPartitionsRequest) (*SkipModelPartitionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SkipModelPartitions not implemented")
 }
 func (UnimplementedRuntimeServiceServer) CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTrigger not implemented")
@@ -1032,6 +1061,9 @@ func (UnimplementedRuntimeServiceServer) Complete(context.Context, *CompleteRequ
 func (UnimplementedRuntimeServiceServer) CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method CompleteStreaming not implemented")
 }
+func (UnimplementedRuntimeServiceServer) GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAIMessage not implemented")
+}
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
 }
@@ -1043,6 +1075,9 @@ func (UnimplementedRuntimeServiceServer) ListGitCommits(context.Context, *ListGi
 }
 func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitDiff(context.Context, *GitDiffRequest) (*GitDiffResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitDiff not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGitBranches not implemented")
@@ -1064,6 +1099,9 @@ func (UnimplementedRuntimeServiceServer) GitPull(context.Context, *GitPullReques
 }
 func (UnimplementedRuntimeServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
+}
+func (UnimplementedRuntimeServiceServer) PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushEnv not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 func (UnimplementedRuntimeServiceServer) testEmbeddedByValue()                        {}
@@ -1457,42 +1495,6 @@ func _RuntimeService_GenerateCanvasFile_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_GenerateResolver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateResolverRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GenerateResolver(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GenerateResolver_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GenerateResolver(ctx, req.(*GenerateResolverRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_GenerateRenderer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateRendererRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GenerateRenderer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GenerateRenderer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GenerateRenderer(ctx, req.(*GenerateRendererRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RuntimeService_QueryResolver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryResolverRequest)
 	if err := dec(in); err != nil {
@@ -1619,6 +1621,24 @@ func _RuntimeService_GetModelPartitions_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GetModelPartitions(ctx, req.(*GetModelPartitionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_SkipModelPartitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SkipModelPartitionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).SkipModelPartitions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_SkipModelPartitions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).SkipModelPartitions(ctx, req.(*SkipModelPartitionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1814,6 +1834,24 @@ func _RuntimeService_CompleteStreaming_Handler(srv interface{}, stream grpc.Serv
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type RuntimeService_CompleteStreamingServer = grpc.ServerStreamingServer[CompleteStreamingResponse]
 
+func _RuntimeService_GetAIMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAIMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetAIMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetAIMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetAIMessage(ctx, req.(*GetAIMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_IssueDevJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IssueDevJWTRequest)
 	if err := dec(in); err != nil {
@@ -1882,6 +1920,24 @@ func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GitStatus(ctx, req.(*GitStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitDiff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitDiffRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitDiff(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitDiff_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitDiff(ctx, req.(*GitDiffRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2012,6 +2068,24 @@ func _RuntimeService_GitPush_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_PushEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushEnvRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).PushEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_PushEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).PushEnv(ctx, req.(*PushEnvRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2100,14 +2174,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_GenerateCanvasFile_Handler,
 		},
 		{
-			MethodName: "GenerateResolver",
-			Handler:    _RuntimeService_GenerateResolver_Handler,
-		},
-		{
-			MethodName: "GenerateRenderer",
-			Handler:    _RuntimeService_GenerateRenderer_Handler,
-		},
-		{
 			MethodName: "QueryResolver",
 			Handler:    _RuntimeService_QueryResolver_Handler,
 		},
@@ -2130,6 +2196,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetModelPartitions",
 			Handler:    _RuntimeService_GetModelPartitions_Handler,
+		},
+		{
+			MethodName: "SkipModelPartitions",
+			Handler:    _RuntimeService_SkipModelPartitions_Handler,
 		},
 		{
 			MethodName: "CreateTrigger",
@@ -2172,6 +2242,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_Complete_Handler,
 		},
 		{
+			MethodName: "GetAIMessage",
+			Handler:    _RuntimeService_GetAIMessage_Handler,
+		},
+		{
 			MethodName: "IssueDevJWT",
 			Handler:    _RuntimeService_IssueDevJWT_Handler,
 		},
@@ -2186,6 +2260,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitStatus",
 			Handler:    _RuntimeService_GitStatus_Handler,
+		},
+		{
+			MethodName: "GitDiff",
+			Handler:    _RuntimeService_GitDiff_Handler,
 		},
 		{
 			MethodName: "ListGitBranches",
@@ -2214,6 +2292,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitPush",
 			Handler:    _RuntimeService_GitPush_Handler,
+		},
+		{
+			MethodName: "PushEnv",
+			Handler:    _RuntimeService_PushEnv_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

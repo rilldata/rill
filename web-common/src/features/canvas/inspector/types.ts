@@ -4,15 +4,23 @@ import type {
   ChartSortDirectionOptions,
 } from "@rilldata/web-common/features/components/charts/types";
 
-type NativeInputTypes = "text" | "number" | "boolean" | "textArea" | "select";
-type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
+type SemanticInputTypes =
+  | "metrics"
+  | "measure"
+  | "dimension"
+  | "multi_fields"
+  | "metrics_sql";
+type NativeInputTypes = "text" | "number" | "boolean" | "textarea" | "select";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
 type CustomInputTypes =
   | "rill_time"
   | "sparkline"
   | "comparison_options"
+  | "map_color"
+  | "vega_spec"
   | "switcher_tab"
-  | "map_color";
+  | "ai_generate"
+  | "labels";
 type PositionalInputTypes = "alignment";
 
 export type InputType =

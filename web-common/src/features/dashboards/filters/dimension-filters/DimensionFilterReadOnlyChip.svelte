@@ -6,7 +6,7 @@
     useDimensionSearch,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -18,8 +18,9 @@
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let pinned = false;
+  export let missingRequired = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: effectiveLabel = isInclude ? label : `Exclude ${label}`;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
@@ -28,19 +29,14 @@
     mode === DimensionFilterMode.Select ||
     (mode === DimensionFilterMode.Contains && !!inputText) ||
     (mode === DimensionFilterMode.InList && values.length > 0);
-  $: searchResultsQuery = useDimensionSearch(
-    instanceId,
-    metricsViewNames,
-    name,
-    {
-      mode,
-      values,
-      searchText: inputText ?? "",
-      timeStart,
-      timeEnd,
-      enabled: enableSearchQuery,
-    },
-  );
+  $: searchResultsQuery = useDimensionSearch(client, metricsViewNames, name, {
+    mode,
+    values,
+    searchText: inputText ?? "",
+    timeStart,
+    timeEnd,
+    enabled: enableSearchQuery,
+  });
   $: ({ data: searchResults, isFetching: isFetchingFromSearchResults } =
     $searchResultsQuery);
   $: correctedSearchResults = enableSearchQuery ? searchResults : [];
@@ -48,7 +44,7 @@
     (mode === DimensionFilterMode.Contains && !!inputText) ||
     (mode === DimensionFilterMode.InList && values.length > 0);
   $: allSearchResultsCountQuery = useAllSearchResultsCount(
-    instanceId,
+    client,
     metricsViewNames,
     name,
     {
@@ -81,6 +77,7 @@
   exclude={!isInclude}
   showPinnedIcon={pinned}
   gray={pinned && values.length === 0}
+  error={missingRequired}
 >
   <DimensionFilterChipBody
     slot="body"

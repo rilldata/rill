@@ -25,6 +25,70 @@ export function getMinWidth(
   }
 }
 
+/**
+ * Calculates the optimal number of columns for a grid layout to avoid
+ * unnecessary whitespace. For example, with 6 items, returns 3 or 2
+ * (for a 3x2 or 2x3 layout) rather than 4 (which would leave 2 empty cells).
+ *
+ * @param itemCount - Number of items to display in the grid
+ * @param containerWidth - Available container width in pixels
+ * @param minItemWidth - Minimum width per item in pixels
+ * @returns Optimal number of columns
+ */
+export function getOptimalColumns(
+  itemCount: number,
+  containerWidth: number,
+  minItemWidth: number,
+): number {
+  if (itemCount <= 0 || containerWidth <= 0 || minItemWidth <= 0) {
+    return 1;
+  }
+
+  // Calculate maximum columns that fit in the container
+  const maxColumns = Math.max(1, Math.floor(containerWidth / minItemWidth));
+
+  // If only one column fits or we have one item, return 1
+  if (maxColumns === 1 || itemCount === 1) {
+    return 1;
+  }
+
+  // Find the optimal number of columns that minimizes whitespace
+  // by finding the largest factor of itemCount >= 2 that fits
+  let bestColumns = -1;
+
+  for (let cols = Math.min(maxColumns, itemCount); cols >= 2; cols--) {
+    if (itemCount % cols === 0) {
+      // Perfect fit with multiple columns - no empty cells
+      bestColumns = cols;
+      break;
+    }
+  }
+
+  // If a perfect factor >= 2 was found, use it
+  if (bestColumns !== -1) {
+    return bestColumns;
+  }
+
+  // No perfect factor >= 2 found (prime numbers or only factor is 1)
+  // Find the column count that minimizes empty cells while preferring more columns
+  // Use maxColumns as starting point since having more columns is generally better
+  bestColumns = maxColumns;
+  let minEmptyCells = Infinity;
+
+  for (let cols = Math.min(maxColumns, itemCount); cols >= 2; cols--) {
+    const rows = Math.ceil(itemCount / cols);
+    const totalCells = rows * cols;
+    const emptyCells = totalCells - itemCount;
+
+    if (emptyCells < minEmptyCells) {
+      minEmptyCells = emptyCells;
+      bestColumns = cols;
+    }
+  }
+
+  return bestColumns;
+}
+
 export interface KPISpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {

@@ -34,6 +34,12 @@ func (t *DevelopFile) Spec() *mcp.Tool {
 		Name:        DevelopFileName,
 		Title:       "Develop file",
 		Description: "Developer agent that creates, edits or deletes a single Rill project file based on a prompt. It has no prior context from the conversation, but has deep knowledge of Rill project development and best practices.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(true),
+			IdempotentHint:  false,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    false,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Developing file...",
 			"openai/toolInvocation/invoked":  "Developed file",

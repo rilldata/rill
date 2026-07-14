@@ -6,8 +6,7 @@ project_files:
     connector: duckdb
     materialize: true
     sql: |
-      select id, timestamp, publisher, domain, volume, impressions, clicks
-      from read_csv('data/AdBids_mini.csv')
+      select id, timestamp, publisher, domain, volume, impressions, clicks from 'data/AdBids_mini.csv'
   metrics_with_policy.yaml:
     type: metrics_view
     model: ad_bids_mini

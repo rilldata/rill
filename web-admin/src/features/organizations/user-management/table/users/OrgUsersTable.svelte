@@ -12,13 +12,14 @@
   import UserRoleCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserRoleCell.svelte";
   import UserGroupsCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserGroupsCell.svelte";
   import UserProjectsCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserProjectsCell.svelte";
-  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import type {
     InfiniteData,
     InfiniteQueryObserverResult,
   } from "@tanstack/svelte-query";
   import { ExternalLinkIcon } from "lucide-svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
     invitedBy?: string;
@@ -49,10 +50,10 @@
 
   const UserCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "user",
-    header: "User",
+    header: m.users_table_header_user(),
     enableSorting: false,
     cell: ({ row }) =>
-      flexRender(UserCompositeCell, {
+      renderComponent(UserCompositeCell, {
         name: row.original.userName ?? row.original.email,
         email: row.original.userEmail,
         isCurrentUser: row.original.userEmail === currentUserEmail,
@@ -66,9 +67,9 @@
   };
   const RoleCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "roleName",
-    header: "Organization Role",
+    header: m.users_table_header_org_role(),
     cell: ({ row }) =>
-      flexRender(UserRoleCell, {
+      renderComponent(UserRoleCell, {
         email: row.original.userEmail,
         role: row.original.roleName,
         isCurrentUser: row.original.userEmail === currentUserEmail,
@@ -83,9 +84,9 @@
   };
   const UserGroupCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "usergroupsCount",
-    header: "Groups",
+    header: m.users_table_header_groups(),
     cell: ({ row }) =>
-      flexRender(UserGroupsCell, {
+      renderComponent(UserGroupsCell, {
         userId: row.original.userId,
         organization,
         groupCount: row.original.usergroupsCount ?? 0,
@@ -98,9 +99,9 @@
   };
   const ProjectsCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "projectsCount",
-    header: "Projects",
+    header: m.users_table_header_projects(),
     cell: ({ row }) =>
-      flexRender(UserProjectsCell, {
+      renderComponent(UserProjectsCell, {
         organization,
         userId: row.original.userId,
         projectCount: row.original.projectsCount ?? 0,
@@ -115,7 +116,7 @@
     header: "",
     enableSorting: false,
     cell: ({ row }) =>
-      flexRender(UserActionsCell, {
+      renderComponent(UserActionsCell, {
         email: row.original.userEmail,
         role: row.original.roleName,
         isCurrentUser: row.original.userEmail === currentUserEmail,
@@ -161,7 +162,7 @@
     invitesQuery.isFetchingNextPage}
   onLoadMore={handleLoadMore}
   maxHeight={dynamicTableMaxHeight}
-  emptyStateMessage="No users found"
+  emptyStateMessage={m.users_table_empty()}
   {headerIcons}
   {scrollToTopTrigger}
 />

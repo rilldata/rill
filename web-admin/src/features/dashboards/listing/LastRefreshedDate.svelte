@@ -2,15 +2,16 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { timeAgo } from "./utils";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let dashboard: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: lastRefreshedQuery = createRuntimeServiceGetExplore(
-    instanceId,
+    runtimeClient,
     { name: dashboard },
     {
       query: {
@@ -28,7 +29,7 @@
 {#if data}
   <Tooltip distance={8}>
     <div class="text-[11px] text-fg-secondary">
-      Last refreshed {timeAgo(data)}
+      {m.dashboard_last_refreshed_ago({ time: timeAgo(data) })}
     </div>
     <TooltipContent slot="tooltip-content">
       {data.toLocaleString()}

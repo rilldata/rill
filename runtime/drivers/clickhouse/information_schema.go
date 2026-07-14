@@ -93,11 +93,19 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	q := `
 	SELECT
-		name AS table_name,
-		CASE WHEN match(engine, 'View') THEN true ELSE false END AS view
-	FROM system.tables
-	WHERE is_temporary = 0 AND database = ?
+		t1.name AS table_name,
+		match(t1.engine, 'View') AS view
+	FROM system.tables t1
 	`
+	if c.config.Cluster != "" {
+		q += `
+		LEFT ANTI JOIN system.tables t2
+			ON t2.database = t1.database
+			AND t1.name = concat(t2.name, '_local')
+		`
+	}
+
+	q += " WHERE t1.is_temporary = 0 AND t1.database = ?"
 	args := []any{databaseSchema}
 	if pageToken != "" {
 		var startAfter string
@@ -150,58 +158,51 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = release() }()
 
-	q := `
-    SELECT
-        CASE WHEN match(engine, 'View') THEN true ELSE false END AS view,
-        c.name AS column_name,
-        c.type AS data_type
-    FROM system.tables t
-    LEFT JOIN system.columns c
-		ON t.database = c.database AND t.name = c.table
-    WHERE t.database = ? AND t.name = ?
-    ORDER BY c.position
-    `
-	rows, err := conn.QueryxContext(ctx, q, databaseSchema, table)
+	var q string
+	var args []any
+	q = `
+		SELECT 
+			T.database AS SCHEMA,
+			T.database = currentDatabase() AS is_default_schema,
+			T.name AS NAME,
+			if(lower(T.engine) like '%view%', 'VIEW', 'TABLE') AS TABLE_TYPE,
+			C.name AS COLUMNS,
+			C.type AS COLUMN_TYPE,
+			C.position AS ORDINAL_POSITION
+		FROM system.tables T
+		JOIN system.columns C ON T.database = C.database AND T.name = C.table
+		WHERE T.database = coalesce(?, currentDatabase()) AND T.name = ?
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+	`
+	if databaseSchema == "" {
+		args = append(args, nil, name)
+	} else {
+		args = append(args, databaseSchema, name)
+	}
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	schemaMap := make(map[string]string)
-	var view bool
-	var colName, dataType string
-	for rows.Next() {
-		if err := rows.Scan(&view, &colName, &dataType); err != nil {
-			return nil, err
-		}
-		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
-			if errors.Is(err, errUnsupportedType) {
-				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-			} else {
-				return nil, err
-			}
-		} else if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-		} else {
-			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
-	}
-
-	if err := rows.Err(); err != nil {
+	tables, err := scanTables(rows)
+	if err != nil {
 		return nil, err
 	}
 
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-		View:   view,
-	}, nil
+	if len(tables) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+
+	return tables[0], nil
 }
 
 func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
@@ -241,6 +242,15 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 		args = append(args, startAfterSchema, startAfterSchema, startAfterName)
 	}
 
+	localTableExclusionJoin := ""
+	if c.config.Cluster != "" {
+		localTableExclusionJoin = `
+		LEFT ANTI JOIN system.tables T2
+			ON T2.database = T.database
+			AND T.name = concat(T2.name, '_local')
+		`
+	}
+
 	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
 	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
 	// We map clickhouse database to `database schema` and table_name to `table name`.
@@ -259,6 +269,7 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 				T.name,
 				T.engine
 			FROM system.tables T
+			%s
 			-- allow fetching tables from system or information_schema if it is current database
 			WHERE %s
 			ORDER BY database, name, engine
@@ -266,7 +277,7 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 		) LT
 		JOIN system.columns C ON LT.database = C.database AND LT.name = C.table
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`, filter)
+	`, localTableExclusionJoin, filter)
 
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	args = append(args, limit+1)
@@ -292,53 +303,6 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 	return tables, next, nil
 }
 
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	conn, release, err := c.acquireMetaConn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = release() }()
-
-	var q string
-	var args []any
-	q = `
-		SELECT 
-			T.database AS SCHEMA,
-			T.database = currentDatabase() AS is_default_schema,
-			T.name AS NAME,
-			if(lower(T.engine) like '%view%', 'VIEW', 'TABLE') AS TABLE_TYPE,
-			C.name AS COLUMNS,
-			C.type AS COLUMN_TYPE,
-			C.position AS ORDINAL_POSITION
-		FROM system.tables T
-		JOIN system.columns C ON T.database = C.database AND T.name = C.table
-		WHERE T.database = coalesce(?, currentDatabase()) AND T.name = ?
-		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`
-	if schema == "" {
-		args = append(args, nil, name)
-	} else {
-		args = append(args, schema, name)
-	}
-
-	rows, err := conn.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	tables, err := scanTables(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(tables) == 0 {
-		return nil, drivers.ErrNotFound
-	}
-
-	return tables[0], nil
-}
-
 func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	if len(tables) == 0 {
 		return nil
@@ -349,21 +313,33 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	}
 	defer func() { _ = release() }()
 
+	// On a cluster, data is sharded across replicas and Rill-created tables are Distributed tables whose data lives in `<name>_local`.
+	// Use cluster() (one replica per shard) so SUM(bytes_on_disk) totals every shard without double-counting replicas,
+	// and look up the `_local` name alongside the original so Distributed tables resolve to their backing storage.
+	partsExpr := "system.parts"
+	if c.config.Cluster != "" {
+		partsExpr = fmt.Sprintf("cluster(%s, system.parts)", safeSQLString(c.config.Cluster))
+	}
+
 	var queryBuilder strings.Builder
-	queryBuilder.WriteString(`
-		SELECT 
-			database, 
-			table, 
+	fmt.Fprintf(&queryBuilder, `
+		SELECT
+			database,
+			table,
 			SUM(bytes_on_disk) AS total_size_bytes
-		FROM system.parts
+		FROM %s
 		WHERE active = 1 AND (database, table) IN (
-	`)
-	args := make([]interface{}, 0, len(tables)*2)
-	placeholders := make([]string, 0, len(tables))
+	`, partsExpr)
+	args := make([]interface{}, 0, len(tables)*4)
+	placeholders := make([]string, 0, len(tables)*2)
 
 	for _, table := range tables {
 		placeholders = append(placeholders, "(?, ?)")
 		args = append(args, table.DatabaseSchema, table.Name)
+		if c.config.Cluster != "" {
+			placeholders = append(placeholders, "(?, ?)")
+			args = append(args, table.DatabaseSchema, localTableName(table.Name))
+		}
 	}
 
 	queryBuilder.WriteString(strings.Join(placeholders, ", "))
@@ -402,9 +378,34 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 		}
 		if size, ok := schemaTables[t.Name]; ok {
 			t.PhysicalSizeBytes = int64(size)
+		} else if c.config.Cluster != "" {
+			if size, ok := schemaTables[localTableName(t.Name)]; ok {
+				t.PhysicalSizeBytes = int64(size)
+			}
 		}
 	}
 	return err
+}
+
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	schema := table.DatabaseSchema
+	if schema == "" {
+		schema = c.config.Database // In Clickhouse, this is actually like a schema
+	}
+
+	var ddl string
+	err = conn.QueryRowxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s.%s", safeSQLName(schema), safeSQLName(table.Name))).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
 }
 
 func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {

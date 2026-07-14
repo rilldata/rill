@@ -2,6 +2,7 @@
   import IconSwitcher from "@rilldata/web-common/components/forms/IconSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ArrowDown, ArrowRight } from "lucide-svelte";
 
   export let key: string;
@@ -9,16 +10,16 @@
   export let value: string | undefined;
   export let onChange: (updatedSparkline: string) => void;
 
-  const horizontalOptions = [
+  $: horizontalOptions = [
     {
       id: "bottom",
       Icon: ArrowDown,
-      tooltip: "Show sparkline below the value",
+      tooltip: m.canvas_sparkline_below(),
     },
     {
       id: "right",
       Icon: ArrowRight,
-      tooltip: "Show sparkline to the right of the value",
+      tooltip: m.canvas_sparkline_right(),
     },
   ];
 
@@ -31,7 +32,7 @@
     <InputLabel small {label} id={key} faint={!showSparkline} />
     <Switch
       checked={showSparkline}
-      on:click={() => {
+      onclick={() => {
         let newSparklinePosition = "bottom";
         if (showSparkline) newSparklinePosition = "none";
         onChange(newSparklinePosition);

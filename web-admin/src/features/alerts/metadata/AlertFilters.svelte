@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import DimensionFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterReadOnlyChip.svelte";
@@ -13,7 +14,7 @@
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
 
@@ -36,9 +37,9 @@
     whereFilter = dimensionFilters;
     havingFilter = dimensionThresholdFilters;
   }
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: metricsView = useMetricsView(instanceId, metricsViewName);
+  $: metricsView = useMetricsView(runtimeClient, metricsViewName);
   $: dimensionIdMap = getMapFromArray(
     $metricsView.data?.metricsView?.state?.validSpec?.dimensions ?? [],
     (dimension) => dimension.name,
@@ -58,7 +59,9 @@
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label="Alert filters">
-  <MetadataLabel>Filters ({filtersLength})</MetadataLabel>
+  <MetadataLabel
+    >{m.alert_filters_label({ count: String(filtersLength) })}</MetadataLabel
+  >
   <div class="flex flex-wrap gap-2">
     {#if filtersLength}
       {#if hasTimeRange}
@@ -99,7 +102,7 @@
         class="text-fg-muted grid items-center"
         style:min-height="26px"
       >
-        No filters selected
+        {m.alert_no_filters_heading()}
       </div>
     {/if}
   </div>

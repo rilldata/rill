@@ -15,7 +15,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { ConnectError } from "@connectrpc/connect";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { type Readable, derived, readable, writable } from "svelte/store";
 import {
@@ -216,7 +216,7 @@ export function queryExpandedRowMeasureValues(
         tableData,
         rowDimensionNames,
         expandIndex,
-        numMeasures > 0,
+        config.pivot?.showTotalsRow !== false && numMeasures > 0,
       );
 
       if (
@@ -305,6 +305,8 @@ export function queryExpandedRowMeasureValues(
             sortPivotBy,
             timeRange,
             queryLimit,
+            "0",
+            true,
           ),
         ],
         ([expandIndex, subRowDimensions], axisSet) => {
@@ -356,8 +358,10 @@ export function queryExpandedRowMeasureValues(
 
           let subTableQuery:
             | Readable<null>
-            | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
-            readable(null);
+            | CreateQueryResult<
+                V1MetricsViewAggregationResponse,
+                ConnectError
+              > = readable(null);
 
           if (config.colDimensionNames.length) {
             subTableQuery = createSubTableCellQuery(
@@ -478,7 +482,10 @@ export function addExpandedDataToPivot(
       .split(".")
       .map((index) => parseInt(index, 10));
 
-    if (config.measureNames.length > 0) {
+    if (
+      config.pivot?.showTotalsRow !== false &&
+      config.measureNames.length > 0
+    ) {
       // The first row is always the totals row for the expanded context with measures
       indices[0] = indices[0] - 1;
     }

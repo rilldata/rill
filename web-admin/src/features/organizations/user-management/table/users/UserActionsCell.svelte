@@ -15,6 +15,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { page } from "$app/stores";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let email: string;
   export let role: string;
@@ -62,12 +63,12 @@
       await invalidateAfterUserDelete(queryClient, organization);
 
       eventBus.emit("notification", {
-        message: "User removed from organization",
+        message: m.users_removed_from_org(),
       });
     } catch (error) {
       console.error("Error removing user from organization", error);
       eventBus.emit("notification", {
-        message: "Error removing user from organization",
+        message: m.users_error_removing(),
         type: "error",
       });
     }
@@ -85,17 +86,17 @@
       {#if role === OrgUserRoles.Guest && !pendingAcceptance}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={onConvertToMember}
+          onclick={onConvertToMember}
         >
-          Convert to member
+          {m.users_convert_to_member()}
         </DropdownMenu.Item>
       {/if}
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
-        on:click={onRemoveClick}
+        onclick={onRemoveClick}
       >
-        Remove
+        {m.users_remove()}
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

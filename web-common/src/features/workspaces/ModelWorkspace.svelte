@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fade, slide } from "svelte/transition";
   import { goto } from "$app/navigation";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -7,7 +8,7 @@
     ResourceKind,
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/actions/ui-actions.ts";
   import WorkspaceInspector from "@rilldata/web-common/features/models/inspector/WorkspaceInspector.svelte";
   import ModelEditor from "@rilldata/web-common/features/models/workspace/ModelEditor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
@@ -18,14 +19,17 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { fade, slide } from "svelte/transition";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
+  import ReconcileWarningPanel from "../entity-management/ReconcileWarningPanel.svelte";
   import { getUserFriendlyError } from "../models/error-utils";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
 
   export let fileArtifact: FileArtifact;
+
+  const runtimeClient = useRuntimeClient();
 
   $: ({
     hasUnsavedChanges,
@@ -40,14 +44,12 @@
   $: workspace = workspaces.get(filePath);
   $: tableVisible = workspace.table.visible;
 
-  $: ({ instanceId } = $runtime);
-
-  $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
-  $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
+  $: allErrorsStore = fileArtifact.getAllErrors(queryClient);
+  $: hasErrors = fileArtifact.getHasErrors(queryClient);
 
   $: allErrors = $allErrorsStore;
 
-  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: resource = $resourceQuery.data;
   $: model = $resourceQuery.data?.model;
   $: connector = (model as V1Model)?.spec?.outputConnector as string;
@@ -62,7 +64,6 @@
   $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
 
   async function save() {
-    httpRequestQueue.removeByName(assetName);
     await queryClient.cancelQueries({
       predicate: (query) => isProfilingQuery(query, assetName),
     });
@@ -70,7 +71,7 @@
 
   async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
-      instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,
@@ -102,7 +103,7 @@
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={handleNameChange}
   >
-    <svelte:fragment slot="workspace-controls">
+    {#snippet workspaceControls()}
       <p
         class="text-fg-muted line-clamp-1 mr-2 text-[11px]"
         transition:fade={{ duration: 200 }}
@@ -111,9 +112,9 @@
           Computed on {formatRefreshedOn(refreshedOn)}
         {/if}
       </p>
-    </svelte:fragment>
+    {/snippet}
 
-    <svelte:fragment slot="cta" let:width>
+    {#snippet cta(width: number)}
       {@const collapse = width < 800}
 
       <div class="flex gap-x-2 items-center">
@@ -126,7 +127,7 @@
           hasUnsavedChanges={$hasUnsavedChanges}
         />
       </div>
-    </svelte:fragment>
+    {/snippet}
   </WorkspaceHeader>
 
   <div
@@ -139,6 +140,8 @@
       {/key}
     </WorkspaceEditorContainer>
 
+    <ReconcileWarningPanel {fileArtifact} />
+
     {#if $tableVisible}
       <WorkspaceTableContainer {filePath}>
         {#if isResourceReconciling}
@@ -150,13 +153,17 @@
           {#if allErrors.length > 0}
             <div
               transition:slide={{ duration: 200 }}
-              class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-fg-primary w-full shrink-0 max-h-[60%] bg-gray-100 flex flex-col gap-2"
+              class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto flex flex-col gap-2"
+              aria-label="Model errors"
             >
               {#each allErrors as error (error.message)}
                 <div>
                   {getUserFriendlyError(error.message ?? "")}
                 </div>
               {/each}
+              <div class="flex justify-start pt-1">
+                <ExplainAndFixErrorButton {filePath} />
+              </div>
             </div>
           {/if}
         </svelte:fragment>

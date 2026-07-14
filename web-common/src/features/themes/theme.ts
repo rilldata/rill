@@ -108,7 +108,7 @@ export class Theme {
   private processTheme(spec: V1ThemeSpec) {
     // Handle legacy theme format (colors: primary/secondary)
     // If neither light nor dark is defined, but we have legacy color fields,
-    // treat them as light mode colors only for backwards compatibility
+    // generate both light and dark palettes from them
     const hasLegacyColors =
       !spec.light &&
       !spec.dark &&
@@ -120,7 +120,8 @@ export class Theme {
         secondary: spec.secondaryColorRaw,
       };
       const lightColors = this.processColors(legacyColors);
-      return { dark: {}, light: lightColors };
+      const darkColors = this.processColors(legacyColors, true);
+      return { dark: darkColors, light: lightColors };
     }
 
     const darkColors = this.processColors(spec.dark ?? {}, true);
@@ -227,6 +228,10 @@ type Colors = {
   // Destructive actions
   destructive?: Color;
   "destructive-foreground"?: Color;
+
+  // KPI delta coloring
+  "kpi-positive"?: Color;
+  "kpi-negative"?: Color;
 
   // Popover
   popover?: Color;

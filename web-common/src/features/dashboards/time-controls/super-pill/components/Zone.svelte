@@ -11,6 +11,7 @@
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import ZoneDisplay from "./ZoneDisplay.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const browserIANA = getLocalIANA();
 
@@ -52,24 +53,27 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <button
-      use:builder.action
-      {...builder}
-      class="flex items-center gap-x-1"
-      aria-label="Timezone selector"
-      title={!availableTimeZones.length ? "No timezones configured" : ""}
-      disabled={lockTimeZone}
-      type="button"
-    >
-      {getAbbreviationForIANA(watermark, activeTimeZone)}
-      {#if !lockTimeZone}
-        <span class="flex-none transition-transform" class:-rotate-180={open}>
-          <CaretDownIcon />
-        </span>
-      {/if}
-    </button>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        class="flex items-center gap-x-1"
+        aria-label={m.dashboard_timezone_selector()}
+        title={!availableTimeZones.length
+          ? m.dashboard_no_timezones_configured()
+          : ""}
+        disabled={lockTimeZone}
+        type="button"
+      >
+        {getAbbreviationForIANA(watermark, activeTimeZone)}
+        {#if !lockTimeZone}
+          <span class="flex-none transition-transform" class:-rotate-180={open}>
+            <CaretDownIcon />
+          </span>
+        {/if}
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" {side} class="w-80">
@@ -93,12 +97,13 @@
       <DropdownMenu.Separator />
     {/if}
 
-    <DropdownMenu.Group>
+    <DropdownMenu.Group class="max-h-72 overflow-y-auto">
       {#each filteredPinnedTimeZones as [iana, { offset, abbreviation }] (iana)}
         <DropdownMenu.CheckboxItem
           checkRight
+          closeOnSelect
           checked={activeTimeZone === iana}
-          on:click={() => {
+          onSelect={() => {
             onSelectTimeZone(iana);
           }}
         >
@@ -117,13 +122,14 @@
 
       <DropdownMenu.Group>
         <div class="flex justify-between pr-2">
-          <DropdownMenu.Label>Recent</DropdownMenu.Label>
+          <DropdownMenu.Label>{m.dashboard_recent()}</DropdownMenu.Label>
           {#if recentIANAs.length}
             <button
-              on:click={() => {
+              onclick={() => {
                 recents.set([]);
               }}
-              class="text-[10px] text-fg-secondary">Clear recents</button
+              class="text-[10px] text-fg-secondary"
+              >{m.dashboard_clear_recents()}</button
             >
           {/if}
         </div>
@@ -134,7 +140,7 @@
             <DropdownMenu.CheckboxItem
               checkRight
               checked={activeTimeZone === iana}
-              on:click={() => {
+              onclick={() => {
                 onSelectTimeZone(iana);
               }}
             >
@@ -156,13 +162,14 @@
         <DropdownMenu.Label
           class="sticky top-0 bg-gradient-to-b z-10 from-surface from-75% to-transparent"
         >
-          Search Results
+          {m.dashboard_search_results()}
         </DropdownMenu.Label>
 
         {#each filteredTimeZones as [iana, { abbreviation, offset }], i (i)}
           <DropdownMenu.CheckboxItem
             checkRight
-            on:click={() => {
+            closeOnSelect
+            onSelect={() => {
               onSelectTimeZone(iana);
               recents.set(Array.from(new Set([iana, ...$recents])).slice(0, 5));
             }}
@@ -172,7 +179,7 @@
         {:else}
           <DropdownMenu.Group>
             <p class="pt-0 pb-2 text-fg-secondary text-center">
-              No options found
+              {m.dashboard_no_options_found()}
             </p>
           </DropdownMenu.Group>
         {/each}

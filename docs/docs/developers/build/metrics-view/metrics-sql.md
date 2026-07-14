@@ -1,12 +1,12 @@
 ---
-title: Metrics SQL 
+title: Metrics SQL
 description: Query metrics views using SQL syntax
 sidebar_label: Metrics SQL
 ---
 
 You can write a SQL query referring to metrics definitions and dimensions defined in a metrics view.
 It should have the following structure:
-    
+
 ```yaml
 type: api
 metrics_sql: SELECT publisher, domain, total_records FROM ad_bids_metrics
@@ -50,111 +50,121 @@ SELECT toUpper(publisher) AS publisher, domain AS domain, COUNT(*) AS total_reco
 
 Queries executed via Metrics SQL are subject to the security policies and access controls defined in the metrics view YAML configuration, ensuring data security and compliance.
 
-## Limitations
-
-Metrics SQL is specifically designed for querying metrics views and may not support all features found in standard SQL. Its primary focus is on providing an efficient and easy way to extract data within the constraints of metrics view configurations.
-
 ## Supported SQL Features
 
-- **SELECT** statements with plain `dimension` and `measure` references.
-- A single **FROM** clause referencing a `metrics view`.
-- **WHERE** clause that can reference selected `dimensions` only.
-- Operators in **WHERE** and **HAVING** clauses include `=`, `!=`, `>`, `>=`, `<`, `<=`, IN, LIKE, AND, OR, and parentheses for structuring the expression.
-- **HAVING** clause for filtering on aggregated results, referencing selected dimension and measure names. Supports the same expression capabilities as the WHERE clause.
-- **ORDER BY** clause for sorting the results.
-- **LIMIT** and **OFFSET** clauses for controlling the result set size and pagination.
+### SELECT
+
+Reference dimensions and measures by name. The `date_trunc` function can be used to group a time dimension by a specific grain (and optionally aliased with `AS`):
+
+```sql
+SELECT date_trunc('MONTH', timestamp) AS month, publisher, total_records FROM ad_bids_metrics
+```
+
+Supported grains: `SECOND`, `MINUTE`, `HOUR`, `DAY`, `WEEK`, `MONTH`, `QUARTER`, `YEAR`.
+
+### FROM
+
+A single metrics view name. Joins and subqueries in the FROM clause are not supported.
+
+### WHERE and HAVING
+
+`WHERE` filters on dimensions; `HAVING` filters on aggregated measures. Both support the same operators and functions.
+
+### ORDER BY, LIMIT, OFFSET
+
+Standard SQL sorting and pagination clauses are supported:
+
+```sql
+SELECT publisher, total_records FROM ad_bids_metrics
+ORDER BY total_records DESC
+LIMIT 20 OFFSET 40
+```
+
+## Operators
+
+The following operators are supported in `WHERE` and `HAVING` clauses:
+
+| Operator |
+|----------|
+| `=`, `!=`, `<`, `<=`, `>`, `>=` |
+| `AND`, `OR`, `(` `)` |
+| `IN (...)`, `NOT IN (...)` |
+| `LIKE`, `NOT LIKE` (case-insensitive, `%` wildcard) |
+| `BETWEEN ... AND ...` |
+| `IS NULL`, `IS NOT NULL` |
+| `IS TRUE`, `IS FALSE`, `IS NOT TRUE`, `IS NOT FALSE` |
+
+```sql
+SELECT publisher, total_records FROM ad_bids_metrics
+WHERE (publisher IS NOT NULL AND domain LIKE '%google%')
+   OR publisher IN ('Yahoo', 'Microsoft')
+```
+
+## Functions
+
+### Time range functions
+
+`time_range_start` and `time_range_end` resolve a Rill time expression against the metrics view's watermark and time range. They must be compared against the time dimension:
+
+```sql
+SELECT publisher, total_records FROM ad_bids_metrics
+WHERE timestamp > time_range_start('7D as of watermark/D+1D')
+  AND timestamp <= time_range_end('7D as of watermark/D+1D')
+```
+
+### Interval arithmetic
+
+Add or subtract an interval from a timestamp literal using `INTERVAL amount UNIT` syntax. Supported units: `SECOND`, `MINUTE`, `HOUR`, `DAY`, `WEEK`, `MONTH`, `YEAR`.
+
+```sql
+SELECT publisher, total_records FROM ad_bids_metrics
+WHERE timestamp > '2024-07-30' - INTERVAL 90 DAY
+```
+
+### now()
+
+Returns the current timestamp:
+
+```sql
+SELECT publisher, total_records FROM ad_bids_metrics
+WHERE timestamp > now() - INTERVAL 7 DAY
+```
+
+### CAST
+
+Casting to `DATETIME` or `TIMESTAMP` is supported (other target types are not):
+
+```sql
+SELECT publisher, total_records FROM ad_bids_metrics
+WHERE timestamp > CAST('2024-01-01' AS TIMESTAMP)
+```
+
+## Subqueries
+
+Subqueries are supported inside `IN` expressions. The subquery must select exactly one dimension from the same metrics view and can include its own `WHERE` and `HAVING` clauses:
+
+```sql
+SELECT publisher, total_records FROM ad_bids_metrics
+WHERE publisher IN (
+  SELECT publisher FROM ad_bids_metrics
+  HAVING total_records > 100
+)
+```
+
+Subqueries do not support `ORDER BY`, `LIMIT`, `DISTINCT`, window functions, joins, or CTEs.
+
+## Limitations
+
+- Only one metrics view can be queried per statement (no joins).
+- `SELECT *` is not supported; list dimensions and measures explicitly.
+- `GROUP BY` is implicit based on selected dimensions and cannot be specified manually.
+- Aggregate functions like `COUNT()` or `SUM()` cannot be used directly; reference predefined measures instead.
+- Set operations (`UNION`, `INTERSECT`, `EXCEPT`) and CTEs (`WITH`) are not supported.
 
 :::warning
  The Metrics SQL feature is currently evolving. We are dedicated to enhancing the syntax by introducing additional SQL features, while striving to maintain support for existing syntax. However, please be advised that backward compatibility cannot be guaranteed at all times. Additionally, users should be aware that there may be untested edge cases in the current implementation. We appreciate your understanding as we work to refine and improve this feature.
 :::
 
-## SQL Templating
+## Using Metrics SQL in custom APIs
 
-You can use templating to make your Metrics SQL query dynamic. We support:
- - Dynamic arguments that can be passed in as query parameters during the API call using `{{ .args.<param-name> }}`
- - User attributes like email, domain, and admin if available using `{{ .user.<attr> }}` (see integration docs [here](/developers/integrate/custom-api) for when user attributes are available)
- - Conditional statements
- - Optional parameters paired with conditional statements.
-
-See integration docs [here](/developers/integrate/custom-api) to learn how these are passed in when calling the API.
-
-### Conditional statements
-
-Assume an API endpoint defined as `my-api.yaml`:
-```yaml
-type: api
-metrics_sql: |
-  SELECT publisher, total_records
-    {{ if ( .user.admin ) }} ,domain  {{ end }} 
-    FROM ad_bids_metrics WHERE timestamp::DATE = '{{ .args.date }}' 
-    {{ if ( .user.admin ) }} GROUP BY publisher, domain {{ else }} GROUP BY publisher {{ end }}
-```
-If the user is an admin, the API will return the count of records by `publisher` and `domain` for the given date. If the user is not an admin, the API will return the total count of records by `publisher` for the given date.
-
-### Optional parameters
-
-Rill utilizes standard Go templating together with [Sprig](http://masterminds.github.io/sprig/), which adds a number of useful utility functions.  
-One of those functions is `hasKey`, which in the example below enables optional parameters to be passed to the Custom API endpoint. This allows you to build API endpoints that can handle a wider range of parameters and logic, reducing the need to duplicate API endpoints.
-
-Assume an API endpoint defined as `my-api.yaml`:
-```yaml
-type: api
-metrics_sql: |
-  SELECT
-    publisher,
-    total_records
-  FROM ad_bids_metrics
-  {{ if hasKey .args "publisher" }} WHERE publisher = '{{ .args.publisher }}' {{ end }} 
-  GROUP BY publisher
-```
-
-HTTP GET `.../runtime/api/my-api` would return `total_records` for all `publisher`s.  
-HTTP GET `.../runtime/api/my-api?publisher=Google` would return `total_records` for `Google`.
-
-## Add an OpenAPI spec
-
-You can optionally provide OpenAPI annotations for the request and response schema in your custom API definition. These will automatically be incorporated in the OpenAPI spec for your project (see [Custom API Integration](/developers/integrate/custom-api) for details).
-
-Example custom API with request and response schema:
-
-```yaml
-type: api
-
-metrics_sql: >
-  SELECT publisher, total_records
-  FROM ad_bids_metrics
-  WHERE domain = '{{ .args.domain }}'
-  {{ if hasKey .args "limit" }} LIMIT {{ .args.limit }} {{ end }}
-  {{ if hasKey .args "offset" }} OFFSET {{ .args.offset }} {{ end }}
-
-openapi:
-  request_schema:
-    type: object
-    required:
-      - domain
-    properties:
-      domain:
-        type: string
-        description: Domain to filter sales by
-      limit:
-        type: integer
-        description: Optional limit for pagination
-      offset:
-        type: integer
-        description: Optional offset for pagination
-  
-  response_schema:
-    type: object
-    properties:
-      publisher:
-        type: string
-        description: Publisher name
-      total_records:
-        type: number
-        description: Total records for the publisher
-```
-
-## How to use Metrics SQL APIs
-
-Refer to the integration docs [here](/developers/integrate/custom-api) to learn how to use Metrics SQL APIs in your application.
-
+To expose Metrics SQL queries as HTTP API endpoints, see the [Metrics SQL APIs](/developers/build/custom-apis/metrics-sql) guide. You can also add [dynamic templating](/developers/build/custom-apis/templating), [security rules](/developers/build/custom-apis/security), and [OpenAPI documentation](/developers/build/custom-apis/openapi) to your Metrics SQL APIs.

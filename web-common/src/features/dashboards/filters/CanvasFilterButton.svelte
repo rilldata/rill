@@ -9,6 +9,7 @@
     getDimensionDisplayName,
     getMeasureDisplayName,
   } from "./getDisplayName";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { MetricsViewName } from "../../canvas/stores/filter-manager";
   import type {
     MetricsViewSpecDimension,
@@ -51,30 +52,33 @@
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
-      name: "DIMENSIONS",
+      name: m.filter_dimensions(),
       items: dimensionEntries,
     },
     <SearchableFilterSelectableGroup>{
-      name: "MEASURES",
+      name: m.filter_measures(),
       items: measureEntries,
     },
   ];
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <Tooltip distance={8} suppress={open}>
-      <button
-        class:addBorder
-        class:active={open}
-        use:builder.action
-        {...builder}
-        aria-label="Add filter button"
-      >
-        <Add size="17px" />
-      </button>
-      <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
-    </Tooltip>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Tooltip distance={8} suppress={open}>
+        <button
+          {...props}
+          class:addBorder
+          class:active={open}
+          aria-label={m.dashboard_add_filter_button()}
+        >
+          <Add size="17px" />
+        </button>
+        <TooltipContent slot="tooltip-content"
+          >{m.dashboard_add_filter()}</TooltipContent
+        >
+      </Tooltip>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent

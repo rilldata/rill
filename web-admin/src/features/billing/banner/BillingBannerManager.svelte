@@ -2,7 +2,6 @@
   import { onNavigate } from "$app/navigation";
   import type { V1OrganizationPermissions } from "@rilldata/web-admin/client";
   import BillingBannerManagerForAdmins from "@rilldata/web-admin/features/billing/banner/BillingBannerManagerForAdmins.svelte";
-  import BillingBannerManagerForViewers from "@rilldata/web-admin/features/billing/banner/BillingBannerManagerForViewers.svelte";
   import { BillingBannerID } from "@rilldata/web-common/components/banner/constants";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
@@ -20,6 +19,4 @@
 
 {#if organizationPermissions.manageOrg}
   <BillingBannerManagerForAdmins {organization} />
-{:else if organizationPermissions.readOrg && organizationPermissions.readProjects}
-  <BillingBannerManagerForViewers {organization} />
 {/if}

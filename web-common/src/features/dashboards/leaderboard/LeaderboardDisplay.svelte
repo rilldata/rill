@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
@@ -21,7 +22,12 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      numberFormat: { measureFormatters, activeMeasureFormatter },
+      numberFormat: {
+        measureFormatters,
+        activeMeasureFormatter,
+        measureTooltipFormatters,
+        activeMeasureTooltipFormatter,
+      },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
@@ -43,9 +49,9 @@
     dashboardStore,
   } = StateManagers;
 
-  let parentElement: HTMLDivElement;
+  const client = useRuntimeClient();
 
-  $: ({ instanceId } = $runtime);
+  let parentElement: HTMLDivElement;
 
   // Reset column widths when the measure changes
   $: if ($leaderboardSortByMeasureName) {
@@ -69,7 +75,10 @@
         : 0);
 </script>
 
-<div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
+<div
+  class="flex flex-col overflow-hidden size-full"
+  aria-label={m.dashboard_leaderboards_aria()}
+>
   <div class="pl-2.5 pb-3">
     <LeaderboardControls exploreName={$exploreName} />
   </div>
@@ -86,7 +95,6 @@
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
-              {instanceId}
               {tableWidth}
               {timeRange}
               {dimensionColumnWidth}
@@ -98,7 +106,7 @@
               {parentElement}
               {timeControlsReady}
               selectedValues={selectedDimensionValues(
-                $runtime.instanceId,
+                client,
                 [metricsViewName],
                 $dashboardStore.whereFilter,
                 dimension.name,
@@ -109,6 +117,12 @@
               formatters={$leaderboardMeasures.length > 1
                 ? $measureFormatters
                 : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
+              tooltipFormatters={$leaderboardMeasures.length > 1
+                ? $measureTooltipFormatters
+                : {
+                    [$leaderboardSortByMeasureName]:
+                      $activeMeasureTooltipFormatter,
+                  }}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}

@@ -1,5 +1,5 @@
 import type { V1User } from "@rilldata/web-admin/client";
-import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
+import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils.ts";
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
@@ -9,6 +9,7 @@ import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashbo
 import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
@@ -37,7 +38,7 @@ export function getNewAlertInitialFormValues(
       },
     ],
     criteriaOperation: V1Operation.OPERATION_AND,
-    snooze: SnoozeOptions[0].value, // Defaults to `Off`
+    snooze: getSnoozeOptions()[0].value, // Defaults to `Off`
 
     refreshWhenDataRefreshes: true,
     ...getInitialScheduleFormValues(),
@@ -53,13 +54,13 @@ export function getNewAlertInitialFormValues(
 }
 
 export function getNewAlertInitialFiltersFormValues(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   exploreName: string,
   exploreState: Partial<ExploreState>,
 ) {
   const metricsViewMetadata = new ExploreMetricsViewMetadata(
-    instanceId,
+    client,
     metricsViewName,
     exploreName,
   );

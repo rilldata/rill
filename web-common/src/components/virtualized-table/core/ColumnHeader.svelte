@@ -169,7 +169,7 @@
           class:text-fg-primary={pinned}
           class:text-fg-secondary={!pinned}
           class="   duration-100 justify-self-end"
-          on:click={onPin}
+          onclick={onPin}
         >
           <Pin size="16px" />
         </button>

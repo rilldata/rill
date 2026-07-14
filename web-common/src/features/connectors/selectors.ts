@@ -1,41 +1,45 @@
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
-import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   type V1TableInfo,
-  createConnectorServiceListDatabaseSchemas,
-  createConnectorServiceGetTable,
-  createRuntimeServiceGetInstance,
   type V1GetResourceResponse,
+  createRuntimeServiceAnalyzeConnectors,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
+  runtimeServiceAnalyzeConnectors,
+} from "../../runtime-client";
+import type { RuntimeClient } from "../../runtime-client/v2";
+import { isNotFoundError } from "../../lib/errors";
+import {
+  createRuntimeServiceGetInstance,
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
-  type RpcStatus,
-} from "../../runtime-client";
-import { connectorServiceListTables } from "../../runtime-client/gen/connector-service/connector-service";
+  createConnectorServiceListDatabaseSchemas,
+  createConnectorServiceGetTable,
+  createConnectorServiceListTablesInfinite,
+} from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 /**
  * Creates query options for checking modeling support of a connector
  */
 function createModelingSupportQueryOptions(
-  instanceId: string,
+  client: RuntimeClient,
   connectorName: string,
 ) {
+  const instanceId = client.instanceId;
   return {
     queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.kind": ResourceKind.Connector,
-      "name.name": connectorName,
+      name: { kind: ResourceKind.Connector, name: connectorName },
     }),
     queryFn: async () => {
       try {
-        return await runtimeServiceGetResource(instanceId, {
-          "name.kind": ResourceKind.Connector,
-          "name.name": connectorName,
+        return await runtimeServiceGetResource(client, {
+          name: { kind: ResourceKind.Connector, name: connectorName },
         });
       } catch (error) {
         // Handle legacy DuckDB projects where no explicit connector resource exists
-        if (connectorName === "duckdb" && error?.response?.status === 404) {
+        if (connectorName === "duckdb" && isNotFoundError(error)) {
           // Return a synthetic DuckDB connector
           return {
             resource: {
@@ -72,28 +76,23 @@ function createModelingSupportQueryOptions(
  * Check if modeling is supported for a specific connector based on its properties
  */
 export function useIsModelingSupportedForConnectorOLAP(
-  instanceId: string,
+  client: RuntimeClient,
   connectorName: string,
-): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
-  return createQuery(
-    createModelingSupportQueryOptions(instanceId, connectorName),
-  );
+): CreateQueryResult<boolean, Error> {
+  return createQuery(createModelingSupportQueryOptions(client, connectorName));
 }
 
 export function useIsModelingSupportedForDefaultOlapDriverOLAP(
-  instanceId: string,
-): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
-  const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  client: RuntimeClient,
+): CreateQueryResult<boolean, Error> {
+  const instanceQuery = createRuntimeServiceGetInstance(client, {
     sensitive: true,
   });
 
   // Create queryOptions store that includes the dynamic connector name
   const queryOptions = derived([instanceQuery], ([$instanceQuery]) => {
     const olapConnectorName = $instanceQuery.data?.instance?.olapConnector;
-    return createModelingSupportQueryOptions(
-      instanceId,
-      olapConnectorName || "",
-    );
+    return createModelingSupportQueryOptions(client, olapConnectorName || "");
   });
 
   return createQuery(queryOptions);
@@ -104,19 +103,19 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
  * The backend returns all schemas across databases; filtering is applied client-side.
  */
 export function useListDatabaseSchemas(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database?: string,
   enabled: boolean = true,
 ) {
   return createConnectorServiceListDatabaseSchemas(
+    client,
     {
-      instanceId,
       connector,
     },
     {
       query: {
-        enabled: !!instanceId && !!connector && enabled,
+        enabled: !!client.instanceId && !!connector && enabled,
         select: (data) => {
           const allSchemas = data.databaseSchemas ?? [];
 
@@ -152,49 +151,40 @@ export function useListDatabaseSchemas(
  * Infinite tables loader using pageToken cursor
  */
 export function useInfiniteListTables(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
   pageSize = 5,
   enabled: boolean = true,
 ) {
-  return createInfiniteQuery({
-    queryKey: [
-      "/v1/connectors/tables",
-      { instanceId, connector, database, databaseSchema, pageSize },
-    ],
-    enabled:
-      enabled &&
-      !!instanceId &&
-      !!connector &&
-      (!!database || database === "") &&
-      databaseSchema !== undefined,
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage: { nextPageToken?: string }) =>
-      lastPage?.nextPageToken || undefined,
-    queryFn: ({ pageParam, signal }) =>
-      connectorServiceListTables(
-        {
-          instanceId,
-          connector,
-          database,
-          databaseSchema,
-          pageSize,
-          pageToken: pageParam,
-        },
-        signal,
-      ),
-    select: (data: any) => ({
-      tables: data.pages.flatMap(
-        (p: { tables?: V1TableInfo[] }) => p.tables ?? [],
-      ),
-      nextPageToken:
-        data.pages.length > 0
-          ? data.pages[data.pages.length - 1].nextPageToken
-          : undefined,
-    }),
-  });
+  return createConnectorServiceListTablesInfinite(
+    client,
+    { connector, database, databaseSchema, pageSize },
+    {
+      query: {
+        enabled:
+          enabled &&
+          !!client.instanceId &&
+          !!connector &&
+          (!!database || database === "") &&
+          databaseSchema !== undefined,
+        select: (data) => ({
+          tables: data.pages.flatMap(
+            (p) => (p as { tables?: V1TableInfo[] }).tables ?? [],
+          ),
+          nextPageToken:
+            data.pages.length > 0
+              ? (
+                  data.pages[data.pages.length - 1] as {
+                    nextPageToken?: string;
+                  }
+                ).nextPageToken
+              : undefined,
+        }),
+      },
+    },
+  );
 }
 
 /**
@@ -202,15 +192,15 @@ export function useInfiniteListTables(
  * Called when a table is selected/expanded
  */
 export function useGetTable(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
 ) {
   return createConnectorServiceGetTable(
+    client,
     {
-      instanceId,
       connector,
       database,
       databaseSchema,
@@ -219,7 +209,7 @@ export function useGetTable(
     {
       query: {
         enabled:
-          !!instanceId &&
+          !!client.instanceId &&
           !!connector &&
           !!table &&
           database !== undefined &&
@@ -227,4 +217,67 @@ export function useGetTable(
       },
     },
   );
+}
+
+export function getAnalyzedConnectors(
+  client: RuntimeClient,
+  olapOnly: boolean,
+) {
+  return createRuntimeServiceAnalyzeConnectors(
+    client,
+    {},
+    {
+      query: {
+        // Retry transient errors during runtime resets (e.g. project initialization)
+        retry: (failureCount) => failureCount < 3,
+        retryDelay: 1000,
+        // sort alphabetically
+        select: (data) => {
+          if (!data?.connectors) return;
+
+          const filtered = (
+            olapOnly
+              ? data.connectors.filter((c) => c?.driver?.implementsOlap)
+              : data.connectors
+          ).sort((a, b) =>
+            (a?.name as string).localeCompare(b?.name as string),
+          );
+          return { connectors: filtered };
+        },
+      },
+    },
+  );
+}
+
+export function getAnalyzedConnectorByName(
+  client: RuntimeClient,
+  connectorName: string,
+) {
+  return createRuntimeServiceAnalyzeConnectors(
+    client,
+    {},
+    {
+      query: {
+        // Retry transient errors during runtime resets (e.g. project initialization)
+        retry: (failureCount) => failureCount < 3,
+        retryDelay: 1000,
+        // sort alphabetically
+        select: (data) => {
+          return data.connectors?.find((c) => c?.name === connectorName);
+        },
+      },
+    },
+  );
+}
+
+export async function fetchAnalyzeConnectors(client: RuntimeClient) {
+  const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+  );
+  const resp = await queryClient.fetchQuery({
+    queryKey,
+    queryFn: () => runtimeServiceAnalyzeConnectors(client, {}),
+    staleTime: Infinity,
+  });
+  return resp?.connectors ?? [];
 }

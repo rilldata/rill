@@ -12,6 +12,7 @@
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   type Option = {
     name: TimeComparisonOption;
     key: number;
@@ -53,9 +54,10 @@
   $: firstOption = timeComparisonOptionsState[0];
   $: label =
     TIME_COMPARISON[comparisonOption ?? firstOption?.name]?.label ??
-    "Custom range";
+    m.time_custom_range();
 
-  $: selectedLabel = comparisonOption ?? firstOption?.name ?? "Custom range";
+  $: selectedLabel =
+    comparisonOption ?? firstOption?.name ?? m.time_custom_range();
 
   function applyRange(range: Interval<true>) {
     onSelectComparisonRange(
@@ -92,41 +94,40 @@
 
 <DropdownMenu.Root
   bind:open
-  closeOnItemClick={false}
   onOpenChange={() => {
     showSelector = !!(
       comparisonOption === TimeComparisonOption.CUSTOM && showComparison
     );
   }}
-  typeahead={!showSelector}
 >
-  <DropdownMenu.Trigger asChild let:builder {disabled}>
-    <button
-      {disabled}
-      aria-disabled={disabled}
-      use:builder.action
-      {...builder}
-      aria-label="Select time comparison option"
-      type="button"
-    >
-      <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
-        {#if !timeComparisonOptionsState.length && !showComparison}
-          <p>no comparison period</p>
-        {:else}
-          <b class="line-clamp-1">{label}</b>
-          {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} {timeGrain} />
-          {/if}
-        {/if}
-      </div>
-      <span
-        class="flex-none transition-transform"
-        class:-rotate-180={open}
-        class:opacity-50={!showComparison}
+  <DropdownMenu.Trigger {disabled}>
+    {#snippet child({ props })}
+      <button
+        {...props}
+        {disabled}
+        aria-disabled={disabled}
+        aria-label={m.dashboard_select_time_comparison_aria()}
+        type="button"
       >
-        <CaretDownIcon />
-      </span>
-    </button>
+        <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
+          {#if !timeComparisonOptionsState.length && !showComparison}
+            <p>{m.time_no_comparison_period()}</p>
+          {:else}
+            <b class="line-clamp-1">{label}</b>
+            {#if interval?.isValid && showFullRange}
+              <RangeDisplay {interval} {timeGrain} />
+            {/if}
+          {/if}
+        </div>
+        <span
+          class="flex-none transition-transform"
+          class:-rotate-180={open}
+          class:opacity-50={!showComparison}
+        >
+          <CaretDownIcon />
+        </span>
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
@@ -137,7 +138,7 @@
           {@const selected = selectedLabel === option.name}
           <DropdownMenu.Item
             class="flex gap-x-2"
-            on:click={() => {
+            onclick={() => {
               onCompareRangeSelect(option.name);
               open = false;
             }}
@@ -157,7 +158,8 @@
 
           <DropdownMenu.Item
             data-range="custom"
-            on:click={() => {
+            closeOnSelect={false}
+            onclick={() => {
               showSelector = !showSelector;
             }}
           >
@@ -165,7 +167,7 @@
               class:font-bold={comparisonOption ===
                 TimeComparisonOption.CUSTOM && showComparison}
             >
-              Custom
+              {m.time_custom()}
             </span>
           </DropdownMenu.Item>
         {/if}
@@ -194,9 +196,5 @@
 <style lang="postcss">
   button {
     @apply gap-x-1;
-  }
-
-  .inactive {
-    @apply opacity-50;
   }
 </style>

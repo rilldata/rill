@@ -95,17 +95,15 @@
         {/if}
 
         <div class="error-actions">
-          <button class="btn-primary" on:click={handleReset}>
-            Try Again
-          </button>
+          <button class="btn-primary" onclick={handleReset}> Try Again </button>
 
-          <button class="btn-secondary" on:click={handleClearCache}>
+          <button class="btn-secondary" onclick={handleClearCache}>
             Clear Cache
           </button>
 
           <button
             class="btn-secondary"
-            on:click={() => window.location.reload()}
+            onclick={() => window.location.reload()}
           >
             Reload Page
           </button>

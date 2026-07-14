@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -29,13 +30,13 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 
 	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	pageSize := validPageSize(req.PageSize)
 
 	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), token.Val, pageSize)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	nextToken := ""
@@ -86,7 +87,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}
 
 	return &adminv1.GetOrganizationResponse{
-		Organization: s.organizationToDTO(org, perms.ManageOrg),
+		Organization: s.organizationToDTO(org, perms.ManageOrg || forceAccess),
 		Permissions:  perms,
 	}, nil
 }
@@ -136,7 +137,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 
 	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, user.Email, req.Name, req.DisplayName, req.Description)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.CreateOrganizationResponse{
@@ -149,7 +150,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -182,7 +183,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -257,6 +258,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
@@ -333,7 +335,7 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		return nil, err
 	}
 
-	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID, req.SearchPattern)
+	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID, req.SearchPattern, false)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +364,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -407,12 +409,13 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.AddOrganizationMemberUserRequest) (*adminv1.AddOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 		attribute.String("args.role", req.Role),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -431,7 +434,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
@@ -441,7 +444,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 		if user != nil {
 			invitedByUserID = user.ID
@@ -489,12 +492,21 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			InvitedByName: invitedByName,
 		})
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		return &adminv1.AddOrganizationMemberUserResponse{
 			PendingSignup: true,
 		}, nil
+	}
+
+	// Enforce the seat quota (counts billable member users, excluding internal Rill users; invites are limited by QuotaOutstandingInvites above).
+	seats, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, "", "%@"+billing.InternalEmailDomain, true)
+	if err != nil {
+		return nil, err
+	}
+	if org.QuotaSeats >= 0 && seats >= org.QuotaSeats {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d seats", org.Name, org.QuotaSeats)
 	}
 
 	// Insert the user in the org and its managed usergroups transactionally.
@@ -515,7 +527,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		InvitedByName: invitedByName,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.AddOrganizationMemberUserResponse{
@@ -526,11 +538,12 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.RemoveOrganizationMemberUserRequest) (*adminv1.RemoveOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -569,7 +582,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 	}
 
 	if org.BillingEmail == user.Email {
-		return nil, status.Error(codes.InvalidArgument, "this user is the billing email for the organization, please update the billing email before removing")
+		return nil, status.Error(codes.FailedPrecondition, "this user is the billing email for the organization, please update the billing email before removing")
 	}
 
 	// Check admin status edge cases
@@ -581,7 +594,7 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin member")
 	}
 	if isLastAdmin {
-		return nil, status.Error(codes.InvalidArgument, "cannot remove the last admin member")
+		return nil, status.Error(codes.FailedPrecondition, "cannot remove the last admin member")
 	}
 
 	err = s.admin.DeleteOrganizationMemberUser(ctx, org.ID, user.ID)
@@ -595,12 +608,13 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1.SetOrganizationMemberUserRoleRequest) (*adminv1.SetOrganizationMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 		attribute.String("args.role", req.Role),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -611,7 +625,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 	if role.Admin && !claims.OrganizationPermissions(ctx, org.ID).ManageOrgAdmins && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
@@ -620,7 +634,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, err
 		}
 		// Check if there is a pending invite for this user
 		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
@@ -643,7 +657,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin member")
 	}
 	if isLastAdmin {
-		return nil, status.Error(codes.InvalidArgument, "cannot remove the last admin member")
+		return nil, status.Error(codes.FailedPrecondition, "cannot remove the last admin member")
 	}
 
 	err = s.admin.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
@@ -662,7 +676,7 @@ func (s *Server) GetOrganizationMemberUser(ctx context.Context, req *adminv1.Get
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -678,7 +692,7 @@ func (s *Server) GetOrganizationMemberUser(ctx context.Context, req *adminv1.Get
 	// Find the organization member
 	member, err := s.admin.DB.FindOrganizationMemberUser(ctx, org.ID, user.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.GetOrganizationMemberUserResponse{
@@ -694,7 +708,7 @@ func (s *Server) UpdateOrganizationMemberUserAttributes(ctx context.Context, req
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -704,7 +718,7 @@ func (s *Server) UpdateOrganizationMemberUserAttributes(ctx context.Context, req
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	// Convert protobuf Struct to map[string]any
@@ -735,7 +749,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
@@ -748,7 +762,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	}
 
 	if org.BillingEmail == user.Email {
-		return nil, status.Error(codes.InvalidArgument, "this user is the billing email for the organization, please update the billing email before leaving")
+		return nil, status.Error(codes.FailedPrecondition, "this user is the billing email for the organization, please update the billing email before leaving")
 	}
 
 	// check if the user is the last admin
@@ -757,7 +771,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, err
 	}
 	if isLastAdmin {
-		return nil, status.Error(codes.InvalidArgument, "cannot leave because you are the last admin")
+		return nil, status.Error(codes.FailedPrecondition, "cannot leave because you are the last admin")
 	}
 
 	err = s.admin.DeleteOrganizationMemberUser(ctx, org.ID, user.ID)
@@ -939,6 +953,9 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	if req.OutstandingInvites != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int("args.outstanding_invites", int(*req.OutstandingInvites)))
 	}
+	if req.Seats != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.seats", int(*req.Seats)))
+	}
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
@@ -966,6 +983,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		QuotaSlotsPerDeployment:             int(valOrDefault(req.SlotsPerDeployment, int32(org.QuotaSlotsPerDeployment))),
 		QuotaOutstandingInvites:             int(valOrDefault(req.OutstandingInvites, int32(org.QuotaOutstandingInvites))),
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(req.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaSeats:                          int(valOrDefault(req.Seats, int32(org.QuotaSeats))),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -1016,6 +1034,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
@@ -1025,6 +1044,13 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// If the custom domain changed, we need to update the deployment annotations for this org so that the new custom domain is picked up.
+	if req.CustomDomain != org.CustomDomain {
+		if err := s.admin.UpdateOrgDeploymentAnnotations(ctx, org); err != nil {
+			return nil, err
+		}
 	}
 
 	return &adminv1.SudoUpdateOrganizationCustomDomainResponse{
@@ -1076,6 +1102,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 			SlotsPerDeployment:             int32(o.QuotaSlotsPerDeployment),
 			OutstandingInvites:             int32(o.QuotaOutstandingInvites),
 			StorageLimitBytesPerDeployment: o.QuotaStorageLimitBytesPerDeployment,
+			Seats:                          int32(o.QuotaSeats),
 		},
 		CreatedOn: timestamppb.New(o.CreatedOn),
 		UpdatedOn: timestamppb.New(o.UpdatedOn),

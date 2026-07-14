@@ -68,7 +68,7 @@ func (s *Server) Provision(ctx context.Context, req *adminv1.ProvisionRequest) (
 	if !typ.Valid() {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid type %q", req.Type)
 	}
-	annotations := s.admin.NewDeploymentAnnotations(org, proj)
+	annotations := s.admin.NewDeploymentAnnotations(org, proj, depl.Environment)
 	res, err = s.admin.Provision(ctx, &admin.ProvisionOptions{
 		DeploymentID: depl.ID,
 		Type:         typ,

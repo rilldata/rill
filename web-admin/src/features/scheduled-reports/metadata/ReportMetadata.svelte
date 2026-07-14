@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
@@ -13,7 +14,7 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createAdminServiceDeleteReport } from "../../../client";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
@@ -31,25 +32,27 @@
     formatNextRunOn,
     formatRefreshSchedule,
   } from "./utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
   export let report: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: reportQuery = useReport(instanceId, report);
-  $: isReportCreatedByCode = useIsReportCreatedByCode(instanceId, report);
+  $: reportQuery = useReport(runtimeClient, report);
+  $: isReportCreatedByCode = useIsReportCreatedByCode(runtimeClient, report);
 
   // Get dashboard
-  $: exploreName = useReportDashboardName(instanceId, report);
-  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
+  $: exploreName = useReportDashboardName(runtimeClient, report);
+  $: validSpecResp = useExploreValidSpec(runtimeClient, $exploreName.data);
   $: exploreSpec = $validSpecResp.data?.explore;
   $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
-  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+  $: dashboardDoesNotExist =
+    $validSpecResp.isError && isNotFoundError($validSpecResp.error);
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     $exploreName.data,
   );
 
@@ -63,18 +66,27 @@
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
 
+  $: queryName =
+    (reportSpec?.resolverProperties?.query_name as string | undefined) ??
+    reportSpec?.queryName ??
+    "";
+  $: queryArgsJson =
+    (reportSpec?.resolverProperties?.query_args_json as string | undefined) ??
+    reportSpec?.queryArgsJson ??
+    "";
+
   $: exploreUrl = getMappedExploreUrl(
     {
       exploreName: $exploreName.data,
-      queryName: reportSpec?.queryName,
-      queryArgsJson: reportSpec?.queryArgsJson,
+      queryName,
+      queryArgsJson,
     },
     {
       exploreProtoState: reportSpec?.annotations?.web_open_state,
       forceOpenPivot: true,
     },
     {
-      instanceId,
+      client: runtimeClient,
       organization,
       project,
     },
@@ -96,7 +108,9 @@
       name: $reportQuery.data.resource.meta.name.name,
     });
     queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        runtimeClient.instanceId,
+      ),
     });
     goto(`/${organization}/${project}/-/reports`);
   }
@@ -124,32 +138,32 @@
         <!-- Limit -->
         <span>
           {reportSpec.exportLimit === "0"
-            ? "No row limit"
-            : `${reportSpec.exportLimit} row limit`}
+            ? m.report_no_row_limit()
+            : m.report_row_limit({ count: reportSpec.exportLimit })}
         </span>
       </div>
       <div class="flex gap-x-2 items-center">
         <h1 class="text-fg-primary text-lg font-bold" aria-label="Report name">
           {reportSpec.displayName}
         </h1>
-        <div class="grow" />
+        <div class="grow"></div>
         <RunNowButton {organization} {project} {report} />
         {#if !$isReportCreatedByCode.data}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <IconButton ariaLabel="Report context menu">
+              <IconButton ariaLabel={m.report_context_menu_aria()}>
                 <ThreeDot size="16px" />
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
               <DropdownMenu.Item
-                on:click={handleEditReport}
+                onclick={handleEditReport}
                 disabled={!$exploreIsValid}
               >
-                Edit report
+                {m.report_edit()}
               </DropdownMenu.Item>
-              <DropdownMenu.Item on:click={handleDeleteReport}>
-                Delete report
+              <DropdownMenu.Item onclick={handleDeleteReport}>
+                {m.report_delete()}
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
@@ -162,7 +176,7 @@
       <!-- Dashboard -->
       <div class="flex flex-col gap-y-3" aria-label="Report dashboard name">
         {#if dashboardTitle}
-          <MetadataLabel>Dashboard</MetadataLabel>
+          <MetadataLabel>{m.report_dashboard()}</MetadataLabel>
           <MetadataValue>
             {#if dashboardDoesNotExist}
               <div class="flex items-center gap-x-1">
@@ -170,7 +184,7 @@
                 <Tooltip distance={8}>
                   <CancelCircle size="16px" className="text-red-500" />
                   <TooltipContent slot="tooltip-content">
-                    Dashboard does not exist
+                    {m.report_dashboard_not_exist()}
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -181,7 +195,7 @@
             {/if}
           </MetadataValue>
         {:else}
-          <MetadataLabel>Name</MetadataLabel>
+          <MetadataLabel>{m.report_name_label()}</MetadataLabel>
           <MetadataValue>
             {$reportQuery.data?.resource?.meta?.name?.name}
           </MetadataValue>
@@ -190,7 +204,7 @@
 
       <!-- Frequency -->
       <div class="flex flex-col gap-y-3" aria-label="Report schedule">
-        <MetadataLabel>Repeats</MetadataLabel>
+        <MetadataLabel>{m.report_repeats()}</MetadataLabel>
         <MetadataValue>
           {humanReadableFrequency}
         </MetadataValue>
@@ -198,7 +212,7 @@
 
       <!-- Next run -->
       <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Next run</MetadataLabel>
+        <MetadataLabel>{m.report_next_run()}</MetadataLabel>
         <MetadataValue>
           {formatNextRunOn(
             $reportQuery.data.resource.report.state.nextRunOn,
@@ -211,13 +225,16 @@
     {#if slackNotifier}
       <MetadataList
         data={[...slackNotifier.channels, ...slackNotifier.users]}
-        label="Slack recipients"
+        label={m.report_slack_recipients()}
       />
     {/if}
 
     <!-- Email recipients -->
     {#if emailNotifier}
-      <MetadataList data={emailNotifier.recipients} label="Email recipients" />
+      <MetadataList
+        data={emailNotifier.recipients}
+        label={m.report_email_recipients()}
+      />
     {/if}
   </div>
 {/if}

@@ -115,7 +115,7 @@ dimensions:
     );
     await measuresButton.click();
     await page
-      .getByRole("menuitem", { name: "USD" })
+      .getByRole("menuitemcheckbox", { name: "USD" })
       .filter({ has: page.getByText("USD") })
       .click();
     await page
@@ -128,7 +128,7 @@ dimensions:
     ).toBeVisible();
     await measuresButton.click();
     await page
-      .getByRole("menuitem", { name: "percentage" })
+      .getByRole("menuitemcheckbox", { name: "percentage" })
       .filter({ has: page.getByText("percentage") })
       .click();
     await expect(measuresButton).toHaveText("Showing percentage");
@@ -139,7 +139,7 @@ dimensions:
     // try interval_ms...
     await measuresButton.click();
     await page
-      .getByRole("menuitem", { name: "interval_ms" })
+      .getByRole("menuitemcheckbox", { name: "interval_ms" })
       .filter({ has: page.getByText("interval_ms") })
       .click();
     await expect(measuresButton).toHaveText("Showing interval_ms");
@@ -156,7 +156,7 @@ dimensions:
     // try No Format...
     await measuresButton.click();
     await page
-      .getByRole("menuitem", { name: "No Format" })
+      .getByRole("menuitemcheckbox", { name: "No Format" })
       .filter({ has: page.getByText("No Format") })
       .click();
     await expect(measuresButton).toHaveText("Showing No Format");

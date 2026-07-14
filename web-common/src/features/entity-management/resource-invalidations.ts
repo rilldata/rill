@@ -11,8 +11,7 @@ export function refreshResource(
 ) {
   return queryClient.setQueryData(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.name": res.meta?.name?.name,
-      "name.kind": res.meta?.name?.kind,
+      name: { name: res.meta?.name?.name, kind: res.meta?.name?.kind },
     }),
     {
       resource: res,

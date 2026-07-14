@@ -15,6 +15,7 @@
       measures: { getMeasureByName, visibleMeasures },
       leaderboard: { leaderboardSortByMeasureName, leaderboardMeasureNames },
       dimensions: { visibleDimensions, allDimensions },
+      tags: { dimensionTagIndex },
     },
     actions: {
       contextColumn: { setContextColumn },
@@ -78,6 +79,7 @@
     onSelectedChange={(items) =>
       setDimensionVisibility(items, allDimensionNames)}
     allItems={$allDimensions}
+    tagIndex={$dimensionTagIndex}
     selectedItems={visibleDimensionsNames}
   />
   <LeaderboardMeasureNamesDropdown

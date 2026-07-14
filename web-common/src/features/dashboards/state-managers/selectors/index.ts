@@ -1,10 +1,7 @@
 import { chartSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
 import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
-import type {
-  RpcStatus,
-  V1MetricsViewTimeRangeResponse,
-} from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewTimeRangeResponse } from "@rilldata/web-common/runtime-client";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
@@ -18,6 +15,7 @@ import { dimensionSelectors } from "./dimensions";
 import { measureSelectors } from "./measures";
 import { pivotSelectors } from "./pivot";
 import { sortingSelectors } from "./sorting";
+import { tagSelectors } from "./tags";
 import { timeRangeSelectors } from "./time-range";
 import type { ReadablesObj, SelectorFnsObj } from "./types";
 import { leaderboardSelectors } from "./leaderboard";
@@ -25,7 +23,7 @@ import { leaderboardSelectors } from "./leaderboard";
 export type DashboardDataReadables = {
   dashboardStore: Readable<ExploreState>;
   validSpecStore: Readable<
-    QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+    QueryObserverResult<ExploreValidSpecResponse, Error>
   >;
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
@@ -141,6 +139,13 @@ export const createStateManagerReadables = (
      * Readables related to pivot state
      */
     pivot: createReadablesFromSelectors(pivotSelectors, dashboardDataReadables),
+
+    /**
+     * Readables exposing shared tag indices over dimensions, measures, and
+     * their union. Consumed by tag-aware surfaces (dimension/measure dropdown,
+     * pivot sidebar) so the index is built once per spec change.
+     */
+    tags: createReadablesFromSelectors(tagSelectors, dashboardDataReadables),
 
     /**
      * Readables related to the chart interactions state

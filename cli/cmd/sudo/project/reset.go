@@ -1,6 +1,8 @@
 package project
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -25,12 +27,11 @@ func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if !force {
 				ch.PrintfWarn("The project will be unavailable for a while as data sources are reloaded from scratch. If you just need to refresh data, use `rill project refresh`.\n")
-				ok, err := cmdutil.ConfirmPrompt("Continue?", "", false)
-				if err != nil {
-					return err
+				if !ch.Interactive {
+					return fmt.Errorf("confirmation required; use --force flag to proceed")
 				}
-				if !ok {
-					return nil
+				if err := cmdutil.ConfirmPrompt("Continue?", false); err != nil {
+					return err
 				}
 			}
 

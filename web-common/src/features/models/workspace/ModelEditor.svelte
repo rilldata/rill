@@ -8,7 +8,7 @@
   import { EditorView } from "@codemirror/view";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import Editor from "../../editor/Editor.svelte";
   import { getExtensionsForFile } from "../../editor/getExtensionsForFile";
   import { FileArtifact } from "../../entity-management/file-artifact";
@@ -21,7 +21,7 @@
   export let fileArtifact: FileArtifact;
   export let onSave: (content: string) => void = () => {};
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: ({ remoteContent } = fileArtifact);
 
@@ -29,7 +29,7 @@
   let autocompleteCompartment = new Compartment();
 
   // Autocomplete: source tables
-  $: allSourceColumns = useAllSourceColumns(queryClient, instanceId);
+  $: allSourceColumns = useAllSourceColumns(queryClient, runtimeClient);
   $: if ($allSourceColumns?.length) {
     for (const sourceTable of $allSourceColumns) {
       const sourceIdentifier = sourceTable?.tableName;
@@ -41,7 +41,7 @@
   }
 
   // Autocomplete: model tables
-  $: allModelColumns = useAllModelColumns(queryClient, instanceId);
+  $: allModelColumns = useAllModelColumns(queryClient, runtimeClient);
   $: if ($allModelColumns?.length) {
     for (const modelTable of $allModelColumns) {
       const modelIdentifier = modelTable?.tableName;

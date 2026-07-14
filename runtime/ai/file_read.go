@@ -29,6 +29,12 @@ func (t *ReadFile) Spec() *mcp.Tool {
 		Name:        ReadFileName,
 		Title:       "Read file",
 		Description: "Reads the contents of a file in the Rill project",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Reading file...",
 			"openai/toolInvocation/invoked":  "Read file",
@@ -37,7 +43,7 @@ func (t *ReadFile) Spec() *mcp.Tool {
 }
 
 func (t *ReadFile) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, true)
+	return checkDeveloperAccess(ctx, t.Runtime, false)
 }
 
 func (t *ReadFile) Handler(ctx context.Context, args *ReadFileArgs) (*ReadFileResult, error) {

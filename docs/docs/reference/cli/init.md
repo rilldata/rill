@@ -4,28 +4,41 @@ title: rill init
 ---
 ## rill init
 
-Add Rill project files from a template
+Initialize a new Rill project
 
 ### Synopsis
 
-Initialize a new Rill project or add files to an existing project from a template.
+Initialize a new Rill project. Use flags to customize the project or run interactively to be prompted for each option.
 
-The available templates are:
-- duckdb: Creates an empty Rill project configured to use DuckDB as the OLAP database.
-- clickhouse: Creates an empty Rill project configured to use ClickHouse as the OLAP database.
-- cursor: Adds Cursor rules in .cursor to an existing Rill project.
-- claude: Adds Claude Code instruction in .claude to an existing Rill project.
+Available example projects:
+  - rill-cost-monitoring (duckdb)
+  - rill-github-analytics (duckdb)
+  - rill-openrtb-prog-ads (duckdb)
 
 
 ```
 rill init [<path>] [flags]
 ```
 
+### Examples
+
+```
+  # Interactive initialization (prompts for all options)
+  rill init
+
+  # Create an empty DuckDB project with Claude agent instructions
+  rill init my-project --olap duckdb --agent claude
+
+  # Add Claude agent instructions to an existing Rill project
+  rill init ./existing-project --agent claude
+```
+
 ### Flags
 
 ```
-      --force             Overwrite existing files when unpacking a template
-      --template string   Project template to use (options: duckdb, clickhouse, cursor) (default "duckdb")
+      --agent string     Agent instructions (options: claude, cursor, agentsmd, all, none) (default "claude")
+      --example string   Example project name (default: empty project)
+      --olap string      OLAP engine (options: duckdb, clickhouse) (default "duckdb")
 ```
 
 ### Global flags

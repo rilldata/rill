@@ -1,9 +1,10 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
-  commonOptions,
+  getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import type {
   PivotDataStoreConfig,
   PivotState,
@@ -14,7 +15,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { Readable } from "svelte/motion";
+import type { Readable } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type {
@@ -23,7 +24,11 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
-import { createPivotConfig, usePivotForCanvas } from "./util";
+import {
+  createPivotConfig,
+  ROW_LIMIT_ALL_VALUE,
+  usePivotForCanvas,
+} from "./util";
 
 export interface PivotSpec
   extends ComponentCommonProperties,
@@ -32,6 +37,9 @@ export interface PivotSpec
   measures: string[];
   row_dimensions?: string[];
   col_dimensions?: string[];
+  hide_totals_row?: boolean;
+  hide_totals_col?: boolean;
+  row_limit?: string;
 }
 
 export interface TableSpec
@@ -39,9 +47,13 @@ export interface TableSpec
     ComponentFilterProperties {
   metrics_view: string;
   columns: string[];
+  hide_totals_row?: boolean;
+  hide_totals_col?: boolean;
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
+
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export class PivotCanvasComponent extends BaseCanvasComponent<
   PivotSpec | TableSpec
@@ -54,10 +66,15 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   config: Readable<PivotDataStoreConfig>;
   pivotDataStore: ReturnType<typeof usePivotForCanvas>;
   pivotState: Writable<PivotState>;
+  /** Dimensions the pivot itself has filtered via click-to-filter.
+   *  These are excluded from the pivot's own data query so all rows remain visible. */
+  selfFilteredDimensions: Writable<Set<string>>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
-    const type = resource.component?.state?.validSpec
-      ?.renderer as CanvasComponentType;
+    const type = (resource.component?.state?.validSpec?.renderer ??
+      (parent.allowUnvalidatedSpec
+        ? resource.component?.spec?.renderer
+        : undefined)) as CanvasComponentType;
 
     if (type !== "table" && type !== "pivot") {
       throw new Error(
@@ -87,18 +104,21 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     this.type = type;
 
     this.pivotState = writable(this.getInitPivotState(type));
+    this.selfFilteredDimensions = writable(new Set<string>());
 
     this.config = createPivotConfig(
       this.parent,
       this.specStore,
       this.pivotState,
       this.timeAndFilterStore,
+      this.selfFilteredDimensions,
     );
 
     this.pivotDataStore = usePivotForCanvas(
       this.parent,
       derived(this.specStore, ($specStore) => $specStore.metrics_view),
       this.config,
+      this.dataEnabled,
     );
   }
 
@@ -113,6 +133,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       enableComparison: false,
       tableMode: type === "pivot" ? "nest" : "flat",
       activeCell: null,
+      showTotalsColumn: true,
+      showTotalsRow: true,
     };
   }
 
@@ -121,46 +143,107 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   }
 
   getExploreTransformerProperties(): Partial<ExploreState> {
-    const pivotState = get(this.pivotState);
     return {
-      pivot: pivotState,
+      pivot: get(this.pivotState),
       activePage: DashboardState_ActivePage.PIVOT,
     };
   }
   inputParams(type: "pivot" | "table"): InputParams<PivotSpec | TableSpec> {
+    const spec = get(this.specStore);
+
     if (type === "pivot") {
+      const measureCount = ("measures" in spec && spec.measures?.length) || 0;
+      const rowDimensionCount =
+        ("row_dimensions" in spec && spec.row_dimensions?.length) || 0;
+      const colDimensionCount =
+        ("col_dimensions" in spec && spec.col_dimensions?.length) || 0;
+
+      // Mirror PivotToolbar: totals only apply when their constituent fields exist.
+      const canShowTotalRow = rowDimensionCount > 0 && measureCount > 0;
+      const canShowTotalColumn =
+        rowDimensionCount > 0 && colDimensionCount > 0 && measureCount > 0;
+
       return {
         options: {
-          metrics_view: { type: "metrics", label: "Metrics view" },
+          metrics_view: {
+            type: "metrics",
+            label: m.canvas_metrics_view_label(),
+          },
           measures: {
             type: "multi_fields",
             meta: { allowedTypes: ["measure"] },
-            label: "Measures",
+            label: m.canvas_measures_label(),
           },
           col_dimensions: {
             type: "multi_fields",
             meta: { allowedTypes: ["time", "dimension"] },
-            label: "Column dimensions",
+            label: m.canvas_column_dimensions_label(),
           },
           row_dimensions: {
             type: "multi_fields",
             meta: { allowedTypes: ["time", "dimension"] },
-            label: "Row dimensions",
+            label: m.canvas_row_dimensions_label(),
           },
-          ...commonOptions,
+          hide_totals_col: {
+            type: "boolean",
+            label: m.canvas_hide_total_column_label(),
+            meta: { defaultValue: false },
+            showInUI: canShowTotalColumn,
+          },
+          hide_totals_row: {
+            type: "boolean",
+            label: m.canvas_hide_total_row_label(),
+            meta: { defaultValue: false },
+            showInUI: canShowTotalRow,
+          },
+          row_limit: {
+            type: "select",
+            label: "Row limit",
+            meta: {
+              default: ROW_LIMIT_ALL_VALUE,
+              options: [
+                ...PIVOT_ROW_LIMIT_OPTIONS.map((limit) => ({
+                  value: limit.toString(),
+                  label: limit.toString(),
+                })),
+                { value: ROW_LIMIT_ALL_VALUE, label: "All" },
+              ],
+            },
+          },
+          ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
       };
     } else {
+      const columns = ("columns" in spec && spec.columns) || [];
+      const metricsViewSpec = get(
+        this.parent.metricsView.getMetricsViewFromName(spec.metrics_view),
+      ).metricsView;
+      const measureNames = new Set(
+        metricsViewSpec?.measures?.map((m) => m.name as string) || [],
+      );
+      const measureCount = columns.filter((c) => measureNames.has(c)).length;
+      const dimensionCount = columns.length - measureCount;
+      const canShowTotalRow = dimensionCount > 0 && measureCount > 0;
+
       return {
         options: {
-          metrics_view: { type: "metrics", label: "Metrics view" },
+          metrics_view: {
+            type: "metrics",
+            label: m.canvas_metrics_view_label(),
+          },
           columns: {
             type: "multi_fields",
-            label: "Columns",
+            label: m.canvas_columns_label(),
             meta: { allowedTypes: ["time", "dimension", "measure"] },
           },
-          ...commonOptions,
+          hide_totals_row: {
+            type: "boolean",
+            label: m.canvas_hide_total_row_label(),
+            meta: { defaultValue: false },
+            showInUI: canShowTotalRow,
+          },
+          ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
       };
@@ -188,6 +271,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   updateTableType(newTableType: "pivot" | "table") {
     if (!this.parent.fileArtifact) return;
 
+    // Clear active component if this pivot was the active one
+    if (get(this.parent.activeComponent) === this.id) {
+      this.parent.clearActiveComponent();
+    }
+    this.selfFilteredDimensions.set(new Set());
+
     this.type = newTableType;
 
     this.pivotState.set(this.getInitPivotState(newTableType));
@@ -214,11 +303,14 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     let newSpec: PivotSpec | TableSpec;
 
     const commonProperties: ComponentCommonProperties &
-      ComponentFilterProperties = {
+      ComponentFilterProperties &
+      Pick<PivotSpec, "hide_totals_row" | "hide_totals_col"> = {
       title: currentSpec.title,
       description: currentSpec.description,
       dimension_filters: currentSpec.dimension_filters,
       time_filters: currentSpec.time_filters,
+      hide_totals_row: currentSpec.hide_totals_row,
+      hide_totals_col: currentSpec.hide_totals_col,
     };
 
     if ("columns" in currentSpec) {

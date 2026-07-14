@@ -20,6 +20,7 @@
   export let marginClasses = "";
   export let ariaLabel = "";
   export let ariaPressed: boolean | undefined = undefined;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
 </script>
 
 <Tooltip
@@ -29,7 +30,7 @@
 >
   <button
     type="button"
-    on:click
+    {onclick}
     {disabled}
     aria-label={ariaLabel}
     aria-pressed={ariaPressed}

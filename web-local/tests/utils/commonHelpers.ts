@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import type { Page } from "playwright";
 
@@ -24,22 +25,15 @@ export async function clickMenuButton(
 
 export async function waitForProfiling(
   page: Page,
-  name: string,
+  _name: string,
   columns: Array<string>,
 ) {
   return Promise.all(
-    [
-      page.waitForResponse(
-        new RegExp(`/queries/columns-profile/tables/${name}`),
-      ),
-      columns.map((column) =>
-        page.waitForResponse(
-          new RegExp(
-            `/queries/null-count/tables/${name}\\?connector=duckdb&database=&databaseSchema=&columnName=${column}`,
-          ),
-        ),
-      ),
-    ].flat(),
+    columns.map((c) =>
+      expect(page.getByLabel(`${c} profile`, { exact: true })).toBeVisible({
+        timeout: 30_000,
+      }),
+    ),
   );
 }
 
@@ -89,17 +83,14 @@ export async function renameFileUsingMenu(
   await openFileNavEntryContextMenu(page, filePath);
   await clickMenuButton(page, "Rename");
 
-  // wait for rename modal to open
-  await page
-    .locator("#rill-portal h2", {
-      hasText: "Rename",
-    })
-    .waitFor();
+  // wait for rename modal to open (dialog is portaled to document.body)
+  const dialog = page.getByRole("dialog");
+  await dialog.waitFor();
 
   // type new fileName and submit
-  await page.locator("#rill-portal input").fill(toFileName);
+  await dialog.locator("input").fill(toFileName);
   await Promise.all([
-    page.waitForResponse(/rename/),
+    page.waitForResponse("**/rill.runtime.v1.RuntimeService/RenameFile"),
     clickModalButton(page, "Change Name"),
   ]);
 }
@@ -117,14 +108,10 @@ export async function renameFileUsingTitle(
 }
 
 export async function deleteFile(page: Page, filePath: string) {
-  // open context menu and click rename
+  // open context menu and click delete
   await openFileNavEntryContextMenu(page, filePath);
   await Promise.all([
-    page.waitForResponse(
-      (response) =>
-        response.url().includes(encodeURIComponent(filePath)) &&
-        response.request().method() === "DELETE",
-    ),
+    page.waitForResponse("**/rill.runtime.v1.RuntimeService/DeleteFile"),
     clickMenuButton(page, "Delete"),
   ]);
 }

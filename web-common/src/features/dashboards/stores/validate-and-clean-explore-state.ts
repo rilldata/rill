@@ -7,11 +7,11 @@ import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
-import type {
-  MetricsViewSpecDimension,
-  MetricsViewSpecMeasure,
-  V1ExploreSpec,
-  V1MetricsViewSpec,
+import {
+  type MetricsViewSpecDimension,
+  type MetricsViewSpecMeasure,
+  type V1ExploreSpec,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
 /**
@@ -24,7 +24,7 @@ import type {
  *
  * Currently, it only acts on only a small section of the state.
  *
- * TODO: move all validations from convertUrlParamsToPreset and AdvancedMeasureCorrector here
+ * TODO: move all validations from convertUrlParamsToPreset here
  */
 export function validateAndCleanExploreState(
   metricsViewSpec: V1MetricsViewSpec,
@@ -201,6 +201,18 @@ function validateAndCleanMeasureRelatedExploreState(
       // Else set the 1st visible measure as leaderboard measure.
       exploreState.leaderboardMeasureNames = [exploreState.visibleMeasures[0]];
     }
+  }
+
+  // Ensure leaderboardSortByMeasureName is in leaderboardMeasureNames (sync invariant)
+  if (
+    exploreState.leaderboardMeasureNames?.length &&
+    exploreState.leaderboardSortByMeasureName &&
+    !exploreState.leaderboardMeasureNames.includes(
+      exploreState.leaderboardSortByMeasureName,
+    )
+  ) {
+    exploreState.leaderboardSortByMeasureName =
+      exploreState.leaderboardMeasureNames[0];
   }
 
   return errors;

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -105,6 +105,25 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{}
 	}
 
+	// get web open mode from annotations
+	mode := rep.Spec.Annotations["web_open_mode"]
+	if mode == "" {
+		mode = "creator" // default
+	}
+
+	nonEmailNotifiers := false
+	for _, notifier := range rep.Spec.Notifiers {
+		if notifier.Connector != "email" {
+			nonEmailNotifiers = true
+			break
+		}
+	}
+
+	// AI resolver only supports non email notifications in creator mode as we can't reliably fetch user attributes for slack webhooks/channels for enforcing access control in other modes
+	if rep.Spec.Resolver == "ai" && mode != "creator" && nonEmailNotifiers {
+		return runtime.ReconcileResult{Err: fmt.Errorf("reports with 'ai' resolver only support non-email notifications in 'creator' web open mode")}
+	} // TODO add support for slack users who are also rill users in recipient mode
+
 	// Determine whether to trigger
 	adhocTrigger := rep.Spec.Trigger
 	scheduleTrigger := rep.State.NextRunOn != nil && !rep.State.NextRunOn.AsTime().After(time.Now())
@@ -114,12 +133,12 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if !trigger {
 		err = r.updateNextRunOn(ctx, self, rep)
 		if err != nil {
-			return runtime.ReconcileResult{Err: err}
+			return runtime.ReconcileResult{Err: err, Warnings: latestReportWarnings(rep)}
 		}
 		if rep.State.NextRunOn != nil {
-			return runtime.ReconcileResult{Retrigger: rep.State.NextRunOn.AsTime()}
+			return runtime.ReconcileResult{Retrigger: rep.State.NextRunOn.AsTime(), Warnings: latestReportWarnings(rep)}
 		}
-		return runtime.ReconcileResult{}
+		return runtime.ReconcileResult{Warnings: latestReportWarnings(rep)}
 	}
 
 	// Determine time to evaluate the report relative to.
@@ -155,9 +174,9 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Done
 	if rep.State.NextRunOn != nil {
-		return runtime.ReconcileResult{Err: executeErr, Retrigger: rep.State.NextRunOn.AsTime()}
+		return runtime.ReconcileResult{Err: executeErr, Warnings: latestReportWarnings(rep), Retrigger: rep.State.NextRunOn.AsTime()}
 	}
-	return runtime.ReconcileResult{Err: executeErr}
+	return runtime.ReconcileResult{Err: executeErr, Warnings: latestReportWarnings(rep)}
 }
 
 func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
@@ -177,20 +196,18 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	conditionRes = append(conditionRes, res.Meta.Name)
 	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
 
-	if spec.QueryName != "" {
-		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
+	var mvName string
+	if spec.Resolver != "" {
+		initializer, ok := runtime.ResolverInitializers[spec.Resolver]
 		if !ok {
 			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
 		}
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:    r.C.Runtime,
 			InstanceID: r.C.InstanceID,
-			Properties: map[string]any{
-				"query_name":      spec.QueryName,
-				"query_args_json": spec.QueryArgsJson,
-			},
-			Claims:    claims,
-			ForExport: false,
+			Properties: spec.ResolverProperties.AsMap(),
+			Claims:     claims,
+			ForExport:  false,
 		})
 		if err != nil {
 			return nil, err
@@ -203,7 +220,6 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 
 		rules = append(rules, inferred...)
 
-		mvName := ""
 		refs := resolver.Refs()
 		for _, ref := range refs {
 			// need access to the referenced resources
@@ -212,49 +228,31 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 				mvName = ref.Name
 			}
 		}
+	}
 
-		// figure out explore or canvas for the report
-		var explore, canvas string
-		if e, ok := spec.Annotations["explore"]; ok {
-			explore = e
-		}
-		if c, ok := spec.Annotations["canvas"]; ok {
-			canvas = c
-		}
+	// figure out explore or canvas for the report
+	explore := exploreNameFromAnnotations(spec.Annotations, mvName)
+	var canvas string
+	if c, ok := spec.Annotations["canvas"]; ok {
+		canvas = c
+	}
 
-		if explore == "" { // backwards compatibility, try to find explore
-			if path, ok := spec.Annotations["web_open_path"]; ok {
-				// parse path, extract explore name, it will be like /explore/{explore}
-				if strings.HasPrefix(path, "/explore/") {
-					explore = path[9:]
-					if explore[len(explore)-1] == '/' {
-						explore = explore[:len(explore)-1]
-					}
-				}
-			}
-			// still not found, use mv name as explore name
-			if explore == "" {
-				explore = mvName
+	// add explore and canvas to access and field access rule's condition resources
+	if explore != "" {
+		exp := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+		conditionRes = append(conditionRes, exp)
+		for _, r := range rules {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				rfa.ConditionResources = append(rfa.ConditionResources, exp)
 			}
 		}
-
-		// add explore and canvas to access and field access rule's condition resources
-		if explore != "" {
-			exp := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
-			conditionRes = append(conditionRes, exp)
-			for _, r := range rules {
-				if rfa := r.GetFieldAccess(); rfa != nil {
-					rfa.ConditionResources = append(rfa.ConditionResources, exp)
-				}
-			}
-		}
-		if canvas != "" {
-			c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
-			conditionRes = append(conditionRes, c)
-			for _, r := range rules {
-				if rfa := r.GetFieldAccess(); rfa != nil {
-					rfa.ConditionResources = append(rfa.ConditionResources, c)
-				}
+	}
+	if canvas != "" {
+		c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+		conditionRes = append(conditionRes, c)
+		for _, r := range rules {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				rfa.ConditionResources = append(rfa.ConditionResources, c)
 			}
 		}
 	}
@@ -384,7 +382,6 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 	if err != nil {
 		return false, err
 	}
-
 	return retry, executeErr
 }
 
@@ -448,6 +445,9 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 
 // executeSingle runs the report query and sends notifications for a single execution time.
 func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, error) {
+	// Tag as report execution so the metrics queries it runs (e.g. via the AI resolver) are attributed to the "report" source for billing.
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceReport)
+
 	// Create new execution and save in State.CurrentExecution
 	rep.State.CurrentExecution = &runtimev1.ReportExecution{
 		Adhoc:      adhocTrigger,
@@ -460,7 +460,7 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 	}
 
 	// Execute report
-	dirtyErr, reportErr := r.sendReport(ctx, self, rep, executionTime)
+	dirtyErr, warnings, reportErr := r.sendReport(ctx, self, rep, executionTime)
 
 	// Set execution error and determine whether to retry.
 	// We're only going to retry on non-dirty cancellations.
@@ -486,6 +486,7 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 
 	// Commit CurrentExecution to history
 	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
+	rep.State.CurrentExecution.Warnings = warnings
 	err = r.popCurrentExecution(ctx, self, rep)
 	if err != nil {
 		return false, err
@@ -496,16 +497,12 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 
 // sendReport composes and sends the actual report to the configured recipients.
 // It returns true if an error occurred after some or all notifications were sent.
-func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
+func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, []string, error) {
 	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t), observability.ZapCtx(ctx))
 
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
-		if errors.Is(err, runtime.ErrAdminNotConfigured) {
-			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
-			return false, nil
-		}
-		return false, fmt.Errorf("failed to get admin client: %w", err)
+		return false, nil, fmt.Errorf("failed to get admin client: %w", err)
 	}
 	defer release()
 
@@ -532,7 +529,66 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
-		return false, fmt.Errorf("failed to get report metadata: %w", err)
+		if errors.Is(err, drivers.ErrNotImplemented) {
+			r.C.Logger.Info("Skipped sending report: admin service does not support reports", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			return false, nil, nil
+		}
+		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
+	}
+
+	// recipient -> notification data
+	notificationsContent := make(map[string]*notificationData)
+
+	var allWarnings []string
+
+	// generate report contents first depending on the resolver type and then send notifications
+	switch rep.Spec.Resolver {
+	case "ai": // generate ai sessions
+		aiReports := make(map[string]*aiReport)
+		// For AI reports, in recipient mode, we require the metadata to contain user attributes for reach recipient, since we'll need them to trigger the report and generate personalized content.
+		// In creator mode, we create a shared session for all recipients and create the session with creator's attributes.
+		for recipient, delivery := range meta.ReportDelivery {
+			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
+				r.C.Logger.Warn("Skipping recipient - no user attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+				continue
+			}
+			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the ownerID which is same for all recipients so report will be triggered once.
+			report, exists := aiReports[delivery.UserID]
+			if !exists {
+				var triggerWarnings []string
+				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
+				if err != nil {
+					return false, nil, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
+				}
+				allWarnings = append(allWarnings, triggerWarnings...)
+				aiReports[delivery.UserID] = report
+			}
+
+			openLink, err := buildAISessionURL(delivery.OpenURL, report.sessionID)
+			if err != nil {
+				return false, nil, fmt.Errorf("failed to build open link for %q: %w", recipient, err)
+			}
+			notificationsContent[recipient] = &notificationData{
+				openLink:        openLink,
+				editLink:        delivery.EditURL,
+				unsubscribeLink: delivery.UnsubscribeURL,
+				summary:         truncateSummary(report.summary, 500),
+			}
+		}
+	default: // add more resolvers here, for default just generate export links
+		for recipient, delivery := range meta.ReportDelivery {
+			downloadURL, err := createExportURL(delivery.ExportURL, t)
+			if err != nil {
+				return false, nil, err
+			}
+			notificationsContent[recipient] = &notificationData{
+				openLink:        delivery.OpenURL,
+				editLink:        delivery.EditURL,
+				unsubscribeLink: delivery.UnsubscribeURL,
+				downloadLink:    downloadURL.String(),
+				downloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+			}
+		}
 	}
 
 	sent := false
@@ -540,85 +596,200 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		switch notifier.Connector {
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				opts := &email.ScheduledReport{
-					ToEmail:        recipient,
-					ToName:         "",
-					DisplayName:    rep.Spec.DisplayName,
-					ReportTime:     t,
-					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-				}
-				urls, ok := meta.RecipientURLs[recipient]
-				if !ok {
-					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
-				}
-				opts.OpenLink = urls.OpenURL
-				u, err := createExportURL(urls.ExportURL, t)
-				if err != nil {
-					return false, err
-				}
-				opts.DownloadLink = u.String()
-				opts.EditLink = urls.EditURL
-				opts.UnsubscribeLink = urls.UnsubscribeURL
-				err = r.C.Runtime.Email.SendScheduledReport(opts)
-				sent = true
-				if err != nil {
-					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
-				}
+			sent, err = r.sendEmailNotification(ctx, self, rep, t, recipients, notificationsContent)
+			if err != nil {
+				return sent, nil, err
 			}
 		default:
-			err := func() (outErr error) {
-				conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
-				if err != nil {
-					return err
-				}
-				defer release()
-				n, err := conn.AsNotifier(notifier.Properties.AsMap())
-				if err != nil {
-					return err
-				}
-				urls, ok := meta.RecipientURLs[""]
-				if !ok {
-					return fmt.Errorf("failed to get recipient URLs for anon user")
-				}
-				u, err := createExportURL(urls.ExportURL, t)
-				if err != nil {
-					return err
-				}
-				msg := &drivers.ScheduledReport{
-					DisplayName:     rep.Spec.DisplayName,
-					ReportTime:      t,
-					DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:        urls.OpenURL,
-					DownloadLink:    u.String(),
-					UnsubscribeLink: urls.UnsubscribeURL,
-				}
-				start := time.Now()
-				defer func() {
-					totalLatency := time.Since(start).Milliseconds()
-
-					if r.C.Activity != nil {
-						r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
-							attribute.Bool("failed", outErr != nil),
-							attribute.String("connector", notifier.Connector),
-							attribute.String("notification_type", "scheduled_report"),
-						)
-					}
-				}()
-				err = n.SendScheduledReport(msg)
-				sent = true
-				if err != nil {
-					return fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
-				}
-				return nil
-			}()
+			var err error
+			sent, err = r.sendNonEmailNotification(ctx, rep, t, notifier, notificationsContent)
 			if err != nil {
-				return sent, err
+				return sent, nil, err
 			}
 		}
 	}
 
-	return false, nil
+	return false, allWarnings, nil
+}
+
+func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, recipients []string, notificationsContent map[string]*notificationData) (bool, error) {
+	sent := false
+	for _, recipient := range recipients {
+		content, ok := notificationsContent[recipient]
+		if !ok {
+			r.C.Logger.Warn("Skipping recipient - failed to get notification content", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			continue
+		}
+
+		opts := &email.ScheduledReport{
+			ToEmail:         recipient,
+			ToName:          "",
+			DisplayName:     rep.Spec.DisplayName,
+			ReportTime:      t,
+			Summary:         content.summary,
+			OpenLink:        content.openLink,
+			EditLink:        content.editLink,
+			UnsubscribeLink: content.unsubscribeLink,
+			DownloadLink:    content.downloadLink,
+			DownloadFormat:  content.downloadFormat,
+		}
+		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
+			return true, fmt.Errorf("failed to send AI report email to %q: %w", recipient, err)
+		}
+		sent = true
+	}
+
+	return sent, nil
+}
+
+// sendNonEmailNotification sends report via non-email notifiers (e.g., Slack).
+func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *runtimev1.Report, t time.Time, notifier *runtimev1.Notifier, notificationsContent map[string]*notificationData) (bool, error) {
+	conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
+	if err != nil {
+		return false, err
+	}
+	defer release()
+
+	n, err := conn.AsNotifier(notifier.Properties.AsMap())
+	if err != nil {
+		return false, err
+	}
+
+	content, ok := notificationsContent[""] // non-email recipients are treated as anon users
+	if !ok {
+		return false, fmt.Errorf("failed to get notification content for non-email notifier %q", notifier.Connector)
+	}
+
+	msg := &drivers.ScheduledReport{
+		DisplayName:     rep.Spec.DisplayName,
+		ReportTime:      t,
+		DownloadFormat:  content.downloadFormat,
+		OpenLink:        content.openLink,
+		DownloadLink:    content.downloadLink,
+		UnsubscribeLink: content.unsubscribeLink,
+		Summary:         content.summary,
+	}
+
+	start := time.Now()
+	err = n.SendScheduledReport(msg)
+	totalLatency := time.Since(start).Milliseconds()
+
+	if r.C.Activity != nil {
+		r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
+			attribute.Bool("failed", err != nil),
+			attribute.String("connector", notifier.Connector),
+			attribute.String("notification_type", "scheduled_report"),
+		)
+	}
+
+	if err != nil {
+		return false, fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
+	}
+
+	return true, nil
+}
+
+// common notification data used for reports
+type notificationData struct {
+	openLink        string
+	editLink        string
+	downloadLink    string
+	downloadFormat  string
+	unsubscribeLink string
+	summary         string
+} // add more fields as needed for new resolver types that reports will support
+
+type aiReport struct {
+	sessionID string
+	summary   string
+}
+
+// triggerAIReport executes an AI-powered report and returns session id with summary.
+// If userID is provided, the session will be created with that user's claims for row-level security.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, []string, error) {
+	if rep.Spec.Resolver != "ai" {
+		return nil, nil, fmt.Errorf("triggerAIReport called for non-AI report")
+	}
+
+	if userID == "" || len(userAttrs) == 0 {
+		return nil, nil, fmt.Errorf("userID and userAttrs are required for AI report")
+	}
+
+	// Create claims for executing the AI resolver
+	// The userID and userAttrs determines what data the AI can access (row-level security)
+	claims := &runtime.SecurityClaims{
+		UserID:         userID,
+		UserAttributes: userAttrs,
+		SkipChecks:     false,
+		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+	}
+
+	// Get resolver properties from spec and add is_report flag
+	props := rep.Spec.ResolverProperties.AsMap()
+	props["is_report"] = true
+	if props["agent"] == nil {
+		props["agent"] = ai.AnalystAgentName
+	}
+
+	// Execute AI resolver
+	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           "ai",
+		ResolverProperties: props,
+		Args: map[string]any{
+			"execution_time":        t,
+			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
+		},
+		Claims: claims,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to execute AI resolver: %w", err)
+	}
+	defer result.Close()
+
+	var warnings []string
+	if info != nil {
+		warnings = info.Warnings
+	}
+
+	// Get the result row
+	row, err := result.Next()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get AI resolver result: %w", err)
+	}
+
+	sessionID, ok := row["ai_session_id"].(string)
+	if !ok || sessionID == "" {
+		return nil, nil, fmt.Errorf("AI resolver did not return a valid session ID")
+	}
+	summary, _ := row["summary"].(string)
+
+	r.C.Logger.Info("AI session created", zap.String("report", self.Meta.Name.Name), zap.String("session_id", sessionID), zap.String("user_id", userID), observability.ZapCtx(ctx))
+
+	return &aiReport{
+		sessionID: sessionID,
+		summary:   summary,
+	}, warnings, nil
+}
+
+func buildAISessionURL(baseOpenURL, sessionID string) (string, error) {
+	// add session_id as query param
+	u, err := url.Parse(baseOpenURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse open URL %q: %w", baseOpenURL, err)
+	}
+	q := u.Query()
+	q.Set("session_id", sessionID)
+	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
+
+// truncateSummary truncates the summary to a maximum length, adding ellipsis if truncated.
+func truncateSummary(summary string, maxLen int) string {
+	if len(summary) <= maxLen {
+		return summary
+	}
+	return summary[:maxLen-3] + "..."
 }
 
 func createExportURL(inURL string, executionTime time.Time) (*url.URL, error) {
@@ -751,4 +922,11 @@ func calculateReportExecutionTimes(r *runtimev1.Report, watermark, previousWater
 	slices.Reverse(ts)
 
 	return ts, nil
+}
+
+func latestReportWarnings(r *runtimev1.Report) []string {
+	if r.State != nil && len(r.State.ExecutionHistory) > 0 {
+		return r.State.ExecutionHistory[len(r.State.ExecutionHistory)-1].Warnings
+	}
+	return nil
 }

@@ -54,10 +54,10 @@ func TestHTTPToDuckDBTransfer(t *testing.T) {
 	}))
 	defer server.Close() // Ensure server shuts down after test
 
-	to, err := drivers.Open("duckdb", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open("duckdb", "", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	inputHandle, err := drivers.Open("https", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	inputHandle, err := drivers.Open("https", "", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	opts := &drivers.ModelExecutorOptions{

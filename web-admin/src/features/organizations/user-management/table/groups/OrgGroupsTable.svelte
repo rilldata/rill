@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
-  import { flexRender } from "@tanstack/svelte-table";
-  import type { ColumnDef } from "@tanstack/svelte-table";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import GroupActionsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupActionsCell.svelte";
   import GroupCompositeCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupCompositeCell.svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
@@ -22,11 +23,11 @@
   const columns: ColumnDef<V1MemberUsergroup, any>[] = [
     {
       accessorKey: "groupName",
-      header: "Group",
+      header: m.groups_table_header_group(),
       enableSorting: true,
       sortDescFirst: true,
       cell: ({ row }) =>
-        flexRender(GroupCompositeCell, {
+        renderComponent(GroupCompositeCell, {
           groupName: row.original.groupName,
           name: row.original.groupName?.startsWith("autogroup:")
             ? transformGroupName(row.original.groupName)
@@ -56,7 +57,7 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(GroupActionsCell, {
+        renderComponent(GroupActionsCell, {
           groupName: row.original.groupName,
           currentUserEmail: currentUserEmail,
         }),
@@ -76,5 +77,5 @@
   {isFetchingNextPage}
   {onLoadMore}
   maxHeight={dynamicTableMaxHeight}
-  emptyStateMessage="No groups found"
+  emptyStateMessage={m.groups_table_empty()}
 />

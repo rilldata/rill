@@ -25,10 +25,10 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Find the cloud project name
-			if projectName == "" && !cmd.Flags().Changed("project") {
-				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+			if projectName == "" {
+				projectName, err = ch.InferProjectName(cmd.Context(), projectPath, "use --project to specify the name")
 				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					return err
 				}
 			}
 

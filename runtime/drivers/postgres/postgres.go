@@ -20,8 +20,10 @@ import (
 )
 
 func init() {
-	drivers.Register("postgres", driver{})
-	drivers.RegisterAsConnector("postgres", driver{})
+	drivers.Register("postgres", driver{name: "postgres"})
+	drivers.RegisterAsConnector("postgres", driver{name: "postgres"})
+	drivers.Register("supabase", driver{name: "supabase"})
+	drivers.RegisterAsConnector("supabase", driver{name: "supabase"})
 }
 
 var spec = drivers.Spec{
@@ -89,18 +91,88 @@ var spec = drivers.Spec{
 	ImplementsSQLStore: true,
 }
 
-type driver struct{}
+var supabaseSpec = drivers.Spec{
+	DisplayName: "Supabase",
+	Description: "Connect to Supabase.",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/supabase",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Supabase Connection String",
+			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
+			Placeholder: "postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres",
+			Hint:        "Can be configured here or by setting the 'connector.supabase.dsn' environment variable (using '.env' or '--env').",
+			Secret:      true,
+		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Host",
+			Placeholder: "aws-0-[region].pooler.supabase.com",
+			Required:    true,
+			Hint:        "Supabase database host",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Port",
+			Placeholder: "5432",
+			Default:     "5432",
+			Hint:        "Supabase database port (default is 5432)",
+		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Username",
+			Placeholder: "postgres.[ref]",
+			Required:    true,
+			Hint:        "Supabase database user",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Placeholder: "your_password",
+			Hint:        "Supabase database password",
+			Secret:      true,
+		},
+		{
+			Key:         "dbname",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Placeholder: "postgres",
+			Required:    true,
+			Hint:        "Name of the Supabase database to connect to",
+		},
+		{
+			Key:         "sslmode",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "SSL Mode",
+			Placeholder: "require",
+			Default:     "require",
+			Hint:        "Options include disable, allow, prefer, require",
+		},
+	},
+	ImplementsSQLStore: true,
+}
+
+type driver struct {
+	name string
+}
 
 type ConfigProperties struct {
-	DatabaseURL string `mapstructure:"database_url"`
-	DSN         string `mapstructure:"dsn"`
-	Host        string `mapstructure:"host"`
-	Port        string `mapstructure:"port"`
-	DBname      string `mapstructure:"dbname"`
-	User        string `mapstructure:"user"`
-	Password    string `mapstructure:"password"`
-	SSLMode     string `mapstructure:"sslmode"`
-	LogQueries  bool   `mapstructure:"log_queries"`
+	DatabaseURL     string `mapstructure:"database_url"`
+	DSN             string `mapstructure:"dsn"`
+	Host            string `mapstructure:"host"`
+	Port            string `mapstructure:"port"`
+	DBname          string `mapstructure:"dbname"`
+	User            string `mapstructure:"user"`
+	Password        string `mapstructure:"password"`
+	SSLMode         string `mapstructure:"sslmode"`
+	MaxOpenConns    int    `mapstructure:"max_open_conns"`
+	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
+	LogQueries      bool   `mapstructure:"log_queries"`
 }
 
 func (c *ConfigProperties) Validate() error {
@@ -136,6 +208,24 @@ func (c *ConfigProperties) Validate() error {
 	return nil
 }
 
+func (c *ConfigProperties) resolveMaxOpenConns() int {
+	if c.MaxOpenConns == 0 {
+		return 1
+	}
+	return c.MaxOpenConns
+}
+
+func (c *ConfigProperties) resolveConnMaxLifetime() (time.Duration, error) {
+	if c.ConnMaxLifetime == "" {
+		return time.Minute, nil
+	}
+	d, err := time.ParseDuration(c.ConnMaxLifetime)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
+	}
+	return d, nil
+}
+
 func (c *ConfigProperties) ResolveDSN() string {
 	if c.DSN != "" {
 		return c.DSN
@@ -165,7 +255,7 @@ func (c *ConfigProperties) ResolveDSN() string {
 	return strings.Join(parts, " ")
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("postgres driver can't be shared")
 	}
@@ -188,6 +278,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 }
 
 func (d driver) Spec() drivers.Spec {
+	if d.name == "supabase" {
+		return supabaseSpec
+	}
 	return spec
 }
 
@@ -323,10 +416,18 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return c.db, c.dbErr
 	}
 
+	connMaxLifetime, err := c.config.resolveConnMaxLifetime()
+	if err != nil {
+		c.dbErr = err
+		return nil, c.dbErr
+	}
+
 	c.db, c.dbErr = sqlx.Connect("pgx", c.config.ResolveDSN())
 	if c.dbErr != nil {
 		return nil, c.dbErr
 	}
+	c.db.SetMaxOpenConns(c.config.resolveMaxOpenConns())
+	c.db.SetConnMaxLifetime(connMaxLifetime)
 	c.db.SetConnMaxIdleTime(time.Minute)
 	return c.db, c.dbErr
 }

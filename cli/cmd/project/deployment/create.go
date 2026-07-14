@@ -32,19 +32,23 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// Get project name from flag or infer it
-			if !cmd.Flags().Changed("project") && len(args) <= 1 && ch.Interactive {
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+			if project == "" {
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name")
 				if err != nil {
 					return err
 				}
 			}
-			if project == "" {
-				return fmt.Errorf("project name is required")
+
+			if environment == "prod" {
+				// editable defaults to true, so only error if it was explicitly requested
+				if cmd.Flags().Changed("editable") && editable {
+					return fmt.Errorf("prod deployments cannot be editable")
+				}
+				editable = false
 			}
 
-			if environment == "prod" && editable {
-				return fmt.Errorf("prod deployments cannot be editable")
+			if editable {
+				ch.PrintfWarn("Cloud editing is still in beta. Ensure `cloud_editing` feature flag is set in `rill.yaml`.\n")
 			}
 
 			ch.PrintfBold("Creating %q deployment for branch %q...\n", environment, branch)
@@ -71,7 +75,9 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().StringVar(&project, "project", "", "Project name")
 	createCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	createCmd.Flags().StringVar(&environment, "environment", "dev", "Optional environment to create for (options: dev, prod)")
-	createCmd.Flags().BoolVar(&editable, "editable", false, "Make the deployment editable (changes are persisted back to git repo)")
+	createCmd.Flags().BoolVar(&editable, "editable", true, "Make the deployment editable (changes are persisted back to git repo)")
+	_ = createCmd.Flags().MarkHidden("environment") // Hide the environment flag since editable deployments are only supported for dev environment and non editable deployments are not supported in UI yet
+	_ = createCmd.Flags().MarkHidden("editable")    // Hide the editable flag since non editable deployments are not supported in UI yet
 
 	return createCmd
 }

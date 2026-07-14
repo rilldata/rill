@@ -10,10 +10,10 @@ import RadioGroup from "./context-menu-radio-group.svelte";
 import SubContent from "./context-menu-sub-content.svelte";
 import SubTrigger from "./context-menu-sub-trigger.svelte";
 import CheckboxItem from "./context-menu-checkbox-item.svelte";
+import Trigger from "./context-menu-trigger.svelte";
 
 const Sub = ContextMenuPrimitive.Sub;
 const Root = ContextMenuPrimitive.Root;
-const Trigger = ContextMenuPrimitive.Trigger;
 const Group = ContextMenuPrimitive.Group;
 
 export {

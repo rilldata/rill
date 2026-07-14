@@ -29,7 +29,7 @@ This guide can be completed with user tokens. These tokens are tied to your pers
 
 - [Rill Admin OpenAPI Specification](/api/admin)
 - [Service Account CLI Reference](/reference/cli/service)
-- [Custom API Integration Guide](/developers/integrate/custom-api)
+- [Custom API Integration Guide](/developers/build/custom-apis/calling)
 
 ## Example: Managing Users with a Rill Service Account
 

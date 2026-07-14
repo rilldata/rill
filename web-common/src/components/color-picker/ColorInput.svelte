@@ -18,7 +18,18 @@
 
   let open = false;
 
-  $: ({ h: hue, s: saturation, l: lightness } = stringColorToHsl(stringColor));
+  // Use a reactive block (not destructuring assignment) so that hue/saturation/lightness
+  // are plain state variables, not derived. Derived values are read-only in Svelte 5 compat
+  // and can't be updated via bind:value on the sliders.
+  let hue = 0;
+  let saturation = 100;
+  let lightness = 50;
+  $: {
+    const parsed = stringColorToHsl(stringColor);
+    hue = parsed.h;
+    saturation = parsed.s;
+    lightness = parsed.l;
+  }
 
   $: hsl = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 
@@ -26,7 +37,7 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Escape" || e.key === "Enter") {
       open = false;
     }
@@ -51,12 +62,12 @@
         class:text-red-500={!isColorValid}
         bind:value={stringColor}
         {disabled}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
           if (e.key === "Enter") {
             e.currentTarget.blur();
           }
         }}
-        on:blur={() => {
+        onblur={() => {
           if (stringColor) {
             onChange(stringColor);
           }
@@ -64,19 +75,20 @@
       />
 
       <Popover.Root bind:open>
-        <Popover.Trigger asChild let:builder>
-          <button
-            class="trigger"
-            class:error-trigger={!isColorValid}
-            use:builder.action
-            class:open
-            {...builder}
-            style:--hsl={hsl}
-          >
-            {#if !isColorValid}
-              <WarningIcon size="0.875rem" color="#f59e0b" />
-            {/if}
-          </button>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <button
+              {...props}
+              class="trigger"
+              class:error-trigger={!isColorValid}
+              class:open
+              style:--hsl={hsl}
+            >
+              {#if !isColorValid}
+                <WarningIcon size="0.875rem" color="#f59e0b" />
+              {/if}
+            </button>
+          {/snippet}
         </Popover.Trigger>
 
         <Popover.Content
@@ -130,19 +142,20 @@
     </div>
   {:else}
     <Popover.Root bind:open>
-      <Popover.Trigger asChild let:builder>
-        <button
-          class="trigger"
-          class:error-trigger={!isColorValid}
-          use:builder.action
-          class:open
-          {...builder}
-          style:--hsl={hsl}
-        >
-          {#if !isColorValid}
-            <WarningIcon size="0.875rem" color="#f59e0b" />
-          {/if}
-        </button>
+      <Popover.Trigger>
+        {#snippet child({ props })}
+          <button
+            {...props}
+            class="trigger"
+            class:error-trigger={!isColorValid}
+            class:open
+            style:--hsl={hsl}
+          >
+            {#if !isColorValid}
+              <WarningIcon size="0.875rem" color="#f59e0b" />
+            {/if}
+          </button>
+        {/snippet}
       </Popover.Trigger>
 
       <Popover.Content
@@ -199,12 +212,12 @@
       class:text-red-500={!isColorValid}
       bind:value={stringColor}
       {disabled}
-      on:keydown={(e) => {
+      onkeydown={(e) => {
         if (e.key === "Enter") {
           e.currentTarget.blur();
         }
       }}
-      on:blur={() => {
+      onblur={() => {
         if (stringColor) {
           onChange(stringColor);
         }

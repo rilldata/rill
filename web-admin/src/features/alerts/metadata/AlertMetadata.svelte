@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import EditAlert from "@rilldata/web-admin/features/alerts/EditAlert.svelte";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
@@ -31,28 +32,30 @@
     getRuntimeServiceListResourcesQueryKey,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
   export let alert: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: alertQuery = useAlert(instanceId, alert);
-  $: isAlertCreatedByCode = useIsAlertCreatedByCode(instanceId, alert);
+  $: alertQuery = useAlert(runtimeClient, alert);
+  $: isAlertCreatedByCode = useIsAlertCreatedByCode(runtimeClient, alert);
 
   // Get dashboard
-  $: exploreName = useAlertDashboardName(instanceId, alert);
-  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
+  $: exploreName = useAlertDashboardName(runtimeClient, alert);
+  $: validSpecResp = useExploreValidSpec(runtimeClient, $exploreName.data);
   $: exploreSpec = $validSpecResp.data?.explore;
   $: metricsViewName = exploreSpec?.metricsView;
   $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
-  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+  $: dashboardDoesNotExist =
+    $validSpecResp.isError && isNotFoundError($validSpecResp.error);
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     $exploreName.data,
   );
 
@@ -61,7 +64,7 @@
   // Get human-readable frequency
   $: humanReadableFrequency = alertSpec?.refreshSchedule?.cron
     ? formatRefreshSchedule(alertSpec.refreshSchedule.cron)
-    : "Whenever your data refreshes";
+    : m.alert_whenever_data_refreshes();
 
   $: queryArgsJson =
     (alertSpec?.resolverProperties?.query_args_json as string) ||
@@ -74,7 +77,7 @@
     queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
 
-  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
+  $: dashboardState = useAlertDashboardState(runtimeClient, alertSpec);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 
@@ -91,7 +94,7 @@
       exploreProtoState: alertSpec?.annotations?.web_open_state,
     },
     {
-      instanceId,
+      client: runtimeClient,
       organization,
       project,
     },
@@ -108,7 +111,9 @@
       name: $alertQuery.data.resource.meta.name.name,
     });
     await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        runtimeClient.instanceId,
+      ),
     });
     // goto only after invalidate is complete
     goto(`/${organization}/${project}/-/alerts`);
@@ -137,18 +142,18 @@
         <h1 class="text-fg-primary text-lg font-bold" aria-label="Alert name">
           {alertSpec.displayName}
         </h1>
-        <div class="grow" />
+        <div class="grow"></div>
         {#if !$isAlertCreatedByCode.data}
           <EditAlert {alertSpec} disabled={!$exploreIsValid} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <IconButton ariaLabel="Alert context menu">
+              <IconButton ariaLabel={m.alert_context_menu_aria()}>
                 <ThreeDot size="16px" />
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start">
-              <DropdownMenu.Item on:click={handleDeleteAlert}>
-                Delete Alert
+              <DropdownMenu.Item onclick={handleDeleteAlert}>
+                {m.alert_delete()}
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
@@ -161,7 +166,7 @@
       <!-- Dashboard -->
       <div class="flex flex-col gap-y-3" aria-label="Alert dashboard name">
         {#if dashboardTitle}
-          <MetadataLabel>Dashboard</MetadataLabel>
+          <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
           <MetadataValue>
             {#if dashboardDoesNotExist}
               <div class="flex items-center gap-x-1">
@@ -169,7 +174,7 @@
                 <Tooltip distance={8}>
                   <CancelCircle size="16px" className="text-red-500" />
                   <TooltipContent slot="tooltip-content">
-                    Dashboard does not exist
+                    {m.alert_dashboard_not_exist()}
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -180,7 +185,7 @@
             {/if}
           </MetadataValue>
         {:else}
-          <MetadataLabel>Name</MetadataLabel>
+          <MetadataLabel>{m.alert_name_label()}</MetadataLabel>
           <MetadataValue>
             {$alertQuery.data?.resource?.meta?.name?.name}
           </MetadataValue>
@@ -189,21 +194,22 @@
 
       <!-- Split by dimension -->
       <div class="flex flex-col gap-y-3" aria-label="Alert split by dimension">
-        <MetadataLabel>Split by dimension</MetadataLabel>
+        <MetadataLabel>{m.alert_split_by_dimension()}</MetadataLabel>
         <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions?.[0]?.name ?? "None"}
+          {metricsViewAggregationRequest?.dimensions?.[0]?.name ??
+            m.alert_none()}
         </MetadataValue>
       </div>
 
       <!-- Schedule: TODO: change based on non UI settings -->
       <div class="flex flex-col gap-y-3" aria-label="Alert schedule">
-        <MetadataLabel>Schedule</MetadataLabel>
+        <MetadataLabel>{m.alert_schedule()}</MetadataLabel>
         <MetadataValue>{humanReadableFrequency}</MetadataValue>
       </div>
 
       <!-- Snooze -->
       <div class="flex flex-col gap-y-3">
-        <MetadataLabel>Snooze</MetadataLabel>
+        <MetadataLabel>{m.alert_snooze()}</MetadataLabel>
         <MetadataValue>{snoozeLabel}</MetadataValue>
       </div>
     </div>
@@ -228,7 +234,7 @@
     {#if slackNotifier}
       <MetadataList
         data={[...slackNotifier.channels, ...slackNotifier.users]}
-        label="Slack notifications"
+        label={m.alert_slack_notifications()}
       />
     {/if}
 
@@ -236,7 +242,7 @@
     {#if emailNotifier}
       <MetadataList
         data={emailNotifier.recipients}
-        label="Email notifications"
+        label={m.alert_email_notifications()}
       />
     {/if}
   </div>

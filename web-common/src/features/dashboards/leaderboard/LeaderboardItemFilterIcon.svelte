@@ -4,7 +4,7 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import {
-    COMPARIONS_COLORS,
+    COMPARISON_COLORS,
     SELECTED_NOT_COMPARED_COLOR,
   } from "@rilldata/web-common/features/dashboards/config";
 
@@ -16,7 +16,7 @@
 
   function getColor(i: number) {
     if (i >= 7) return SELECTED_NOT_COMPARED_COLOR;
-    return COMPARIONS_COLORS[i];
+    return COMPARISON_COLORS[i];
   }
 </script>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as Command from "@rilldata/web-common/components/command/index.js";
   import {
     createAdminServiceSearchProjectUsers,
@@ -36,15 +37,18 @@
 </div>
 
 <Command.Root>
-  <Command.Input placeholder="Search for users" />
+  <Command.Input placeholder={m.project_search_users()} />
   <Command.List>
-    <Command.Empty>No results found.</Command.Empty>
-    <Command.Group heading="Users">
-      {#each clientSideUsers as user}
-        <Command.Item onSelect={() => handleViewAsUser(user)}>
-          {user.email}
-        </Command.Item>
-      {/each}
+    <Command.Empty>{m.common_no_results_found()}</Command.Empty>
+    <Command.Group>
+      <Command.GroupHeading>Users</Command.GroupHeading>
+      <Command.GroupItems>
+        {#each clientSideUsers as user}
+          <Command.Item onSelect={() => handleViewAsUser(user)}>
+            {user.email}
+          </Command.Item>
+        {/each}
+      </Command.GroupItems>
     </Command.Group>
   </Command.List>
 </Command.Root>

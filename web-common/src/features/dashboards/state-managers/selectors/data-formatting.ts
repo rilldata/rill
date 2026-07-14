@@ -38,4 +38,28 @@ export const formattingSelectors = {
       ]),
     );
   },
+
+  /**
+   * Tooltip formatter for the active measure (higher precision than display).
+   */
+  activeMeasureTooltipFormatter: (args: DashboardDataSources) => {
+    const measure = activeMeasure(args);
+    if (measure === undefined) {
+      return (_value: number | undefined) => undefined;
+    }
+    return createMeasureValueFormatter(measure, "tooltip");
+  },
+
+  /**
+   * A map of measure names to their tooltip formatters
+   */
+  measureTooltipFormatters: (args: DashboardDataSources) => {
+    const measures = visibleMeasures(args);
+    return Object.fromEntries(
+      measures.map((measure) => [
+        measure.name,
+        createMeasureValueFormatter(measure, "tooltip"),
+      ]),
+    );
+  },
 };

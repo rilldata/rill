@@ -1,12 +1,13 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import {
     COLUMN_PROFILE_CONFIG,
     LIST_SLIDE_DURATION,
   } from "@rilldata/web-common/layout/config";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { slide } from "svelte/transition";
 
+  export let columnName: string;
   export let active = false;
   export let emphasize = false;
   export let type;
@@ -27,6 +28,8 @@
   } else {
     columns = `${summarySize}px ${COLUMN_PROFILE_CONFIG.nullPercentageWidth}px`;
   }
+
+  $: label = `${columnName} profile${isFetching ? " loading" : ""}`;
 </script>
 
 <div>
@@ -44,10 +47,11 @@
         justify-between w-full"
     class:text-fg-muted={isFetching}
     class:bg-surface-background={active}
-    on:click={modified({
+    onclick={modified({
       shift: onShiftClick,
       click: onSelect,
     })}
+    aria-label={label}
   >
     <div class="flex gap-2 items-baseline flex-1" style:min-width="0px">
       <div class="self-center flex items-center text-fg-secondary-muted">

@@ -25,18 +25,26 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				roleOptions = orgRoles
 			}
 
-			if ch.Interactive {
-				err := cmdutil.SelectPromptIfEmpty(&role, "Select role", roleOptions, "")
+			if role == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("--role is required when not running interactively")
+				}
+				var err error
+				role, err = cmdutil.SelectPrompt("Select role", roleOptions, "")
 				if err != nil {
 					return err
 				}
+			}
 
-				err = cmdutil.StringPromptIfEmpty(&email, "Enter email")
+			if email == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("--email is required when not running interactively")
+				}
+				var err error
+				email, err = cmdutil.InputPrompt("Enter email", "")
 				if err != nil {
 					return err
 				}
-			} else if email == "" || role == "" {
-				return fmt.Errorf("email and role must be specified")
 			}
 
 			client, err := ch.Client()

@@ -55,8 +55,10 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				if dark {
 					label = "dark-mode logo"
 				}
-				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom %s for %q. Continue?", label, ch.Org), "", false); err != nil || !ok {
-					return err
+				if ch.Interactive {
+					if err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom %s for %q. Continue?", label, ch.Org), false); err != nil {
+						return err
+					}
 				}
 
 				empty := ""
@@ -82,9 +84,9 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Check the file is an image
 			ext := strings.TrimPrefix(filepath.Ext(path), ".")
 			switch ext {
-			case "png", "jpg", "jpeg", "gif", "svg", "ico":
+			case "png", "jpg", "jpeg", "gif", "ico":
 			default:
-				return fmt.Errorf("invalid file type %q (expected PNG, JPG, GIF, SVG)", ext)
+				return fmt.Errorf("invalid file type %q (expected PNG, JPG, GIF, ICO)", ext)
 			}
 
 			// Validate and open the path
@@ -109,8 +111,10 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			if dark {
 				label = "dark-mode logo"
 			}
-			if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom %s for %q. Continue?", label, ch.Org), "", false); err != nil || !ok {
-				return err
+			if ch.Interactive {
+				if err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom %s for %q. Continue?", label, ch.Org), false); err != nil {
+					return err
+				}
 			}
 
 			// Generate the asset upload URL

@@ -4,15 +4,17 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { getDeployRouteForProject } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
-  import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service.ts";
+  import { createRuntimeServiceGitStatus } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import GithubRepoDetails from "@rilldata/web-common/features/project/GithubRepoDetails.svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
   const orgParam = data.org;
 
-  const gitStatusQuery = createLocalServiceGitStatus();
-  const deployUrl = getDeployRouteForProject(orgParam);
+  const runtimeClient = useRuntimeClient();
+  const gitStatusQuery = createRuntimeServiceGitStatus(runtimeClient, {});
+  const deployUrl = getDeployRouteForProject(runtimeClient, orgParam);
 
   $: ({ isPending, data: statusData } = $gitStatusQuery);
   $: linkDisabled = isPending || !$deployUrl;

@@ -17,7 +17,7 @@ import (
 func getTestServer(t *testing.T) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstance(t)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID

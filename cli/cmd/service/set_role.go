@@ -24,17 +24,15 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				roleOptions = orgRoles
 			}
 
-			if ch.Interactive {
-				err := cmdutil.StringPromptIfEmpty(&name, "Enter service name")
+			if role == "" {
+				if !ch.Interactive {
+					return fmt.Errorf("required flag \"role\" not set")
+				}
+				var err error
+				role, err = cmdutil.SelectPrompt("Select role", roleOptions, "")
 				if err != nil {
 					return err
 				}
-				err = cmdutil.SelectPromptIfEmpty(&role, "Select role", roleOptions, "")
-				if err != nil {
-					return err
-				}
-			} else if name == "" || role == "" {
-				return fmt.Errorf("name and role must be specified")
 			}
 
 			client, err := ch.Client()

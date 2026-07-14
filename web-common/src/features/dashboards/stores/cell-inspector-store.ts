@@ -4,6 +4,7 @@ interface CellInspectorState {
   isOpen: boolean;
   hasValue: boolean;
   value: string | null;
+  formattedValue: string | null;
 }
 
 /**
@@ -22,16 +23,18 @@ function createCellInspectorStore() {
     isOpen: false,
     hasValue: false,
     value: null,
+    formattedValue: null,
   });
 
   return {
     subscribe,
-    open: (value: string | null) =>
+    open: (value: string | null, formattedValue?: string | null) =>
       update((state) => ({
         ...state,
         isOpen: true,
         hasValue: true,
         value,
+        formattedValue: formattedValue ?? null,
       })),
     close: () =>
       update((state) => ({
@@ -41,14 +44,16 @@ function createCellInspectorStore() {
     /**
      * Update the value without changing visibility.
      * Accepts any value type and normalizes it internally.
+     * Optionally accepts a pre-formatted value (e.g. from a tooltip formatter).
      */
-    updateValue: (value: unknown) =>
+    updateValue: (value: unknown, formattedValue?: unknown) =>
       update((state) => ({
         ...state,
         hasValue: true,
         value: normalizeValue(value),
+        formattedValue: normalizeValue(formattedValue ?? null),
       })),
-    toggle: (value: string | null) =>
+    toggle: (value: string | null, formattedValue?: string | null) =>
       update((state) => ({
         ...state,
         isOpen: !state.isOpen,
@@ -59,6 +64,9 @@ function createCellInspectorStore() {
           : {
               hasValue: true,
               value: state.hasValue ? state.value : value,
+              formattedValue: state.hasValue
+                ? state.formattedValue
+                : (formattedValue ?? null),
             }),
       })),
   };

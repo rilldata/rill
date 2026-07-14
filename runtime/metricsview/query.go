@@ -28,6 +28,9 @@ type Query struct {
 	TimeZone            string      `json:"time_zone" mapstructure:"time_zone"`
 	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
 	Rows                bool        `json:"rows" mapstructure:"rows"`
+
+	QueryLimits  *QueryLimits   `json:"query_limits,omitempty" mapstructure:"query_limits"`
+	UnusedFields map[string]any `json:"-" mapstructure:",remain"`
 }
 
 type Dimension struct {
@@ -58,6 +61,12 @@ type MeasureCompute struct {
 	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total,omitempty" mapstructure:"percent_of_total"`
 	URI             *MeasureComputeURI             `json:"uri,omitempty" mapstructure:"uri"`
 	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time,omitempty" mapstructure:"comparison_time"`
+}
+
+// QueryLimits represents limits that should be applied to a query, such as requiring a time range or limiting the maximum time range for interactive queries. These are not part of the Query json itself because they are not intrinsic to the query, but rather are constraints that may be applied to the query before execution.
+type QueryLimits struct {
+	RequireTimeRange bool  `json:"require_time_range,omitempty" mapstructure:"require_time_range"`
+	MaxTimeRangeDays int64 `json:"max_time_range_days,omitempty" mapstructure:"max_time_range_days"`
 }
 
 func (q *Query) AsMap() (map[string]any, error) {
@@ -96,6 +105,10 @@ func (q *Query) Validate() error {
 		if len(q.PivotOn) > 0 {
 			return fmt.Errorf("pivot_on not supported when rows is set")
 		}
+	}
+
+	if q.ComparisonTimeRange != nil && !q.ComparisonTimeRange.IsZero() && (q.TimeRange == nil || q.TimeRange.IsZero()) {
+		return fmt.Errorf("comparison_time_range requires time_range to be set")
 	}
 
 	if q.TimeRange != nil && q.ComparisonTimeRange != nil && q.TimeRange.TimeDimension != q.ComparisonTimeRange.TimeDimension {
@@ -193,11 +206,11 @@ type Sort struct {
 type TimeRange struct {
 	Start         time.Time `json:"start" mapstructure:"start"`
 	End           time.Time `json:"end" mapstructure:"end"`
-	Expression    string    `json:"expression" mapstructure:"expression"`
-	IsoDuration   string    `json:"iso_duration" mapstructure:"iso_duration"`
-	IsoOffset     string    `json:"iso_offset" mapstructure:"iso_offset"`
-	RoundToGrain  TimeGrain `json:"round_to_grain" mapstructure:"round_to_grain"`
-	TimeDimension string    `json:"time_dimension" mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
+	Expression    string    `json:"expression,omitempty" mapstructure:"expression"`
+	IsoDuration   string    `json:"iso_duration,omitempty" mapstructure:"iso_duration"`
+	IsoOffset     string    `json:"iso_offset,omitempty" mapstructure:"iso_offset"`
+	RoundToGrain  TimeGrain `json:"round_to_grain,omitempty" mapstructure:"round_to_grain"`
+	TimeDimension string    `json:"time_dimension,omitempty" mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
 }
 
 func (tr *TimeRange) IsZero() bool {
@@ -765,6 +778,7 @@ const QueryJSONSchema = `
     },
     "TimeRange": {
       "type": "object",
+      "description": "Time range for filtering the query. Prefer using absolute 'start' and 'end' parameters if available. Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields other than 'time_dimension' is set as its not supported.",
       "properties": {
         "start": {
           "type": "string",
@@ -778,15 +792,15 @@ const QueryJSONSchema = `
         },
         "expression": {
           "type": "string",
-          "description": "Time range expression"
+          "description": "Time range expression. If specifying this no other TimeRange fields should be set."
         },
         "iso_duration": {
           "type": "string",
-          "description": "ISO 8601 duration"
+          "description": "ISO 8601 duration, supported but deprecated in favor of 'expression' field."
         },
         "iso_offset": {
           "type": "string",
-          "description": "ISO 8601 offset"
+          "description": "ISO 8601 offset, supported but deprecated in favor of 'expression' field."
         },
         "round_to_grain": {
           "$ref": "#/$defs/TimeGrain",

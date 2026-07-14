@@ -3,7 +3,7 @@ import type { MultiStepFormSchema } from "./types";
 export const athenaSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
-  title: "Amazon Athena",
+  title: "Athena",
   "x-category": "warehouse",
   properties: {
     aws_access_key_id: {
@@ -35,6 +35,44 @@ export const athenaSchema: MultiStepFormSchema = {
       },
       "x-placeholder": "s3://bucket-name/path/",
       "x-step": "connector",
+    },
+    region: {
+      type: "string",
+      title: "AWS Region",
+      description: "AWS region for Athena queries",
+      "x-placeholder": "us-east-1",
+      "x-step": "connector",
+    },
+    workgroup: {
+      type: "string",
+      title: "Workgroup",
+      description: "Athena workgroup name",
+      "x-placeholder": "primary",
+      "x-step": "connector",
+    },
+    role_arn: {
+      type: "string",
+      title: "IAM Role ARN",
+      description: "IAM role ARN to assume for Athena queries",
+      "x-placeholder": "arn:aws:iam::123456789012:role/MyRole",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    role_session_name: {
+      type: "string",
+      title: "Role Session Name",
+      description: "Session name for STS AssumeRole",
+      "x-placeholder": "rill-session",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    external_id: {
+      type: "string",
+      title: "External ID",
+      description: "External ID for cross-account role assumption",
+      "x-placeholder": "your-external-id",
+      "x-step": "connector",
+      "x-advanced": true,
     },
     sql: {
       type: "string",

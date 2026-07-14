@@ -1,6 +1,8 @@
 package deploy
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -10,7 +12,9 @@ import (
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
-	opts := &project.DeployOpts{}
+	opts := &project.DeployOpts{
+		ProdVersion: "latest",
+	}
 
 	deployCmd := &cobra.Command{
 		Use:   "deploy [<path>]",
@@ -32,7 +36,10 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !opts.Managed && !opts.ArchiveUpload && !opts.Github {
-				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
+				if !ch.Interactive {
+					return fmt.Errorf("must specify --managed or --github in non-interactive mode")
+				}
+				confirmed, err := cmdutil.YesNoPrompt("Enable automatic deploys to Rill Cloud from GitHub?", false)
 				if err != nil {
 					return err
 				}
@@ -62,16 +69,19 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
-	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
-	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
+	deployCmd.Flags().IntVar(&opts.DevSlots, "dev-slots", local.DefaultDevSlots(ch), "Slots to allocate for dev deployments")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
 		}
+		if err := deployCmd.Flags().MarkHidden("dev-slots"); err != nil {
+			panic(err)
+		}
 	}
-
+	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
+	deployCmd.Flags().BoolVar(&opts.ForcePush, "force-push", false, "Force push local changes in case of Rill managed repos")
 	deployCmd.Flags().BoolVar(&opts.Managed, "managed", false, "Create project using rill managed repo")
 	deployCmd.Flags().BoolVar(&opts.ArchiveUpload, "archive", false, "Create project using tarballs(for testing only)")
 	err := deployCmd.Flags().MarkHidden("archive")
@@ -82,7 +92,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	// subpath cannot be used with archive or managed deploys
 	deployCmd.MarkFlagsMutuallyExclusive("managed", "archive", "subpath")
 	deployCmd.MarkFlagsMutuallyExclusive("managed", "archive", "github")
-
+	deployCmd.MarkFlagsMutuallyExclusive("force-push", "github")
 	deployCmd.Flags().BoolVar(&opts.SkipDeploy, "skip-deploy", false, "Skip the runtime deployment step (for testing only)")
 	if !ch.IsDev() {
 		err = deployCmd.Flags().MarkHidden("skip-deploy")

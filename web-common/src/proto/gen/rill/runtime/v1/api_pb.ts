@@ -863,9 +863,18 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
   connectors: Connector[] = [];
 
   /**
+   * Deprecated: Continue populating this for some time for backward compatibility with older runtimes, remove after a few releases.
+   *
    * @generated from field: map<string, string> variables = 7;
    */
   variables: { [key: string]: string } = {};
+
+  /**
+   * system_variables are variables that are set by admin service and should not be overridden by user input
+   *
+   * @generated from field: map<string, string> system_variables = 19;
+   */
+  systemVariables: { [key: string]: string } = {};
 
   /**
    * @generated from field: map<string, string> annotations = 9;
@@ -893,6 +902,7 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
     { no: 17, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 19, name: "system_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 18, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -1185,6 +1195,20 @@ export class ReloadConfigRequest extends Message$1<ReloadConfigRequest> {
  * @generated from message rill.runtime.v1.ReloadConfigResponse
  */
 export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
+  /**
+   * Number of variables pulled from admin service
+   *
+   * @generated from field: int32 variables_count = 1;
+   */
+  variablesCount = 0;
+
+  /**
+   * Whether the .env file(s) were modified
+   *
+   * @generated from field: bool modified = 2;
+   */
+  modified = false;
+
   constructor(data?: PartialMessage<ReloadConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1193,6 +1217,8 @@ export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ReloadConfigResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "variables_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "modified", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigResponse {
@@ -2433,212 +2459,6 @@ export class GenerateCanvasFileResponse extends Message$1<GenerateCanvasFileResp
 }
 
 /**
- * @generated from message rill.runtime.v1.GenerateResolverRequest
- */
-export class GenerateResolverRequest extends Message$1<GenerateResolverRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: string prompt = 2;
-   */
-  prompt = "";
-
-  /**
-   * Both connector and table must be specified if metrics_view is not.
-   *
-   * @generated from field: string connector = 3;
-   */
-  connector = "";
-
-  /**
-   * @generated from field: string table = 4;
-   */
-  table = "";
-
-  /**
-   * table and connector should not be provided if metrics_view is provided.
-   *
-   * @generated from field: string metrics_view = 5;
-   */
-  metricsView = "";
-
-  constructor(data?: PartialMessage<GenerateResolverRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GenerateResolverRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateResolverRequest {
-    return new GenerateResolverRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateResolverRequest {
-    return new GenerateResolverRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateResolverRequest {
-    return new GenerateResolverRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GenerateResolverRequest | PlainMessage<GenerateResolverRequest> | undefined, b: GenerateResolverRequest | PlainMessage<GenerateResolverRequest> | undefined): boolean {
-    return proto3.util.equals(GenerateResolverRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.GenerateResolverResponse
- */
-export class GenerateResolverResponse extends Message$1<GenerateResolverResponse> {
-  /**
-   * @generated from field: string resolver = 1;
-   */
-  resolver = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct resolver_properties = 2;
-   */
-  resolverProperties?: Struct;
-
-  constructor(data?: PartialMessage<GenerateResolverResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GenerateResolverResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resolver_properties", kind: "message", T: Struct },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateResolverResponse {
-    return new GenerateResolverResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateResolverResponse {
-    return new GenerateResolverResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateResolverResponse {
-    return new GenerateResolverResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GenerateResolverResponse | PlainMessage<GenerateResolverResponse> | undefined, b: GenerateResolverResponse | PlainMessage<GenerateResolverResponse> | undefined): boolean {
-    return proto3.util.equals(GenerateResolverResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.GenerateRendererRequest
- */
-export class GenerateRendererRequest extends Message$1<GenerateRendererRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: string prompt = 2;
-   */
-  prompt = "";
-
-  /**
-   * @generated from field: string resolver = 3;
-   */
-  resolver = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct resolver_properties = 4;
-   */
-  resolverProperties?: Struct;
-
-  constructor(data?: PartialMessage<GenerateRendererRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GenerateRendererRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "resolver_properties", kind: "message", T: Struct },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateRendererRequest {
-    return new GenerateRendererRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateRendererRequest {
-    return new GenerateRendererRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateRendererRequest {
-    return new GenerateRendererRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GenerateRendererRequest | PlainMessage<GenerateRendererRequest> | undefined, b: GenerateRendererRequest | PlainMessage<GenerateRendererRequest> | undefined): boolean {
-    return proto3.util.equals(GenerateRendererRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.GenerateRendererResponse
- */
-export class GenerateRendererResponse extends Message$1<GenerateRendererResponse> {
-  /**
-   * @generated from field: string renderer = 1;
-   */
-  renderer = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct renderer_properties = 2;
-   */
-  rendererProperties?: Struct;
-
-  constructor(data?: PartialMessage<GenerateRendererResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GenerateRendererResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "renderer_properties", kind: "message", T: Struct },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateRendererResponse {
-    return new GenerateRendererResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateRendererResponse {
-    return new GenerateRendererResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateRendererResponse {
-    return new GenerateRendererResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GenerateRendererResponse | PlainMessage<GenerateRendererResponse> | undefined, b: GenerateRendererResponse | PlainMessage<GenerateRendererResponse> | undefined): boolean {
-    return proto3.util.equals(GenerateRendererResponse, a, b);
-  }
-}
-
-/**
  * @generated from message rill.runtime.v1.QueryResolverRequest
  */
 export class QueryResolverRequest extends Message$1<QueryResolverRequest> {
@@ -2837,6 +2657,11 @@ export class ModelPartition extends Message$1<ModelPartition> {
    */
   elapsedMs = 0;
 
+  /**
+   * @generated from field: bool skipped = 7;
+   */
+  skipped = false;
+
   constructor(data?: PartialMessage<ModelPartition>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2851,6 +2676,7 @@ export class ModelPartition extends Message$1<ModelPartition> {
     { no: 4, name: "executed_on", kind: "message", T: Timestamp },
     { no: 5, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "elapsed_ms", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "skipped", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelPartition {
@@ -3449,6 +3275,11 @@ export class GetModelPartitionsRequest extends Message$1<GetModelPartitionsReque
   errored = false;
 
   /**
+   * @generated from field: bool skipped = 7;
+   */
+  skipped = false;
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -3470,6 +3301,7 @@ export class GetModelPartitionsRequest extends Message$1<GetModelPartitionsReque
     { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "pending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "errored", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "skipped", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -3531,6 +3363,104 @@ export class GetModelPartitionsResponse extends Message$1<GetModelPartitionsResp
 
   static equals(a: GetModelPartitionsResponse | PlainMessage<GetModelPartitionsResponse> | undefined, b: GetModelPartitionsResponse | PlainMessage<GetModelPartitionsResponse> | undefined): boolean {
     return proto3.util.equals(GetModelPartitionsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SkipModelPartitionsRequest
+ */
+export class SkipModelPartitionsRequest extends Message$1<SkipModelPartitionsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string model = 2;
+   */
+  model = "";
+
+  /**
+   * Specific partition keys to skip.
+   *
+   * @generated from field: repeated string partitions = 3;
+   */
+  partitions: string[] = [];
+
+  /**
+   * Skip all pending partitions.
+   *
+   * @generated from field: bool pending = 4;
+   */
+  pending = false;
+
+  /**
+   * Skip all errored partitions, clearing them from the model's error state.
+   *
+   * @generated from field: bool errored = 5;
+   */
+  errored = false;
+
+  constructor(data?: PartialMessage<SkipModelPartitionsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SkipModelPartitionsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "pending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "errored", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SkipModelPartitionsRequest {
+    return new SkipModelPartitionsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SkipModelPartitionsRequest {
+    return new SkipModelPartitionsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SkipModelPartitionsRequest {
+    return new SkipModelPartitionsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SkipModelPartitionsRequest | PlainMessage<SkipModelPartitionsRequest> | undefined, b: SkipModelPartitionsRequest | PlainMessage<SkipModelPartitionsRequest> | undefined): boolean {
+    return proto3.util.equals(SkipModelPartitionsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SkipModelPartitionsResponse
+ */
+export class SkipModelPartitionsResponse extends Message$1<SkipModelPartitionsResponse> {
+  constructor(data?: PartialMessage<SkipModelPartitionsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SkipModelPartitionsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SkipModelPartitionsResponse {
+    return new SkipModelPartitionsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SkipModelPartitionsResponse {
+    return new SkipModelPartitionsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SkipModelPartitionsResponse {
+    return new SkipModelPartitionsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SkipModelPartitionsResponse | PlainMessage<SkipModelPartitionsResponse> | undefined, b: SkipModelPartitionsResponse | PlainMessage<SkipModelPartitionsResponse> | undefined): boolean {
+    return proto3.util.equals(SkipModelPartitionsResponse, a, b);
   }
 }
 
@@ -5430,6 +5360,102 @@ export class CompleteStreamingResponse extends Message$1<CompleteStreamingRespon
 }
 
 /**
+ * Request message for RuntimeService.GetAIMessage
+ *
+ * @generated from message rill.runtime.v1.GetAIMessageRequest
+ */
+export class GetAIMessageRequest extends Message$1<GetAIMessageRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * @generated from field: string message_id = 3;
+   */
+  messageId = "";
+
+  constructor(data?: PartialMessage<GetAIMessageRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIMessageRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIMessageRequest {
+    return new GetAIMessageRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIMessageRequest | PlainMessage<GetAIMessageRequest> | undefined, b: GetAIMessageRequest | PlainMessage<GetAIMessageRequest> | undefined): boolean {
+    return proto3.util.equals(GetAIMessageRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GetAIMessage
+ *
+ * @generated from message rill.runtime.v1.GetAIMessageResponse
+ */
+export class GetAIMessageResponse extends Message$1<GetAIMessageResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Message message = 1;
+   */
+  message?: Message;
+
+  /**
+   * @generated from field: rill.runtime.v1.Message result = 2;
+   */
+  result?: Message;
+
+  constructor(data?: PartialMessage<GetAIMessageResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIMessageResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "message", kind: "message", T: Message },
+    { no: 2, name: "result", kind: "message", T: Message },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIMessageResponse {
+    return new GetAIMessageResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined, b: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined): boolean {
+    return proto3.util.equals(GetAIMessageResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.IssueDevJWT
  *
  * @generated from message rill.runtime.v1.IssueDevJWTRequest
@@ -5829,6 +5855,14 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
    */
   instanceId = "";
 
+  /**
+   * remote_branch is the remote branch to compare the current local branch against.
+   * If empty, the upstream of the current local branch is used.
+   *
+   * @generated from field: string remote_branch = 2;
+   */
+  remoteBranch = "";
+
   constructor(data?: PartialMessage<GitStatusRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5838,6 +5872,7 @@ export class GitStatusRequest extends Message$1<GitStatusRequest> {
   static readonly typeName = "rill.runtime.v1.GitStatusRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitStatusRequest {
@@ -5874,6 +5909,13 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
    * @generated from field: string github_url = 2;
    */
   githubUrl = "";
+
+  /**
+   * Subpath from the git repo.
+   *
+   * @generated from field: string subpath = 7;
+   */
+  subpath = "";
 
   /**
    * If the repo is managed by Rill.
@@ -5913,6 +5955,7 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "managed_git", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "local_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "local_commits", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -5933,6 +5976,210 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
 
   static equals(a: GitStatusResponse | PlainMessage<GitStatusResponse> | undefined, b: GitStatusResponse | PlainMessage<GitStatusResponse> | undefined): boolean {
     return proto3.util.equals(GitStatusResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GitDiffRequest
+ */
+export class GitDiffRequest extends Message$1<GitDiffRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * remote_branch is the branch to compare against. Same semantics as GitStatusRequest:
+   * if empty, the upstream of the current local branch is used.
+   *
+   * @generated from field: string remote_branch = 2;
+   */
+  remoteBranch = "";
+
+  /**
+   * include_diff also computes and returns the combined unified patch in addition to the
+   * changed_files list. It is opt-in because computing the diff is more expensive.
+   *
+   * @generated from field: bool include_diff = 3;
+   */
+  includeDiff = false;
+
+  /**
+   * fetch first updates the remote-tracking ref from the remote before computing the changes.
+   * When false, changes are computed against the already-fetched ref; use that when a recent
+   * GitStatus/GitDiff already fetched, to avoid a redundant fetch.
+   *
+   * @generated from field: bool fetch = 4;
+   */
+  fetch = false;
+
+  constructor(data?: PartialMessage<GitDiffRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitDiffRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "include_diff", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "fetch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffRequest {
+    return new GitDiffRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitDiffRequest {
+    return new GitDiffRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitDiffRequest {
+    return new GitDiffRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitDiffRequest | PlainMessage<GitDiffRequest> | undefined, b: GitDiffRequest | PlainMessage<GitDiffRequest> | undefined): boolean {
+    return proto3.util.equals(GitDiffRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GitDiffResponse
+ */
+export class GitDiffResponse extends Message$1<GitDiffResponse> {
+  /**
+   * changed_files lists the files that would land on the target branch, relative to the project subpath.
+   * The comparison ref is the requested remote_branch, or the upstream of the current branch when
+   * remote_branch is empty.
+   *
+   * @generated from field: repeated rill.runtime.v1.GitDiffResponse.GitFileChange changed_files = 1;
+   */
+  changedFiles: GitDiffResponse_GitFileChange[] = [];
+
+  /**
+   * diff is the combined unified patch across all changed_files; only set when include_diff is true.
+   * Individual files whose diff is very large are elided to a "Binary files differ" placeholder.
+   *
+   * @generated from field: string diff = 2;
+   */
+  diff = "";
+
+  constructor(data?: PartialMessage<GitDiffResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitDiffResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "changed_files", kind: "message", T: GitDiffResponse_GitFileChange, repeated: true },
+    { no: 2, name: "diff", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffResponse {
+    return new GitDiffResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitDiffResponse {
+    return new GitDiffResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitDiffResponse {
+    return new GitDiffResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitDiffResponse | PlainMessage<GitDiffResponse> | undefined, b: GitDiffResponse | PlainMessage<GitDiffResponse> | undefined): boolean {
+    return proto3.util.equals(GitDiffResponse, a, b);
+  }
+}
+
+/**
+ * @generated from enum rill.runtime.v1.GitDiffResponse.GitFileStatus
+ */
+export enum GitDiffResponse_GitFileStatus {
+  /**
+   * @generated from enum value: GIT_FILE_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: GIT_FILE_STATUS_ADDED = 1;
+   */
+  ADDED = 1,
+
+  /**
+   * @generated from enum value: GIT_FILE_STATUS_MODIFIED = 2;
+   */
+  MODIFIED = 2,
+
+  /**
+   * @generated from enum value: GIT_FILE_STATUS_DELETED = 3;
+   */
+  DELETED = 3,
+
+  /**
+   * @generated from enum value: GIT_FILE_STATUS_RENAMED = 4;
+   */
+  RENAMED = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(GitDiffResponse_GitFileStatus)
+proto3.util.setEnumType(GitDiffResponse_GitFileStatus, "rill.runtime.v1.GitDiffResponse.GitFileStatus", [
+  { no: 0, name: "GIT_FILE_STATUS_UNSPECIFIED" },
+  { no: 1, name: "GIT_FILE_STATUS_ADDED" },
+  { no: 2, name: "GIT_FILE_STATUS_MODIFIED" },
+  { no: 3, name: "GIT_FILE_STATUS_DELETED" },
+  { no: 4, name: "GIT_FILE_STATUS_RENAMED" },
+]);
+
+/**
+ * @generated from message rill.runtime.v1.GitDiffResponse.GitFileChange
+ */
+export class GitDiffResponse_GitFileChange extends Message$1<GitDiffResponse_GitFileChange> {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.GitDiffResponse.GitFileStatus status = 2;
+   */
+  status = GitDiffResponse_GitFileStatus.UNSPECIFIED;
+
+  /**
+   * old_path is the previous path; only set when status is GIT_FILE_STATUS_RENAMED.
+   *
+   * @generated from field: string old_path = 3;
+   */
+  oldPath = "";
+
+  constructor(data?: PartialMessage<GitDiffResponse_GitFileChange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitDiffResponse.GitFileChange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "status", kind: "enum", T: proto3.getEnumType(GitDiffResponse_GitFileStatus) },
+    { no: 3, name: "old_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitDiffResponse_GitFileChange {
+    return new GitDiffResponse_GitFileChange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitDiffResponse_GitFileChange {
+    return new GitDiffResponse_GitFileChange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitDiffResponse_GitFileChange {
+    return new GitDiffResponse_GitFileChange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitDiffResponse_GitFileChange | PlainMessage<GitDiffResponse_GitFileChange> | undefined, b: GitDiffResponse_GitFileChange | PlainMessage<GitDiffResponse_GitFileChange> | undefined): boolean {
+    return proto3.util.equals(GitDiffResponse_GitFileChange, a, b);
   }
 }
 
@@ -6291,6 +6538,13 @@ export class GitMergeToBranchResponse extends Message$1<GitMergeToBranchResponse
    */
   output = "";
 
+  /**
+   * Conflict is true if the merge failed due to conflicts.
+   *
+   * @generated from field: bool conflict = 2;
+   */
+  conflict = false;
+
   constructor(data?: PartialMessage<GitMergeToBranchResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6300,6 +6554,7 @@ export class GitMergeToBranchResponse extends Message$1<GitMergeToBranchResponse
   static readonly typeName = "rill.runtime.v1.GitMergeToBranchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conflict", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitMergeToBranchResponse {
@@ -6459,6 +6714,20 @@ export class GitPullResponse extends Message$1<GitPullResponse> {
    */
   output = "";
 
+  /**
+   * The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
+   *
+   * @generated from field: string merged_branch = 2;
+   */
+  mergedBranch = "";
+
+  /**
+   * Conflict is true if the pull failed due to merge conflicts.
+   *
+   * @generated from field: bool conflict = 3;
+   */
+  conflict = false;
+
   constructor(data?: PartialMessage<GitPullResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6468,6 +6737,8 @@ export class GitPullResponse extends Message$1<GitPullResponse> {
   static readonly typeName = "rill.runtime.v1.GitPullResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "merged_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "conflict", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitPullResponse {
@@ -6564,6 +6835,90 @@ export class GitPushResponse extends Message$1<GitPushResponse> {
 
   static equals(a: GitPushResponse | PlainMessage<GitPushResponse> | undefined, b: GitPushResponse | PlainMessage<GitPushResponse> | undefined): boolean {
     return proto3.util.equals(GitPushResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.PushEnvRequest
+ */
+export class PushEnvRequest extends Message$1<PushEnvRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<PushEnvRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.PushEnvRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushEnvRequest {
+    return new PushEnvRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PushEnvRequest {
+    return new PushEnvRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PushEnvRequest {
+    return new PushEnvRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PushEnvRequest | PlainMessage<PushEnvRequest> | undefined, b: PushEnvRequest | PlainMessage<PushEnvRequest> | undefined): boolean {
+    return proto3.util.equals(PushEnvRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.PushEnvResponse
+ */
+export class PushEnvResponse extends Message$1<PushEnvResponse> {
+  /**
+   * Number of variables added
+   *
+   * @generated from field: int32 added_count = 1;
+   */
+  addedCount = 0;
+
+  /**
+   * Number of variables changed
+   *
+   * @generated from field: int32 changed_count = 2;
+   */
+  changedCount = 0;
+
+  constructor(data?: PartialMessage<PushEnvResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.PushEnvResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "added_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "changed_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushEnvResponse {
+    return new PushEnvResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PushEnvResponse {
+    return new PushEnvResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PushEnvResponse {
+    return new PushEnvResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PushEnvResponse | PlainMessage<PushEnvResponse> | undefined, b: PushEnvResponse | PlainMessage<PushEnvResponse> | undefined): boolean {
+    return proto3.util.equals(PushEnvResponse, a, b);
   }
 }
 

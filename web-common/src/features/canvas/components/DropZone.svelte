@@ -3,6 +3,7 @@
 
   export let column: number;
   export let row: number;
+  export let zoneScope = "canvas";
   export let allowDrop: boolean;
   export let maxColumns: number;
   export let onDrop: (row: number, column: number) => void;
@@ -10,7 +11,7 @@
 
 {#each { length: 2 } as _, i (i)}
   {@const effectiveColumn = column + i}
-  {@const dropId = `row:${row}::column:${effectiveColumn}`}
+  {@const dropId = `${zoneScope}::row:${row}::column:${effectiveColumn}`}
   <div
     class:left={i === 0}
     class:first={effectiveColumn === 0}
@@ -20,14 +21,14 @@
     style:height="calc(100% - 20px)"
     class="absolute z-[100000] h-full min-h-10"
     role="presentation"
-    on:mouseenter={() => dropZone.set(dropId)}
-    on:mouseleave={dropZone.clear}
-    on:mouseup={() => {
+    onmouseenter={() => dropZone.set(dropId)}
+    onmouseleave={dropZone.clear}
+    onmouseup={() => {
       if (allowDrop) {
         onDrop(row, effectiveColumn);
       }
     }}
-  />
+  ></div>
 {/each}
 
 <style lang="postcss">

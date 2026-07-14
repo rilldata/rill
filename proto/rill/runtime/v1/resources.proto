@@ -42,6 +42,8 @@ message ResourceMeta {
   repeated ResourceName refs = 2;
   optional ResourceName owner = 3;
   repeated string file_paths = 4;
+  // Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
+  repeated string tags = 19;
   bool hidden = 7;
   int64 version = 15;
   int64 spec_version = 5;
@@ -52,6 +54,7 @@ message ResourceMeta {
   optional google.protobuf.Timestamp deleted_on = 12;
   ReconcileStatus reconcile_status = 16;
   string reconcile_error = 8;
+  repeated string reconcile_warnings = 18;
   google.protobuf.Timestamp reconcile_on = 17;
   optional ResourceName renamed_from = 13;
 }
@@ -156,6 +159,8 @@ message ModelState {
   string test_hash = 27;
   // test_errors contains the results of the model's tests.
   repeated string test_errors = 28;
+  // test_warnings contains warnings from the most recent test run, stored separately from execution warnings.
+  repeated string test_warnings = 30;
   // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
   // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
@@ -166,12 +171,18 @@ message ModelState {
   string partitions_model_id = 10;
   // partitions_have_errors is true if one or more partitions failed to execute.
   bool partitions_have_errors = 11;
+  // warnings contains any warnings generated during the model's execution.
+  repeated string warnings = 29;
   // total_execution_duration_ms is the time user queries took to execute while refreshing the model.
   // In case of incremental models it is the sum of all successful executions so far.
   // This is not the time it took to refresh the model which also includes other stuff like taking a write lock.
   int64 total_execution_duration_ms = 12;
   // latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
   int64 latest_execution_duration_ms = 13;
+  // rows_total is the total number of rows in the model's output table.
+  int64 rows_total = 14;
+  // bytes_total is the total size in bytes of the model's output table.
+  int64 bytes_total = 15;
 }
 
 enum ModelChangeMode {
@@ -262,6 +273,8 @@ message MetricsViewSpec {
     string treat_nulls_as = 14;
     // The data type of the measure. Only populated in ValidSpec.
     Type data_type = 15;
+    // When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+    bool lower_is_better = 17;
   }
   // name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
   string parent = 30;
@@ -290,6 +303,29 @@ message MetricsViewSpec {
     // Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
     bool has_duration = 11;
   }
+  // Pre-aggregated rollup that can be used to accelerate queries.
+  // The system automatically routes queries to a rollup when the query can be satisfied from the pre-aggregated data.
+  message Rollup {
+    string database = 1;
+    string database_schema = 2;
+    string table = 3;
+    string model = 4;
+    // Optional rilltime expression describing the time range covered by the rollup.
+    // When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+    string data_time_range = 11;
+    // Time grain of the rollup.
+    TimeGrain time_grain = 5;
+    // IANA timezone the rollup was aggregated in; defaults to UTC
+    string time_zone = 6;
+    // Resolved list of dimensions present in the rollup. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string dimensions = 7;
+    // Resolved list of measures present in the rollup. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string measures = 8;
+    // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector dimensions_selector = 9;
+    // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector measures_selector = 10;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the database where table is located (optional)
@@ -313,6 +349,9 @@ message MetricsViewSpec {
   TimeGrain smallest_time_grain = 8;
   // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
   string watermark_expression = 20;
+  // Optional rilltime expression describing the time range covered by the base table.
+  // When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
+  string data_time_range = 37;
   // Dimensions in the metrics view
   repeated Dimension dimensions = 6;
   // Measures in the metrics view
@@ -329,13 +368,24 @@ message MetricsViewSpec {
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
-  // Cache controls for the metrics view.
+  // Cache controls for the metrics view. By default, enabled for Rill managed models and disabled for streaming (externally managed) data sources.
   optional bool cache_enabled = 25;
+  // Defaults to use watermark if cache is enabled.
   string cache_key_sql = 26;
+  // Defaults to 60 seconds if cache is enabled.
   int64 cache_key_ttl_seconds = 27;
+  // TTL for caching timestamp boundaries (min/max) of base and rollup tables. Defaults to 5 minutes if unset.
+  // Takes effect only when mv level caching is disabled otherwise the timestamp boundaries are cached with the same TTL
+  // as the rest of the query results set via `cache.timestamps_ttl` in the metrics view YAML.
+  int64 cache_timestamps_ttl_seconds = 35;
   // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
   // Keys and values are stored as templates and will be resolved at query time.
   map<string, string> query_attributes = 33;
+  repeated Rollup rollups = 34;
+  // Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
+  // Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
+  // Time-range introspection RPCs are exempt. If unset, no limit is enforced.
+  string max_query_time_range = 36;
 }
 
 message SecurityRule {
@@ -529,6 +579,12 @@ message ExplorePreset {
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
   optional int32 pivot_row_limit = 33;
+  optional bool pivot_show_totals_column = 37;
+  optional bool pivot_show_totals_row = 38;
+
+  // Chart display settings (frontend-only; persisted in URL state)
+  optional bool chart_dynamic_y_axis = 35;
+  reserved 36; // was chart_force_line; replaced by chart_type URL param
 }
 
 enum ExploreComparisonMode {
@@ -601,6 +657,10 @@ message ReportSpec {
   bool trigger = 1;
   Schedule refresh_schedule = 3;
   uint32 timeout_seconds = 4;
+  // Generic resolver configuration (preferred for new reports)
+  string resolver = 17;
+  google.protobuf.Struct resolver_properties = 18;
+  // Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
   string query_name = 5;
   string query_args_json = 6;
   uint64 export_limit = 7;
@@ -624,6 +684,7 @@ message ReportState {
 message ReportExecution {
   bool adhoc = 1;
   string error_message = 2;
+  repeated string warnings = 6;
   google.protobuf.Timestamp report_time = 3;
   google.protobuf.Timestamp started_on = 4;
   google.protobuf.Timestamp finished_on = 5;
@@ -691,6 +752,7 @@ message AssertionResult {
   AssertionStatus status = 1;
   google.protobuf.Struct fail_row = 2;
   string error_message = 3;
+  repeated string warnings = 4;
 }
 
 enum AssertionStatus {
@@ -725,6 +787,8 @@ message RefreshModelTrigger {
   repeated string partitions = 3;
   // If true, it will refresh all partitions that errored on their last execution.
   bool all_errored_partitions = 4;
+  // If true, it will refresh all partitions that are currently marked as skipped.
+  bool all_skipped_partitions = 5;
 }
 
 message Theme {
@@ -820,6 +884,11 @@ message CanvasSpec {
   repeated SecurityRule security_rules = 6;
   // Array of dimension or measure names
   repeated string pinned_filters = 16;
+  // Array of dimension or measure names that must have a value before the canvas can render.
+  // Required filters are implicitly pinned.
+  repeated string required_filters = 19;
+  // Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
+  map<string, string> annotations = 20;
 }
 
 message CanvasState {
@@ -835,8 +904,29 @@ message CanvasRow {
   optional uint32 height = 1;
   // Unit of the height. Current possible values: "px", empty string.
   string height_unit = 2;
-  // Items to render in the row.
+  // Items to render in the row. Empty when the row is a tab group.
   repeated CanvasItem items = 3;
+  // If set, this row renders a tab group instead of items.
+  // A row has either items or a tab_group, never both.
+  CanvasTabGroup tab_group = 4;
+}
+
+message CanvasTabGroup {
+  // Stable identifier for the tab group, used for URL state.
+  // Defaults to "group-<index>" if not provided in the canvas YAML.
+  string name = 1;
+  // Tabs in the group. A group always has at least one tab.
+  repeated CanvasTab tabs = 2;
+}
+
+message CanvasTab {
+  // Stable identifier for the tab, used for URL state. Derived from the label.
+  string name = 1;
+  // User-facing label for the tab.
+  string display_name = 2;
+  // Rows to render when the tab is active. These are always plain rows;
+  // a tab's rows never contain a nested tab_group.
+  repeated CanvasRow rows = 3;
 }
 
 message CanvasItem {
@@ -903,6 +993,7 @@ message ParseError {
   string file_path = 2;
   CharLocation start_location = 3;
   bool external = 4;
+  bool warning = 5;
 }
 
 message ValidationError {

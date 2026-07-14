@@ -100,6 +100,9 @@ func (r *Runtime) Health(ctx context.Context, fullStatus bool) (*Health, error) 
 }
 
 func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error) {
+	// Tag the health-check probe queries with the "health" source so they're identifiable and excluded from billing.
+	ctx = WithRequestSource(ctx, RequestSourceHealth)
+
 	res := &InstanceHealth{}
 
 	inst, err := r.Instance(ctx, instanceID)
@@ -117,7 +120,13 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	if err != nil {
 		return nil, err
 	}
-	res.ParseErrCount = len(parser.GetProjectParser().State.ParseErrors)
+	var count int
+	for _, e := range parser.GetProjectParser().State.ParseErrors {
+		if !e.Warning {
+			count++
+		}
+	}
+	res.ParseErrCount = count
 
 	cachedHealth, _ := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version)
 
@@ -174,7 +183,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 				continue
 			}
 		}
-		resolverRes, err := r.Resolve(ctx, &ResolveOptions{
+		resolverRes, _, err := r.Resolve(ctx, &ResolveOptions{
 			InstanceID:         ctrl.InstanceID,
 			Resolver:           "metrics_time_range",
 			ResolverProperties: map[string]any{"metrics_view": mv.Meta.Name.Name},

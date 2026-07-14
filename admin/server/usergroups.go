@@ -108,12 +108,17 @@ func (s *Server) GetUsergroup(ctx context.Context, req *adminv1.GetUsergroupRequ
 	}, nil
 }
 
-func (s *Server) RenameUsergroup(ctx context.Context, req *adminv1.RenameUsergroupRequest) (*adminv1.RenameUsergroupResponse, error) {
+func (s *Server) UpdateUsergroup(ctx context.Context, req *adminv1.UpdateUsergroupRequest) (*adminv1.UpdateUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
-		attribute.String("args.name", req.Name),
 	)
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
+	if req.Description != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
 
 	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
@@ -122,48 +127,30 @@ func (s *Server) RenameUsergroup(ctx context.Context, req *adminv1.RenameUsergro
 
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to rename org user group")
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org user group")
 	}
 
 	if usergroup.Managed {
-		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
+		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
 	}
 
-	_, err = s.admin.DB.UpdateUsergroupName(ctx, req.Name, usergroup.ID)
-	if err != nil {
-		return nil, err
+	if req.NewName != nil {
+		usergroup, err = s.admin.DB.UpdateUsergroupName(ctx, *req.NewName, usergroup.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return &adminv1.RenameUsergroupResponse{}, nil
-}
-
-func (s *Server) EditUsergroup(ctx context.Context, req *adminv1.EditUsergroupRequest) (*adminv1.EditUsergroupResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Org),
-		attribute.String("args.usergroup", req.Usergroup),
-		attribute.String("args.description", req.Description),
-	)
-
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
-	if err != nil {
-		return nil, err
+	if req.Description != nil {
+		usergroup, err = s.admin.DB.UpdateUsergroupDescription(ctx, *req.Description, usergroup.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to rename org user group")
-	}
-
-	if usergroup.Managed {
-		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
-	}
-
-	_, err = s.admin.DB.UpdateUsergroupDescription(ctx, req.Description, usergroup.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &adminv1.EditUsergroupResponse{}, nil
+	return &adminv1.UpdateUsergroupResponse{
+		Usergroup: usergroupToPB(usergroup),
+	}, nil
 }
 
 func (s *Server) ListOrganizationMemberUsergroups(ctx context.Context, req *adminv1.ListOrganizationMemberUsergroupsRequest) (*adminv1.ListOrganizationMemberUsergroupsResponse, error) {
@@ -286,7 +273,7 @@ func (s *Server) DeleteUsergroup(ctx context.Context, req *adminv1.DeleteUsergro
 	}
 
 	if usergroup.Managed {
-		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
+		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
 	}
 
 	err = s.admin.DB.DeleteUsergroup(ctx, usergroup.ID)
@@ -315,7 +302,7 @@ func (s *Server) AddOrganizationMemberUsergroup(ctx context.Context, req *adminv
 	}
 
 	if usergroup.Managed {
-		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
+		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
@@ -352,7 +339,7 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 	}
 
 	if usergroup.Managed {
-		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
+		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
@@ -396,7 +383,7 @@ func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adm
 	}
 
 	if usergroup.Managed {
-		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
+		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
 	}
 
 	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, usergroup.ID, usergroup.OrgID)
@@ -597,6 +584,7 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
+		attribute.String("args.email", req.Email),
 	)
 
 	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
@@ -610,7 +598,7 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 	}
 
 	if group.Managed {
-		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
+		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
 	}
 
 	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, group.OrgID)
@@ -717,7 +705,7 @@ func (s *Server) ListUsergroupsForProjectAndUser(ctx context.Context, req *admin
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	if !auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
@@ -746,6 +734,7 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
+		attribute.String("args.email", req.Email),
 	)
 
 	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
@@ -759,7 +748,7 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 	}
 
 	if group.Managed {
-		return nil, status.Error(codes.InvalidArgument, "cannot edit managed user group")
+		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ArrowLeftRight } from "lucide-svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
@@ -11,6 +12,7 @@
   export let addIndex: number;
   export let rowLength: number;
   export let rowIndex: number;
+  export let zoneScope = "canvas";
   export let columnWidth: number | undefined = undefined;
   export let isSpreadEvenly: boolean;
   export let dragging: boolean;
@@ -27,11 +29,11 @@
   $: firstElement = addIndex === 0;
   $: lastElement = addIndex === rowLength;
 
-  $: dividerId = `row:${rowIndex}::column:${resizeIndex}`;
+  $: dividerId = `${zoneScope}::row:${rowIndex}::column:${resizeIndex}`;
 
   $: isActiveDivider = $activeDivider === dividerId;
 
-  $: dropId = `row:${rowIndex}::column:${addIndex}`;
+  $: dropId = `${zoneScope}::row:${rowIndex}::column:${addIndex}`;
   $: isDropZone = $dropZone === dropId;
 
   $: notActiveDivider = !isActiveDivider && !!$activeDivider;
@@ -64,7 +66,10 @@
 >
   {#if !addDisabled || !isSpreadEvenly || isDropZone}
     <button
-      aria-label="Resize row {rowIndex + 1} column {resizeIndex + 1}"
+      aria-label={m.canvas_resize_aria({
+        row: String(rowIndex + 1),
+        col: String(resizeIndex + 1),
+      })}
       disabled={resizeDisabled}
       data-width={columnWidth}
       data-row={rowIndex}
@@ -74,7 +79,7 @@
         : "auto"}
       class:!opacity-100={isDropZone}
       class="peer h-full flex items-center justify-center w-4 disabled:opacity-60 disabled:cursor-default cursor-col-resize"
-      on:mousedown={() => {
+      onmousedown={() => {
         if (onColumnResizeStart) onColumnResizeStart(resizeIndex);
         activeDivider.set(dividerId);
         window.addEventListener(
@@ -115,7 +120,7 @@
         <Tooltip distance={8} location="bottom">
           <button
             class="h-7 px-1 grid place-content-center border-t hover:bg-surface-background active:bg-gray-100 text-fg-secondary"
-            on:click={(e) => {
+            onclick={(e) => {
               e.stopPropagation();
               e.preventDefault();
               spreadEvenly(rowIndex);
@@ -125,7 +130,7 @@
           </button>
 
           <TooltipContent slot="tooltip-content" side="bottom">
-            Evenly distribute widgets
+            {m.canvas_evenly_distribute()}
           </TooltipContent>
         </Tooltip>
       {/if}

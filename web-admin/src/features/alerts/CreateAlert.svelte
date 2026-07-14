@@ -7,10 +7,11 @@
   } from "@rilldata/web-common/components/dialog/index";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
+  import AlertFormDataWrapper from "@rilldata/web-common/features/alerts/AlertFormDataWrapper.svelte";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { BellPlusIcon } from "lucide-svelte";
 
   const {
@@ -22,9 +23,9 @@
     dashboardStore,
   } = getStateManagers();
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: metricsView = useMetricsViewValidSpec(instanceId, $metricsViewName);
+  $: metricsView = useMetricsViewValidSpec(runtimeClient, $metricsViewName);
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
   let open = false;
@@ -32,32 +33,40 @@
 
 {#if hasTimeDimension && $dashboardStore}
   <GuardedDialog
-    title="Close without saving?"
-    description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
-    confirmLabel="Close"
-    cancelLabel="Keep editing"
+    title={m.dialog_close_without_saving_title()}
+    description={m.dialog_close_without_saving_alert_desc()}
+    confirmLabel={m.dialog_close_without_saving_confirm()}
+    cancelLabel={m.dialog_close_without_saving_cancel()}
     bind:open
     let:onCancel
     let:onClose
+    let:preventClose
   >
-    <DialogTrigger asChild let:builder>
-      <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
-        <Button
-          compact
-          disabled={$isCustomTimeRange}
-          type="secondary"
-          builders={[builder]}
-          label="Create alert"
-        >
-          <BellPlusIcon class="inline-flex" size="16px" />
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          To create an alert, set a non-custom time range.
-        </TooltipContent>
-      </Tooltip>
+    <DialogTrigger>
+      {#snippet child({ props })}
+        <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
+          <Button
+            {...props}
+            compact
+            disabled={$isCustomTimeRange}
+            type="secondary"
+            label={m.alert_create_alert()}
+          >
+            <BellPlusIcon class="inline-flex" size="16px" />
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            {m.alert_set_non_custom_time_range()}
+          </TooltipContent>
+        </Tooltip>
+      {/snippet}
     </DialogTrigger>
-    <DialogContent class="p-0 m-0 w-[802px] max-w-fit rounded-md" noClose>
-      <AlertForm
+    <DialogContent
+      class="p-0 m-0 w-[802px] max-w-fit rounded-md"
+      noClose
+      onEscapeKeydown={preventClose}
+      onInteractOutside={preventClose}
+    >
+      <AlertFormDataWrapper
         props={{ mode: "create", exploreName: $exploreName }}
         {onCancel}
         {onClose}

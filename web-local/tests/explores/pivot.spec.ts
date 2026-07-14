@@ -532,13 +532,13 @@ const expectedFlatTable = [
   ["instagram.com", "Facebook", "8.8k", "25.0k"],
   ["news.google.com", "Google", "8.6k", "24.7k"],
   ["sports.yahoo.com", "Yahoo", "8.6k", "24.9k"],
-  ["msn.com", "", "5.1k", "16.0k"],
-  ["facebook.com", "", "5.1k", "15.9k"],
-  ["google.com", "", "5.0k", "15.5k"],
-  ["news.yahoo.com", "", "4.9k", "15.1k"],
-  ["instagram.com", "", "4.3k", "12.1k"],
-  ["sports.yahoo.com", "", "4.3k", "12.1k"],
-  ["news.google.com", "", "4.2k", "12.1k"],
+  ["msn.com", "null", "5.1k", "16.0k"],
+  ["facebook.com", "null", "5.1k", "15.9k"],
+  ["google.com", "null", "5.0k", "15.5k"],
+  ["news.yahoo.com", "null", "4.9k", "15.1k"],
+  ["instagram.com", "null", "4.3k", "12.1k"],
+  ["sports.yahoo.com", "null", "4.3k", "12.1k"],
+  ["news.google.com", "null", "4.2k", "12.1k"],
   [],
 ];
 
@@ -628,12 +628,12 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectedTwoMeasureRowDimColDim);
 
     // Flatten the table
-    await page.getByRole("button", { name: "Pivot table" }).click();
+    await page.getByRole("button", { name: "Flat", exact: true }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedFlatTable);
 
     // Nest the table
-    await page.getByRole("button", { name: "Flat table" }).click();
+    await page.getByRole("button", { name: "Pivot", exact: true }).click();
     await expect(page.locator(".status.running")).toHaveCount(0);
 
     // Remove the row dimension and second measure
@@ -667,7 +667,12 @@ test.describe("pivot run through", () => {
       await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
-    await page.waitForTimeout(100);
+    // Wait for the new time range to apply before dragging chips. The running
+    // status can flip too quickly to observe reliably, so assert the applied
+    // range instead.
+    await expect(page.getByLabel("Select time range")).toContainText(
+      "Last 4 Weeks",
+    );
 
     // add measure and time week to column
     await dragPivotChip(page, totalRecords, columnZone);

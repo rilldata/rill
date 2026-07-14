@@ -15,15 +15,19 @@
   import DelayedCircleOutlineSpinner from "@rilldata/web-common/components/spinner/DelayedCircleOutlineSpinner.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
-  export let organization: string;
+  let { organization }: { organization: string } = $props();
 
-  $: userDomain = getUserDomain();
-  $: isPublicDomain = userDomainIsPublic();
+  let userDomain = $derived(getUserDomain());
+  let isPublicDomain = $derived(userDomainIsPublic());
 
-  $: allowedDomains = createAdminServiceListWhitelistedDomains(organization);
-  $: domainAllowed = !!$allowedDomains.data?.domains?.find(
-    (d) => d.domain === $userDomain.data,
+  let allowedDomains = $derived(
+    createAdminServiceListWhitelistedDomains(organization),
+  );
+  let domainAllowed = $derived(
+    !!$allowedDomains.data?.domains?.find((d) => d.domain === $userDomain.data),
   );
 
   const allowDomainMutation = createAdminServiceCreateWhitelistedDomain();
@@ -50,18 +54,20 @@
   }
 </script>
 
-<SettingsContainer title="Allow domain access">
-  <div slot="body" class="mt-1">
+<SettingsContainer title={m.settings_allow_domain_title()}>
+  <div class="mt-1">
     <div class="flex flex-row items-center gap-x-2">
       {#if !$isPublicDomain.data}
         <Label for="allow-domain" class="font-normal text-fg-secondary text-sm">
-          Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
-          email address to join this org as a <b>Viewer</b>.
+          {@html m.settings_allow_domain_description({
+            domain: `<b>@${escapeHtml($userDomain.data)}</b>`,
+            role: `<b>${escapeHtml(m.role_viewer())}</b>`,
+          })}
           <a
             target="_blank"
             href="https://docs.rilldata.com/reference/cli/user/whitelist"
           >
-            Learn more
+            {m.settings_learn_more()}
           </a>
         </Label>
         <div class="grow"></div>
@@ -72,22 +78,22 @@
           <Switch
             checked={domainAllowed}
             id="allow-domain"
-            on:click={updateAllowedDomain}
+            onclick={updateAllowedDomain}
           />
         </DelayedCircleOutlineSpinner>
       {:else}
-        Domain allowlisting is not allowed with a public domain.
+        {m.settings_domain_not_allowed_public()}
         <a
           target="_blank"
           href="https://docs.rilldata.com/reference/cli/user/whitelist"
         >
-          Learn more
+          {m.settings_learn_more()}
         </a>
       {/if}
     </div>
 
     <div class="mt-2 font-medium text-sm">
-      <div>Domains added to allowlist by other admins</div>
+      <div>{m.settings_domains_added_by_admins()}</div>
       {#if $allowedDomains.data?.domains?.length}
         <div class="flex flex-col ml-2 mt-1 gap-y-1">
           {#each $allowedDomains.data.domains as { domain } (domain)}
@@ -95,7 +101,7 @@
           {/each}
         </div>
       {:else}
-        <div class="text-fg-secondary">none</div>
+        <div class="text-fg-secondary">{m.settings_none()}</div>
       {/if}
     </div>
   </div>

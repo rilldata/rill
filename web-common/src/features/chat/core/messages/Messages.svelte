@@ -1,9 +1,8 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
   import { afterUpdate } from "svelte";
-  import { derived } from "svelte/store";
   import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
-  import { runtime } from "../../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import FeedbackModal from "../feedback/FeedbackModal.svelte";
@@ -16,6 +15,8 @@
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
+  import ErrorMessage from "@rilldata/web-common/features/chat/core/messages/error/ErrorMessage.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -25,9 +26,12 @@
   let feedbackModalOpen = false;
   let pendingFeedbackMessageId: string | null = null;
 
+  const runtimeClient = useRuntimeClient();
+
   // Prefetch tools metadata for tool call display names
-  const listToolsQueryOptionsStore = derived(runtime, ($runtime) =>
-    getRuntimeServiceListToolsQueryOptions($runtime.instanceId),
+  const listToolsQueryOptionsStore = getRuntimeServiceListToolsQueryOptions(
+    runtimeClient,
+    {},
   );
   const listToolsQuery = createQuery(listToolsQueryOptionsStore);
   $: tools = $listToolsQuery.data?.tools;
@@ -113,28 +117,29 @@
       <DelayedSpinner isLoading={$getConversationQuery.isLoading} size="24px" />
     </div>
   {:else if hasConversationLoadError}
-    <Error
-      headline="Unable to load conversation"
-      error={$conversationQueryError}
-    />
+    <Error headline={m.chat_unable_to_load()} error={$conversationQueryError} />
   {:else if isConversationEmpty}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
-      <div class="chat-empty-title">How can I help you today?</div>
+      <div class="chat-empty-title">{m.chat_how_can_i_help()}</div>
       <div class="chat-empty-subtitle">
         {config.emptyChatLabel}
       </div>
     </div>
   {:else}
     {#each blocks as block (block.id)}
-      {#if block.type === "text" && block.message.role === "user"}
-        <UserMessage message={block.message} />
-      {:else if block.type === "text" && block.message.role === "assistant"}
-        <AssistantMessage
-          {block}
-          conversation={currentConversation}
-          onDownvote={handleDownvote}
-        />
+      {#if block.type === "text"}
+        {#if block.isError}
+          <ErrorMessage message={block.message} />
+        {:else if block.message.role === "user"}
+          <UserMessage message={block.message} />
+        {:else if block.message.role === "assistant"}
+          <AssistantMessage
+            {block}
+            conversation={currentConversation}
+            onDownvote={handleDownvote}
+          />
+        {/if}
       {:else if block.type === "thinking"}
         <ThinkingBlock {block} {tools} />
       {:else if block.type === "working"}
@@ -149,7 +154,7 @@
     {/each}
   {/if}
   {#if hasStreamError}
-    <Error headline="Failed to generate response" error={$streamErrorStore} />
+    <Error headline={m.chat_failed_to_generate()} error={$streamErrorStore} />
   {/if}
 </div>
 

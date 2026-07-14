@@ -16,9 +16,10 @@ var examplesFS embed.FS
 var ErrExampleNotFound = errors.New("example not found")
 
 type Example struct {
-	Name        string
-	DisplayName string
-	Description string
+	Name          string
+	DisplayName   string
+	Description   string
+	OLAPConnector string
 }
 
 func List() ([]Example, error) {
@@ -39,9 +40,10 @@ func List() ([]Example, error) {
 		}
 
 		contents := struct {
-			DisplayName string
-			Title       string
-			Description string
+			DisplayName   string `yaml:"display_name"`
+			Title         string `yaml:"title"`
+			Description   string `yaml:"description"`
+			OLAPConnector string `yaml:"olap_connector"`
 		}{}
 		if err := yaml.Unmarshal(rillYamlContents, &contents); err != nil {
 			return nil, err
@@ -49,11 +51,15 @@ func List() ([]Example, error) {
 		if contents.DisplayName == "" { // Backwards compatibility
 			contents.DisplayName = contents.Title
 		}
+		if contents.OLAPConnector == "" {
+			contents.OLAPConnector = "duckdb"
+		}
 
 		exampleList = append(exampleList, Example{
-			Name:        entry.Name(),
-			DisplayName: contents.DisplayName,
-			Description: contents.Description,
+			Name:          entry.Name(),
+			DisplayName:   contents.DisplayName,
+			Description:   contents.Description,
+			OLAPConnector: contents.OLAPConnector,
 		})
 	}
 

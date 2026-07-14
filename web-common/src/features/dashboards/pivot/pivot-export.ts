@@ -12,7 +12,6 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
-import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
 import { prepareMeasureForComparison } from "./pivot-utils";
@@ -62,6 +61,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
 
   const query: V1Query = {
     metricsViewAggregationRequest: getPivotAggregationRequest({
+      instanceId: ctx.runtimeClient.instanceId,
       metricsViewName,
       timeDimension:
         exploreState.selectedTimeDimension ||
@@ -82,6 +82,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
 }
 
 export function getPivotAggregationRequest({
+  instanceId,
   metricsViewName,
   timeDimension,
   exploreState,
@@ -93,6 +94,7 @@ export function getPivotAggregationRequest({
   isFlat,
   pivotState,
 }: {
+  instanceId: string;
   metricsViewName: string;
   timeDimension: string;
   exploreState: ExploreState;
@@ -131,6 +133,11 @@ export function getPivotAggregationRequest({
         },
   );
 
+  // `pivotOn` is an internal request key, not a display label: each entry must
+  // match the alias the backend assigns to the corresponding dimension (built
+  // from the same `d.title` in `allDimensions` above). It is never shown to the
+  // user, so it must NOT be localized — doing so would diverge from the alias
+  // and break the aggregation ("pivot field not found in dimensions").
   const pivotOn = isFlat
     ? undefined
     : columns.dimension.map((d) =>
@@ -179,7 +186,7 @@ export function getPivotAggregationRequest({
   }
 
   return {
-    instanceId: get(runtime).instanceId,
+    instanceId,
     metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,

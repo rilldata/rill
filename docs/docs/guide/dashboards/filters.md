@@ -42,7 +42,7 @@ With the release of v0.52, we have introduced an easy way to craft specific view
 
 ## Add / Hide Dimensions and Metrics
 
-Users can add or hide dimensions and metrics to a subset of fields they wish to see at any given time. At the top left, above the time series and above the top left leaderboard, you'll find the Measures & Dimensions selectors to add or hide from the page. In the example below, `network` and `country` are deselected so would be hidden from view.
+Users can add or hide dimensions and metrics to create a subset of fields they wish to see at any given time. At the top left, above the time series and above the top left leaderboard, you'll find the Measures & Dimensions selectors to add or hide fields from the page. In the example below, `network` and `country` are deselected, so they would be hidden from view.
 
 ![Hide](/img/explore/filters/hide.png)
 
@@ -62,7 +62,7 @@ To add or remove dimensions on the page - select the All Dimensions picker above
 
 You can also expand each dimension table to see all metrics and full list of those dimensions. In the expanded Leaderboard, you can search for dimension values, select all values returned, or exclude values from the result. 
 
-Any filter applied in the Leaderboard will also show up in the filter bar at next to the time picker. You can apply the same search capabilities and select features in the filter bar as well.
+Any filter applied in the Leaderboard will also show up in the filter bar next to the time picker. You can apply the same search capabilities and select features in the filter bar as well.
 
 ![Filter](/img/explore/filters/filter.gif)
 
@@ -91,7 +91,7 @@ These metric filters can be applied from the filter bar. To apply a metric filte
 
 - Select the metric you wish to filter by (e.g. Total Cost)
 - Select which dimension to sort/key the metric by (e.g. Cost by Region)
-- Select your Threshold Type (e.g. Great Than)
+- Select your Threshold Type (e.g. Greater Than)
 - Input your Threshold amount and Click Enter
 
 
@@ -101,7 +101,6 @@ These metric filters can be applied from the filter bar. To apply a metric filte
 :::tip
 Metric filters are a good way to "sort" by two different metrics. First, apply your metric threshold. Then, sort by your metrics within the Leaderboard to do multi-metric sorting. 
 
-As an example - to see most active enterprise customers - filter all customers with revenue greater than $1000 then sorted by number of users increased descending.
+As an example - to see the most active enterprise customers - filter all customers with revenue greater than $1000, then sort by number of users in descending order.
 :::
-
 

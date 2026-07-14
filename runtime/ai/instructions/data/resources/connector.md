@@ -188,14 +188,6 @@ Amazon Athena. Key properties:
 - **HTTPS**: Simple connector for public HTTP sources
 - **Pinot**: Use `broker_host`, `controller_host`, `username`, `password`
 
-## JSON Schema
-
-Here is a full JSON schema for the connector syntax:
-
-```
-{% json_schema_for_resource "connector" %}
-```
-
 ## Examples
 
 ### DuckDB: Managed
@@ -448,4 +440,12 @@ controller_host: "{{ .env.pinot_controller_host }}"
 username: "{{ .env.pinot_user }}"
 password: "{{ .env.pinot_password }}"
 ssl: true
+```
+
+## Reference documentation
+
+Here is a full JSON schema for the connector syntax:
+
+```
+{% json_schema_for_resource "connector" %}
 ```

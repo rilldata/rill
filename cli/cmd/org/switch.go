@@ -22,6 +22,10 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var defaultOrg string
 			if len(args) == 0 {
+				if !ch.Interactive {
+					return fmt.Errorf("org name must be provided as an argument in non-interactive mode")
+				}
+
 				res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{
 					PageSize: 1000,
 				})
@@ -90,21 +94,18 @@ func SetDefaultOrg(ctx context.Context, ch *cmdutil.Helper) error {
 		return fmt.Errorf("listing orgs failed: %w", err)
 	}
 
-	if len(res.Organizations) == 1 {
-		ch.Org = res.Organizations[0].Name
-		if err := ch.DotRill.SetDefaultOrg(ch.Org); err != nil {
-			return err
-		}
-	} else if len(res.Organizations) > 1 {
-		orgName, err := SwitchSelectFlow(ch, res.Organizations)
+	if len(res.Organizations) == 0 {
+		return nil
+	}
+
+	orgName := res.Organizations[0].Name
+	if ch.Interactive && len(res.Organizations) > 1 {
+		orgName, err = SwitchSelectFlow(ch, res.Organizations)
 		if err != nil {
 			return fmt.Errorf("org selection failed %w", err)
 		}
-
-		ch.Org = orgName
-		if err := ch.DotRill.SetDefaultOrg(ch.Org); err != nil {
-			return err
-		}
 	}
-	return nil
+
+	ch.Org = orgName
+	return ch.DotRill.SetDefaultOrg(orgName)
 }

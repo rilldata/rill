@@ -73,6 +73,7 @@ const LeaderboardContextColumnReverseMap: Record<
 
 const TDDChartTypeReverseMap: Record<string, TDDChart> = {
   default: TDDChart.DEFAULT,
+  line: TDDChart.LINE,
   stacked_bar: TDDChart.STACKED_BAR,
   grouped_bar: TDDChart.GROUPED_BAR,
   stacked_area: TDDChart.STACKED_AREA,
@@ -83,8 +84,6 @@ export function getDashboardStateFromUrl(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
 ): Partial<ExploreState> {
-  // backwards compatibility for older urls that had encoded state
-  urlState = urlState.includes("%") ? decodeURIComponent(urlState) : urlState;
   return getDashboardStateFromProto(
     base64ToProto(urlState),
     metricsView,
@@ -180,7 +179,7 @@ export function getDashboardStateFromProto(
   } else if (isActivePageSet) {
     entity.tdd = {
       pinIndex: -1,
-      chartType: TDDChart.DEFAULT,
+      chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: "",
     };
   }
@@ -236,6 +235,7 @@ export function getDashboardStateFromProto(
 }
 
 export function base64ToProto(message: string) {
+  message = message.includes("%") ? decodeURIComponent(message) : message;
   return protoBase64.dec(message);
 }
 
@@ -430,6 +430,8 @@ function fromPivotProto(
     rowPage: 1,
     enableComparison: dashboard.pivotEnableComparison ?? true,
     activeCell: null,
+    showTotalsColumn: dashboard.pivotShowTotalsColumn ?? true,
+    showTotalsRow: dashboard.pivotShowTotalsRow ?? true,
     tableMode:
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
@@ -448,6 +450,8 @@ function blankPivotState(): PivotState {
     rowPage: 1,
     enableComparison: true,
     activeCell: null,
+    showTotalsColumn: true,
+    showTotalsRow: true,
     tableMode: "nest" as PivotTableMode,
   };
 }

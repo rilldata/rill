@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { createAdminServiceTriggerReport } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -6,7 +7,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useReport } from "../selectors";
 
@@ -14,11 +15,10 @@
   export let project: string;
   export let report: string;
 
-  $: ({ instanceId } = $runtime);
-
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
   const triggerReport = createAdminServiceTriggerReport();
-  const reportQuery = useReport(instanceId, report);
+  const reportQuery = useReport(runtimeClient, report);
 
   async function handleRunNow() {
     const lastExecution =
@@ -31,7 +31,7 @@
     });
 
     eventBus.emit("notification", {
-      message: "Triggered an ad-hoc run of this report.",
+      message: m.report_triggered_adhoc(),
       type: "success",
     });
 
@@ -42,10 +42,12 @@
         lastExecution
     ) {
       await queryClient.invalidateQueries({
-        queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.name": report,
-          "name.kind": ResourceKind.Report,
-        }),
+        queryKey: getRuntimeServiceGetResourceQueryKey(
+          runtimeClient.instanceId,
+          {
+            name: { name: report, kind: ResourceKind.Report },
+          },
+        ),
       });
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
@@ -58,10 +60,9 @@
     onClick={handleRunNow}
     disabled={$triggerReport.isPending}
   >
-    Run now
+    {m.report_run_now()}
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="300px">
-    Run this report immediately. A new report will be generated and emailed to
-    recipients.
+    {m.report_run_now_tooltip()}
   </TooltipContent>
 </Tooltip>

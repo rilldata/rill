@@ -8,10 +8,12 @@
   import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ColorPaletteSelector from "./field-config/ColorPaletteSelector.svelte";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
   import SingleColorSelector from "./field-config/SingleColorSelector.svelte";
+
+  const client = useRuntimeClient();
 
   export let key: string;
   export let metricsView: string;
@@ -20,7 +22,7 @@
   export let canvasName: string;
   export let onChange: (updatedConfig: FieldConfig | string) => void;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = client);
   $: ({
     canvasEntity: { selectedComponent, theme },
   } = getCanvasStore(canvasName, instanceId));

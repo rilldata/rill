@@ -1,5 +1,7 @@
 <script lang="ts">
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import ExplainAndFixErrorButton from "@rilldata/web-common/features/chat/ExplainAndFixErrorButton.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DashboardBuilding from "../dashboards/DashboardBuilding.svelte";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
 
@@ -7,6 +9,7 @@
   export let errorMessage: string | undefined;
   export let isReconciling: boolean | undefined;
   export let isLoading: boolean | undefined;
+  export let filePath: string | undefined = undefined;
 </script>
 
 <div class="size-full justify-center items-center flex flex-col">
@@ -15,9 +18,15 @@
   {:else if errorMessage}
     <ErrorPage
       statusCode={404}
-      header="Canvas not found"
-      body={errorMessage || "An unknown error occurred."}
-    />
+      header={m.canvas_not_found()}
+      body={errorMessage || m.canvas_unknown_error()}
+    >
+      <svelte:fragment slot="cta">
+        {#if filePath}
+          <ExplainAndFixErrorButton {filePath} variant="cta" />
+        {/if}
+      </svelte:fragment>
+    </ErrorPage>
   {:else if isReconciling}
     <DashboardBuilding />
   {:else if isLoading}

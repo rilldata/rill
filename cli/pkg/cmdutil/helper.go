@@ -6,25 +6,25 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/version"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/term"
 )
 
 const (
@@ -36,7 +36,7 @@ const (
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
 
-var ErrNoMatchingProject = fmt.Errorf("no matching project found")
+var ErrInferProjectFailed = fmt.Errorf("could not infer project")
 
 type Helper struct {
 	*printer.Printer
@@ -66,7 +66,7 @@ func NewHelper(ver version.Version, homeDir string) (*Helper, error) {
 		DotRill:     dotrill.New(homeDir),
 		HomeDir:     homeDir,
 		Version:     ver,
-		Interactive: true,
+		Interactive: isTerminal(),
 	}
 
 	// Load base admin config from ~/.rill
@@ -357,15 +357,30 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 	return names, nil
 }
 
-// InferProjectName infers the project name from the given path.
-// If multiple projects are found, it prompts the user to select one.
-func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string) (string, error) {
-	projects, err := h.InferProjects(ctx, org, pathToProject)
+// InferProjectName infers a project name from the given path.
+// If multiple projects are found, it prompts the user to select one (or errors in non-interactive mode).
+// The hint (e.g. "use --project to specify the name") is appended to error messages.
+func (h *Helper) InferProjectName(ctx context.Context, pathToProject, hint string) (string, error) {
+	errorfWithHint := func(format string, a ...any) error {
+		if hint != "" {
+			return fmt.Errorf(format+" (%s)", append(append([]any{}, a...), hint)...)
+		}
+		return fmt.Errorf(format, a...)
+	}
+
+	projects, err := h.InferProjects(ctx, h.Org, pathToProject)
 	if err != nil {
-		return "", err
+		if errors.Is(err, ErrInferProjectFailed) {
+			return "", errorfWithHint("%w", err)
+		}
+		return "", errorfWithHint("failed to infer project: %w", err)
 	}
 	if len(projects) == 1 {
 		return projects[0].Name, nil
+	}
+
+	if !h.Interactive {
+		return "", errorfWithHint("multiple projects match the current directory; you must explicitly specify a project")
 	}
 
 	var names []string
@@ -420,7 +435,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 		return nil, err
 	}
 	if len(resp.Projects) == 0 {
-		return nil, ErrNoMatchingProject
+		return nil, ErrInferProjectFailed
 	}
 
 	if org == "" {
@@ -434,7 +449,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 		}
 	}
 	if len(orgFiltered) == 0 {
-		return nil, ErrNoMatchingProject
+		return nil, ErrInferProjectFailed
 	}
 	// cleanup rill managed remote
 	if len(orgFiltered) == 1 && orgFiltered[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
@@ -503,41 +518,44 @@ func (h *Helper) GitHelper(org, project, localPath string) *GitHelper {
 	return h.gitHelper
 }
 
-func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signature, error) {
-	repo, err := git.PlainOpen(path)
-	if err == nil {
-		cfg, err := repo.ConfigScoped(config.SystemScope)
-		if err == nil && cfg.User.Email != "" && cfg.User.Name != "" {
-			// user has git properly configured use that
-			return &object.Signature{
-				Name:  cfg.User.Name,
-				Email: cfg.User.Email,
-				When:  time.Now(),
-			}, nil
+// GitSignature returns the author to attribute Rill's git commits to.
+//
+// The path must be the root of the git working tree (the directory that contains .git), not a
+// subpath within it. Callers working from a monorepo subpath must resolve the root first, e.g.
+// via gitutil.InferRepoRootAndSubpath. This matters because the local git identity is only read
+// when .git is found directly at path: a subpath would silently fall back to the Rill user even
+// when a local identity is configured.
+func (h *Helper) GitSignature(ctx context.Context, path string) (gitutil.Signature, error) {
+	// Only read the user's git config when path is an existing repo: without this exact-path
+	// guard, the global git identity would be picked up even for paths that are not git repos
+	// yet (e.g. a first-time deploy that only initializes the repo later).
+	if _, err := os.Stat(filepath.Join(path, ".git")); err == nil {
+		sig, err := gitutil.UserSignature(ctx, path)
+		if err == nil {
+			return sig, nil
 		}
+		// git identity not configured: fall through to the Rill user
 	}
 
 	// use email of rill user
 	c, err := h.Client()
 	if err != nil {
-		return nil, err
+		return gitutil.Signature{}, err
 	}
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		if strings.Contains(err.Error(), "not authenticated as a user") {
-			return &object.Signature{
+			return gitutil.Signature{
 				Name:  "service-account",
 				Email: "service-account@rilldata.com", // not an actual email
-				When:  time.Now(),
 			}, nil
 		}
-		return nil, err
+		return gitutil.Signature{}, err
 	}
 
-	return &object.Signature{
+	return gitutil.Signature{
 		Name:  userResp.User.DisplayName,
 		Email: userResp.User.Email,
-		When:  time.Now(),
 	}, nil
 }
 
@@ -548,7 +566,7 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 	h.gitHelperMu.Unlock()
 
 	// remove rill managed remote
-	err := removeRemote(path, "__rill_remote")
+	err := gitutil.RemoveRemote(path, "__rill_remote")
 	if err != nil {
 		return err
 	}
@@ -571,15 +589,21 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 //   - "3": Abort the push operation
 //
 // If h.Interactive is true and there are remote commits, the user will be prompted to choose how to proceed.
-func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature, defaultPushChoice string) error {
+func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author gitutil.Signature, defaultPushChoice string) error {
+	// Set remote if not set
+	err := gitutil.SetRemote(root, config)
+	if err != nil {
+		return fmt.Errorf("failed to set git remote: %w", err)
+	}
+
 	// 1. Fetch latest from remote
-	err := gitutil.GitFetch(ctx, root, config)
+	err = gitutil.Fetch(ctx, root, config)
 	if err != nil {
 		return fmt.Errorf("failed to fetch from remote: %w", err)
 	}
 
 	// 2. Check status of the subpath
-	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName())
+	status, err := gitutil.Status(ctx, root, config.Subpath, config.RemoteName(), "")
 	if err != nil {
 		return fmt.Errorf("failed to get git status: %w", err)
 	}
@@ -608,7 +632,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	// The push can still fail if there were new remote commits since the fetch. But that's okay, the user can just retry.
 	switch choice {
 	case "1":
-		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, false)
+		err := gitutil.UpstreamMerge(ctx, root, config.RemoteName(), status.Branch, false)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
@@ -622,7 +646,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
 			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
 		}
-		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, true)
+		err := gitutil.UpstreamMerge(ctx, root, config.RemoteName(), status.Branch, true)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
@@ -632,17 +656,17 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	}
 }
 
-func removeRemote(path, remoteName string) error {
-	repo, err := git.PlainOpen(path)
+// IsLocalRillRunning checks whether rill start is listening on the default HTTP port (9009).
+// This is a best-effort check that assumes the default port.
+func IsLocalRillRunning(ctx context.Context) bool {
+	d := net.Dialer{Timeout: time.Second}
+	conn, err := d.DialContext(ctx, "tcp", "localhost:9009")
 	if err != nil {
-		return fmt.Errorf("failed to open git repository: %w", err)
+		// This could be another error than unix.ECONNREFUSED, but not checking that as it's a best-efforts check.
+		return false
 	}
-
-	err = repo.DeleteRemote(remoteName)
-	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
-		return err
-	}
-	return nil
+	conn.Close()
+	return true
 }
 
 func hashStr(ss ...string) string {
@@ -654,4 +678,15 @@ func hashStr(ss ...string) string {
 		}
 	}
 	return hex.EncodeToString(hash.Sum(nil))
+}
+
+// isTerminal reports whether both stdin and stdout are connected to an interactive terminal.
+// It can be overridden by setting RILL_DOCS_GENERATE=true (used in CI for docs generation).
+func isTerminal() bool {
+	if os.Getenv("RILL_DOCS_GENERATE") == "true" {
+		// Used for generating docs with `make docs.generate`.
+		// This ensures --interactive defaults to "true", which makes the generated docs appear the way the CLI help menus appear to a real user (e.g. strips agent instructions).
+		return true
+	}
+	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }

@@ -122,7 +122,7 @@ If your time series column is quite granular, this may affect your dashboards as
 
 :::note Query-time vs Model processing
 
-There are benefits to pre-procesing the data in the model layer but for some quick processing this can be done in the metrics view.
+There are benefits to pre-processing the data in the model layer, but for some quick processing, this can be done in the metrics view.
 
 **Query-time processing** (in metrics views):
 - Flexible and dynamic

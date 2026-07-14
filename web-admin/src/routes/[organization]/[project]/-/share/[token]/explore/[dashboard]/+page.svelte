@@ -10,10 +10,11 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: ({ organization, project, dashboard: exploreName } = $page.params);
 
@@ -26,7 +27,9 @@
       priority: TokenBannerPriority,
       message: {
         type: "default",
-        message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/explore/${exploreName}'>original dashboard</a>.`,
+        message: m.share_limited_view({
+          link: `<a href='/${organization}/${project}/explore/${exploreName}'>${m.share_original_dashboard()}</a>`,
+        }),
         includesHtml: true,
         iconType: "alert",
       },
@@ -34,7 +37,7 @@
   }
 
   // Call `GetExplore` to get the Explore's metrics view
-  $: exploreQuery = createRuntimeServiceGetExplore(instanceId, {
+  $: exploreQuery = createRuntimeServiceGetExplore(runtimeClient, {
     name: exploreName,
   });
   $: ({ data: explore } = $exploreQuery);

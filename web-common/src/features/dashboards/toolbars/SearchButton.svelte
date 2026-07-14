@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Button } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
@@ -23,13 +24,13 @@
     onClick={() => (isSearchElementOpen = !isSearchElementOpen)}
   >
     <SearchIcon size="16px" />
-    <span>Search</span>
+    <span>{m.common_search()}</span>
   </Button>
 {:else}
   <div transition:slideRight={{}} class="flex items-center gap-x-1">
     <Search bind:value {onSubmit} />
     <button
-      on:click={_onClose}
+      onclick={_onClose}
       class="p-1.5 rounded hover:bg-surface-hover transition-colors"
     >
       <Close className="text-fg-secondary" />

@@ -2,9 +2,12 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import CanvasTabGroupView from "./CanvasTabGroupView.svelte";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
+  import { page } from "$app/stores";
   import { derived } from "svelte/store";
   import {
     getEmbedThemeStoreInstance,
@@ -14,24 +17,37 @@
   export let canvasName: string;
   export let navigationEnabled: boolean = true;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   $: ({
+    canvasEntity,
     canvasEntity: {
       componentsStore,
       _rows,
+      layout,
       firstLoad,
       _maxWidth,
       filtersEnabledStore,
       themeName,
+      activeComponent: activeComponentStore,
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: components = $componentsStore;
+  $: activeComponentId = $activeComponentStore;
 
   $: filtersEnabled = $filtersEnabledStore;
   $: maxWidth = $_maxWidth;
   $: rows = $_rows;
+  $: blocks = $layout;
+
+  // Re-apply the active tab per group whenever the URL changes (e.g. browser back/forward),
+  // so deep-linked tab state is restored on navigation, not just on initial load.
+  $: if ($page.url.search !== undefined) {
+    canvasEntity.applyTabsFromURL();
+  }
 
   const embedThemeStore = getEmbedThemeStoreInstance();
   const embedThemeName = derived([embedThemeStore], () => resolveEmbedTheme());
@@ -47,20 +63,35 @@
 
 {#if canvasName}
   <CanvasDashboardWrapper {maxWidth} {canvasName} {filtersEnabled} embedded>
-    {#each rows as row, rowIndex (rowIndex)}
-      <StaticCanvasRow
-        {row}
-        {rowIndex}
-        {components}
-        {maxWidth}
-        {navigationEnabled}
-      />
+    {#each blocks as block (block.kind === "tab-group" ? `g-${block.group.name}` : `r-${block.rowIndex}`)}
+      {#if block.kind === "tab-group"}
+        <CanvasTabGroupView
+          group={block.group}
+          {components}
+          {maxWidth}
+          {navigationEnabled}
+          {activeComponentId}
+          onSelect={(tabName) =>
+            canvasEntity.setActiveTabInURL(block.group.name, tabName)}
+        />
+      {:else if rows[block.freeRowIndex]}
+        <StaticCanvasRow
+          row={rows[block.freeRowIndex]}
+          rowIndex={block.rowIndex}
+          {components}
+          {maxWidth}
+          {navigationEnabled}
+          {activeComponentId}
+        />
+      {/if}
     {:else}
       <div class="size-full flex items-center justify-center">
         {#if $firstLoad}
           <Spinner status={EntityStatus.Running} size="32px" />
         {:else}
-          <p class="text-lg text-fg-secondary">No components added</p>
+          <p class="text-lg text-fg-secondary">
+            {m.canvas_no_components_added()}
+          </p>
         {/if}
       </div>
     {/each}

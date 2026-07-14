@@ -1,6 +1,10 @@
 <script lang="ts">
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import {
+    extractErrorStatusCode,
+    isNotFoundError,
+  } from "@rilldata/web-common/lib/errors";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -12,7 +16,7 @@
   import { readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { activeDashboardTheme } from "../../themes/active-dashboard-theme";
   import { createResolvedThemeStore } from "../../themes/selectors";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -26,14 +30,23 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import {
+    DEFAULT_TDD_CHART_HEIGHT,
+    DEFAULT_TIMESERIES_WIDTH,
+    MIN_TDD_CHART_HEIGHT,
+    MIN_TIMESERIES_WIDTH,
+    exploreTimeseriesWidth,
+    tddChartHeight,
+  } from "./dashboard-layout-store";
 
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
   export let embedThemeName: Readable<string | null> | null = null;
 
-  const DEFAULT_TIMESERIES_WIDTH = 580;
-  const MIN_TIMESERIES_WIDTH = 440;
+  // Vertical space reserved below the chart for the chart toolbar, axis, big
+  // number, and a minimum detail table height when computing the drag maximum.
+  const TDD_RESERVED_HEIGHT = 280;
   const StateManagers = getStateManagers();
   const {
     selectors: {
@@ -49,10 +62,10 @@
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let exploreContainerWidth: number;
-  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
+  let exploreContainerHeight: number;
   let resizing = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
     $dashboardStore);
@@ -77,7 +90,7 @@
   $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the explore
-  $: exploreQuery = useExploreValidSpec(instanceId, exploreName);
+  $: exploreQuery = useExploreValidSpec(client, exploreName);
 
   $: ({ data, error: exploreError } = $exploreQuery);
 
@@ -86,7 +99,7 @@
   $: hasTimeSeries = !!data?.metricsView?.timeDimension;
 
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && exploreError?.response?.status === 404;
+    $selectedMockUserStore && isNotFoundError(exploreError);
 
   $: hidePivot = isEmbedded && exploreSpec?.embedsHidePivot;
 
@@ -127,7 +140,7 @@
   let themeSource: Readable<string | null> = urlThemeName;
   $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
 
-  $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
+  $: theme = createResolvedThemeStore(themeSource, exploreQuery, client);
 
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);
@@ -149,7 +162,7 @@
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}
-        <div class="mb-3" />
+        <div class="mb-3"></div>
       {:else}
         {#key exploreName}
           <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
@@ -165,7 +178,7 @@
     {#if mockUserHasNoAccess}
       <!-- Additional safeguard for mock users without dashboard access. -->
       <ErrorPage
-        statusCode={exploreError?.response?.status}
+        statusCode={extractErrorStatusCode(exploreError)}
         header="This user can't access this dashboard"
         body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
       />
@@ -180,19 +193,21 @@
         class:left-shift={extraLeftPadding}
         class:w-full={$dynamicHeight}
         class:size-full={!$dynamicHeight}
+        bind:clientHeight={exploreContainerHeight}
       >
         <div
           class="flex-none pl-4"
           class:pt-2={!showTimeDimensionDetail}
-          style:width={showTimeDimensionDetail ? "auto" : `${metricsWidth}px`}
+          style:width={showTimeDimensionDetail
+            ? "auto"
+            : `${$exploreTimeseriesWidth}px`}
         >
           {#key exploreName}
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
-                timeSeriesWidth={metricsWidth}
-                workspaceWidth={exploreContainerWidth}
                 hideStartPivotButton={hidePivot}
+                tddChartHeight={$tddChartHeight}
               />
             {:else}
               <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
@@ -201,6 +216,23 @@
         </div>
 
         {#if showTimeDimensionDetail && expandedMeasureName}
+          <div class="relative flex-none bg-border h-[1px]">
+            <Resizer
+              direction="NS"
+              side="bottom"
+              dimension={$tddChartHeight}
+              min={MIN_TDD_CHART_HEIGHT}
+              max={Math.max(
+                MIN_TDD_CHART_HEIGHT,
+                (exploreContainerHeight || 600) - TDD_RESERVED_HEIGHT,
+              )}
+              basis={DEFAULT_TDD_CHART_HEIGHT}
+              bind:resizing
+              onUpdate={(height: number) => {
+                tddChartHeight.set(height);
+              }}
+            />
+          </div>
           <TimeDimensionDisplay
             {exploreName}
             {expandedMeasureName}
@@ -209,14 +241,14 @@
         {:else}
           <div class="relative flex-none bg-border w-[1px]">
             <Resizer
-              dimension={metricsWidth}
+              dimension={$exploreTimeseriesWidth}
               min={MIN_TIMESERIES_WIDTH}
               max={exploreContainerWidth - 500}
               basis={DEFAULT_TIMESERIES_WIDTH}
               bind:resizing
               side="right"
-              onUpdate={(width) => {
-                metricsWidth = width;
+              onUpdate={(width: number) => {
+                exploreTimeseriesWidth.set(width);
               }}
             />
           </div>

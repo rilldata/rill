@@ -6,7 +6,7 @@ import {
   wrapRetryAssertion,
 } from "./commonHelpers";
 import { createModel } from "./modelHelpers";
-import { uploadFile, waitForSource } from "./sourceHelpers";
+import { createSourceV2 } from "./sourceHelpers";
 
 export interface TimeSeriesValue {
   ts: string;
@@ -24,12 +24,8 @@ export const AD_BIDS_EXPLORE_PATH =
 
 export async function createAdBidsModel(page: Page) {
   await Promise.all([
-    waitForSource(page, "/sources/AdBids.yaml", [
-      "publisher",
-      "domain",
-      "timestamp",
-    ]),
-    uploadFile(page, "AdBids.csv"),
+    waitForProfiling(page, "AdBids", ["publisher", "domain", "timestamp"]),
+    createSourceV2(page, "AdBids.csv", "/models/AdBids.yaml"),
   ]);
 
   await createModel(page, "AdBids_model.sql");
@@ -84,8 +80,7 @@ export function interceptTimeseriesResponse(
 
     const handler = async (response: Response) => {
       if (
-        response.url().includes("/queries/metrics-views/") &&
-        response.url().includes("/timeseries") &&
+        response.url().includes("QueryService/MetricsViewTimeSeries") &&
         response.request().method() === "POST"
       ) {
         try {
@@ -107,9 +102,9 @@ export function interceptTimeseriesResponse(
  * Gets the chart container element for timeseries
  */
 export function getChartContainer(page: Page) {
-  // The chart SVG has role="application" and contains path elements for the line
+  // The chart SVG has an aria-label and contains path elements for the line
   return page
-    .locator('svg[role="application"]')
+    .locator('svg[aria-label*="Measure Chart"]')
     .filter({ has: page.locator("path") })
     .first();
 }

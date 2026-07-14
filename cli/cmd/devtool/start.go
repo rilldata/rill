@@ -21,7 +21,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/spf13/cobra"
@@ -69,6 +69,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				preset = args[0]
 			} else {
+				if !ch.Interactive {
+					return fmt.Errorf("preset must be provided as an argument in non-interactive mode")
+				}
 				res, err := cmdutil.SelectPrompt("Select preset", presets, "cloud")
 				if err != nil {
 					return err

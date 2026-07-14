@@ -39,13 +39,17 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 - [**Slice-and-Dice Dashboards**](/developers/build/dashboards/explore) - Explore and find insights in your data
 - [**Traditional Visualizations**](/developers/build/dashboards/canvas) - Visualize your data with various chart types
 - [**Canvas Components**](/developers/build/dashboards/canvas-widgets) - See all of our supported components!
-- [**Define Dashboard Access**](/developers/build/dashboards/customization#define-dashboard-access) - Set a SQL boolean query that defines access to dashboard
+- [**Define Dashboard Access**](/developers/build/dashboards/customization#define-dashboard-access) - Set a SQL boolean query that defines access to the dashboard
 
-### Build Integrations with External Applications
-- [**Custom API**](/developers/build/custom-apis) - Create custom API endpoints to retrieve data outside of Rill
+### Build Integrations with Custom APIs
+- [**Custom APIs Overview**](/developers/build/custom-apis) - Create HTTP API endpoints to expose your Rill data
+- [**SQL APIs**](/developers/build/custom-apis/sql) - Query models, tables, and external databases
+- [**Metrics SQL APIs**](/developers/build/custom-apis/metrics-sql) - Query metrics views with automatic security inheritance
+- [**Dynamic Queries & Templating**](/developers/build/custom-apis/templating) - Add parameters, user attributes, and conditional logic
+- [**Security & Access Control**](/developers/build/custom-apis/security) - Multi-tenant APIs with custom attributes on tokens
 
 ### Project Settings
 - [**Project Configuration**](/developers/build/project-configuration) - Configure your Rill Project and set default behavior
 - [**Structure your Project**](/developers/build/structure) - Structure folder architecture in Rill
 - [**Use your favorite IDE**](/developers/build/ide) - Utilize your favorite IDE to build Rill projects
-- [**Debugging Rill Developer**](/developers/build/debugging/trace-viewer) - Troubleshoot dashboard access, trace your reconciled resources, and understand project logs  
+- [**Debugging Rill Developer**](/developers/build/debugging/trace-viewer) - Troubleshoot dashboard access, trace your reconciled resources, and understand project logs

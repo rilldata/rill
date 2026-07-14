@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
@@ -23,10 +24,13 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types.ts";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
+  import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
+
+  const runtimeClient = useRuntimeClient();
 
   export let filters: Filters;
   export let timeControls: TimeControls;
@@ -200,11 +204,12 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        isMetricsViewQuery(query.queryHash, metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     const { interval, grain } = await deriveInterval(
       name,
+      runtimeClient,
       metricsViewName,
       $selectedTimezone,
       timeDimension,
@@ -258,7 +263,7 @@
 <div
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
-  aria-label="Filters form"
+  aria-label={m.report_form_filters_aria()}
 >
   <div
     class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
@@ -325,7 +330,7 @@
           class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
-          No filters selected
+          {m.dashboard_no_filters_selected()}
         </div>
       {:else}
         {#each $allDimensionFilterItems as filterData (filterData.name)}
@@ -378,7 +383,9 @@
         <!-- if filters are present, place a chip at the end of the flex container
       that enables clearing all filters -->
         {#if $hasFilters}
-          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}
+            >{m.report_form_clear_filters()}</Button
+          >
         {/if}
       {/if}
     </div>

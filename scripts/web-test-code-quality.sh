@@ -69,8 +69,11 @@ echo "filters: admin=$ADMIN local=$LOCAL common=$COMMON"
 
 echo ""
 echo "== NPM Install =="
-# https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-HUSKY=0 npm install
+npm ci
+
+echo ""
+echo "== Build i18n files =="
+npm run build:i18n
 
 if [[ "$COMMON" == "true" ]]; then
   echo ""
@@ -79,8 +82,18 @@ if [[ "$COMMON" == "true" ]]; then
   npx svelte-kit sync
   cd ..
   npx eslint web-common --quiet || exit_code=$?
-  npx svelte-check --workspace web-common --no-tsconfig --ignore "src/features/dashboards/time-series/MetricsTimeSeriesCharts.svelte,src/features/dashboards/time-series/MeasureChart.svelte,src/features/dashboards/time-controls/TimeControls.svelte,src/components/data-graphic/elements/GraphicContext.svelte,src/components/data-graphic/guides/Axis.svelte,src/components/data-graphic/guides/DynamicallyPlacedLabel.svelte,src/components/data-graphic/guides/Grid.svelte,src/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte,src/components/data-graphic/marks/Area.svelte,src/components/data-graphic/marks/ChunkedLine.svelte,src/components/data-graphic/marks/HistogramPrimitive.svelte,src/components/data-graphic/marks/Line.svelte,src/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte,src/features/column-profile/column-types/details/SummaryNumberPlot.svelte,src/stories/Tooltip.stories.svelte,src/lib/number-formatting/__stories__/NumberFormatting.stories.svelte" || exit_code=$?
+  npx svelte-check --workspace web-common --no-tsconfig || exit_code=$?
 fi
+
+echo ""
+echo "== i18n guard: catalog integrity + migrated areas =="
+# Scans the message catalogs and a fixed set of already-migrated areas on the
+# filesystem, so it runs unconditionally rather than under an app filter: the
+# migrated areas span multiple apps and are independent of which files a given
+# PR touched. Catalog integrity errors are exact and fatal; hardcoded-string
+# findings are heuristic and non-fatal for now: the final i18n migration chunk
+# adds --strict to make them fatal too.
+node ./scripts/i18n-guard.js || exit_code=$?
 
 if [[ "$LOCAL" == "true" ]]; then
   echo ""
@@ -105,6 +118,10 @@ fi
 echo ""
 echo "== type check non-svelte files (with temporary whitelist) =="
 bash ./scripts/tsc-with-whitelist.sh || exit_code=$?
+
+echo ""
+echo "== edit route parity check =="
+node ./scripts/check-edit-route-parity.js || exit_code=$?
 
 # Exit with failure if any check failed (only relevant when not in fail-fast mode)
 exit "${exit_code:-0}"

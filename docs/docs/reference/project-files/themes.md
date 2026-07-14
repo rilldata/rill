@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Theme YAML
-sidebar_position: 39
+sidebar_position: 40
 ---
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
@@ -17,49 +17,61 @@ _[string]_ - Refers to the resource type and must be `theme` _(required)_
 
 ### `colors`
 
-_[object]_ - Color palette for the theme 
+_[object]_ - Color palette for the theme
 
-  - **`primary`** - _[string]_ - Primary color 
+  - **`primary`** - _[string]_ - Primary color
 
-  - **`secondary`** - _[string]_ - Secondary color 
+  - **`secondary`** - _[string]_ - Secondary color
 
 ### `light`
 
-_[object]_ - Light theme color configuration 
+_[object]_ - Light theme color configuration
 
-  - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-  - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-  - **`variables`** - _[object]_ - Custom CSS variables for light theme 
+  - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in light theme. Defaults to fg-secondary (gray).
+
+  - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in light theme. Defaults to red.
+
+  - **`variables`** - _[object]_ - Custom CSS variables for light theme
 
 ### `dark`
 
-_[object]_ - Dark theme color configuration 
+_[object]_ - Dark theme color configuration
 
-  - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-  - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
 
-  - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
+  - **`kpi-positive`** - _[string]_ - Color for positive KPI delta values in dark theme. Defaults to fg-secondary (gray).
+
+  - **`kpi-negative`** - _[string]_ - Color for negative KPI delta values in dark theme. Defaults to red.
+
+  - **`variables`** - _[object]_ - Custom CSS variables for dark theme
 
 ## Common Properties
 
 ### `name`
 
-_[string]_ - Name is usually inferred from the filename, but can be specified manually. 
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
 
 ### `refs`
 
-_[array of string]_ - List of resource references 
+_[array of string]_ - List of resource references
+
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.
 
 ## Examples
 
@@ -91,4 +103,19 @@ dark:
     color-sequential-1: "hsl(180deg 40% 30%)"
     color-sequential-5: "hsl(180deg 50% 50%)"
     color-sequential-9: "hsl(180deg 60% 70%)"
+```
+
+```yaml
+# Example: Theme with KPI delta colors (green for positive, red for negative)
+type: theme
+light:
+    primary: "#6366f1"
+    secondary: "#8b5cf6"
+    kpi-positive: "#16a34a" # Green for positive deltas (default: gray)
+    kpi-negative: "#dc2626" # Red for negative deltas (default: red)
+dark:
+    primary: "#818cf8"
+    secondary: "#a78bfa"
+    kpi-positive: "#4ade80" # Brighter green for dark mode
+    kpi-negative: "#f87171" # Brighter red for dark mode
 ```

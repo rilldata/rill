@@ -12,6 +12,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
 
   export let exploreName: string;
@@ -20,6 +21,8 @@
 
   let priorRange: DashboardTimeControls | null = null;
   let button: HTMLButtonElement;
+
+  const explainEnabled = measureSelection.getEnabledStore();
 
   const StateManagers = getStateManagers();
   const {
@@ -58,7 +61,8 @@
     }
 
     const isMac = window.navigator.userAgent.includes("Macintosh");
-    const isExplainKey = e.key === "e" && !e.metaKey && !e.ctrlKey;
+    const isExplainKey =
+      $explainEnabled && e.key === "e" && !e.metaKey && !e.ctrlKey;
 
     if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {
@@ -175,8 +179,11 @@
 {#if priorRange || (subInterval?.isValid && !subInterval.start.equals(subInterval.end))}
   <button
     bind:this={button}
-    on:click|stopPropagation={handleClick}
-    aria-label={priorRange ? "Undo zoom" : "Zoom"}
+    onclick={(e) => {
+      e.stopPropagation();
+      handleClick();
+    }}
+    aria-label={priorRange ? m.chart_undo_zoom() : m.chart_zoom()}
   >
     <div class="content-wrapper">
       <span class="flex-none text-icon-muted">
@@ -189,9 +196,9 @@
 
       <span class="font-medium line-clamp-1 flex-none whitespace-nowrap">
         {#if priorRange}
-          Undo Zoom (<MetaKey plusses={false} action="Z" />)
+          {m.chart_undo_zoom_label()} (<MetaKey plusses={false} action="Z" />)
         {:else}
-          Zoom (Z)
+          {m.chart_zoom_label()} (Z)
         {/if}
       </span>
     </div>
@@ -199,12 +206,14 @@
 {/if}
 
 <!-- Only to be used on singleton components to avoid multiple state dispatches -->
-<svelte:window on:keydown={onKeyDown} />
+<svelte:window onkeydown={onKeyDown} />
 
 <style lang="postcss">
   button {
     @apply border rounded-[2px] bg-surface-subtle pointer-events-auto;
-    @apply absolute left-1/2 -top-8 -translate-x-1/2 z-50;
+    @apply absolute top-0 -translate-x-1/2 z-50;
+    /* Center over the plot body, not the full chart (40px right margin for y-axis labels) */
+    left: calc(50% - 20px);
   }
 
   .content-wrapper {

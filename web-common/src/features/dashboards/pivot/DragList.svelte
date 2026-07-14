@@ -26,12 +26,28 @@
   } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
   import { timePillSelectors } from "./time-pill-store";
 
-  export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
+  export type Zone =
+    | "rows"
+    | "columns"
+    | "Time"
+    | "Measures"
+    | "Dimensions"
+    | "tags";
+
+  // When a tag chip is being dragged the drop receivers do a bulk-add instead
+  // of the per-chip splice path. The dimensions and measures arrays are
+  // precomputed at drag-start so each receiver does not have to re-split.
+  export type TagDragPayload = {
+    tagName: string;
+    dimensions: PivotChipData[];
+    measures: PivotChipData[];
+  };
 
   export type DragData = {
     source: Zone;
     width: number;
     chip: PivotChipData;
+    tagPayload?: TagDragPayload;
   };
 
   export const dragDataStore = writable<null | DragData>(null);
@@ -39,6 +55,8 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
   export let zone: Zone;
@@ -70,10 +88,14 @@
     (i) => i.type !== PivotChipType.Measure,
   );
 
+  $: isTagDrag = !!dragData?.tagPayload;
+
   $: isValidDropZone =
     isDropLocation &&
     dragData &&
-    (zone === "columns" || dragChip?.type !== PivotChipType.Measure);
+    (isTagDrag ||
+      zone === "columns" ||
+      dragChip?.type !== PivotChipType.Measure);
 
   // Get available grains from the store
   const availableGrainsStore = timePillSelectors.getAvailableGrains("time");
@@ -134,12 +156,33 @@
     window.removeEventListener("mousemove", detectDragStart);
   }
 
-  function handleDrop() {
+  function handleDrop(e: MouseEvent) {
     if (zoneStartedDrag)
       $controllerStore?.abort("Drag cancelled - item dropped");
 
+    // Holding CMD (mac) or Ctrl flips the tag drop from append to replace,
+    // matching the click-side affordance on the tag row.
+    const replace = e.metaKey || e.ctrlKey;
+
     if (isValidDropZone) {
-      if (dragChip && ghostIndex !== null) {
+      if (dragData?.tagPayload) {
+        // Bulk-add path for tag drops. Skips ghost-index positioning since
+        // we are inserting multiple chips, not a single one. Cross-zone
+        // cleanup on replace happens in the auto-arrange zone or the click
+        // affordances on the tag row — DragList only manages its own zone.
+        const { dimensions, measures } = dragData.tagPayload;
+        const newItems =
+          zone === "rows" ? dimensions : [...dimensions, ...measures];
+        if (newItems.length === 0) {
+          // Pure-measure tag dropped on rows, for instance: nothing to do.
+        } else if (replace) {
+          onUpdate(newItems);
+        } else {
+          const existing = new Set(items.map((c) => c.id));
+          const additions = newItems.filter((c) => !existing.has(c.id));
+          if (additions.length > 0) onUpdate([...items, ...additions]);
+        }
+      } else if (dragChip && ghostIndex !== null) {
         const temp = [...items];
 
         let chipToAdd = dragChip;
@@ -286,9 +329,9 @@
   class:valid={isValidDropZone}
   class:horizontal={isDropLocation}
   style:--ghost-width="{ghostWidth ?? 0}px"
-  on:mouseup={handleDrop}
-  on:mouseenter={handleDragEnter}
-  on:mouseleave={handleDragLeave}
+  onmouseup={handleDrop}
+  onmouseenter={handleDragEnter}
+  onmouseleave={handleDragLeave}
   use:swapListener={{
     condition: isDropLocation && swap,
     ghostIndex: _ghostIndex,
@@ -297,6 +340,7 @@
     orientation: "horizontal",
   }}
   bind:this={container}
+  aria-label={m.dashboard_drag_list_zone({ zone })}
 >
   {#each items as item, index (item.id)}
     <div
@@ -309,7 +353,7 @@
         <span
           class="ghost"
           class:rounded={dragChip?.type !== PivotChipType.Measure}
-        />
+        ></span>
       {/if}
 
       <div
@@ -330,7 +374,7 @@
             availableGrains={availableTimeGrains}
             onTimeGrainSelect={(timeGrain) =>
               handleTimeGrainSelect(item, timeGrain)}
-            on:mousedown={(e) => handleMouseDown(e, item)}
+            onmousedown={(e) => handleMouseDown(e, item)}
             onRemove={() => {
               items = items.filter((i) => i.id !== item.id);
               onUpdate(items);
@@ -341,7 +385,7 @@
             {item}
             grab
             removable={isDropLocation}
-            on:mousedown={(e) => handleMouseDown(e, item)}
+            onmousedown={(e) => handleMouseDown(e, item)}
             onRemove={() => {
               items = items.filter((i) => i.id !== item.id);
               onUpdate(items);
@@ -356,13 +400,14 @@
             <Tooltip distance={8} location="top" alignment="start">
               <button
                 class="icon-wrapper"
-                on:click={() => handleRowClick(item)}
-                aria-label="Add Row"
+                onclick={() => handleRowClick(item)}
+                aria-label={m.dashboard_add_row()}
                 type="button"
               >
                 <Row size="16px" />
               </button>
-              <TooltipContent slot="tooltip-content">Add to rows</TooltipContent
+              <TooltipContent slot="tooltip-content"
+                >{m.dashboard_add_to_rows()}</TooltipContent
               >
             </Tooltip>
           {/if}
@@ -370,14 +415,14 @@
           <Tooltip distance={8} location="top" alignment="start">
             <button
               class="icon-wrapper"
-              on:click={() => handleColumnClick(item)}
-              aria-label="Add Column"
+              onclick={() => handleColumnClick(item)}
+              aria-label={m.dashboard_add_column()}
               type="button"
             >
               <Column size="16px" />
             </button>
             <TooltipContent slot="tooltip-content">
-              Add to columns
+              {m.dashboard_add_to_columns()}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -390,10 +435,8 @@
   {/each}
 
   {#if ghostIndex === items.length}
-    <span
-      class="ghost"
-      class:rounded={dragChip?.type !== PivotChipType.Measure}
-    />
+    <span class="ghost" class:rounded={dragChip?.type !== PivotChipType.Measure}
+    ></span>
   {/if}
 
   {#if zone === "columns" || zone === "rows"}
@@ -405,7 +448,7 @@
           onUpdate([]);
         }}
       >
-        Clear
+        {m.dashboard_clear()}
       </Button>
     {/if}
   {/if}

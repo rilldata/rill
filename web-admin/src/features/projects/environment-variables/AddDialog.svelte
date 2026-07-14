@@ -27,6 +27,7 @@
   import { array, object, string } from "yup";
   import { type VariableNames } from "./types";
   import { getCurrentEnvironment, isDuplicateKey } from "./utils";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let variableNames: VariableNames = [];
@@ -129,12 +130,12 @@
       });
 
       eventBus.emit("notification", {
-        message: "Environment variables updated",
+        message: m.env_variables_updated_notification(),
       });
     } catch (error) {
       console.error("Error updating project variables", error);
       eventBus.emit("notification", {
-        message: "Error updating project variables",
+        message: m.env_variables_update_error_notification(),
         type: "error",
       });
     }
@@ -284,28 +285,36 @@
       handleReset();
     }
   }}
-  onOutsideClick={() => {
-    open = false;
-    handleReset();
-  }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={() => {
+      open = false;
+      handleReset();
+    }}
+  >
     <DialogHeader>
-      <DialogTitle>Add environment variables</DialogTitle>
+      <DialogTitle>{m.env_add_title()}</DialogTitle>
     </DialogHeader>
     <DialogDescription>
-      For help, see <a
+      {m.env_for_help_see()}
+      <a
         href="https://docs.rilldata.com/guide/administration/project-settings/variables-and-credentials"
-        target="_blank">documentation</a
+        target="_blank">{m.env_documentation_link()}</a
       >
     </DialogDescription>
     <form
       id={formId}
       class="w-full"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <div class="flex flex-col gap-y-5">
@@ -316,40 +325,44 @@
           onClick={() => fileInput.click()}
         >
           <UploadIcon size="14px" />
-          <span>Import .env</span>
+          <span>{m.env_import_dotenv()}</span>
         </Button>
         <input
           type="file"
           bind:this={fileInput}
-          on:change={handleFileUpload}
+          onchange={handleFileUpload}
           class="hidden"
         />
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-fg-primary">Environment</div>
+          <div class="text-sm font-medium text-fg-primary">
+            {m.env_environment_label()}
+          </div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
               id="development"
-              label="Development"
+              label={m.env_development_label()}
               onCheckedChange={handleEnvironmentChange}
             />
             <Checkbox
               bind:checked={isProduction}
               id="production"
-              label="Production"
+              label={m.env_production_label()}
               onCheckedChange={handleEnvironmentChange}
             />
           </div>
           {#if hasNoEnvironment}
             <div class="mt-1">
               <p class="text-xs text-red-600 font-normal">
-                You must select at least one environment
+                {m.env_must_select_environment()}
               </p>
             </div>
           {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-fg-primary">Variables</div>
+          <div class="text-sm font-medium text-fg-primary">
+            {m.env_variables_label()}
+          </div>
           <!-- 64 (gap 16px * 4) + 160 (item height 32 * 5) = 224 -->
           <div
             class="flex flex-col gap-y-4 w-full overflow-y-auto max-h-[224px]"
@@ -367,8 +380,8 @@
                   inputErrors[index].type === "draft"
                     ? "error-input-wrapper"
                     : ""}
-                  placeholder="Key"
-                  on:input={(e) => handleKeyChange(index, e)}
+                  placeholder={m.env_key_placeholder()}
+                  oninput={(e) => handleKeyChange(index, e)}
                   onBlur={() => {
                     checkForExistingKeys();
                   }}
@@ -377,11 +390,11 @@
                   bind:value={variable.value}
                   id={`value-${index}`}
                   label=""
-                  placeholder="Value"
-                  on:input={(e) => handleValueChange(index, e)}
+                  placeholder={m.env_value_placeholder()}
+                  oninput={(e) => handleValueChange(index, e)}
                 />
                 <IconButton
-                  on:click={() => {
+                  onclick={() => {
                     // Reset if there is only one variable
                     if ($form.variables.length === 1) {
                       handleReset();
@@ -397,7 +410,7 @@
           </div>
           <Button type="secondary" class="w-full mt-4" onClick={handleAdd}>
             <Plus size="16px" />
-            <span>Add variable</span>
+            <span>{m.env_add_variable_button()}</span>
           </Button>
           <div class="mt-1">
             {#if $allErrors.length}
@@ -416,16 +429,15 @@
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
                   {#if Object.values(inputErrors).every((err) => err.type === "draft")}
-                    {Object.keys(inputErrors).length > 1
-                      ? "Duplicate keys are not allowed"
-                      : "This key is duplicated"}
+                    {m.env_duplicate_keys_error({
+                      count: Object.keys(inputErrors).length,
+                    })}
                   {:else if Object.values(inputErrors).every((err) => err.type === "existing")}
-                    {Object.keys(inputErrors).length > 1
-                      ? "These keys already exist for your target environment(s)"
-                      : "This key already exists for your target environment(s)"}
+                    {m.env_keys_exist_error({
+                      count: Object.keys(inputErrors).length,
+                    })}
                   {:else}
-                    Some keys are duplicated or already exist in target
-                    environment(s)
+                    {m.env_some_keys_duplicated_error()}
                   {/if}
                 </p>
               </div>
@@ -443,7 +455,7 @@
           handleReset();
         }}
       >
-        Cancel
+        {m.env_cancel_button()}
       </Button>
       <Button
         type="primary"
@@ -451,7 +463,7 @@
         disabled={isSubmitDisabled}
         submitForm
       >
-        Create
+        {m.env_create_button()}
       </Button>
     </DialogFooter>
   </DialogContent>

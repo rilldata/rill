@@ -82,11 +82,23 @@ export function getDirectoryHasErrors(
 ) {
   return derived(
     flattenDirectory(dir).map((filePath) =>
-      fileArtifacts
-        .getFileArtifact(filePath)
-        .getAllErrors(queryClient, instanceId),
+      fileArtifacts.getFileArtifact(filePath).getAllErrors(queryClient),
     ),
     (filesErrors) => filesErrors.some((fileErrors) => fileErrors.length > 0),
+  );
+}
+
+export function getDirectoryHasWarnings(
+  queryClient: QueryClient,
+  instanceId: string,
+  dir: Directory,
+) {
+  return derived(
+    flattenDirectory(dir).map((filePath) =>
+      fileArtifacts.getFileArtifact(filePath).getAllWarnings(queryClient),
+    ),
+    (filesWarnings) =>
+      filesWarnings.some((fileWarnings) => fileWarnings.length > 0),
   );
 }
 

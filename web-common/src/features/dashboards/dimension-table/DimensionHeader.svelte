@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import LeaderboardAdvancedActions from "@rilldata/web-common/components/menu/LeaderboardAdvancedActions.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -31,16 +32,12 @@
       dimensions: { getDimensionDisplayName },
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
-      leaderboard: { leaderboardMeasureNames },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
-      leaderboard: {
-        toggleLeaderboardShowContextForAllMeasures,
-        setLeaderboardSortByMeasureName,
-      },
+      leaderboard: { toggleLeaderboardShowContextForAllMeasures },
     },
     timeRangeSummaryStore,
     dashboardStore,
@@ -73,16 +70,6 @@
 
     // Reset expanded dimension
     setPrimaryDimension("");
-
-    // If user previously sorted by a measure that is not in the leaderboard measure names in expanded view,
-    // we need to set a new sort measure from the available leaderboard measures
-    if (
-      !$leaderboardMeasureNames.includes(
-        $dashboardStore.leaderboardSortByMeasureName,
-      )
-    ) {
-      setLeaderboardSortByMeasureName($leaderboardMeasureNames[0]);
-    }
   };
   function toggleFilterMode() {
     toggleDimensionFilterMode(dimensionName);
@@ -144,7 +131,7 @@
       onClick={() => goBackToLeaderboard()}
     >
       <Back size="16px" />
-      <span>All Dimensions</span>
+      <span>{m.dashboard_menu_all_dimensions()}</span>
     </Button>
 
     <div class="shrink-0 flex items-center gap-x-1">
@@ -164,7 +151,7 @@
 
       {#if $exports}
         <ExportMenu
-          label="Export dimension table data"
+          label={m.dashboard_export_dimension_table_data()}
           includeScheduledReport={$adminServer && exploreHasTimeDimension}
           getQuery={(isScheduled) =>
             getDimensionTableExportQuery(stateManagers, isScheduled)}

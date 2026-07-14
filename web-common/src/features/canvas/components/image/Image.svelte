@@ -1,16 +1,17 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
-  import httpClient from "@rilldata/web-common/runtime-client/http-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import type { ImageComponent } from "./";
   import { getImagePosition } from "./util";
+
+  const client = useRuntimeClient();
 
   export let component: ImageComponent;
 
   $: ({ specStore } = component);
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = client);
   $: imageProperties = $specStore;
 
   $: ({ title, description, show_description_as_tooltip, alignment, url } =
@@ -43,15 +44,14 @@
     if (isValidURL(url)) return url;
 
     try {
-      const response = (await httpClient({
-        url: `/v1/instances/${instanceId}/assets/${url}`,
-        method: "GET",
-      })) as Response;
-
+      const fetchUrl = `${client.host}/v1/instances/${instanceId}/assets/${url}`;
+      const headers: Record<string, string> = {};
+      const jwt = client.getJwt();
+      if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
+      const response = await fetch(fetchUrl, { method: "GET", headers });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const blob = await response.blob();
       return URL.createObjectURL(blob);
     } catch {

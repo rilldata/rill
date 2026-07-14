@@ -6,10 +6,8 @@ test.describe("Azure connector form reset", () => {
 
   test("clears connection string after submit and reopen", async ({ page }) => {
     // Open Add Data modal and pick Azure.
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#azure").click();
-    await page.waitForSelector('form[id*="azure"]');
+    await page.getByLabel("See more connectors").click();
+    await page.getByLabel("Connect to azure").click();
 
     const connectionString = page.getByRole("textbox", {
       name: "Connection string",
@@ -25,19 +23,16 @@ test.describe("Azure connector form reset", () => {
     await expect(submit).toBeEnabled();
     await submit.click();
 
-    // Save Anyway (expected for failed test) to close the modal, then wait for form unmount.
-    const saveAnyway = page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Save Anyway" });
-    await expect(saveAnyway).toBeVisible();
-    await saveAnyway.click();
+    // Save (expected for failed test) to close the modal, then wait for form unmount.
+    const save = page.getByRole("dialog").getByRole("button", { name: "Save" });
+    await expect(save).toBeVisible();
+    await save.click();
     await page.waitForSelector('form[id*="azure"]', { state: "detached" });
 
     // Re-open and ensure the connection string is cleared.
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#azure").click();
-    await page.waitForSelector('form[id*="azure"]');
+    await page.getByLabel("Connect to azure").click();
 
     await expect(connectionString).toHaveValue("");
   });

@@ -30,6 +30,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -133,7 +134,7 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	}))
 
 	// Initialize mock AI using drivers.Open pattern
-	mockAIHandle, err := drivers.Open("mock_ai", "test", map[string]any{}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+	mockAIHandle, err := drivers.Open("mock_ai", "", "test", map[string]any{}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 	require.NoError(t, err)
 	t.Cleanup(func() { mockAIHandle.Close() })
 	mockAI, ok := mockAIHandle.AsAI("test")
@@ -156,7 +157,19 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	}
 	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), mockAI, nil, billing.NewNoop(), payment.NewNoop())
 	require.NoError(t, err)
-	t.Cleanup(func() { adm.Close() })
+	t.Cleanup(func() {
+		// cleanup any managed repos created during testing since the repos are cleaned in a river job not executed in tests
+		// ignore pagination since we don't expect more than 20 repos to be created during testing
+		repos, err := adm.DB.FindManagedGitRepos(context.Background(), "", 20)
+		require.NoError(t, err)
+		for _, repo := range repos {
+			_, name, ok := gitutil.SplitGithubRemote(repo.Remote)
+			require.True(t, ok, "invalid github remote: %s", repo.Remote)
+			err := adm.Github.DeleteManagedRepo(context.Background(), name)
+			require.NoError(t, err, "failed to delete managed github repo %s", repo.Remote)
+		}
+		adm.Close()
+	})
 
 	// Background jobs
 	jobs, err := river.New(ctx, pg.DatabaseURL, adm)
@@ -327,8 +340,16 @@ func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (s
 	return "", time.Time{}, nil
 }
 
-func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
+func (m *mockGithub) DeleteBranch(ctx context.Context, installationID, repoID int64, remote, branch string) error {
+	return nil
+}
+
+func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string, autoInit bool) (*github.Repository, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockGithub) DeleteManagedRepo(ctx context.Context, repo string) error {
+	return fmt.Errorf("not implemented")
 }
 
 func (m *mockGithub) ManagedOrgInstallationID() (int64, error) {
@@ -358,7 +379,7 @@ func newRuntimeServer(ctx context.Context, t *testing.T, group *errgroup.Group, 
 	rt := testruntime.New(t, false)
 
 	// Create runtime server
-	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 	t.Cleanup(func() { rtSrv.Close() })
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
+  import { onMount, onDestroy } from "svelte";
   import { formatInteger } from "../lib/formatters";
   import { cellInspectorStore } from "../features/dashboards/stores/cell-inspector-store";
   import { cubicOut } from "svelte/easing";
@@ -17,6 +17,7 @@
   let isJson = false;
   let parsedJson: any = null;
   let isLocked = false;
+  let formattedValue: string | null = null;
 
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
@@ -24,6 +25,7 @@
     // Update value when open and not locked, and a value has been set via hover
     if (state.isOpen && !isLocked && state.hasValue) {
       value = state.value;
+      formattedValue = state.formattedValue;
     }
   });
 
@@ -159,7 +161,7 @@
         >
         <button
           class="p-1 hover:bg-surface-hover rounded transition-colors"
-          on:click={toggleLock}
+          onclick={toggleLock}
           title={isLocked ? "Unlock value (L)" : "Lock value (L)"}
         >
           {#if isLocked}
@@ -183,7 +185,8 @@
         {:else}
           <span
             class="whitespace-pre-wrap break-words text-sm text-fg-primary w-full"
-            class:font-mono={isJson}>{formatValue(value)}</span
+            class:font-mono={isJson}
+            >{formattedValue || formatValue(value)}</span
           >
         {/if}
       </div>

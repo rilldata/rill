@@ -176,6 +176,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 			DROP VIEW,
 			TRUNCATE,
 			OPTIMIZE,
+			SYSTEM SYNC REPLICA,
 			SHOW DICTIONARIES,
 			dictGet
 		ON %s.* TO %s
@@ -240,6 +241,11 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		State:  nil,
 		Config: cfg.AsMap(),
 	}, nil
+}
+
+func (p *Provisioner) Hibernate(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
+	// Clickhouse-static provisioning has no compute to release; the database is shared and not torn down here.
+	return r, nil
 }
 
 func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {

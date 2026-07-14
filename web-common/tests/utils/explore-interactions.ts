@@ -14,3 +14,9 @@ export async function interactWithTimeRangeMenu(
     page.getByRole("menu", { name: "Select time range" }),
   ).not.toBeVisible();
 }
+
+export async function setDashboardTimezone(page: Page, timezone: string) {
+  const currentUrl = new URL(page.url());
+  currentUrl.searchParams.set("tz", timezone);
+  await page.goto(currentUrl.toString());
+}

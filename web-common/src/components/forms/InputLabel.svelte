@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
   import InfoCircle from "../icons/InfoCircle.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
@@ -35,7 +36,7 @@
         <InfoCircle size="13px" />
       </svelte:element>
       <TooltipContent maxWidth="240px" slot="tooltip-content">
-        {@html hint}
+        {@html DOMPurify.sanitize(hint)}
       </TooltipContent>
     </Tooltip>
   {/if}

@@ -3,22 +3,26 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { derived } from "svelte/store";
+  import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { errorStore } from "../../components/errors/error-store";
   import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
   import {
     getEmbedThemeStoreInstance,
     resolveEmbedTheme,
   } from "@rilldata/web-common/features/embeds/embed-theme";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  export let instanceId: string;
   export let exploreName: string;
 
-  $: explore = createRuntimeServiceGetExplore(instanceId, {
+  const runtimeClient = useRuntimeClient();
+
+  $: explore = createRuntimeServiceGetExplore(runtimeClient, {
     name: exploreName,
   });
   $: ({ isSuccess, isError, error, data } = $explore);
-  $: isExploreNotFound = isError && error?.response?.status === 404;
+  $: isExploreNotFound = isError && isNotFoundError(error);
 
   // We check for explore.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid explores, allowing display even when the current explore spec is invalid
@@ -36,15 +40,15 @@
   $: if (isExploreNotFound) {
     errorStore.set({
       statusCode: 404,
-      header: "Explore not found",
-      body: `The Explore dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
+      header: m.embed_explore_not_found(),
+      body: m.embed_explore_not_found_body(),
     });
   }
 </script>
 
 {#if isSuccess}
   {#if isExploreErrored}
-    <br /> Explore Error <br />
+    <br /> {m.embed_explore_error()} <br />
   {:else if data}
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>

@@ -1,0 +1,428 @@
+connectors:
+  - clickhouse
+project_files:
+  duckdb_events.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select 1 as id, 'event_a' as name, ['analytics','clickhouse','database'] as tags, '2024-01-01T00:00:00Z'::TIMESTAMP as created_at, 2 as priority union all
+      select 2, 'event_b', ['backend','golang'], '2024-01-01T00:00:00Z'::TIMESTAMP, 2 union all
+      select 3, 'event_c', []::VARCHAR[], '2024-01-01T00:00:00Z'::TIMESTAMP, 2 union all
+      select 4, 'event_d', ['etl','pipeline'], '2024-01-02T00:00:00Z'::TIMESTAMP, 1 union all
+      select 5, 'event_e', ['analytics'], '2024-01-02T00:00:00Z'::TIMESTAMP, 2 union all
+      select 6, 'event_f', []::VARCHAR[], '2024-01-03T00:00:00Z'::TIMESTAMP, 1 union all
+      select 7, 'event_g', ['analytics',NULL,'warehouse'], '2024-01-03T00:00:00Z'::TIMESTAMP, 2 union all
+      select 8, 'event_h', [NULL]::VARCHAR[], '2024-01-03T00:00:00Z'::TIMESTAMP, 0 union all
+      select 9, 'event_i', [NULL,'etl',NULL], '2024-01-03T00:00:00Z'::TIMESTAMP, 3 union all
+      select 10, 'event_j', ['analytics'], '2024-01-04T00:00:00Z'::TIMESTAMP, 3
+  duckdb_events_metrics.yaml:
+    type: metrics_view
+    model: duckdb_events
+    timeseries: created_at
+    dimensions:
+      - column: name
+      - column: tags
+        unnest: true
+    measures:
+      - name: total_priority
+        expression: sum(priority)
+      - name: count
+        expression: count(*)
+  clickhouse_events.yaml:
+    type: model
+    connector: clickhouse
+    output: clickhouse
+    sql: |
+      select 1 as id, 'event_a' as name, ['analytics','clickhouse','database'] as tags, parseDateTimeBestEffort('2024-01-01T00:00:00Z') as created_at, 2 as priority union all
+      select 2, 'event_b', ['backend','golang', NULL], parseDateTimeBestEffort('2024-01-01T00:00:00Z'), 2 union all
+      select 3, 'event_c', array()::Array(Nullable(String)), parseDateTimeBestEffort('2024-01-01T00:00:00Z'), 2 union all
+      select 4, 'event_d', ['etl','pipeline'], parseDateTimeBestEffort('2024-01-02T00:00:00Z'), 1 union all
+      select 5, 'event_e', ['analytics'], parseDateTimeBestEffort('2024-01-02T00:00:00Z'), 2 union all
+      select 6, 'event_f', array()::Array(Nullable(String)), parseDateTimeBestEffort('2024-01-03T00:00:00Z'), 1 union all
+      select 7, 'event_g', ['analytics','warehouse'], parseDateTimeBestEffort('2024-01-03T00:00:00Z'), 2 union all
+      select 8, 'event_h', array()::Array(Nullable(String)), parseDateTimeBestEffort('2024-01-03T00:00:00Z'), 0 union all
+      select 9, 'event_i', ['etl'], parseDateTimeBestEffort('2024-01-03T00:00:00Z'), 3 union all
+      select 10, 'event_j', ['analytics'], parseDateTimeBestEffort('2024-01-04T00:00:00Z'), 3
+  clickhouse_events_metrics.yaml:
+    type: metrics_view
+    model: clickhouse_events
+    timeseries: created_at
+    dimensions:
+      - column: name
+      - name: tag
+        expression: tags
+        unnest: true
+    measures:
+      - name: total_priority
+        expression: sum(priority)
+      - name: count
+        expression: count(*)
+tests:
+  # DuckDB tests
+  # IN filter on unnest dim with multiple values.
+  # event_a has tags ['analytics','clickhouse','database']; it matches both 'analytics' and 'clickhouse' but should be counted once.
+  # event_e has tags ['analytics']; matches 'analytics'.
+  # event_g has tags ['analytics',NULL,'warehouse']; matches 'analytics'.
+  # event_j has tags ['analytics']; matches 'analytics'.
+  - name: duckdb_array_contains_multiple_values_no_double_count
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tags
+            - val: analytics
+            - val: clickhouse
+      sort:
+        - name: name
+    result:
+      - name: event_a
+        total_priority: 2
+      - name: event_e
+        total_priority: 2
+      - name: event_g
+        total_priority: 2
+      - name: event_j
+        total_priority: 3
+  # IN filter on unnest dim with multiple values including NULL. same results as the previous test since NULL is ignored by duckdb list_has_any function.
+  - name: duckdb_array_contains_multiple_values_with_null
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tags
+            - val: analytics
+            - val: clickhouse
+            - val: null
+      sort:
+        - name: name
+    result:
+      - name: event_a
+        total_priority: 2
+      - name: event_e
+        total_priority: 2
+      - name: event_g
+        total_priority: 2
+      - name: event_j
+        total_priority: 3
+  # IN filter with a single value.
+  - name: duckdb_array_contains_single_value
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tags
+            - val: etl
+      sort:
+        - name: name
+    result:
+      - name: event_d
+        total_priority: 1
+      - name: event_i
+        total_priority: 3
+  # Excludes rows whose tags array contains 'analytics'.
+  # Remaining: event_b (backend,golang), event_d (etl,pipeline), event_i (NULL,etl,NULL).
+  # event_c, event_f have empty tags; event_h has [NULL]; these should also be included since they don't contain 'analytics'.
+  - name: duckdb_array_not_contains_filter
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: nin
+          exprs:
+            - name: tags
+            - val: analytics
+      sort:
+        - name: name
+    result:
+      - name: event_b
+        total_priority: 2
+      - name: event_c
+        total_priority: 2
+      - name: event_d
+        total_priority: 1
+      - name: event_f
+        total_priority: 1
+      - name: event_h
+        total_priority: 0
+      - name: event_i
+        total_priority: 3
+  # IN filter combined with a non-unnest dimension filter.
+  - name: duckdb_array_contains_combined_with_regular_filter
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_events_metrics
+      measures:
+        - name: total_priority
+        - name: count
+      where:
+        cond:
+          op: and
+          exprs:
+            - cond:
+                op: in
+                exprs:
+                  - name: tags
+                  - val: analytics
+            - cond:
+                op: eq
+                exprs:
+                  - name: name
+                  - val: event_a
+    result:
+      - total_priority: 2
+        count: 1
+  # IN filter with empty list returns no rows.
+  - name: duckdb_array_contains_empty_list
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: count
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tags
+            - val: []
+    result: []
+  # IN filter with value not present in any array.
+  - name: duckdb_array_contains_no_match
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: count
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tags
+            - val: nonexistent
+    result: []
+  # IN filter on unnest dim with tags also as a query dimension (already unnested via lateral join; should fall back to normal IN).
+  - name: duckdb_array_contains_with_tags_as_dimension
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_events_metrics
+      dimensions:
+        - name: tags
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tags
+            - val: analytics
+            - val: etl
+      sort:
+        - name: tags
+    result:
+      - tags: analytics
+        total_priority: 9
+      - tags: etl
+        total_priority: 4
+  # Clickhouse tests
+  # IN filter on unnest dim with multiple values; no double counting.
+  - name: clickhouse_array_contains_multiple_values_no_double_count
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tag
+            - val: analytics
+            - val: clickhouse
+      sort:
+        - name: name
+    result:
+      - name: event_a
+        total_priority: 2
+      - name: event_e
+        total_priority: 2
+      - name: event_g
+        total_priority: 2
+      - name: event_j
+        total_priority: 3
+  # same as above but with NULL also included as a value; clickhouse hasAny function does not ignore null so counts will be same for events already included but will include extra events having nulls like event_b
+  - name: clickhouse_array_contains_multiple_values_with_null
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tag
+            - val: analytics
+            - val: clickhouse
+            - val: null
+      sort:
+        - name: name
+    result:
+      - name: event_a
+        total_priority: 2
+      - name: event_b
+        total_priority: 2
+      - name: event_e
+        total_priority: 2
+      - name: event_g
+        total_priority: 2
+      - name: event_j
+        total_priority: 3
+  # IN filter with a single value.
+  - name: clickhouse_array_contains_single_value
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tag
+            - val: etl
+      sort:
+        - name: name
+    result:
+      - name: event_d
+        total_priority: 1
+      - name: event_i
+        total_priority: 3
+  # Excludes rows whose tags array contains 'analytics'.
+  - name: clickhouse_array_not_contains_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: nin
+          exprs:
+            - name: tag
+            - val: analytics
+      sort:
+        - name: name
+    result:
+      - name: event_b
+        total_priority: 2
+      - name: event_c
+        total_priority: 2
+      - name: event_d
+        total_priority: 1
+      - name: event_f
+        total_priority: 1
+      - name: event_h
+        total_priority: 0
+      - name: event_i
+        total_priority: 3
+  # IN filter combined with a non-unnest dimension filter.
+  - name: clickhouse_array_contains_combined_with_regular_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_events_metrics
+      measures:
+        - name: total_priority
+        - name: count
+      where:
+        cond:
+          op: and
+          exprs:
+            - cond:
+                op: in
+                exprs:
+                  - name: tag
+                  - val: analytics
+            - cond:
+                op: eq
+                exprs:
+                  - name: name
+                  - val: event_a
+    result:
+      - total_priority: 2
+        count: 1
+  # IN filter with value not present in any array.
+  - name: clickhouse_array_contains_no_match
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_events_metrics
+      dimensions:
+        - name: name
+      measures:
+        - name: count
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tag
+            - val: nonexistent
+    result: []
+  # IN filter on unnest dim with tag also as a query dimension.
+  - name: clickhouse_array_contains_with_tag_as_dimension
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_events_metrics
+      dimensions:
+        - name: tag
+      measures:
+        - name: total_priority
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: tag
+            - val: analytics
+            - val: etl
+      sort:
+        - name: tag
+    result:
+      - tag: analytics
+        total_priority: 9
+      - tag: etl
+        total_priority: 4

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -17,7 +18,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectMySQL
+	return DialectMySQL
 }
 
 // Exec implements drivers.OLAPStore.
@@ -36,8 +37,13 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 // InformationSchema implements drivers.OLAPStore.
-func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
+func (c *connection) InformationSchema() drivers.InformationSchema {
 	return c
+}
+
+// EstimateSize implements drivers.OLAPStore.
+func (c *connection) EstimateSize(ctx context.Context) (int64, error) {
+	return -1, nil
 }
 
 // MayBeScaledToZero implements drivers.OLAPStore.
@@ -98,6 +104,27 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	return res, nil
 }
 
+func (c *connection) Head(ctx context.Context, db, schema, table string, limit int64) (*drivers.Result, error) {
+	tbl, err := c.InformationSchema().Lookup(ctx, db, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	var columns []string
+	for _, field := range tbl.Schema.Fields {
+		columns = append(columns, c.Dialect().EscapeIdentifier(field.Name))
+	}
+
+	limitClause := ""
+	if limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	return c.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SELECT %s FROM %s%s", strings.Join(columns, ", "), c.Dialect().EscapeTable(db, schema, table), limitClause),
+	})
+}
+
 // QuerySchema implements drivers.OLAPStore.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
 	return nil, drivers.ErrNotImplemented
@@ -106,41 +133,6 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 // WithConnection implements drivers.OLAPStore.
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return drivers.ErrNotImplemented
-}
-
-// All implements drivers.OLAPInformationSchema.
-func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
-}
-
-// LoadPhysicalSize implements drivers.OLAPInformationSchema.
-func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
-	return nil
-}
-
-// Lookup implements drivers.OLAPInformationSchema.
-func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
-	if err != nil {
-		return nil, err
-	}
-
-	rtSchema := &runtimev1.StructType{}
-	for name, typ := range meta.Schema {
-		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
-			Name: name,
-			Type: databaseTypeToPB(typ, true),
-		})
-	}
-	return &drivers.OlapTable{
-		Database:          db,
-		DatabaseSchema:    schema,
-		Name:              name,
-		View:              meta.View,
-		Schema:            rtSchema,
-		UnsupportedCols:   nil,
-		PhysicalSizeBytes: 0,
-	}, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
@@ -170,7 +162,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 }
 
 func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
-	t := &runtimev1.Type{Nullable: nullable}
+	t := &runtimev1.Type{Nullable: nullable, RawType: dbt}
 	switch strings.ToUpper(dbt) {
 	case "DECIMAL":
 		t.Code = runtimev1.Type_CODE_STRING
@@ -282,7 +274,12 @@ func (r *mysqlRows) MapScan(dest map[string]any) error {
 			}
 		case *sql.NullString:
 			if valPtr.Valid {
-				dest[fieldName] = valPtr.String
+				if strings.ToUpper(r.colTypes[i].DatabaseTypeName()) == "BIT" {
+					// MySQL driver returns BIT values as raw bytes; convert to numeric string
+					dest[fieldName] = new(big.Int).SetBytes([]byte(valPtr.String)).String()
+				} else {
+					dest[fieldName] = valPtr.String
+				}
 			} else {
 				dest[fieldName] = nil
 			}

@@ -21,7 +21,7 @@
       class="absolute top-2 right-2 p-1 rounded"
       type="button"
       aria-label="Copy YAML"
-      on:click={copyYaml}
+      onclick={copyYaml}
     >
       {#if copied}
         <Check size="16px" />
@@ -30,7 +30,8 @@
       {/if}
     </button>
     <pre
-      class="bg-surface-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yaml}</pre>
+      class="bg-surface-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto"
+      aria-label="Yaml preview">{yaml}</pre>
   </div>
   <slot />
   <!-- support need help, errors etc -->

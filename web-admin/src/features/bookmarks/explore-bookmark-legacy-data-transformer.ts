@@ -3,6 +3,7 @@ import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-co
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
 import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
@@ -12,13 +13,14 @@ import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
 export function createExploreBookmarkLegacyDataTransformer(
+  client: RuntimeClient,
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(client, exploreNameStore),
   );
   const timeRangeQuery = createQuery(
-    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
+    getMetricsViewTimeRangeFromExploreQueryOptions(client, exploreNameStore),
   );
 
   return derived(

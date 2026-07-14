@@ -13,9 +13,25 @@ func TestLoad(t *testing.T) {
 	require.NotNil(t, inst)
 
 	require.Equal(t, "development", inst.Name)
-	require.Equal(t, "How to develop a Rill project with an introduction to Rill's concepts and resource types", inst.Description)
+	require.Equal(t, "Overview of how to develop a Rill project", inst.Description)
 	require.NotEmpty(t, inst.Body)
 	require.Contains(t, inst.Body, "# Instructions for developing a Rill project")
+}
+
+func TestLoadAnalysis(t *testing.T) {
+	// The analyst agent loads this file as its system prompt, so it must parse and render for both modes.
+	// The citation requirements are gated on internal use, since the open_url field is only available then.
+	internal, err := Load("analysis.md", Options{External: false})
+	require.NoError(t, err)
+	require.Equal(t, "analysis", internal.Name)
+	require.Equal(t, "Overview of how to analyze data in a Rill project", internal.Description)
+	require.NotEmpty(t, internal.Body)
+	require.Contains(t, internal.Body, "Citation requirements")
+
+	external, err := Load("analysis.md", Options{External: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, external.Body)
+	require.NotContains(t, external.Body, "Citation requirements")
 }
 
 func TestLoadNested(t *testing.T) {
@@ -33,11 +49,25 @@ func TestLoadNotFound(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestLoadAgentsMD(t *testing.T) {
+	inst, err := Load("AGENTS.md", Options{External: false})
+	require.NoError(t, err)
+	require.NotNil(t, inst)
+	require.Equal(t, "AGENTS", inst.Name)
+	require.Equal(t, "Entry point for Rill project development instructions", inst.Description)
+	require.Contains(t, inst.Body, "rill-development")
+}
+
 func TestLoadAll(t *testing.T) {
 	// Test loading all instruction files
 	instructions, err := LoadAll(Options{External: false})
 	require.NoError(t, err)
 	require.NotEmpty(t, instructions)
+
+	// Check that AGENTS.md (entry point) is included
+	agents, ok := instructions["AGENTS.md"]
+	require.True(t, ok, "AGENTS.md should be loaded")
+	require.Equal(t, "AGENTS", agents.Name)
 
 	// Check that development.md is included
 	dev, ok := instructions["development.md"]

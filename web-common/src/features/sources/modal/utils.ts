@@ -58,9 +58,22 @@ export function normalizeConnectorError(
   let message: string;
   let details: string | undefined;
 
-  if (err instanceof Error) {
-    message = err.message;
+  // ConnectRPC error: has numeric code and rawMessage
+  const connectErr = err as { code?: unknown; rawMessage?: unknown };
+  if (
+    typeof connectErr?.code === "number" &&
+    typeof connectErr?.rawMessage === "string"
+  ) {
+    const originalMessage = connectErr.rawMessage;
+    const humanReadable = humanReadableErrorMessage(
+      connectorName,
+      connectErr.code,
+      originalMessage,
+    );
+    message = humanReadable;
+    details = humanReadable !== originalMessage ? originalMessage : undefined;
   } else if (isErrorWithResponse(err) && err.response?.data) {
+    // Axios/REST error
     const originalMessage = err.response.data.message;
     const humanReadable = humanReadableErrorMessage(
       connectorName,
@@ -69,6 +82,8 @@ export function normalizeConnectorError(
     );
     message = humanReadable;
     details = humanReadable !== originalMessage ? originalMessage : undefined;
+  } else if (err instanceof Error) {
+    message = err.message;
   } else if (isErrorWithMessage(err)) {
     message = err.message;
     const errorWithDetails = err as ErrorWithResponse;

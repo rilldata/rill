@@ -32,10 +32,11 @@
 
   const formats = [...formatsWithoutYear, ...formatsWithYear];
 
-  enum ErrorType {
-    INVALID = "invalid",
-    OUT_OF_RANGE = "out-of-range",
-  }
+  const ErrorType = {
+    INVALID: "invalid",
+    OUT_OF_RANGE: "out-of-range",
+  } as const;
+  type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
 
   export let date: DateTime;
   export let zone: string;
@@ -148,25 +149,27 @@
       aria-label={label}
       type="text"
       bind:value={dateString}
-      on:focus={() => {
+      onfocus={() => {
         onFocus();
         inputIsFocused = true;
       }}
-      on:blur={() => {
+      onblur={() => {
         processInput(dateString);
         inputIsFocused = false;
       }}
     />
     {#if errorType === ErrorType.OUT_OF_RANGE || (errorType && !inputIsFocused)}
-      <Tooltip.Root portal="body">
-        <Tooltip.Trigger asChild let:builder>
-          <button use:builder.action {...builder} on:click={resetDate}>
-            <AlertTriangle
-              className="size-4 text-{errorType === ErrorType.INVALID
-                ? 'red'
-                : 'yellow'}-500"
-            />
-          </button>
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          {#snippet child({ props })}
+            <button {...props} onclick={resetDate}>
+              <AlertTriangle
+                className="size-4 text-{errorType === ErrorType.INVALID
+                  ? 'red'
+                  : 'yellow'}-500"
+              />
+            </button>
+          {/snippet}
         </Tooltip.Trigger>
         <Tooltip.Content side="top" sideOffset={10} class="shadow-md">
           {#if errorType === ErrorType.OUT_OF_RANGE}

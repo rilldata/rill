@@ -212,10 +212,10 @@ func (s *Service) ProjectPermissionsForDeployment(ctx context.Context, projectID
 			ManageProject:              false,
 			ReadProd:                   true,
 			ReadProdStatus:             true,
-			ManageProd:                 false,
+			ManageProd:                 depl.Editable && depl.Environment == "prod", // Since editable deployments can push variables
 			ReadDev:                    true,
 			ReadDevStatus:              true,
-			ManageDev:                  false,
+			ManageDev:                  depl.Editable, // Since editable deployments can push variables
 			ReadProvisionerResources:   true,
 			ManageProvisionerResources: true,
 			ReadProjectMembers:         true,

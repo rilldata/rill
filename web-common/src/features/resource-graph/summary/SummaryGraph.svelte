@@ -14,6 +14,7 @@
   import { themeControl } from "../../themes/theme-control";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { goto } from "$app/navigation";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
 
   export let connectors = 0;
   export let sources = 0;
@@ -92,7 +93,7 @@
 
     // Only navigate if there are resources of this kind
     if (token && count > 0) {
-      goto(`/graph?kind=${token}`);
+      goto(withEditorPrefix(`/graph?kind=${token}`));
     }
   }
 

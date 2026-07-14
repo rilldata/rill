@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import TimeRangeReadOnly from "./TimeRangeReadOnly.svelte";
   import DimensionFilterReadOnlyChip from "./dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import MeasureFilterReadOnlyChip from "./measure-filters/MeasureFilterReadOnlyChip.svelte";
@@ -10,6 +11,8 @@
   export let timeStart: string | undefined = undefined;
   export let timeEnd: string | undefined = undefined;
   export let col = true;
+  export let ariaLabel: string | undefined =
+    m.dashboard_readonly_filter_chips_aria();
 
   $: ({ dimensionFilters, measureFilters } = uiFilters);
 </script>
@@ -18,7 +21,7 @@
   class:flex-col={col}
   class:flex-wrap={!col}
   class="flex gap-y-2 gap-x-2 w-full flex-none"
-  aria-label="Readonly Filter Chips"
+  aria-label={ariaLabel}
 >
   <div class="flex gap-x-2">
     {#if timeRangeString}
@@ -38,6 +41,7 @@
     {#if dimension && dimension.name}
       <DimensionFilterReadOnlyChip
         pinned={filterData.pinned}
+        missingRequired={!!filterData.missingRequired}
         name={dimension.name}
         {metricsViewNames}
         label={dimension.displayName ||
@@ -61,6 +65,7 @@
     {#if measure && measure.name}
       <MeasureFilterReadOnlyChip
         pinned={filterData.pinned}
+        missingRequired={!!filterData.missingRequired}
         dimensionName={filterData.dimensionName}
         label={filterData.label}
         filter={filterData.filter}

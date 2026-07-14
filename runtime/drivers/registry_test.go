@@ -80,3 +80,18 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(insts))
 }
+
+func TestInstanceConfigAITimeouts(t *testing.T) {
+	inst := &drivers.Instance{
+		Environment: "prod",
+		Variables: map[string]string{
+			"rill.ai.completion_timeout_seconds": "600",
+			"rill.ai.llm_timeout_seconds":        "600",
+		},
+	}
+
+	cfg, err := inst.Config()
+	require.NoError(t, err)
+	require.Equal(t, uint32(600), cfg.AICompletionTimeoutSeconds)
+	require.Equal(t, uint32(600), cfg.AILLMTimeoutSeconds)
+}

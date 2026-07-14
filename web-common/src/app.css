@@ -48,6 +48,12 @@
   .ui-measure-bar-excluded {
     @apply bg-surface-overlay;
   }
+
+  .text-outline {
+    stroke: var(--surface-background);
+    stroke-width: 4px;
+    paint-order: stroke;
+  }
 }
 
 @layer base {
@@ -105,6 +111,9 @@
 
     --destructive: var(--color-red-600);
     --destructive-foreground: var(--color-red-50);
+
+    --kpi-positive: var(--fg-secondary);
+    --kpi-negative: var(--color-red-500);
 
     --popover: var(--white);
     --popover-accent: var(--surface-hover);
@@ -344,6 +353,9 @@
       transparent
     );
     --destructive-foreground: var(--color-red-light-50);
+
+    --kpi-positive: var(--fg-secondary);
+    --kpi-negative: var(--color-red-500);
 
     --popover: var(--color-rill-gray-dark-400);
     --popover-accent: var(--surface-hover);

@@ -33,7 +33,7 @@ query_attributes:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
-	res, err := rt.Resolve(t.Context(), &runtime.ResolveOptions{
+	res, _, err := rt.Resolve(t.Context(), &runtime.ResolveOptions{
 		InstanceID: instanceID,
 		Resolver:   "metrics",
 		ResolverProperties: map[string]any{

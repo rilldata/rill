@@ -31,6 +31,10 @@ export enum ExploreStateURLParams {
   PivotColumns = "cols",
   PivotTableMode = "table_mode",
   PivotRowLimit = "row_limit",
+  PivotShowTotalsColumn = "show_totals_column",
+  PivotShowTotalsRow = "show_totals_row",
+
+  DynamicYAxisScale = "dyn_y",
 
   GzippedParams = "gzipped_state",
   TemporaryFilters = "temp",
@@ -54,4 +58,6 @@ export const ExploreStateKeyToURLParamMap: Partial<
   leaderboardMeasureNames: ExploreStateURLParams.LeaderboardMeasures,
   leaderboardShowContextForAllMeasures:
     ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+
+  dynamicYAxisScale: ExploreStateURLParams.DynamicYAxisScale,
 };

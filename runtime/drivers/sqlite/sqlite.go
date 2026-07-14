@@ -34,7 +34,7 @@ type configProperties struct {
 	ID string `mapstructure:"id"`
 }
 
-func (d driver) Open(_ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	// Parse config
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)

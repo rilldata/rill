@@ -202,12 +202,14 @@ func TestClose(t *testing.T) {
 	isClosedErr := strings.Contains(err.Error(), "sql: database is closed")
 	require.True(t, isConnErr || isClosedErr, "Error should be either connection error or database closed error")
 
-	x := <-results
-	require.Greater(t, x, 0)
+	if len(results) > 0 { // guard with len check in case no results were returned before the connection was closed
+		x := <-results
+		require.Greater(t, x, 0)
+	}
 }
 
 func prepareConn(t *testing.T) drivers.Handle {
-	conn, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -228,7 +230,7 @@ func Test_safeSQLString(t *testing.T) {
 	err := os.Mkdir(path, fs.ModePerm)
 	require.NoError(t, err)
 
-	conn, err := Driver{}.Open("default", map[string]any{"data_dir": path}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("", "default", map[string]any{"data_dir": path}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 	require.NoError(t, conn.Close())

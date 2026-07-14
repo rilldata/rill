@@ -8,7 +8,7 @@
   import { getUpdateProjectRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
-  import Rocket from "svelte-radix/Rocket.svelte";
+  import { Rocket } from "lucide-svelte";
   import { getActiveResourceStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 
   export let open = false;
@@ -37,12 +37,14 @@
 </script>
 
 <Popover.Root bind:open>
-  <Popover.Trigger asChild let:builder>
-    <Button type="primary" builders={[builder]}>
-      <Rocket size="16px" />
+  <Popover.Trigger>
+    {#snippet child({ props })}
+      <Button {...props} type="primary">
+        <Rocket size={16} />
 
-      Deploy
-    </Button>
+        Deploy
+      </Button>
+    {/snippet}
   </Popover.Trigger>
   <Popover.Content align="start" class="w-[420px] flex flex-col gap-y-2">
     <div class="text-base font-medium">Update</div>

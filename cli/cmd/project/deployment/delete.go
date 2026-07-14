@@ -29,16 +29,11 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			// Get project name from flag or infer it
-			if !cmd.Flags().Changed("project") && len(args) <= 1 && ch.Interactive {
-				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
+			if project == "" {
+				project, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name")
 				if err != nil {
 					return err
 				}
-			}
-
-			if project == "" {
-				return fmt.Errorf("project name is required")
 			}
 
 			// List deployments for the project to find the one matching the branch
@@ -56,6 +51,11 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			for _, d := range resp.Deployments {
+				if ch.Interactive && d.Editable {
+					if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Deleting the deployment will also delete the associated remote branch %q. Are you sure?", d.Branch), true); err != nil {
+						return err
+					}
+				}
 				// usually there should be only one deployment per branch
 				ch.PrintfBold("Deleting deployment for branch %q (ID: %s)...\n", branch, d.Id)
 				_, err = client.DeleteDeployment(cmd.Context(), &adminv1.DeleteDeploymentRequest{

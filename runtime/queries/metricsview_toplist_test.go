@@ -2,7 +2,6 @@ package queries_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -11,48 +10,57 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestMetricsViewsToplistAgainstClickHouse(t *testing.T) {
 	testmode.Expensive(t)
+	rt, instanceID := testruntime.NewInstanceWithClickhouseProject(t, false)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) { testMetricsViewsToplist_measure_filters(t, rt, instanceID) })
+}
 
-	ctx := context.Background()
-	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
-		clickhouse.WithUsername("clickhouse"),
-		clickhouse.WithPassword("clickhouse"),
-		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := clickHouseContainer.Terminate(ctx)
-		require.NoError(t, err)
+func TestMetricsViewsToplistAgainstBigQuery(t *testing.T) {
+	testmode.Expensive(t)
+	rt, instanceID := newBigQueryInstance(t)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testMetricsViewsToplistWithCatalog_measure_filters(t, rt, instanceID, "rilldata", "integration_test")
 	})
+}
 
-	host, err := clickHouseContainer.Host(ctx)
-	require.NoError(t, err)
-	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
-	require.NoError(t, err)
+func TestMetricsViewsToplistAgainstDatabricks(t *testing.T) {
+	t.Skip("Skipping Databricks due to disabled test instance")
+	testmode.Expensive(t)
+	rt, instanceID := newDatabricksInstance(t)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testMetricsViewsToplistWithCatalog_measure_filters(t, rt, instanceID, "", "integration_test")
+	})
+}
 
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
-	t.Run("TestMetricsViewsToplist_measure_filters", func(t *testing.T) { TestMetricsViewsToplist_measure_filters(t) })
+func TestMetricsViewsToplistAgainstSnowflake(t *testing.T) {
+	t.Skip("Skipping Snowflake due to disabled test instance")
+	testmode.Expensive(t)
+	rt, instanceID := newSnowflakeInstance(t)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testMetricsViewsToplistWithCatalog_measure_filters(t, rt, instanceID, "integration_test", "public")
+	})
+}
+
+func TestMetricsViewsToplistAgainstDuckdb(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) { testMetricsViewsToplist_measure_filters(t, rt, instanceID) })
 }
 
 func TestMetricsViewsToplistAgainstStarRocks(t *testing.T) {
 	testmode.Expensive(t)
 
 	rt, instanceID := testruntime.NewInstanceWithStarRocksProject(t)
-	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
-		testMetricsViewsToplist_measure_filters(t, rt, instanceID)
+	t.Run("testStarRocksMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testStarRocksMetricsViewsToplist_measure_filters(t, rt, instanceID)
 	})
 }
 
-func testMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testStarRocksMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	ctr := &queries.ColumnTimeRange{
 		DatabaseSchema: "test_db",
 		TableName:      "ad_bids",
@@ -97,9 +105,64 @@ func testMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, 
 	require.NotEmpty(t, q.Result)
 }
 
-func TestMetricsViewsToplist_measure_filters(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+func testMetricsViewsToplistWithCatalog_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID, database, databaseSchema string) {
+	ctr := &queries.ColumnTimeRange{
+		Database:       database,
+		DatabaseSchema: databaseSchema,
+		TableName:      "ad_bids",
+		ColumnName:     "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
+	lmt := int64(250)
+	q := &queries.MetricsViewToplist{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		MeasureNames:    []string{"measure_1"},
+		TimeStart:       ctr.Result.Min,
+		TimeEnd:         timestamppb.New(maxTime),
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "dom",
+				Ascending: false,
+			},
+		},
+		Limit:          &lmt,
+		SecurityClaims: testClaims(),
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Len(t, q.Result.Data, 3)
+	require.Equal(t, "sports.yahoo.com", q.Result.Data[0].AsMap()["dom"])
+	require.Equal(t, "news.google.com", q.Result.Data[1].AsMap()["dom"])
+	require.Equal(t, "instagram.com", q.Result.Data[2].AsMap()["dom"])
+}
+
+func testMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",

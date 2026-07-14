@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/chcol"
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
@@ -113,13 +114,6 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		// This is what we should do when frontend supports it:
 		// s := v.String()
 		// return structpb.NewStringValue(s), nil
-	case *big.Int:
-		// Evil cast to float until frontend can deal with bigs:
-		v2, _ := new(big.Float).SetInt(v).Float64()
-		return structpb.NewNumberValue(v2), nil
-		// This is what we should do when frontend supports it:
-		// s := v.String()
-		// return structpb.NewStringValue(s), nil
 	case duckdb.Decimal:
 		// Evil cast to float until frontend can deal with bigs:
 		denom := big.NewInt(10)
@@ -128,6 +122,12 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(v2), nil
 	case duckdb.Map:
 		return ToValue(map[any]any(v), t)
+	case duckdb.OrderedMap:
+		m := make(map[any]any, len(v.Keys()))
+		for i, k := range v.Keys() {
+			m[k] = v.Values()[i]
+		}
+		return ToValue(m, t)
 	case *chcol.JSON:
 		return ToValue(v.NestedMap(), t)
 	case chcol.JSON:
@@ -169,6 +169,15 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 					f, _ := v2.Float64()
 					return structpb.NewNumberValue(f), nil
 				}
+			case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256:
+				// Snowflake returns integers as strings when scanned into interface{}.
+				// All ints have same size i.e. 256 in Snowflake.
+				// Evil cast to float until frontend can deal with bigs:
+				v2, ok := new(big.Int).SetString(v, 10)
+				if ok {
+					f, _ := v2.Float64()
+					return structpb.NewNumberValue(f), nil
+				}
 			case runtimev1.Type_CODE_INTERVAL:
 				// ClickHouse currently returns INTERVALs as strings.
 				// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
@@ -181,60 +190,12 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewStringValue(strings.ToValidUTF8(v, "�")), nil
 	case net.IP:
 		return structpb.NewStringValue(v.String()), nil
-	// pointers to base types
-	case *bool:
-		return structpb.NewBoolValue(*v), nil
-	case *int:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *int32:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *int64:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *uint:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *uint32:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *uint64:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *string:
-		return ToValue(*v, nil)
-	case *int8:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *int16:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *uint8:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *uint16:
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *time.Time:
-		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
-			s := v.In(time.UTC).Format(time.DateOnly)
-			return structpb.NewStringValue(s), nil
-		}
-		s := v.In(time.UTC).Format(time.RFC3339Nano)
-		return structpb.NewStringValue(s), nil
-	case *float32:
-		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
-		// (They don't have a native JSON representation)
-		if math.IsNaN(float64(*v)) || math.IsInf(float64(*v), 0) {
-			return structpb.NewNullValue(), nil
-		}
-		return structpb.NewNumberValue(float64(*v)), nil
-	case *float64:
-		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
-		// (They don't have a native JSON representation)
-		if math.IsNaN(*v) || math.IsInf(*v, 0) {
-			return structpb.NewNullValue(), nil
-		}
-		return structpb.NewNumberValue(*v), nil
 	case []*string:
 		v2, err := ToListValueUnknown(v, t)
 		if err != nil {
 			return nil, err
 		}
 		return structpb.NewListValue(v2), nil
-	case *net.IP:
-		return structpb.NewStringValue(v.String()), nil
 	case orb.Point:
 		st, err := structpb.NewList([]any{v[0], v[1]})
 		if err != nil {
@@ -255,6 +216,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return nil, err
 		}
 		return structpb.NewListValue(st), nil
+	case civil.Date:
+		return structpb.NewStringValue(v.String()), nil
+	case civil.DateTime:
+		return structpb.NewStringValue(v.String()), nil
 	default:
 	}
 	if t != nil && t.ArrayElementType != nil {
@@ -274,6 +239,9 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 	// Try pointers to types handled above
 	rv := reflect.ValueOf(v)
 	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return structpb.NewNullValue(), nil
+		}
 		return ToValue(rv.Elem().Interface(), t)
 	}
 	// Try slices of types handled above (e.g. []*int32)

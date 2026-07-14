@@ -14,18 +14,17 @@ const alias: Alias[] = [
   },
 ];
 
-if (process.env["STORYBOOK_MODE"] === "true") {
-  alias.push({
-    find: "$app/environment",
-    replacement: "/../web-common/.storybook/app-environment.mock.ts",
-  });
-}
-
 export default defineConfig(({ mode }) => {
   if (mode === "test") {
     alias.push({
       find: "$app/environment",
-      replacement: "/../web-common/.storybook/app-environment.mock.ts",
+      replacement: "/../web-common/tests/app-environment.mock.ts",
+    });
+    // canvas-entity dynamically imports the admin client only in the cloud context; stub
+    // it so web-common unit tests that pull in canvas-entity can resolve the import graph.
+    alias.push({
+      find: "@rilldata/web-admin/client",
+      replacement: "/../web-common/tests/web-admin-client.mock.ts",
     });
   }
 
@@ -35,7 +34,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [sveltekit()],
     test: {
-      workspace: [
+      projects: [
         {
           extends: "./vite.config.ts",
           plugins: [svelteTesting()],
@@ -47,8 +46,7 @@ export default defineConfig(({ mode }) => {
             globals: true,
             coverage: {
               provider: "v8",
-              src: ["./src"],
-              all: true,
+              include: ["src/**"],
             },
           },
         },

@@ -1,10 +1,11 @@
 <script lang="ts">
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
-  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: V1Resource[];
   export let organization: string;
@@ -24,7 +25,7 @@
     {
       id: "composite",
       cell: (info) =>
-        flexRender(AlertsTableCompositeCell, {
+        renderComponent(AlertsTableCompositeCell, {
           organization: organization,
           project: project,
           id: info.row.original.meta.name.name,
@@ -52,7 +53,7 @@
     // {
     //   id: "actions",
     //   cell: ({ row }) =>
-    //     flexRender(AlertsTableActionCell, {
+    //     renderComponent(AlertsTableActionCell, {
     //       title: row.original.name,
     //     }),
     // },
@@ -68,24 +69,19 @@
   <ResourceListEmptyState
     slot="empty"
     icon={AlertIcon}
-    message="You don't have any alerts yet"
+    message={m.alerts_empty_message()}
   >
     <span slot="action">
-      Create <a
-        href="https://docs.rilldata.com/guide/alerts"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        alerts
-      </a>
-      from any dashboard or{" "}
-      <a
-        href="https://docs.rilldata.com/reference/project-files/alerts"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        via code</a
-      >.
+      {@html m.alerts_empty_action({
+        alertsLink:
+          '<a href="https://docs.rilldata.com/guide/alerts" target="_blank" rel="noopener noreferrer">' +
+          m.alerts_link_text() +
+          "</a>",
+        codeLink:
+          '<a href="https://docs.rilldata.com/reference/project-files/alerts" target="_blank" rel="noopener noreferrer">' +
+          m.alerts_via_code() +
+          "</a>",
+      })}
     </span>
   </ResourceListEmptyState>
 </ResourceList>

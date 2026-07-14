@@ -5,7 +5,10 @@ import {
   type FunnelBreakdownMode,
   type FunnelChartSpec as FunnelChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/funnel/FunnelChartProvider";
-import type { ChartFieldsMap } from "@rilldata/web-common/features/components/charts/types";
+import {
+  ChartSortType,
+  type ChartFieldsMap,
+} from "@rilldata/web-common/features/components/charts/types";
 import { isMultiFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
@@ -21,75 +24,97 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 const DEFAULT_STAGE_LIMIT = 15;
-const DEFAULT_SORT = "-y";
+const DEFAULT_SORT = ChartSortType.Y_DESC;
 
 export type FunnelCanvasChartSpec = BaseChartConfig & FunnelChartSpecBase;
 
 export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
   private provider: FunnelChartProvider;
 
-  static chartInputParams: Record<string, ComponentInputParam> = {
-    breakdownMode: {
-      type: "switcher_tab",
-      label: "Breakdown by",
-      meta: {
-        default: "dimension",
-        options: [
-          { label: "Dimension", value: "dimension" },
-          { label: "Measures", value: "measures" },
-        ],
+  // Static getter (not a static field) so the localized labels inside resolve
+  // in the active locale at access time (render) rather than freezing to the
+  // locale active when this class was defined at module load.
+  static get chartInputParams(): Record<string, ComponentInputParam> {
+    return {
+      breakdownMode: {
+        type: "switcher_tab",
+        label: m.canvas_breakdown_by_label(),
+        meta: {
+          default: "dimension",
+          options: [
+            { label: m.canvas_dimension_label(), value: "dimension" },
+            { label: m.canvas_measures_label(), value: "measures" },
+          ],
+        },
       },
-    },
-    stage: {
-      type: "positional",
-      label: "Stage",
-      meta: {
-        chartFieldInput: {
-          type: "dimension",
-          nullSelector: true,
-          sortSelector: {
-            enable: true,
-            defaultSort: DEFAULT_SORT,
-            options: ["y", "-y", "custom"],
+      stage: {
+        type: "positional",
+        label: m.canvas_stage_label(),
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            nullSelector: true,
+            sortSelector: {
+              enable: true,
+              defaultSort: DEFAULT_SORT,
+              options: [
+                ChartSortType.Y_ASC,
+                ChartSortType.Y_DESC,
+                ChartSortType.CUSTOM,
+              ],
+            },
+            limitSelector: { defaultLimit: DEFAULT_STAGE_LIMIT },
+            hideTimeDimension: true,
           },
-          limitSelector: { defaultLimit: DEFAULT_STAGE_LIMIT },
-          hideTimeDimension: true,
         },
       },
-    },
-    measure: {
-      type: "positional",
-      label: "Measure",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
+      measure: {
+        type: "positional",
+        label: m.canvas_measure_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+          },
         },
       },
-    },
-    mode: {
-      type: "select",
-      label: "Mode",
-      meta: {
-        default: "width",
-        options: [
-          { label: "Width", value: "width" },
-          { label: "Order", value: "order" },
-        ],
+      mode: {
+        type: "select",
+        label: m.canvas_mode_label(),
+        meta: {
+          default: "width",
+          options: [
+            { label: m.canvas_width_option(), value: "width" },
+            { label: m.canvas_order_option(), value: "order" },
+          ],
+        },
       },
-    },
-    color: {
-      type: "switcher_tab",
-      label: "Color",
-      meta: {
-        default: "stage",
-        options: [
-          { label: "Stage", value: "stage" },
-          { label: "Measure", value: "measure" },
-        ],
+      color: {
+        type: "switcher_tab",
+        label: m.canvas_color_label(),
+        meta: {
+          default: "stage",
+          options: [
+            { label: m.canvas_stage_label(), value: "stage" },
+            { label: m.canvas_measure_label(), value: "measure" },
+          ],
+        },
       },
-    },
-  };
+      percentMode: {
+        type: "switcher_tab",
+        label: m.canvas_percent_of_label(),
+        meta: {
+          default: "top",
+          options: [
+            { label: m.canvas_top_option(), value: "top" },
+            { label: m.canvas_previous_option(), value: "previous" },
+          ],
+        },
+      },
+    };
+  }
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
@@ -125,8 +150,8 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
 
       // Update color field for measures mode: Name (discrete) and Value (continuous)
       inputParams.color.meta!.options = [
-        { label: "Name", value: "name" },
-        { label: "Value", value: "value" },
+        { label: m.canvas_name_option(), value: "name" },
+        { label: m.canvas_value_option(), value: "value" },
       ];
     } else {
       // In dimension mode, show stage field and single measure selection
@@ -137,8 +162,8 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
 
       // Update color field for dimension mode
       inputParams.color.meta!.options = [
-        { label: "Stage", value: "stage" },
-        { label: "Measure", value: "measure" },
+        { label: m.canvas_stage_label(), value: "stage" },
+        { label: m.canvas_measure_label(), value: "measure" },
       ];
 
       // Exclude the main measure field from multi-field selector
@@ -208,8 +233,13 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
   createChartDataQuery(
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible: Readable<boolean>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    return this.provider.createChartDataQuery(
+      ctx.runtimeClient,
+      timeAndFilterStore,
+      visible,
+    );
   }
 
   chartTitle(fields: ChartFieldsMap) {
@@ -246,6 +276,7 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
       mode: "width",
       color: "stage",
       breakdownMode: "dimension",
+      percentMode: "top",
     };
   }
 }

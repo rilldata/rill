@@ -27,13 +27,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				role := args[2]
 
 				ch.PrintfWarn("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s\n", domain, org, role)
-				ok, err := cmdutil.ConfirmPrompt("Do you want to continue", "", false)
-				if err != nil {
-					return err
-				}
-				if !ok {
-					ch.PrintfWarn("Aborted\n")
-					return nil
+				if ch.Interactive {
+					if err := cmdutil.ConfirmPrompt("Do you want to continue", false); err != nil {
+						return err
+					}
 				}
 
 				_, err = client.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
@@ -57,13 +54,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			role := args[3]
 
 			ch.PrintfWarn("Warn: Whitelisting will give all users from domain %q access to the project %q of %q as %s\n", domain, project, org, role)
-			ok, err := cmdutil.ConfirmPrompt("Do you want to continue", "", false)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				ch.PrintfWarn("Aborted\n")
-				return nil
+			if ch.Interactive {
+				if err := cmdutil.ConfirmPrompt("Do you want to continue", false); err != nil {
+					return err
+				}
 			}
 
 			_, err = client.CreateProjectWhitelistedDomain(ctx, &adminv1.CreateProjectWhitelistedDomainRequest{

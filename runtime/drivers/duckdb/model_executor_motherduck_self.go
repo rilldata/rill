@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 type mdToSelfInputProps struct {
@@ -47,15 +49,23 @@ func (e *mdToSelfExecutor) Concurrency(desired int) (int, bool) {
 
 func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &mdToSelfInputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	var warnings []string
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	mdConfig := &mdConfigProps{}
-	err := mapstructure.WeakDecode(opts.InputHandle.Config(), mdConfig)
+	err = mapstructure.WeakDecode(opts.InputHandle.Config(), mdConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -96,5 +106,10 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 	clone.InputProperties = props
 
 	executor := &selfToSelfExecutor{c: e.c}
-	return executor.Execute(ctx, &clone)
+	res, err := executor.Execute(ctx, &clone)
+	if err != nil {
+		return nil, err
+	}
+	res.Warnings = append(res.Warnings, warnings...)
+	return res, nil
 }

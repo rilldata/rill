@@ -68,11 +68,11 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		return nil, err
 	}
 	if args.CurrentFilePath != "" {
-		_, err := s.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
+		_, _ = s.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
 			Path: args.CurrentFilePath,
 		})
-		if err != nil {
-			return nil, err
+		if ctx.Err() != nil { // Ignore tool error since the file may not exist
+			return nil, ctx.Err()
 		}
 	}
 
@@ -80,7 +80,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByType(MessageTypeCall), FilterByTool(DeveloperAgentName)))...)
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
-	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
 
 	// Run an LLM tool call loop
 	var response string
@@ -158,9 +158,6 @@ The user has configured global additional instructions for you. They may not rel
 
 For context, here are some details about the project's default OLAP connector: {{ .default_olap_info }}.
 Note that you can only use it in model resources if it is not readonly.
-
-Call "navigate" tool for the main file created/edited (not if it is deleted) in the conversation. Use kind "file" and pass the written file path.
-Prefer dashboard or metrics view files over other files.
 
 Task: {{ .prompt }}
 `, data)

@@ -1,13 +1,11 @@
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { type Writable } from "svelte/store";
 import { CanvasEntity } from "../stores/canvas-entity";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { CanvasResponse } from "../selector";
 
 export type CanvasStore = {
-  runtime: Writable<Runtime>;
+  runtimeClient: RuntimeClient;
   canvasEntity: CanvasEntity;
   queryClient: QueryClient;
 };
@@ -23,10 +21,22 @@ function makeCanvasId(canvasName: string, instanceId: string): CanvasId {
 export function getCanvasStoreUnguarded(
   canvasName: string,
   instanceId: string,
+  allowUnvalidatedSpec?: boolean,
 ): CanvasStore | undefined {
   const id = makeCanvasId(canvasName, instanceId);
+  const store = canvasRegistry.get(id);
 
-  return canvasRegistry.get(id);
+  if (
+    store &&
+    allowUnvalidatedSpec !== undefined &&
+    store.canvasEntity.allowUnvalidatedSpec !== allowUnvalidatedSpec
+  ) {
+    store.canvasEntity.dispose();
+    canvasRegistry.delete(id);
+    return undefined;
+  }
+
+  return store;
 }
 
 export function getCanvasStore(
@@ -51,26 +61,48 @@ export function removeCanvasStore(
   instanceId: string,
 ): void {
   const id = makeCanvasId(canvasName, instanceId);
+  // Tear down the entity's subscriptions before dropping it from the registry,
+  // otherwise the orphaned entity keeps reacting to spec emissions and races
+  // the entity created on the next visit.
+  canvasRegistry.get(id)?.canvasEntity.dispose();
   canvasRegistry.delete(id);
 }
 
+// The returned entity does not subscribe to its spec store until a consumer
+// calls `canvasEntity.acquire()`; callers are responsible for acquiring and
+// releasing their reference (see CanvasInitialization).
 export function setCanvasStore(
   canvasName: string,
   instanceId: string,
   response: CanvasResponse,
+  runtimeClient?: RuntimeClient,
+  allowUnvalidatedSpec = false,
 ): CanvasStore {
   const id = makeCanvasId(canvasName, instanceId);
 
-  if (canvasRegistry.has(id)) {
+  const existingStore = canvasRegistry.get(id);
+  if (
+    existingStore &&
+    existingStore.canvasEntity.allowUnvalidatedSpec !== allowUnvalidatedSpec
+  ) {
+    existingStore.canvasEntity.dispose();
+    canvasRegistry.delete(id);
+  } else if (existingStore) {
     console.warn(
       `Canvas store for ID ${id} already exists. Returning existing store.`,
     );
-    return canvasRegistry.get(id)!;
+    return existingStore;
   }
 
-  const canvasEntity = new CanvasEntity(canvasName, instanceId, response);
+  const canvasEntity = new CanvasEntity(
+    canvasName,
+    instanceId,
+    response,
+    runtimeClient!,
+    allowUnvalidatedSpec,
+  );
   const store: CanvasStore = {
-    runtime: runtime,
+    runtimeClient: runtimeClient!,
     canvasEntity,
     queryClient,
   };

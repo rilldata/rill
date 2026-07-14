@@ -112,6 +112,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: deploymentId
+          description: ID of the deployment to get credentials for.
           in: path
           required: true
           type: string
@@ -124,12 +125,24 @@ paths:
               accessTokenTtlSeconds:
                 type: integer
                 format: int64
+                description: Optional TTL for the returned access token in seconds.
               userId:
                 type: string
+                description: If set, will use the attributes of the Rill user with this ID.
               userEmail:
                 type: string
+                description: If set, will generate attributes corresponding to a user with this email.
               attributes:
                 type: object
+                description: If set, will use the provided attributes outright.
+              externalUserId:
+                type: string
+                description: |-
+                  Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+                  Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+              superuserForceAccess:
+                type: boolean
+                description: If true, superusers can access the deployment even without org/project membership.
   /v1/deployments/{deploymentId}/provision:
     post:
       summary: |-
@@ -455,7 +468,7 @@ paths:
           type: string
       x-visibility: public
     patch:
-      summary: UpdateOrganization deletes an organizations
+      summary: UpdateOrganization updates an organization
       operationId: AdminService_UpdateOrganization
       responses:
         "200":
@@ -496,6 +509,28 @@ paths:
               billingEmail:
                 type: string
       x-visibility: public
+  /v1/orgs/{org}/billing/credits:
+    get:
+      summary: GetBillingCreditBalance returns the organization's remaining trial credit balance
+      operationId: AdminService_GetBillingCreditBalance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetBillingCreditBalanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
   /v1/orgs/{org}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -540,6 +575,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: setup
+          description: If true, the returned URL will be for the first time payment method setup flow. If false, it will be for managing the billing details.
+          in: query
+          required: false
+          type: boolean
         - name: superuserForceAccess
           in: query
           required: false
@@ -669,6 +709,9 @@ paths:
               name:
                 type: string
                 description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
+              autoInit:
+                type: boolean
+                title: whether to auto initialize the repo with a commit after creation
   /v1/orgs/{org}/create_asset:
     post:
       summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
@@ -934,50 +977,9 @@ paths:
           in: path
           required: true
           type: string
-  /v1/orgs/{org}/project/{project}/usergroups:
-    get:
-      summary: ListProjectMemberUsergroups lists the project's user groups
-      operationId: AdminService_ListProjectMemberUsergroups
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListProjectMemberUsergroupsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: project
-          in: path
-          required: true
-          type: string
-        - name: role
-          description: Optionally filter by role
-          in: query
-          required: false
-          type: string
-        - name: includeCounts
-          description: Optionally include counts
-          in: query
-          required: false
-          type: boolean
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
   /v1/orgs/{org}/projects:
     get:
-      summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
+      summary: ListProjectsForOrganization lists all the projects currently available for a given organization.
       operationId: AdminService_ListProjectsForOrganization
       responses:
         "200":
@@ -1057,6 +1059,9 @@ paths:
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
               prodVersion:
                 type: string
+              devSlots:
+                type: string
+                format: int64
               skipDeploy:
                 type: boolean
       x-visibility: public
@@ -1093,6 +1098,16 @@ paths:
           in: query
           required: false
           type: string
+        - name: direct
+          description: Only return projects where the user has a direct membership (exclude usergroup-inherited access).
+          in: query
+          required: false
+          type: boolean
+        - name: includeRoles
+          description: Populate project_roles in the response.
+          in: query
+          required: false
+          type: boolean
   /v1/orgs/{org}/projects/{project}:
     get:
       summary: GetProject returns information about a specific project
@@ -1135,7 +1150,7 @@ paths:
           type: boolean
       x-visibility: public
     delete:
-      summary: DeleteProject deletes an project
+      summary: DeleteProject deletes a project
       operationId: AdminService_DeleteProject
       responses:
         "200":
@@ -1209,8 +1224,17 @@ paths:
                 format: int64
               prodVersion:
                 type: string
+              devSlots:
+                type: string
+                format: int64
+              devTtlSeconds:
+                type: string
+                format: int64
               superuserForceAccess:
                 type: boolean
+              overrideDiskGb:
+                type: string
+                format: int64
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
@@ -1468,10 +1492,12 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: org
+          description: Org the deployment belongs to.
           in: path
           required: true
           type: string
         - name: project
+          description: Project the deployment belongs to.
           in: path
           required: true
           type: string
@@ -1483,15 +1509,28 @@ paths:
             properties:
               branch:
                 type: string
+                description: Optional branch for the deployment. If not set, defaults to the project's primary branch.
               ttlSeconds:
                 type: integer
                 format: int64
+                description: Optional TTL for the returned access token in seconds.
               userId:
                 type: string
+                description: If set, will use the attributes of the Rill user with this ID.
               userEmail:
                 type: string
+                description: If set, will generate attributes corresponding to a user with this email.
               attributes:
                 type: object
+                description: If set, will use the provided attributes outright.
+              externalUserId:
+                type: string
+                description: |-
+                  Optional ID for an external end user of the deployment. If set, the access token enables per-user state, such as AI chat history.
+                  Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
+              superuserForceAccess:
+                type: boolean
+                description: If true, superusers can access the deployment even without org/project membership.
   /v1/orgs/{org}/projects/{project}/deployments:
     get:
       summary: ListDeployments lists deployments for a project.
@@ -1563,6 +1602,69 @@ paths:
                 description: |-
                   Whether the deployment is editable and the edited changes are persisted back to the git repo.
                   Can't be set for `prod` deployments.
+  /v1/orgs/{org}/projects/{project}/github/pr:
+    post:
+      summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
+      operationId: AdminService_CreateGithubPullRequest
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateGithubPullRequestResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+                title: The head branch for the PR
+              title:
+                type: string
+                title: Optional title of the PR. If not set, a default title will be used
+              body:
+                type: string
+                title: / Optional body of the PR
+  /v1/orgs/{org}/projects/{project}/github/pr/{branch}:
+    get:
+      summary: GetGithubPullRequest returns the status of the PR for the specified branch, if it exists.
+      operationId: AdminService_GetGithubPullRequest
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetGithubPullRequestResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -1628,13 +1730,18 @@ paths:
                 description: TTL for the iframe's access token. If not set, defaults to 24 hours.
               userId:
                 type: string
-                description: If set, will use the attributes of the user with this ID.
+                description: If set, will use the attributes of the Rill user with this ID.
               userEmail:
                 type: string
                 description: If set, will generate attributes corresponding to a user with this email.
               attributes:
                 type: object
                 description: If set, will use the provided attributes outright.
+              externalUserId:
+                type: string
+                description: |-
+                  Optional ID for the external end user of the iframe. If set, the access token enables per-user state, such as AI chat history.
+                  Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, their attributes are used, but this ID takes precedence for per-user state.
               type:
                 type: string
                 description: Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
@@ -1661,6 +1768,9 @@ paths:
                 additionalProperties:
                   type: string
                 description: 'DEPRECATED: Additional parameters to set outright in the generated URL query.'
+              superuserForceAccess:
+                type: boolean
+                description: If true, superusers can access the project even without org/project membership.
             description: GetIFrameRequest is the request payload for AdminService.GetIFrame.
   /v1/orgs/{org}/projects/{project}/invites:
     get:
@@ -1693,6 +1803,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members:
     get:
       summary: ListProjectMemberUsers lists all the project members
@@ -1733,6 +1844,7 @@ paths:
           in: query
           required: false
           type: boolean
+      x-visibility: public
     post:
       summary: AddProjectMemberUser adds a member to the project
       operationId: AdminService_AddProjectMemberUser
@@ -1771,6 +1883,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}:
     get:
       summary: GetProjectMemberUser gets the member details
@@ -1797,6 +1910,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     delete:
       summary: RemoveProjectMemberUser removes member from the project
       operationId: AdminService_RemoveProjectMemberUser
@@ -1822,6 +1936,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     put:
       summary: SetProjectMemberUserRole sets the role for the member
       operationId: AdminService_SetProjectMemberUserRole
@@ -1862,6 +1977,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
     get:
       summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
@@ -1888,6 +2004,148 @@ paths:
           in: path
           required: true
           type: string
+  /v1/orgs/{org}/projects/{project}/personal-files:
+    get:
+      summary: ListPersonalFiles lists the calling user's personal files.
+      operationId: AdminService_ListPersonalFiles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListPersonalFilesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+    post:
+      summary: CreatePersonalFile creates a personal (owner-only) resource as a virtual file in the project.
+      operationId: AdminService_CreatePersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreatePersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              displayName:
+                type: string
+              kind:
+                type: string
+              yaml:
+                type: string
+                description: 'Optional: initial YAML body. If empty, the server generates a blank template for the given type.'
+  /v1/orgs/{org}/projects/{project}/personal-files/{name}:
+    get:
+      summary: GetPersonalFile returns the YAML body and metadata for a personal virtual file the caller owns.
+      operationId: AdminService_GetPersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetPersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+    delete:
+      summary: DeletePersonalFile deletes a personal virtual file the caller owns.
+      operationId: AdminService_DeletePersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeletePersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+    post:
+      summary: EditPersonalFile updates the YAML body of a personal virtual file the caller owns.
+      operationId: AdminService_EditPersonalFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditPersonalFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              kind:
+                type: string
+              yaml:
+                type: string
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -2310,6 +2568,48 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
                 description: list of resources to grant access to.
+  /v1/orgs/{org}/projects/{project}/usergroups:
+    get:
+      summary: ListProjectMemberUsergroups lists the user groups assigned to a project
+      operationId: AdminService_ListProjectMemberUsergroups
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberUsergroupsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
+          type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles:
     delete:
       summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
@@ -2336,8 +2636,9 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     post:
-      summary: AddProjectMemberUsergroupRole adds the role for the user group
+      summary: AddProjectMemberUsergroup adds a user group to the project with a role
       operationId: AdminService_AddProjectMemberUsergroup
       responses:
         "200":
@@ -2376,6 +2677,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -2416,6 +2718,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -2844,7 +3147,7 @@ paths:
             type: object
   /v1/orgs/{org}/usergroups:
     get:
-      summary: ListOrganizationMemberUsergroups lists the org's user groups
+      summary: ListOrganizationMemberUsergroups lists the organization's user groups
       operationId: AdminService_ListOrganizationMemberUsergroups
       responses:
         "200":
@@ -2879,6 +3182,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     post:
       summary: CreateUsergroup creates a user group in the organization
       operationId: AdminService_CreateUsergroup
@@ -2904,6 +3208,7 @@ paths:
             properties:
               name:
                 type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups-for-user:
     get:
       summary: ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
@@ -2937,7 +3242,7 @@ paths:
           type: string
   /v1/orgs/{org}/usergroups/{usergroup}:
     get:
-      summary: GetUsergroups returns the user group details
+      summary: GetUsergroup returns the user group details
       operationId: AdminService_GetUsergroup
       responses:
         "200":
@@ -2966,6 +3271,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     delete:
       summary: DeleteUsergroup deletes the user group from the organization
       operationId: AdminService_DeleteUsergroup
@@ -2987,14 +3293,15 @@ paths:
           in: path
           required: true
           type: string
-    post:
-      summary: RenameUsergroup renames the user group
-      operationId: AdminService_RenameUsergroup
+      x-visibility: public
+    patch:
+      summary: UpdateUsergroup updates a user group's name and/or description
+      operationId: AdminService_UpdateUsergroup
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RenameUsergroupResponse'
+            $ref: '#/definitions/v1UpdateUsergroupResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3014,37 +3321,11 @@ paths:
           schema:
             type: object
             properties:
-              name:
+              newName:
                 type: string
-    put:
-      summary: EditUsergroup renames the user group
-      operationId: AdminService_EditUsergroup
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1EditUsergroupResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: usergroup
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
               description:
                 type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/members:
     get:
       summary: ListUsergroupMemberUsers lists all the user group members
@@ -3076,6 +3357,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/members/{email}:
     delete:
       summary: RemoveUsergroupMemberUser removes member from the user group
@@ -3102,6 +3384,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     put:
       summary: AddUsergroupMemberUser adds a member to the user group
       operationId: AdminService_AddUsergroupMemberUser
@@ -3132,6 +3415,7 @@ paths:
           required: true
           schema:
             type: object
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/role:
     delete:
       summary: RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
@@ -3788,6 +4072,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
+  /v1/superuser/organization/billing/report-usage:
+    post:
+      summary: SudoReportUsage reports a mock usage event for an organization.
+      operationId: AdminService_SudoReportUsage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoReportUsageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoReportUsageRequest'
   /v1/superuser/organization/custom-domain:
     patch:
       summary: |-
@@ -3829,6 +4132,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoExtendTrialRequest'
+  /v1/superuser/organization/trial/grant-credits:
+    post:
+      summary: SudoGrantTrialCredits grants additional trial credits to an organization on the credit-based trial plan.
+      operationId: AdminService_SudoGrantTrialCredits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoGrantTrialCreditsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoGrantTrialCreditsRequest'
   /v1/superuser/organizations/{org}/billing/issues/{type}:
     delete:
       summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
@@ -3860,6 +4182,54 @@ paths:
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
             - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+            - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+            - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+            - BILLING_ISSUE_TYPE_MESSAGE
+  /v1/superuser/organizations/{org}/billing/message:
+    delete:
+      summary: SudoDeleteOrganizationBillingMessage removes the custom message banner for the organization
+      operationId: AdminService_SudoDeleteOrganizationBillingMessage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoDeleteOrganizationBillingMessageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+    post:
+      summary: SudoUpdateOrganizationBillingMessage sets (overriding any existing) a custom message banner for the organization
+      operationId: AdminService_SudoUpdateOrganizationBillingMessage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingMessageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              level:
+                $ref: '#/definitions/v1BillingIssueLevel'
+              message:
+                type: string
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -4401,6 +4771,39 @@ paths:
           required: false
           type: string
 definitions:
+  GetAlertMetaResponseURLs:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      editUrl:
+        type: string
+      unsubscribeUrl:
+        type: string
+  GetGithubPullRequestResponseState:
+    type: string
+    enum:
+      - STATE_UNSPECIFIED
+      - STATE_OPEN
+      - STATE_CLOSED_UNMERGED
+      - STATE_MERGED
+    default: STATE_UNSPECIFIED
+  GetReportMetaResponseDeliveryMeta:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
+      unsubscribeUrl:
+        type: string
+      userId:
+        type: string
+      userAttrs:
+        type: object
+        title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -4572,12 +4975,35 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
       neverSubscribed:
         $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+      onCreditTrial:
+        $ref: '#/definitions/v1BillingIssueMetadataOnCreditTrial'
+      trialCreditsDepleted:
+        $ref: '#/definitions/v1BillingIssueMetadataTrialCreditsDepleted'
+      message:
+        $ref: '#/definitions/v1BillingIssueMetadataMessage'
+  v1BillingIssueMetadataMessage:
+    type: object
+    properties:
+      message:
+        type: string
   v1BillingIssueMetadataNeverSubscribed:
     type: object
   v1BillingIssueMetadataNoBillableAddress:
     type: object
   v1BillingIssueMetadataNoPaymentMethod:
     type: object
+  v1BillingIssueMetadataOnCreditTrial:
+    type: object
+    properties:
+      subscriptionId:
+        type: string
+      planId:
+        type: string
+      creditAllocation:
+        type: number
+        format: double
+      lowCredit:
+        type: boolean
   v1BillingIssueMetadataOnTrial:
     type: object
     properties:
@@ -4623,6 +5049,16 @@ definitions:
       endDate:
         type: string
         format: date-time
+  v1BillingIssueMetadataTrialCreditsDepleted:
+    type: object
+    properties:
+      subscriptionId:
+        type: string
+      planId:
+        type: string
+      depletedOn:
+        type: string
+        format: date-time
   v1BillingIssueMetadataTrialEnded:
     type: object
     properties:
@@ -4643,6 +5079,9 @@ definitions:
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
       - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
+      - BILLING_ISSUE_TYPE_ON_CREDIT_TRIAL
+      - BILLING_ISSUE_TYPE_TRIAL_CREDITS_DEPLETED
+      - BILLING_ISSUE_TYPE_MESSAGE
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -4675,6 +5114,10 @@ definitions:
       - BILLING_PLAN_TYPE_TEAM
       - BILLING_PLAN_TYPE_MANAGED
       - BILLING_PLAN_TYPE_ENTERPRISE
+      - BILLING_PLAN_TYPE_FREE
+      - BILLING_PLAN_TYPE_PRO
+      - BILLING_PLAN_TYPE_STARTER
+      - BILLING_PLAN_TYPE_GROWTH
     default: BILLING_PLAN_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object
@@ -4737,11 +5180,18 @@ definitions:
       inputTokens:
         type: integer
         format: int64
-        description: Number of tokens in the input.
+        description: Number of full-rate (non-cached) tokens in the input.
       outputTokens:
         type: integer
         format: int64
         description: Number of tokens in the output.
+      cachedInputTokens:
+        type: integer
+        format: int64
+        description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+      provider:
+        type: string
+        description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
   v1CompletionMessage:
     type: object
     properties:
@@ -4823,6 +5273,11 @@ definitions:
     properties:
       deployment:
         $ref: '#/definitions/v1Deployment'
+  v1CreateGithubPullRequestResponse:
+    type: object
+    properties:
+      prUrl:
+        type: string
   v1CreateManagedGitRepoResponse:
     type: object
     properties:
@@ -4851,6 +5306,11 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+  v1CreatePersonalFileResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1CreateProjectResponse:
     type: object
     properties:
@@ -4883,6 +5343,8 @@ definitions:
       deploymentId:
         type: string
   v1DeleteOrganizationResponse:
+    type: object
+  v1DeletePersonalFileResponse:
     type: object
   v1DeleteProjectResponse:
     type: object
@@ -4933,6 +5395,9 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      usedOn:
+        type: string
+        format: date-time
   v1DeploymentStatus:
     type: string
     enum:
@@ -4948,9 +5413,9 @@ definitions:
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1EditAlertResponse:
     type: object
-  v1EditReportResponse:
+  v1EditPersonalFileResponse:
     type: object
-  v1EditUsergroupResponse:
+  v1EditReportResponse:
     type: object
   v1ExportFormat:
     type: string
@@ -4986,23 +5451,20 @@ definitions:
       recipientUrls:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1GetAlertMetaResponseURLs'
+          $ref: '#/definitions/GetAlertMetaResponseURLs'
       queryForAttributes:
         type: object
-  v1GetAlertMetaResponseURLs:
-    type: object
-    properties:
-      openUrl:
-        type: string
-      editUrl:
-        type: string
-      unsubscribeUrl:
-        type: string
   v1GetAlertYAMLResponse:
     type: object
     properties:
       yaml:
         type: string
+  v1GetBillingCreditBalanceResponse:
+    type: object
+    properties:
+      balance:
+        type: number
+        format: double
   v1GetBillingProjectCredentialsRequest:
     type: object
     properties:
@@ -5071,10 +5533,16 @@ definitions:
     type: object
     properties:
       variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+        description: Variables for the deployment.
+      variablesLegacy:
         type: object
         additionalProperties:
           type: string
-        title: Variables for the deployment (connector credentials, etc.)
+        description: 'Deprecated: Variables for the deployment. Use `variables` instead.'
       annotations:
         type: object
         additionalProperties:
@@ -5093,6 +5561,14 @@ definitions:
       duckdbConnectorConfig:
         type: object
         title: Duckdb connector config for the deployment
+      editable:
+        type: boolean
+        description: Whether the deployment is editable (dev environment with changes persisted to git repo).
+      systemVariables:
+        type: object
+        additionalProperties:
+          type: string
+        description: System variables set by the admin service that should not be overridden by user input.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -5117,6 +5593,13 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetGithubPullRequestResponse:
+    type: object
+    properties:
+      prUrl:
+        type: string
+      prState:
+        $ref: '#/definitions/GetGithubPullRequestResponseState'
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
@@ -5183,6 +5666,13 @@ definitions:
     type: object
     properties:
       url:
+        type: string
+  v1GetPersonalFileResponse:
+    type: object
+    properties:
+      path:
+        type: string
+      yaml:
         type: string
   v1GetProjectAccessRequestResponse:
     type: object
@@ -5269,21 +5759,10 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      recipientUrls:
+      deliveryMeta:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1GetReportMetaResponseURLs'
-  v1GetReportMetaResponseURLs:
-    type: object
-    properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
-      unsubscribeUrl:
-        type: string
+          $ref: '#/definitions/GetReportMetaResponseDeliveryMeta'
   v1GetServiceResponse:
     type: object
     properties:
@@ -5445,6 +5924,13 @@ definitions:
           $ref: '#/definitions/v1Organization'
       nextPageToken:
         type: string
+  v1ListPersonalFilesResponse:
+    type: object
+    properties:
+      files:
+        type: array
+        items:
+          type: string
   v1ListProjectInvitesResponse:
     type: object
     properties:
@@ -5512,6 +5998,11 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+      projectRoles:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1ProjectMemberUser'
+        description: Maps project IDs to the user's direct project membership. Only populated when include_roles is true.
   v1ListProjectsForOrganizationResponse:
     type: object
     properties:
@@ -5843,6 +6334,9 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+      seats:
+        type: integer
+        format: int32
   v1OrganizationRole:
     type: object
     properties:
@@ -5905,6 +6399,12 @@ definitions:
         type: string
         description: 'Note: Does NOT incorporate the parent org''s custom domain.'
       prodTtlSeconds:
+        type: string
+        format: int64
+      devTtlSeconds:
+        type: string
+        format: int64
+      overrideDiskGb:
         type: string
         format: int64
       annotations:
@@ -6123,6 +6623,12 @@ definitions:
         type: string
       storageLimitBytesPerDeployment:
         type: string
+      apiCallsPerSeat:
+        type: string
+      seats:
+        type: string
+      tokensPerSeat:
+        type: string
   v1RecordEventsRequest:
     type: object
     properties:
@@ -6154,8 +6660,6 @@ definitions:
     type: object
   v1RemoveWhitelistedDomainResponse:
     type: object
-  v1RenameUsergroupResponse:
-    type: object
   v1RenewBillingSubscriptionResponse:
     type: object
     properties:
@@ -6174,10 +6678,16 @@ definitions:
         type: string
       intervalDuration:
         type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
       queryName:
         type: string
+        title: use resolver/resolver_properties instead
       queryArgsJson:
         type: string
+        title: use resolver/resolver_properties instead
       exportLimit:
         type: string
         format: uint64
@@ -6216,13 +6726,9 @@ definitions:
         type: string
         title: |-
           web_open_mode is used to determine how to create or disable open link for the report
-          - send "recipient" for older reports (old behaviour)
-          - send "creator" for reports that should be opened with creators permissions
+          - send "recipient" for reports that should be opened with recipient's permissions - requires login
+          - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
           - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-          - send "filtered" for reports that should be opened with creators permissions but with locked filters
-      filter:
-        $ref: '#/definitions/v1Expression'
-        title: use with OPEN_MODE_FILTERED
   v1RequestProjectAccessResponse:
     type: object
   v1ResourceName:
@@ -6378,6 +6884,8 @@ definitions:
         format: date-time
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
+  v1SudoDeleteOrganizationBillingMessageResponse:
+    type: object
   v1SudoExtendTrialRequest:
     type: object
     properties:
@@ -6405,6 +6913,25 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       instance:
         $ref: '#/definitions/v1Deployment'
+  v1SudoGrantTrialCreditsRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      amountUsd:
+        type: number
+        format: double
+        description: Amount of trial credits to grant in USD.
+      description:
+        type: string
+        description: Optional human-readable reason for the grant.
+  v1SudoGrantTrialCreditsResponse:
+    type: object
+    properties:
+      grantedUsd:
+        type: number
+        format: double
+        description: The grant amount actually applied, in USD.
   v1SudoIssueRuntimeManagerTokenRequest:
     type: object
     properties:
@@ -6415,6 +6942,39 @@ definitions:
     properties:
       token:
         type: string
+  v1SudoReportUsageRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      eventName:
+        type: string
+      value:
+        type: number
+        format: double
+      endTime:
+        type: string
+        format: date-time
+        description: Optional end time of the reporting window. Defaults to the current server time.
+      projectName:
+        type: string
+        description: Optional project name attribution for the mock event. If not set, a placeholder is used.
+  v1SudoReportUsageResponse:
+    type: object
+    properties:
+      customerId:
+        type: string
+      eventName:
+        type: string
+      value:
+        type: number
+        format: double
+      startTime:
+        type: string
+        format: date-time
+      endTime:
+        type: string
+        format: date-time
   v1SudoTriggerBillingRepairRequest:
     type: object
   v1SudoTriggerBillingRepairResponse:
@@ -6451,6 +7011,8 @@ definitions:
         $ref: '#/definitions/v1Organization'
       subscription:
         $ref: '#/definitions/v1Subscription'
+  v1SudoUpdateOrganizationBillingMessageResponse:
+    type: object
   v1SudoUpdateOrganizationCustomDomainRequest:
     type: object
     properties:
@@ -6486,6 +7048,9 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: int64
+      seats:
+        type: integer
+        format: int32
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
@@ -6633,6 +7198,11 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1UpdateUsergroupResponse:
+    type: object
+    properties:
+      usergroup:
+        $ref: '#/definitions/v1Usergroup'
   v1User:
     type: object
     properties:

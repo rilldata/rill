@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onMount } from "svelte";
   import Search from "../icons/Search.svelte";
 
@@ -8,8 +9,8 @@
   /* Input value being searched */
   export let value: string | number;
   /* Aria label for input */
-  export let label = "Search";
-  export let placeholder = "Search";
+  export let label: string | undefined = undefined;
+  export let placeholder: string | undefined = undefined;
   export let multiline = false;
   export let border = true;
   export let background = true;
@@ -20,6 +21,9 @@
   export let theme = false;
   export let rounded: "sm" | "md" | "lg" = "sm";
   export let onSubmit: () => void = () => {};
+
+  $: resolvedLabel = label ?? m.common_search();
+  $: resolvedPlaceholder = placeholder ?? m.common_search();
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement | HTMLTextAreaElement;
@@ -63,7 +67,7 @@
   <button
     type="button"
     class="flex absolute inset-y-0 items-center pl-2 text-fg-secondary"
-    on:click={() => {
+    onclick={() => {
       ref?.focus();
     }}
   >
@@ -80,13 +84,15 @@
     class:rounded-sm={rounded === "sm"}
     class:rounded-md={rounded === "md"}
     class:rounded-lg={rounded === "lg"}
-    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none text-fg-secondary placeholder-fg-secondary"
+    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none text-fg-secondary placeholder-fg-secondary {large
+      ? 'min-h-9'
+      : ''}"
     class:h-full={large}
     {disabled}
-    {placeholder}
-    on:input={handleInput}
-    on:keydown={handleKeyDown}
-    aria-label={label}
+    placeholder={resolvedPlaceholder}
+    oninput={handleInput}
+    onkeydown={handleKeyDown}
+    aria-label={resolvedLabel}
     role="textbox"
     tabindex="-1"
     {value}

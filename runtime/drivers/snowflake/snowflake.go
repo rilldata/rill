@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -24,6 +25,9 @@ import (
 func init() {
 	drivers.Register("snowflake", driver{})
 	drivers.RegisterAsConnector("snowflake", driver{})
+
+	// Naughty Snowflake does logging inside the library using a global.
+	gosnowflake.GetLogger().SetOutput(io.Discard)
 }
 
 var spec = drivers.Spec{
@@ -97,6 +101,7 @@ var spec = drivers.Spec{
 		},
 	},
 	ImplementsWarehouse: true,
+	ImplementsOLAP:      true,
 }
 
 type driver struct{}
@@ -203,7 +208,7 @@ func (c *configProperties) resolveDSN() (string, error) {
 	return gosnowflake.DSN(cfg)
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("snowflake driver can't be shared")
 	}

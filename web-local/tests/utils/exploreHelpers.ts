@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test";
 import type { Page } from "playwright";
 import {
   clickMenuButton,
@@ -5,9 +6,20 @@ import {
 } from "web-local/tests/utils/commonHelpers";
 import { waitForFileNavEntry } from "web-local/tests/utils/waitHelpers";
 
+/**
+ * Waits for the Preview button to be enabled and clicks it.
+ * Reconciliation can take a while in CI, so we use a generous timeout.
+ */
+export async function clickPreviewButton(page: Page, timeout = 10_000) {
+  const previewButton = page.getByRole("button", { name: "Preview" });
+  await previewButton.waitFor({ state: "visible" });
+  await expect(previewButton).toBeEnabled({ timeout });
+  await previewButton.click();
+}
+
 export async function createExploreFromSource(
   page: Page,
-  sourcePath = "/sources/AdBids.yaml",
+  sourcePath = "/models/AdBids.yaml",
   metricsViewPath = "/metrics/AdBids_metrics.yaml",
 ) {
   await openFileNavEntryContextMenu(page, sourcePath);
@@ -28,7 +40,7 @@ export async function createExploreFromModel(
   await page.getByText("Generate Explore Dashboard").click();
 
   if (navigateToPreview) {
-    await page.getByRole("button", { name: "Preview" }).click();
+    await clickPreviewButton(page);
   }
 
   await page.waitForTimeout(1000);

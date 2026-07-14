@@ -7,13 +7,14 @@ title: rill usergroup edit
 Edit a group
 
 ```
-rill usergroup edit [<name>] [flags]
+rill usergroup edit <name> [flags]
 ```
 
 ### Flags
 
 ```
       --description string   Description
+      --new-name string      New user group name
       --org string           Organization
 ```
 

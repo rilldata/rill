@@ -43,7 +43,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				if members.NextPageToken != "" {
 					cmd.Println()
-					cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
+					cmd.Printf("Next page token: %s\n", members.NextPageToken)
 				}
 			} else {
 				members, err := client.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
@@ -60,7 +60,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				if members.NextPageToken != "" {
 					cmd.Println()
-					cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
+					cmd.Printf("Next page token: %s\n", members.NextPageToken)
 				}
 			}
 

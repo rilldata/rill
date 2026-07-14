@@ -4,8 +4,7 @@
   import { Clock } from "lucide-svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import { ALL_TIME_RANGE_ALIAS } from "../../new-time-controls";
-
-  const message = "Unable to parse time string";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let context: string;
   export let width: number;
@@ -37,7 +36,7 @@
     class:error={(inError || unableToParse) &&
       timeString !== ALL_TIME_RANGE_ALIAS}
     class=""
-    on:submit={(e) => {
+    onsubmit={(e) => {
       e.preventDefault();
 
       if (searchValue === ALL_TIME_RANGE_ALIAS) {
@@ -68,17 +67,17 @@
     <span
       class="mr-1 flex-none"
       role="presentation"
-      on:click={() => {
+      onclick={() => {
         searchElement.focus();
       }}
     >
       <Clock size={15} />
     </span>
     <input
-      placeholder="Enter a time range"
+      placeholder={m.time_enter_time_range()}
       type="text"
       class="h-7 border w-full"
-      on:keydown={() => {
+      onkeydown={() => {
         if (unableToParse) {
           unableToParse = false;
         }
@@ -89,7 +88,7 @@
   </form>
 
   {#if unableToParse}
-    <div class="text-red-500 text-xs">{message}</div>
+    <div class="text-red-500 text-xs">{m.time_unable_to_parse()}</div>
   {/if}
 
   <div class="flex gap-x-2 size-full overflow-x-auto pb-2.5">

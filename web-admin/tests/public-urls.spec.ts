@@ -11,15 +11,19 @@ test.describe.serial("Public URLs", () => {
     // Add a filter on "Pub Name"
     await page.getByLabel("Add Filter Button").click();
     await page.getByRole("menuitem", { name: "Pub Name" }).click();
-    await page.getByLabel("Pub Name").getByPlaceholder("Search").click();
-    await page.getByLabel("Pub Name").getByPlaceholder("Search").fill("disney");
-    await page.getByRole("menuitem", { name: "Disney" }).first().click();
-    await page.getByLabel("pub_name filter", { exact: true }).click(); // Hides the popover
+    // DimensionFilter content is portaled to document.body, so use page-level scope
+    await page.getByPlaceholder("Search").click();
+    await page.getByPlaceholder("Search").fill("disney");
+    await page
+      .getByRole("menuitemcheckbox", { name: "Disney" })
+      .first()
+      .click();
+    await page.keyboard.press("Escape"); // Close the dimension filter popover
 
     // Change the time grain to hour
     // (Tests that non-default state propagates to the public URL)
     await page.getByLabel("Select reference time and grain").click();
-    await page.getByRole("menuitem", { name: "hour" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "hour" }).click();
 
     // Check the Big Number
     await expect(

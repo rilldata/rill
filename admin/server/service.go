@@ -29,7 +29,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -70,7 +70,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	if req.OrgRoleName != "" {
 		orgRole, err := s.admin.DB.FindOrganizationRole(ctx, req.OrgRoleName)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid organization role")
+			return nil, err
 		}
 		err = s.admin.DB.InsertOrganizationMemberService(ctx, service.ID, org.ID, orgRole.ID)
 		if err != nil {
@@ -82,12 +82,12 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	if req.Project != "" && req.ProjectRoleName != "" {
 		project, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid project")
+			return nil, err
 		}
 
 		projectRole, err := s.admin.DB.FindProjectRole(ctx, req.ProjectRoleName)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid project role")
+			return nil, err
 		}
 
 		err = s.admin.DB.UpsertProjectMemberServiceRole(ctx, service.ID, project.ID, projectRole.ID)
@@ -98,7 +98,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
-		return nil, status.Error(codes.Internal, "failed to commit transaction")
+		return nil, err
 	}
 
 	return &adminv1.CreateServiceResponse{
@@ -155,7 +155,7 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -165,7 +165,7 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 
 	services, err := s.admin.DB.FindOrganizationMemberServices(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	var servicesPB []*adminv1.OrganizationMemberService
@@ -288,7 +288,7 @@ func (s *Server) SetOrganizationMemberServiceRole(ctx context.Context, req *admi
 
 	err = s.admin.DB.UpdateOrganizationMemberServiceRole(ctx, service.ID, org.ID, orgRole.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetOrganizationMemberServiceRoleResponse{}, nil
@@ -317,7 +317,7 @@ func (s *Server) RemoveOrganizationMemberService(ctx context.Context, req *admin
 
 	err = s.admin.DB.DeleteOrganizationMemberService(ctx, service.ID, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RemoveOrganizationMemberServiceResponse{}, nil
@@ -358,7 +358,7 @@ func (s *Server) SetProjectMemberServiceRole(ctx context.Context, req *adminv1.S
 
 	err = s.admin.DB.UpsertProjectMemberServiceRole(ctx, service.ID, project.ID, projectRole.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SetProjectMemberServiceRoleResponse{}, nil
@@ -459,7 +459,7 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 	for i, token := range tokens {
 		id, err := uuid.Parse(token.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, "invalid token ID format")
+			return nil, status.Errorf(codes.Internal, "invalid token ID %q: %v", token.ID, err)
 		}
 
 		prefix := authtoken.FromID(authtoken.TypeService, id).Prefix()
@@ -501,7 +501,7 @@ func (s *Server) IssueServiceAuthToken(ctx context.Context, req *adminv1.IssueSe
 
 	token, err := s.admin.IssueServiceAuthToken(ctx, service.ID, nil)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.IssueServiceAuthTokenResponse{
@@ -527,7 +527,7 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 
 	org, err := s.admin.DB.FindOrganization(ctx, service.OrgID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -537,7 +537,7 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 
 	err = s.admin.DB.DeleteServiceAuthToken(ctx, token.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.RevokeServiceAuthTokenResponse{}, nil

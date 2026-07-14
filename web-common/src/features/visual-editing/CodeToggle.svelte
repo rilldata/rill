@@ -21,7 +21,7 @@
         aria-label="Switch to {view === 'viz' ? 'visual' : view} editor"
         id="{view}-toggle"
         class="size-[22px] z-10 hover:brightness-75 p-0"
-        on:click={() => {
+        onclick={() => {
           if (selectedView === "code") {
             selectedView = "viz";
           } else {
@@ -39,7 +39,7 @@
   <span
     style:left={selectedView === "code" ? "2px" : "24px"}
     class="toggle size-[22px] pointer-events-none absolute rounded-[4px] z-0 transition-[left]"
-  />
+  ></span>
 </div>
 
 <style lang="postcss">

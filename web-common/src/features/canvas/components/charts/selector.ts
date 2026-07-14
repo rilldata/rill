@@ -16,10 +16,12 @@ export function getChartDataForCanvas(
   config: CanvasChartSpec,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
   themeModeStore: Readable<boolean>,
+  visible: Readable<boolean>,
 ): Readable<ChartDataResult> {
   const chartDataQuery = component.createChartDataQuery(
     ctx,
     timeAndFilterStore,
+    visible,
   );
 
   return getChartData({

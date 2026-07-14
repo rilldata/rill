@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { PROJECT_ROLES_OPTIONS } from "../constants";
+  import { getProjectRolesOptions } from "./constants";
 
   export let value: string;
   export let width = "w-18";
@@ -18,10 +18,11 @@
     value = val;
   }
 
-  $: selected = PROJECT_ROLES_OPTIONS.find((o) => o.value === value);
+  $: projectRolesOptions = getProjectRolesOptions();
+  $: selected = projectRolesOptions.find((o) => o.value === value);
 </script>
 
-<DropdownMenu bind:open typeahead={false}>
+<DropdownMenu bind:open>
   <DropdownMenuTrigger
     class="{width} flex flex-row gap-1 items-center rounded-sm {open
       ? 'bg-surface-active'
@@ -40,9 +41,9 @@
     class="w-[240px]"
     strategy="fixed"
   >
-    {#each PROJECT_ROLES_OPTIONS as { value, label, description } (value)}
+    {#each projectRolesOptions as { value, label, description } (value)}
       <DropdownMenuItem
-        on:click={() => onSelect(value)}
+        onclick={() => onSelect(value)}
         class="text-xs hover:bg-surface-hover {selected?.value === value
           ? 'bg-surface-active'
           : ''}"

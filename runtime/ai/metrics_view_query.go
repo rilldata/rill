@@ -12,6 +12,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 const QueryMetricsViewName = "query_metrics_view"
@@ -25,10 +26,14 @@ var _ Tool[QueryMetricsViewArgs, *QueryMetricsViewResult] = (*QueryMetricsView)(
 type QueryMetricsViewArgs map[string]any
 
 type QueryMetricsViewResult struct {
-	Schema            []SchemaField `json:"schema"`
-	Data              [][]any       `json:"data"`
-	OpenURL           string        `json:"open_url,omitempty"`
-	TruncationWarning string        `json:"truncation_warning,omitempty"`
+	Schema []SchemaField `json:"schema"`
+	Data   [][]any       `json:"data"`
+	// ResolvedTimeRange & ResolvedComparisonTimeRange store the exact time ranges used for the query.
+	// This helps when opening the citation url and get the exact time range for relative time ranges.
+	ResolvedTimeRange           *metricsview.TimeRange `json:"resolved_time_range,omitempty"`
+	ResolvedComparisonTimeRange *metricsview.TimeRange `json:"resolved_comparison_time_range,omitempty"`
+	OpenURL                     string                 `json:"open_url,omitempty"`
+	TruncationWarning           string                 `json:"truncation_warning,omitempty"`
 }
 
 func (t *QueryMetricsView) Spec() *mcp.Tool {
@@ -146,6 +151,44 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
 		"limit": 10
 	}
+
+Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing last month as of latest day (base period) to previous month (comparison period):
+	{
+		"metrics_view": "ecommerce_financials",
+		"measures": [
+			{"name": "total_revenue"},
+			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+		],
+		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
+		"time_range": {
+			"expression": "1M as of latest/D"
+		},
+		"comparison_time_range": {
+			expression": "1M as of latest/D offset -1M"
+		},
+		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
+		"limit": 10
+	}
+
+Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing last day as of latest minute (base period) to previous day (comparison period):
+	{
+		"metrics_view": "ecommerce_financials",
+		"measures": [
+			{"name": "total_revenue"},
+			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+		],
+		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
+		"time_range": {
+			"expression": "1D as of latest/m"
+		},
+		"comparison_time_range": {
+			expression": "1D as of latest/m offset -1D"
+		},
+		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
+		"limit": 10
+	}
 `
 
 	var inputSchema *jsonschema.Schema
@@ -158,6 +201,12 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		Name:        QueryMetricsViewName,
 		Title:       "Query Metrics View",
 		Description: description,
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Querying metrics...",
 			"openai/toolInvocation/invoked":  "Queried metrics",
@@ -185,6 +234,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Compute a hard limit to prevent large results that bloat the context
+	// ideally can be moved to executor.enforceQueryLimits, but then we cannot return the warning message in the result as easily
 	var limit int64
 	var isSystemLimit bool
 	if v, ok := args["limit"]; ok { // Hackily extracting the query's 'limit' to avoid parsing the entire query outside of the resolver
@@ -201,13 +251,17 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		isSystemLimit = true
 	}
 	args["limit"] = limit
+	args["query_limits"] = metricsview.QueryLimits{
+		RequireTimeRange: cfg.AIRequireTimeRange,
+		MaxTimeRangeDays: cfg.AIMaxTimeRangeDays,
+	}
 
 	// Apply a timeout to prevent runaway queries
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
 	// Run the metrics query
-	res, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+	res, _, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         session.InstanceID(),
 		Resolver:           "metrics",
 		ResolverProperties: map[string]any(args),
@@ -224,17 +278,25 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		return nil, err
 	}
 
+	// Resolve time ranges and store them in the result to record the exact resolved time ranges for this tool call
+	tr, ctr, err := resolveTimeRanges(res)
+	if err != nil {
+		return nil, err
+	}
+
 	// Generate an open URL for the query
-	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), args)
+	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), session.ID(), session.ParentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate open URL: %w", err)
 	}
 
 	// Build the result
 	result := &QueryMetricsViewResult{
-		Schema:  schema,
-		Data:    data,
-		OpenURL: openURL,
+		Schema:                      schema,
+		Data:                        data,
+		OpenURL:                     openURL,
+		ResolvedTimeRange:           tr,
+		ResolvedComparisonTimeRange: ctr,
 	}
 	if isSystemLimit && int64(len(data)) >= limit { // Add a warning if we hit the system limit
 		msg := fmt.Sprintf("The system truncated the result to %d rows", limit)
@@ -247,7 +309,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 }
 
 // generateOpenURL generates an open URL for the given query parameters
-func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID string, metricsQuery map[string]any) (string, error) {
+func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sessionID, callID string) (string, error) {
 	// Get instance to access the configured frontend URL
 	instance, err := t.Runtime.Instance(ctx, instanceID)
 	if err != nil {
@@ -265,18 +327,37 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
 		return "", fmt.Errorf("failed to parse frontend URL %q: %w", instance.FrontendURL, err)
 	}
 
-	openURL.Path, err = url.JoinPath(openURL.Path, "-", "open-query")
+	openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", sessionID, "message", callID, "-", "open")
 	if err != nil {
 		return "", fmt.Errorf("failed to join path: %w", err)
 	}
 
-	queryJSON, err := json.Marshal(metricsQuery)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
-	}
-	values := make(url.Values)
-	values.Set("query", string(queryJSON))
-	openURL.RawQuery = values.Encode()
-
 	return openURL.String(), nil
+}
+
+func resolveTimeRanges(res runtime.ResolverResult) (*metricsview.TimeRange, *metricsview.TimeRange, error) {
+	meta := res.Meta()
+	if meta == nil {
+		return nil, nil, nil
+	}
+
+	var tr *metricsview.TimeRange
+	rawTr, ok := meta["time_range"]
+	if ok {
+		tr = &metricsview.TimeRange{}
+		if err := mapstructureutil.WeakDecode(rawTr, tr); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var ctr *metricsview.TimeRange
+	rawCtr, ok := meta["comparison_time_range"]
+	if ok {
+		ctr = &metricsview.TimeRange{}
+		if err := mapstructureutil.WeakDecode(rawCtr, ctr); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return tr, ctr, nil
 }

@@ -1,12 +1,18 @@
 import { expect, type Locator } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions.ts";
 import { test } from "./setup/base";
+import {
+  getOpenLinkFromEmail,
+  waitForEmail,
+} from "@rilldata/web-common/tests/utils/email-utils.ts";
 
 // These tests are highly dependent on comparisons. So we need to fix that with rill time. Will be in a separate PR
 test.describe.serial("Alerts", () => {
   test.describe.serial("Alerts with filters", () => {
     test("Should create alert with filters", async ({ adminPage }) => {
       await adminPage.goto("/e2e/openrtb/explore/auction_explore");
+      // We are seeing some race condition where clicking `App Site Domain` too quickly can get reset with an internal redirect.
+      await adminPage.waitForURL(/tr=P7D/);
 
       await adminPage.getByRole("button", { name: "Create alert" }).click();
 
@@ -14,15 +20,14 @@ test.describe.serial("Alerts", () => {
 
       // Select "Last 6 hours" as time range
       await interactWithTimeRangeMenu(alertForm, async () => {
-        await alertForm.getByRole("menuitem", { name: "Last 6 hours" }).click();
+        // Menu content is portaled to document.body, so use page-level scope
+        await adminPage.getByRole("menuitem", { name: "Last 6 hours" }).click();
       });
       // Enable time comparison
       await alertForm.getByLabel("Toggle time comparison").click();
 
       // Select "App Site Name" as split by dimension
-      await adminPage
-        .getByRole("combobox", { name: "Split by dimension" })
-        .click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Name").click();
 
       // Preview should have the correct 1st row
@@ -85,6 +90,8 @@ test.describe.serial("Alerts", () => {
         .getByTitle("Alert name")
         .fill("Requests for App Site Name % change vs previous period alert");
 
+      // Store time before clicking run to ensure latest email is fetched.
+      const time = new Date();
       // Create the alert
       await alertForm.getByRole("button", { name: "Create" }).click();
 
@@ -119,6 +126,25 @@ test.describe.serial("Alerts", () => {
       await expect(adminPage.getByLabel("Alert criteria")).toHaveText(
         /Criteria\s*requests\s*% change from previous period\s*> 0%\s*requests\s*% change from previous period\s*< 100%/m,
       );
+
+      // Wait for the email and extract the open url from it.
+      const email = await waitForEmail(
+        "Requests for App Site Name % change vs previous period alert",
+        time,
+      );
+      const link = await getOpenLinkFromEmail(email);
+
+      await adminPage.goto(link);
+
+      // Assert that the data is as expected
+      await expect(
+        adminPage
+          .getByLabel("app_site_name leaderboard")
+          .getByRole("row", { name: "My Little Universe" }),
+      ).toHaveText(/My Little Universe\s+4.6k\s+3.2k\s+229%/);
+      await expect(
+        adminPage.getByRole("button", { name: "Requests 162k" }),
+      ).toHaveText(/Requests\s+162k\s+-16,000\s+-9%/);
     });
 
     test("Should edit alert with filters", async ({ adminPage }) => {
@@ -131,30 +157,36 @@ test.describe.serial("Alerts", () => {
         .click();
 
       // Edit the alert
-      await adminPage.getByRole("button", { name: "Edit" }).click();
+      await adminPage.getByLabel("Edit alert").click();
 
       const alertForm = adminPage.locator("form#edit-alert-form");
 
       // Select "Last 24 hours" as time range
       await interactWithTimeRangeMenu(alertForm, async () => {
-        await alertForm
+        // Menu content is portaled to document.body, so use page-level scope
+        await adminPage
           .getByRole("menuitem", { name: "Last 24 hours" })
           .click();
       });
 
       // Add "Ad Size" filter
       await alertForm.getByLabel("Add filter button").click();
-      await alertForm.getByRole("menuitem", { name: "Ad Size" }).click();
-      // Add filters for 1024x768, 120x600, 160x600
-      await alertForm.getByRole("menuitem", { name: "1024x768" }).click();
-      await alertForm.getByRole("menuitem", { name: "120x600" }).click();
-      await alertForm.getByRole("menuitem", { name: "160x600" }).click();
+      // Menu content is portaled to document.body, so use page-level scope
+      await adminPage.getByRole("menuitem", { name: "Ad Size" }).click();
+      // DimensionFilter values are also portaled
+      await adminPage
+        .getByRole("menuitemcheckbox", { name: "1024x768" })
+        .click();
+      await adminPage
+        .getByRole("menuitemcheckbox", { name: "120x600" })
+        .click();
+      await adminPage
+        .getByRole("menuitemcheckbox", { name: "160x600" })
+        .click();
       await alertForm.getByLabel("Open ad_size filter").click();
 
       // Update split by dimension to "App Site Domain"
-      await adminPage
-        .getByRole("combobox", { name: "Split by dimension" })
-        .click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Domain").click();
 
       // Preview should have the correct 1st row
@@ -262,9 +294,7 @@ test.describe.serial("Alerts", () => {
       const alertForm = adminPage.locator("form#create-alert-form");
 
       // Select "App Site Name" as split by dimension
-      await adminPage
-        .getByRole("combobox", { name: "Split by dimension" })
-        .click();
+      await adminPage.getByLabel("Split by dimension", { exact: true }).click();
       await adminPage.getByRole("listbox").getByText("App Site Name").click();
 
       // Go to criteria tab
@@ -324,7 +354,7 @@ test.describe.serial("Alerts", () => {
         .click();
 
       // Edit the alert
-      await adminPage.getByRole("button", { name: "Edit" }).click();
+      await adminPage.getByLabel("Edit alert").click();
 
       const alertForm = adminPage.locator("form#edit-alert-form");
 

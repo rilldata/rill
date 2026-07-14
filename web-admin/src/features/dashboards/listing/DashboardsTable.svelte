@@ -1,58 +1,85 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
+  import { page } from "$app/state";
+  import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { flexRender } from "@tanstack/svelte-table";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
-  import { useDashboards } from "./selectors";
+  import { useDashboards, useIsInitialBuild } from "./selectors";
+  import { Search } from "@rilldata/web-common/components/search";
+  import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
+  import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
+  import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
-  export let isEmbedded = false;
-  export let isPreview = false;
-  export let previewLimit = 5;
+  let {
+    isEmbedded = false,
+    isPreview = false,
+    previewLimit = 5,
+  }: {
+    isEmbedded?: boolean;
+    isPreview?: boolean;
+    previewLimit?: number;
+  } = $props();
 
-  $: ({ instanceId } = $runtime);
-  $: ({
-    params: { organization, project },
-  } = $page);
+  const selectedTagsState = UrlParamsState.createStringArrayParam("tags");
 
-  $: dashboards = useDashboards(instanceId);
-  $: ({
+  const searchTextStore = new DebouncedRuneStore(
+    UrlParamsState.createStringParam("q"),
+    500,
+  );
+
+  const runtimeClient = useRuntimeClient();
+  let { organization, project } = $derived(page.params);
+
+  const dashboards = useDashboards(runtimeClient);
+  let {
     data: dashboardsData,
     isLoading,
     isError,
     isSuccess,
     error,
-  } = $dashboards);
+  } = $derived($dashboards);
 
-  $: displayData = isPreview
-    ? (dashboardsData?.slice(0, previewLimit) ?? [])
-    : (dashboardsData ?? []);
-  $: hasMoreDashboards =
-    isPreview && dashboardsData && dashboardsData.length > previewLimit;
+  let initialBuild = useIsInitialBuild(runtimeClient);
+  let isBuilding = $derived($initialBuild.data === true);
 
-  /**
-   * Table column definitions.
-   * - "composite": Renders all dashboard data in a single cell.
-   * - Others: Used for sorting and filtering but not displayed.
-   *
-   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
-   * Relevant issues:
-   * - https://github.com/TanStack/table/issues/4241
-   * - https://github.com/TanStack/table/issues/4302
-   */
+  let allDashboards = $derived(dashboardsData ?? []);
+  let availableTags = $derived(getAllTagsForResources(allDashboards));
+  let hasSomeTag = $derived(availableTags.length > 0);
+
+  let filteredDashboards = $derived(
+    filterResources(
+      allDashboards,
+      [],
+      searchTextStore.value,
+      [],
+      selectedTagsState.value,
+    ),
+  );
+
+  let displayData = $derived(
+    isPreview ? filteredDashboards.slice(0, previewLimit) : filteredDashboards,
+  );
+
+  let hasMoreDashboards = $derived(
+    isPreview && filteredDashboards.length > previewLimit,
+  );
+
   const columns = [
     {
       id: "composite",
       cell: ({ row }) => {
         const resource = row.original as V1Resource;
         const name = resource.meta.name.name;
-
-        // If not a Metrics Explorer, it's a Custom Dashboard.
         const isMetricsExplorer = !!resource?.explore;
         const title = isMetricsExplorer
           ? resource.explore.spec.displayName
@@ -63,8 +90,9 @@
         const refreshedOn = isMetricsExplorer
           ? resource.explore?.state?.dataRefreshedOn
           : resource.canvas?.state?.dataRefreshedOn;
+        const tags = resource.meta?.tags ?? [];
 
-        return flexRender(DashboardsTableCompositeCell, {
+        return renderComponent(DashboardsTableCompositeCell, {
           name,
           title,
           lastRefreshed: refreshedOn,
@@ -72,6 +100,9 @@
           error: resource.meta.reconcileError,
           isMetricsExplorer,
           isEmbedded,
+          organization,
+          project,
+          tags,
         });
       },
     },
@@ -116,47 +147,77 @@
   const initialSorting = [{ id: "name", desc: false }];
 </script>
 
-{#if isLoading}
+{#if isLoading || isBuilding}
   <div class="m-auto mt-20">
-    <DelayedSpinner {isLoading} size="24px" />
+    <DelayedSpinner isLoading={true} size="24px" />
   </div>
 {:else if isError}
   <ResourceError kind="dashboard" {error} />
 {:else if isSuccess}
   <div class="flex flex-col w-full gap-y-3">
-    <ResourceList
-      kind="dashboard"
-      data={displayData}
-      {columns}
-      {columnVisibility}
-      {initialSorting}
-      toolbar={!isPreview}
-    >
-      <ResourceListEmptyState
-        slot="empty"
-        icon={ExploreIcon}
-        message="You don't have any dashboards yet"
-      >
-        <span slot="action">
-          <a
-            href="https://docs.rilldata.com/developers/build/dashboards"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Create a dashboard</a
-          > to get started
-        </span>
-      </ResourceListEmptyState>
-    </ResourceList>
-    {#if hasMoreDashboards}
-      <div class="pl-4 py-1">
-        <a
-          href={`/${organization}/${project}/-/dashboards`}
-          class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
-        >
-          See all dashboards →
-        </a>
+    {#if !isPreview}
+      <div class="flex flex-row items-center gap-x-2">
+        <Search
+          placeholder={m.common_search()}
+          autofocus={false}
+          bind:value={searchTextStore.getter, searchTextStore.setter}
+          rounded="lg"
+          retainValueOnMount
+          large
+        />
       </div>
     {/if}
+
+    <div class="flex flex-row flex-1 w-full gap-x-2 overflow-hidden">
+      {#if hasSomeTag && !isPreview}
+        <ResizableSidebar
+          id="dashboards-tag-sidebar"
+          minWidth={200}
+          maxWidth={500}
+          defaultWidth={200}
+          additionalClass="overflow-hidden border rounded-lg"
+          side="right"
+        >
+          <DashboardsTagSidebar
+            resources={allDashboards}
+            searchText={searchTextStore.value}
+          />
+        </ResizableSidebar>
+      {/if}
+
+      <div class="flex flex-col flex-grow">
+        <ResourceList
+          kind="dashboard"
+          data={displayData}
+          {columns}
+          {columnVisibility}
+          {initialSorting}
+          toolbar={false}
+        >
+          <ResourceListEmptyState
+            slot="empty"
+            icon={ExploreIcon}
+            message={m.dashboard_list_empty()}
+          >
+            <span slot="action">
+              {@html m.dashboard_list_create_to_start({
+                link: `<a href="https://docs.rilldata.com/developers/build/dashboards" target="_blank" rel="noopener noreferrer">${escapeHtml(m.dashboard_list_create())}</a>`,
+              })}
+            </span>
+          </ResourceListEmptyState>
+        </ResourceList>
+
+        {#if hasMoreDashboards}
+          <div class="pl-4 py-1">
+            <a
+              href={`/${organization}/${project}/-/dashboards`}
+              class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+            >
+              {m.dashboard_list_see_all()} →
+            </a>
+          </div>
+        {/if}
+      </div>
+    </div>
   </div>
 {/if}

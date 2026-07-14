@@ -70,6 +70,7 @@ measures:
 					ResultConnector:   "duckdb",
 					ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
+					RowsTotal:         3,
 				},
 			},
 		},
@@ -99,6 +100,7 @@ measures:
 					ResultConnector:   "duckdb",
 					ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": "bar", "used_model_name": true, "view": true})),
 					ResultTable:       "bar",
+					RowsTotal:         3,
 				},
 			},
 		},
@@ -237,6 +239,7 @@ path: data/foo.csv
 					ResultConnector:   "duckdb",
 					ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
+					RowsTotal:         3,
 				},
 			},
 		},
@@ -325,6 +328,7 @@ path: data/foo.csv
 					ResultConnector:   "duckdb",
 					ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
+					RowsTotal:         1,
 				},
 			},
 		},
@@ -559,7 +563,7 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	model, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
+	model, modelRes := newModel("SELECT * FROM foo", "bar", "foo", 3)
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar")
 
@@ -592,7 +596,7 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
-	_, anotherModelRes := newModel("SELECT * FROM Bar_New", "bar_another", "Bar_New")
+	_, anotherModelRes := newModel("SELECT * FROM Bar_New", "bar_another", "Bar_New", 3)
 	anotherModelRes.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	testruntime.RequireResource(t, rt, id, anotherModelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar_another")
@@ -722,11 +726,11 @@ func TestCyclesWithTwoModels(t *testing.T) {
 		"/models/bar1.sql": `SELECT * FROM bar2`,
 		"/models/bar2.sql": `SELECT * FROM bar1`,
 	})
-	bar1Model, bar1Res := newModel("SELECT * FROM bar2", "bar1", "bar2")
+	bar1Model, bar1Res := newModel("SELECT * FROM bar2", "bar1", "bar2", 0)
 	bar1Res.Meta.ReconcileError = `dependency`
 	bar1Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	bar1Model.State = &runtimev1.ModelState{}
-	bar2Model, bar2Res := newModel("SELECT * FROM bar1", "bar2", "bar1")
+	bar2Model, bar2Res := newModel("SELECT * FROM bar1", "bar2", "bar1", 0)
 	bar2Res.Meta.ReconcileError = `dependency`
 	bar2Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	bar2Model.State = &runtimev1.ModelState{}
@@ -748,7 +752,7 @@ func TestSelfReference(t *testing.T) {
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar1.sql": `SELECT * FROM bar1`,
 	})
-	bar1Model, bar1Res := newModel("SELECT * FROM bar1", "bar1", "bar1")
+	bar1Model, bar1Res := newModel("SELECT * FROM bar1", "bar1", "bar1", 0)
 	bar1Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	bar1Res.Meta.ReconcileError = `cyclic dependency`
 	bar1Model.State = &runtimev1.ModelState{}
@@ -779,15 +783,15 @@ path: data/foo.csv
 		"/models/bar2.sql": `SELECT * FROM bar3`,
 		"/models/bar3.sql": `SELECT * FROM bar1`,
 	})
-	bar1Model, bar1Res := newModel("SELECT * FROM bar2", "bar1", "bar2")
+	bar1Model, bar1Res := newModel("SELECT * FROM bar2", "bar1", "bar2", 0)
 	bar1Res.Meta.ReconcileError = `dependency`
 	bar1Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	bar1Model.State = &runtimev1.ModelState{}
-	bar2Model, bar2Res := newModel("SELECT * FROM bar3", "bar2", "bar3")
+	bar2Model, bar2Res := newModel("SELECT * FROM bar3", "bar2", "bar3", 0)
 	bar2Res.Meta.ReconcileError = `dependency`
 	bar2Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	bar2Model.State = &runtimev1.ModelState{}
-	bar3Model, bar3Res := newModel("SELECT * FROM bar1", "bar3", "bar1")
+	bar3Model, bar3Res := newModel("SELECT * FROM bar1", "bar3", "bar1", 0)
 	bar3Res.Meta.ReconcileError = `dependency`
 	bar3Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	bar3Model.State = &runtimev1.ModelState{}
@@ -802,11 +806,11 @@ path: data/foo.csv
 		"/models/bar2.sql": `SELECT * FROM bar3`,
 		"/models/bar3.sql": `SELECT * FROM foo`,
 	})
-	_, bar1Res = newModel("SELECT * FROM bar2", "bar1", "bar2")
+	_, bar1Res = newModel("SELECT * FROM bar2", "bar1", "bar2", 3)
 	bar1Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
-	_, bar2Res = newModel("SELECT * FROM bar3", "bar2", "bar3")
+	_, bar2Res = newModel("SELECT * FROM bar3", "bar2", "bar3", 3)
 	bar2Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
-	_, bar3Res = newModel("SELECT * FROM foo", "bar3", "foo")
+	_, bar3Res = newModel("SELECT * FROM foo", "bar3", "foo", 3)
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
 	testruntime.RequireResource(t, rt, id, bar1Res)
@@ -1091,7 +1095,7 @@ measures:
 - expression: avg(a)
 `,
 	})
-	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
+	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo", 3)
 	_, metricsRes := newMetricsView("dash", "bar", "", []any{"count(*)", runtimev1.Type_CODE_INT64, "avg(a)", runtimev1.Type_CODE_FLOAT64}, []any{"b", runtimev1.Type_CODE_INT64, "c", runtimev1.Type_CODE_INT64})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
@@ -1157,7 +1161,7 @@ path: data/foo.csv
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
-	_, sourceRes := newSource("foo", "data/foo.csv", localFileHash(t, rt, id, []string{"data/foo.csv"}))
+	_, sourceRes := newSource("foo", "data/foo.csv", localFileHash(t, rt, id, []string{"data/foo.csv"}), 3)
 	testruntime.RequireResource(t, rt, id, sourceRes)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1166,7 +1170,7 @@ path: data/foo.csv
 	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "bar")
-	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
+	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo", 3)
 	testruntime.RequireResource(t, rt, id, modelRes)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1218,7 +1222,7 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.Resource) {
+func newSource(name, path, localFileHash string, rows int64) (*runtimev1.Model, *runtimev1.Resource) {
 	source := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
 			InputConnector:   "local_file",
@@ -1234,6 +1238,7 @@ func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.R
 			ResultConnector:   "duckdb",
 			ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": false})),
 			ResultTable:       name,
+			RowsTotal:         rows,
 		},
 	}
 	sourceRes := &runtimev1.Resource{
@@ -1249,7 +1254,7 @@ func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.R
 	return source, sourceRes
 }
 
-func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource) {
+func newModel(query, name, source string, rows int64) (*runtimev1.Model, *runtimev1.Resource) {
 	model := &runtimev1.Model{
 		Spec: &runtimev1.ModelSpec{
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
@@ -1263,6 +1268,7 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 			ResultConnector:   "duckdb",
 			ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": true})),
 			ResultTable:       name,
+			RowsTotal:         rows,
 		},
 	}
 	modelRes := &runtimev1.Resource{

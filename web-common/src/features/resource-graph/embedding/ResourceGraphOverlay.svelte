@@ -5,6 +5,7 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { ALLOWED_FOR_GRAPH } from "../navigation/seed-parser";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { withEditorPrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { tick } from "svelte";
 
   export let open = false;
@@ -52,9 +53,11 @@
       : null;
 
   $: overlaySeeds = anchorSeed ? [anchorSeed] : undefined;
-  $: graphHref = graphableKind
-    ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
-    : "/graph";
+  $: graphHref = withEditorPrefix(
+    graphableKind
+      ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
+      : "/graph",
+  );
 
   $: emptyReason = !anchorSeed ? "unsupported" : null;
 
@@ -87,22 +90,21 @@
 
 {#if open}
   <Overlay bg="rgba(15,23,42,0.8)">
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
       class="graph-overlay__backdrop bg-neutral-800/60 dark:bg-neutral-100/60"
-      on:click={handleBackdropClick}
+      onclick={handleBackdropClick}
       role="presentation"
     >
-      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <div
         class="graph-overlay"
         role="dialog"
         aria-modal="true"
+        tabindex="-1"
         aria-label={anchorName
           ? `Resource graph for ${anchorName}`
           : "Resource graph"}
-        on:click={handleDialogClick}
+        onclick={handleDialogClick}
       >
         <header class="graph-overlay__header">
           <div class="graph-overlay__title">
@@ -118,7 +120,7 @@
             </a>
             <button
               class="graph-overlay__close"
-              on:click={closeOverlay}
+              onclick={closeOverlay}
               aria-label="Close resource graph overlay"
             >
               <X size="18px" aria-hidden="true" />

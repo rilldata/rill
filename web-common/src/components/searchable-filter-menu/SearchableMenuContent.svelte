@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import { matchSorter } from "match-sorter";
@@ -70,7 +71,7 @@
   <div class="px-3 pt-3 pb-1">
     <Search
       bind:value={searchText}
-      label="Search list"
+      label={m.common_search_list()}
       showBorderOnFocus={false}
     />
   </div>
@@ -91,13 +92,16 @@
               ? DropdownMenu.CheckboxItem
               : DropdownMenu.Item}
             {...allowMultiSelect || showSelection
-              ? { checked: selected, showXForSelected }
+              ? {
+                  checked: selected,
+                  showXForSelected,
+                  closeOnSelect: !allowMultiSelect,
+                }
               : {}}
             class="text-xs cursor-pointer"
-            role="menuitem"
             disabled={requireSelection && singleSelection && selected}
             aria-disabled={requireSelection && singleSelection && selected}
-            on:click={() => {
+            onclick={() => {
               if (requireSelection && singleSelection && selected) return;
 
               onSelect(name);
@@ -135,16 +139,16 @@
     <footer>
       <Button onClick={onToggleSelectAll} type="tertiary">
         {#if allSelected}
-          Deselect all
+          {m.common_deselect_all()}
         {:else}
-          Select all
+          {m.common_select_all()}
         {/if}
       </Button>
 
       <slot name="action" />
       {#if numSelectedNotShown && showHiddenSelectionsCount}
         <div class="ui-label">
-          {numSelectedNotShown} other value{numSelectedNotShown > 1 ? "s" : ""} selected
+          {m.common_other_values_selected({ count: numSelectedNotShown })}
         </div>
       {/if}
     </footer>
@@ -158,10 +162,5 @@
     @apply bg-gray-100;
     @apply flex flex-row flex-none items-center justify-end;
     @apply gap-x-2 p-2 px-3.5;
-  }
-
-  footer:is(.dark) {
-    @apply bg-gray-800;
-    @apply border-gray-700;
   }
 </style>

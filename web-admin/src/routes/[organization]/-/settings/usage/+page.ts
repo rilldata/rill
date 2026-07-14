@@ -1,16 +1,14 @@
-import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
-import { error, redirect } from "@sveltejs/kit";
+import { redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
+import { PaidPlanTypes } from "@rilldata/web-admin/features/billing/plans/utils.ts";
 
 export const load: PageLoad = async ({ params: { organization }, parent }) => {
-  const { subscription, billingPortalUrl } = await parent();
+  const { billingPortalUrl, subscription } = await parent();
 
-  if (!billingPortalUrl) {
+  if (
+    !billingPortalUrl ||
+    (subscription?.plan?.planType && !PaidPlanTypes[subscription.plan.planType])
+  ) {
     throw redirect(307, `/${organization}/-/settings`);
-  }
-
-  // Orgs on an Enterprise Plan should not see this page
-  if (subscription?.plan && isEnterprisePlan(subscription.plan.name)) {
-    throw error(404, "Page not found");
   }
 };

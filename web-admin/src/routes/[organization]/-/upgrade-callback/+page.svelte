@@ -6,26 +6,38 @@
     createAdminServiceUpdateBillingSubscription,
   } from "@rilldata/web-admin/client";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
-  import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+  import {
+    getPaymentIssueErrorText,
+    needsPaymentSetup,
+  } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
     fetchPaymentsPortalURL,
-    fetchTeamPlan,
+    maybeFetchPublicPlanByName,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
+  import {
+    SELF_SERVE_PLANS,
+    SELF_SERVE_PLANS_BY_NAME,
+  } from "@rilldata/web-admin/features/billing/plans/plan-details";
+  import { triggerWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: PageData;
   $: ({ cancelled, paymentIssues } = data);
   $: redirect = $page.url.searchParams.get("redirect");
+  // The chosen plan is carried through the Stripe return URL (see getBillingUpgradeUrl).
+  // Fall back to the first self-serve plan for older links that predate the plan chooser.
+  $: planName = $page.url.searchParams.get("plan") ?? SELF_SERVE_PLANS[0].name;
+  $: planDetails = SELF_SERVE_PLANS_BY_NAME[planName];
+  $: planDisplayName = planDetails?.displayName ?? planName;
 
   /**
    * Landing page to upgrade a user to team plan.
@@ -41,12 +53,15 @@
     if (paymentIssues.length) {
       eventBus.emit("notification", {
         type: "error",
-        message: `Please fix payment issues: ${getPaymentIssueErrorText(paymentIssues)}`,
+        message: m.billing_fix_payment_issues({
+          details: getPaymentIssueErrorText(paymentIssues),
+        }),
         link: {
-          text: "Update payment",
+          text: m.billing_update_payment(),
           href: await fetchPaymentsPortalURL(
             organization,
             getBillingUpgradeUrl($page, organization),
+            needsPaymentSetup(paymentIssues),
           ),
         },
         options: {
@@ -55,30 +70,27 @@
       });
       return goto(`/${organization}/-/settings/billing`);
     }
-    const teamPlan = await fetchTeamPlan();
+    const paidPlan = await maybeFetchPublicPlanByName(planName);
+    if (!paidPlan) return goto(`/${organization}/-/settings/billing`);
     try {
       if (cancelled) {
         await $planRenewer.mutateAsync({
           org: organization,
-          data: {
-            planName: teamPlan.name,
-          },
+          data: { planName },
         });
         eventBus.emit("notification", {
           type: "success",
-          message: "Your Team plan was renewed",
+          message: m.billing_plan_renewed({ planName: paidPlan.displayName }),
         });
       } else {
         await $planUpdater.mutateAsync({
           org: organization,
-          data: {
-            planName: teamPlan.name,
-          },
+          data: { planName },
         });
         // if redirect is set then this page won't be active.
         // so this will lead to pop-in of the modal before navigating away
         if (!redirect) {
-          showWelcomeToRillDialog.set(true);
+          triggerWelcomeToRillDialog(planName);
         }
       }
       void invalidateBillingInfo(organization);
@@ -99,14 +111,12 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <div class="h-36">
-      <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
-    </div>
+    <LoadingSpinner />
     <CtaHeader variant="bold">
       {#if cancelled}
-        Renewing team plan...
+        {m.billing_renewing_plan({ plan: planDisplayName })}
       {:else}
-        Upgrading to team plan...
+        {m.billing_upgrading_plan({ plan: planDisplayName })}
       {/if}
     </CtaHeader>
     <CtaNeedHelp />

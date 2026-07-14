@@ -22,9 +22,8 @@
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
   export let autoSave = true;
-  export let editor: EditorView;
+  export let editor: EditorView | null;
   export let forceDisableAutoSave = false;
-  export let showSaveBar = true;
   export let refetchOnWindowFocus = true;
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
@@ -39,6 +38,8 @@
     saveState: { saving, error, resolve },
     saveEnabled,
   } = fileArtifact);
+
+  $: editable = !fileArtifact.managed;
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
@@ -70,7 +71,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} on:focus={handleRefocus} />
+<svelte:window onkeydown={handleKeydown} onfocus={handleRefocus} />
 
 <section>
   {#if $merging}
@@ -89,11 +90,12 @@
         {fileArtifact}
         autoSave={!forceDisableAutoSave && !disableAutoSave && autoSave}
         bind:editor
+        {editable}
       />
     {/key}
   </div>
 
-  {#if !$merging && showSaveBar}
+  {#if !$merging && editable}
     <footer>
       <div class="flex gap-x-3">
         {#if !autoSave || disableAutoSave || forceDisableAutoSave}
@@ -141,7 +143,7 @@
           bind:checked={autoSave}
           id="auto-save"
           small
-          on:click={() => {
+          onclick={() => {
             if (!autoSave) debounceSave();
           }}
         />
@@ -161,26 +163,23 @@
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
-        <AlertDialog.Action asChild let:builder>
-          <Button
-            builders={[builder]}
-            type="primary"
-            large
-            onClick={() => {
-              merging.set(true);
-            }}
-          >
-            Compare
-          </Button>
+        <AlertDialog.Action>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              type="primary"
+              large
+              onClick={() => {
+                merging.set(true);
+              }}
+            >
+              Compare
+            </Button>
 
-          <Button
-            builders={[builder]}
-            type="secondary"
-            large
-            onClick={revertContent}
-          >
-            Overwrite
-          </Button>
+            <Button type="secondary" large onClick={revertContent}>
+              Overwrite
+            </Button>
+          {/snippet}
         </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>

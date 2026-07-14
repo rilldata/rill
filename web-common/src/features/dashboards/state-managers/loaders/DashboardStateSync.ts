@@ -15,13 +15,11 @@ import {
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { parseRillTime } from "../../url-state/time-ranges/parser";
-import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -51,7 +49,7 @@ export class DashboardStateSync {
   }
 
   public constructor(
-    instanceId: string,
+    private readonly client: RuntimeClient,
     metricsViewName: string,
     private readonly exploreName: string,
     private readonly extraPrefix: string | undefined,
@@ -59,7 +57,7 @@ export class DashboardStateSync {
   ) {
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
-      instanceId,
+      client,
       metricsViewName,
       exploreName,
     );
@@ -150,6 +148,7 @@ export class DashboardStateSync {
         initExploreState.selectedTimeRange,
         // initExploreState.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
+        this.client,
         exploreSpec,
         [
           initExploreState.selectedTimeRange,
@@ -159,8 +158,6 @@ export class DashboardStateSync {
         undefined,
         initExploreState.selectedTimeDimension,
       );
-
-      deriveIntervalFromRillTimeName(initExploreState.selectedTimeRange);
     }
 
     // Init the store with state we got from dataLoader
@@ -245,6 +242,7 @@ export class DashboardStateSync {
         partialExplore.selectedTimeRange,
         // partialExplore.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
+        this.client,
         exploreSpec,
         [
           partialExplore.selectedTimeRange,
@@ -254,15 +252,12 @@ export class DashboardStateSync {
         undefined,
         partialExplore.selectedTimeDimension,
       );
-
-      deriveIntervalFromRillTimeName(partialExplore.selectedTimeRange);
     }
 
     // Merge the partial state from url into the store
     metricsExplorerStore.mergePartialExplorerEntity(
       this.exploreName,
       partialExplore,
-      metricsViewSpec,
     );
     // Get time controls state after explore state is updated.
     const timeControlsState = get(this.timeControlStore);
@@ -355,22 +350,5 @@ export class DashboardStateSync {
     // dashboard changed so we should update the url
     await goto(newUrl);
     this.updating = false;
-  }
-}
-
-/**
- * Derives and sets the interval (time grain) on a time range from its RillTime name.
- * This is needed when the URL doesn't explicitly specify a grain.
- */
-function deriveIntervalFromRillTimeName(
-  selectedRange: DashboardTimeControls | undefined,
-): void {
-  if (!selectedRange?.name || selectedRange.interval) return;
-
-  try {
-    const parsed = parseRillTime(selectedRange.name);
-    selectedRange.interval = getRangePrecision(parsed);
-  } catch {
-    // Parsing fails for non-rill-time names like "CUSTOM" - use undefined
   }
 }

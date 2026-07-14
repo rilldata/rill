@@ -1,12 +1,12 @@
 <script lang="ts">
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type {
     RangeBuckets,
     NamedRange,
     ISODurationString,
   } from "../../new-time-controls";
-  import type { CustomEventHandler } from "bits-ui";
   import { RILL_TO_LABEL, ALL_TIME_RANGE_ALIAS } from "../../new-time-controls";
 
   export let ranges: RangeBuckets;
@@ -17,8 +17,8 @@
   export let onSelectCustomOption: () => void;
   export let allowCustomTimeRange = true;
 
-  function handleClick(e: CustomEventHandler<MouseEvent, HTMLDivElement>) {
-    const range = e.detail.currentTarget.dataset.range;
+  function handleClick(e: MouseEvent) {
+    const range = (e.currentTarget as HTMLElement)?.dataset?.range;
     if (!range) {
       throw new Error("No range provided");
     }
@@ -28,9 +28,11 @@
 </script>
 
 {#if showDefaultItem && defaultTimeRange}
-  <DropdownMenu.Item data-range={defaultTimeRange} on:click={handleClick}>
+  <DropdownMenu.Item data-range={defaultTimeRange} onclick={handleClick}>
     <div class:font-bold={selected === defaultTimeRange}>
-      Last {humaniseISODuration(defaultTimeRange)}
+      {m.time_last_duration({
+        duration: humaniseISODuration(defaultTimeRange),
+      })}
     </div>
   </DropdownMenu.Item>
 
@@ -40,7 +42,7 @@
 {#each ranges.latest as rillTime, i (i)}
   <DropdownMenu.Item
     data-range={rillTime.interval.toString()}
-    on:click={handleClick}
+    onclick={handleClick}
   >
     <span class:font-bold={selected === rillTime.interval.toString()}>
       {rillTime.getLabel()}
@@ -55,7 +57,7 @@
 {#each ranges.periodToDate as rillTime, i (i)}
   <DropdownMenu.Item
     data-range={rillTime.interval.toString()}
-    on:click={handleClick}
+    onclick={handleClick}
   >
     <span class:font-bold={selected === rillTime.interval.toString()}>
       {rillTime.getLabel()}
@@ -70,7 +72,7 @@
 {#each ranges.previous as rillTime, i (i)}
   <DropdownMenu.Item
     data-range={rillTime.interval.toString()}
-    on:click={handleClick}
+    onclick={handleClick}
   >
     <span class:font-bold={selected === rillTime.interval.toString()}>
       {rillTime.getLabel()}
@@ -80,7 +82,7 @@
 
 {#if ranges.allTime}
   <DropdownMenu.Separator />
-  <DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
+  <DropdownMenu.Item onclick={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
     <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
       {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
     </span>
@@ -89,7 +91,7 @@
 
 {#if allowCustomTimeRange}
   <DropdownMenu.Separator />
-  <DropdownMenu.Item on:click={onSelectCustomOption} data-range="custom">
-    <span class:font-bold={selected === "CUSTOM"}> Custom </span>
+  <DropdownMenu.Item onclick={onSelectCustomOption} data-range="custom">
+    <span class:font-bold={selected === "CUSTOM"}> {m.time_custom()} </span>
   </DropdownMenu.Item>
 {/if}

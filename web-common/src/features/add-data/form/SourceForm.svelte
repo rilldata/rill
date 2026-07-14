@@ -1,0 +1,187 @@
+<script lang="ts">
+  import { createConnectorForm } from "@rilldata/web-common/features/sources/modal/FormValidation.ts";
+  import {
+    runtimeServiceGetInstance,
+    getRuntimeServiceGetInstanceQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { getConnectorSchema } from "@rilldata/web-common/features/sources/modal/connector-schemas.ts";
+  import { onMount } from "svelte";
+  import { getSourceYAML } from "./connector-source-yaml-generator.ts";
+  import AddDataFormStructure from "@rilldata/web-common/features/add-data/form/AddDataFormStructure.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { prepareSourceFormData } from "@rilldata/web-common/features/sources/sourceUtils.ts";
+  import {
+    type AddDataConfig,
+    type CreateModelStep,
+    type ImportFromConfig,
+    type ImportStepConfig,
+  } from "@rilldata/web-common/features/add-data/manager/steps/types.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getLabelsForSource } from "@rilldata/web-common/features/add-data/form/form-labels.ts";
+  import { uploadFile } from "@rilldata/web-common/features/sources/modal/file-upload.ts";
+  import { splitFolderFileNameAndExtension } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+  import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { getAnalyzedConnectorByName } from "@rilldata/web-common/features/connectors/selectors.ts";
+  import { generateImportToConfig } from "@rilldata/web-common/features/add-data/manager/steps/import.ts";
+  import {
+    getConnectorDriverForSchema,
+    getImportStepsForSource,
+  } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
+  import { maybeInitProject } from "@rilldata/web-common/features/add-data/manager/steps/connector.ts";
+  import { getEnvFileStore } from "@rilldata/web-common/features/env-management/env-file-store.ts";
+  import { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+  import { setSubmitError } from "@rilldata/web-common/features/add-data/form/errors.ts";
+  import type { AddDataStateManager } from "@rilldata/web-common/features/add-data/manager/AddDataStateManager.svelte.ts";
+  import { setError, type SuperValidated } from "sveltekit-superforms";
+
+  export let config: AddDataConfig;
+  export let stateManager: AddDataStateManager;
+  export let step: CreateModelStep;
+  export let onSubmit: (importConfig: ImportStepConfig) => void;
+  export let onBack: () => void;
+
+  const runtimeClient = useRuntimeClient();
+  $: connectorDriverQuery = getAnalyzedConnectorByName(
+    runtimeClient,
+    step.connector,
+  );
+  $: connectorDriver =
+    $connectorDriverQuery.data?.driver ??
+    getConnectorDriverForSchema(step.schema);
+
+  const envStore = getEnvFileStore();
+  const envEditSession = new EnvEditSession(
+    envStore,
+    step.connector,
+    getConnectorSchema(step.schema),
+  );
+
+  const importSteps = getImportStepsForSource(config);
+
+  // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
+  // This prevents the preview from updating when Test and Connect writes to .env.
+  // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
+  let defaultOLAP = "duckdb";
+  onMount(async () => {
+    try {
+      const runtimeInstance = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetInstanceQueryKey(
+          runtimeClient.instanceId,
+          {},
+        ),
+        queryFn: () =>
+          runtimeServiceGetInstance(runtimeClient, { sensitive: false }),
+      });
+      defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+    } catch {
+      // fall back to duckdb
+    }
+  });
+
+  const superFormsParams = createConnectorForm({
+    schemaName: step.schema,
+    formType: "source",
+    onUpdate: async ({ form }) => {
+      if (!form.valid) return;
+      try {
+        await submitImportConfig(form);
+      } catch (e) {
+        stateManager.fireErrorEvent(e.message);
+        setSubmitError(form, e);
+      }
+    },
+    additionalDefaults: step.connectorFormValues,
+  });
+
+  $: ({ form } = superFormsParams);
+
+  $: schema = getConnectorSchema(step.schema);
+  $: yamlPreview = connectorDriver
+    ? getSourceYAML({
+        connectorName: step.connector,
+        connector: connectorDriver,
+        formValues: $form,
+        schema,
+        envEditSession,
+        outputConnector: defaultOLAP,
+      })
+    : "";
+
+  $: sourceFormLabels = getLabelsForSource(importSteps);
+
+  async function submitImportConfig(
+    form: SuperValidated<Record<string, unknown>>,
+  ) {
+    if (!connectorDriver) {
+      throw new Error("Connector driver not found for: " + step.connector);
+    }
+    const formValues = form.data;
+
+    await maybeInitProject(runtimeClient);
+
+    if (formValues.file) {
+      // TODO: support multiple files upload
+      const firstFile = formValues.file[0];
+      try {
+        const filePath = await uploadFile(runtimeClient, firstFile);
+        formValues.path = filePath;
+        const [, fileName] = splitFolderFileNameAndExtension(filePath);
+        formValues.name = getName(
+          fileName,
+          fileArtifacts.getNamesForKind(ResourceKind.Model),
+        );
+      } catch (e) {
+        setError(form, "file", e.message); // set error on the file field
+        throw e; // rethrow so that global error handler is triggered
+      }
+    }
+
+    const [rewrittenConnector] = prepareSourceFormData(
+      connectorDriver,
+      formValues,
+      { connectorInstanceName: step.connector },
+    );
+    const schema = getConnectorSchema(rewrittenConnector.name ?? "");
+
+    const yaml = getSourceYAML({
+      connectorName: step.connector,
+      connector: connectorDriver,
+      formValues,
+      schema,
+      envEditSession,
+      outputConnector: defaultOLAP,
+    });
+
+    const importFrom: ImportFromConfig = {
+      from: "yaml",
+      yaml,
+    };
+
+    const importConfig = {
+      importSteps,
+      connector: rewrittenConnector.name!,
+      importFrom,
+      importTo: generateImportToConfig(
+        importFrom,
+        formValues.name as string | undefined,
+      ),
+      envEditSession,
+    } satisfies ImportStepConfig;
+
+    onSubmit(importConfig);
+  }
+</script>
+
+{#if connectorDriver}
+  <AddDataFormStructure
+    {connectorDriver}
+    {schema}
+    {superFormsParams}
+    labels={sourceFormLabels}
+    {yamlPreview}
+    {step}
+    {onBack}
+  />
+{/if}

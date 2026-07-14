@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as Popover from "@rilldata/web-common/components/popover/";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
@@ -15,6 +16,7 @@
   import { string, object, mixed } from "yup";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PinButton from "../PinButton.svelte";
+  import RequiredButton from "../RequiredButton.svelte";
 
   export let dimensionName: string;
   export let name: string;
@@ -30,6 +32,8 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let pinned = false;
   export let showPinControl = false;
+  export let required = false;
+  export let showRequiredControl = false;
 
   const initialValues = {
     dimension: dimensionName,
@@ -39,28 +43,28 @@
   };
 
   const validationSchema = object().shape({
-    dimension: string().required("Required"),
+    dimension: string().required(m.common_required()),
     operation: mixed<MeasureFilterOperation>()
       .oneOf(Object.values(MeasureFilterOperation))
-      .required("Required"),
+      .required(m.common_required()),
     value1: string()
-      .required("Required")
-      .test("is-numeric", "Value must be a valid number", (value) => {
+      .required(m.common_required())
+      .test("is-numeric", m.common_must_be_number(), (value) => {
         return !isNaN(Number(value)) && value.trim() !== "";
       }),
     value2: string().when("operation", {
       is: (val: MeasureFilterOperation) => expressionIsBetween(val),
       then: (schema) =>
         schema
-          .required("Required")
-          .test("is-numeric", "Value must be a valid number", (value) => {
+          .required(m.common_required())
+          .test("is-numeric", m.common_must_be_number(), (value) => {
             return !isNaN(Number(value)) && value.trim() !== "";
           }),
       otherwise: (schema) => schema.optional(),
     }),
   });
 
-  const { form, errors, submit, enhance } = superForm(
+  const { form, formId, errors, submit, enhance } = superForm(
     defaults(initialValues, yup(validationSchema)),
     {
       SPA: true,
@@ -112,7 +116,7 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  onkeydown={(e) => {
     if (e.key === "Enter") {
       submit();
     }
@@ -124,34 +128,47 @@
   {side}
   class="p-2 px-3 w-[250px]"
   strategy="fixed"
+  preventScroll
   id="measure-filter-popover"
 >
-  {#if showPinControl}
+  {#if showPinControl || showRequiredControl}
     <div
       class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
     >
       <b>{label}</b>
 
-      <PinButton
-        pinned={!!pinned}
-        onTogglePin={() => {
-          pinned = !pinned;
-        }}
-      />
+      <div class="flex flex-row items-center gap-x-1">
+        {#if showRequiredControl}
+          <RequiredButton
+            required={!!required}
+            onToggleRequired={() => {
+              required = !required;
+            }}
+          />
+        {/if}
+        {#if showPinControl}
+          <PinButton
+            pinned={!!pinned}
+            onTogglePin={() => {
+              pinned = !pinned;
+            }}
+          />
+        {/if}
+      </div>
     </div>
   {/if}
   <form
     use:enhance
     autocomplete="off"
     class="flex flex-col gap-y-3"
-    id="measure"
+    id={$formId}
   >
     <Select
       bind:value={$form["dimension"]}
       id="dimension"
-      label="By Dimension"
+      label={m.measure_filter_by_dimension()}
       options={dimensionOptions}
-      placeholder="Select dimension to split by"
+      placeholder={m.measure_filter_select_dimension()}
     />
     <Select
       bind:value={$form["operation"]}
@@ -169,7 +186,7 @@
         }
       }}
       id="operation"
-      label="Threshold"
+      label={m.measure_filter_threshold()}
       options={MeasureFilterOperationOptions}
     />
     <Input
@@ -178,7 +195,9 @@
       id="value1"
       onEnter={submit}
       alwaysShowError
-      placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
+      placeholder={isBetweenExpression
+        ? m.measure_filter_lower_value()
+        : m.measure_filter_enter_number()}
     />
 
     {#if isBetweenExpression}
@@ -186,12 +205,14 @@
         bind:value={$form["value2"]}
         errors={$errors["value2"]}
         id="value2"
-        placeholder="Higher Value"
+        placeholder={m.measure_filter_higher_value()}
         alwaysShowError
         onEnter={submit}
       />
     {/if}
 
-    <Button submitForm type="primary" form="measure">Apply</Button>
+    <Button submitForm type="primary" form={$formId}
+      >{m.measure_filter_apply()}</Button
+    >
   </form>
 </Popover.Content>

@@ -1,3 +1,4 @@
+import type { ConnectError } from "@connectrpc/connect";
 import {
   createAndExpression,
   createInExpression,
@@ -13,8 +14,6 @@ import {
   type V1MetricsViewAggregationSort,
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   type CreateQueryResult,
   keepPreviousData,
@@ -25,6 +24,7 @@ import {
   getErrorFromResponses,
   getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
+  getUriMeasuresForDimensions,
   isTimeDimension,
   prepareMeasureForComparison,
 } from "./pivot-utils";
@@ -50,7 +50,7 @@ export function createPivotAggregationRowQuery(
   limit = "100",
   offset = "0",
   timeRange: TimeRangeString | undefined = undefined,
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, ConnectError> {
   if (!sort.length) {
     sort = [
       {
@@ -73,12 +73,12 @@ export function createPivotAggregationRowQuery(
   }
 
   return derived(
-    [runtime, ctx.metricsViewName],
-    ([$runtime, metricsViewName], set) =>
+    [ctx.metricsViewName, ctx.enabled],
+    ([metricsViewName, enabled], set) =>
       createQueryServiceMetricsViewAggregation(
-        $runtime.instanceId,
-        metricsViewName,
+        ctx.runtimeClient,
         {
+          metricsView: metricsViewName,
           measures: prepareMeasureForComparison(measures),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
@@ -101,7 +101,7 @@ export function createPivotAggregationRowQuery(
         },
         {
           query: {
-            enabled: ctx.enabled,
+            enabled: enabled && config.ready !== false,
             placeholderData: keepPreviousData,
           },
         },
@@ -123,6 +123,9 @@ export function getAxisForDimensions(
   timeRange: TimeRangeString | undefined = undefined,
   limit = "100",
   offset = "0",
+  // When true, append URI measures for dimensions that declare a `uri`, so the
+  // resolved URL rides along on each row. Used for row (not column) dimensions.
+  includeUriMeasures = false,
 ): Readable<PivotAxesData | null> {
   if (!dimensions.length) return readable(null);
 
@@ -164,10 +167,20 @@ export function getAxisForDimensions(
           },
         ];
       }
+      // Append the URI measure for this dimension (if it has one) without
+      // affecting the sort, which was derived from `measures` above.
+      const measuresForDimension =
+        includeUriMeasures && !dimension.alias
+          ? [
+              ...measures,
+              ...getUriMeasuresForDimensions([dimension.name], config),
+            ]
+          : measures;
+
       return createPivotAggregationRowQuery(
         ctx,
         config,
-        measures,
+        measuresForDimension,
         [dimension],
         whereFilter,
         sortByForDimension,

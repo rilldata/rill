@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
@@ -6,7 +7,7 @@
     createAdminServiceListOrganizationMemberUsers,
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveUsergroupMemberUser,
-    createAdminServiceRenameUsergroup,
+    createAdminServiceUpdateUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
@@ -95,7 +96,7 @@
   const queryClient = useQueryClient();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
-  const renameUserGroup = createAdminServiceRenameUsergroup();
+  const updateUserGroup = createAdminServiceUpdateUsergroup();
 
   function handleRemove(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
@@ -105,11 +106,11 @@
 
   async function handleRename(groupName: string, newName: string) {
     try {
-      await $renameUserGroup.mutateAsync({
+      await $updateUserGroup.mutateAsync({
         org: organization,
         usergroup: groupName,
         data: {
-          name: newName,
+          newName: newName,
         },
       });
 
@@ -122,7 +123,7 @@
         ),
       });
 
-      eventBus.emit("notification", { message: "User group renamed" });
+      eventBus.emit("notification", { message: m.groups_renamed() });
     } catch (error) {
       eventBus.emit("notification", {
         message: `Error: ${error.response.data.message}`,
@@ -185,7 +186,7 @@
       pendingRemovals = [];
 
       eventBus.emit("notification", {
-        message: "User group changes saved successfully",
+        message: m.groups_changes_saved(),
       });
     } catch (error) {
       eventBus.emit("notification", {
@@ -274,34 +275,36 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-  }}
   onOpenChange={(open) => {
     if (!open) {
       handleClose();
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
     <DialogHeader>
-      <DialogTitle>Edit group</DialogTitle>
+      <DialogTitle>{m.groups_edit_group()}</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
       class="w-full"
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       use:enhance
     >
       <div class="flex flex-col gap-4 w-full">
         <Input
           bind:value={$form.newName}
           id="edit-user-group-name"
-          label="Name"
-          placeholder="Untitled"
+          label={m.users_form_name()}
+          placeholder={m.users_form_untitled()}
           errors={$errors.newName}
           alwaysShowError={true}
         />
@@ -311,12 +314,12 @@
             for="user-group-users"
             class="line-clamp-1 text-sm font-medium text-fg-primary"
           >
-            Users
+            {m.users_form_users()}
           </label>
           <Combobox
             bind:searchValue={searchInput}
             options={coercedUsersToOptions}
-            placeholder="Search to add/remove users"
+            placeholder={m.org_search_add_remove_users()}
             {getMetadata}
             enableClientFiltering={false}
             selectedValues={[
@@ -330,7 +333,7 @@
             onSelectedChange={(values) => {
               if (!values) return;
 
-              const newEmails = values.map((v) => v.value);
+              const newEmails = values;
               const currentEmails = selectedUsers.map((u) => u.userEmail);
 
               // Find emails to add (in new but not in current)
@@ -352,7 +355,7 @@
       {#if selectedUsers.length > 0}
         <div class="flex flex-row items-center gap-x-1">
           <div class="text-xs font-semibold uppercase text-fg-secondary">
-            {selectedUsers.length} User{selectedUsers.length === 1 ? "" : "s"}
+            {m.users_user_count({ count: selectedUsers.length })}
           </div>
         </div>
       {/if}
@@ -371,7 +374,7 @@
                 type="destructive"
                 onClick={() => handleRemove(user.userEmail)}
               >
-                Remove
+                {m.users_remove()}
               </Button>
             </div>
           {/each}
@@ -380,7 +383,7 @@
     </div>
 
     <DialogFooter>
-      <Button type="tertiary" onClick={handleClose}>Cancel</Button>
+      <Button type="tertiary" onClick={handleClose}>{m.users_cancel()}</Button>
       <Button
         type="primary"
         disabled={$submitting ||
@@ -389,7 +392,7 @@
         form={formId}
         submitForm
       >
-        Save
+        {m.users_save()}
       </Button>
     </DialogFooter>
   </DialogContent>

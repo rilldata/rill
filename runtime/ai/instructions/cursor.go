@@ -38,6 +38,14 @@ func InitCursorRules(ctx context.Context, repo drivers.RepoStore, force bool) er
 		}
 	}
 
+	// Write MCP server config
+	err = writeMCPConfig(ctx, repo, force, "/.cursor/mcp.json", map[string]any{
+		"url": "http://localhost:9009/mcp",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to write MCP config: %w", err)
+	}
+
 	return nil
 }
 
@@ -56,7 +64,7 @@ func convertToCursorRule(path string, inst *Instruction) (outputPath, content st
 	// Serialize front matter to YAML
 	fmBytes, _ := yaml.Marshal(&cursorFrontMatter{
 		Description: inst.Description,
-		AlwaysApply: path == "development.md",
+		AlwaysApply: path == "AGENTS.md",
 	})
 
 	// Build final content

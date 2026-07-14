@@ -1,6 +1,7 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimension,
@@ -13,7 +14,9 @@
     createQueryServiceMetricsViewAggregation,
     V1Operation,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
+  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import {
     getComparisonRequestMeasures,
     getURIRequestMeasure,
@@ -21,13 +24,14 @@
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
   import { getFiltersForOtherDimensions } from "../selectors";
+  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
+  import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
   import {
     createAndExpression,
     createOrExpression,
     isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
@@ -38,17 +42,15 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
-  import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
-  import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
+  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
 
+  const runtimeClient = useRuntimeClient();
   const gutterWidth = 24;
 
   export let dimension: MetricsViewSpecDimension;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
-  export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let leaderboardSortByMeasureName: string;
@@ -68,6 +70,10 @@
   export let allowDimensionComparison = true;
   export let visible = false;
   export let formatters: Record<
+    string,
+    (value: number | string | null | undefined) => string | null | undefined
+  >;
+  export let tooltipFormatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
   >;
@@ -121,6 +127,9 @@
   $: leaderboardMeasureNames = leaderboardMeasures.map(
     (measure) => measure.name!,
   );
+  $: lowerIsBetterMap = Object.fromEntries(
+    leaderboardMeasures.map((m) => [m.name!, m.lowerIsBetter ?? false]),
+  );
 
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
@@ -165,9 +174,9 @@
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    runtimeClient,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       measures,
       timeRange,
@@ -185,9 +194,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    runtimeClient,
     {
+      metricsView: metricsViewName,
       measures: leaderboardMeasureNames.map((name) => ({ name })),
       where,
       timeRange,
@@ -223,9 +232,9 @@
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    runtimeClient,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       where: sanitiseExpression(
         createAndExpression(
@@ -313,8 +322,8 @@
   aria-label="{dimensionName} leaderboard"
   role="table"
   bind:this={container}
-  on:mouseenter={() => (hovered = true)}
-  on:mouseleave={() => (hovered = false)}
+  onmouseenter={() => (hovered = true)}
+  onmouseleave={() => (hovered = false)}
 >
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
@@ -377,7 +386,6 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
-            dataType={dimension.dataType?.code ?? ""}
             {itemData}
             {isValidPercentOfTotal}
             {leaderboardShowContextForAllMeasures}
@@ -386,8 +394,10 @@
             {toggleDimensionValueSelection}
             {leaderboardSortByMeasureName}
             {formatters}
+            {tooltipFormatters}
             {dimensionColumnWidth}
             {maxValues}
+            {lowerIsBetterMap}
           />
         {/each}
       </DelayedLoadingRows>
@@ -396,7 +406,6 @@
         <LeaderboardRow
           {itemData}
           {dimensionName}
-          dataType={dimension.dataType?.code ?? ""}
           {isBeingCompared}
           {filterExcludeMode}
           {atLeastOneActive}
@@ -409,8 +418,10 @@
           {toggleDimensionValueSelection}
           {leaderboardSortByMeasureName}
           {formatters}
+          {tooltipFormatters}
           {dimensionColumnWidth}
           {maxValues}
+          {lowerIsBetterMap}
         />
       {/each}
     </tbody>
@@ -420,17 +431,17 @@
     <Tooltip location="right">
       <button
         class="transition-color text-fg-muted table-message"
-        on:click={() => setPrimaryDimension(dimensionName)}
+        onclick={() => setPrimaryDimension(dimensionName)}
       >
-        <div class="pl-8 text-fg-muted">(Expand Table)</div>
+        <div class="pl-8 text-fg-muted">{m.leaderboard_expand_table()}</div>
       </button>
       <TooltipContent slot="tooltip-content">
-        Expand dimension to see more values
+        {m.leaderboard_expand_tooltip()}
       </TooltipContent>
     </Tooltip>
   {:else if noAvailableValues}
     <div class="table-message text-fg-muted">
-      <div class="pl-8">(No available values)</div>
+      <div class="pl-8">{m.leaderboard_no_available_values()}</div>
     </div>
   {/if}
 </div>

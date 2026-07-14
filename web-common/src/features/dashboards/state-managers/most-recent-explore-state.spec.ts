@@ -31,6 +31,10 @@ import {
   DashboardState_LeaderboardSortDirection,
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  RUNTIME_CONTEXT_KEY,
+  RuntimeClient,
+} from "@rilldata/web-common/runtime-client/v2";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -65,8 +69,8 @@ const TestCases: {
     mutations: [
       AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
       AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
-      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
-      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
+      AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY(AD_BIDS_EXPLORE_INIT),
+      AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE_INIT),
       AD_BIDS_SORT_BY_PERCENT_VALUE,
       AD_BIDS_SORT_ASC_BY_BID_PRICE,
     ],
@@ -179,7 +183,13 @@ function renderDashboardStateManager() {
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.
-    context: new Map([["$$_queryClient", queryClient]]),
+    context: new Map<string | symbol, unknown>([
+      ["$$_queryClient", queryClient],
+      [
+        RUNTIME_CONTEXT_KEY,
+        new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+      ],
+    ]),
   });
 
   return { queryClient, renderResults };

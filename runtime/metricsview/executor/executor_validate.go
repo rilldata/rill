@@ -81,7 +81,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// Populate empty database/databaseSchema from table metadata for StarRocks only.
 	// StarRocks requires fully qualified table names (catalog.database.table),
 	// even when the metrics view YAML doesn't explicitly specify them (e.g., when using models).
-	if e.olap.Dialect() == drivers.DialectStarRocks {
+	if e.olap.Dialect().String() == drivers.DialectNameStarRocks {
 		if mv.Database == "" && t.Database != "" {
 			mv.Database = t.Database
 		}
@@ -94,10 +94,11 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// make sure for olaps like Druid and Pinot both database and database_schema are not set
 	// for Clickhouse we allow only database_schema as we already use that in OLAPInformationSchema.Lookup(...)
 	// not doing any validation for duckdb as we ignore database and database_schema in Dialect.EscapeTable(...) so not to break any existing metrics view
-	if (e.olap.Dialect() == drivers.DialectDruid || e.olap.Dialect() == drivers.DialectPinot) && mv.Database != "" && mv.DatabaseSchema != "" {
-		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("only one of database or database_schema can be set for %s as it only supports one level of namespacing", e.olap.Dialect().String()))
+	dialectName := e.olap.Dialect().String()
+	if (dialectName == drivers.DialectNameDruid || dialectName == drivers.DialectNamePinot) && mv.Database != "" && mv.DatabaseSchema != "" {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("only one of database or database_schema can be set for %s as it only supports one level of namespacing", dialectName))
 	}
-	if e.olap.Dialect() == drivers.DialectClickHouse && mv.Database != "" {
+	if dialectName == drivers.DialectNameClickHouse && mv.Database != "" {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("database cannot be set for clickHouse, set database_schema instead"))
 	}
 
@@ -131,7 +132,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 
 	// ClickHouse specifically does not support using a column name as a dimension or measure name if the dimension or measure has an expression.
 	// This is due to ClickHouse's aggressive substitution of aliases: https://github.com/ClickHouse/ClickHouse/issues/9715.
-	if e.olap.Dialect() == drivers.DialectClickHouse {
+	if e.olap.Dialect().String() == drivers.DialectNameClickHouse {
 		for _, d := range mv.Dimensions {
 			if d.Expression == "" && !d.Unnest {
 				continue
@@ -164,13 +165,27 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		return res, err
 	}
 
+	// Validate rollup tables
+	allDimNames := make([]string, 0, len(mv.Dimensions))
+	for _, d := range mv.Dimensions {
+		allDimNames = append(allDimNames, d.Name)
+	}
+	allMeasureNames := make([]string, 0, len(mv.Measures))
+	for _, m := range mv.Measures {
+		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
+			continue
+		}
+		allMeasureNames = append(allMeasureNames, m.Name)
+	}
+	e.validateAndNormalizeRollups(ctx, mv, allDimNames, allMeasureNames, res)
+
 	// Pinot does not have any native support for time shift using time grain specifiers
-	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+	if e.olap.Dialect().String() == drivers.DialectNamePinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
 	// StarRocks does not support time shift using time grain specifiers
-	if e.olap.Dialect() == drivers.DialectStarRocks && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+	if e.olap.Dialect().String() == drivers.DialectNameStarRocks && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for StarRocks dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
@@ -252,6 +267,102 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	}
 
 	return res, nil
+}
+
+// validateAndNormalizeRollups validates that rollup tables exist and contain the expected columns.
+// It reuses validateDimension/validateMeasure to check expressions against the rollup table,
+// handling expression-based dimensions correctly (not just column lookups).
+func (e *Executor) validateAndNormalizeRollups(ctx context.Context, mv *runtimev1.MetricsViewSpec, allDimensions, allMeasures []string, res *ValidateMetricsViewResult) {
+	// Build lookup from dimension/measure name to spec definition
+	dimsByName := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(mv.Dimensions))
+	for _, d := range mv.Dimensions {
+		dimsByName[strings.ToLower(d.Name)] = d
+	}
+	measuresByName := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(mv.Measures))
+	for _, m := range mv.Measures {
+		measuresByName[strings.ToLower(m.Name)] = m
+	}
+
+	for i, rollup := range mv.Rollups {
+		// Resolve dimension selector
+		var err error
+		rollup.Dimensions, err = fieldselectorpb.ResolveFields(rollup.Dimensions, rollup.DimensionsSelector, allDimensions)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid dimensions: %w", i, err))
+			continue
+		}
+		rollup.DimensionsSelector = nil
+
+		// Resolve measure selector
+		rollup.Measures, err = fieldselectorpb.ResolveFields(rollup.Measures, rollup.MeasuresSelector, allMeasures)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid measures: %w", i, err))
+			continue
+		}
+		rollup.MeasuresSelector = nil
+
+		// time_grain is required and must be >= smallest_time_grain
+		if rollup.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain is required", i))
+			continue
+		}
+		if mv.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && rollup.TimeGrain < mv.SmallestTimeGrain {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: time_grain %q must be greater than or equal to smallest_time_grain %q", i, metricsview.TimeGrainFromProto(rollup.TimeGrain), metricsview.TimeGrainFromProto(mv.SmallestTimeGrain)))
+			continue
+		}
+
+		t, err := e.olap.InformationSchema().Lookup(ctx, rollup.Database, rollup.DatabaseSchema, rollup.Table)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: table %q does not exist", i, rollup.Table))
+			continue
+		}
+
+		// Build a subset spec with just this rollup's dims and measures, then validate
+		// all at once using validateAllDimensionsAndMeasures (single dry-run query).
+		// Falls back to individual validation on error to report per-field details.
+		var subsetDims []*runtimev1.MetricsViewSpec_Dimension
+		for _, dimName := range rollup.Dimensions {
+			d := dimsByName[strings.ToLower(dimName)]
+			if d == nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: dimension %q not found in metrics view", i, dimName))
+				continue
+			}
+			subsetDims = append(subsetDims, d)
+		}
+		var subsetMeasures []*runtimev1.MetricsViewSpec_Measure
+		for _, mName := range rollup.Measures {
+			m := measuresByName[strings.ToLower(mName)]
+			if m == nil {
+				continue
+			}
+			subsetMeasures = append(subsetMeasures, m)
+		}
+
+		subsetSpec := &runtimev1.MetricsViewSpec{
+			Dimensions: subsetDims,
+			Measures:   subsetMeasures,
+		}
+		if err := e.validateAllDimensionsAndMeasures(ctx, t, subsetSpec); err != nil {
+			// Fall back to individual validation for detailed per-field errors
+			cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
+			for _, f := range t.Schema.Fields {
+				cols[strings.ToLower(f.Name)] = f
+			}
+			for _, d := range subsetDims {
+				if err := e.validateDimension(ctx, t, d, cols); err != nil {
+					res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: %w", i, err))
+				}
+			}
+			for _, m := range subsetMeasures {
+				if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
+					continue
+				}
+				if err := e.validateMeasure(ctx, t, m); err != nil {
+					res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid expression for measure %q: %w", i, m.Name, err))
+				}
+			}
+		}
+	}
 }
 
 // resolves the parent metrics view and inherits all its dimensions and measures unless they are overridden in the current metrics view.
@@ -388,8 +499,9 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 	var dimExprs []string
 	var unnestClauses []string
 	var groupIndexes []string
+	escapeTable := dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)
 	for idx, d := range mv.Dimensions {
-		dimExpr, unnestClause, err := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+		dimExpr, unnestClause, err := dialect.DimensionSelect(escapeTable, d)
 		if err != nil {
 			return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
 		}
@@ -621,7 +733,7 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 		}
 		typeCode := schema.Fields[0].Type.Code
 
-		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && typeCode == runtimev1.Type_CODE_INT64) {
+		if typeCode != runtimev1.Type_CODE_TIMESTAMP && typeCode != runtimev1.Type_CODE_DATE && !(e.olap.Dialect().String() == drivers.DialectNamePinot && typeCode == runtimev1.Type_CODE_INT64) {
 			res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, typeCode)
 		}
 		return
@@ -632,7 +744,7 @@ func (e *Executor) validateTimeDimension(ctx context.Context, t *drivers.OlapTab
 	if !ok {
 		res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q or defined in metrics view", e.metricsView.TimeDimension, e.metricsView.Table)
 		return
-	} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE && !(e.olap.Dialect() == drivers.DialectPinot && f.Type.Code == runtimev1.Type_CODE_INT64) {
+	} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE && !(e.olap.Dialect().String() == drivers.DialectNamePinot && f.Type.Code == runtimev1.Type_CODE_INT64) {
 		res.TimeDimensionErr = fmt.Errorf("time dimension %q is not a TIMESTAMP column, got %s", e.metricsView.TimeDimension, f.Type.Code)
 		return
 	}
@@ -652,14 +764,15 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 	}
 
 	dialect := e.olap.Dialect()
-	expr, unnestClause, err := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+	escapeTable := dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name)
+	expr, unnestClause, err := dialect.DimensionSelect(escapeTable, d)
 	if err != nil {
 		return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
 	}
 
 	// Validate with a query if it's an expression
 	err = e.olap.Exec(ctx, &drivers.Statement{
-		Query:           fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
+		Query:           fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, escapeTable, unnestClause),
 		DryRun:          true,
 		QueryAttributes: e.queryAttributes,
 	})

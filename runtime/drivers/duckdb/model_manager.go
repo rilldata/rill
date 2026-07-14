@@ -38,6 +38,12 @@ type ModelOutputProperties struct {
 	UniqueKey           []string                    `mapstructure:"unique_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
 	PartitionBy         string                      `mapstructure:"partition_by"`
+	// PreExec is a SQL query to run on the output engine before the main query. Ensure pre_exec queries are idempotent.
+	PreExec string `mapstructure:"pre_exec"`
+	// PostExec is a SQL query to run on the output engine after the main query. Ensure post_exec queries are idempotent.
+	PostExec string `mapstructure:"post_exec"`
+	// CreateSecretsFromConnectors is the list of connector names to create temporary secrets for before executing the model.
+	CreateSecretsFromConnectors []string `mapstructure:"create_secrets_from_connectors"`
 }
 
 func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions, ip *ModelInputProperties, op *ModelOutputProperties) error {

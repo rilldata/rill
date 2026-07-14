@@ -6,6 +6,7 @@
   import EditDialog from "./EditDialog.svelte";
   import DeleteDialog from "./DeleteDialog.svelte";
   import type { VariableNames } from "./types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let id: string;
   export let environment: string;
@@ -28,22 +29,22 @@
     <DropdownMenu.Content align="start" class="min-w-[95px]">
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => {
+        onclick={() => {
           isEditDialogOpen = true;
         }}
       >
         <Pencil size="12px" />
-        <span class="ml-2">Edit</span>
+        <span class="ml-2">{m.env_edit_action()}</span>
       </DropdownMenu.Item>
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
-        on:click={() => {
+        onclick={() => {
           isDeleteDialogOpen = true;
         }}
       >
         <Trash2Icon size="12px" />
-        <span class="ml-2">Delete</span>
+        <span class="ml-2">{m.env_delete_action()}</span>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

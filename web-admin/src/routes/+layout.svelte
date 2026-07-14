@@ -1,13 +1,16 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
-  import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
-  import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
+  import { initializeI18n } from "@rilldata/web-common/lib/i18n";
+  import {
+    handleAdminServerNetworkError,
+    handleAdminServerQuerySuccess,
+    registerAdminNetworkRecoveryListeners,
+  } from "@rilldata/web-admin/components/errors/admin-network-errors";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
-    isProjectInvitePage,
+    isOnboardingPage,
     isPublicReportPage,
     withinOrganization,
     withinProject,
@@ -23,19 +26,20 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
-  import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
-  import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
+  import OrgHeader from "../features/organizations/OrgHeader.svelte";
   import "@rilldata/web-common/app.css";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import type { V1Organization } from "@rilldata/web-admin/client";
 
   export let data;
 
+  initializeI18n();
+
   $: ({
-    projectPermissions,
     organizationPermissions,
     organization: organizationObj,
     planDisplayName,
@@ -58,18 +62,20 @@
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
   queryClient.getQueryCache().config.onError = (
-    error: AxiosError,
+    error: unknown,
     query: Query,
   ) => {
     // Add TanStack Query errors to telemetry
     errorEventHandler?.requestErrorEventHandler(error, query);
 
-    // Handle network errors
-    // Note: ideally, we'd throw this in the root `+layout.ts` file, but we're blocked by
-    // https://github.com/sveltejs/kit/issues/10201
-    if (isAdminServerQuery(query) && error.message === "Network Error") {
-      errorStore.set(createUserFacingError(null, error.message));
-    }
+    handleAdminServerNetworkError(error, query, queryClient);
+  };
+
+  queryClient.getQueryCache().config.onSuccess = (
+    _data: unknown,
+    query: Query,
+  ) => {
+    handleAdminServerQuerySuccess(query);
   };
 
   // The admin server enables some dashboard features like scheduled reports and alerts
@@ -87,23 +93,29 @@
   initPylonWidget();
 
   onMount(() => {
-    return () => removeJavascriptListeners?.();
+    const removeNetworkRecoveryListeners =
+      registerAdminNetworkRecoveryListeners(queryClient);
+
+    return () => {
+      removeJavascriptListeners?.();
+      removeNetworkRecoveryListeners();
+    };
   });
 
   $: isEmbed = isEmbedPage($page);
 
+  // Onboarding pages like the project invite page, org/project welcome page, and project create page should hide the top bar and billing manager
+  $: onOnboardingPage = isOnboardingPage($page);
+
   $: hideTopBar =
-    // invite page shouldn't show the top bar because it is considered an onboard step
-    isProjectInvitePage($page) ||
     // upgrade callback landing page shouldn't show any rill identifications
     isBillingUpgradePage($page) ||
     // public reports are shared to external users who shouldn't be shown any rill related stuff
-    isPublicReportPage($page);
+    isPublicReportPage($page) ||
+    onOnboardingPage;
   $: hideBillingManager =
     // billing manager needs organization
-    !organization ||
-    // invite page shouldn't show the banner since the illusion is that the user is not on cloud yet.
-    isProjectInvitePage($page);
+    !organization || onOnboardingPage;
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 
@@ -137,37 +149,38 @@
   {/if}
 </svelte:head>
 
-<QueryClientProvider client={queryClient}>
-  <main
-    class="flex flex-col bg-surface-subtle"
-    class:min-h-screen={!$dynamicHeight}
-    class:h-screen={!$dynamicHeight}
-    use:pageContentSizeHandler
-  >
-    <BannerCenter />
-    {#if !hideBillingManager}
-      <BillingBannerManager {organization} {organizationPermissions} />
-    {/if}
-    {#if !isEmbed && !hideTopBar}
-      <TopNavigationBar
-        createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-        manageProjectMembers={projectPermissions?.manageProjectMembers}
-        manageProjectAdmins={projectPermissions?.manageProjectAdmins}
-        manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-        manageOrgMembers={organizationPermissions?.manageOrgMembers}
-        readProjects={organizationPermissions?.readProjects}
-        {planDisplayName}
-        {organizationLogoUrl}
-      />
-
-      {#if withinOnlyOrg}
-        <OrganizationTabs {organization} {organizationPermissions} {pathname} />
+<Tooltip.Provider>
+  <QueryClientProvider client={queryClient}>
+    <main
+      class="flex flex-col bg-surface-base dark:bg-surface-background"
+      class:min-h-screen={!$dynamicHeight}
+      class:h-screen={!$dynamicHeight}
+      use:pageContentSizeHandler
+    >
+      <BannerCenter />
+      {#if !hideBillingManager}
+        <BillingBannerManager {organization} {organizationPermissions} />
       {/if}
-    {/if}
-    <ErrorBoundary>
-      <slot />
-    </ErrorBoundary>
-  </main>
-</QueryClientProvider>
+      {#if !isEmbed && !hideTopBar && !withinProject($page)}
+        <OrgHeader
+          readProjects={organizationPermissions?.readProjects}
+          {planDisplayName}
+          {organizationLogoUrl}
+        />
 
-<NotificationCenter />
+        {#if withinOnlyOrg}
+          <OrganizationTabs
+            {organization}
+            {organizationPermissions}
+            {pathname}
+          />
+        {/if}
+      {/if}
+      <ErrorBoundary>
+        <slot />
+      </ErrorBoundary>
+    </main>
+  </QueryClientProvider>
+
+  <NotificationCenter />
+</Tooltip.Provider>

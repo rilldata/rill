@@ -1,1 +1,1 @@
-export const ExploreStateDefaultChartType = "timeseries";
+export const ExploreStateDefaultChartType = "adaptive";

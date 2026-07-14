@@ -2,7 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { Copy } from "lucide-svelte";
+  import { Copy, Columns } from "lucide-svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
@@ -10,6 +10,9 @@
   export let dropdownOpen = false;
   export let onDelete: () => void;
   export let onDuplicate: () => void;
+  // Optional: convert this component's row into a tab group. Only provided for
+  // top-level rows (a tab's rows cannot be nested into another tab group).
+  export let onConvertToTabGroup: (() => void) | undefined = undefined;
   export let editable = false;
   export let component: BaseCanvasComponent;
   export let navigationEnabled: boolean = true;
@@ -28,6 +31,8 @@
     "donut_chart",
     "pie_chart",
     "heatmap",
+    "combo_chart",
+    "custom_chart",
   ] as const;
 
   $: showExplore =
@@ -44,10 +49,7 @@
 >
   {#if editable}
     <!-- Editable mode: Show dropdown with explore option -->
-    <DropdownMenu.Root
-      bind:open={dropdownOpen}
-      portal=".dashboard-theme-boundary"
-    >
+    <DropdownMenu.Root bind:open={dropdownOpen}>
       <DropdownMenu.Trigger
         class="size-7 grid place-content-center bg-surface-card hover:brightness-[85%] active:brightness-75"
       >
@@ -60,17 +62,23 @@
         alignOffset={-4}
         class="w-40"
       >
-        <DropdownMenu.Item on:click={onDuplicate}>
+        <DropdownMenu.Item onclick={onDuplicate}>
           <Copy size="14px" />
           Duplicate
         </DropdownMenu.Item>
+        {#if onConvertToTabGroup}
+          <DropdownMenu.Item onclick={onConvertToTabGroup}>
+            <Columns size="14px" />
+            Convert row to tab group
+          </DropdownMenu.Item>
+        {/if}
         {#if showExplore && exploreComponent}
           <DropdownMenu.Separator />
           <ExploreLink component={exploreComponent} mode="dropdown-item" />
         {/if}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
-          on:click={onDelete}
+          onclick={onDelete}
           class="text-red-600 data-[highlighted]:text-red-600"
         >
           <Trash size="14px" />

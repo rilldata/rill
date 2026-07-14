@@ -47,7 +47,7 @@
       class="hover:bg-surface-hover text-fg-secondary rounded-full aspect-square size-5 flex items-center justify-center"
       class:opacity-50={!backwardPanEnabled}
       class:hide={visibleIndex !== 0}
-      on:click={() => onPan(-1)}
+      onclick={() => onPan(-1)}
     >
       <ChevronLeft size="14px" />
     </button>
@@ -63,7 +63,7 @@
       class="hover:bg-surface-hover text-fg-secondary rounded-full aspect-square size-5 flex items-center justify-center"
       class:opacity-50={!forwardPanEnabled}
       class:hide={visibleIndex !== visibleMonths - 1}
-      on:click={() => onPan(1)}
+      onclick={() => onPan(1)}
     >
       <ChevronRight size="14px" />
     </button>
@@ -72,7 +72,7 @@
   <div
     role="presentation"
     class="grid grid-cols-7 w-full"
-    on:mouseleave={resetPotentialDates}
+    onmouseleave={resetPotentialDates}
   >
     {#each weekdays as weekday (weekday)}
       <div class="weekday">{weekday}</div>

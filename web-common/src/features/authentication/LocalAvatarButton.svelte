@@ -91,7 +91,7 @@
       </DropdownMenu.Item>
 
       {#if loggedIn}
-        <DropdownMenu.Item on:click={handlePylon}>
+        <DropdownMenu.Item onclick={handlePylon}>
           Contact Rill support
         </DropdownMenu.Item>
         <DropdownMenu.Separator />

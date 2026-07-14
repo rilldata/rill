@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { timeAgo } from "../../dashboards/listing/utils";
+  import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
   import { Duration } from "luxon";
 
   export let datetime: Date | string;

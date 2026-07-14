@@ -29,80 +29,89 @@
 
 <div class="flex gap-2" class:selecting>
   <Select.Root
-    onSelectedChange={(e) => {
-      if (e === undefined) return;
+    type="single"
+    value={value?.month?.toString() ?? ""}
+    onValueChange={(val) => {
+      if (val === undefined) return;
+      const monthNum = Number(val);
       if (!value) {
-        value = DateTime.fromObject({ year: maxYear, month: e.value }).setZone(
+        value = DateTime.fromObject({ year: maxYear, month: monthNum }).setZone(
           zone,
         );
       } else {
-        value = value.set({ month: e.value });
+        value = value.set({ month: monthNum });
       }
     }}
-    items={months}
+    items={months.map((m) => ({ value: m.value.toString(), label: m.label }))}
   >
     <Select.Trigger class="flex-none w-32" aria-label="Select a {label} month">
-      <Select.Value placeholder={value?.monthLong ?? ""} />
+      <span>{value?.monthLong ?? ""}</span>
     </Select.Trigger>
     <Select.Content class="max-h-64 overflow-y-auto">
-      {#each months as { value, label }}
-        <Select.Item {value}>
-          {label}
+      {#each months as { value: monthVal, label: monthLabel }}
+        <Select.Item value={monthVal.toString()}>
+          {monthLabel}
         </Select.Item>
       {/each}
     </Select.Content>
   </Select.Root>
 
   <Select.Root
-    onSelectedChange={(e) => {
-      if (e === undefined) return;
+    type="single"
+    value={value?.day?.toString() ?? ""}
+    onValueChange={(val) => {
+      if (val === undefined) return;
+      const dayNum = Number(val);
       if (!value) {
         value = DateTime.fromObject({
           year: maxYear,
           month: 1,
-          day: e.value,
+          day: dayNum,
         }).setZone(zone);
       } else {
-        value = value.set({ day: e.value });
+        value = value.set({ day: dayNum });
       }
     }}
     disabled={!value}
-    items={days}
+    items={days.map((d) => ({ value: d.value.toString(), label: d.label }))}
   >
     <Select.Trigger class="w-16" aria-label="Select a {label} day">
-      <Select.Value placeholder={value?.day.toString() ?? ""} />
+      <span>{value?.day.toString() ?? ""}</span>
     </Select.Trigger>
     <Select.Content class="max-h-64 overflow-y-auto">
-      {#each days as { value, label }}
-        <Select.Item {value}>
-          {label}
+      {#each days as { value: dayVal, label: dayLabel }}
+        <Select.Item value={dayVal.toString()}>
+          {dayLabel}
         </Select.Item>
       {/each}
     </Select.Content>
   </Select.Root>
 
   <Select.Root
-    onSelectedChange={(e) => {
-      if (e === undefined) return;
+    type="single"
+    value={value?.year?.toString() ?? ""}
+    onValueChange={(val) => {
+      if (val === undefined) return;
+      const yearNum = Number(val);
       if (!value) {
         value = DateTime.fromObject({
-          year: e.value,
+          year: yearNum,
           month: 1,
           day: 1,
         }).setZone(zone);
       } else {
-        value = value.set({ year: e.value });
+        value = value.set({ year: yearNum });
       }
     }}
-    items={years}
+    items={years.map((y) => ({ value: y.value.toString(), label: y.label }))}
   >
     <Select.Trigger class="w-24" aria-label="Select a {label} year">
-      <Select.Value placeholder={value?.year.toString() ?? ""} />
+      <span>{value?.year.toString() ?? ""}</span>
     </Select.Trigger>
     <Select.Content class="max-h-64 overflow-y-auto">
-      {#each years as { value, label }}
-        <Select.Item {value}>
-          {label}
+      {#each years as { value: yearVal, label: yearLabel }}
+        <Select.Item value={yearVal.toString()}>
+          {yearLabel}
         </Select.Item>
       {/each}
     </Select.Content>

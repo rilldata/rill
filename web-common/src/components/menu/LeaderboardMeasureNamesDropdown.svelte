@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import { fly } from "svelte/transition";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
@@ -9,6 +9,7 @@
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { writable } from "svelte/store";
 
   export let disabled = false;
@@ -38,7 +39,7 @@
 
   $: showingMeasuresText =
     selectedMeasureNames.length > 1
-      ? `${selectedMeasureNames.length} measures`
+      ? m.explore_n_measures({ count: String(selectedMeasureNames.length) })
       : getMeasureDisplayText(leaderboardSortByMeasureName);
 
   function onToggleOff() {
@@ -59,9 +60,8 @@
     active = false;
   }
 
-  function toggleMultiSelect() {
-    const newMultiSelect = !multiSelect;
-    if (!newMultiSelect) {
+  function onMultiSelectChange(checked: boolean) {
+    if (!checked) {
       onToggleOff();
     } else {
       // When toggling back to multi-select, restore the last selection
@@ -71,7 +71,7 @@
         setLeaderboardSortByMeasureName(lastMeasures[0]);
       }
     }
-    multiSelect = newMultiSelect;
+    multiSelect = checked;
   }
 
   function toggleMeasure(name: string) {
@@ -110,114 +110,114 @@
 </script>
 
 <DropdownMenu.Root
-  closeOnItemClick={false}
-  typeahead={false}
   bind:open={active}
   onOpenChange={(open) => {
     if (!open) searchText = "";
   }}
 >
-  <DropdownMenu.Trigger asChild let:builder>
-    <Tooltip
-      activeDelay={60}
-      alignment="start"
-      distance={8}
-      location="bottom"
-      suppress={active}
-    >
-      <Button
-        builders={[builder]}
-        type="text"
-        theme
-        dataAttributes={{
-          "data-testid": "leaderboard-measure-names-dropdown",
-          "data-leaderboard-measures-count":
-            selectedMeasureNames.length.toString(),
-        }}
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <Tooltip
+        activeDelay={60}
+        alignment="start"
+        distance={8}
+        location="bottom"
+        suppress={active}
       >
-        <div
-          class="flex items-center gap-x-0.5 px-1 text-fg-muted hover:text-inherit"
+        <Button
+          {...props}
+          type="text"
+          theme
+          dataAttributes={{
+            "data-testid": "leaderboard-measure-names-dropdown",
+            "data-leaderboard-measures-count":
+              selectedMeasureNames.length.toString(),
+          }}
         >
-          Showing <strong> {showingMeasuresText}</strong>
-          <span
-            class="transition-transform"
-            class:hidden={disabled}
-            class:-rotate-180={active}
+          <div
+            class="flex items-center gap-x-0.5 px-1 text-fg-muted hover:text-inherit"
           >
-            <CaretDownIcon />
-          </span>
-        </div>
-      </Button>
+            {m.explore_showing()} <strong> {showingMeasuresText}</strong>
+            <span
+              class="transition-transform"
+              class:hidden={disabled}
+              class:-rotate-180={active}
+            >
+              <CaretDownIcon />
+            </span>
+          </div>
+        </Button>
 
-      <DropdownMenu.Content
-        align="start"
-        class="flex flex-col w-72 p-0 overflow-hidden"
-        strategy="absolute"
-        fitViewport={true}
-      >
-        <div class="px-3 pt-3 pb-1">
-          <Search
-            bind:value={searchText}
-            label="Search measures"
-            showBorderOnFocus={false}
-          />
-        </div>
+        <DropdownMenu.Content
+          align="start"
+          class="flex flex-col w-72 p-0 overflow-hidden"
+          strategy="absolute"
+        >
+          <div class="px-3 pt-3 pb-1">
+            <Search
+              bind:value={searchText}
+              label={m.explore_search_measures()}
+              showBorderOnFocus={false}
+            />
+          </div>
 
-        <div class="px-1 pb-1 max-h-80 overflow-y-auto">
-          {#if filteredMeasures.length}
-            {#each filteredMeasures as measure (measure.name)}
-              <DropdownMenu.CheckboxItem
-                class="text-[12px]"
-                checked={Boolean(
-                  measure.name &&
-                    (multiSelect
-                      ? selectedMeasureNames.includes(measure.name)
-                      : leaderboardSortByMeasureName === measure.name),
-                )}
-                onCheckedChange={() => {
-                  if (measure.name) toggleMeasure(measure.name);
-                }}
-              >
-                <div class="truncate flex-1 text-left">
-                  {measure.displayName || measure.name}
-                </div>
-              </DropdownMenu.CheckboxItem>
-            {/each}
-          {:else}
-            <div class="text-fg-disabled p-2 w-full">
-              No matching leaderboard measures shown
-            </div>
+          <div class="px-1 pb-1 max-h-80 overflow-y-auto">
+            {#if filteredMeasures.length}
+              {#each filteredMeasures as measure (measure.name)}
+                <DropdownMenu.CheckboxItem
+                  closeOnSelect={!multiSelect}
+                  class="text-[12px]"
+                  checked={Boolean(
+                    measure.name &&
+                      (multiSelect
+                        ? selectedMeasureNames.includes(measure.name)
+                        : leaderboardSortByMeasureName === measure.name),
+                  )}
+                  onCheckedChange={() => {
+                    if (measure.name) toggleMeasure(measure.name);
+                  }}
+                >
+                  <div class="truncate flex-1 text-left">
+                    {measure.displayName || measure.name}
+                  </div>
+                </DropdownMenu.CheckboxItem>
+              {/each}
+            {:else}
+              <div class="text-fg-disabled p-2 w-full">
+                {m.explore_no_matching_leaderboard_measures()}
+              </div>
+            {/if}
+          </div>
+
+          {#if visibleMeasures.length > 1}
+            <footer class="bg-popover-footer">
+              <div class="flex items-center space-x-2">
+                <Switch
+                  theme
+                  checked={multiSelect}
+                  id="multi-measure-select"
+                  small
+                  onCheckedChange={onMultiSelectChange}
+                  data-testid="multi-measure-select-switch"
+                />
+                <InputLabel
+                  small
+                  capitalize={false}
+                  label={m.explore_multi_select()}
+                  id="multi-measure-select"
+                />
+              </div>
+            </footer>
           {/if}
+        </DropdownMenu.Content>
+
+        <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
+          <TooltipContent maxWidth="400px">
+            {m.explore_choose_measures()}
+          </TooltipContent>
         </div>
-
-        {#if visibleMeasures.length > 1}
-          <footer class="bg-popover-footer">
-            <div class="flex items-center space-x-2">
-              <Switch
-                theme
-                checked={multiSelect}
-                id="multi-measure-select"
-                small
-                on:click={toggleMultiSelect}
-                data-testid="multi-measure-select-switch"
-              />
-              <InputLabel
-                small
-                capitalize={false}
-                label="Multi-select"
-                id="multi-measure-select"
-              />
-            </div>
-          </footer>
-        {/if}
-      </DropdownMenu.Content>
-
-      <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
-        <TooltipContent maxWidth="400px">
-          Choose measures to display
-        </TooltipContent>
-      </div>
-    </Tooltip>
+      </Tooltip>
+    {/snippet}
   </DropdownMenu.Trigger>
 </DropdownMenu.Root>
 

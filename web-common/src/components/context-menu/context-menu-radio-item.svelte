@@ -4,7 +4,6 @@
   import { Dot } from "lucide-svelte";
 
   type $$Props = ContextMenuPrimitive.RadioItemProps;
-  // type $$Events = ContextMenuPrimitive.RadioItemEvents;
 
   let className: $$Props["class"] = undefined;
   export let value: $$Props["value"];
@@ -13,23 +12,14 @@
 
 <ContextMenuPrimitive.RadioItem
   class={cn(
-    "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-popover-accent data-[highlighted]:text-fg-accent data-[disabled]:opacity-50",
+    "group relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-popover-accent data-[highlighted]:text-fg-accent data-[disabled]:opacity-50",
     className,
   )}
   {value}
   {...$$restProps}
-  on:click
-  on:keydown
-  on:focusin
-  on:focusout
-  on:pointerdown
-  on:pointerleave
-  on:pointermove
 >
   <span class="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-    <ContextMenuPrimitive.RadioIndicator>
-      <Dot class="h-4 w-4 fill-current" />
-    </ContextMenuPrimitive.RadioIndicator>
+    <Dot class="h-4 w-4 fill-current hidden group-data-[state=checked]:block" />
   </span>
   <slot />
 </ContextMenuPrimitive.RadioItem>

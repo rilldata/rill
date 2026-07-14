@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -11,24 +13,107 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
+  import {
+    createQueryServiceMetricsViewAggregation,
+    type MetricsViewSpecMeasure,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { keepPreviousData } from "@tanstack/svelte-query";
   import {
     crossfade,
     fly,
     type CrossfadeParams,
     type FlyParams,
   } from "svelte/transition";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
   export let measure: MetricsViewSpecMeasure;
-  export let value: number | null;
-  export let comparisonValue: number | undefined = undefined;
-  export let showComparison = false;
-  export let status: EntityStatus;
-  export let errorMessage: string | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
+  export let metricsViewName: string;
+  export let where: V1Expression | undefined = undefined;
+  export let timeDimension: string | undefined = undefined;
+  export let timeStart: string | undefined = undefined;
+  export let timeEnd: string | undefined = undefined;
+  export let comparisonTimeStart: string | undefined = undefined;
+  export let comparisonTimeEnd: string | undefined = undefined;
+  export let showComparison = false;
+  export let ready: boolean = true;
+  export let skipLink: boolean = false;
+
+  const client = useRuntimeClient();
+
+  $: measureName = measure.name ?? "";
+
+  // Primary totals query
+  $: primaryQuery = createQueryServiceMetricsViewAggregation(
+    client,
+    {
+      metricsView: metricsViewName,
+      measures: [{ name: measureName }],
+      where,
+      timeRange: {
+        start: timeStart as any,
+        end: timeEnd as any,
+        timeDimension,
+      },
+    },
+    {
+      query: {
+        enabled: ready && (!!timeStart || !timeDimension) && !!measureName,
+        placeholderData: keepPreviousData,
+        refetchOnMount: false,
+      },
+    },
+  );
+
+  // Comparison totals query
+  $: comparisonQuery = createQueryServiceMetricsViewAggregation(
+    client,
+    {
+      metricsView: metricsViewName,
+      measures: [{ name: measureName }],
+      where,
+      timeRange: {
+        start: comparisonTimeStart as any,
+        end: comparisonTimeEnd as any,
+        timeDimension,
+      },
+    },
+    {
+      query: {
+        enabled:
+          ready && showComparison && !!comparisonTimeStart && !!measureName,
+        placeholderData: keepPreviousData,
+        refetchOnMount: false,
+      },
+    },
+  );
+
+  // Derive value, comparisonValue, status, errorMessage from queries
+  $: value =
+    ($primaryQuery.data?.data?.[0]?.[measureName] as number | null) ?? null;
+  $: comparisonValue = showComparison
+    ? ($comparisonQuery.data?.data?.[0]?.[measureName] as number | undefined)
+    : undefined;
+
+  $: isFetching =
+    $primaryQuery.isFetching || (showComparison && $comparisonQuery.isFetching);
+  $: isError = $primaryQuery.isError || $comparisonQuery.isError;
+
+  $: status = isError
+    ? EntityStatus.Error
+    : isFetching
+      ? EntityStatus.Running
+      : EntityStatus.Idle;
+
+  $: errorMessage = isError
+    ? ($primaryQuery.error?.message ??
+      $comparisonQuery.error?.message ??
+      undefined)
+    : undefined;
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null
@@ -64,7 +149,22 @@
       ? value - comparisonValue
       : 0;
   $: noChange = !comparisonValue;
-  $: isComparisonPositive = diff >= 0;
+  $: isComparisonPositive = diff > 0;
+  $: isComparisonNegative = diff < 0;
+  $: lowerIsBetter = measure?.lowerIsBetter ?? false;
+  // When comparisonValue < 0, dividing diff by a negative denominator flips the percentage sign,
+  // so "positive %" actually means "value went lower". We flip lowerIsBetter to compensate.
+  $: lowerIsBetterForPerc =
+    comparisonValue != null && comparisonValue < 0
+      ? !lowerIsBetter
+      : lowerIsBetter;
+  $: comparisonDeltaColorClass = (
+    lowerIsBetter ? isComparisonNegative : isComparisonPositive
+  )
+    ? "text-kpi-positive"
+    : (lowerIsBetter ? isComparisonPositive : isComparisonNegative)
+      ? "text-kpi-negative"
+      : "text-fg-secondary";
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
     diff,
@@ -73,8 +173,8 @@
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
-  $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
+  $: copyValue = measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
+  $: tooltipValue = measureValueFormatterTooltip(value) ?? m.kpi_no_data();
 
   $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
@@ -91,19 +191,19 @@
       isMeasureExpanded = true;
     }
   };
-  $: useDiv = isMeasureExpanded || !withTimeseries;
+  $: useDiv = isMeasureExpanded || !withTimeseries || skipLink;
 
   function handleMouseOver() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 
   function handleFocus() {
-    cellInspectorStore.updateValue(value);
+    cellInspectorStore.updateValue(value, tooltipValue);
   }
 </script>
 
 <Tooltip
-  suppress={suppressTooltip}
+  suppress={suppressTooltip || isError}
   distance={8}
   location="right"
   alignment="start"
@@ -121,7 +221,7 @@
     class="group big-number outline-border"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
-    on:click={modified({
+    onclick={modified({
       shift: () => shiftClickHandler(copyValue),
       click: () => {
         suppressTooltip = true;
@@ -144,8 +244,8 @@
       class="text-fg-secondary relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
-      on:mouseover={handleMouseOver}
-      on:focus={handleFocus}
+      onmouseover={handleMouseOver}
+      onfocus={handleFocus}
       tabindex="0"
     >
       {#if value !== null && value !== undefined && status === EntityStatus.Idle}
@@ -157,26 +257,28 @@
             {#if comparisonValue != null}
               <div
                 role="complementary"
-                class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
-                class:font-semibold={isComparisonPositive}
-                on:mouseenter={() => {
+                class="w-fit max-w-full overflow-hidden text-ellipsis {comparisonDeltaColorClass}"
+                class:font-semibold={lowerIsBetter
+                  ? isComparisonNegative
+                  : isComparisonPositive}
+                onmouseenter={() => {
                   tooltipValue =
-                    measureValueFormatterTooltip(diff) ?? "no data";
+                    measureValueFormatterTooltip(diff) ?? m.kpi_no_data();
                   copyValue =
-                    measureValueFormatterUnabridged(diff) ?? "no data";
+                    measureValueFormatterUnabridged(diff) ?? m.kpi_no_data();
                 }}
-                on:mouseleave={() => {
+                onmouseleave={() => {
                   tooltipValue =
-                    measureValueFormatterTooltip(value) ?? "no data";
+                    measureValueFormatterTooltip(value) ?? m.kpi_no_data();
                   copyValue =
-                    measureValueFormatterUnabridged(value) ?? "no data";
+                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
                 }}
               >
                 {#if !noChange}
                   {formattedDiff}
                 {:else}
                   <span class="text-fg-muted italic" style:font-size=".9em"
-                    >no change</span
+                    >{m.kpi_no_change()}</span
                   >
                 {/if}
               </div>
@@ -184,7 +286,7 @@
             {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
               <div
                 role="complementary"
-                on:mouseenter={() => {
+                onmouseenter={() => {
                   tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
@@ -194,14 +296,16 @@
                     measureValueFormatterUnabridged(comparisonPercChange) ??
                     "no data";
                 }}
-                on:mouseleave={() => {
+                onmouseleave={() => {
                   tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? "no data";
+                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
                   copyValue =
-                    measureValueFormatterUnabridged(value) ?? "no data";
+                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
                 }}
-                class="w-fit text-fg-secondary"
-                class:text-red-500={!isComparisonPositive}
+                class="w-fit {comparisonDeltaColorClass}"
+                class:font-semibold={lowerIsBetter
+                  ? isComparisonNegative
+                  : isComparisonPositive}
               >
                 <WithTween
                   value={comparisonPercChange}
@@ -210,6 +314,7 @@
                 >
                   <PercentageChange
                     tabularNumber={false}
+                    lowerIsBetter={lowerIsBetterForPerc}
                     value={formatMeasurePercentageDifference(output)}
                   />
                 </WithTween>
@@ -218,12 +323,8 @@
           </div>
         {/if}
       {:else if status === EntityStatus.Error}
-        <div class="text-xs pt-1">
-          {#if errorMessage}
-            Error: {errorMessage}
-          {:else}
-            Error fetching totals data
-          {/if}
+        <div class="pt-1">
+          <InlineErrorIndicator message={errorMessage} />
         </div>
       {:else if status === EntityStatus.Running}
         <div
@@ -238,9 +339,10 @@
           />
         </div>
       {:else if value === null}
-        <span class="text-fg-muted italic text-sm">no data</span>
+        <span class="text-fg-muted italic text-sm">{m.kpi_no_data()}</span>
       {:else if value === undefined}
-        <span class="text-fg-muted italic text-sm">n/a</span>
+        <span class="text-fg-muted italic text-sm">{m.kpi_not_available()}</span
+        >
       {/if}
     </div>
   </svelte:element>
@@ -249,7 +351,7 @@
 <style lang="postcss">
   .big-number {
     @apply h-fit w-[138px] m-0.5 rounded p-2 font-normal;
-    @apply items-start flex flex-col text-left;
+    @apply items-start flex flex-col text-left flex-none;
     min-height: 85px;
   }
 

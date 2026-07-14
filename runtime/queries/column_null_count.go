@@ -55,19 +55,11 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return err
 	}
 	defer release()
-
-	var columnName string
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectStarRocks:
-		columnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
-	default:
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	dialect := olap.Dialect()
+	nullCountSQL, err := dialect.ColumnNullCount(dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName), q.ColumnName)
+	if err != nil {
+		return err
 	}
-
-	nullCountSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s WHERE %s IS NULL",
-		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
-		columnName,
-	)
 
 	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            nullCountSQL,

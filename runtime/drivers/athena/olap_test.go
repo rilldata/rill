@@ -457,7 +457,7 @@ func TestExec(t *testing.T) {
 func acquireTestAthena(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "athena")
 	cfg["output_location"] = "s3://integration-test.rilldata.com/athena/"
-	conn, err := drivers.Open("athena", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("athena", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

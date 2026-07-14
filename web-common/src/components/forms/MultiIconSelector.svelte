@@ -28,7 +28,7 @@
         {tooltip}
       </TooltipContent>
       <button
-        on:click={() => toggleSelection(id)}
+        onclick={() => toggleSelection(id)}
         class="-ml-[1px] first-of-type:-ml-0 px-2 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
         class:selected={selected.includes(id)}
       >

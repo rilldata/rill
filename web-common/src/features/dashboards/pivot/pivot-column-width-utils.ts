@@ -18,6 +18,40 @@ export const COLUMN_WIDTH_CONSTANTS = {
   MAX_COL_DIMENSION_HEADER_LENGTH: 18,
 };
 
+type ColumnWidthRole = "dimension" | "measure";
+
+export type FillWidthColumn = {
+  width: number;
+  role: ColumnWidthRole;
+};
+
+const DIMENSION_FILL_WEIGHT = 1.4;
+const MEASURE_FILL_WEIGHT = 1;
+
+export function distributeColumnWidthsToFillContainer(
+  columns: FillWidthColumn[],
+  containerWidth: number,
+) {
+  const baseWidths = columns.map(({ width }) => width);
+  const totalWidth = baseWidths.reduce((sum, width) => sum + width, 0);
+  const extraWidth = containerWidth - totalWidth;
+
+  if (!columns.length || extraWidth <= 0) return baseWidths;
+
+  const hasDimensions = columns.some(({ role }) => role === "dimension");
+  const hasMeasures = columns.some(({ role }) => role === "measure");
+  const weights = columns.map(({ role }) =>
+    hasDimensions && hasMeasures && role === "dimension"
+      ? DIMENSION_FILL_WEIGHT
+      : MEASURE_FILL_WEIGHT,
+  );
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+  return baseWidths.map(
+    (width, i) => width + (extraWidth * weights[i]) / totalWeight,
+  );
+}
+
 export function calculateColumnWidth(
   columnName: string,
   timeDimension: string,
@@ -123,4 +157,14 @@ export function calculateRowDimensionWidth(
     width,
     COLUMN_WIDTH_CONSTANTS.MAX_INIT_COL_WIDTH,
   );
+}
+
+export function getNestedRowDimensionWidthKey(
+  widthScopeKey: string,
+  rowDimensions: Array<{ name: string }>,
+) {
+  const rowDimensionName = rowDimensions[0]?.name;
+  if (!widthScopeKey || !rowDimensionName) return undefined;
+
+  return `${widthScopeKey}:${rowDimensionName}`;
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
@@ -9,8 +10,7 @@
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { slide } from "svelte/transition";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let connector: string;
   export let database: string;
@@ -21,15 +21,17 @@
   let isReconciling = false;
   let hasUnsavedChanges = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
-  $: cardinalityQuery = createQueryServiceTableCardinality(instanceId, table, {
+  $: cardinalityQuery = createQueryServiceTableCardinality(client, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
   });
 
-  $: profileColumnsQuery = createQueryServiceTableColumns(instanceId, table, {
+  $: profileColumnsQuery = createQueryServiceTableColumns(client, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
@@ -87,7 +89,7 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply transition duration-200 py-2 flex flex-col gap-y-2;
+    @apply py-2 flex flex-col gap-y-2;
   }
 
   .spinner-wrapper {

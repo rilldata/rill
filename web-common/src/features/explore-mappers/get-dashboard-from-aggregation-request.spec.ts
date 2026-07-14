@@ -32,6 +32,7 @@ import {
   V1Operation,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("getDashboardFromAggregationRequest", () => {
@@ -105,6 +106,8 @@ describe("getDashboardFromAggregationRequest", () => {
             rowPage: 1,
             enableComparison: true,
             activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
             tableMode: "flat",
           },
         },
@@ -143,6 +146,8 @@ describe("getDashboardFromAggregationRequest", () => {
             rowPage: 1,
             enableComparison: true,
             activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
             tableMode: "flat",
           },
         },
@@ -201,6 +206,8 @@ describe("getDashboardFromAggregationRequest", () => {
             rowPage: 1,
             enableComparison: true,
             activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
             tableMode: "flat",
           },
         },
@@ -261,6 +268,8 @@ describe("getDashboardFromAggregationRequest", () => {
             rowPage: 1,
             enableComparison: true,
             activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
             tableMode: "nest",
           },
         },
@@ -339,7 +348,12 @@ async function runTest({
   ignoreFilters: boolean;
   forceOpenPivot: boolean;
 }) {
+  const mockClient = new RuntimeClient({
+    host: "http://localhost:9009",
+    instanceId: "default",
+  });
   const mapQueryStore = mapQueryToDashboard(
+    mockClient,
     {
       exploreName: AD_BIDS_EXPLORE_NAME,
       queryName: "MetricsViewAggregation",

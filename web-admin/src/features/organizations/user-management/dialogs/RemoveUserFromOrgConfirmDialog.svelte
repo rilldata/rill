@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -25,15 +26,17 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild>
-    <div class="hidden"></div>
+  <AlertDialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </AlertDialogTrigger>
   <AlertDialogContent noCancel>
     <AlertDialogHeader>
-      <AlertDialogTitle>Remove user from organization?</AlertDialogTitle>
+      <AlertDialogTitle>{m.users_remove_confirm_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          This user will no longer be able to access the organization.
+          {m.users_remove_confirm_desc()}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -42,9 +45,11 @@
         type="tertiary"
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.users_cancel()}</Button
       >
-      <Button type="destructive" onClick={handleRemove}>Yes, remove</Button>
+      <Button type="destructive" onClick={handleRemove}
+        >{m.users_yes_remove()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

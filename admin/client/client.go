@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -58,6 +59,9 @@ func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 	}
 
 	if bearerToken != "" {
+		if strings.ContainsAny(bearerToken, "\r\n") { // Prevents a very cryptic HTTP protocol error
+			return nil, fmt.Errorf("bearer token contains invalid newline characters")
+		}
 		secure := uri.Scheme != "http"
 		opts = append(opts, grpc.WithPerRPCCredentials(bearerAuth{token: bearerToken, secure: secure}))
 	}

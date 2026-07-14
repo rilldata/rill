@@ -1,103 +1,73 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
-import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
-import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
-import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-export type StatusDisplay = {
-  icon: any; // SvelteComponent
-  iconProps?: {
-    [key: string]: unknown;
-  };
-  text?: string;
-  textClass?: string;
-  wrapperClass?: string;
-};
+/**
+ * Returns the Tailwind CSS class for a deployment status indicator dot.
+ * Green for running, yellow for in-progress states, red for errors, gray for not deployed.
+ * @param status - The deployment status
+ * @returns Tailwind CSS class for the status dot background color
+ */
+export function getStatusDotClass(status: V1DeploymentStatus): string {
+  switch (status) {
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
+      return "bg-green-500"; // Green - Ready
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING:
+      return "bg-yellow-500"; // Yellow - In progress
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
+      return "bg-red-500"; // Red - Error
+    default:
+      return "bg-gray-400"; // Gray - Not deployed
+  }
+}
 
-export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
-  {
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Not deployed",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Not deployed",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Pending",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Updating",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Stopping",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Deleting",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Deleted",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED]: {
-      icon: CancelCircle,
-      iconProps: { className: "text-red-600 hover:text-red-500" },
-      text: "Error",
-      textClass: "text-red-600",
-      wrapperClass: "bg-red-50 border-red-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING]: {
-      icon: CheckCircle,
-      iconProps: { className: "text-primary-600 hover:text-primary-500" },
-      text: "Ready",
-      textClass: "text-primary-600",
-      wrapperClass: "bg-primary-50 border-primary-300",
-    },
-  };
+/**
+ * Returns true for deployment statuses that represent in-progress transitions.
+ */
+export function isTransitoryStatus(status: V1DeploymentStatus): boolean {
+  return (
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING ||
+    status === V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING
+  );
+}
 
+/**
+ * Returns a human-readable label for a deployment status.
+ * @param status - The deployment status
+ * @returns Human-readable status label (e.g., "Ready", "Pending", "Error")
+ */
+export function getStatusLabel(status: V1DeploymentStatus): string {
+  switch (status) {
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
+      return m.status_deploy_ready();
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
+      return m.status_deploy_pending();
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
+      return m.status_deploy_updating();
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
+      return m.status_deploy_stopping();
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING:
+      return m.status_deploy_deleting();
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
+      return m.status_deploy_error();
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED:
+      return m.status_deploy_stopped();
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED:
+      return m.status_deploy_deleted();
+    default:
+      return m.status_deploy_not_deployed();
+  }
+}
+
+/**
+ * Returns a color name for a resource kind tag.
+ * @param kind - The fully qualified resource kind (e.g., "rill.runtime.v1.Model")
+ * @returns Color name for the tag (e.g., "blue", "green", "gray")
+ */
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {
     case "rill.runtime.v1.MetricsView":

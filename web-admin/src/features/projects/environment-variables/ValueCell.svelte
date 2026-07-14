@@ -4,6 +4,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let value: string;
 
@@ -34,25 +35,25 @@
 <div class="flex flex-row gap-2 items-center truncate">
   <button
     class="hover:bg-surface-hover rounded-sm p-0.5 flex-none"
-    on:click={toggleShowValue}
+    onclick={toggleShowValue}
   >
     <svelte:component this={showValue ? EyeInvisible : Eye} size="18px" />
   </button>
 
   {#if showValue}
     <Tooltip distance={6} location="top" suppress={isValueHidden || isEmpty}>
-      <button on:click={onCopy} class="truncate">
+      <button onclick={onCopy} class="truncate">
         <span
           class:italic={isEmpty}
           class="text-sm text-fg-primary font-medium truncate"
           class:cursor-pointer={showValue}
           title={value}
         >
-          {value || "Empty"}
+          {value || m.env_empty_value()}
         </span>
       </button>
       <TooltipContent slot="tooltip-content">
-        {copied ? "Copied!" : "Click to copy"}
+        {copied ? m.env_copied_tooltip() : m.env_click_to_copy_tooltip()}
       </TooltipContent>
     </Tooltip>
   {:else}

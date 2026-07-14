@@ -5,6 +5,7 @@ import {
   type CartesianChartSpec as CartesianChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
 import {
+  ChartSortType,
   type ChartDataQuery,
   type ChartFieldsMap,
   type FieldConfig,
@@ -23,65 +24,80 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 export type CartesianCanvasChartSpec = BaseChartConfig & CartesianChartSpecBase;
 
 const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SPLIT_LIMIT = 10;
-const DEFAULT_SORT = "-y";
+const DEFAULT_SORT = ChartSortType.Y_DESC;
 
 export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec> {
   private provider: CartesianChartProvider;
 
-  static chartInputParams: Record<string, ComponentInputParam> = {
-    x: {
-      type: "positional",
-      label: "X-axis",
-      meta: {
-        chartFieldInput: {
-          type: "dimension",
-          axisTitleSelector: true,
-          sortSelector: {
-            enable: true,
-            defaultSort: DEFAULT_SORT,
-            options: ["x", "-x", "y", "-y", "custom"],
+  // Static getter (not a static field) so the localized labels inside resolve
+  // in the active locale at access time (render) rather than freezing to the
+  // locale active when this class was defined at module load.
+  static get chartInputParams(): Record<string, ComponentInputParam> {
+    return {
+      x: {
+        type: "positional",
+        label: m.canvas_x_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            axisTitleSelector: true,
+            sortSelector: {
+              enable: true,
+              defaultSort: DEFAULT_SORT,
+              options: [
+                ChartSortType.X_ASC,
+                ChartSortType.X_DESC,
+                ChartSortType.Y_ASC,
+                ChartSortType.Y_DESC,
+                ChartSortType.Y_DELTA_ASC,
+                ChartSortType.Y_DELTA_DESC,
+                ChartSortType.CUSTOM,
+              ],
+            },
+            limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
+            nullSelector: true,
+            labelAngleSelector: true,
           },
-          limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
-          nullSelector: true,
-          labelAngleSelector: true,
         },
       },
-    },
-    y: {
-      type: "positional",
-      label: "Y-axis",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          axisTitleSelector: true,
-          originSelector: true,
-          axisRangeSelector: true,
-          colorMappingSelector: { enable: false },
-          multiFieldSelector: true,
+      y: {
+        type: "positional",
+        label: m.canvas_y_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            axisTitleSelector: true,
+            originSelector: true,
+            axisRangeSelector: true,
+            colorMappingSelector: { enable: false },
+            multiFieldSelector: true,
+          },
         },
       },
-    },
-    // TODO: Refactor to use simpler primitives
-    color: {
-      type: "mark",
-      label: "Color",
-      showInUI: true,
-      meta: {
-        type: "color",
-        chartFieldInput: {
-          type: "dimension",
-          defaultLegendOrientation: "top",
-          limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
-          colorMappingSelector: { enable: true },
-          nullSelector: true,
+      // TODO: Refactor to use simpler primitives
+      color: {
+        type: "mark",
+        label: m.canvas_color_label(),
+        showInUI: true,
+        meta: {
+          type: "color",
+          chartFieldInput: {
+            type: "dimension",
+            defaultLegendOrientation: "top",
+            limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
+            colorMappingSelector: { enable: true },
+            nullSelector: true,
+          },
         },
       },
-    },
-  };
+    };
+  }
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
@@ -196,8 +212,13 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
   createChartDataQuery(
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible: Readable<boolean>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    return this.provider.createChartDataQuery(
+      ctx.runtimeClient,
+      timeAndFilterStore,
+      visible,
+    );
   }
 
   static newComponentSpec(

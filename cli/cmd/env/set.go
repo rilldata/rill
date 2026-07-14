@@ -1,8 +1,6 @@
 package env
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	envValidator "github.com/rilldata/rill/runtime/pkg/env"
@@ -31,10 +29,10 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectName, variables = args[0], map[string]string{args[1]: args[2]}
 			}
 
-			if projectName == "" && !cmd.Flags().Changed("project") {
-				projectName, err = ch.InferProjectName(ctx, ch.Org, projectPath)
+			if projectName == "" {
+				projectName, err = ch.InferProjectName(ctx, projectPath, "use --project to specify the name")
 				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
+					return err
 				}
 			}
 

@@ -54,6 +54,7 @@ export class PageMockForExploreTests {
     const { update, subscribe } = writable<Page>({
       url: new URL(`http://localhost/explore/${this.exploreName}`),
       params: { name: "AdBids_explore" },
+      route: { id: "/explore/[name]" },
     } as any);
     this.update = update;
 

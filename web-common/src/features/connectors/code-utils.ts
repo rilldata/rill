@@ -1,12 +1,16 @@
 import { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 import {
-  type V1ConnectorDriver,
   type ConnectorDriverProperty,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetFileQueryKey,
+  getRuntimeServiceGetInstanceQueryKey,
+  runtimeServiceAnalyzeConnectors,
   runtimeServiceGetFile,
+  runtimeServiceGetInstance,
+  runtimeServicePutFile,
+  type V1ConnectorDriver,
 } from "../../runtime-client";
-import { runtime } from "../../runtime-client/runtime-store";
+import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -15,16 +19,17 @@ import {
   isNonStandardIdentifier,
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
-  getRuntimeServiceAnalyzeConnectorsQueryKey,
-  getRuntimeServiceGetInstanceQueryKey,
-  runtimeServiceAnalyzeConnectors,
-  runtimeServiceGetInstance,
-  runtimeServicePutFile,
-} from "../../runtime-client";
-import {
   getDriverNameForConnector,
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
+import { getDocsCategory } from "../sources/modal/connector-schemas";
+import type { EnvEditSession } from "@rilldata/web-common/features/env-management/env-edit-session.ts";
+import {
+  applyDuckLakeFormPipeline,
+  injectDuckLakeAttach,
+} from "@rilldata/web-common/features/templates/schemas/ducklake-utils.ts";
+import { filterSchemaValuesForSubmit } from "@rilldata/web-common/features/templates/schema-utils.ts";
+import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
 function yamlModelTemplate(driverName: string) {
   return `# Model YAML
@@ -36,6 +41,9 @@ materialize: true
 connector: {{ connector }}
 
 sql: {{ sql }}{{ dev_section }}
+
+output:
+  connector: {{ output_connector }}
 `;
 }
 
@@ -103,13 +111,10 @@ function splitAuthSchemePrefix(
  * `{{ .env.connector.<name>.<header_key> }}` references so that secrets are
  * stored in `.env` rather than in the connector YAML file.
  */
-function formatHeadersAsYamlMap(
+export function formatHeadersAsYamlMap(
   value: Array<{ key: string; value: string }> | string,
-  driverName?: string,
-  connectorInstanceName?: string,
+  envEditSession: EnvEditSession,
 ): string {
-  const nameForEnv = connectorInstanceName || driverName;
-
   if (typeof value === "string") {
     // Legacy textarea format: parse "Key: Value" lines
     const lines = value
@@ -125,9 +130,13 @@ function formatHeadersAsYamlMap(
         .trim()
         .replace(/^"|"$/g, "");
       let v: string;
-      if (nameForEnv && isSensitiveHeaderKey(k)) {
-        const envRef = `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`;
+      if (isSensitiveHeaderKey(k)) {
         const split = splitAuthSchemePrefix(raw);
+        const entry = envEditSession.acquire(
+          headerKeyToEnvSegment(k),
+          split ? split.secret : raw,
+        );
+        const envRef = `{{ .env.${entry.mappedEnvVarName} }}`;
         v = split ? `${split.scheme}${envRef}` : envRef;
       } else {
         v = raw;
@@ -143,21 +152,27 @@ function formatHeadersAsYamlMap(
   const entries = valid.map((e) => {
     const k = e.key.trim();
     let v: string;
-    if (nameForEnv && isSensitiveHeaderKey(k)) {
-      const envRef = `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`;
-      const split = splitAuthSchemePrefix(e.value.trim());
+    const trimmedVal = e.value.trim();
+    if (isSensitiveHeaderKey(k)) {
+      const split = splitAuthSchemePrefix(trimmedVal);
+      const entry = envEditSession.acquire(
+        headerKeyToEnvSegment(k),
+        split ? split.secret : trimmedVal,
+      );
+      const envRef = `{{ .env.${entry.mappedEnvVarName} }}`;
       v = split ? `${split.scheme}${envRef}` : envRef;
     } else {
-      v = e.value.trim();
+      v = trimmedVal;
     }
     return `    "${k}": "${v}"`;
   });
   return `headers:\n${entries.join("\n")}`;
 }
 
-export function compileConnectorYAML(
+export function generateYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  envEditSession: EnvEditSession,
   options?: {
     fieldFilter?: (
       property:
@@ -166,19 +181,23 @@ export function compileConnectorYAML(
     ) => boolean;
     orderedProperties?: Array<
       | ConnectorDriverProperty
-      | { key?: string; type?: string; secret?: boolean }
+      | { key?: string; type?: string; secret?: boolean; internal?: boolean }
     >;
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];
-    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
-    existingEnvBlob?: string;
+    schema?: MultiStepFormSchema;
   },
 ) {
   // Add instructions to the top of the file
   const driverName = getDriverNameForConnector(connector.name as string);
+  const category = connector.implementsAi
+    ? "ai"
+    : connector.implementsOlap
+      ? "olap"
+      : undefined;
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/${getDocsCategory(category)}/${driverName}
 
 type: connector
 
@@ -194,6 +213,22 @@ driver: ${driverName}`;
 
   // Get the secret property keys
   const secretPropertyKeys = options?.secretKeys ?? [];
+  envEditSession.startEdit();
+
+  // Apply ducklake transforms
+  formValues = applyDuckLakeFormPipeline(options?.schema, formValues, {
+    connectorName: connector.name ?? "",
+    envEditSession,
+  });
+  formValues = options?.schema
+    ? injectDuckLakeAttach(
+        options.schema,
+        filterSchemaValuesForSubmit(options.schema, formValues, {
+          step: "connector",
+        }),
+        formValues,
+      )
+    : formValues;
 
   // Get the string property keys
   const stringPropertyKeys = options?.stringKeys ?? [];
@@ -216,29 +251,56 @@ driver: ${driverName}`;
         value === false
       )
         return false;
+      // For advanced fields, skip values that match the field's effective default.
+      const schemaProp = options?.schema?.properties?.[property.key];
+      if (schemaProp?.["x-advanced"]) {
+        const typeDefault =
+          schemaProp.type === "boolean"
+            ? false
+            : schemaProp.type === "number" ||
+                (schemaProp.type as any) === "integer"
+              ? 0
+              : schemaProp.type === "string"
+                ? ""
+                : undefined;
+        const effectiveDefault =
+          schemaProp.default !== undefined ? schemaProp.default : typeDefault;
+        if (effectiveDefault !== undefined && value === effectiveDefault)
+          return false;
+      }
       return true;
     })
     .map((property) => {
       const key = property.key as string;
-      const value = formValues[key] as string;
+      const value = formValues[key];
 
       if (key === "headers") {
         return formatHeadersAsYamlMap(
           value as Array<{ key: string; value: string }> | string,
-          driverName,
-          options?.connectorInstanceName,
+          envEditSession,
         );
       }
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        const envVarName = makeEnvVarKey(
-          connector.name as string,
-          key,
-          options?.existingEnvBlob,
-          options?.schema,
-        );
-        return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
+        const entry = envEditSession.acquire(key, String(value));
+        return `${key}: "{{ .env.${entry.mappedEnvVarName} }}"`; // uses standard Go template syntax
+      }
+
+      // For boolean fields with x-yaml-value, emit the mapped value instead of true/false.
+      // Object form maps both toggle states so each round-trips to YAML; scalar form
+      // emits only when the toggle is checked.
+      const schemaPropForMap = options?.schema?.properties?.[key];
+      const yamlValueRule = schemaPropForMap?.["x-yaml-value"];
+      if (
+        yamlValueRule !== null &&
+        typeof yamlValueRule === "object" &&
+        typeof value === "boolean"
+      ) {
+        const mapped = yamlValueRule[value ? "true" : "false"];
+        if (mapped !== undefined) return `${key}: ${mapped}`;
+      } else if (yamlValueRule !== undefined && value === true) {
+        return `${key}: ${yamlValueRule}`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -255,256 +317,17 @@ driver: ${driverName}`;
   return `${topOfFile}\n` + compiledKeyValues;
 }
 
-export async function updateDotEnvWithSecrets(
-  queryClient: QueryClient,
-  connector: V1ConnectorDriver,
-  formValues: Record<string, unknown>,
-  opts?: {
-    secretKeys?: string[];
-    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
-  },
-): Promise<{ newBlob: string; originalBlob: string }> {
-  const instanceId = get(runtime).instanceId;
-
-  // Invalidate the cache to ensure we get fresh .env content
-  // This prevents overwriting credentials added by a previous step
-  await queryClient.invalidateQueries({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-  });
-
-  // Get the existing .env file with fresh data
-  let blob: string;
-  let originalBlob: string;
-  try {
-    const file = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    blob = file.blob || "";
-    originalBlob = blob; // Keep original for conflict detection
-  } catch (error) {
-    // Handle the case where the .env file does not exist
-    if (error?.response?.data?.message?.includes("no such file")) {
-      blob = "";
-      originalBlob = "";
-    } else {
-      throw error;
-    }
-  }
-
-  // Get the secret keys
-  const secretKeys = opts?.secretKeys ?? [];
-
-  // In reality, all connectors have secret keys, but this is a safeguard
-  if (!secretKeys) {
-    return { newBlob: blob, originalBlob };
-  }
-
-  // Update the blob with the new secrets
-  // Use originalBlob for conflict detection so all secrets use consistent naming
-  secretKeys.forEach((key) => {
-    if (!key || !formValues[key]) {
-      return;
-    }
-
-    const connectorSecretKey = makeEnvVarKey(
-      connector.name as string,
-      key,
-      originalBlob,
-      opts?.schema,
-    );
-
-    blob = replaceOrAddEnvVariable(
-      blob,
-      connectorSecretKey,
-      formValues[key] as string,
-    );
-  });
-
-  // Persist sensitive header values (e.g. Authorization, API keys) as
-  // individual .env entries so tokens are not stored as raw text in YAML.
-  const headers = formValues.headers;
-  if (Array.isArray(headers)) {
-    for (const entry of headers as Array<{ key: string; value: string }>) {
-      if (!entry.key?.trim() || !entry.value?.trim()) continue;
-      if (!isSensitiveHeaderKey(entry.key)) continue;
-      const envSegment = headerKeyToEnvSegment(entry.key);
-      const envKey = makeEnvVarKey(
-        connector.name as string,
-        envSegment,
-        originalBlob,
-        opts?.schema,
-      );
-      const raw = entry.value.trim();
-      const split = splitAuthSchemePrefix(raw);
-      blob = replaceOrAddEnvVariable(blob, envKey, split ? split.secret : raw);
-    }
-  }
-
-  return { newBlob: blob, originalBlob };
-}
-
-export function replaceOrAddEnvVariable(
-  existingEnvBlob: string,
-  key: string,
-  newValue: string,
-): string {
-  const lines = existingEnvBlob.split("\n");
-  let keyFound = false;
-
-  const updatedLines = lines.map((line) => {
-    if (line.startsWith(`${key}=`)) {
-      keyFound = true;
-      return `${key}=${newValue}`;
-    }
-    return line;
-  });
-
-  if (!keyFound) {
-    updatedLines.push(`${key}=${newValue}`);
-  }
-
-  const newBlob = updatedLines
-    .filter((line, index) => !(line === "" && index === 0))
-    .join("\n")
-    .trim();
-
-  return newBlob;
-}
-
-export function deleteEnvVariable(
-  existingEnvBlob: string,
-  key: string,
-): string {
-  const lines = existingEnvBlob.split("\n");
-  const updatedLines = lines.filter((line) => !line.startsWith(`${key}=`));
-  const newBlob = updatedLines
-    .filter((line, index) => !(line === "" && index === 0))
-    .join("\n")
-    .trim();
-
-  return newBlob;
-}
-
-/**
- * Get a generic ALL_CAPS environment variable name for a connector property.
- * If schema provides x-env-var-name, use it directly.
- * Otherwise uses DRIVER_NAME_PROPERTY_KEY format.
- *
- * @param driverName - The connector driver name (e.g., "clickhouse", "s3")
- * @param propertyKey - The property key (e.g., "password", "aws_access_key_id")
- * @param schema - Optional schema with x-env-var-name annotations
- * @returns The environment variable name in SCREAMING_SNAKE_CASE
- *
- * @example
- * getGenericEnvVarName("clickhouse", "password") // "CLICKHOUSE_PASSWORD"
- * getGenericEnvVarName("s3", "aws_access_key_id", s3Schema) // "AWS_ACCESS_KEY_ID" (from x-env-var-name)
- */
-export function getGenericEnvVarName(
-  driverName: string,
-  propertyKey: string,
-  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
-): string {
-  // If schema provides explicit env var name, use it
-  const field = schema?.properties?.[propertyKey];
-  if (field?.["x-env-var-name"]) {
-    return field["x-env-var-name"];
-  }
-
-  // Convert property key to SCREAMING_SNAKE_CASE
-  const propertyKeyUpper = propertyKey
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
-    .replace(/[._-]+/g, "_")
-    .toUpperCase();
-
-  // Otherwise, use DriverName_PropertyKey format
-  const driverNameUpper = driverName
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
-    .replace(/[._-]+/g, "_")
-    .toUpperCase();
-
-  return `${driverNameUpper}_${propertyKeyUpper}`;
-}
-
-/**
- * Check if an environment variable exists in the env blob.
- *
- * @param envBlob - The contents of the .env file as a string
- * @param varName - The environment variable name to check for
- * @returns true if the variable exists, false otherwise
- */
-export function envVarExists(envBlob: string, varName: string): boolean {
-  const lines = envBlob.split("\n");
-  return lines.some((line) => line.startsWith(`${varName}=`));
-}
-
-/**
- * Find the next available environment variable name by appending _1, _2, etc.
- * Used to avoid conflicts when creating multiple connectors of the same type.
- *
- * @param envBlob - The contents of the .env file as a string
- * @param baseName - The base environment variable name to check
- * @returns The first available name (baseName, baseName_1, baseName_2, etc.)
- *
- * @example
- * // If .env contains "AWS_ACCESS_KEY_ID=xxx"
- * findAvailableEnvVarName(envBlob, "AWS_ACCESS_KEY_ID") // "AWS_ACCESS_KEY_ID_1"
- */
-export function findAvailableEnvVarName(
-  envBlob: string,
-  baseName: string,
-): string {
-  let varName = baseName;
-  let counter = 1;
-
-  while (envVarExists(envBlob, varName)) {
-    varName = `${baseName}_${counter}`;
-    counter++;
-  }
-
-  return varName;
-}
-
-/**
- * Generate an environment variable key for a property.
- * Uses schema-defined x-env-var-name when available, otherwise generates
- * DRIVER_NAME_PROPERTY_KEY format. Handles conflicts by appending _1, _2, etc.
- *
- * @param driverName - The connector driver name (e.g., "clickhouse", "s3")
- * @param key - The property key (e.g., "password", "dsn")
- * @param existingEnvBlob - Optional existing .env content for conflict detection
- * @param schema - Optional schema with x-env-var-name annotations
- * @returns The environment variable name, with suffix if needed to avoid conflicts
- */
-export function makeEnvVarKey(
-  driverName: string,
-  key: string,
-  existingEnvBlob?: string,
-  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
-): string {
-  // Generate generic ALL_CAPS environment variable name
-  const baseGenericName = getGenericEnvVarName(driverName, key, schema);
-
-  // If no existing env blob is provided, just return the base generic name
-  if (!existingEnvBlob) {
-    return baseGenericName;
-  }
-
-  // Check for conflicts and append _# if necessary
-  return findAvailableEnvVarName(existingEnvBlob, baseGenericName);
-}
-
 export async function updateRillYAMLWithOlapConnector(
+  client: RuntimeClient,
   queryClient: QueryClient,
   newConnector: string,
 ): Promise<string> {
   // Get the existing rill.yaml file
-  const instanceId = get(runtime).instanceId;
   const file = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
       path: "rill.yaml",
     }),
-    queryFn: () => runtimeServiceGetFile(instanceId, { path: "rill.yaml" }),
+    queryFn: () => runtimeServiceGetFile(client, { path: "rill.yaml" }),
   });
   const blob = file.blob || "";
 
@@ -529,20 +352,65 @@ export function replaceOlapConnectorInYAML(
   }
 }
 
+export function maybeUnsetOlapConnectorInYaml(
+  blob: string,
+  connectorName: string,
+): [boolean, string] {
+  const olapConnectorRegex = new RegExp(
+    `^\\s*olap_connector:\\s+${connectorName}\\s*$`,
+    "m",
+  );
+  if (!olapConnectorRegex.test(blob)) return [false, blob];
+  return [true, blob.replace(olapConnectorRegex, "")];
+}
+
+export async function updateRillYAMLWithAiConnector(
+  client: RuntimeClient,
+  queryClient: QueryClient,
+  newConnector: string,
+): Promise<string> {
+  const file = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(client.instanceId, {
+      path: "rill.yaml",
+    }),
+    queryFn: () => runtimeServiceGetFile(client, { path: "rill.yaml" }),
+  });
+  const blob = file.blob || "";
+  return replaceAiConnectorInYAML(blob, newConnector);
+}
+
+/**
+ * Update the `ai_connector` key in a YAML file.
+ * This function uses a regex approach to preserve comments and formatting.
+ */
+export function replaceAiConnectorInYAML(
+  blob: string,
+  newConnector: string,
+): string {
+  const aiConnectorRegex = /^ai_connector: .+$/m;
+
+  if (aiConnectorRegex.test(blob)) {
+    return blob.replace(aiConnectorRegex, `ai_connector: ${newConnector}`);
+  } else {
+    return `${blob}${blob !== "" ? "\n" : ""}ai_connector: ${newConnector}\n`;
+  }
+}
+
 export async function createYamlModelFromTable(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
-
   // Get driver name for makeSufficientlyQualifiedTableName
-  const analyzeConnectorsQueryKey =
-    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const analyzeConnectorsQueryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+    {},
+  );
   const analyzeConnectorsQueryFn = async () =>
-    runtimeServiceAnalyzeConnectors(instanceId);
+    runtimeServiceAnalyzeConnectors(client, {});
   const connectors = await queryClient.fetchQuery({
     queryKey: analyzeConnectorsQueryKey,
     queryFn: analyzeConnectorsQueryFn,
@@ -574,6 +442,16 @@ export async function createYamlModelFromTable(
   // Use the sufficiently qualified table name directly
   const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
 
+  // Get default OLAP connector for the output
+  const runtimeInstance = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {}),
+    queryFn: () => runtimeServiceGetInstance(client, { sensitive: true }),
+  });
+  if (!runtimeInstance) {
+    throw new Error(`Could not find runtime instance ${client.instanceId}`);
+  }
+  const defaultOLAP = runtimeInstance?.instance?.olapConnector || "duckdb";
+
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
   const devSection = shouldIncludeDevSection
@@ -583,10 +461,11 @@ export async function createYamlModelFromTable(
   const yamlContent = yamlModelTemplate(driverName)
     .replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
-    .replace("{{ dev_section }}", devSection);
+    .replace("{{ dev_section }}", devSection)
+    .replace("{{ output_connector }}", defaultOLAP);
 
   // Write the YAML file
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newModelPath,
     blob: yamlContent,
     createOnly: true,
@@ -594,13 +473,14 @@ export async function createYamlModelFromTable(
 
   // Invalidate relevant queries
   await queryClient.invalidateQueries({
-    queryKey: ["runtimeServiceListFiles", instanceId],
+    queryKey: ["runtimeServiceListFiles", client.instanceId],
   });
 
   return ["/" + newModelPath, newModelName];
 }
 
 export async function createSqlModelFromTable(
+  client: RuntimeClient,
   queryClient: QueryClient,
   connector: string,
   database: string,
@@ -608,13 +488,13 @@ export async function createSqlModelFromTable(
   table: string,
   addDevLimit: boolean = true,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
-
   // Get driver name
-  const analyzeConnectorsQueryKey =
-    getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+  const analyzeConnectorsQueryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
+    client.instanceId,
+    {},
+  );
   const analyzeConnectorsQueryFn = async () =>
-    runtimeServiceAnalyzeConnectors(instanceId);
+    runtimeServiceAnalyzeConnectors(client, {});
   const connectors = await queryClient.fetchQuery({
     queryKey: analyzeConnectorsQueryKey,
     queryFn: analyzeConnectorsQueryFn,
@@ -626,21 +506,6 @@ export async function createSqlModelFromTable(
     throw new Error(`Could not find connector ${connector}`);
   }
   const driverName = analyzedConnector.driver?.name as string;
-
-  // Determine whether the connector is the default OLAP connector
-  const runtimeInstanceQueryKey =
-    getRuntimeServiceGetInstanceQueryKey(instanceId);
-  const runtimeInstanceQueryFn = async () =>
-    runtimeServiceGetInstance(instanceId, { sensitive: true });
-  const runtimeInstance = await queryClient.fetchQuery({
-    queryKey: runtimeInstanceQueryKey,
-    queryFn: runtimeInstanceQueryFn,
-  });
-  if (!runtimeInstance) {
-    throw new Error(`Could not find runtime instance ${instanceId}`);
-  }
-  const isDefaultOLAPConnector =
-    runtimeInstance?.instance?.olapConnector === connector;
 
   // Get new model name
   const allNames = [
@@ -658,9 +523,10 @@ export async function createSqlModelFromTable(
     table,
   );
 
-  // Create model
+  // Create model — OLAP models use the same connector for both source and output
   const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
+  const outputConnectorLine = `-- @output.connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,
   )
@@ -669,10 +535,8 @@ export async function createSqlModelFromTable(
   const devLimit = "{{ if dev }} limit 100000 {{ end}}";
 
   let modelSQL = `${topComments}\n`;
-
-  if (!isDefaultOLAPConnector) {
-    modelSQL += `${connectorLine}\n`;
-  }
+  modelSQL += `${connectorLine}\n`;
+  modelSQL += `${outputConnectorLine}\n`;
 
   modelSQL += `\n${selectStatement}`;
 
@@ -680,7 +544,7 @@ export async function createSqlModelFromTable(
     modelSQL += `\n${devLimit}`;
   }
 
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newModelPath,
     blob: modelSQL,
     createOnly: true,

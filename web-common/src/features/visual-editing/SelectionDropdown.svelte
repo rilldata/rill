@@ -32,8 +32,6 @@
 
 <DropdownMenu.Root
   bind:open
-  typeahead={false}
-  closeOnItemClick={false}
   onOpenChange={() => {
     if (!open) {
       selectedProxy = new Set(selectedItems);
@@ -41,25 +39,21 @@
     }
   }}
 >
-  <DropdownMenu.Trigger asChild let:builder {id}>
-    <button
-      use:builder.action
-      {...builder}
-      class:open
-      class:small
-      class="dropdown-trigger"
-    >
-      {#if type}
-        {selectedItems.size} {type}
-      {:else}
-        {selectedItems.size} of {allItems.size}
-      {/if}
+  <DropdownMenu.Trigger {id}>
+    {#snippet child({ props })}
+      <button {...props} class:open class:small class="dropdown-trigger">
+        {#if type}
+          {selectedItems.size} {type}
+        {:else}
+          {selectedItems.size} of {allItems.size}
+        {/if}
 
-      <CaretDownIcon
-        size="12px"
-        className="text-fg-secondary ml-auto flex-none"
-      />
-    </button>
+        <CaretDownIcon
+          size="12px"
+          className="text-fg-secondary ml-auto flex-none"
+        />
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content sameWidth class="p-0">
@@ -70,9 +64,10 @@
       {#if !searchValue}
         {#each selectedProxy as item (item)}
           <DropdownMenu.CheckboxItem
+            closeOnSelect={false}
             showXForSelected={excludeMode}
             checked={selectedItems.has(item)}
-            on:click={() => {
+            onclick={() => {
               onSelect(item);
             }}
           >
@@ -89,9 +84,10 @@
 
       {#each filteredItems as item (item)}
         <DropdownMenu.CheckboxItem
+          closeOnSelect={false}
           showXForSelected={excludeMode}
           checked={selectedItems.has(item)}
-          on:click={() => {
+          onclick={() => {
             onSelect(item);
           }}
         >

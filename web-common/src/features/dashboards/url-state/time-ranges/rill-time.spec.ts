@@ -7,12 +7,15 @@ import {
   type RillTimeAsOfLabel,
   RillTimeLabel,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
-import { GrainAliasToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  getLowerOrderGrain,
+  GrainAliasToV1TimeGrain,
+} from "@rilldata/web-common/lib/time/new-grains";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 import nearley from "nearley";
 import { describe, expect, it } from "vitest";
-import grammar from "./rill-time.cjs";
+import grammar from "./rill-time.js";
 
 const GRAINS = ["Y", "Q", "M", "W", "D", "H", "m", "s"] as const;
 const GRAIN_TO_LUXON: Record<string, DateTimeUnit> = {
@@ -98,7 +101,7 @@ function getMultiPeriodTestCases(n: number): TestCase[] {
 
 function getPeriodToDateTestCases(): TestCase[] {
   return GRAINS.map((g) => {
-    const protoGrain = GrainAliasToV1TimeGrain[g];
+    const protoGrain = getLowerOrderGrain(GrainAliasToV1TimeGrain[g]);
     const label = capitalizeFirstChar(`${GRAIN_TO_LUXON[g]} to date`);
     return <TestCase[]>[
       [`${g}TD as of watermark/${g}`, label, true, protoGrain, undefined],
@@ -111,6 +114,8 @@ function getPeriodToDateTestCases(): TestCase[] {
       ],
 
       [`${g}TD as of watermark/h`, label, true, protoGrain, undefined],
+
+      [`${g}TD`, label, false, protoGrain, undefined],
     ];
   }).flat();
 }

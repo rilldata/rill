@@ -4,11 +4,11 @@ import type {
   ColorMapping,
 } from "@rilldata/web-common/features/components/charts/types";
 import { resolveCSSVariable } from "@rilldata/web-common/features/components/charts/util";
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import type { VisualizationSpec } from "svelte-vega";
-import type { ColorDef, Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
+import type { ColorDef, Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
+import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import {
   buildHoverRuleLayer,
   createConfigWithLegend,
@@ -33,11 +33,11 @@ function getColorForField(
   }
 
   // Use qualitative palette colors for the two measures
-  if (encoding === "y1") return COMPARIONS_COLORS[0];
-  if (encoding === "y2") return COMPARIONS_COLORS[1];
+  if (encoding === "y1") return COMPARISON_COLORS[0];
+  if (encoding === "y2") return COMPARISON_COLORS[1];
 
   // Fallback to qualitative palette color 3
-  return COMPARIONS_COLORS[2];
+  return COMPARISON_COLORS[2];
 }
 
 export function generateVLComboChartSpec(

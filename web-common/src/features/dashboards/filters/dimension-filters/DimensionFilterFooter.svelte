@@ -3,12 +3,13 @@
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let mode: DimensionFilterMode;
   export let excludeMode: boolean;
   export let allSelected: boolean;
   export let disableApplyButton: boolean;
-  export let onToggleExcludeMode: () => void;
+  export let onToggleExcludeMode: (checked: boolean) => void;
   export let onToggleSelectAll: () => void;
   export let onApply: () => void;
 </script>
@@ -19,18 +20,20 @@
       checked={excludeMode}
       id="include-exclude"
       small
-      on:click={onToggleExcludeMode}
-      label="Include exclude toggle"
+      onCheckedChange={onToggleExcludeMode}
+      label={m.dashboard_include_exclude_toggle()}
     />
-    <Label class="font-normal text-xs" for="include-exclude">Exclude</Label>
+    <Label class="font-normal text-xs" for="include-exclude"
+      >{m.dashboard_exclude()}</Label
+    >
   </div>
   <div class="flex gap-2">
     {#if mode === DimensionFilterMode.Select}
       <Button onClick={onToggleSelectAll} type="tertiary">
         {#if allSelected}
-          Deselect all
+          {m.dashboard_deselect_all()}
         {:else}
-          Select all
+          {m.dashboard_select_all()}
         {/if}
       </Button>
     {:else}
@@ -40,7 +43,7 @@
         class="justify-end"
         disabled={disableApplyButton}
       >
-        Apply
+        {m.common_apply()}
       </Button>
     {/if}
   </div>
@@ -53,10 +56,5 @@
     @apply bg-popover-footer;
     @apply flex flex-row flex-none items-center justify-between;
     @apply gap-x-2 p-2 px-3.5;
-  }
-
-  footer:is(.dark) {
-    @apply bg-gray-800;
-    @apply border-gray-700;
   }
 </style>

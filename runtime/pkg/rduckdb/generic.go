@@ -156,16 +156,33 @@ func NewGeneric(ctx context.Context, opts *GenericOptions) (res DB, dbErr error)
 	}
 	if opts.DBName == "" {
 		// find the attached database name
-		err = db.QueryRowxContext(
+		rows, err := db.QueryxContext(
 			ctx,
 			`SELECT database_name
 			 FROM duckdb_databases()
 			 WHERE internal = false -- ignore internal information_schema databases
 			   AND (path IS NOT NULL OR database_name = 'memory') -- all databases except the in-memory one should have a path 
-			   AND database_name != current_database()`,
-		).Scan(&opts.DBName)
+			   AND database_name != current_database() AND database_name NOT LIKE '__ducklake_metadata_%'`,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("error getting attached database name: %w. Set property `db_name` in the corresponding connector.yaml", err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			if opts.DBName != "" {
+				// more than one attached database, require user to specify db_name
+				return nil, fmt.Errorf("multiple attached databases found. Set property `db_name` in the corresponding connector.yaml")
+			}
+			err = rows.Scan(&opts.DBName)
+			if err != nil {
+				return nil, fmt.Errorf("error getting attached database name: %w. Set property `db_name` in the corresponding connector.yaml", err)
+			}
+		}
+		if err := rows.Err(); err != nil {
+			return nil, fmt.Errorf("error getting attached database name: %w. Set property `db_name` in the corresponding connector.yaml", err)
+		}
+		if opts.DBName == "" {
+			return nil, fmt.Errorf("no attached database found. Set property `db_name` in the corresponding connector.yaml")
 		}
 	}
 
@@ -294,7 +311,7 @@ func (m *generic) DropTable(ctx context.Context, name string) (resErr error) {
 
 func (m *generic) dropTableUnsafe(ctx context.Context, name string, conn *sqlx.Conn) (resErr error) {
 	var typ string
-	tbl, _, err := m.schemaUsingConn(ctx, "", name, 0, "", conn)
+	tbl, _, err := m.schemaUsingConn(ctx, "", "", name, "", 0, "", conn)
 	if err != nil {
 		return err
 	}
@@ -366,7 +383,7 @@ func (m *generic) RenameTable(ctx context.Context, oldName, newName string) (res
 
 	// check the current type, if it is a view, rename it to a view
 	// if it is a table, rename it to a table
-	tbl, _, err := m.Schema(ctx, "", oldName, 0, "")
+	tbl, _, err := m.Schema(ctx, "", "", oldName, "", 0, "")
 	if err != nil {
 		return err
 	}
@@ -400,8 +417,43 @@ func (m *generic) RenameTable(ctx context.Context, oldName, newName string) (res
 	return err
 }
 
+// DDL implements DB.
+func (m *generic) DDL(ctx context.Context, database, databaseSchema, name string) (string, error) {
+	conn, err := m.acquireConn(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = conn.Close() }()
+
+	var q string
+	var args []any
+	if database != "" && databaseSchema != "" {
+		q = `
+			SELECT sql FROM duckdb_tables() WHERE database_name = ? AND schema_name = ? AND table_name = ?
+			UNION ALL
+			SELECT sql FROM duckdb_views() WHERE database_name = ? AND schema_name = ? AND view_name = ?
+		`
+		args = []any{database, databaseSchema, name, database, databaseSchema, name}
+	} else {
+		// Fall back to current_database()/current_schema() to avoid collisions across attached databases.
+		q = `
+			SELECT sql FROM duckdb_tables() WHERE database_name = current_database() AND schema_name = current_schema() AND table_name = ?
+			UNION ALL
+			SELECT sql FROM duckdb_views() WHERE database_name = current_database() AND schema_name = current_schema() AND view_name = ?
+		`
+		args = []any{name, name}
+	}
+
+	var sqlStr *string
+	err = conn.QueryRowxContext(ctx, q, args...).Scan(&sqlStr)
+	if err != nil || sqlStr == nil {
+		return "", nil
+	}
+	return *sqlStr, nil
+}
+
 // Schema implements DB.
-func (m *generic) Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error) {
+func (m *generic) Schema(ctx context.Context, database, databaseSchema, name, ilike string, pageSize uint32, pageToken string) ([]*Table, string, error) {
 	conn, err := m.acquireConn(ctx)
 	if err != nil {
 		return nil, "", err
@@ -409,22 +461,38 @@ func (m *generic) Schema(ctx context.Context, ilike, name string, pageSize uint3
 	defer func() {
 		_ = conn.Close()
 	}()
-	return m.schemaUsingConn(ctx, ilike, name, pageSize, pageToken, conn)
+	return m.schemaUsingConn(ctx, database, databaseSchema, name, ilike, pageSize, pageToken, conn)
 }
 
-func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, pageSize uint32, pageToken string, conn *sqlx.Conn) ([]*Table, string, error) {
+func (m *generic) schemaUsingConn(ctx context.Context, database, databaseSchema, name, ilike string, pageSize uint32, pageToken string, conn *sqlx.Conn) ([]*Table, string, error) {
 	if ilike != "" && name != "" {
 		return nil, "", fmt.Errorf("cannot specify both `ilike` and `name`")
 	}
 
 	var whereClause string
 	var args []any
+	// Database filter
+	if database != "" {
+		whereClause += "WHERE t.table_catalog = ?"
+		args = append(args, database)
+	} else {
+		whereClause += "WHERE t.table_catalog = current_database()"
+	}
+
+	// Schema filter
+	if databaseSchema != "" {
+		whereClause += " AND t.table_schema = ?"
+		args = append(args, databaseSchema)
+	} else {
+		whereClause += " AND t.table_schema = current_schema()"
+	}
+
 	if ilike != "" {
-		whereClause = " AND t.table_name ilike ?"
-		args = []any{ilike}
+		whereClause += " AND t.table_name ilike ?"
+		args = append(args, ilike)
 	} else if name != "" {
-		whereClause = " AND t.table_name = ?"
-		args = []any{name}
+		whereClause += " AND t.table_name = ?"
+		args = append(args, name)
 	}
 
 	// Add pagination filter
@@ -440,7 +508,7 @@ func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, pageS
 	q := fmt.Sprintf(`
 		SELECT
 			coalesce(t.table_catalog, current_database()) AS "database",
-			current_schema() AS "schema",
+			t.table_schema AS "schema",
 			t.table_name AS "name",
 			t.table_type = 'VIEW' AS "view", 
 			array_agg(c.column_name ORDER BY c.ordinal_position) AS "column_names",
@@ -450,9 +518,7 @@ func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, pageS
 		JOIN information_schema.columns c 
 			ON t.table_schema = c.table_schema 
 			AND t.table_name = c.table_name
-		WHERE database = current_database() 
-			AND t.table_schema = current_schema()
-			%s
+		%s
 		GROUP BY ALL
 		ORDER BY t.table_name
 		LIMIT ?

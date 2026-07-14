@@ -16,7 +16,9 @@ test.describe("canvas leaderboards", () => {
 
     await page.getByLabel("Add measure fields").click();
 
-    await page.getByRole("menuitem", { name: "Sum of Bid Price" }).click();
+    await page
+      .getByRole("menuitemcheckbox", { name: "Sum of Bid Price" })
+      .click();
     await page
       .getByLabel("domain leaderboard")
       .locator("button")

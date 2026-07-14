@@ -1,18 +1,28 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import { page } from "$app/state";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  $: ({
-    params: { project },
-  } = $page);
+  let { project } = $derived(page.params);
+
+  const runtimeClient = useRuntimeClient();
+  const dashboards = useDashboards(runtimeClient);
+  let availableTags = $derived(getAllTagsForResources($dashboards.data ?? []));
+  let hasSomeTag = $derived(availableTags.length > 0);
 </script>
 
 <svelte:head>
   <title>{project} overview - Rill</title>
 </svelte:head>
 
-<ContentContainer maxWidth={800} title="Project dashboards">
+<ContentContainer
+  maxWidth={hasSomeTag ? 1000 : 800}
+  title={m.project_dashboards_title()}
+>
   <div class="flex flex-col items-center gap-y-4">
     <DashboardsTable />
   </div>

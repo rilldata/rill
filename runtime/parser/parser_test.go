@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"maps"
 	"reflect"
@@ -411,7 +410,7 @@ schema: default
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -450,7 +449,7 @@ FRO m1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, errors)
 }
@@ -461,7 +460,7 @@ func TestReparse(t *testing.T) {
 
 	// Create empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 
@@ -619,7 +618,7 @@ SELECT 10
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
 
@@ -707,7 +706,7 @@ SELECT * FROM m1
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, []*runtimev1.ParseError{
 		{
@@ -748,7 +747,7 @@ func TestReparseRillYAML(t *testing.T) {
 	}
 
 	// Parse empty project. Expect rill.yaml error.
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	require.Nil(t, p.RillYAML)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{perr})
@@ -810,7 +809,7 @@ func TestRefInferrence(t *testing.T) {
 		// model foo
 		`models/foo.sql`: `SELECT * FROM bar`,
 	})
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
 
@@ -888,7 +887,7 @@ SELECT 1
 		},
 	}
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -905,7 +904,7 @@ driver: duckdb
 	})
 
 	// Initial parse - model should ref the connector
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 
 	m1 := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
@@ -972,7 +971,7 @@ materialize: true
 		},
 	}
 	repo := makeRepo(b, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(b, err)
 	requireResourcesAndErrors(b, p, resources, nil)
 
@@ -1035,7 +1034,7 @@ SELECT * FROM t2
 	}
 
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1131,7 +1130,7 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1260,12 +1259,12 @@ environment_overrides:
 	}
 
 	// Parse without environment
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Base, m1Base, m2Base, m3Base}, nil)
 
 	// Parse in environment "dev"
-	p, err = Parse(ctx, repo, "", "dev", "duckdb")
+	p, err = Parse(ctx, repo, "", "dev", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Test, m1Base, m2Base, m3Test}, nil)
 }
@@ -1347,7 +1346,7 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1436,8 +1435,11 @@ annotations:
 					Cron:     "0 * * * *",
 					TimeZone: "America/Los_Angeles",
 				},
-				QueryName:           "MetricsViewToplist",
-				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				Resolver: "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": "{\"metrics_view\":\"mv1\"}",
+				})),
 				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportIncludeHeader: true,
 				ExportLimit:         10000,
@@ -1460,8 +1462,11 @@ annotations:
 					Cron:     "0 * * * *",
 					TimeZone: "America/Los_Angeles",
 				},
-				QueryName:           "MetricsViewToplist",
-				QueryArgsJson:       `{"metrics_view":"mv1"}`,
+				Resolver: "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": "{\"metrics_view\":\"mv1\"}",
+				})),
 				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportIncludeHeader: false,
 				ExportLimit:         10000,
@@ -1477,7 +1482,7 @@ annotations:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1567,7 +1572,7 @@ annotations:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1609,7 +1614,7 @@ measures:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1740,39 +1745,21 @@ theme:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
 func TestComponentsAndCanvas(t *testing.T) {
-	vegaLiteSpec := normalizeJSON(t, `
-  {
-    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "description": "A simple bar chart with embedded data.",
-    "mark": "bar",
-    "data": {
-      "name": "table"
-    },
-    "encoding": {
-      "x": {"field": "time", "type": "nominal", "axis": {"labelAngle": 0}},
-      "y": {"field": "total_sales", "type": "quantitative"}
-    }
-  }`)
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
-		`components/c1.yaml`: fmt.Sprintf(`
+		`components/c1.yaml`: `
 type: component
-vega_lite:
-  spec: '%s'
-`, vegaLiteSpec),
-		`components/c2.yaml`: fmt.Sprintf(`
-type: component
-vega_lite:
-  spec: '%s'
-`, vegaLiteSpec),
-		`components/c3.yaml`: `
+kpi:
+  metrics_view: foo
+`,
+		`components/c2.yaml`: `
 type: component
 kpi:
   metrics_view: foo
@@ -1817,27 +1804,19 @@ rows:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
 			Paths: []string{"/components/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				DisplayName:        "C1",
-				Renderer:           "vega_lite",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo"})),
 			},
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c2"},
 			Paths: []string{"/components/c2.yaml"},
-			ComponentSpec: &runtimev1.ComponentSpec{
-				DisplayName:        "C2",
-				Renderer:           "vega_lite",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
-			},
-		},
-		{
-			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
-			Paths: []string{"/components/c3.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				DisplayName:        "C3",
+				DisplayName:        "C2",
 				Renderer:           "kpi",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo", "measure": "bar", "time_range": "P1W"})),
 			},
@@ -1901,9 +1880,265 @@ rows:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestCanvasTabGroups(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: c1
+- name: deep_dive
+  tabs:
+  - label: Overview
+    rows:
+    - items:
+      - markdown:
+          content: "Overview"
+  - label: Detail View
+    rows:
+    - items:
+      - markdown:
+          content: "Detail"
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
+			Paths: []string{"/components/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "C1",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-g1-t0-0-0"},
+			Paths: []string{"/canvases/d1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Overview"})),
+				DefinedInCanvas:    true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-g1-t1-0-0"},
+			Paths: []string{"/canvases/d1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Detail"})),
+				DefinedInCanvas:    true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "d1"},
+			Paths: []string{"/canvases/d1.yaml"},
+			Refs: []ResourceName{
+				{Kind: ResourceKindComponent, Name: "c1"},
+				{Kind: ResourceKindComponent, Name: "d1--component-g1-t0-0-0"},
+				{Kind: ResourceKindComponent, Name: "d1--component-g1-t1-0-0"},
+			},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName:          "D1",
+				AllowCustomTimeRange: true,
+				FiltersEnabled:       true,
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{Component: "c1"},
+						},
+					},
+					{
+						TabGroup: &runtimev1.CanvasTabGroup{
+							Name: "deep_dive",
+							Tabs: []*runtimev1.CanvasTab{
+								{
+									Name:        "overview",
+									DisplayName: "Overview",
+									Rows: []*runtimev1.CanvasRow{
+										{Items: []*runtimev1.CanvasItem{{Component: "d1--component-g1-t0-0-0", DefinedInCanvas: true}}},
+									},
+								},
+								{
+									Name:        "detail-view",
+									DisplayName: "Detail View",
+									Rows: []*runtimev1.CanvasRow{
+										{Items: []*runtimev1.CanvasItem{{Component: "d1--component-g1-t1-0-0", DefinedInCanvas: true}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestCanvasTabGroupErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "items and tabs together",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "x"
+  tabs:
+  - label: A
+    rows: []
+`,
+		},
+		{
+			name: "nested tab groups",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: Outer
+    rows:
+    - tabs:
+      - label: Inner
+        rows: []
+`,
+		},
+		{
+			name: "empty tab group",
+			yaml: `
+type: canvas
+rows:
+- name: empty
+  tabs: []
+`,
+		},
+		{
+			name: "duplicate group names",
+			yaml: `
+type: canvas
+rows:
+- name: dup
+  tabs:
+  - label: A
+    rows: []
+- name: dup
+  tabs:
+  - label: B
+    rows: []
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+		})
+	}
+}
+
+// TestCanvasTabNameUniqueness verifies that tab names are uniquified when labels slugify
+// to the same value, so each tab keeps a distinct URL key.
+func TestCanvasTabNameUniqueness(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- tabs:
+  - label: Sales
+    rows: []
+  - label: "Sales!"
+    rows: []
+  - label: "Sales?"
+    rows: []
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	var canvas *runtimev1.CanvasSpec
+	for _, r := range p.Resources {
+		if r.CanvasSpec != nil {
+			canvas = r.CanvasSpec
+		}
+	}
+	require.NotNil(t, canvas)
+
+	tabs := canvas.Rows[0].TabGroup.Tabs
+	require.Equal(t, "sales", tabs[0].Name)
+	require.Equal(t, "sales-2", tabs[1].Name)
+	require.Equal(t, "sales-3", tabs[2].Name)
+}
+
+// TestCanvasTabExplicitName verifies a tab can carry an explicit URL `name` alongside its
+// display `label`, and that `name` defaults from the label when omitted.
+func TestCanvasTabExplicitName(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- tabs:
+  - name: ov
+    label: Overview
+    rows: []
+  - label: Deep Dive
+    rows: []
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	var canvas *runtimev1.CanvasSpec
+	for _, r := range p.Resources {
+		if r.CanvasSpec != nil {
+			canvas = r.CanvasSpec
+		}
+	}
+	require.NotNil(t, canvas)
+
+	tabs := canvas.Rows[0].TabGroup.Tabs
+	// Explicit name + label.
+	require.Equal(t, "ov", tabs[0].Name)
+	require.Equal(t, "Overview", tabs[0].DisplayName)
+	// Name defaults from the label.
+	require.Equal(t, "deep-dive", tabs[1].Name)
+	require.Equal(t, "Deep Dive", tabs[1].DisplayName)
 }
 
 func TestKindBackwardsCompatibility(t *testing.T) {
@@ -1983,7 +2218,7 @@ select 3
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -2081,7 +2316,7 @@ measures:
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -2132,7 +2367,7 @@ refresh:
 	}
 
 	// Parse for prod and check
-	p, err := Parse(ctx, repo, "", "prod", "duckdb")
+	p, err := Parse(ctx, repo, "", "prod", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
 
@@ -2140,7 +2375,7 @@ refresh:
 	m1.ModelSpec.RefreshSchedule.Cron = ""
 
 	// Parse for dev and check
-	p, err = Parse(ctx, repo, "", "dev", "duckdb")
+	p, err = Parse(ctx, repo, "", "dev", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
 }
@@ -2162,7 +2397,7 @@ driver: clickhouse
 			Driver: "clickhouse",
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
 
@@ -2181,7 +2416,7 @@ managed: true
 			Provision: true,
 		},
 	}
-	p, err = Parse(ctx, repo, "", "", "duckdb")
+	p, err = Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
 
@@ -2204,7 +2439,7 @@ time_zone: America/Los_Angeles
 			ProvisionArgs: must(structpb.NewStruct(map[string]any{"hello": "world"})),
 		},
 	}
-	p, err = Parse(ctx, repo, "", "", "duckdb")
+	p, err = Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
 
@@ -2215,7 +2450,7 @@ driver: clickhouse
 managed: 10
 `,
 	})
-	p, err = Parse(ctx, repo, "", "", "duckdb")
+	p, err = Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{
 		{Message: "failed to decode 'managed'", FilePath: "/connectors/clickhouse.yaml"},
@@ -2263,7 +2498,7 @@ metrics_view: missing
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -2330,7 +2565,7 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 
@@ -2393,7 +2628,7 @@ change_mode: patch
 				`models/m1.yaml`: tt.yamlInput,
 			})
 
-			p, err := Parse(ctx, repo, "", "", "duckdb")
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
 			require.NoError(t, err)
 			require.Len(t, p.Resources, 1)
 			resource := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
@@ -2483,7 +2718,7 @@ tests:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -2542,7 +2777,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("file", "", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")
@@ -2569,14 +2804,6 @@ func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 
 func asPtr[T any](val T) *T {
 	return &val
-}
-
-func normalizeJSON(t *testing.T, s string) string {
-	var v interface{}
-	require.NoError(t, json.Unmarshal([]byte(s), &v))
-	b, err := json.Marshal(v)
-	require.NoError(t, err)
-	return string(b)
 }
 
 func TestThemeValidation(t *testing.T) {
@@ -2689,6 +2916,24 @@ dark:
 				},
 			},
 		},
+		{
+			name: "kpi semantic variables are accepted",
+			yaml: `
+type: theme
+light:
+  kpi-positive: "#16a34a"
+  kpi-negative: "#dc2626"
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Variables: map[string]string{
+						"kpi-positive": "#16a34a",
+						"kpi-negative": "#dc2626",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2699,7 +2944,7 @@ dark:
 				"themes/test.yaml": tt.yaml,
 			})
 
-			p, err := Parse(ctx, repo, "", "", "duckdb")
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
 			require.NoError(t, err)
 
 			if tt.expectError {

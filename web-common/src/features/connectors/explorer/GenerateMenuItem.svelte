@@ -14,7 +14,7 @@
   $: label = type === "metrics" ? "Generate metrics" : "Generate dashboard";
 </script>
 
-<NavigationMenuItem on:click={onClick}>
+<NavigationMenuItem onclick={onClick}>
   <svelte:component this={icon} slot="icon" />
   <div class="flex gap-x-2 items-center">
     {label}

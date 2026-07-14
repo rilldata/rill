@@ -40,6 +40,10 @@ import {
   V1ExploreComparisonMode,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import {
+  RUNTIME_CONTEXT_KEY,
+  RuntimeClient,
+} from "@rilldata/web-common/runtime-client/v2";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -292,6 +296,33 @@ describe("DashboardStateManager", () => {
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
+
+    it("Should not load local storage or session storage when disabled", async () => {
+      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
+      setExploreStateForWebView(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        ExploreUrlWebView.Explore,
+        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC&leaderboard_measures=bid_price",
+      );
+      renderDashboardStateManager(undefined, true, true);
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      assertExploreStateSubset({
+        ...ExploreStateSubsetForRillDefaultState,
+        ...ExploreStateSubsetForYAMLState,
+      });
+    });
   });
 
   describe("Dashboards without timeseries", () => {
@@ -477,15 +508,25 @@ function renderDashboardStateManager(
   bookmarkOrTokenExploreState:
     | CompoundQueryResult<Partial<ExploreState> | undefined>
     | undefined = undefined,
+  disableMostRecentDashboardState: boolean = false,
+  disableInitSessionDashboardState: boolean = false,
 ) {
   const renderResults = render(DashboardStateManagerTest, {
     props: {
       exploreName: AD_BIDS_EXPLORE_NAME,
       bookmarkOrTokenExploreState,
+      disableMostRecentDashboardState,
+      disableInitSessionDashboardState,
     },
     // TODO: we need to make sure every single query uses an explicit queryClient instead of the global one
     //       only then we can use a fresh client here.
-    context: new Map([["$$_queryClient", queryClient]]),
+    context: new Map<string | symbol, unknown>([
+      ["$$_queryClient", queryClient],
+      [
+        RUNTIME_CONTEXT_KEY,
+        new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+      ],
+    ]),
   });
 
   return { queryClient, renderResults };

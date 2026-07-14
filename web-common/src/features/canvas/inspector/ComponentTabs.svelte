@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { isChartComponentType } from "@rilldata/web-common/features/canvas/components/util";
   import Tab from "@rilldata/web-common/features/dashboards/tab-bar/Tab.svelte";
@@ -18,7 +19,7 @@
   $: if (hasFilters) {
     tabs.push({
       tab: "filters",
-      label: "Filters",
+      label: m.canvas_filters(),
     });
   }
 
@@ -38,7 +39,7 @@
   <div class="flex gap-x-2">
     {#each tabs as { tab, label } (tab)}
       {@const selected = tab === currentTab}
-      <Tab {selected} on:click={() => (currentTab = tab)}>
+      <Tab {selected} onclick={() => (currentTab = tab)}>
         {label}
       </Tab>
     {/each}

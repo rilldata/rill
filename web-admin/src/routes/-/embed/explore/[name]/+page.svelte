@@ -3,7 +3,7 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  $: ({ instanceId, exploreName } = data);
+  $: ({ exploreName } = data);
 </script>
 
-<ExploreEmbed {instanceId} {exploreName} />
+<ExploreEmbed {exploreName} />

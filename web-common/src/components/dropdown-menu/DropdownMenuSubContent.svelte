@@ -1,30 +1,28 @@
 <script lang="ts">
-  import { cn, flyAndScale } from "@rilldata/web-common/lib/shadcn";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+  import type { Snippet } from "svelte";
 
-  type $$Props = DropdownMenuPrimitive.SubContentProps;
-  // type $$Events = DropdownMenuPrimitive.SubContentEvents;
-
-  let className: $$Props["class"] = undefined;
-  export let transition: $$Props["transition"] = flyAndScale;
-  export let transitionConfig: $$Props["transitionConfig"] = {
-    x: -10,
-    y: 0,
-  };
-  export { className as class };
+  // svelte-ignore custom_element_props_identifier
+  let {
+    class: className,
+    sideOffset = 2,
+    align = "start" as const,
+    children,
+    ...restProps
+  }: DropdownMenuPrimitive.SubContentProps & {
+    children?: Snippet;
+  } = $props();
 </script>
 
 <DropdownMenuPrimitive.SubContent
-  {transition}
-  {transitionConfig}
+  {sideOffset}
+  {align}
   class={cn(
     "z-50 min-w-[8rem] rounded-md border bg-popover p-1.5 text-popover-foreground shadow-md focus:outline-none",
     className,
   )}
-  {...$$restProps}
-  on:keydown
-  on:focusout
-  on:pointermove
+  {...restProps}
 >
-  <slot />
+  {@render children?.()}
 </DropdownMenuPrimitive.SubContent>

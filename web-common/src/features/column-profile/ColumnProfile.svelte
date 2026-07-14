@@ -1,11 +1,11 @@
 <script lang="ts">
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
+  import { onMount } from "svelte";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import {
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";
-  import { onMount } from "svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./utils";
@@ -21,7 +21,7 @@
   let mode = "summaries";
   let container;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   onMount(() => {
     const observer = new ResizeObserver(() => {
@@ -32,9 +32,9 @@
   });
 
   $: profileColumns = createQueryServiceTableColumns(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -43,7 +43,8 @@
   );
 
   /** get single example */
-  $: exampleValue = createQueryServiceTableRows(instanceId, objectName, {
+  $: exampleValue = createQueryServiceTableRows(client, {
+    tableName: objectName,
     connector,
     database,
     databaseSchema,
@@ -51,7 +52,7 @@
   });
 
   $: nestedColumnProfileQuery = getSummaries(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -82,6 +83,7 @@
     ? '10'
     : '4'} pr-5 pb-2 flex justify-between text-fg-secondary pt-1"
   class:flex-col={containerWidth < 325}
+  aria-label="Column profile for {objectName}"
 >
   <select bind:value={sortMethod} class={native_select} style:font-size="11px">
     <option value={sortByOriginalOrder}>show original order</option>

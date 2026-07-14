@@ -4,7 +4,7 @@
 </script>
 
 <script lang="ts">
-  import ProjectGlobalStatusIndicator from "@rilldata/web-admin/features/projects/status/ProjectGlobalStatusIndicator.svelte";
+  import ProjectGlobalStatusIndicator from "@rilldata/web-admin/features/projects/status/overview/ProjectGlobalStatusIndicator.svelte";
   import { onMount } from "svelte";
   import { writable } from "svelte/store";
 
@@ -16,23 +16,28 @@
 
   let size: number = 0;
   let left: number = 0;
-
-  $: if (selected && size) width.set(size);
-  $: if (selected && left) position.set(left);
-
-  const observer = new ResizeObserver((entries) => {
-    for (const entry of entries) {
-      if (entry.target instanceof HTMLElement) {
-        left = entry.target.offsetLeft;
-        size = entry.target.clientWidth;
-      }
-    }
-  });
-
   let element: HTMLAnchorElement;
 
+  $: if (selected && size) {
+    width.set(size);
+    position.set(left);
+  }
+
+  function measure() {
+    if (!element) return;
+    left = element.offsetLeft;
+    size = element.clientWidth;
+  }
+
   onMount(() => {
+    // Observe self for size changes AND the parent nav so we re-measure when
+    // sibling tabs mount/unmount (feature flags, permissions). ResizeObserver
+    // does not fire on pure offsetLeft changes, so without this the underline
+    // sticks to a stale position after sibling layout shifts.
+    const observer = new ResizeObserver(measure);
     observer.observe(element);
+    if (element.parentElement) observer.observe(element.parentElement);
+    return () => observer.disconnect();
   });
 </script>
 

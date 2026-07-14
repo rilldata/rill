@@ -18,8 +18,11 @@ export let actionEvent: ActiveEventHandler;
 export let behaviourEvent: BehaviourEventHandler;
 export let errorEventHandler: ErrorEventHandler;
 
-export async function initMetrics(localConfig: GetMetadataResponse) {
-  metricsService = new MetricsService(new RillIntakeClient(), [
+export async function initMetrics(
+  localConfig: GetMetadataResponse,
+  host: string,
+) {
+  metricsService = new MetricsService(new RillIntakeClient(host), [
     new ProductHealthEventFactory(),
     new BehaviourEventFactory(),
     new ErrorEventFactory(),

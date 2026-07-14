@@ -9,4 +9,4 @@
   style:width={vertical ? "3px" : "100%"}
   style:height={horizontal ? "3px" : "100%"}
   class="rounded-full pointer-events-none group-hover:bg-indigo-300 opacity-80"
-/>
+></span>

@@ -7,6 +7,7 @@ import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, type Readable } from "svelte/store";
 
 export class ExploreMetricsViewMetadata {
@@ -21,18 +22,18 @@ export class ExploreMetricsViewMetadata {
   public readonly measureNameMap: Readable<Map<string, MetricsViewSpecMeasure>>;
 
   public constructor(
-    instanceId: string,
+    client: RuntimeClient,
     public readonly metricsViewName: string,
     exploreName: string,
   ) {
     this.validSpecQuery = useExploreValidSpec(
-      instanceId,
+      client,
       exploreName,
       undefined,
       queryClient,
     );
     this.timeRangeSummary = useMetricsViewTimeRange(
-      instanceId,
+      client,
       metricsViewName,
       undefined,
       queryClient,

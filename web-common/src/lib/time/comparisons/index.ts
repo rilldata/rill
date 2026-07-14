@@ -1,6 +1,7 @@
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   V1TimeGrain,
   type V1TimeRange,
@@ -13,6 +14,7 @@ import {
   TimeOffsetType,
   TimeRangePreset,
 } from "../types";
+import { isNewRillTimeFormat } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 
 export function getComparisonTransform(
   start: Date,
@@ -296,10 +298,10 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
   }
   switch (true) {
     case comparisonTimeRange.isoOffset === TimeRangePreset.ALL_TIME:
-      return "All time";
+      return m.time_all_time();
     case comparisonTimeRange.isoDuration === comparisonTimeRange.isoOffset ||
       comparisonTimeRange.expression?.toLowerCase()?.endsWith("offset pp"):
-      return "Previous period";
+      return m.time_comparison_previous_period();
     case comparisonTimeRange.isoOffset &&
       comparisonTimeRange.isoOffset in TIME_COMPARISON:
       return TIME_COMPARISON[comparisonTimeRange.isoOffset].label;
@@ -307,7 +309,11 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
       comparisonTimeRange.expression in TIME_COMPARISON:
       return TIME_COMPARISON[comparisonTimeRange.expression].label;
     default:
-      return `Last ${humaniseISODuration(comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "")}`;
+      return m.time_last_duration({
+        duration: humaniseISODuration(
+          comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "",
+        ),
+      });
   }
 }
 
@@ -316,7 +322,8 @@ export function getComparisonInterval(
   comparisonRange: string | undefined,
   activeTimeZone: string,
 ): Interval<true> | undefined {
-  if (!interval || !comparisonRange) return undefined;
+  if (!interval || !comparisonRange || isNewRillTimeFormat(comparisonRange))
+    return undefined;
 
   let comparisonInterval: Interval | undefined = undefined;
 
@@ -348,7 +355,11 @@ export function getComparisonInterval(
     }
   } else {
     const normalizedRange = comparisonRange.replace(",", "/");
-    comparisonInterval = Interval.fromISO(normalizedRange).mapEndpoints((dt) =>
+    const normalizedInterval = Interval.fromISO(normalizedRange);
+    // Safeguard against unknown comparison range format.
+    if (!normalizedInterval.isValid) return undefined;
+
+    comparisonInterval = normalizedInterval.mapEndpoints((dt) =>
       dt.setZone(activeTimeZone),
     );
   }

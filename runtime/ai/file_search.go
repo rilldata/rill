@@ -40,6 +40,12 @@ func (t *SearchFiles) Spec() *mcp.Tool {
 		Name:        SearchFilesName,
 		Title:       "Search files",
 		Description: "Searches for a pattern across files in the Rill project. Returns matching file paths, line numbers, and snippets. Use this before read_file to discover which files contain specific content.",
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: boolPtr(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   boolPtr(false),
+			ReadOnlyHint:    true,
+		},
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Searching files...",
 			"openai/toolInvocation/invoked":  "Searched files",
@@ -48,7 +54,7 @@ func (t *SearchFiles) Spec() *mcp.Tool {
 }
 
 func (t *SearchFiles) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, true)
+	return checkDeveloperAccess(ctx, t.Runtime, false)
 }
 
 func (t *SearchFiles) Handler(ctx context.Context, args *SearchFilesArgs) (*SearchFilesResult, error) {

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -92,6 +93,16 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	// Validation
 	if len(eventTypes) == 0 {
 		http.Error(w, "must specify at least one event type via the 'events' parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Check controller is open
+	if _, err := s.runtime.Controller(req.Context(), instanceID); err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			http.Error(w, "instance not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "controller is not open", http.StatusConflict)
 		return
 	}
 
@@ -223,6 +234,13 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	// 1. The request is cancelled. The ctx used by the streams is cancelled, so they return with context.Canceled. The grp.Wait() returns, this goroutine closes the events channel, making serveSSEUntilClose return.
 	// 2. An error occurs in a stream. The errgroup cancels the ctx, so the other streams also returns. The grp.Wait() returns the original error, which this goroutine sends as a final message, then closes the events channel, making serveSSEUntilClose return.
 	go func() {
+		// Handle panics (it's a separate goroutine so the middleware won't catch panics)
+		defer func() {
+			if r := recover(); r != nil {
+				s.logger.Error("panic in SSEHandler subscription goroutine", zap.Any("recover", r), zap.Stack("stack"))
+			}
+		}()
+
 		// This goroutine must close the events channel to ensure the call to serveSSEUntilClose returns.
 		defer close(events)
 

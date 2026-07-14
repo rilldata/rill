@@ -4,6 +4,7 @@
 
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
   import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
@@ -17,6 +18,7 @@
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import TableIcon from "../../canvas/icons/TableIcon.svelte";
   import type { PivotChipData, PivotState, PivotTableMode } from "./types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let pivotState: PivotState;
   export let showPanels = true;
@@ -27,11 +29,31 @@
     columns: PivotChipData[],
   ) => void;
   export let setRowLimit: (limit: number | undefined) => void;
+  export let setShowTotals: (
+    totals: Pick<PivotState, "showTotalsColumn" | "showTotalsRow">,
+  ) => void;
   export let collapseAll: () => void;
 
-  $: ({ rows, columns, tableMode, expanded, rowLimit } = pivotState);
+  $: ({
+    rows,
+    columns,
+    tableMode,
+    expanded,
+    rowLimit,
+    showTotalsColumn,
+    showTotalsRow,
+  } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
+  $: rowDimensionCount = isFlat ? splitColumns.dimension.length : rows.length;
+  $: colDimensionCount = isFlat ? 0 : splitColumns.dimension.length;
+  $: measureCount = splitColumns.measure.length;
+  $: canShowTotalRow = rowDimensionCount > 0 && measureCount > 0;
+  $: canShowTotalColumn =
+    !isFlat &&
+    rowDimensionCount > 0 &&
+    colDimensionCount > 0 &&
+    measureCount > 0;
 
   // Row limit options - uses shared constants to ensure sync with URL validation
   const rowLimitOptions: { value: string; label: string }[] = [
@@ -39,7 +61,7 @@
       value: limit.toString(),
       label: limit.toString(),
     })),
-    { value: "all", label: "All" },
+    { value: "all", label: m.dashboard_all() },
   ];
 
   // Convert rowLimit to string for Select component binding
@@ -59,6 +81,8 @@
    * dashboard store when toggling back from `flat` to `nest`
    */
   function togglePivotType(newJoinState: PivotTableMode) {
+    if (newJoinState === tableMode) return;
+
     if (newJoinState === "flat") {
       lastNestState.set(rows);
       setTableMode(
@@ -101,27 +125,53 @@
       <PivotPanel size="18px" open={showPanels} colorClass="fill-theme-800" />
     </Button>
     <TooltipContent slot="tooltip-content">
-      {showPanels ? "Hide panels" : "Show panels"}
+      {showPanels ? m.dashboard_hide_panels() : m.dashboard_show_panels()}
     </TooltipContent>
   </Tooltip>
 
   <div class="flex items-center gap-x-1">
-    <Tooltip location="bottom" alignment="start" distance={8}>
-      <Button
-        type="toolbar"
-        onClick={() => togglePivotType(isFlat ? "nest" : "flat")}
-      >
-        {#if isFlat}
-          <TableIcon size="16px" />
-        {:else}
+    <div
+      class="flex h-6 overflow-hidden rounded-sm border border-gray-200 bg-input pointer-events-auto"
+      role="group"
+      aria-label={m.dashboard_table_mode()}
+    >
+      <Tooltip location="bottom" alignment="start" distance={8}>
+        <button
+          type="button"
+          class="pivot-mode-button"
+          class:selected={!isFlat}
+          aria-pressed={!isFlat}
+          onclick={(e) => {
+            togglePivotType("nest");
+            blurCurrentTarget(e);
+          }}
+        >
           <Pivot size="16px" />
-        {/if}
-        <span>{isFlat ? "Flat table" : "Pivot table"}</span>
-      </Button>
-      <TooltipContent slot="tooltip-content">
-        {isFlat ? "Switch to a pivot table" : "Switch to a flat table"}
-      </TooltipContent>
-    </Tooltip>
+          <span>{m.dashboard_pivot()}</span>
+        </button>
+        <TooltipContent slot="tooltip-content">
+          {!isFlat ? m.dashboard_currently_pivot() : m.dashboard_switch_pivot()}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip location="bottom" alignment="start" distance={8}>
+        <button
+          type="button"
+          class="pivot-mode-button border-l border-gray-200"
+          class:selected={isFlat}
+          aria-pressed={isFlat}
+          onclick={(e) => {
+            togglePivotType("flat");
+            blurCurrentTarget(e);
+          }}
+        >
+          <TableIcon size="16px" color="currentColor" />
+          <span>{m.dashboard_flat()}</span>
+        </button>
+        <TooltipContent slot="tooltip-content">
+          {isFlat ? m.dashboard_currently_flat() : m.dashboard_switch_flat()}
+        </TooltipContent>
+      </Tooltip>
+    </div>
 
     <Button
       type="toolbar"
@@ -129,15 +179,15 @@
       disabled={Object.keys(expanded).length === 0}
     >
       <Collapse size="16px" />
-      Collapse All
+      {m.dashboard_collapse_all()}
     </Button>
 
     {#if !isFlat}
       <div class="flex items-center gap-x-2 pointer-events-auto">
         <Tooltip location="bottom" alignment="start" distance={8}>
-          <span class="text-fg-secondary pl-2">Row limit</span>
+          <span class="text-fg-secondary pl-2">{m.dashboard_row_limit()}</span>
           <TooltipContent slot="tooltip-content">
-            Only up to top N child rows are shown under each dimension
+            {m.dashboard_row_limit_tooltip()}
           </TooltipContent>
         </Tooltip>
         <Select
@@ -147,8 +197,41 @@
           onChange={handleRowLimitChange}
           size="sm"
           width={80}
-          placeholder="Row limit"
+          placeholder={m.dashboard_row_limit()}
         />
+      </div>
+    {/if}
+
+    {#if canShowTotalRow || canShowTotalColumn}
+      <div class="flex items-center gap-x-3 pl-2 pointer-events-auto">
+        {#if canShowTotalRow}
+          <Checkbox
+            id="pivot-show-total-row"
+            checked={showTotalsRow}
+            onCheckedChange={(checked) => {
+              setShowTotals({
+                showTotalsColumn,
+                showTotalsRow: Boolean(checked),
+              });
+            }}
+            label={m.dashboard_total_row()}
+            labelClass="text-xs leading-snug font-normal text-fg-secondary"
+          />
+        {/if}
+        {#if canShowTotalColumn}
+          <Checkbox
+            id="pivot-show-total-column"
+            checked={showTotalsColumn}
+            onCheckedChange={(checked) => {
+              setShowTotals({
+                showTotalsColumn: Boolean(checked),
+                showTotalsRow,
+              });
+            }}
+            label={m.dashboard_total_column()}
+            labelClass="text-xs leading-snug font-normal text-fg-secondary"
+          />
+        {/if}
       </div>
     {/if}
     <slot name="export-menu" />
@@ -158,3 +241,14 @@
     {/if}
   </div>
 </div>
+
+<style lang="postcss">
+  .pivot-mode-button {
+    @apply flex h-full min-w-[64px] items-center justify-center gap-x-1.5 px-2;
+    @apply text-xs font-normal text-fg-secondary hover:bg-gray-600/15;
+  }
+
+  .pivot-mode-button.selected {
+    @apply bg-gray-600/15;
+  }
+</style>

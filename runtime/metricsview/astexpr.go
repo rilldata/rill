@@ -99,6 +99,8 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		TimeZone:            outer.TimeZone,
 		UseDisplayNames:     false,
 		Rows:                false,
+		QueryLimits:         outer.QueryLimits,
+		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
@@ -275,6 +277,12 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
 
+		// For IN/NIN on unnest dimensions backed by DuckDB or ClickHouse, use native array-contains
+		// functions (list_has_any / hasAny). This avoids double-counting when a row's array contains multiple matching values.
+		if (op == OperatorIn || op == OperatorNin) && b.ast.Dialect.RequiresArrayContainsForInOperator() {
+			return b.writeArrayContainsCondition(leftExpr, right, op == OperatorNin)
+		}
+
 		// Generate unnest join
 		unnestTableAlias := b.ast.GenerateIdentifier()
 		unnestFrom, tupleStyle, auto, err := b.ast.Dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
@@ -283,13 +291,14 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		}
 		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
+			leftExpr = b.ast.Dialect.AutoUnnest(leftExpr)
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
 		var unnestColAlias string
 		if tupleStyle {
 			unnestColAlias = b.ast.Dialect.EscapeMember(unnestTableAlias, left.Name)
 		} else {
-			unnestColAlias = b.ast.Dialect.EscapeIdentifier(left.Name)
+			unnestColAlias = b.ast.Dialect.EscapeAlias(left.Name)
 		}
 
 		if !tupleStyle { // if tupleStyle, then we cannot refer to the column by table alias
@@ -423,7 +432,11 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if not {
 			b.writeString(" NOT ")
 		}
-		b.writeString(b.ast.Dialect.GetRegexMatchFunction())
+		regexFunc, err := b.ast.Dialect.GetRegexMatchFunction()
+		if err != nil {
+			return err
+		}
+		b.writeString(regexFunc)
 		b.writeByte('(')
 		if leftOverride != "" {
 			b.writeParenthesizedString(leftOverride)
@@ -641,6 +654,48 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		b.writeString(" IS NULL")
 	}
 
+	b.writeByte(')')
+
+	return nil
+}
+
+func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Expression, not bool) error {
+	vals, ok := right.Value.([]any)
+	if !ok {
+		return fmt.Errorf("the right value must be a list of values for an array IN condition")
+	}
+
+	if len(vals) == 0 {
+		if not {
+			b.writeString("TRUE")
+		} else {
+			b.writeString("FALSE")
+		}
+		return nil
+	}
+
+	b.writeByte('(')
+	if not {
+		b.writeString("NOT ")
+	}
+	arrayContainsFunc, err := b.ast.Dialect.GetArrayContainsFunction()
+	if err != nil {
+		return err
+	}
+	b.writeString(arrayContainsFunc)
+	b.writeByte('(')
+	b.writeParenthesizedString(leftExpr)
+	b.writeString(", [")
+	// not handling NULL values separately as clickhouse hasAny function takes care of it however, duckdb ignores null values in the list_has_any function, but there is no reliable way to make it work,
+	// but even using leftExpr IS NULL does not solve the issue as it checks for null array rather than null values in the array.
+	for i, val := range vals {
+		if i > 0 {
+			b.writeByte(',')
+		}
+		b.writeString("?")
+		b.args = append(b.args, val)
+	}
+	b.writeString("])")
 	b.writeByte(')')
 
 	return nil

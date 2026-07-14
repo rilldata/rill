@@ -4,8 +4,9 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
-  import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
+  import AlertFormDataWrapper from "@rilldata/web-common/features/alerts/AlertFormDataWrapper.svelte";
   import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Button from "web-common/src/components/button/Button.svelte";
 
   export let alertSpec: V1AlertSpec;
@@ -13,17 +14,34 @@
 </script>
 
 <GuardedDialog
-  title="Close without saving?"
-  description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
-  confirmLabel="Close"
-  cancelLabel="Keep editing"
+  title={m.dialog_close_without_saving_title()}
+  description={m.dialog_close_without_saving_alert_desc()}
+  confirmLabel={m.dialog_close_without_saving_confirm()}
+  cancelLabel={m.dialog_close_without_saving_cancel()}
   let:onCancel
   let:onClose
+  let:preventClose
 >
-  <DialogTrigger asChild let:builder>
-    <Button type="secondary" builders={[builder]} {disabled}>Edit</Button>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <Button
+        {...props}
+        type="secondary"
+        {disabled}
+        label={m.alert_edit_label()}>{m.alert_edit()}</Button
+      >
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="p-0 m-0 w-[802px] max-w-fit" noClose>
-    <AlertForm props={{ mode: "edit", alertSpec }} {onCancel} {onClose} />
+  <DialogContent
+    class="p-0 m-0 w-[802px] max-w-fit"
+    noClose
+    onEscapeKeydown={preventClose}
+    onInteractOutside={preventClose}
+  >
+    <AlertFormDataWrapper
+      props={{ mode: "edit", alertSpec }}
+      {onCancel}
+      {onClose}
+    />
   </DialogContent>
 </GuardedDialog>

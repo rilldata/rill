@@ -147,6 +147,10 @@ message DashboardState {
   optional bool pivot_enable_comparison = 34;
   // Row limit for pivot table (number of child rows to show under each dimension)
   optional int32 pivot_row_limit = 41;
+  // Show the totals column (per-row totals) for pivot tables.
+  optional bool pivot_show_totals_column = 42;
+  // Show the totals row (per-column totals) for pivot/flat tables.
+  optional bool pivot_show_totals_row = 43;
 
   // List of all dimensions selected for rows
   repeated PivotElement pivot_row_all_dimensions = 35;

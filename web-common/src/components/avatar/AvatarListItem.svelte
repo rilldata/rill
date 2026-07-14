@@ -80,7 +80,7 @@
         <button
           type="button"
           class="text-xs text-primary-600 font-medium cursor-pointer hover:text-primary-700"
-          on:click={handleManageClick}>Manage</button
+          onclick={handleManageClick}>Manage</button
         >
       {/if}
     </div>

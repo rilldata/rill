@@ -14,9 +14,28 @@
   import { onDestroy } from "svelte";
   import Line from "./Line.svelte";
   import Point from "./Point.svelte";
+  import { bridgeGaps, snapToNearestNonNull } from "./sparse-data-utils";
   import type { ChartDataPoint } from "./types";
 
   const THROTTLE_MS = 16;
+  const chartId = Math.random().toString(36).slice(2, 11);
+
+  // Hover snaps to the nearest non-null point within this distance (in index
+  // units), so sparse points are easy to land on without snapping across wide
+  // gaps. A fraction of the data length keeps the snap radius a roughly
+  // constant pixel distance regardless of point count.
+  const SNAP_FRACTION = 0.05;
+  const MIN_SNAP_INDICES = 3;
+
+  const pointValueAccessor = (d: ChartDataPoint) => d.value ?? null;
+  const pointCloneWithValue = (
+    d: ChartDataPoint,
+    value: number,
+  ): ChartDataPoint => ({
+    ...d,
+    value,
+  });
+  const MIN_WIDTH_FOR_DYNAMIC_LABEL = 200;
 
   export let primaryData: V1TimeSeriesValue[];
   export let secondaryData: V1TimeSeriesValue[] = [];
@@ -25,6 +44,7 @@
   export let yAccessor: string;
   export let hideTimeRange: boolean | undefined = false;
   export let formatterFunction: ReturnType<typeof createMeasureValueFormatter>;
+  export let connectNulls: boolean = true;
   export let hoveredPoints: ChartDataPoint[] = [];
 
   let offsetPosition: { x: number; y: number } | null = null;
@@ -74,11 +94,35 @@
   $: yExtents = [Math.min(0, min(mins) ?? 0), max(maxes) ?? 0];
   $: yScale = scaleLinear().domain(yExtents).range([100, 0]);
 
+  // Bridge gaps in the data, treating missing data as zero
+  $: bridgeResults = mappedData.map((line) =>
+    bridgeGaps(line, pointValueAccessor, pointCloneWithValue, connectNulls),
+  );
+  $: bridgedData = bridgeResults.map((r) => r.values);
+
+  // Isolated points (single non-null surrounded by nulls) in bridged data
+  $: singletonIndices = bridgeResults.map((result) =>
+    result.bridgedSegments
+      .filter((s) => s.startIndex === s.endIndex)
+      .map((s) => s.startIndex),
+  );
+
+  $: maxSnapDistance = Math.max(
+    MIN_SNAP_INDICES,
+    maxDataLength * SNAP_FRACTION,
+  );
+
   $: hoverIndex = (() => {
     if (offsetPosition === null) return null;
     if (maxDataLength === 0) return null;
     if (maxDataLength === 1) return 0;
-    return Math.round((offsetPosition.x / width) * (maxDataLength - 1));
+    const fractionalIndex = (offsetPosition.x / width) * (maxDataLength - 1);
+    return snapToNearestNonNull(
+      fractionalIndex,
+      mappedData,
+      pointValueAccessor,
+      maxSnapDistance,
+    );
   })();
 
   $: hoveredPoints = getPoints(hoverIndex);
@@ -188,7 +232,7 @@
               <span
                 class="size-[6.5px] rounded-full"
                 style:background-color={getColor(i)}
-              />
+              ></span>
               <span>{formatterFunction(point.value)}</span>
               {#if hasComparison}
                 <span class="text-fg-muted">
@@ -207,25 +251,38 @@
       class="cursor-default size-full overflow-visible"
       preserveAspectRatio="none"
       viewBox="0 0 10000 100"
-      on:mousemove={handleThrottledMouseMove}
-      on:mouseleave={handleMouseLeave}
+      onmousemove={handleThrottledMouseMove}
+      onmouseleave={handleMouseLeave}
     >
-      {#each mappedData as mappedDataLine, i (i)}
+      <defs>
+        {#if bridgeResults[0]}
+          <clipPath id="sparkline-clip-{chartId}">
+            {#each bridgeResults[0].bridgedSegments as seg (seg.startIndex)}
+              {@const x = xScale(seg.startIndex)}
+              {@const segWidth = xScale(seg.endIndex) - x}
+              <rect {x} y={0} width={segWidth} height={100} />
+            {/each}
+          </clipPath>
+        {/if}
+      </defs>
+
+      {#each bridgedData as bridgedLine, i (i)}
         <Line
-          data={mappedDataLine}
+          data={bridgedLine}
           {xScale}
           color={getColor(i)}
           {yScale}
           fill={i === 0}
           strokeWidth={1}
+          clipPathId={i === 0 ? `sparkline-clip-${chartId}` : undefined}
         />
       {/each}
 
       <g>
-        {#each [...mappedData].reverse() as mappedDataLine, reversedIndex (reversedIndex)}
-          {@const i = mappedData.length - reversedIndex - 1}
-          {#each mappedDataLine as { index, value }, pointIndex (pointIndex)}
-            {#if value !== null && value !== undefined && (hoverIndex === pointIndex || (mappedDataLine[pointIndex - 1]?.value === null && mappedDataLine[pointIndex + 1]?.value === null))}
+        {#each [...bridgedData].reverse() as bridgedLine, reversedIndex (reversedIndex)}
+          {@const i = bridgedData.length - reversedIndex - 1}
+          {#each bridgedLine as { index, value }, pointIndex (pointIndex)}
+            {#if value !== null && value !== undefined && (hoverIndex === pointIndex || singletonIndices[i]?.includes(pointIndex))}
               <Point x={xScale(index)} y={yScale(value)} color={getColor(i)} />
             {/if}
           {/each}
@@ -241,11 +298,14 @@
         {@const interval = getHoveredInterval(hoveredPoints[0].originalDate)}
         {@const comparisonPoint =
           hasComparison && hoveredPoints[1] ? hoveredPoints[1] : null}
+        {@const useDynamicPosition = width >= MIN_WIDTH_FOR_DYNAMIC_LABEL}
         {#if interval.isValid}
           <span
             class="absolute flex whitespace-nowrap gap-x-1"
-            style:transform="translateX(-{percentage}%)"
-            style:left="{percentage}%"
+            style:transform="translateX(-{useDynamicPosition
+              ? percentage
+              : 50}%)"
+            style:left="{useDynamicPosition ? percentage : 50}%"
           >
             <RangeDisplay {interval} {timeGrain} />
             {#if comparisonPoint}

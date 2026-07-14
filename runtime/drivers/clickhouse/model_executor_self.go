@@ -3,9 +3,11 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 type selfToSelfExecutor struct {
@@ -24,18 +26,50 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Parse the input and output properties
 	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	var warnings []string
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in input properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
+	}
+
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+	unused, err = mapstructureutil.WeakDecodeWithWarnings(opts.OutputProperties, outputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if len(unused) > 0 {
+		if opts.Env.StrictModelProps {
+			return nil, fmt.Errorf("undefined fields in output properties: %q", strings.Join(unused, ", "))
+		}
+		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
 
 	// Validate the output properties
-	err := e.c.validateAndApplyDefaults(opts, inputProps, outputProps)
+	err = e.c.validateAndApplyDefaults(opts, inputProps, outputProps)
 	if err != nil {
 		return nil, fmt.Errorf("invalid model properties: %w", err)
+	}
+
+	// Merge pre/post exec statements from output props into input props
+	// Ideally pre_exec and post_exec needs to be set in output but for clickhouse -> clickhouse models they can be set in input props as well.
+	if outputProps.PreExec != "" {
+		if inputProps.PreExec != "" {
+			inputProps.PreExec += "\n;"
+		}
+		inputProps.PreExec += outputProps.PreExec
+	}
+	if outputProps.PostExec != "" {
+		if inputProps.PostExec != "" {
+			inputProps.PostExec = outputProps.PostExec + "\n;" + inputProps.PostExec
+		} else {
+			inputProps.PostExec = outputProps.PostExec
+		}
 	}
 
 	usedModelName := false
@@ -58,9 +92,17 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		// NOTE: This intentionally drops the end table if not staging changes.
 		_ = e.c.dropTable(ctx, stagingTableName)
 
+		// When the table is staged under a temporary name, defer post_exec until after the rename so that it
+		// runs against the final table name. Otherwise a post_exec referencing the model's own table would fail.
+		deferPostExec := stagingTableName != tableName && inputProps.PostExec != ""
+		afterCreate := inputProps.PostExec
+		if deferPostExec {
+			afterCreate = ""
+		}
+
 		// Create the table
 		var err error
-		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, outputProps, inputProps.PreExec, inputProps.PostExec)
+		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, outputProps, inputProps.PreExec, afterCreate)
 		if err != nil {
 			_ = e.c.dropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
@@ -71,6 +113,13 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			err = e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
+			}
+		}
+
+		// Run the deferred post_exec against the final table name.
+		if deferPostExec {
+			if err := e.c.Exec(ctx, &drivers.Statement{Query: inputProps.PostExec, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
 			}
 		}
 	} else {
@@ -105,5 +154,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Properties:   resultPropsMap,
 		Table:        tableName,
 		ExecDuration: metrics.duration,
+		Warnings:     warnings,
 	}, nil
 }

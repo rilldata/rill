@@ -1,10 +1,11 @@
 <script lang="ts">
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
-  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
+  import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let data: V1Resource[];
   export let organization: string;
@@ -24,7 +25,7 @@
     {
       id: "composite",
       cell: (info) =>
-        flexRender(ReportsTableCompositeCell, {
+        renderComponent(ReportsTableCompositeCell, {
           organization,
           project,
           id: info.row.original.meta.name.name,
@@ -54,7 +55,7 @@
     // {
     //   id: "actions",
     //   cell: ({ row }) =>
-    //     flexRender(ReportsTableActionCell, {
+    //     renderComponent(ReportsTableActionCell, {
     //       title: row.original.name,
     //     }),
     // },
@@ -70,16 +71,15 @@
   <ResourceListEmptyState
     slot="empty"
     icon={ReportIcon}
-    message="You don't have any reports yet"
+    message={m.reports_empty_message()}
   >
     <span slot="action">
-      Schedule <a
-        href="https://docs.rilldata.com/guide/reports/exports"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        reports</a
-      > from any dashboard
+      {@html m.reports_empty_action({
+        reportsLink:
+          '<a href="https://docs.rilldata.com/guide/reports/exports" target="_blank" rel="noopener noreferrer">' +
+          m.reports_link_text() +
+          "</a>",
+      })}
     </span>
   </ResourceListEmptyState>
 </ResourceList>

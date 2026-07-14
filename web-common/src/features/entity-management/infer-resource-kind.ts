@@ -39,7 +39,7 @@ export function inferResourceKind(
   return null;
 }
 
-const resourceKindRegex = /type\s*:\s*(\w+)/i;
+const resourceKindRegex = /^type\s*:\s*(\w+)/im;
 function findResourceKindInYAML(text: string): ResourceKind | null {
   const match = text.match(resourceKindRegex);
 

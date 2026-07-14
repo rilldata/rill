@@ -8,14 +8,14 @@
 </script>
 
 <Alert.Root bind:open>
-  <Alert.Trigger asChild>
-    <div class="hidden"></div>
+  <Alert.Trigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </Alert.Trigger>
   <Alert.Content class="min-w-[600px]">
     <Alert.Header>
-      <Alert.Title>
-        Are you sure you want to overwrite this project?
-      </Alert.Title>
+      <Alert.Title>Overwrite this project?</Alert.Title>
       <Alert.Description>
         {#if rillManagedProject}
           Existing project files will be replaced with new ones and cannot be

@@ -13,7 +13,7 @@
   } from "@rilldata/web-admin/client";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { capitalize } from "@rilldata/web-common/components/table/utils.ts";
-  import { ORG_ROLES_DESCRIPTION_MAP } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let name: string;
   export let role: string | undefined = undefined;
@@ -53,11 +53,11 @@
           getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
       });
 
-      eventBus.emit("notification", { message: "User group role added" });
+      eventBus.emit("notification", { message: m.groups_role_added() });
     } catch (error) {
       console.error("Error adding role to user group", error);
       eventBus.emit("notification", {
-        message: "Error adding role to user group",
+        message: m.groups_error_adding_role(),
         type: "error",
       });
     }
@@ -78,10 +78,10 @@
           getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
       });
 
-      eventBus.emit("notification", { message: "User group role updated" });
+      eventBus.emit("notification", { message: m.groups_role_updated() });
     } catch {
       eventBus.emit("notification", {
-        message: "Error updating user group role",
+        message: m.groups_error_updating_role(),
         type: "error",
       });
     }
@@ -99,10 +99,10 @@
           getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
       });
 
-      eventBus.emit("notification", { message: "User group role revoked" });
+      eventBus.emit("notification", { message: m.groups_role_revoked() });
     } catch {
       eventBus.emit("notification", {
-        message: "Error revoking user group role",
+        message: m.groups_error_revoking_role(),
         type: "error",
       });
     }
@@ -128,11 +128,11 @@
         class="font-normal flex flex-col items-start py-2 {role === 'admin'
           ? 'bg-gray-100'
           : ''}"
-        on:click={() => handleRoleSelect(OrgUserRoles.Admin)}
+        onclick={() => handleRoleSelect(OrgUserRoles.Admin)}
       >
-        <span class="font-medium">Admin</span>
+        <span class="font-medium">{m.role_admin()}</span>
         <span class="text-xs text-fg-secondary"
-          >{ORG_ROLES_DESCRIPTION_MAP.admin}</span
+          >{m.role_org_admin_detail()}</span
         >
       </DropdownMenu.Item>
     {/if}
@@ -140,31 +140,29 @@
       class="font-normal flex flex-col items-start py-2 {role === 'editor'
         ? 'bg-gray-100'
         : ''}"
-      on:click={() => handleRoleSelect(OrgUserRoles.Editor)}
+      onclick={() => handleRoleSelect(OrgUserRoles.Editor)}
     >
-      <span class="font-medium">Editor</span>
-      <span class="text-xs text-fg-secondary"
-        >{ORG_ROLES_DESCRIPTION_MAP.editor}</span
+      <span class="font-medium">{m.role_editor()}</span>
+      <span class="text-xs text-fg-secondary">{m.role_org_editor_detail()}</span
       >
     </DropdownMenu.Item>
     <DropdownMenu.Item
       class="font-normal flex flex-col items-start py-2 {role === 'viewer'
         ? 'bg-gray-100'
         : ''}"
-      on:click={() => handleRoleSelect(OrgUserRoles.Viewer)}
+      onclick={() => handleRoleSelect(OrgUserRoles.Viewer)}
     >
-      <span class="font-medium">Viewer</span>
-      <span class="text-xs text-fg-secondary"
-        >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
+      <span class="font-medium">{m.role_viewer()}</span>
+      <span class="text-xs text-fg-secondary">{m.role_org_viewer_detail()}</span
       >
     </DropdownMenu.Item>
     {#if role}
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={handleRevokeRole}
+        onclick={handleRevokeRole}
       >
-        <span>Remove</span>
+        <span>{m.users_remove()}</span>
       </DropdownMenu.Item>
     {/if}
   </DropdownMenu.Content>

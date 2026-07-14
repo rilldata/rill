@@ -1,19 +1,19 @@
 <script lang="ts">
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import GithubConnectionDialog from "@rilldata/web-admin/features/projects/github/GithubConnectionDialog.svelte";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import {
     getRepoNameFromGitRemote,
     getGitUrlFromRemote,
   } from "@rilldata/web-common/features/project/deploy/github-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: ({
@@ -23,9 +23,9 @@
   $: isGithubConnected = !!gitRemote;
   $: isManagedGit = !!managedGitId;
   $: repoName = getRepoNameFromGitRemote(gitRemote);
-  $: githubLastSynced = useGithubLastSynced(instanceId);
+  $: githubLastSynced = useGithubLastSynced(runtimeClient);
   $: dashboardsLastUpdated = useDashboardsLastUpdated(
-    instanceId,
+    runtimeClient,
     organization,
     project,
   );
@@ -35,16 +35,11 @@
 </script>
 
 {#if $proj.data}
-  <div class="flex flex-col gap-y-1 max-w-[400px]">
-    <span
-      class="uppercase text-fg-secondary font-semibold text-[10px] leading-none"
-    >
-      GitHub
-    </span>
-    <div class="flex flex-col gap-x-1">
-      {#if isGithubConnected && !isManagedGit}
-        <div class="flex flex-row gap-x-1 items-center">
-          <Github className="w-4 h-4" />
+  <div class="flex flex-row gap-x-1 w-full">
+    {#if isGithubConnected && !isManagedGit}
+      <div class="flex flex-col gap-y-1">
+        <div class="flex items-center gap-x-1">
+          <Github className="shrink-0 h-4 w-4" />
           <a
             href={getGitUrlFromRemote($proj.data?.project?.gitRemote)}
             class="text-fg-primary text-[12px] font-semibold font-mono leading-5 truncate"
@@ -54,23 +49,16 @@
             {repoName}
           </a>
         </div>
-        {#if subpath}
-          <div class="flex items-center">
-            <span class="font-mono">subpath</span>
-            <span class="text-fg-primary">
-              : /{subpath}
-            </span>
-          </div>
-        {/if}
-        <div class="flex items-center">
-          <span class="font-mono">branch</span>
-          <span class="text-fg-primary">
-            : {primaryBranch}
-          </span>
+        <div class="flex flex-col text-[12px]">
+          <span class="font-mono">{m.github_branch()}: {primaryBranch}</span>
+          {#if subpath}
+            <span class="font-mono">{m.github_subpath()}: /{subpath}</span>
+          {/if}
         </div>
         {#if lastUpdated}
           <span class="text-fg-secondary text-[11px] leading-4">
-            Synced {lastUpdated.toLocaleString(undefined, {
+            {m.github_synced()}
+            {lastUpdated.toLocaleString(undefined, {
               month: "short",
               day: "numeric",
               hour: "numeric",
@@ -78,20 +66,20 @@
             })}
           </span>
         {/if}
-      {:else}
-        <span class="my-1 text-fg-tertiary">
-          Unlock the power of BI-as-code with GitHub-backed collaboration,
-          version control, and approval workflows.
+      </div>
+    {:else}
+      <span class="my-1 text-fg-tertiary">
+        {m.github_unlock_bi_as_code()}
+        <span class="whitespace-nowrap">
           <a
             href="https://docs.rilldata.com/developers/deploy/deploy-dashboard/github-101"
             target="_blank"
             class="text-primary-600"
           >
-            Learn more ->
+            {m.common_learn_more()} ->
           </a>
         </span>
-        <GithubConnectionDialog {organization} {project} />
-      {/if}
-    </div>
+      </span>
+    {/if}
   </div>
 {/if}

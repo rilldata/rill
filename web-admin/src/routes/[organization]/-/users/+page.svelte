@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import type { V1OrganizationInvite } from "@rilldata/web-admin/client";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
@@ -37,11 +38,12 @@
 
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
+  let roleFilter: "all" | "admin" | "editor" | "viewer" = "all";
 
-  let scrollToTopTrigger = null;
+  let scrollToTopTrigger: unknown = null;
   $: {
-    // Update trigger when filter selection changes to scroll to top
-    scrollToTopTrigger = filterSelection;
+    // Update trigger when filter selection or role filter changes to scroll to top
+    scrollToTopTrigger = { filterSelection, roleFilter };
   }
 
   $: organization = $page.params.organization;
@@ -74,7 +76,7 @@
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
-  // Filter by role
+  // Filter by user type and role
   // Filter by search text
   $: filteredUsers = combinedRows
     .filter((user) => {
@@ -86,24 +88,31 @@
         ("userName" in user &&
           (user.userName?.toLowerCase() || "").includes(searchLower));
 
-      let matchesRole = false;
+      let matchesUserType = false;
 
       if (filterSelection === "all") {
         // All org users (members + guests + pending invites)
-        matchesRole = true;
+        matchesUserType = true;
       } else if (filterSelection === "members") {
         // Only members (org admin, editor, viewer)
-        matchesRole =
+        matchesUserType =
           !("invitedBy" in user) &&
           (user.roleName === OrgUserRoles.Admin ||
             user.roleName === OrgUserRoles.Editor ||
             user.roleName === OrgUserRoles.Viewer);
       } else if (filterSelection === "pending") {
         // Only users with pending invites
-        matchesRole = "invitedBy" in user;
+        matchesUserType = "invitedBy" in user;
       }
 
-      return matchesSearch && matchesRole;
+      // Filter by selected role
+      const matchesRoleFilter =
+        roleFilter === "all" ||
+        (roleFilter === "admin" && user.roleName === OrgUserRoles.Admin) ||
+        (roleFilter === "editor" && user.roleName === OrgUserRoles.Editor) ||
+        (roleFilter === "viewer" && user.roleName === OrgUserRoles.Viewer);
+
+      return matchesSearch && matchesUserType && matchesRoleFilter;
     })
     .sort((a, b) => {
       // Sort by current user first
@@ -125,27 +134,26 @@
     />
   {:else if $orgMemberUsersInfiniteQuery.isError || $orgInvitesInfiniteQuery.isError}
     <div class="text-red-500">
-      Error loading organization members: {$orgMemberUsersInfiniteQuery.error ??
-        $orgInvitesInfiniteQuery.error}
+      {m.users_error_loading_members()}
+      {$orgMemberUsersInfiniteQuery.error ?? $orgInvitesInfiniteQuery.error}
     </div>
   {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
     <div class="flex flex-col">
       <div class="flex flex-row gap-x-4">
         <Search
-          placeholder="Search"
           bind:value={searchText}
           large
           autofocus={false}
           showBorderOnFocus={false}
         />
-        <OrgUsersFilters bind:filterSelection />
+        <OrgUsersFilters bind:filterSelection bind:roleFilter />
         <Button
           type="primary"
           large
           onClick={() => (isAddUserDialogOpen = true)}
         >
           <Plus size="16px" />
-          <span>Add users</span>
+          <span>{m.users_add_users()}</span>
         </Button>
       </div>
       <div class="mt-6">

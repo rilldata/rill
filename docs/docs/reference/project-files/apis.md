@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: API YAML
-sidebar_position: 38
+sidebar_position: 39
 ---
 
 Custom APIs allow you to create endpoints that can be called to retrieve or manipulate data.
@@ -14,29 +14,29 @@ _[string]_ - Refers to the resource type and must be `api` _(required)_
 
 ### `openapi`
 
-_[object]_ - OpenAPI specification for the API endpoint 
+_[object]_ - OpenAPI specification for the API endpoint
 
-  - **`summary`** - _[string]_ - A brief description of what the API endpoint does 
+  - **`summary`** - _[string]_ - A brief description of what the API endpoint does
 
-  - **`parameters`** - _[array of object]_ - List of parameters that the API endpoint accepts 
+  - **`parameters`** - _[array of object]_ - List of parameters that the API endpoint accepts
 
-  - **`request_schema`** - _[object]_ - JSON schema for the request body (use nested YAML instead of a JSON string) 
+  - **`request_schema`** - _[object]_ - JSON schema for the request body (use nested YAML instead of a JSON string)
 
-  - **`response_schema`** - _[object]_ - JSON schema for the response body (use nested YAML instead of a JSON string) 
+  - **`response_schema`** - _[object]_ - JSON schema for the response body (use nested YAML instead of a JSON string)
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources 
+_[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources
 
-  - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
+  - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean.
 
     - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
 
     - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
-  - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause 
+  - **`row_filter`** - _[string]_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a WHERE clause
 
-  - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded 
+  - **`include`** - _[array of object]_ - List of dimension or measure names to include in the dashboard. If include is defined all other dimensions and measures are excluded
 
     - **`if`** - _[string]_ - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
@@ -46,7 +46,7 @@ _[object]_ - Defines [security rules and access control policies](/developers/bu
 
       - **option 2** - _[string]_ - Wildcard '*' to include all fields
 
-  - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included 
+  - **`exclude`** - _[array of object]_ - List of dimension or measure names to exclude from the dashboard. If exclude is defined all other dimensions and measures are included
 
     - **`if`** - _[string]_ - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean _(required)_
 
@@ -56,23 +56,23 @@ _[object]_ - Defines [security rules and access control policies](/developers/bu
 
       - **option 2** - _[string]_ - Wildcard '*' to exclude all fields
 
-  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies 
+  - **`rules`** - _[array of object]_ - List of detailed security rules that can be used to define complex access control policies
 
     - **`type`** - _[string]_ - Type of security rule - access (overall access), field_access (field-level access), or row_filter (row-level filtering) _(required)_
 
-    - **`action`** - _[string]_ - Whether to allow or deny access for this rule 
+    - **`action`** - _[string]_ - Whether to allow or deny access for this rule
 
-    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean 
+    - **`if`** - _[string]_ - Conditional expression that determines when this rule applies. Must be a valid SQL expression that evaluates to a boolean
 
-    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules) 
+    - **`names`** - _[array of string]_ - List of field names this rule applies to (for field_access type rules)
 
-    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
+    - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules)
 
-    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
+    - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules)
 
 ### `skip_nested_security`
 
-_[boolean]_ - Flag to control security inheritance 
+_[boolean]_ - Flag to control security inheritance
 
 ## One of Properties Options
 - [SQL Query](#sql-query)
@@ -80,6 +80,7 @@ _[boolean]_ - Flag to control security inheritance
 - [Custom API Call](#custom-api-call)
 - [File Glob Query](#file-glob-query)
 - [Resource Status Check](#resource-status-check)
+- [Union](#union)
 
 ## SQL Query
 
@@ -91,7 +92,7 @@ _[string]_ - Raw SQL query to run against existing models in the project. _(requ
 
 ### `connector`
 
-_[string]_ - specifies the connector to use when running SQL or glob queries. 
+_[string]_ - Specifies the connector to use when running SQL or glob queries.
 
 ```yaml
 type: api
@@ -121,7 +122,7 @@ _[string]_ - Name of a custom API defined in the project. _(required)_
 
 ### `args`
 
-_[object]_ - Arguments to pass to the custom API. 
+_[object]_ - Arguments to pass to the custom API.
 
 ```yaml
 type: api
@@ -137,15 +138,28 @@ Uses a file-matching pattern (glob) to query data from a connector.
 
 ### `glob`
 
-_[anyOf]_ - Defines the file path or pattern to query from the specified connector. _(required)_
+_[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
-  - **option 1** - _[string]_ - A simple file path/glob pattern as a string.
+  - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
-  - **option 2** - _[object]_ - An object-based configuration for specifying a file path/glob pattern with advanced options.
+  - **option 2** - _[object]_ - Configuration for specifying a file path/glob pattern with advanced options.
 
-### `connector`
+    - **`connector`** - _[string]_ - Specifies the object store connector to use (e.g. "s3", "gcs"). If not provided, it is inferred from the scheme of the path.
 
-_[string]_ - Specifies the connector to use with the glob input. 
+    - **`path`** - _[string]_ - Glob pattern used to match files or directories in the object store. _(required)_
+
+    - **`start`** - _[string]_ - Defines the lower bound (inclusive) for partition filtering. Only partitions with paths greater than or equal to this value are considered.
+
+    - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
+
+    - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that prevents full re-listings each time.
+
+    - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
+
+
+    - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning.
+
+    - **`transform_sql`** - _[string]_ - Optional DuckDB SQL query used to transform the results. The resolved data is available as a table referenced using `{{ .table }}`.
 
 ```yaml
 type: api
@@ -160,10 +174,28 @@ Uses the status of a resource as data.
 
 _[object]_ - Based on resource status _(required)_
 
-  - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
+  - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state.
 
 ```yaml
 type: api
 resource_status:
     where_error: true
+```
+
+## Union
+
+Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
+
+### `union`
+
+_[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_
+
+```yaml
+# Example for union resolvers
+type: api
+union:
+    - connector: duckdb
+      sql: SELECT 1
+    - connector: clickhouse
+      sql: SELECT 2
 ```

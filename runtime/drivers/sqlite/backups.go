@@ -24,10 +24,13 @@ import (
 
 var (
 	// Maximum size of the SQLite snapshot for backup.
-	backupMaxSizeBytes int64 = 1024 * 1024 * 1024 // 1 GB
+	backupMaxSizeBytes int64 = 5 * 1024 * 1024 * 1024 // 5 GB
 
 	// Max time a backup may run for.
 	backupMaxDuration = 10 * time.Minute
+
+	// Max AI message content size for backups.
+	backupMaxAIMessageSizeBytes = 10 * 1024 // 10 KB
 
 	// Queries to backup as Parquet.
 	// Each will be exported to {output_dir}/{key}.parquet.
@@ -35,7 +38,7 @@ var (
 		// Table `instances`.
 		// It excludes the JSON columns due to a type mess up: the columns are TEXT, but we've been saving BLOB values to them.
 		// SQLite weirdly allows this, but DuckDB chokes on it.
-		"instances": "SELECT * EXCLUDE (variables, project_variables, feature_flags, annotations, connectors, project_connectors, public_paths) FROM instances",
+		"instances": "SELECT * EXCLUDE (variables, project_variables, system_variables, feature_flags, annotations, connectors, project_connectors, public_paths) FROM instances",
 		// Table `instance_health`
 		"instance_health": "SELECT * FROM instance_health",
 		// Table `catalogv2` (NOTE: the `data` column has already been converted to JSON in rewriteSnapshotForAnalytics below).
@@ -140,7 +143,7 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 	}
 
 	// Setup a temporary directory for intermediate files
-	tmpDir, err := os.MkdirTemp("", "sqlite-backup-*")
+	tmpDir, err := c.storage.RandomTempDir("sqlite-backup")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
@@ -173,14 +176,27 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 		return fmt.Errorf("failed to rewrite snapshot for analytics: %w", err)
 	}
 
-	// Open an in-memory DuckDB handle with 1 CPU and 256MB memory limit.
+	// Direct DuckDB's temp directory to our controlled tmpDir.
+	// By default, in-memory DuckDB creates ".tmp" in the current working directory, which may not be writable.
+	duckdbTmpDir, err := c.storage.RandomTempDir("duckdb-tmp")
+	if err != nil {
+		return fmt.Errorf("failed to create DuckDB temp directory: %w", err)
+	}
+	defer os.RemoveAll(duckdbTmpDir)
+
+	// Open an in-memory DuckDB handle with 1 CPU and 512MB memory limit.
 	// We'll use this to create Parquet files for the tables in the SQLite database.
-	duckdb, err := sqlx.Open("duckdb", "?threads=1&memory_limit=256MB")
+	duckdb, err := sqlx.Open("duckdb", "?threads=1&memory_limit=512MB")
 	if err != nil {
 		return fmt.Errorf("failed to open DuckDB: %w", err)
 	}
 	duckdb.SetMaxOpenConns(1)
 	defer duckdb.Close()
+
+	_, err = duckdb.ExecContext(ctx, fmt.Sprintf("SET temp_directory='%s'", duckdbTmpDir))
+	if err != nil {
+		return fmt.Errorf("failed to set DuckDB temp directory: %w", err)
+	}
 
 	// Attach the SQLite database to DuckDB and export tables to Parquet.
 	_, err = duckdb.ExecContext(ctx, fmt.Sprintf("ATTACH '%s' AS sqlite_db (TYPE SQLITE); USE sqlite_db;", snapshotPath))
@@ -225,7 +241,9 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 
 // rewriteSnapshotForAnalytics rewrites the snapshot database to prepare it for analytics exports to Parquet.
 // This is done after the snapshot.db file has been backed up, so it does not affect the backup file itself.
-// Specifically, we do this to convert catalog resources from protobuf to JSON format to make them easy to query in downstream analytics.
+// It performs two rewrites:
+// 1. Converts catalog resources from protobuf to JSON format to make them easy to query in downstream analytics.
+// 2. Truncates AI message contents that exceed 10 KB to reduce backup size.
 func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPath string) error {
 	// Open the snapshot database.
 	snapshotDB, err := sqlx.Open("sqlite", snapshotPath)
@@ -262,6 +280,19 @@ func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPa
 		if err != nil {
 			return fmt.Errorf("failed to update catalog resource with JSON data: %w", err)
 		}
+	}
+
+	// Truncate AI message contents that exceed 10 KB.
+	// NOTE: The runtime/ai package now errors on large messages, so this is just to handle previously added large messages.
+	_, err = snapshotDB.ExecContext(ctx, `
+		UPDATE ai_messages SET content = CASE
+			WHEN content_type = 'json' THEN '{"truncated":true}'
+			ELSE '<truncated>'
+		END
+		WHERE LENGTH(content) > ?
+	`, backupMaxAIMessageSizeBytes)
+	if err != nil {
+		return fmt.Errorf("failed to truncate AI messages: %w", err)
 	}
 
 	return nil

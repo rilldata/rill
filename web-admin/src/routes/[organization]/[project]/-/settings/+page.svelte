@@ -1,19 +1,42 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import GithubConnectionDialog from "@rilldata/web-admin/features/projects/github/GithubConnectionDialog.svelte";
+  import ProjectGithubConnection from "@rilldata/web-admin/features/projects/github/ProjectGithubConnection.svelte";
+  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import DangerZone from "@rilldata/web-admin/components/settings/DangerZone.svelte";
   import DeleteProject from "@rilldata/web-admin/features/projects/settings/DeleteProject.svelte";
   import HibernateProject from "@rilldata/web-admin/features/projects/settings/HibernateProject.svelte";
   import ProjectNameSettings from "@rilldata/web-admin/features/projects/settings/ProjectNameSettings.svelte";
   import ProjectVisibilitySettings from "@rilldata/web-admin/features/projects/settings/ProjectVisibilitySettings.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
+  let organization = $derived($page.params.organization);
+  let project = $derived($page.params.project);
+
+  let proj = $derived(createAdminServiceGetProject(organization, project));
+  let isGithubConnected = $derived(
+    !!$proj.data?.project?.gitRemote && !$proj.data?.project?.managedGitId,
+  );
 </script>
 
 <ProjectNameSettings {organization} {project} />
 
+{#snippet githubAction()}
+  <GithubConnectionDialog {organization} {project} />
+{/snippet}
+
+<SettingsContainer
+  title={m.settings_github_title()}
+  action={isGithubConnected ? undefined : githubAction}
+>
+  <div>
+    <ProjectGithubConnection {organization} {project} />
+  </div>
+</SettingsContainer>
+
 <div class="danger-zone-section">
-  <h3 class="danger-zone-title">Danger Zone</h3>
+  <h3 class="danger-zone-title">{m.settings_danger_zone_title()}</h3>
   <DangerZone>
     <ProjectVisibilitySettings {organization} {project} />
     <HibernateProject {organization} {project} />

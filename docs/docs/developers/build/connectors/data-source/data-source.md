@@ -40,6 +40,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 ### Athena
 ### BigQuery
+### Databricks
 ### Redshift
 ### Snowflake
 
@@ -59,6 +60,15 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     link="/developers/build/connectors/data-source/bigquery"
     linkLabel="Learn more"
     referenceLink="bigquery"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Databricks.svg" alt="Databricks" />}
+    header="Databricks"
+    content="Connect to Databricks SQL warehouses with personal access token authentication."
+    link="/developers/build/connectors/data-source/databricks"
+    linkLabel="Learn more"
+    referenceLink="databricks"
   />
 
   <ConnectorIcon
@@ -84,6 +94,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 ### MySQL
 ### PostgreSQL
 ### SQLite
+### Supabase
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -108,7 +119,14 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Connect to SQLite databases for lightweight, file-based data storage and querying."
     link="/developers/build/connectors/data-source/sqlite"
     linkLabel="Learn more"
-    referenceLink="sqlite"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Supabase.svg" alt="Supabase" className="duckdb-icon"/>}
+    header="Supabase"
+    content="Connect to Supabase's managed PostgreSQL databases with SSL support and standard connection methods."
+    link="/developers/build/connectors/data-source/supabase"
+    linkLabel="Learn more"
+    referenceLink="supabase"
   />
 </div>
 
@@ -146,9 +164,27 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     linkLabel="Learn more"
     referenceLink="azure"
   />
+</div>
 
+## Table Formats
+### Delta Lake
+### Apache Iceberg
 
-
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Delta.svg" alt="Delta Lake" />}
+    header="Delta Lake"
+    content="Read Delta tables directly from object storage through compatible query engines."
+    link="/developers/build/connectors/data-source/delta"
+    linkLabel="Learn more"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Iceberg.svg" alt="Apache Iceberg" />}
+    header="Apache Iceberg"
+    content="Read Iceberg tables directly from object storage through compatible query engines."
+    link="/developers/build/connectors/data-source/iceberg"
+    linkLabel="Learn more"
+  />
 </div>
 
 ## Other Data Connectors
@@ -197,7 +233,6 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Connect to Salesforce to extract data from objects and queries using the Salesforce API."
     link="/developers/build/connectors/data-source/salesforce"
     linkLabel="Learn more"
-    referenceLink="salesforce"
   />
 
 </div>

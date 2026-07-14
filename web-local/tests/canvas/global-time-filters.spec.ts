@@ -13,8 +13,6 @@ test.describe("canvas global time filters", () => {
 
     await page.getByRole("button", { name: "Preview" }).click();
 
-    await page.waitForTimeout(1000);
-
     // Change global time range
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
@@ -32,7 +30,7 @@ test.describe("canvas global time filters", () => {
       name: "Select reference time and grain",
     });
     await timeGrainSelector.click();
-    await page.getByRole("menuitem", { name: "day" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "day" }).click();
 
     await page.getByLabel("Toggle time comparison").click();
 
@@ -43,7 +41,7 @@ test.describe("canvas global time filters", () => {
     });
 
     await timeGrainSelector.click();
-    await page.getByRole("menuitem", { name: "hour" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "hour" }).click();
 
     await expect(page.getByText("Total records 1,122")).toBeVisible();
 

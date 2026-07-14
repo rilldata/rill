@@ -36,7 +36,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 
 **Explore** 
-The main screen of any Rill dashboard is called the _Explore_ page. As seen above, this is divided into three section. 
+The main screen of any Rill dashboard is called the _Explore_ page. As seen above, this is divided into three sections.
 
 - Navigation Bar
 - Measures panel (Left)
@@ -44,13 +44,13 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 ### Navigation Bar
 
-- _**Time Selector and Time Selector Comparison:**_ You can change the period of analysis to different ranges of time (see `red` box), either by selecting from a pre-defined period (such as last week) or choosing a custom date range. Along with this, you can enable a comparison filter to compare range of dates with 1 click.
+- _**Time Selector and Time Selector Comparison:**_ You can change the period of analysis to different ranges of time (see `red` box), either by selecting from a pre-defined period (such as last week) or choosing a custom date range. Along with this, you can enable a comparison filter to compare a range of dates with one click.
 
 - _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/guide/dashboards/filters) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
 
-- _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](/guide/dashboards/explore/pivot) by selecting either from the UI (see `pink` box)
+- _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](/guide/dashboards/explore/pivot) by selecting either option from the UI (see `pink` box).
 
-- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/guide/dashboards/bookmarks), or share the dashboard ([internally by clicking the `Share` button](/guide/administration/users-and-access/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/guide/dashboards/public-urls)) .
+- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/guide/alerts) by selecting the bell, customize the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/guide/dashboards/bookmarks), or share the dashboard ([internally by clicking the `Share` button](/guide/administration/users-and-access/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/guide/dashboards/public-urls)).
 
 
 ### KPI Widget (Measures) Panel
@@ -80,7 +80,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 
 
-- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards)). You can add, remove or reorder your metrics from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](/guide/dashboards/explore/tdd).
+- _**Measures:**_  All _**metrics**_ that are available in the underlying model are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards)). You can add, remove, or reorder your metrics from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will navigate to the [Time Dimension Detail](/guide/dashboards/explore/tdd).
 
 - _**Time Dimension Detail:**_ A detailed view of a single specific measure that can be further drilled down to understand minute details in your data. As with the Explore page, you can add comparison dimensions to visualize the value for several specific dimension values. For more information see: [Time Dimension Detail](/guide/dashboards/explore/tdd).
 
@@ -133,7 +133,7 @@ After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ 
 
 
 :::tip Don't have a Rill project or dashboard deployed yet?
-If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/#examples) are also available on GitHub and can be deployed locally using Rill Developer.
+If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/developers/tutorials/) are also available on GitHub and can be deployed locally using Rill Developer.
 :::
 
 
@@ -146,7 +146,7 @@ Whether you need to see the full value of a long JSON, or copy a value, there ar
 List of commands:
 - __*Copy values*__ ( ``shift + click`` ) - Copy the value of the row value. 
 - __*Value previewer*__ ( ``space`` ) - See the full text value of the row value.
-- __*Lock Insepector*__ ( ``L`` ) - Lock the inspector (allows scrolling through long values)
+- __*Lock Inspector*__ ( ``L`` ) - Lock the inspector (allows scrolling through long values)
 
 ![Preview Value](/img/explore/dashboard101/preview-value.png)
 
@@ -161,7 +161,7 @@ Toggle between light and dark themes by clicking your profile icon in the top ri
 ## Banners!
 Another additional feature that you can add to an Explore dashboard are banners. Whether it is to inform your end-users about specific guidelines on how to use Rill, or an informational post about the datasets being used, you can design the banner to whatever text you'd like.
 
-Simple add the following to your explore-dashboard.yaml 
+Simply add the following to your explore-dashboard.yaml
 
 ```yaml
 banner: Your custom message here!

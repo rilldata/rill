@@ -4,7 +4,11 @@ import {
   CircularChartProvider,
   type CircularChartSpec as CircularChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/circular/CircularChartProvider";
-import type { ChartFieldsMap } from "@rilldata/web-common/features/components/charts/types";
+import { DEFAULT_LABELS_THRESHOLD } from "@rilldata/web-common/features/components/charts/circular/constants";
+import {
+  ChartSortType,
+  type ChartFieldsMap,
+} from "@rilldata/web-common/features/components/charts/types";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   MetricsViewSpecDimensionType,
@@ -19,49 +23,71 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 const DEFAULT_COLOR_LIMIT = 20;
-const DEFAULT_SORT = "-measure";
+const DEFAULT_SORT = ChartSortType.MEASURE_DESC;
 
 export type CircularCanvasChartSpec = BaseChartConfig & CircularChartSpecBase;
 
 export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
   private provider: CircularChartProvider;
+  private isTruncated = false;
 
-  static chartInputParams: Record<string, ComponentInputParam> = {
-    measure: {
-      type: "positional",
-      label: "Measure",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          totalSelector: true,
-        },
-      },
-    },
-    innerRadius: {
-      type: "number",
-      label: "Inner Radius (%)",
-    },
-    color: {
-      type: "positional",
-      label: "Color",
-      meta: {
-        chartFieldInput: {
-          type: "dimension",
-          nullSelector: true,
-          limitSelector: { defaultLimit: DEFAULT_COLOR_LIMIT },
-          hideTimeDimension: true,
-          defaultLegendOrientation: "right",
-          sortSelector: {
-            enable: true,
-            defaultSort: DEFAULT_SORT,
-            options: ["color", "-color", "measure", "-measure", "custom"],
+  // Static getter (not a static field) so the localized labels inside resolve
+  // in the active locale at access time (render) rather than freezing to the
+  // locale active when this class was defined at module load.
+  static get chartInputParams(): Record<string, ComponentInputParam> {
+    return {
+      measure: {
+        type: "positional",
+        label: m.canvas_measure_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            totalSelector: true,
           },
-          colorMappingSelector: { enable: true },
         },
       },
-    },
-  };
+      innerRadius: {
+        type: "number",
+        label: m.canvas_inner_radius_label(),
+      },
+      show_other: {
+        type: "boolean",
+        label: m.canvas_show_other_bucket_label(),
+      },
+      labels: {
+        type: "labels",
+        label: m.canvas_data_labels_label(),
+      },
+      color: {
+        type: "positional",
+        label: m.canvas_color_label(),
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            nullSelector: true,
+            limitSelector: { defaultLimit: DEFAULT_COLOR_LIMIT },
+            hideTimeDimension: true,
+            defaultLegendOrientation: "right",
+            sortSelector: {
+              enable: true,
+              defaultSort: DEFAULT_SORT,
+              options: [
+                ChartSortType.COLOR_ASC,
+                ChartSortType.COLOR_DESC,
+                ChartSortType.MEASURE_ASC,
+                ChartSortType.MEASURE_DESC,
+                ChartSortType.CUSTOM,
+              ],
+            },
+            colorMappingSelector: { enable: true },
+          },
+        },
+      },
+    };
+  }
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
@@ -75,6 +101,10 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     this.provider.combinedWhere.subscribe((where) => {
       this.componentFilters = where;
     });
+
+    this.provider.isTruncated.subscribe((value) => {
+      this.isTruncated = value;
+    });
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
@@ -84,14 +114,22 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     if (colorMappingSelector) {
       colorMappingSelector.values = this.provider.customColorValues;
     }
+
+    inputParams.show_other.showInUI = this.isTruncated;
+
     return inputParams;
   }
 
   createChartDataQuery(
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    visible: Readable<boolean>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    return this.provider.createChartDataQuery(
+      ctx.runtimeClient,
+      timeAndFilterStore,
+      visible,
+    );
   }
 
   getChartDomainValues() {
@@ -106,13 +144,18 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): CircularCanvasChartSpec {
-    // Randomly select a measure and dimension if available
     const measures = metricsViewSpec?.measures || [];
     const dimensions = [...(metricsViewSpec?.dimensions || [])].filter(
       (d) => d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
     );
-    const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
-      ?.name as string;
+
+    // Prefer summable measures since percentage-style measures don't make
+    // sense as slices of a whole.
+    const summableMeasures = measures.filter((m) => m.validPercentOfTotal);
+    const measurePool = summableMeasures.length ? summableMeasures : measures;
+    const randomMeasure = measurePool[
+      Math.floor(Math.random() * measurePool.length)
+    ]?.name as string;
 
     const randomDimension = dimensions[
       Math.floor(Math.random() * dimensions.length)
@@ -121,6 +164,12 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
     return {
       metrics_view: metricsViewName,
       innerRadius: 50,
+      show_other: true,
+      labels: {
+        show: true,
+        format: "percent",
+        threshold: DEFAULT_LABELS_THRESHOLD,
+      },
       color: {
         type: "nominal",
         field: randomDimension,

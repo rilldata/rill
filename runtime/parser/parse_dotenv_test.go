@@ -15,7 +15,7 @@ func TestEnvParsing(t *testing.T) {
 			`rill.yaml`: ``,
 		})
 
-		parser, err := Parse(ctx, repo, "", "", "duckdb")
+		parser, err := Parse(ctx, repo, "", "", "duckdb", true)
 		require.NoError(t, err)
 		require.Equal(t, len(parser.DotEnv), 0)
 	})
@@ -30,7 +30,7 @@ FOO=bar
 `,
 		})
 
-		parser, err := Parse(ctx, repo, "", "", "duckdb")
+		parser, err := Parse(ctx, repo, "", "", "duckdb", true)
 		require.NoError(t, err)
 
 		mergedEnv := parser.GetDotEnv()
@@ -51,7 +51,7 @@ MODELS_FOLDER_TEST_VAR=models
 `,
 		})
 
-		parser, err := Parse(ctx, repo, "", "", "duckdb")
+		parser, err := Parse(ctx, repo, "", "", "duckdb", true)
 		require.NoError(t, err)
 
 		require.Empty(t, parser.Errors)
@@ -78,7 +78,7 @@ NESTED_ONLY=nested_value
 `,
 		})
 
-		parser, err := Parse(ctx, repo, "", "", "duckdb")
+		parser, err := Parse(ctx, repo, "", "", "duckdb", true)
 		require.NoError(t, err)
 		require.Empty(t, parser.Errors)
 
@@ -94,12 +94,56 @@ NESTED_ONLY=nested_value
 	})
 }
 
+func TestNamedDotEnv(t *testing.T) {
+	repo := makeRepo(t, map[string]string{
+		"rill.yaml": ``,
+		".env": `
+BASE_VAR=base
+SHARED_VAR=from_base
+`,
+		".dev.env": `
+SHARED_VAR=from_dev
+DEV_VAR=dev
+`,
+		".prod.env": `
+SHARED_VAR=from_prod
+PROD_VAR=prod
+`,
+	})
+
+	t.Run("dev environment applies .dev.env and not .prod.env", func(t *testing.T) {
+		ctx := context.Background()
+		parser, err := Parse(ctx, repo, "", "dev", "duckdb", false)
+		require.NoError(t, err)
+		require.Empty(t, parser.Errors)
+
+		env := parser.GetDotEnv()
+		require.Equal(t, "base", env["BASE_VAR"], ".env base variable should be present")
+		require.Equal(t, "dev", env["DEV_VAR"], ".dev.env variable should be present")
+		require.Equal(t, "from_dev", env["SHARED_VAR"], ".dev.env should override .env for shared variables")
+		require.NotContains(t, env, "PROD_VAR", ".prod.env variable should not be present when env is dev")
+	})
+
+	t.Run("prod environment applies .prod.env and not .dev.env", func(t *testing.T) {
+		ctx := context.Background()
+		parser, err := Parse(ctx, repo, "", "prod", "duckdb", false)
+		require.NoError(t, err)
+		require.Empty(t, parser.Errors)
+
+		env := parser.GetDotEnv()
+		require.Equal(t, "base", env["BASE_VAR"], ".env base variable should be present")
+		require.Equal(t, "prod", env["PROD_VAR"], ".prod.env variable should be present")
+		require.Equal(t, "from_prod", env["SHARED_VAR"], ".prod.env should override .env for shared variables")
+		require.NotContains(t, env, "DEV_VAR", ".dev.env variable should not be present when env is prod")
+	})
+}
+
 func TestEnvReparse(t *testing.T) {
 	ctx := context.Background()
 
 	// Create an empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``, ".env": `ROOT_VAR=root_val`})
-	p, err := Parse(ctx, repo, "", "", "duckdb")
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 

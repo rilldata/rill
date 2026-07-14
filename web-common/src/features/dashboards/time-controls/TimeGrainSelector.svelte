@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -6,6 +7,7 @@
     getAllowedTimeGrains,
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
+  import { translateGrainName } from "@rilldata/web-common/lib/time/new-grains";
   import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
 
@@ -28,18 +30,18 @@
     activeTimeGrain && TIME_GRAIN[activeTimeGrain as AvailableTimeGrain]?.label;
 
   $: capitalizedLabel = activeTimeGrainLabel
-    ?.split(" ")
-    .map((word) => {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(" ");
+    ? translateGrainName(activeTimeGrainLabel)
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    : undefined;
 
   $: timeGrains = minTimeGrain
     ? timeGrainOptions
         .filter((timeGrain) => !isGrainBigger(minTimeGrain, timeGrain.grain))
         .map((timeGrain) => {
           return {
-            main: timeGrain.label,
+            main: translateGrainName(timeGrain.label),
             key: timeGrain.grain,
           };
         })
@@ -48,42 +50,49 @@
 
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}
   <DropdownMenu.Root bind:open>
-    <DropdownMenu.Trigger asChild let:builder>
-      <button
-        class:tdd
-        use:builder.action
-        {...builder}
-        aria-label="Select a time grain"
-        class="flex items-center gap-x-1"
-      >
-        <div class="items-center flex gap-x-1">
-          <span>
-            <svelte:element this={tdd ? "b" : "span"}>
-              {tdd ? "Time" : "by"}
-            </svelte:element>
+    <DropdownMenu.Trigger>
+      {#snippet child({ props })}
+        <button
+          {...props}
+          class:tdd
+          aria-label={m.dashboard_select_time_grain()}
+          class="flex items-center gap-x-1"
+        >
+          <div class="items-center flex gap-x-1">
+            <span>
+              <svelte:element this={tdd ? "b" : "span"}>
+                {tdd ? m.time_grain_time() : m.time_grain_by()}
+              </svelte:element>
 
-            <svelte:element this={tdd ? "span" : "b"}>
-              {capitalizedLabel}
-            </svelte:element>
+              <svelte:element this={tdd ? "span" : "b"}>
+                {capitalizedLabel}
+              </svelte:element>
 
-            {#if complete}
-              <i class="ml-0.5">complete</i>
-            {/if}
-          </span>
-          <span class="flex-none transition-transform" class:-rotate-180={open}>
-            <CaretDownIcon />
-          </span>
-        </div>
-      </button>
+              {#if complete}
+                <i class="ml-0.5">{m.time_grain_complete()}</i>
+              {/if}
+            </span>
+            <span
+              class="flex-none transition-transform"
+              class:-rotate-180={open}
+            >
+              <CaretDownIcon />
+            </span>
+          </div>
+        </button>
+      {/snippet}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="min-w-52" align="start" {side}>
       {#each timeGrains as option (option.key)}
         <DropdownMenu.CheckboxItem
           checkRight
-          role="menuitem"
+          closeOnSelect
           checked={option.key === activeTimeGrain}
           class="text-xs cursor-pointer capitalize"
-          on:click={() => onTimeGrainSelect(option.key)}
+          onSelect={() => {
+            onTimeGrainSelect(option.key);
+            open = false;
+          }}
         >
           {option.main}
         </DropdownMenu.CheckboxItem>
@@ -101,7 +110,7 @@
     @apply bg-surface-background;
   }
 
-  .tdd[data-state="open"] {
+  .tdd:global([data-state="open"]) {
     @apply bg-surface-background border-gray-400;
   }
 </style>

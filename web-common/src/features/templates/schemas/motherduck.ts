@@ -5,6 +5,7 @@ export const motherduckSchema: MultiStepFormSchema = {
   type: "object",
   title: "MotherDuck",
   "x-category": "olap",
+  "x-form-width": "wide",
   properties: {
     path: {
       type: "string",
@@ -25,6 +26,16 @@ export const motherduckSchema: MultiStepFormSchema = {
       title: "Schema name",
       description: "Default schema to use",
       "x-placeholder": "main",
+    },
+    mode: {
+      type: "boolean",
+      title: "Enable write mode",
+      description:
+        "Read-write mode allows Rill to drop, create, and modify tables, not just query them",
+      default: false,
+      "x-display": "toggle",
+      "x-yaml-value": "readwrite",
+      "x-advanced": true,
     },
   },
   required: ["path", "token", "schema_name"],

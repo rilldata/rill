@@ -70,8 +70,8 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 
 	var estimateSQL string
 	var useSample string
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
+	switch olap.Dialect().String() {
+	case drivers.DialectNameDuckDB:
 		if sampleSize <= cq.Result {
 			useSample = fmt.Sprintf("USING SAMPLE %d ROWS", sampleSize)
 		}
@@ -116,7 +116,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
-	case drivers.DialectClickHouse:
+	case drivers.DialectNameClickHouse:
 		if sampleSize <= cq.Result {
 			// TODO : Not good from performance POV, fix this with clickhouse native sampling if possible.
 			useSample = fmt.Sprintf("ORDER BY rand() LIMIT %d", sampleSize)
@@ -162,7 +162,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
-	case drivers.DialectStarRocks:
+	case drivers.DialectNameStarRocks:
 		if sampleSize <= cq.Result {
 			useSample = fmt.Sprintf("ORDER BY rand() LIMIT %d", sampleSize)
 		}

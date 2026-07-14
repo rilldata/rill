@@ -24,16 +24,18 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild let:builder>
-    <Tooltip distance={8}>
-      <Button loading={isLoading} type="secondary" builders={[builder]}>
-        <CloudIcon size="16px" />
-        Update
-      </Button>
-      <TooltipContent slot="tooltip-content">
-        Push changes to Rill Cloud
-      </TooltipContent>
-    </Tooltip>
+  <AlertDialogTrigger>
+    {#snippet child({ props })}
+      <Tooltip distance={8}>
+        <Button {...props} loading={isLoading} type="secondary">
+          <CloudIcon size="16px" />
+          Update
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          Push changes to Rill Cloud
+        </TooltipContent>
+      </Tooltip>
+    {/snippet}
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>

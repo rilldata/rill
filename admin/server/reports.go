@@ -3,14 +3,13 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -22,6 +21,7 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -53,10 +53,10 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
-	urls := make(map[string]*adminv1.GetReportMetaResponse_URLs)
+	delivery := make(map[string]*adminv1.GetReportMetaResponse_DeliveryMeta)
 
 	var recipients []string
 	recipients = append(recipients, req.EmailRecipients...)
@@ -84,6 +84,17 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
+	var ownerAttrs *structpb.Struct
+	if req.OwnerId != "" {
+		attr, _, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
+		if err != nil {
+			return nil, err
+		}
+		ownerAttrs, err = structpb.NewStruct(attr)
+		if err != nil {
+			return nil, err
+		}
+	}
 	// Generate URLs for each recipient based on web open mode, and whether they are the owner -
 	// 	Owner does not get a token in recipient mode and does not get an unsubscribe link.
 	// 	Recipients in creator mode get a token and an unsubscribe link.
@@ -94,43 +105,68 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		if recipient == ownerEmail {
 			if webOpenMode == WebOpenModeRecipient {
 				// owner in recipient mode gets plain open and export url without token as token does not have any access
-				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+					UserId:    req.OwnerId,
+					UserAttrs: ownerAttrs,
 				}
 			} else {
-				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+					UserId:    req.OwnerId,
+					UserAttrs: ownerAttrs,
 				}
 			}
 			continue
 		}
 		if webOpenMode == WebOpenModeCreator {
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
+				UserId:         req.OwnerId,
+				UserAttrs:      ownerAttrs,
 			}
 		} else if webOpenMode == WebOpenModeRecipient {
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+			attr, userID, err := s.getAttributesForProjectMember(ctx, recipient, proj.OrganizationID, proj.ID)
+			if err != nil {
+				return nil, err
+			}
+			pbAttrs, err := structpb.NewStruct(attr)
+			if err != nil {
+				return nil, err
+			}
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
+				UserId:         userID,
+				UserAttrs:      pbAttrs,
 			}
-		} else {
-			// same as recipient but no open url
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+		} else { // same as recipient but no open url
+			attr, userID, err := s.getAttributesForProjectMember(ctx, recipient, proj.OrganizationID, proj.ID)
+			if err != nil {
+				return nil, err
+			}
+			pbAttrs, err := structpb.NewStruct(attr)
+			if err != nil {
+				return nil, err
+			}
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
+				UserId:         userID,
+				UserAttrs:      pbAttrs,
 			}
 		}
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		RecipientUrls: urls,
+		DeliveryMeta: delivery,
 	}, nil
 }
 
@@ -161,12 +197,15 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
-	name, err := s.generateReportName(ctx, depl, req.Options.DisplayName)
+	name, err := s.generateVirtualFileName(ctx, req.Options.DisplayName, func(ctx context.Context, name string) error {
+		_, err := s.admin.LookupReport(ctx, depl, name)
+		return err
+	})
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	data, err := s.yamlForManagedReport(req.Options, claims.OwnerID())
@@ -179,6 +218,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		Environment: "prod",
 		Path:        virtualFilePathForManagedReport(name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -218,12 +258,12 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, fmt.Errorf("could not get report: %w", err)
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
@@ -246,6 +286,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		Environment: "prod",
 		Path:        virtualFilePathForManagedReport(req.Name),
 		Data:        data,
+		OwnerID:     nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -265,6 +306,9 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
+	if req.Email != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -275,12 +319,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, fmt.Errorf("could not get report: %w", err)
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
@@ -305,11 +349,11 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		reportTkn, err := s.admin.DB.FindNotificationTokenForMagicAuthToken(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to find notification token: %s", err.Error())
+			return nil, fmt.Errorf("failed to find notification token: %w", err)
 		}
 
 		if reportTkn.ResourceKind != runtime.ResourceKindReport || reportTkn.ResourceName != req.Name {
-			return nil, status.Error(codes.InvalidArgument, "token is not valid for this report")
+			return nil, status.Error(codes.PermissionDenied, "token is not valid for this report")
 		}
 
 		if reportTkn.RecipientEmail == "" {
@@ -357,7 +401,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if !found {
-		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to report")
+		return nil, status.Error(codes.FailedPrecondition, "user is not subscribed to report")
 	}
 
 	if len(report.Notify.Email.Recipients) == 0 && len(report.Notify.Slack.Users) == 0 && len(report.Notify.Slack.Channels) == 0 && len(report.Notify.Slack.Webhooks) == 0 {
@@ -376,6 +420,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			Environment: "prod",
 			Path:        virtualFilePathForManagedReport(req.Name),
 			Data:        data,
+			OwnerID:     nil,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -414,12 +459,12 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, fmt.Errorf("could not get report: %w", err)
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
@@ -469,12 +514,12 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, fmt.Errorf("could not get report: %w", err)
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
@@ -515,11 +560,18 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	res.Query.Name = opts.QueryName
-	res.Query.ArgsJSON = opts.QueryArgsJson
+
+	if opts.Resolver != "" {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties,
+		}
+	}
+	res.Query.Name = opts.QueryName         // nolint:staticcheck // backwards compatibility
+	res.Query.ArgsJSON = opts.QueryArgsJson // nolint:staticcheck // backwards compatibility
 	res.Export.Format = opts.ExportFormat.String()
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
+
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -547,8 +599,8 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
 	// Format args as pretty YAML
 	var args map[string]interface{}
-	if opts.QueryArgsJson != "" {
-		err := json.Unmarshal([]byte(opts.QueryArgsJson), &args)
+	if opts.QueryArgsJson != "" { // nolint:staticcheck // backwards compatibility
+		err := json.Unmarshal([]byte(opts.QueryArgsJson), &args) // nolint:staticcheck // backwards compatibility
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
 		}
@@ -574,7 +626,12 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	res.Query.Name = opts.QueryName
+	if opts.Resolver != "" {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties,
+		}
+	}
+	res.Query.Name = opts.QueryName // nolint:staticcheck // backwards compatibility
 	res.Query.Args = args
 	res.Export.Format = exportFormat
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
@@ -592,27 +649,6 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
 	}
 	return yaml.Marshal(res)
-}
-
-// generateReportName generates a random report name with the display name as a seed.
-// Example: "My report!" -> "my-report-5b3f7e1a".
-// It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateReportName(ctx context.Context, depl *database.Deployment, displayName string) (string, error) {
-	for i := 0; i < 5; i++ {
-		name := randomReportName(displayName)
-
-		_, err := s.admin.LookupReport(ctx, depl, name)
-		if err != nil {
-			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-				// Success! Name isn't taken
-				return name, nil
-			}
-			return "", fmt.Errorf("failed to check report name: %w", err)
-		}
-	}
-
-	// Fail-safe in case all names we tried were taken
-	return uuid.New().String(), nil
 }
 
 func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
@@ -768,21 +804,28 @@ func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportNa
 	return emailTokens, nil
 }
 
-var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
-
-var reportNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
-
-func randomReportName(displayName string) string {
-	name := reportNameToDashCharsRegexp.ReplaceAllString(displayName, "-")
-	name = reportNameExcludeCharsRegexp.ReplaceAllString(name, "")
-	name = strings.ToLower(name)
-	name = strings.Trim(name, "-")
-	if name == "" {
-		name = uuid.New().String()
-	} else {
-		name = name + "-" + uuid.New().String()[0:8]
+// getAttributesForProjectMember returns user attributes for a given email only if the user is a member of the project.
+func (s *Server) getAttributesForProjectMember(ctx context.Context, email, orgID, projID string) (map[string]any, string, error) {
+	if email == "" {
+		return nil, "", nil
 	}
-	return name
+	// Look up user by email
+	user, err := s.admin.DB.FindUserByEmail(ctx, email)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, "", err
+	}
+	if user == nil {
+		return nil, "", nil
+	}
+
+	attr, id, readProd, err := s.getAttributesForUser(ctx, orgID, projID, user.ID, "")
+	if err != nil {
+		return nil, "", err
+	}
+	if !readProd {
+		return nil, "", nil
+	}
+	return attr, id, nil
 }
 
 // reportYAML is derived from runtime/parser.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
@@ -798,11 +841,12 @@ type reportYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Query struct {
-		Name     string         `yaml:"name"`
+	Data  map[string]any `yaml:"data,omitempty"` // Generic data resolver block (e.g., data.ai, data.sql)
+	Query struct {       // Legacy query-based report (deprecated - use data instead)
+		Name     string         `yaml:"name,omitempty"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
-	} `yaml:"query"`
+	} `yaml:"query,omitempty"`
 	Export struct {
 		Format        string `yaml:"format"`
 		IncludeHeader bool   `yaml:"include_header"`

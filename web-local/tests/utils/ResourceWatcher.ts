@@ -22,7 +22,7 @@ export class ResourceWatcher {
   ) {
     return waitUntil(
       () => this.statuses.get(`${type}__${name}`) === "RECONCILE_STATUS_IDLE",
-      2000,
+      10_000,
     );
   }
 
@@ -30,7 +30,7 @@ export class ResourceWatcher {
     code: string,
     name = "AdBids_model_metrics_explore",
   ) {
-    this.statuses.delete(name); // clear older state
+    this.statuses.delete(`rill.runtime.v1.Explore__${name}`);
     return Promise.all([
       updateCodeEditor(this.page, code),
       this.waitForResource("rill.runtime.v1.Explore", name),
@@ -41,7 +41,7 @@ export class ResourceWatcher {
     code: string,
     name = "AdBids_model_metrics",
   ) {
-    this.statuses.delete(name); // clear older state
+    this.statuses.delete(`rill.runtime.v1.MetricsView__${name}`);
     return Promise.all([
       updateCodeEditor(this.page, code),
       this.waitForResource("rill.runtime.v1.MetricsView", name),

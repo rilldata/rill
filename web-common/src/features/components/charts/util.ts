@@ -1,21 +1,23 @@
 import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import chroma from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
-import type {
-  ChartDataResult,
-  ChartDomainValues,
-  ChartSortDirection,
-  ChartSpec,
-  ChartType,
-  ColorMapping,
-  FieldConfig,
-} from "./types";
 import { getChroma } from "../../themes/theme-utils";
-import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
+import { OTHER_VALUE } from "./circular/constants";
+import {
+  ChartSortType,
+  type ChartDataResult,
+  type ChartDomainValues,
+  type ChartSortDirection,
+  type ChartSpec,
+  type ChartType,
+  type ColorMapping,
+  type FieldConfig,
+} from "./types";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
   return (
@@ -174,6 +176,8 @@ export function isDomainStringArray(
     : false;
 }
 
+export const OTHER_BUCKET_COLOR = "var(--color-gray-400)";
+
 export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
@@ -186,9 +190,12 @@ export function getColorForValues(
     const overrideColor = overrideColorMapping?.find(
       (mapping) => mapping.value === value,
     );
+    const isOther = value === OTHER_VALUE;
     const colorVar =
       overrideColor?.color ||
-      COMPARIONS_COLORS[index % COMPARIONS_COLORS.length];
+      (isOther
+        ? OTHER_BUCKET_COLOR
+        : COMPARISON_COLORS[index % COMPARISON_COLORS.length]);
 
     return {
       value,
@@ -301,8 +308,8 @@ export function colorToVariableReference(
   if (!resolvedColor || typeof window === "undefined") return resolvedColor;
 
   // Check all comparison colors (qualitative palette)
-  for (let i = 0; i < COMPARIONS_COLORS.length; i++) {
-    const varRef = COMPARIONS_COLORS[i];
+  for (let i = 0; i < COMPARISON_COLORS.length; i++) {
+    const varRef = COMPARISON_COLORS[i];
     const resolved = resolveCSSVariable(varRef, isDarkMode);
 
     // Compare colors (normalize by converting both to chroma and back)
@@ -326,7 +333,12 @@ export function colorToVariableReference(
 export function sanitizeSortFieldForVega(sort: ChartSortDirection | undefined) {
   if (!sort) return undefined;
 
-  if (sort === "measure" || sort === "-measure") {
+  if (
+    sort === ChartSortType.MEASURE_ASC ||
+    sort === ChartSortType.MEASURE_DESC ||
+    sort === ChartSortType.Y_DELTA_ASC ||
+    sort === ChartSortType.Y_DELTA_DESC
+  ) {
     return undefined;
   }
   return sort;

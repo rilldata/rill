@@ -20,7 +20,7 @@
 >
   <AlertDialog.Content>
     <AlertDialog.Title>
-      Are you sure you want to delete everything?
+      Delete this folder and all its contents?
     </AlertDialog.Title>
 
     <AlertDialog.Description>
@@ -28,29 +28,28 @@
     </AlertDialog.Description>
 
     <AlertDialog.Footer>
-      <AlertDialog.Action asChild let:builder>
-        <Button
-          large
-          builders={[builder]}
-          onClick={() => {
-            handleClose();
-            onDelete();
-          }}
-          type="destructive"
-        >
-          Delete
-        </Button>
+      <AlertDialog.Action>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            large
+            onClick={() => {
+              handleClose();
+              onDelete();
+            }}
+            type="destructive"
+          >
+            Delete
+          </Button>
+        {/snippet}
       </AlertDialog.Action>
 
-      <AlertDialog.Cancel asChild let:builder>
-        <Button
-          large
-          builders={[builder]}
-          onClick={handleClose}
-          type="tertiary"
-        >
-          Cancel
-        </Button>
+      <AlertDialog.Cancel>
+        {#snippet child({ props })}
+          <Button {...props} large onClick={handleClose} type="tertiary"
+            >Cancel</Button
+          >
+        {/snippet}
       </AlertDialog.Cancel>
     </AlertDialog.Footer>
   </AlertDialog.Content>

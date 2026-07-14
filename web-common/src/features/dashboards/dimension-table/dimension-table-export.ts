@@ -18,7 +18,6 @@ import type {
   V1Query,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
 import { dimensionSearchText as dimensionSearchTextStore } from "../stores/dashboard-stores";
@@ -69,6 +68,7 @@ export function getDimensionTableExportQuery(
 
   const query: V1Query = {
     metricsViewAggregationRequest: getDimensionTableAggregationRequestForTime({
+      instanceId: ctx.runtimeClient.instanceId,
       metricsViewName,
       exploreState,
       timeRange,
@@ -81,12 +81,14 @@ export function getDimensionTableExportQuery(
 }
 
 export function getDimensionTableAggregationRequestForTime({
+  instanceId,
   metricsViewName,
   exploreState,
   timeRange,
   comparisonTimeRange,
   dimensionSearchText,
 }: {
+  instanceId: string;
   metricsViewName: string;
   exploreState: ExploreState;
   timeRange: V1TimeRange;
@@ -128,7 +130,7 @@ export function getDimensionTableAggregationRequestForTime({
   );
 
   return {
-    instanceId: get(runtime).instanceId,
+    instanceId,
     metricsView: metricsViewName,
     dimensions: [
       {

@@ -34,4 +34,5 @@ type ScheduledReport struct {
 	OpenLink        string
 	DownloadLink    string
 	UnsubscribeLink string
+	Summary         string
 }

@@ -56,12 +56,18 @@ var defaultFeatureFlags = map[string]string{
 	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
-	// Controls visibility of the "Create Canvas" dashboard buttons
-	"generate_canvas": "false",
 	// Controls if the developer agent tool is available.
 	"developer_agent": "true",
 	// Controls if the dashboard state is persisted when navigating to a different dashboard.
 	"sticky_dashboard_state": "false",
+	// Controls if the dashboard state is persisted when user revisits the same dashboard.
+	"disable_persistent_dashboard_state": "false",
+	// Controls visibility of the cloud editing feature (Edit button and edit routes)
+	"cloud_editing": "false",
+	// Controls visibility of the custom chart option in canvas dashboards
+	"custom_charts": "false",
+	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
+	"personal_canvases": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

@@ -17,8 +17,8 @@ import {
   MeasureKeyField,
 } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
+import type { Field } from "vega-lite/types_unstable/channeldef.js";
+import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
 import { createVegaTransformPivotConfig } from "../util";
 
@@ -31,8 +31,9 @@ export function generateVLLineChartSpec(
 
   const colorField =
     typeof config.color === "object" ? config.color.field : undefined;
-  const xField = sanitizeValueForVega(config.x?.field);
-  const yField = sanitizeValueForVega(config.y?.field);
+  const sanitizedXField = sanitizeValueForVega(config.x?.field);
+  const yField = config.y?.field;
+  const sanitizedYField = sanitizeValueForVega(yField);
 
   const defaultTooltipChannel = createDefaultTooltipEncoding(
     [config.x, config.y, config.color],
@@ -43,22 +44,25 @@ export function generateVLLineChartSpec(
     data,
   );
 
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  const xEncoding = createPositionEncoding(config.x, data);
+  xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
+  spec.encoding = { x: xEncoding };
 
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
 
   const hoverRuleLayer = buildHoverRuleLayer({
-    xField,
+    xField: sanitizedXField,
     domainValues: data.domainValues,
     defaultTooltip: defaultTooltipChannel,
     multiValueTooltipChannel,
     xSort: config.x?.sort,
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
+    isInteractive: config.isInteractive,
     pivot: createVegaTransformPivotConfig(
-      xField,
-      yField,
+      sanitizedXField,
+      sanitizedYField,
       colorField,
       !!hasComparison,
       !!multiValueTooltipChannel?.length,
@@ -111,5 +115,8 @@ export function generateVLLineChartSpec(
   return {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
+    ...(config.isInteractive && sanitizedXField
+      ? { usermeta: { brushTemporalField: sanitizedXField } }
+      : {}),
   };
 }

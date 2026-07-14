@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.svelte.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { Editor } from "@tiptap/core";
@@ -9,6 +9,7 @@
   import type { ConversationManager } from "../conversation-manager";
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ArrowUp } from "lucide-svelte";
 
   export let conversationManager: ConversationManager;
@@ -120,14 +121,17 @@
   class:inline
   class="chat-input-form"
   class:no-margin={noMargin}
-  on:submit|preventDefault={sendMessage}
+  onsubmit={(e) => {
+    e.preventDefault();
+    sendMessage();
+  }}
 >
-  <div class="chat-input-container" bind:this={element} />
+  <div class="chat-input-container" bind:this={element}></div>
   <div class="chat-input-footer">
     <button
       class="text-base text-fg-muted"
       type="button"
-      on:click={startMention}
+      onclick={startMention}
     >
       @
     </button>
@@ -135,9 +139,9 @@
     <div>
       {#if canCancel}
         <IconButton
-          ariaLabel="Cancel streaming"
+          ariaLabel={m.chat_cancel_streaming()}
           disableHover
-          on:click={cancelStream}
+          onclick={cancelStream}
         >
           <span class="stop-icon">
             <StopCircle size="1.2em" />
@@ -146,7 +150,7 @@
       {:else}
         <Button
           type="primary"
-          label="Send message"
+          label={m.chat_send_message()}
           disabled={!canSend}
           square
           onClick={sendMessage}

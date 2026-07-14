@@ -1,6 +1,5 @@
 import { page } from "$app/stores";
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { derived, writable } from "svelte/store";
 import {
   MetricsEventScreenName,
@@ -105,9 +104,6 @@ const appStoreReducers = {
     update((state) => {
       state.previousActiveEntity = state.activeEntity;
 
-      if (state.previousActiveEntity) {
-        httpRequestQueue.inactiveByName(state.previousActiveEntity.name);
-      }
       state.activeEntity = {
         name,
         type,

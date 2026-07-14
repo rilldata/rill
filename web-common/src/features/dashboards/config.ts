@@ -18,7 +18,7 @@ export const MEASURE_CONFIG = {
  * Comparison colors using the qualitative palette
  * For categorical distinction when comparing different dimension values
  */
-export const COMPARIONS_COLORS = [
+export const COMPARISON_COLORS = [
   "var(--color-qualitative-1)",
   "var(--color-qualitative-2)",
   "var(--color-qualitative-3)",

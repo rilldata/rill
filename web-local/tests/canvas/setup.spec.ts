@@ -22,7 +22,7 @@ test.describe("canvas", () => {
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Add widget" }).click();
-    await page.getByRole("menuitem", { name: "Text" }).click();
+    await page.getByRole("menuitem", { name: "Text/Markdown" }).click();
 
     await expect(
       page.getByRole("heading", { name: "H1 Markdown Text" }),
@@ -57,7 +57,7 @@ test.describe("canvas", () => {
       })
       .click();
 
-    await page.getByRole("menuitem", { name: "Text" }).click();
+    await page.getByRole("menuitem", { name: "Text/Markdown" }).click();
 
     await expect(
       page.getByRole("heading", { name: "H1 Markdown Text" }),

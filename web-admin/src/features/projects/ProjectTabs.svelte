@@ -4,50 +4,58 @@
     width,
   } from "@rilldata/web-admin//components/nav/Tab.svelte";
   import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
+  import { removeBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { type V1ProjectPermissions } from "../../client";
 
   export let projectPermissions: V1ProjectPermissions;
   export let organization: string;
   export let project: string;
   export let pathname: string;
+  export let branchPrefix: string = "";
 
   const { chat, reports, alerts } = featureFlags;
 
   $: tabs = [
     {
-      route: `/${organization}/${project}`,
-      label: "Home",
+      route: `/${organization}/${project}${branchPrefix}`,
+      label: m.nav_tab_home(),
       hasPermission: true,
     },
     {
-      route: `/${organization}/${project}/-/ai`,
-      label: "AI",
+      route: `/${organization}/${project}${branchPrefix}/-/ai`,
+      label: m.nav_tab_ai(),
       hasPermission: $chat,
     },
     {
-      route: `/${organization}/${project}/-/dashboards`,
-      label: "Dashboards",
+      route: `/${organization}/${project}${branchPrefix}/-/dashboards`,
+      label: m.nav_tab_dashboards(),
       hasPermission: true,
     },
     {
-      route: `/${organization}/${project}/-/reports`,
-      label: "Reports",
+      route: `/${organization}/${project}${branchPrefix}/-/query`,
+      label: m.nav_tab_query(),
+      hasPermission: false,
+    },
+    {
+      route: `/${organization}/${project}${branchPrefix}/-/reports`,
+      label: m.nav_tab_reports(),
       hasPermission: $reports,
     },
     {
-      route: `/${organization}/${project}/-/alerts`,
-      label: "Alerts",
+      route: `/${organization}/${project}${branchPrefix}/-/alerts`,
+      label: m.nav_tab_alerts(),
       hasPermission: $alerts,
     },
     {
-      route: `/${organization}/${project}/-/status`,
-      label: "Status",
+      route: `/${organization}/${project}${branchPrefix}/-/status`,
+      label: m.nav_tab_status(),
       hasPermission: projectPermissions.manageProject,
     },
     {
-      route: `/${organization}/${project}/-/settings`,
-      label: "Settings",
+      route: `/${organization}/${project}${branchPrefix}/-/settings`,
+      label: m.nav_tab_settings(),
       hasPermission: projectPermissions.manageProject,
     },
   ];
@@ -55,13 +63,17 @@
   $: selectedIndex = tabs?.findLastIndex((t) => isSelected(t.route, pathname));
 
   function isSelected(tabRoute: string, currentPathname: string) {
-    if (tabRoute.endsWith(`/${organization}/${project}`)) {
-      // For the dashboard (root) route, only exact match
-      return currentPathname === tabRoute;
+    // Strip @branch from both sides so comparison works regardless of branch
+    const normalizedTab = removeBranchFromPath(tabRoute);
+    const normalizedPath = removeBranchFromPath(currentPathname);
+
+    if (normalizedTab.endsWith(`/${organization}/${project}`)) {
+      // For the Home (root) route, only exact match
+      return normalizedPath === normalizedTab;
     }
 
-    const isExactMatch = currentPathname === tabRoute;
-    const isSubpage = currentPathname.startsWith(tabRoute + "/");
+    const isExactMatch = normalizedPath === normalizedTab;
+    const isSubpage = normalizedPath.startsWith(normalizedTab + "/");
 
     return isExactMatch || isSubpage;
   }
@@ -82,11 +94,9 @@
     {/each}
   </nav>
 
-  {#if $width && $position}
-    <span
-      style:width="{$width}px"
-      style:transform="translateX({$position}px) "
-    />
+  {#if $width}
+    <span style:width="{$width}px" style:transform="translateX({$position}px) "
+    ></span>
   {/if}
 </div>
 

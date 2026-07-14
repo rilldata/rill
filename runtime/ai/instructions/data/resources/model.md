@@ -301,14 +301,6 @@ output:
   order_by: event_time
 ```
 
-## JSON Schema
-
-Here is a full JSON schema for the model syntax:
-
-```
-{% json_schema_for_resource "model" %}
-```
-
 ## Examples
 
 ### Simple model with mock data as a SQL file
@@ -424,7 +416,7 @@ refresh:
 connector: snowflake
 sql: |
   SELECT * FROM staging.sales
-  {{ if dev }} event_time >= '2025-01-01' AND event_time < '2025-02-01' {{ end }}
+  {{ if dev }} WHERE event_time >= '2025-01-01' AND event_time < '2025-02-01' {{ end }}
 ```
 
 ### MySQL to DuckDB
@@ -752,4 +744,12 @@ sql: |
     country,
     costs_usd + profit_usd + tax_usd AS value_usd
   FROM read_parquet('{{ .partition.uri }}/*.parquet')
+```
+
+## Reference documentation
+
+Here is a full JSON schema for the model syntax:
+
+```
+{% json_schema_for_resource "model" %}
 ```

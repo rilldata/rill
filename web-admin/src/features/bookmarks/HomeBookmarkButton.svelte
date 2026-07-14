@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import { Button } from "@rilldata/web-common/components/button";
@@ -47,18 +48,20 @@
 </script>
 
 {#if manageProject}
-  <DropdownMenu bind:open typeahead={false}>
-    <DropdownMenuTrigger asChild let:builder>
-      <Button
-        builders={[builder]}
-        compact
-        square
-        type="secondary"
-        label="Home bookmark dropdown"
-        active={open || isHomeBookmarkActive}
-      >
-        <HomeBookmark size="16px" className="flex-none" />
-      </Button>
+  <DropdownMenu bind:open>
+    <DropdownMenuTrigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          compact
+          square
+          type="secondary"
+          label="Home bookmark dropdown"
+          active={open || isHomeBookmarkActive}
+        >
+          <HomeBookmark size="16px" className="flex-none" />
+        </Button>
+      {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-[330px]">
       {#if homeBookmark}
@@ -74,29 +77,29 @@
             href={fullHomeBookmarkUrl}
             class="flex flex-row gap-x-2 w-full min-h-7"
             aria-label="Home Bookmark Entry"
-            on:click={goToDashboardHome}
+            onclick={goToDashboardHome}
           >
             <HomeBookmark size="16px" />
             <div class="flex flex-col gap-y-0.5">
               <div
                 class="text-xs font-medium text-fg-primary h-4 text-ellipsis overflow-hidden"
               >
-                Go to Home
+                {m.bookmark_go_to_home()}
               </div>
             </div>
           </a>
         </DropdownMenuItem>
       {/if}
       <DropdownMenuSeparator />
-      <DropdownMenuItem on:click={onCreate}>
+      <DropdownMenuItem onclick={onCreate}>
         <div class="flex flex-row gap-x-2">
           <HomeBookmarkPlus size="16px" />
           <div>
             <div class="text-xs font-medium text-fg-primary h-4">
-              Bookmark current view as Home.
+              {m.bookmark_current_view_as_home()}
             </div>
             <div class="text-[11px] font-normal text-fg-secondary h-4">
-              This will be everyone’s main view for this dashboard.
+              {m.bookmark_home_description()}
             </div>
           </div>
         </div>
@@ -104,27 +107,31 @@
     </DropdownMenuContent>
   </DropdownMenu>
 {:else}
-  <Tooltip.Root portal="body">
-    <Tooltip.Trigger asChild let:builder>
-      <Button
-        type="secondary"
-        compact
-        preload={false}
-        href={fullHomeBookmarkUrl}
-        onClick={goToDashboardHome}
-        class="border border-primary-300"
-        builders={[builder]}
-        label="Go to home bookmark"
-        active={isHomeBookmarkActive}
-      >
-        <HomeBookmark
-          size="16px"
-          className={isHomeBookmarkActive
-            ? "text-primary-600"
-            : "text-primary-800"}
-        />
-      </Button>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          type="secondary"
+          compact
+          preload={false}
+          href={fullHomeBookmarkUrl}
+          onClick={goToDashboardHome}
+          class="border border-primary-300"
+          label="Go to home bookmark"
+          active={isHomeBookmarkActive}
+        >
+          <HomeBookmark
+            size="16px"
+            className={isHomeBookmarkActive
+              ? "text-primary-600"
+              : "text-primary-800"}
+          />
+        </Button>
+      {/snippet}
     </Tooltip.Trigger>
-    <Tooltip.Content side="bottom">Return to dashboard home</Tooltip.Content>
+    <Tooltip.Content side="bottom"
+      >{m.bookmark_return_to_home()}</Tooltip.Content
+    >
   </Tooltip.Root>
 {/if}

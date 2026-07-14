@@ -3,8 +3,6 @@ package duckdb
 import (
 	"fmt"
 	"strings"
-
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 func sourceReader(paths []string, format string, ingestionProps map[string]any) (string, error) {
@@ -89,5 +87,5 @@ func containsAny(s string, targets []string) bool {
 }
 
 func safeName(name string) string {
-	return drivers.DialectDuckDB.EscapeIdentifier(name)
+	return DialectDuckDB.EscapeIdentifier(name)
 }

@@ -4,7 +4,7 @@ export const sqliteSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "SQLite",
-  "x-category": "sqlStore",
+  "x-category": "fileStore",
   properties: {
     db: {
       type: "string",
@@ -16,12 +16,13 @@ export const sqliteSchema: MultiStepFormSchema = {
       type: "string",
       title: "Table",
       description: "SQLite table name",
-      "x-placeholder": "table",
+      "x-placeholder": "my_table",
     },
     name: {
       type: "string",
       title: "Source name",
       description: "Name of the source",
+      pattern: "^[a-zA-Z0-9_]+$",
       "x-placeholder": "my_new_source",
     },
   },

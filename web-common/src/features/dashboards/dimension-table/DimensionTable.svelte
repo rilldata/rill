@@ -4,6 +4,7 @@ ColumnHeaders – sticky column headers. Utilizes the columnVirtualizer (for now
 TableCells – the cell contents.
 -->
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
@@ -190,11 +191,11 @@ TableCells – the cell contents.
   bind:clientWidth={containerWidth}
   style="height: 100%;"
   role="table"
-  aria-label="Dimension table"
+  aria-label={m.dashboard_dimension_table_aria()}
 >
   <div
     bind:this={container}
-    on:scroll={() => {
+    onscroll={() => {
       horizontalScrolling = container?.scrollLeft > 0;
       /** capture to suppress cell tooltips. Otherwise,
        * there's quite a bit of rendering jank.
@@ -211,8 +212,8 @@ TableCells – the cell contents.
         role="grid"
         tabindex="0"
         class="relative"
-        on:mouseleave={clearActiveIndex}
-        on:blur={clearActiveIndex}
+        onmouseleave={clearActiveIndex}
+        onblur={clearActiveIndex}
         style:will-change="transform, contents"
         style:contain="content"
         style:width="{virtualWidth}px"
@@ -269,7 +270,7 @@ TableCells – the cell contents.
             {excludeMode}
             onSelectItem={onSelectItemHandler}
             onInspect={setActiveIndex}
-            cellLabel="Filter dimension value"
+            cellLabel={m.dashboard_filter_dimension_value()}
           />
         {:else if isFetching || $selectedValues.isFetching}
           <div class="flex text-fg-secondary justify-center mt-[30vh]">

@@ -28,6 +28,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Gemini",
 	Description: "Connect to Google's Gemini API for language models.",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/services/gemini",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "api_key",
@@ -102,7 +103,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 // Open implements drivers.Driver.
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
@@ -325,10 +326,13 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		return nil, fmt.Errorf("failed to convert response: %w", err)
 	}
 
+	// Gemini's PromptTokenCount already includes cached content tokens; CachedInputTokens is the subset.
 	return &drivers.CompleteResult{
-		Message:      resMsg,
-		InputTokens:  int(res.UsageMetadata.PromptTokenCount),
-		OutputTokens: int(res.UsageMetadata.CandidatesTokenCount),
+		Message:           resMsg,
+		Provider:          "gemini",
+		InputTokens:       int(res.UsageMetadata.PromptTokenCount),
+		CachedInputTokens: int(res.UsageMetadata.CachedContentTokenCount),
+		OutputTokens:      int(res.UsageMetadata.CandidatesTokenCount),
 	}, nil
 }
 

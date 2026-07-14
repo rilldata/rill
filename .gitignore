@@ -57,6 +57,7 @@ saved-state.json
 last-query-output.json
 staging-databases
 /rilldata
+/rill-examples/
 docs/dist/
 coverage
 # locally deployed test projects can generate this
@@ -80,6 +81,7 @@ rill-binary-sa.json
 gha-creds*
 .release-env
 binaries/
+
 # runtime test resources
 !runtime/testdata/**
 sysroot/
@@ -89,6 +91,21 @@ latest.txt
 /postgres/
 /clickhouse/
 
-# Claude resources
-/CLAUDE.md
-.claude/
+# Claude Code — personal / ephemeral (do not commit)
+.claude/CLAUDE.local.md
+.claude/settings.local.json
+.claude/**/*.local.md
+.claude/notes/
+.claude/plans/
+.claude/worktrees/
+.claude/projects/
+.mcp.json
+
+# Vite temp files
+vite.config.ts.timestamp-*
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# inlang manages this file itself (^2.5); keep it untracked to avoid churn
+**/*.inlang/.gitignore

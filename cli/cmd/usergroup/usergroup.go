@@ -16,7 +16,6 @@ func UsergroupCmd(ch *cmdutil.Helper) *cobra.Command {
 	userCmd.AddCommand(ListCmd(ch))
 	userCmd.AddCommand(ShowCmd(ch))
 	userCmd.AddCommand(CreateCmd(ch))
-	userCmd.AddCommand(RenameCmd(ch))
 	userCmd.AddCommand(EditCmd(ch))
 	userCmd.AddCommand(DeleteCmd(ch))
 

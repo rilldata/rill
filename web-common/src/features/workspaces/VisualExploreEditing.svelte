@@ -1,6 +1,7 @@
 <script lang="ts">
   import { replaceState } from "$app/navigation";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import TagInput from "@rilldata/web-common/components/forms/TagInput.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -21,9 +22,10 @@
   } from "@rilldata/web-common/lib/time/types";
   import {
     createRuntimeServiceGetInstance,
+    createRuntimeServiceListResources,
     type V1Explore,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
@@ -38,6 +40,11 @@
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
+  import {
+    getResourceTagSuggestions,
+    readRootYamlTags,
+    setRootYamlTags,
+  } from "../visual-editing/tag-utils";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
 
   const itemTypes = ["measures", "dimensions"] as const;
@@ -50,6 +57,7 @@
   export let autoSave: boolean;
   export let switchView: () => void;
 
+  const runtimeClient = useRuntimeClient();
   const StateManagers = getStateManagers();
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -65,15 +73,24 @@
 
   $: ({ selectedTimeRange, showTimeComparison } = $timeControlsStore);
 
-  $: ({ instanceId } = $runtime);
   $: ({ editorContent, path, updateEditorContent } = fileArtifact);
 
   $: exploreSpec = exploreResource?.state?.validSpec;
 
   $: parsedDocument = parseDocument($editorContent ?? "");
 
+  $: resourcesQuery = createRuntimeServiceListResources(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => data.resources ?? [],
+      },
+    },
+  );
+
   $: metricsViewsQuery = useFilteredResources(
-    instanceId,
+    runtimeClient,
     ResourceKind.MetricsView,
   );
 
@@ -101,6 +118,12 @@
   $: rawTheme = parsedDocument.get("theme");
   $: rawTimeRanges = parsedDocument.get("time_ranges");
   $: rawDefaults = parsedDocument.get("defaults");
+
+  $: resourceTags = readRootYamlTags(parsedDocument);
+  $: tagSuggestions = getResourceTagSuggestions(
+    $resourcesQuery?.data,
+    resourceTags,
+  );
 
   $: timeZones = new Set(
     rawTimeZones instanceof YAMLSeq
@@ -162,15 +185,15 @@
   $: dimensionExpression =
     rawDimensions instanceof YAMLMap ? rawDimensions?.get("expr") : "";
 
-  $: themesQuery = useFilteredResources(instanceId, ResourceKind.Theme);
+  $: themesQuery = useFilteredResources(runtimeClient, ResourceKind.Theme);
 
   $: themeNames = ($themesQuery?.data ?? [])
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
   $: defaultThemeQuery = createRuntimeServiceGetInstance(
-    instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => data?.instance?.theme,
@@ -259,6 +282,12 @@
 
     killState();
 
+    updateEditorContent(parsedDocument.toString(), false, autoSave);
+  }
+
+  function updateResourceTags(tags: string[]) {
+    setRootYamlTags(parsedDocument, tags);
+    killState();
     updateEditorContent(parsedDocument.toString(), false, autoSave);
   }
 
@@ -373,6 +402,12 @@
       onEnter={() => {
         updateProperties({ display_name: title });
       }}
+    />
+
+    <TagInput
+      tags={resourceTags}
+      suggestions={tagSuggestions}
+      onChange={updateResourceTags}
     />
 
     <Input
@@ -546,7 +581,7 @@
       >
         <p>
           For more options,
-          <button on:click={switchView} class="text-primary-600 font-medium">
+          <button onclick={switchView} class="text-primary-600 font-medium">
             edit in YAML
           </button>
         </p>

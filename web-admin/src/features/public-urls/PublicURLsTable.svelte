@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
   import DashboardLink from "./DashboardLink.svelte";
   import type {
@@ -13,6 +13,7 @@
     InfiniteData,
     InfiniteQueryObserverResult,
   } from "@tanstack/svelte-query";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   interface MagicAuthTokenProps extends V1MagicAuthToken {
     dashboardTitle: string;
@@ -30,23 +31,23 @@
   $: dynamicTableMaxHeight =
     safeData.length > 12 ? `calc(100dvh - 300px)` : "auto";
 
-  const columns: ColumnDef<MagicAuthTokenProps, any>[] = [
+  $: columns = [
     {
       accessorKey: "title",
-      header: "Label",
+      header: m.public_url_table_label_header(),
       cell: ({ row }) =>
-        flexRender(DashboardLink, {
+        renderComponent(DashboardLink, {
           href: row.original.url,
           title: row.original.displayName,
         }),
     },
     {
       accessorFn: (row) => row.dashboardTitle,
-      header: "Dashboard title",
+      header: m.public_url_table_dashboard_title_header(),
     },
     {
       accessorKey: "expiresOn",
-      header: "Expires on",
+      header: m.public_url_table_expires_header(),
       cell: (info) => {
         if (!info.getValue()) return "-";
         const date = formatDate(info.getValue() as string);
@@ -55,11 +56,11 @@
     },
     {
       accessorFn: (row) => row.attributes.name,
-      header: "Created by",
+      header: m.public_url_table_created_by_header(),
     },
     {
       accessorKey: "usedOn",
-      header: "Last acccesed",
+      header: m.public_url_table_last_accessed_header(),
       sortDescFirst: true,
       cell: (info) => {
         if (!info.getValue()) return "-";
@@ -72,13 +73,13 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(PublicURLsActionsRow, {
+        renderComponent(PublicURLsActionsRow, {
           id: row.original.id,
           url: row.original.url,
           onDelete,
         }),
     },
-  ];
+  ] as ColumnDef<MagicAuthTokenProps, any>[];
 
   function formatDate(value: string) {
     return new Date(value).toLocaleDateString(undefined, {
@@ -98,5 +99,4 @@
   isFetchingNextPage={query.isFetchingNextPage}
   onLoadMore={() => query.fetchNextPage()}
   maxHeight={dynamicTableMaxHeight}
-  rowHeight={40}
 />

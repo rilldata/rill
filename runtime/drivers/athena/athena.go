@@ -17,6 +17,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/awsutil"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
@@ -79,7 +80,7 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("athena driver can't be shared")
 	}
@@ -232,6 +233,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 		config.WithDefaultRegion("us-east-1"),
 		// Setting the region to an empty string, will result in the region value being ignored
 		config.WithRegion(awsRegion),
+		config.WithLogger(awsutil.NewAWSLogger(c.logger)),
 	}
 
 	// If one of the static properties is specified: access key, secret key, or session token, use static credentials,

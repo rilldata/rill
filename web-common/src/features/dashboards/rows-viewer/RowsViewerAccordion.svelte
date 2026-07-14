@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { usePivotForExplore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -7,8 +8,7 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { get } from "svelte/store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
@@ -42,7 +42,7 @@
     },
   } = stateManagers;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: exploreState = useExploreState(exploreName);
   $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
@@ -71,9 +71,9 @@
       );
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
       timeRange,
       where: filters,
@@ -94,9 +94,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
     },
     {
@@ -131,7 +131,7 @@
   function getExportQuery() {
     return {
       metricsViewRowsRequest: {
-        instanceId: get(runtime).instanceId,
+        instanceId: client.instanceId,
         metricsViewName,
         timeStart: timeRange.start,
         timeEnd: timeRange.end,
@@ -162,9 +162,9 @@
   />
   <div class="bar">
     <button
-      aria-label="Toggle rows viewer"
+      aria-label={m.dashboard_toggle_rows_viewer_aria()}
       class="text-xs text-fg-secondary rounded-sm hover:bg-surface-subtle h-6 px-1.5 py-px flex items-center gap-1"
-      on:click={toggle}
+      onclick={toggle}
     >
       <span class:rotate-180={isOpen}>
         <CaretDownIcon size="14px" />
@@ -174,7 +174,10 @@
     </button>
     {#if $exports}
       <div class="ml-auto">
-        <ExportMenu label="Export model data" getQuery={getExportQuery} />
+        <ExportMenu
+          label={m.dashboard_export_model_data()}
+          getQuery={getExportQuery}
+        />
       </div>
     {/if}
   </div>

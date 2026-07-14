@@ -1,9 +1,10 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceListConversationsQueryOptions,
-  type RpcStatus,
   type V1ListConversationsResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { ConnectError } from "@connectrpc/connect";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 import { Conversation } from "./conversation";
@@ -12,22 +13,31 @@ import {
   URLConversationSelector,
   type ConversationSelector,
 } from "./conversation-selector";
+import type { ChatSurface } from "./types";
 import { invalidateConversationsList, NEW_CONVERSATION_ID } from "./utils";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
 export type ConversationStateType = "url" | "browserStorage";
 
-export interface ConversationManagerOptions {
-  /**
-   * How conversation state should be managed and persisted
-   * - "url": Use URL parameters (for full-page chat with shareable URLs)
-   * - "browserStorage": Use session storage (for sidebar chat)
-   */
-  conversationState: ConversationStateType;
-  /**
-   * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
-   */
-  agent?: string;
-}
+/**
+ * Discriminated by `conversationState`:
+ * - "url": full-page chat with shareable URLs. Optional `basePath` overrides
+ *   the default `/${org}/${project}/-/ai`.
+ * - "browserStorage": sidebar chat keyed in sessionStorage. `surface` is
+ *   required and scopes the storage key so developer-surface conversations
+ *   don't load against the dashboard surface.
+ */
+export type ConversationManagerOptions =
+  | {
+      conversationState: "url";
+      agent?: string;
+      basePath?: () => string;
+    }
+  | {
+      conversationState: "browserStorage";
+      agent?: string;
+      surface: ChatSurface;
+    };
 
 /**
  * Manages chat state and conversation lifecycle.
@@ -51,8 +61,12 @@ export class ConversationManager {
   private conversationSelector: ConversationSelector;
   private readonly agent?: string;
 
+  public get instanceId(): string {
+    return this.client.instanceId;
+  }
+
   constructor(
-    public readonly instanceId: string,
+    private readonly client: RuntimeClient,
     options: ConversationManagerOptions,
   ) {
     this.agent = options.agent;
@@ -60,15 +74,26 @@ export class ConversationManager {
 
     switch (options.conversationState) {
       case "url":
-        this.conversationSelector = new URLConversationSelector();
+        this.conversationSelector = new URLConversationSelector(
+          options.basePath,
+        );
         break;
       case "browserStorage":
-        this.conversationSelector = new BrowserStorageConversationSelector();
-        break;
-      default:
-        throw new Error(
-          `Unknown conversation storage type: ${options.conversationState}`,
+        this.conversationSelector = new BrowserStorageConversationSelector(
+          options.surface,
+          client.instanceId,
+          EmbedStore.getInstance()?.externalUserId ?? null,
         );
+        break;
+      default: {
+        // Exhaustiveness check: if a new variant is added to
+        // ConversationManagerOptions without a case, this assignment fails to
+        // compile.
+        const exhaustive: never = options;
+        throw new Error(
+          `Unknown conversation manager options: ${JSON.stringify(exhaustive)}`,
+        );
+      }
     }
   }
 
@@ -79,10 +104,10 @@ export class ConversationManager {
    */
   public listConversationsQuery(): CreateQueryResult<
     V1ListConversationsResponse,
-    RpcStatus
+    ConnectError
   > {
     return createQuery(
-      getRuntimeServiceListConversationsQueryOptions(this.instanceId, {
+      getRuntimeServiceListConversationsQueryOptions(this.client, {
         // Filter to only show Rill client conversations, excluding MCP conversations
         userAgentPattern: "rill%",
       }),
@@ -110,7 +135,7 @@ export class ConversationManager {
 
         // Otherwise, create a conversation instance and store it
         const conversation = new Conversation(
-          this.instanceId,
+          this.client,
           $conversationId,
           this.agent,
         );
@@ -159,7 +184,7 @@ export class ConversationManager {
   private createNewConversation() {
     this.newConversationUnsub?.();
     this.newConversation = new Conversation(
-      this.instanceId,
+      this.client,
       NEW_CONVERSATION_ID,
       this.agent,
     );
@@ -278,21 +303,21 @@ function getConversationManagerKey(instanceId: string, agent?: string): string {
 }
 
 /**
- * Get or create a ConversationManager instance for the given instanceId and agent
+ * Get or create a ConversationManager instance for the given client and agent
  *
- * @param instanceId - The project/instance identifier
+ * @param client - The RuntimeClient instance
  * @param options - Configuration options for the conversation manager instance
  * @returns The ConversationManager instance for this project and agent
  */
 export function getConversationManager(
-  instanceId: string,
+  client: RuntimeClient,
   options: ConversationManagerOptions,
 ): ConversationManager {
-  const key = getConversationManagerKey(instanceId, options.agent);
+  const key = getConversationManagerKey(client.instanceId, options.agent);
   if (!conversationManagerInstances.has(key)) {
     conversationManagerInstances.set(
       key,
-      new ConversationManager(instanceId, options),
+      new ConversationManager(client, options),
     );
   }
   return conversationManagerInstances.get(key)!;

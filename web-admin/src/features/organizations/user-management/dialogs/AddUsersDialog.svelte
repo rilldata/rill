@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import {
     createAdminServiceAddOrganizationMemberUser,
@@ -29,7 +30,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
 
-  import { ORG_ROLES_OPTIONS } from "../../constants";
+  import { getOrgRolesOptions } from "../../constants";
 
   export let open = false;
   export let email: string;
@@ -86,7 +87,7 @@
       emails: array(
         string().matches(RFC5322EmailRegex, {
           excludeEmptyString: true,
-          message: "Invalid email",
+          message: m.users_invalid_email(),
         }),
       ), // yup's email regex is too simple
       role: string().required(),
@@ -134,9 +135,10 @@
         if (succeeded.length > 0) {
           eventBus.emit("notification", {
             type: "success",
-            message: `Successfully invited ${succeeded.length} ${
-              succeeded.length === 1 ? "person" : "people"
-            } as ${values.role}`,
+            message: m.users_org_invited_success({
+              count: succeeded.length,
+              role: values.role,
+            }),
           });
         }
 
@@ -154,6 +156,8 @@
     },
   );
 
+  $: orgRolesOptions = getOrgRolesOptions();
+
   $: hasInvalidEmails = $form.emails.some(
     (e, i) => e.length > 0 && $errors.emails?.[i] !== undefined,
   );
@@ -161,15 +165,6 @@
 
 <Dialog
   bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-    email = "";
-    role = "";
-    isSuperUser = false;
-    failedInvites = [];
-    $form.emails = [""];
-  }}
   onOpenChange={(open) => {
     if (!open) {
       email = "";
@@ -180,22 +175,38 @@
     }
   }}
 >
-  <DialogTrigger asChild>
-    <div class="hidden"></div>
+  <DialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]">
+  <DialogContent
+    class="translate-y-[-200px]"
+    onInteractOutside={(e) => {
+      e.preventDefault();
+      open = false;
+      email = "";
+      role = "";
+      isSuperUser = false;
+      failedInvites = [];
+      $form.emails = [""];
+    }}
+  >
     <DialogHeader>
-      <DialogTitle>Add users</DialogTitle>
+      <DialogTitle>{m.users_add_users()}</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
-      on:submit|preventDefault={submit}
+      onsubmit={(e) => {
+        e.preventDefault();
+        submit(e);
+      }}
       class="w-full"
       use:enhance
     >
       <MultiInput
         id="emails"
-        placeholder="Add emails, separated by commas"
+        placeholder={m.users_email_placeholder()}
         contentClassName="relative [&>div:first-child]:max-h-[120px] [&>div:first-child]:overflow-y-auto"
         bind:values={$form.emails}
         errors={$errors.emails}
@@ -203,12 +214,12 @@
         plural="emails"
       >
         <div slot="within-input" class="flex items-center h-full">
-          <DropdownMenu typeahead={false}>
+          <DropdownMenu>
             <DropdownMenuTrigger
               class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 hover:bg-surface-hover"
             >
               <div class="text-xs">
-                {ORG_ROLES_OPTIONS.find((o) => o.value === $form.role)?.label}
+                {orgRolesOptions.find((o) => o.value === $form.role)?.label}
               </div>
               <CaretDownIcon size="12px" />
             </DropdownMenuTrigger>
@@ -218,9 +229,9 @@
               class="w-[260px]"
               strategy="fixed"
             >
-              {#each ORG_ROLES_OPTIONS as { value, label, description } (value)}
+              {#each orgRolesOptions as { value, label, description } (value)}
                 <DropdownMenuItem
-                  on:click={() => ($form.role = value)}
+                  onclick={() => ($form.role = value)}
                   class="text-xs hover:bg-surface-hover {$form.role === value
                     ? 'bg-surface-active'
                     : ''}"
@@ -247,16 +258,17 @@
             disabled={hasInvalidEmails || !hasSomeValue}
             forcedStyle="height: 32px !important;"
           >
-            Invite
+            {m.users_invite()}
           </Button>
         </svelte:fragment>
       </MultiInput>
 
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {failedInvites.length === 1
-            ? `${failedInvites[0]} is already a member of this organization`
-            : `${failedInvites.join(", ")} are already members of this organization`}
+          {m.users_already_member({
+            emails: failedInvites.join(", "),
+            count: failedInvites.length,
+          })}
         </div>
       {/if}
     </form>

@@ -26,15 +26,11 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
-				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
-				if err != nil {
-					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
-				}
-			}
-
 			if name == "" {
-				return fmt.Errorf("please provide a valid project name. Run `rill project list` to see the available projects")
+				name, err = ch.InferProjectName(cmd.Context(), path, "use --project to specify the name")
+				if err != nil {
+					return err
+				}
 			}
 
 			if !force && ch.Interactive {

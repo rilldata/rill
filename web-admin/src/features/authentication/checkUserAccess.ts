@@ -17,6 +17,7 @@ export async function redirectToLoginIfNotLoggedIn() {
   const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
     queryKey: getAdminServiceGetCurrentUserQueryKey(),
     queryFn: () => adminServiceGetCurrentUser(),
+    staleTime: 5 * 60 * 1000, // 5 minutes; prevents refetches on every navigation/hover
   });
   const isLoggedIn = !!userQuery.user;
   if (isLoggedIn) {

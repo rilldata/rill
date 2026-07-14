@@ -1,5 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+import { RESOURCE_FILE_EXTENSIONS } from "./file-path-utils";
 
 export function getFilePathFromPagePath(path: string): string {
   const pathSplits = path.split("/");
@@ -8,7 +9,7 @@ export function getFilePathFromPagePath(path: string): string {
 
   switch (entityType) {
     case "source":
-      return `/files/sources/${entityName}.yaml`;
+      return `/files/models/${entityName}.yaml`;
     case "model":
       return `/files/models/${entityName}.sql`;
     case "dashboard":
@@ -26,7 +27,7 @@ export function getFilePathFromNameAndType(
     case EntityType.Connector:
       return `/connectors/${name}.yaml`;
     case EntityType.Table:
-      return `/sources/${name}.yaml`;
+      return `/models/${name}.yaml`;
     case EntityType.Model:
       return `/models/${name}.sql`;
     case EntityType.MetricsDefinition:
@@ -49,7 +50,7 @@ export function getFileAPIPathFromNameAndType(
     case EntityType.Connector:
       return `connectors/${name}.yaml`;
     case EntityType.Table:
-      return `sources/${name}.yaml`;
+      return `models/${name}.yaml`;
     case EntityType.Model:
       return `models/${name}.sql`;
     case EntityType.MetricsDefinition:
@@ -64,9 +65,20 @@ export function getFileAPIPathFromNameAndType(
 }
 
 export function getNameFromFile(fileName: string): string {
-  // TODO: do we need a library here?
   const splits = fileName.split("/");
-  const extensionSplits = splits[splits.length - 1]?.split(".");
+  const basename = splits[splits.length - 1] ?? "";
+
+  // Rill resource names are inferred by removing only the final resource file
+  // extension, so dotted names like `dashboard.canvas.yaml` stay intact.
+  for (const extension of RESOURCE_FILE_EXTENSIONS) {
+    if (basename.endsWith(extension)) {
+      return basename.slice(0, -extension.length);
+    }
+  }
+
+  // Non-resource data files keep the legacy behavior of removing compound
+  // extensions, e.g. `adbids.csv.tgz` -> `adbids`.
+  const extensionSplits = basename.split(".");
   return extensionSplits[0];
 }
 

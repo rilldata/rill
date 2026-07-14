@@ -6,25 +6,28 @@
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "./viewAsUserStore";
 
-  let active: boolean;
+  let active: boolean = false;
 </script>
 
 <DropdownMenu.Root bind:open={active}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <Chip
-      removable
-      {active}
-      builders={[builder]}
-      removeTooltipText="Clear view"
-      onRemove={() => {
-        viewAsUserStore.set(null);
-        errorStore.reset();
-      }}
-    >
-      <div slot="body">
-        Viewing as <b>{$viewAsUserStore.email}</b>
-      </div>
-    </Chip>
+  <DropdownMenu.Trigger>
+    {#snippet child({ props })}
+      <button {...props} class="appearance-none border-0 bg-transparent p-0">
+        <Chip
+          removable
+          {active}
+          removeTooltipText="Clear view"
+          onRemove={() => {
+            viewAsUserStore.set(null);
+            errorStore.reset();
+          }}
+        >
+          <div slot="body">
+            Viewing as <b>{$viewAsUserStore.email}</b>
+          </div>
+        </Chip>
+      </button>
+    {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content
     align="start"

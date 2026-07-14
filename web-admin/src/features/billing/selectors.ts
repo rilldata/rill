@@ -5,12 +5,16 @@ import {
   type V1BillingIssue,
   V1BillingIssueType,
 } from "@rilldata/web-admin/client";
-import { getPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
+import {
+  getPaymentIssues,
+  needsPaymentSetup,
+} from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
 import {
   cancelledSubscriptionHasEnded,
   getCancelledIssue,
   getNeverSubscribedIssue,
 } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
+import { getCustomMessageIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCustomMessage";
 import {
   getTrialIssue,
   trialHasPastGracePeriod,
@@ -28,10 +32,12 @@ export async function fetchOrganizationBillingIssues(organization: string) {
 }
 
 export type CategorisedOrganizationBillingIssues = {
+  message?: V1BillingIssue;
   neverSubscribed?: V1BillingIssue;
   trial?: V1BillingIssue;
   cancelled?: V1BillingIssue;
   payment: V1BillingIssue[];
+  needsPaymentSetup: boolean;
 };
 export function useCategorisedOrganizationBillingIssues(organization: string) {
   return createAdminServiceListOrganizationBillingIssues(
@@ -42,10 +48,12 @@ export function useCategorisedOrganizationBillingIssues(organization: string) {
         select: (data) => {
           const issues = data.issues ?? [];
           return <CategorisedOrganizationBillingIssues>{
+            message: getCustomMessageIssue(issues),
             neverSubscribed: getNeverSubscribedIssue(issues),
             trial: getTrialIssue(issues),
             cancelled: getCancelledIssue(issues),
             payment: getPaymentIssues(issues),
+            needsPaymentSetup: needsPaymentSetup(issues),
           };
         },
       },

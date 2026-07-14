@@ -37,6 +37,9 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				toEnv = args[0]
 			} else {
+				if !ch.Interactive {
+					return fmt.Errorf("environment must be provided as an argument in non-interactive mode")
+				}
 				toEnv, err = cmdutil.SelectPrompt("Select environment", maps.Keys(adminenv.EnvURLs), fromEnv)
 				if err != nil {
 					return err
@@ -50,7 +53,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfSuccess("Set default env to %q (%q)\n", toEnv, adminenv.AdminURL(toEnv))
 
-			return auth.SelectOrgFlow(cmd.Context(), ch, ch.Interactive, "")
+			return auth.SelectOrgFlow(cmd.Context(), ch, false)
 		},
 	}
 
@@ -122,7 +125,7 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 	var prevOrg string
 	if authenticated {
 		prevOrg = ch.Org
-		err = auth.SelectOrgFlow(ctx, ch, false, "")
+		err = auth.SelectOrgFlow(ctx, ch, true)
 		if err != nil {
 			logWarn.Printf("Failed to select org in dev environment: %v\n", err)
 		}

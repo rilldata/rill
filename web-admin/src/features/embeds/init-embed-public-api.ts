@@ -1,8 +1,14 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
+import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { buildValidatedExploreUrl } from "@rilldata/web-common/features/dashboards/state-managers/loaders/build-validated-explore-url.ts";
+import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import type { PageContentResized } from "@rilldata/web-common/lib/event-bus/events.ts";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get } from "svelte/store";
 import {
   emitNotification,
@@ -12,15 +18,22 @@ import { themeControl } from "@rilldata/web-common/features/themes/theme-control
 import { getEmbedThemeStoreInstance } from "@rilldata/web-common/features/embeds/embed-theme";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 import {
-  chatOpen,
-  sidebarActions,
+  dashboardChatActions,
+  dashboardChatOpen,
 } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
 const RESIZE_THROTTLE_TIMEOUT = 200;
 const AI_PANE_CHANGE_THROTTLE_TIMEOUT = 200;
 
-export default function initEmbedPublicAPI(): () => void {
+type SetValidStateParams = {
+  state: string;
+  // When false (the default) the cleaned state is applied even if some params were invalid.
+  // When true the state is only applied if there are no validation errors.
+  failOnError?: boolean;
+};
+
+export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
   const embedThemeStore = getEmbedThemeStoreInstance();
 
   const embedStore = EmbedStore.getInstance();
@@ -50,6 +63,62 @@ export default function initEmbedPublicAPI(): () => void {
     currentUrl.search = state;
     void goto(currentUrl, { replaceState: true });
     return true;
+  });
+
+  registerRPCMethod("setValidState", async (params: SetValidStateParams) => {
+    if (
+      typeof params !== "object" ||
+      params === null ||
+      typeof params.state !== "string"
+    ) {
+      throw new Error(
+        "Expected params to be an object with a string `state` property",
+      );
+    }
+    const { state, failOnError = false } = params;
+
+    const pageState = get(page);
+    const activeDashboard = getDashboardFromEmbedRoute(
+      pageState.route.id,
+      pageState.params,
+    );
+
+    // Upfront validation is only supported for explore dashboards.
+    // For anything else (e.g. canvas) fall back to applying the state as-is.
+    if (activeDashboard?.kind !== ResourceKind.Explore) {
+      const currentUrl = new URL(pageState.url);
+      currentUrl.search = state;
+      void goto(currentUrl, { replaceState: true });
+      return { success: true, appliedState: state, errors: [] };
+    }
+
+    const { url, errors } = await buildValidatedExploreUrl(
+      client,
+      activeDashboard.name,
+      new URLSearchParams(state),
+      pageState.url,
+    );
+    const errorMessages = errors.map((error) => error.message);
+
+    if (errors.length > 0 && failOnError) {
+      return { success: false, errors: errorMessages };
+    }
+
+    // Clear any prior embed session state for this explore before navigating.
+    // buildValidatedExploreUrl intentionally ignores session storage,
+    // but applying the url via goto triggers handleURLChange which re-merges session storage for empty / view-only urls.
+    // Without this, resetting the dashboard (e.g. setValidState({ state: "" })) would restore the previous session filters
+    // instead of the validated state we just computed and returned.
+    clearExploreSessionStore(activeDashboard.name, EmbedStorageNamespacePrefix);
+
+    const currentUrl = new URL(pageState.url);
+    currentUrl.search = url.toString();
+    void goto(currentUrl, { replaceState: true });
+    return {
+      success: true,
+      appliedState: currentUrl.search.replace(/^\?/, ""),
+      errors: errorMessages,
+    };
   });
 
   registerRPCMethod("getThemeMode", () => {
@@ -91,7 +160,7 @@ export default function initEmbedPublicAPI(): () => void {
   });
 
   registerRPCMethod("getAiPane", () => {
-    return { open: get(chatOpen) };
+    return { open: get(dashboardChatOpen) };
   });
 
   registerRPCMethod("setAiPane", (open: boolean) => {
@@ -99,9 +168,9 @@ export default function initEmbedPublicAPI(): () => void {
       throw new Error("Expected open to be a boolean");
     }
     if (open) {
-      sidebarActions.openChat();
+      dashboardChatActions.openChat();
     } else {
-      sidebarActions.closeChat();
+      dashboardChatActions.closeChat();
     }
     return true;
   });
@@ -149,7 +218,7 @@ export default function initEmbedPublicAPI(): () => void {
     AI_PANE_CHANGE_THROTTLE_TIMEOUT,
     AI_PANE_CHANGE_THROTTLE_TIMEOUT,
   );
-  const aiPaneUnsubscribe = chatOpen.subscribe((isOpen) => {
+  const aiPaneUnsubscribe = dashboardChatOpen.subscribe((isOpen) => {
     aiPaneChangeThrottler.throttle(() => {
       emitNotification("aiPaneChanged", {
         open: isOpen,
@@ -174,10 +243,11 @@ const EmbedParams = [
   "navigation",
   "theme",
   "theme_mode",
+  "external_user_id",
 ];
 export function removeEmbedParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);
   EmbedParams.forEach((param) => cleanedParams.delete(param));
   const search = cleanedParams.toString();
-  return decodeURIComponent(search);
+  return search;
 }

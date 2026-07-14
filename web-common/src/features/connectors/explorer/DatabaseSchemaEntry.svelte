@@ -1,29 +1,62 @@
 <script lang="ts">
   import { Database, Folder } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import type {
-    V1AnalyzedConnector,
-    V1TableInfo,
+  import {
+    createRuntimeServiceGetInstance,
+    type V1AnalyzedConnector,
+    type V1TableInfo,
   } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import TableEntry from "./TableEntry.svelte";
-  import { useInfiniteListTables } from "../selectors";
+  import {
+    useInfiniteListTables,
+    useIsModelingSupportedForDefaultOlapDriverOLAP,
+  } from "../selectors";
   import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { onMount } from "svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
 
+  const client = useRuntimeClient();
+
   $: connectorName = connector?.name as string;
+
+  $: instanceQuery = createRuntimeServiceGetInstance(client, {
+    sensitive: true,
+  });
+  $: projectOlapConnector = $instanceQuery.data?.instance?.olapConnector;
+
+  // Whether the project's OLAP can be written to (i.e. models can materialize
+  // into it). True for managed DuckDB, provisioned, or read-write connectors.
+  $: projectOlapWriteableQuery =
+    useIsModelingSupportedForDefaultOlapDriverOLAP(client);
+  $: projectOlapWriteable = $projectOlapWriteableQuery.data ?? false;
+
+  $: sourceCanLive = connector.driver?.implementsOlap ?? false;
+  $: sourceCanIngest =
+    (connector.driver?.implementsWarehouse ||
+      connector.driver?.implementsSqlStore) ??
+    false;
+  $: isProjectOlap = projectOlapConnector === connectorName;
+
+  // "Create model" requires an ingestable source AND a writeable project OLAP,
+  // and is pointless when the source is already the project's OLAP.
+  $: canImport = projectOlapWriteable && sourceCanIngest && !isProjectOlap;
+
+  // Live-connect when the source can answer OLAP queries directly and importing
+  // isn't available (or the source IS the project's OLAP, so data is in place).
+  $: isOlapConnector = sourceCanLive && !canImport;
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
 
   $: tablesQuery = useInfiniteListTables(
-    instanceId,
+    client,
     connectorName,
     database,
     databaseSchema,
@@ -64,9 +97,10 @@
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
   <button
+    type="button"
     class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
     class:open={expanded}
-    on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
+    onclick={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
     <CaretDownIcon
       className="transform transition-transform text-fg-secondary {expanded
@@ -94,7 +128,7 @@
       </div>
     {:else if isLoading && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        Loading tables...
+        {m.status_loading_tables_short()}
       </div>
     {:else if connector?.errorMessage}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
@@ -114,14 +148,9 @@
           <TableEntry
             driver={connector.driver.name}
             connector={connectorName}
-            showGenerateMetricsAndDashboard={(connector.driver.implementsOlap ||
-              connector.driver.implementsWarehouse ||
-              connector.driver.implementsSqlStore) ??
-              false}
-            showGenerateModel={(connector.driver.implementsWarehouse ||
-              connector.driver.implementsSqlStore) ??
-              false}
-            isOlapConnector={connector.driver.implementsOlap ?? false}
+            showGenerateMetricsAndDashboard={isOlapConnector || canImport}
+            showGenerateModel={canImport}
+            {isOlapConnector}
             {database}
             {databaseSchema}
             table={tableInfo.name}
@@ -146,7 +175,9 @@
               small
               disabled={isFetchingNextPage}
               loading={isFetchingNextPage}
-              loadingCopy={isNarrow ? "Loading..." : "Loading tables..."}
+              loadingCopy={isNarrow
+                ? m.common_loading()
+                : m.status_loading_tables_short()}
               class="w-full"
               onClick={() => fetchNextPage()}
             >

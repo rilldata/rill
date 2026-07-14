@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
+  import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -10,7 +10,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     createSqlModelFromTable,
@@ -27,7 +27,8 @@
   export let isModelingSupported: boolean | undefined = false;
   export let isOlapConnector: boolean = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+  $: ({ instanceId } = client);
 
   async function handleCreateModel(
     modelCreationFn: () => Promise<[string, string]>,
@@ -35,7 +36,7 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await modelCreationFn();
-      await goto(`/files${newModelPath}`);
+      await navigateToFile(newModelPath);
       await behaviourEvent?.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
@@ -52,6 +53,7 @@
     if (isModelingSupported) {
       await handleCreateModel(() =>
         createSqlModelFromTable(
+          client,
           queryClient,
           connector,
           database,
@@ -62,6 +64,7 @@
     } else if (showGenerateModel) {
       await handleCreateModel(() =>
         createYamlModelFromTable(
+          client,
           queryClient,
           connector,
           database,
@@ -74,6 +77,7 @@
 
   async function handleGenerateMetrics() {
     await generateMetricsFromTable(
+      client,
       instanceId,
       connector,
       database,
@@ -86,6 +90,7 @@
 
   async function handleGenerateDashboard() {
     await generateMetricsFromTable(
+      client,
       instanceId,
       connector,
       database,
@@ -98,7 +103,7 @@
 </script>
 
 {#if isModelingSupported || showGenerateModel}
-  <NavigationMenuItem on:click={handleCreateModelFromTable}>
+  <NavigationMenuItem onclick={handleCreateModelFromTable}>
     <Model slot="icon" />
     Create model
   </NavigationMenuItem>

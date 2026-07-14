@@ -12,6 +12,9 @@ import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
 import ModelIcon from "@rilldata/web-common/components/icons/ModelIcon.svelte";
 import File from "@rilldata/web-common/components/icons/File.svelte";
 import SettingsIcon from "@rilldata/web-common/components/icons/SettingsIcon.svelte";
+import { isEnvFile } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
+import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { Sheet } from "lucide-svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
@@ -59,9 +62,14 @@ export function getIconComponent(
   kind: ResourceKind | undefined,
   filePath: string,
 ) {
-  return kind
-    ? resourceIconMapping[kind]
-    : filePath === "/.env" || filePath === "/rill.yaml"
-      ? SettingsIcon
-      : File;
+  if (kind) {
+    return resourceIconMapping[kind];
+  }
+  if (isEnvFile(filePath) || filePath === "/rill.yaml") {
+    return SettingsIcon;
+  }
+  if (extractFileExtension(filePath) === ".parquet") {
+    return Sheet;
+  }
+  return File;
 }

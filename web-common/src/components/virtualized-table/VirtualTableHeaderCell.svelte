@@ -13,6 +13,9 @@
   export let position: number | null = null;
   export let pinned: boolean = false;
   export let resizable: boolean = false;
+  export let onmouseenter: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onclick: ((e: MouseEvent) => void) | undefined = undefined;
+  export let onmousedown: ((e: MouseEvent) => void) | undefined = undefined;
 </script>
 
 <th
@@ -23,7 +26,7 @@
   class:pinned
   class="group relative overflow-hidden"
   style:left="{position}px"
-  on:mouseenter
+  {onmouseenter}
 >
   <svelte:component this={HeaderCell} {sorted} {name} {type}>
     <button
@@ -33,8 +36,8 @@
       title={"Toggle pin column"}
       aria-label={pinned ? "Unpin column" : "Pin column"}
       class="pin-button duration-100 justify-self-end group-hover:block hidden text-fg-primary"
-      on:mouseenter
-      on:click
+      {onmouseenter}
+      {onclick}
     >
       <Pin size="16px" />
     </button>
@@ -45,8 +48,9 @@
       class="absolute top-0 -right-1 w-2 z-10 cursor-col-resize"
       style:height="{HEADER_HEIGHT}px"
       data-index={index}
-      on:mousedown
-    />
+      aria-label="Resize column"
+      {onmousedown}
+    ></button>
   {/if}
 </th>
 

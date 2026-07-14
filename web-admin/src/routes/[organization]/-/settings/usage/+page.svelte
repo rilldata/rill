@@ -1,29 +1,21 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { PageData } from "./$types";
+  import EmbeddedBillingPage from "@rilldata/web-admin/features/billing/EmbeddedBillingPage.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  export let data: PageData;
-
-  let iframeLoading = true;
-
-  // credentialless is not standard and throws lint error, but it works on chrome and safari for now.
-  const iframeProps = {
-    credentialless: true,
-  };
+  let { data }: { data: PageData } = $props();
 </script>
 
-{#if iframeLoading}
-  <Spinner status={EntityStatus.Running} size="16px" />
-{/if}
+<section class="usage-page">
+  <h1 class="text-xl font-semibold text-fg-primary mb-2">
+    {m.billing_usage_title()}
+  </h1>
 
-<iframe
-  {...iframeProps}
-  src={data.billingPortalUrl}
-  title="Orb Billing Portal"
-  class="w-full h-[1000px]"
-  on:load={() => (iframeLoading = false)}
-/>
+  <EmbeddedBillingPage billingPortalUrl={data.billingPortalUrl} />
+</section>
 
 <style lang="postcss">
+  .usage-page {
+    @apply max-w-4xl;
+  }
 </style>

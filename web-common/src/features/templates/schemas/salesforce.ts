@@ -4,29 +4,9 @@ export const salesforceSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "Salesforce",
-  "x-category": "warehouse",
+  "x-category": "fileStore",
+  "x-form-height": "tall",
   properties: {
-    soql: {
-      type: "string",
-      title: "SOQL",
-      description: "SOQL query to extract data",
-      "x-placeholder": "SELECT Id, Name FROM Opportunity",
-      "x-step": "source",
-    },
-    sobject: {
-      type: "string",
-      title: "SObject",
-      description: "Salesforce object to query",
-      "x-placeholder": "Opportunity",
-      "x-step": "source",
-    },
-    queryAll: {
-      type: "boolean",
-      title: "Query all",
-      description: "Include deleted and archived records",
-      default: false,
-      "x-step": "source",
-    },
     username: {
       type: "string",
       title: "Username",
@@ -38,9 +18,16 @@ export const salesforceSchema: MultiStepFormSchema = {
       title: "Password",
       description:
         "Salesforce password, optionally followed by security token if required",
-      "x-placeholder": "your_password_or_password+token",
+      "x-placeholder": "your_password",
       "x-secret": true,
       "x-env-var-name": "SALESFORCE_PASSWORD",
+    },
+    endpoint: {
+      type: "string",
+      title: "Login endpoint",
+      description:
+        "Salesforce login URL (e.g., login.salesforce.com or test.salesforce.com)",
+      "x-placeholder": "login.salesforce.com",
     },
     key: {
       type: "string",
@@ -50,55 +37,40 @@ export const salesforceSchema: MultiStepFormSchema = {
       "x-placeholder": "your_private_key",
       "x-secret": true,
       "x-env-var-name": "SALESFORCE_KEY",
+      "x-advanced": true,
     },
     client_id: {
       type: "string",
       title: "Connected App Client ID",
       description: "Client ID (consumer key) for JWT auth",
       "x-placeholder": "Connected App client ID",
+      "x-advanced": true,
     },
-    endpoint: {
+    soql: {
       type: "string",
-      title: "Login endpoint",
-      description:
-        "Salesforce login URL (e.g., login.salesforce.com or test.salesforce.com)",
-      "x-placeholder": "login.salesforce.com",
+      title: "SOQL",
+      description: "SOQL query to extract data",
+      "x-placeholder": "SELECT Id, Name FROM Opportunity",
+    },
+    sobject: {
+      type: "string",
+      title: "SObject",
+      description: "Salesforce object to query",
+      "x-placeholder": "Opportunity",
+    },
+    queryAll: {
+      type: "boolean",
+      title: "Query all",
+      description: "Include deleted and archived records",
+      default: false,
     },
     name: {
       type: "string",
       title: "Source name",
       description: "Name for the source",
+      pattern: "^[a-zA-Z0-9_]+$",
       "x-placeholder": "my_new_source",
-      "x-step": "source",
     },
   },
-  required: ["soql", "sobject", "name"],
-  allOf: [
-    {
-      // Username/password auth: when key is NOT provided, require username/password/endpoint
-      if: {
-        not: {
-          required: ["key"],
-          properties: {
-            key: { minLength: 1 },
-          },
-        },
-      },
-      then: {
-        required: ["username", "password", "endpoint"],
-      },
-    },
-    {
-      // JWT auth: when key is provided, require client_id and username
-      if: {
-        required: ["key"],
-        properties: {
-          key: { minLength: 1 },
-        },
-      },
-      then: {
-        required: ["client_id", "username"],
-      },
-    },
-  ],
+  required: ["soql", "sobject", "name", "username", "password"],
 };

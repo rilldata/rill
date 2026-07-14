@@ -167,12 +167,20 @@ const config = {
                 label: "Project Files",
               },
               {
-                to: "/reference/cli",
-                label: "CLI",
+                to: "/reference/time-syntax",
+                label: "Time Syntax",
               },
               {
                 to: "/reference/time-syntax/rill-iso-extensions",
                 label: "Rill ISO 8601",
+              },
+              {
+                to: "/reference/url-syntax/url-parameters",
+                label: "URL Parameters",
+              },
+              {
+                to: "/reference/cli",
+                label: "CLI",
               },
               {
                 to: "/api/admin/",
@@ -181,19 +189,6 @@ const config = {
 
             ],
           },
-
-          // {
-          //   type: 'dropdown',
-          //   label: 'Reference',
-          //   position: 'left',
-          //   className: "navbar-reference-link",
-          //   items: [
-          //     { to: '/reference/project-files', label: 'Project Files' },
-          //     { to: '/reference/cli', label: 'CLI' },
-          //     { to: '/api/admin/', label: 'REST API' },
-
-          //   ],
-          // },
           {
             to: "/contact",
             label: "Contact Us",
@@ -207,18 +202,19 @@ const config = {
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link github-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer"><img src="/icons/Github.svg" alt="" width="20" height="20" class="github-icon" /><span class="github-link-text">GitHub</span></a>',
           },
-
           {
             type: "search",
             position: "right"
           },
+
+
         ],
       },
       footer: {
@@ -295,11 +291,11 @@ const config = {
           },
           {
             from: '/example-projects',
-            to: '/#examples',
+            to: '/developers/tutorials/',
           },
           {
             from: '/integration/embedding',
-            to: '/developers/integrate/embedding',
+            to: '/developers/embed/iframe',
           },
           {
             from: '/develop/import-data',
@@ -1247,31 +1243,71 @@ const config = {
             to: '/developers/tutorials/rill-clickhouse/r_ch_ingest',
           },
           // ============================================
-          // /integrate/* → /developers/integrate/*
+          // /integrate/* → /developers/embed/* (renamed)
           // ============================================
           {
             from: '/integrate',
-            to: '/developers/integrate',
+            to: '/developers/embed',
           },
           {
             from: '/integrate/index',
-            to: '/developers/integrate',
+            to: '/developers/embed',
+          },
+          {
+            from: '/developers/integrate',
+            to: '/developers/embed',
           },
           {
             from: '/integrate/custom-api',
-            to: '/developers/integrate/custom-api',
+            to: '/developers/build/custom-apis/calling',
+          },
+          {
+            from: '/developers/integrate/custom-api',
+            to: '/developers/build/custom-apis/calling',
           },
           {
             from: '/integrate/embed-api',
-            to: '/developers/integrate/embed-iframe-api',
+            to: '/developers/embed/postmessage',
+          },
+          {
+            from: '/developers/integrate/embed-iframe-api',
+            to: '/developers/embed/postmessage',
+          },
+          {
+            from: '/developers/embed/embed-iframe-api',
+            to: '/developers/embed/postmessage',
           },
           {
             from: '/integrate/embedding',
-            to: '/developers/integrate/embedding',
+            to: '/developers/embed/iframe',
+          },
+          {
+            from: '/developers/integrate/embedding',
+            to: '/developers/embed/iframe',
+          },
+          {
+            from: '/developers/embed/embedding',
+            to: '/developers/embed/iframe',
+          },
+          {
+            from: '/developers/embed/dashboards',
+            to: '/developers/embed/iframe',
+          },
+          {
+            from: '/developers/embed/iframe-api',
+            to: '/developers/embed/postmessage',
           },
           {
             from: '/integrate/url-parameters',
-            to: '/developers/integrate/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
+          },
+          {
+            from: '/developers/integrate/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
+          },
+          {
+            from: '/developers/embed/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
           },
           {
             from: '/integrate/custom-apis',

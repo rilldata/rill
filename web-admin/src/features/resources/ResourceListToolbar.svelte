@@ -1,7 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { Search } from "@rilldata/web-common/components/search";
-  import type { Table } from "@tanstack/svelte-table";
+  import type { Table } from "tanstack-table-8-svelte-5";
   import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
 
@@ -19,9 +19,4 @@
   beforeNavigate(() => (filter = "")); // resets filter when changing projects
 </script>
 
-<Search
-  placeholder="Search"
-  autofocus={false}
-  bind:value={filter}
-  rounded="lg"
-/>
+<Search autofocus={false} bind:value={filter} rounded="lg" />

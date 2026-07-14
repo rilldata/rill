@@ -9,6 +9,7 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let id: string;
@@ -25,15 +26,17 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild>
-    <div class="hidden"></div>
+  <AlertDialogTrigger>
+    {#snippet child({ props })}
+      <div {...props} class="hidden"></div>
+    {/snippet}
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Delete this public URL?</AlertDialogTitle>
+      <AlertDialogTitle>{m.public_url_delete_title()}</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          Recipients of this URL will no longer be able to access it.
+          {m.public_url_delete_description()}
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -42,9 +45,11 @@
         type="tertiary"
         onClick={() => {
           open = false;
-        }}>Cancel</Button
+        }}>{m.public_url_cancel_button()}</Button
       >
-      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
+      <Button type="destructive" onClick={handleDelete}
+        >{m.public_url_yes_delete_button()}</Button
+      >
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

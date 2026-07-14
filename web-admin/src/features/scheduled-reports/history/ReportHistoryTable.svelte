@@ -1,18 +1,19 @@
 <script lang="ts">
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import type { V1ReportExecution } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ColumnDef } from "tanstack-table-8-svelte-5";
+  import { renderComponent } from "tanstack-table-8-svelte-5";
   import { useReport } from "../selectors";
   import NoRunsYet from "./NoRunsYet.svelte";
   import ReportHistoryTableCompositeCell from "./ReportHistoryTableCompositeCell.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let report: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: reportQuery = useReport(instanceId, report);
+  $: reportQuery = useReport(runtimeClient, report);
 
   /**
    * Table column definitions.
@@ -23,7 +24,7 @@
     {
       id: "composite",
       cell: (info) =>
-        flexRender(ReportHistoryTableCompositeCell, {
+        renderComponent(ReportHistoryTableCompositeCell, {
           reportTime: info.row.original.reportTime,
           timeZone:
             $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
@@ -36,15 +37,17 @@
 
 <div class="flex flex-col gap-y-4 w-full">
   <div class="flex flex-col gap-y-1">
-    <h1 class="text-fg-secondary text-lg font-bold">Recent history</h1>
-    <p class="text-fg-secondary text-sm">Showing up to 10 most recent runs</p>
+    <h1 class="text-fg-secondary text-lg font-bold">
+      {m.report_recent_history()}
+    </h1>
+    <p class="text-fg-secondary text-sm">{m.report_showing_recent_runs()}</p>
   </div>
   {#if $reportQuery.error}
     <div class="text-red-500">
       {$reportQuery.error.message}
     </div>
   {:else if $reportQuery.isLoading}
-    <div class="text-fg-secondary">Loading...</div>
+    <div class="text-fg-secondary">{m.report_loading()}</div>
   {:else if !$reportQuery.data?.resource.report.state.executionHistory.length}
     <NoRunsYet />
   {:else}

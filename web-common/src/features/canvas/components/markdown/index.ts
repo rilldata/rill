@@ -1,15 +1,17 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import {
   type CanvasComponentType,
   type ComponentAlignment,
   type ComponentCommonProperties,
 } from "../types";
-import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import Markdown from "./Markdown.svelte";
 
 export { default as Markdown } from "./Markdown.svelte";
+
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export const defaultMarkdownAlignment: ComponentAlignment = {
   vertical: "middle",
@@ -48,13 +50,13 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
     return {
       options: {
         content: {
-          type: "textArea",
-          label: "Markdown",
+          type: "textarea",
+          label: m.canvas_markdown_label(),
           description: "Write text using the markdown syntax",
         },
         alignment: {
           type: "alignment",
-          label: "Alignment",
+          label: m.canvas_alignment_label(),
           meta: {
             defaultAlignment: defaultMarkdownAlignment,
           },
@@ -63,7 +65,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           type: "boolean",
           optional: true,
           showInUI: true,
-          label: "Apply measure value formatting",
+          label: m.canvas_apply_measure_formatting_label(),
           description:
             "Format measure values according to their format settings",
         },
