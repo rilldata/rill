@@ -69,7 +69,7 @@
 
 <div class="flex flex-col gap-y-1.5">
   <div class="flex items-center justify-between gap-x-2">
-    <span class="text-fg-secondary text-xs">Style</span>
+    <span class="text-xs font-semibold">Format style</span>
     <Select
       id="pivot-format-mode-{id}"
       value={mode}

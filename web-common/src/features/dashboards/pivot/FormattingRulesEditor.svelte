@@ -69,7 +69,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-y-1.5">
+<div class="flex flex-col gap-y-2">
   {#each rules as rule, index (index)}
     <div class="flex items-center gap-x-1">
       <div class="flex flex-col flex-none">

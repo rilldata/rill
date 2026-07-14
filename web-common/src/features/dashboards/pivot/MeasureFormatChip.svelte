@@ -63,11 +63,18 @@
       </div>
     {/snippet}
   </PopoverTrigger>
-  <PopoverContent align="start" side="bottom" class="w-[280px] px-3.5 py-3">
-    <div class="flex flex-col gap-y-1.5">
-      <span class="text-xs font-medium truncate" title={item.title}>
+  <PopoverContent align="start" side="bottom" class="w-[340px] p-0">
+    <div class="flex flex-col gap-y-0.5 px-3.5 pb-2.5 pt-3">
+      <span class="text-sm font-semibold truncate" title={item.title}>
         {item.title}
       </span>
+      <span class="text-xs text-fg-secondary">
+        Conditional formatting{#if fmt?.mode === "rules"} · {fmt.rules.length}
+          {fmt.rules.length === 1 ? "rule" : "rules"}{/if}
+      </span>
+    </div>
+    <hr class="border-gray-200" />
+    <div class="px-3.5 pb-3 pt-2.5">
       <MeasureFormattingControls
         id={item.id}
         {fmt}
