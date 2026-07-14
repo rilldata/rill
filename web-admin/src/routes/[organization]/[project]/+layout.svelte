@@ -40,7 +40,7 @@
   import ConnectClientProvider from "@rilldata/web-admin/features/ai/mcp/ConnectClientProvider.svelte";
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
-  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
+  import ProjectHeader from "@rilldata/web-admin/features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
