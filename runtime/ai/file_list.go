@@ -41,7 +41,7 @@ func (t *ListFiles) Spec() *mcp.Tool {
 }
 
 func (t *ListFiles) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, true)
+	return checkDeveloperAccess(ctx, t.Runtime, false)
 }
 
 func (t *ListFiles) Handler(ctx context.Context, args *ListFilesArgs) (*ListFilesResult, error) {
