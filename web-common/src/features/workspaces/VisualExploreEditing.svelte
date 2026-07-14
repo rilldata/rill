@@ -1,6 +1,7 @@
 <script lang="ts">
   import { replaceState } from "$app/navigation";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import TagInput from "@rilldata/web-common/components/forms/TagInput.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -21,6 +22,7 @@
   } from "@rilldata/web-common/lib/time/types";
   import {
     createRuntimeServiceGetInstance,
+    createRuntimeServiceListResources,
     type V1Explore,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -38,6 +40,11 @@
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
+  import {
+    getResourceTagSuggestions,
+    readRootYamlTags,
+    setRootYamlTags,
+  } from "../visual-editing/tag-utils";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
 
   const itemTypes = ["measures", "dimensions"] as const;
@@ -78,6 +85,16 @@
 
   $: parsedDocument = parseDocument($editorContent ?? "");
 
+  $: resourcesQuery = createRuntimeServiceListResources(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => data.resources ?? [],
+      },
+    },
+  );
+
   $: metricsViewsQuery = useFilteredResources(
     runtimeClient,
     ResourceKind.MetricsView,
@@ -107,6 +124,12 @@
   $: rawTheme = parsedDocument.getIn([...keyPath, "theme"]);
   $: rawTimeRanges = parsedDocument.getIn([...keyPath, "time_ranges"]);
   $: rawDefaults = parsedDocument.getIn([...keyPath, "defaults"]);
+
+  $: resourceTags = readRootYamlTags(parsedDocument);
+  $: tagSuggestions = getResourceTagSuggestions(
+    $resourcesQuery?.data,
+    resourceTags,
+  );
 
   $: timeZones = new Set(
     rawTimeZones instanceof YAMLSeq
@@ -268,6 +291,12 @@
     updateEditorContent(parsedDocument.toString(), false, autoSave);
   }
 
+  function updateResourceTags(tags: string[]) {
+    setRootYamlTags(parsedDocument, tags);
+    killState();
+    updateEditorContent(parsedDocument.toString(), false, autoSave);
+  }
+
   function killState() {
     localStorage.removeItem(`${exploreName}-persistentDashboardStore`);
 
@@ -379,6 +408,12 @@
       onEnter={() => {
         updateProperties({ display_name: title });
       }}
+    />
+
+    <TagInput
+      tags={resourceTags}
+      suggestions={tagSuggestions}
+      onChange={updateResourceTags}
     />
 
     {#if !isInlineExplore}
@@ -531,9 +566,16 @@
         const altMode = isDarkMode ? "light" : "dark";
 
         // check if theme exists for alt mode
-        const setAltMode = !parsedDocument.hasIn([...keyPath, "theme", altMode]);
+        const setAltMode = !parsedDocument.hasIn([
+          ...keyPath,
+          "theme",
+          altMode,
+        ]);
 
-        parsedDocument.setIn([...keyPath, "theme", modeKey, "primary"], primary);
+        parsedDocument.setIn(
+          [...keyPath, "theme", modeKey, "primary"],
+          primary,
+        );
         parsedDocument.setIn(
           [...keyPath, "theme", modeKey, "secondary"],
           secondary,

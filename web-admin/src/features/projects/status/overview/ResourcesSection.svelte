@@ -27,7 +27,7 @@
   {:else if resourceCounts.length > 0}
     <div class="chips">
       {#each resourceCounts as { kind, label, count } (kind)}
-        <a href="{basePage}/resources?kind={kind}" class="chip">
+        <a href="{basePage}/resources?type={kind}" class="chip">
           {#if resourceIconMapping[kind]}
             <svelte:component this={resourceIconMapping[kind]} size="12px" />
           {/if}

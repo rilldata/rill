@@ -5,6 +5,9 @@ import {
   ArrayRuneStore,
   type RuneStore,
 } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+import { tick } from "svelte";
+
+let newParams: [key: string, value: string | null][] = [];
 
 export class UrlParamsState<Val, DefaultVal>
   implements RuneStore<Val, DefaultVal>
@@ -56,15 +59,31 @@ export class UrlParamsState<Val, DefaultVal>
 
   public setter = (newValue: Val) => {
     const newParamValue = this.serializer(newValue);
-    const newUrl = new SvelteURL(window.location.href);
-    if (newParamValue === null) {
-      newUrl.searchParams.delete(this.param);
-    } else {
-      newUrl.searchParams.set(this.param, newParamValue);
-    }
-
+    // Update local state optimistically so in-tick reads see the new value
+    // (e.g. two `ArrayRuneStore.toggle` calls in the same tick).
+    // The URL write is batched and the constructor's `$effect` reconciles
+    // against the actual URL if navigation lands differently.
     this.paramValue = newParamValue;
     this.value = newValue;
-    void goto(newUrl, { noScroll: true, keepFocus: true });
+
+    const hasParam = newParams.length > 0;
+    newParams.push([this.param, newParamValue]);
+    if (!hasParam) void tick().then(flushParams);
   };
+}
+
+function flushParams() {
+  if (newParams.length === 0) return;
+
+  const newUrl = new SvelteURL(page.url);
+  newParams.forEach(([key, value]) => {
+    if (value === null) {
+      newUrl.searchParams.delete(key);
+    } else {
+      newUrl.searchParams.set(key, value);
+    }
+  });
+
+  newParams = [];
+  void goto(newUrl, { noScroll: true, keepFocus: true });
 }

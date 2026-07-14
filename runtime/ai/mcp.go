@@ -22,6 +22,13 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
+
+## Project Development
+If you have edit access, the server also exposes tools for inspecting and editing the project's source code, which consists of YAML and SQL files:
+- **List files:** Use "list_files" to browse the files in the project.
+- **Search files:** Use "search_files" to find files by name or content.
+- **Read a file:** Use "read_file" to read the contents of a file.
+- **Write a file:** Use "write_file" to create, update or delete a file. If the file declares a Rill resource, it returns the resource's status and any errors encountered after reconciliation.
 `
 
 // MCPServer returns a new MCP server scoped to the current session.

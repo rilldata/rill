@@ -57,7 +57,6 @@ type Config struct {
 	RiverDatabaseURL          string                 `split_words:"true"`
 	RedisURL                  string                 `default:"" split_words:"true"`
 	ProvisionerSetJSON        string                 `split_words:"true"`
-	ProvisionerMaxConcurrency int                    `default:"30" split_words:"true"`
 	DefaultProvisioner        string                 `split_words:"true"`
 	Jobs                      []string               `split_words:"true"`
 	LogLevel                  zapcore.Level          `default:"info" split_words:"true"`
@@ -327,7 +326,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ExternalURL:                conf.ExternalGRPCURL, // NOTE: using gRPC url
 				FrontendURL:                conf.FrontendURL,
 				ProvisionerSetJSON:         conf.ProvisionerSetJSON,
-				ProvisionerMaxConcurrency:  conf.ProvisionerMaxConcurrency,
 				DefaultProvisioner:         conf.DefaultProvisioner,
 				Version:                    ch.Version,
 				MetricsProjectOrg:          metricsProjectOrg,

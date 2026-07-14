@@ -3307,6 +3307,9 @@ definitions:
       hide_totals_col:
         type: boolean
         description: Whether to hide the totals column. Defaults to false.
+      row_limit:
+        type: string
+        description: Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
       comparison_range:
         type: string
         description: Comparison time range

@@ -2169,5 +2169,9 @@
   ],
   "users_yes_remove": "Yes, remove",
   "users_yes_upgrade": "Yes, upgrade",
-  "workspace_generating_sample_data": "Generating your sample data..."
+  "workspace_generating_sample_data": "Generating your sample data...",
+  "parquet_preview_read_error_title": "Unable to read Parquet file",
+  "parquet_preview_unknown_error": "Unknown error",
+  "parquet_preview_no_project_dir": "Could not resolve the project directory for this file.",
+  "parquet_preview_requires_duckdb": "Previewing Parquet files requires a DuckDB connector."
 }

@@ -79,6 +79,10 @@ explore:
 		ai.ShowTableName,
 		ai.ListBucketsName,
 		ai.ListBucketObjectsName,
+		ai.ListFilesName,
+		ai.ReadFileName,
+		ai.SearchFilesName,
+		ai.WriteFileName,
 	}
 	require.Len(t, tools.Tools, len(expectedTools))
 	for _, tool := range tools.Tools {
