@@ -28,7 +28,7 @@ For most users working with DuckDB-backed Rill projects, SQL models provide ever
 
 ### Creating a SQL Model
 
-When using the UI to create a new model, you'll see something similar to the below screenshot. You can also create a model directly from the connector UI in the bottom left by selecting the "...". This will create a `select * from underlying_table` as SQL model file.
+When using the UI to create a new model, you'll see something similar to the screenshot below. You can also create a model directly from the connector UI in the bottom left by selecting the "...". This will create a `select * from underlying_table` as a SQL model file.
 
 ![Model](/img/build/model/model.png)
 
@@ -69,4 +69,3 @@ output:
 ```
 
 Please refer to [our reference documentation](/reference/project-files/models) linked above for the available parameters to set in your model.
-

@@ -49,7 +49,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // Widget specific time filters
   localTimeControls: TimeState;
 
+  // Lazy-load latch: flipped true once the component scrolls into view, gating
+  // its data query so off-screen components don't fetch.
   visible = writable(false);
+
+  // Whether the component's data query should run: true when the component is
+  // visible or while the canvas is exporting to PDF. Export uses this rather than
+  // forcing `visible` so it never mutates the live lazy-load state.
+  dataEnabled: Readable<boolean>;
 
   // Tears down the spec subscription opened in the constructor. Without this,
   // a component replaced in CanvasEntity.processRows keeps reacting to spec
@@ -93,6 +100,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     this.resource.set(resource);
     this.id = resource.meta?.name?.name as string;
+
+    this.dataEnabled = derived(
+      [this.visible, this.parent.exportMode],
+      ([visible, exportMode]) => visible || exportMode,
+    );
 
     const yamlTimeFilterStore: SearchParamsStore = (() => {
       const store = derived(this.specStore, (spec) => {

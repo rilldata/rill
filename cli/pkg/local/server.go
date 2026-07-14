@@ -517,7 +517,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	} else if r.Msg.Reupload {
 		if projResp.Project.ManagedGitId != "" {
 			// If rill-managed project then push to the repo based on org/project passed in.
-			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx, false)
 			if err != nil {
 				return nil, err
 			}

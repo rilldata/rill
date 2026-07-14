@@ -53,7 +53,7 @@ When creating an alert, it is important to note that any existing filters will _
 1. Add a name for the alert **(required)**
 2. Set what measure to alert on **(required)**, including any dimension splits for the metric _(optional)_ and time grains for analysis _(optional)_
 
-Before selecting **Next**, you will have the optional to preview the data for which you alert will be created on.
+Before selecting **Next**, you will have the option to preview the data for which your alert will be created.
 
 :::tip Maximize Your Alert Filters
 To avoid getting over alerted, consider adding a metric filter to avoid long tail changes on small values. Some examples include:
@@ -122,7 +122,7 @@ To view or make changes to existing alerts, navigate to the project home page an
 Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often: is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
 
 ### Pacing
-Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. There alerts tend to be more specific (setting up filters and criteria for specific values) and marking progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
+Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. These alerts tend to be more specific (setting up filters and criteria for specific values) and mark progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
 
 ### Monitoring & Comparison
 Alerts for monitoring purposes are probably the most common alerting use case, i.e. wanting to be alerted based on relative values to prior periods. For these alerts, rather than absolutes, create criteria for % change of values.

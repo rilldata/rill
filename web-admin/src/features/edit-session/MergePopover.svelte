@@ -30,8 +30,10 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
   import { ExternalLink, GitPullRequest } from "lucide-svelte";
-  import ChangedFilesList from "@rilldata/web-common/features/project/ChangedFilesList.svelte";
+  import ChangedFilesList from "@rilldata/web-common/features/project/changes/ChangedFilesList.svelte";
+  import ChangedFilesDialog from "@rilldata/web-common/features/project/changes/ChangedFilesDialog.svelte";
   import { buildPostMergeUrl } from "./post-merge-url";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -47,6 +49,9 @@
   let isMerging = false;
   let errorMessage = "";
   let mergeConflictDialog = false;
+  // The diff dialog is hosted here (not inside the popover) so it survives the popover closing.
+  let diffDialogOpen = false;
+  let diffInitialPath: string | undefined = undefined;
   // Captured at click time so the merge flow can resume after a force merge
   // without re-reading state that may have changed. `preCommitSha` is refreshed
   // before completing the flow because prod's parser may have advanced while
@@ -134,7 +139,7 @@
         force: false,
       });
     } catch (err) {
-      errorMessage = extractErrorMessage(err) || "Failed to merge";
+      errorMessage = extractErrorMessage(err) || m.edit_failed_to_merge();
       isMerging = false;
       return;
     } finally {
@@ -208,7 +213,7 @@
       void goto(targetUrl);
       eventBus.emit("notification", {
         type: "error",
-        message: "Pop-up was blocked.",
+        message: m.edit_popup_blocked(),
       });
     }
   }
@@ -279,7 +284,15 @@
             to production. We'll open a new tab so you can watch updates reconcile.
           {/if}
         </p>
-        <ChangedFilesList remoteBranch={primaryBranch} {open} />
+        <ChangedFilesList
+          remoteBranch={primaryBranch}
+          {open}
+          onViewDiff={(path) => {
+            diffInitialPath = path;
+            open = false;
+            diffDialogOpen = true;
+          }}
+        />
         {#if branchUrl}
           <a
             class="github-link"
@@ -296,7 +309,7 @@
           small
           disabled={isMerging}
           loading={isMerging}
-          loadingCopy="Merging..."
+          loadingCopy={m.edit_merging()}
           onClick={handleMerge}
         >
           Merge
@@ -329,6 +342,12 @@
   loading={isMerging}
   error={errorFromGitCommand}
   onUseLatestVersion={handleForceMerge}
+/>
+
+<ChangedFilesDialog
+  bind:open={diffDialogOpen}
+  remoteBranch={primaryBranch}
+  initialPath={diffInitialPath}
 />
 
 <style lang="postcss">

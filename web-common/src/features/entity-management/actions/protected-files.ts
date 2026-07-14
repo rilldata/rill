@@ -40,7 +40,7 @@ export function setCloudReadonlyNotice(notice: Snippet | undefined) {
 
 export function isManaged(path: string): boolean {
   if (isCloudRuntimeEditEnvironment()) {
-    return CLOUD_READONLY.some((m) => m(path));
+    return CLOUD_READONLY.some((m) => m(path)) && !!cloudReadonlyNotice;
   }
   return false;
 }

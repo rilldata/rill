@@ -584,6 +584,7 @@
           : filterSelected}
       {@const isAncestorOfSelectedHeader =
         ancestorRowIdsOfSelectedHeaders.has(rowId)}
+      {@const isShowMore = isShowMoreRow(rows[row.index])}
       {@const rs = nestedRowState({
         isSelected,
         hasSelection: rowSelectionState?.hasActiveSelection ?? false,
@@ -591,7 +592,7 @@
         hasClickedCell,
         hasCrossSelection,
         isAncestorOfSelectedHeader,
-        isShowMore: isShowMoreRow(rows[row.index]),
+        isShowMore,
       })}
       <tr
         class:show-more-row={rs.showMoreRow}
@@ -617,6 +618,7 @@
             hasCrossSelection,
             isAncestorOfSelectedHeader,
             isTotalsRow,
+            isShowMore,
             canShowDataViewer,
             enableClickToFilter,
           })}

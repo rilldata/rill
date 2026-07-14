@@ -6,18 +6,30 @@
   import type { PathOption, PathOptions } from "./types";
   import { getCarryOverSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import BreadcrumbDropdownItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbDropdownItem.svelte";
 
-  export let pathOptions: PathOptions;
-  export let current: string;
-  export let isCurrentPage = false;
-  export let depth: number = 0;
-  export let currentPath: (string | undefined)[] = [];
-  export let onSelect: undefined | ((id: string) => void) = undefined;
-  export let isEmbedded: boolean = false;
+  let {
+    pathOptions,
+    current,
+    isCurrentPage = false,
+    depth = 0,
+    currentPath = [],
+    onSelect = undefined,
+    isEmbedded = false,
+  }: {
+    pathOptions: PathOptions;
+    current: string;
+    isCurrentPage?: boolean;
+    depth?: number;
+    currentPath?: (string | undefined)[];
+    onSelect?: (id: string) => void;
+    isEmbedded?: boolean;
+  } = $props();
 
-  $: ({ options, carryOverSearchParams } = pathOptions);
-  $: selected = options.get(current.toLowerCase());
+  let options = $derived(pathOptions.options);
+  let carryOverSearchParams = $derived(pathOptions.carryOverSearchParams);
+  let content = $derived(pathOptions.content);
+  let selected = $derived(options.get(current.toLowerCase()));
 
   function linkMaker(
     current: (string | undefined)[],
@@ -71,8 +83,10 @@
         href={isCurrentPage
           ? "#top"
           : linkMaker(currentPath, depth, current, selected, "")}
-        class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
-        class:current={isCurrentPage}
+        class={[
+          "text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2",
+          { current: isCurrentPage },
+        ]}
       >
         <span>{selected?.label}</span>
       </a>
@@ -91,44 +105,34 @@
             </button>
           {/snippet}
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content
-          align="start"
-          class="min-w-44 max-h-96 overflow-y-auto"
-        >
-          {#each options as [id, option] (id)}
-            {@const isSelected = id === current.toLowerCase()}
-            {@const icon = option.resourceKind
-              ? resourceIconMapping[option.resourceKind]
-              : undefined}
-            <DropdownMenu.CheckboxItem
-              class="cursor-pointer"
-              checked={isSelected}
-              checkSize={"h-3 w-3"}
-              href={linkMaker(
-                currentPath,
-                depth,
-                id,
-                option,
-                $page.route.id ?? "",
-              )}
-              preloadData={option.preloadData}
-              onclick={() => {
-                if (onSelect) {
-                  onSelect(id);
-                }
-              }}
-            >
-              <span
-                class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
-              >
-                {#if icon}
-                  <svelte:component this={icon} size="12px" />
-                {/if}
-                {option.label}
-              </span>
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.Content>
+
+        {#if content}
+          {@render content({
+            options,
+            current,
+            currentPath,
+            depth,
+            onSelect,
+            linkMaker,
+          })}
+        {:else}
+          <DropdownMenu.Content
+            align="start"
+            class="min-w-44 max-h-96 overflow-y-auto"
+          >
+            {#each options as [id, option] (id)}
+              <BreadcrumbDropdownItem
+                {id}
+                {option}
+                {current}
+                {currentPath}
+                {depth}
+                {onSelect}
+                {linkMaker}
+              />
+            {/each}
+          </DropdownMenu.Content>
+        {/if}
       </DropdownMenu.Root>
     {/if}
   </div>

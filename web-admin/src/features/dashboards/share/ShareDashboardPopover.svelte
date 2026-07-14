@@ -17,12 +17,30 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import ExportDashboardForm from "@rilldata/web-common/features/exports/pdf/ExportDashboardForm.svelte";
+  import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
+  import type { PdfExportRunOptions } from "@rilldata/web-common/features/exports/pdf/types";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let createMagicAuthTokens: boolean;
+  // Provide canvas identifiers to enable the "PDF" tab (canvas dashboards only).
+  export let canvasName: string | undefined = undefined;
+  export let instanceId: string | undefined = undefined;
 
   const { hidePublicUrl } = featureFlags;
   let isOpen = false;
   let copied = false;
+  let runPdfExport: ((o: PdfExportRunOptions) => Promise<void>) | null = null;
+
+  // Bind the (now-narrowed) identifiers in a helper so the returned closure keeps
+  // them as `string` rather than `string | undefined`.
+  $: runPdfExport =
+    canvasName && instanceId ? makeRunPdfExport(canvasName, instanceId) : null;
+
+  function makeRunPdfExport(name: string, id: string) {
+    return (o: PdfExportRunOptions) =>
+      exportCanvasPdf({ canvasName: name, instanceId: id, ...o });
+  }
 
   function onCopy() {
     navigator.clipboard.writeText(window.location.href).catch(console.error);
@@ -38,23 +56,30 @@
   <PopoverTrigger>
     {#snippet child({ props })}
       <Tooltip distance={8} suppress={isOpen}>
-        <Button {...props} type="secondary" selected={isOpen}>Share</Button>
-        <TooltipContent slot="tooltip-content">Share dashboard</TooltipContent>
+        <Button {...props} type="secondary" selected={isOpen}
+          >{m.avatar_share()}</Button
+        >
+        <TooltipContent slot="tooltip-content"
+          >{m.avatar_share_dashboard()}</TooltipContent
+        >
       </Tooltip>
     {/snippet}
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[402px] p-0">
     <Tabs>
       <TabsList>
-        <TabsTrigger value="tab1">Copy URL</TabsTrigger>
+        <TabsTrigger value="tab1">{m.avatar_copy_url()}</TabsTrigger>
         {#if createMagicAuthTokens && !$hidePublicUrl}
-          <TabsTrigger value="tab2">Create public URL</TabsTrigger>
+          <TabsTrigger value="tab2">{m.avatar_create_public_url()}</TabsTrigger>
+        {/if}
+        {#if runPdfExport}
+          <TabsTrigger value="pdf">PDF</TabsTrigger>
         {/if}
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
         <div class="flex flex-col gap-y-4">
           <h3 class="text-xs text-fg-primary font-normal">
-            Share your current view with another project member.
+            {m.avatar_share_description()}
           </h3>
           <Button
             type="secondary"
@@ -64,10 +89,10 @@
           >
             {#if copied}
               <Check size="16px" />
-              Copied URL
+              {m.avatar_copied_url()}
             {:else}
               <Link size="16px" className="text-primary-500" />
-              Copy URL for this view
+              {m.avatar_copy_url_for_view()}
             {/if}
           </Button>
         </div>
@@ -77,6 +102,14 @@
           <CreatePublicURLForm />
         {/if}
       </TabsContent>
+      {#if runPdfExport}
+        <TabsContent value="pdf" class="mt-0 p-4">
+          <ExportDashboardForm
+            runExport={runPdfExport}
+            onComplete={() => (isOpen = false)}
+          />
+        </TabsContent>
+      {/if}
     </Tabs>
   </PopoverContent>
 </Popover>

@@ -17,7 +17,7 @@ If you're looking for a working example, take a look at [my-rill-tutorial in our
 
 :::
 
-As we already know how to set up these separately, let's see what changes in the UI when we enable both on a single model. In the following example, note that both incremental is enabled and partitions are defined by the Google Cloud Storage directory.
+As we already know how to set these up separately, let's see what changes in the UI when we enable both on a single model. In the following example, note that incremental modeling is enabled and partitions are defined by the Google Cloud Storage directory.
 
 ```yaml
 type: model

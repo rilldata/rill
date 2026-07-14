@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
   import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
@@ -14,6 +15,7 @@
   import type { PivotRowSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
+    isShowMoreRow,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -191,7 +193,9 @@
   $: clickToFilterEnabled = enableClickToFilter && !!onCellClickToFilter;
   function getCustomShortcuts(rowHeader: boolean) {
     if (clickToFilterEnabled) {
-      return [{ description: "Filter by this value", shortcut: "Click" }];
+      return [
+        { description: m.dashboard_filter_by_value(), shortcut: "Click" },
+      ];
     }
     if (canShowDataViewer && !rowHeader) {
       return [
@@ -296,15 +300,17 @@
     const rowId = td.dataset.rowid;
     const columnId = td.dataset.columnid;
     const rowHeader = td.dataset.rowheader === "true";
-    const value = td.dataset.value;
 
     if (rowId === undefined || columnId === undefined) return;
 
     const row = $table.getRow(rowId);
     if (!row) return;
 
-    // Handle "Show More" button clicks
-    if (value === SHOW_MORE_BUTTON && rowHeader) {
+    // "Show More" rows only respond to a row-header click, which increases the
+    // limit. All other cells in that row are inert (no filtering / active cell).
+    if (isShowMoreRow(row)) {
+      if (!rowHeader) return;
+
       const rowData = row.original;
       const currentLimit = rowData.__currentLimit as number;
       const nextLimit = getNextRowLimit(currentLimit);
@@ -369,7 +375,7 @@
     // event target is a child element. Resolve the cell that carries the data attributes.
     const td = e.target.closest("td");
     const value = td?.dataset.value;
-    if (value === undefined) return;
+    if (value === undefined || value === SHOW_MORE_BUTTON) return;
 
     copyToClipboard(value);
   }
@@ -401,6 +407,8 @@
     const value = td?.dataset.value;
 
     if (!td || value === undefined) return;
+
+    if (value === SHOW_MORE_BUTTON) return;
 
     leftCell = false;
     td.addEventListener("mouseleave", () => (leftCell = true), {

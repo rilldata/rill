@@ -11,6 +11,10 @@
   import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/CreatePersonalCanvasDialog.svelte";
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import DashboardsTagFilter from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagFilter.svelte";
+  import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   const { chat, personalCanvases } = featureFlags;
 
@@ -36,6 +40,8 @@
   $: hasNoPersonalCanvases =
     !$personalCanvasesQuery.isPending &&
     ($personalCanvasesQuery.data?.length ?? 0) === 0;
+
+  const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
 </script>
 
 <svelte:head>
@@ -54,25 +60,27 @@
         {:else if isErrorDisplayName}
           <h1
             class="text-4xl font-semibold text-fg-secondary"
-            aria-label="Project title"
+            aria-label={m.home_project_title_label()}
           >
-            Welcome to <span class="text-accent-primary-action">{project}</span>
+            {@html m.home_welcome_to({
+              projectName: `<span class="text-accent-primary-action">${escapeHtml(project)}</span>`,
+            })}
           </h1>
         {:else}
           <h1
             class="text-4xl font-semibold text-fg-secondary"
-            aria-label="Project title"
+            aria-label={m.home_project_title_label()}
           >
-            Welcome to <span class="text-accent-primary-action"
-              >{projectDisplayName}</span
-            >
+            {@html m.home_welcome_to({
+              projectName: `<span class="text-accent-primary-action">${escapeHtml(projectDisplayName)}</span>`,
+            })}
           </h1>
         {/if}
         <p class="text-lg text-fg-muted">
           {#if $chat}
-            Ask questions about your data, or explore your dashboards below
+            {m.home_subtitle_with_chat()}
           {:else}
-            Explore your dashboards below
+            {m.home_subtitle_no_chat()}
           {/if}
         </p>
       </div>
@@ -92,7 +100,10 @@
 
     <div class="flex flex-col gap-y-4">
       <h2 class="flex text-xl font-semibold text-fg-secondary justify-between">
-        Dashboards
+        <div class="flex flex-row w-full items-center justify-between">
+          <span>{m.home_dashboards_heading()}</span>
+          <DashboardsTagFilter align="end" {selectedTagsStore} />
+        </div>
         {#if $personalCanvases && hasNoPersonalCanvases}
           <CreatePersonalCanvasDialog org={organization} {project} />
         {/if}

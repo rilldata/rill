@@ -60,7 +60,7 @@ AWS_ACCESS_KEY_ID=""
 AWS_SECRET_ACCESS_KEY=""
 ```
 :::note
-If you already set up ClickHouse via the .env file, you will just need to add your snowflake and s3 credentials.
+If you already set up ClickHouse via the `.env` file, you will just need to add your Snowflake and S3 credentials.
 :::
 
 

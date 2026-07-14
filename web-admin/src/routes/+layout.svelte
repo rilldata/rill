@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { initializeI18n } from "@rilldata/web-common/lib/i18n";
   import {
     handleAdminServerNetworkError,
     handleAdminServerQuerySuccess,
@@ -35,6 +36,8 @@
   import type { V1Organization } from "@rilldata/web-admin/client";
 
   export let data;
+
+  initializeI18n();
 
   $: ({
     organizationPermissions,

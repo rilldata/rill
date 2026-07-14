@@ -91,7 +91,7 @@ Custom connectors are only available in the paid plan of Claude Desktop. [Learn 
 
 ### Claude Code (Paid Plan)
 
-1. On terminal, run the following command to add mcp server with Claude Code:
+1. In your terminal, run the following command to add an MCP server with Claude Code:
     ```bash
     claude mcp add --transport http <rill-mcp-server-name> https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp 
     ```
@@ -124,7 +124,7 @@ Custom apps with Developer mode are only available in the paid plans of ChatGPT.
 
 ### Connecting to a specific branch
 
-The normal MCP URL target your project's production deployment. To connect to the deployment for a specific branch (e.g. a dev/preview deployment), insert `/branch/{branch_name}` after the project name:
+The normal MCP URL targets your project's production deployment. To connect to the deployment for a specific branch (e.g. a dev/preview deployment), insert `/branch/{branch_name}` after the project name:
 ```
 https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/branch/{branch_name}/runtime/mcp
 ```
@@ -133,7 +133,7 @@ https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/branch/{bran
 ## Manual Configuration (Alternative Method)
 
 If you prefer to manually configure the connection or need to connect to a local Rill instance, you can edit configuration files directly and provide your own access token.
-Note: If you select this option, you must have Node.js installed on your system which can be downloaded from [nodejs.org](https://nodejs.org/en)
+Note: If you select this option, you must have Node.js installed on your system. It can be downloaded from [nodejs.org](https://nodejs.org/en).
 
 ### Create a Rill Personal Access Token (if your project is on Rill Cloud)
 
@@ -154,7 +154,7 @@ rill token issue
 ```
 
 :::tip Learn more about user tokens
-For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/guide/administration/access-tokens/user-tokens.
+For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/guide/administration/access-tokens/user-tokens).
 :::
 
 ### Configure Claude Desktop

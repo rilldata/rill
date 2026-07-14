@@ -9,6 +9,101 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCommitAndForcePush(t *testing.T) {
+	ctx := context.Background()
+	author := Signature{Name: "Rill", Email: "noreply@rilldata.com"}
+
+	t.Run("succeeds on matching branch with uncommitted changes", func(t *testing.T) {
+		local, remote := setupRepoWithRemote(t)
+		branch := getCurrentBranch(t, local)
+
+		require.NoError(t, os.WriteFile(filepath.Join(local, "new.txt"), []byte("hello"), 0644))
+
+		config := &Config{Remote: remote, DefaultBranch: branch}
+		require.NoError(t, CommitAndForcePush(ctx, local, config, "force push commit", author))
+
+		localTip, err := Hash(ctx, local, "HEAD")
+		require.NoError(t, err)
+		remoteTip, err := Hash(ctx, remote, "refs/heads/"+branch)
+		require.NoError(t, err)
+		require.Equal(t, localTip, remoteTip)
+	})
+
+	t.Run("pushes even when there is nothing to commit", func(t *testing.T) {
+		local, remote := setupRepoWithRemote(t)
+		branch := getCurrentBranch(t, local)
+
+		// create a local-only commit with nothing left in the working tree
+		createCommit(t, local, "unpushed.txt", "content", "local-only commit")
+		localTip, err := Hash(ctx, local, "HEAD")
+		require.NoError(t, err)
+
+		config := &Config{Remote: remote, DefaultBranch: branch}
+		require.NoError(t, CommitAndForcePush(ctx, local, config, "", author))
+
+		remoteTip, err := Hash(ctx, remote, "refs/heads/"+branch)
+		require.NoError(t, err)
+		require.Equal(t, localTip, remoteTip, "local-only commit must reach the remote")
+	})
+
+	t.Run("succeeds from a detached HEAD", func(t *testing.T) {
+		local, remote := setupRepoWithRemote(t)
+		branch := getCurrentBranch(t, local)
+
+		require.NoError(t, execGit(local, "checkout", "--detach"))
+		require.NoError(t, os.WriteFile(filepath.Join(local, "detached.txt"), []byte("from detached HEAD"), 0644))
+
+		config := &Config{Remote: remote, DefaultBranch: branch}
+		require.NoError(t, CommitAndForcePush(ctx, local, config, "detached commit", author))
+
+		localTip, err := Hash(ctx, local, "HEAD")
+		require.NoError(t, err)
+		remoteTip, err := Hash(ctx, remote, "refs/heads/"+branch)
+		require.NoError(t, err)
+		require.Equal(t, localTip, remoteTip, "force push from detached HEAD must update the remote branch")
+	})
+
+	t.Run("succeeds from a different local branch", func(t *testing.T) {
+		local, remote := setupRepoWithRemote(t)
+		defaultBranch := getCurrentBranch(t, local)
+
+		require.NoError(t, execGit(local, "checkout", "-b", "feature"))
+		require.NoError(t, os.WriteFile(filepath.Join(local, "feature.txt"), []byte("feature work"), 0644))
+
+		config := &Config{Remote: remote, DefaultBranch: defaultBranch}
+		require.NoError(t, CommitAndForcePush(ctx, local, config, "feature commit", author))
+
+		localTip, err := Hash(ctx, local, "HEAD")
+		require.NoError(t, err)
+		remoteTip, err := Hash(ctx, remote, "refs/heads/"+defaultBranch)
+		require.NoError(t, err)
+		require.Equal(t, localTip, remoteTip, "remote default branch must be overwritten with the local feature branch tip")
+	})
+
+	t.Run("overwrites divergent remote history", func(t *testing.T) {
+		local, remote := setupRepoWithRemote(t)
+		branch := getCurrentBranch(t, local)
+
+		// advance the remote with a commit that local doesn't have
+		createRemoteCommit(t, remote, "remote-only.txt", "remote content", "remote-only commit")
+
+		// advance local with a different commit, creating a true divergence from the initial tip
+		createCommit(t, local, "local-only.txt", "local content", "local-only commit")
+
+		// add uncommitted changes so CommitAll also has work to do
+		require.NoError(t, os.WriteFile(filepath.Join(local, "extra.txt"), []byte("extra"), 0644))
+
+		config := &Config{Remote: remote, DefaultBranch: branch}
+		require.NoError(t, CommitAndForcePush(ctx, local, config, "force over divergence", author))
+
+		localTip, err := Hash(ctx, local, "HEAD")
+		require.NoError(t, err)
+		remoteTip, err := Hash(ctx, remote, "refs/heads/"+branch)
+		require.NoError(t, err)
+		require.Equal(t, localTip, remoteTip, "force push must overwrite the divergent remote history")
+	})
+}
+
 func TestCurrentBranch(t *testing.T) {
 	ctx := context.Background()
 

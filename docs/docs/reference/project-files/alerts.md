@@ -4,7 +4,7 @@ title: Alert YAML
 sidebar_position: 37
 ---
 
-Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
+Along with dashboard-level alerts that can be created via the UI, you can develop more extensive alerting in an alert YAML file. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
 
 ## Properties
 
@@ -42,13 +42,13 @@ _[string]_ - Description for the alert
 
 ### `intervals`
 
-_[object]_ - define the interval of the alert to check
+_[object]_ - Defines the alert interval to check.
 
-  - **`duration`** - _[string]_ - a valid ISO8601 duration to define the interval duration
+  - **`duration`** - _[string]_ - An ISO 8601 duration to define the interval duration.
 
-  - **`limit`** - _[integer]_ - maximum number of intervals to check for on invocation
+  - **`limit`** - _[integer]_ - Maximum number of intervals to check on invocation.
 
-  - **`check_unclosed`** - _[boolean]_ - boolean, whether unclosed intervals should be checked
+  - **`check_unclosed`** - _[boolean]_ - Whether unclosed intervals should be checked.
 
 ### `watermark`
 
@@ -56,7 +56,7 @@ _[string]_ - Specifies how the watermark is determined for incremental processin
 
 ### `timeout`
 
-_[string]_ - define the timeout of the alert in seconds (optional).
+_[string]_ - Defines the timeout of the alert in seconds. (optional)
 
 ### `data`
 
@@ -66,7 +66,7 @@ _[oneOf]_ - Data source for the alert _(required)_
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
+    - **`connector`** - _[string]_ - Specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -80,7 +80,7 @@ _[oneOf]_ - Data source for the alert _(required)_
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
       - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
@@ -94,7 +94,7 @@ _[oneOf]_ - Data source for the alert _(required)_
 
         - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
 
-        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+        - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that prevents full re-listings each time.
 
         - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
 
@@ -205,7 +205,7 @@ _[object]_ - Notification configuration for email and Slack delivery _(required)
 
 ### `annotations`
 
-_[object]_ - Key value pair used for annotations
+_[object]_ - Key-value pairs used for annotations.
 
 ## Common Properties
 
@@ -216,6 +216,10 @@ _[string]_ - Name is usually inferred from the filename, but can be specified ma
 ### `refs`
 
 _[array of string]_ - List of resource references
+
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
 ### `dev`
 

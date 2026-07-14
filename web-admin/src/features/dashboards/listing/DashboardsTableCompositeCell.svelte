@@ -5,6 +5,7 @@
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let name: string;
   export let title: string;
@@ -15,6 +16,7 @@
   export let isEmbedded: boolean;
   export let organization: string;
   export let project: string;
+  export let tags: string[] = [];
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
 
@@ -37,8 +39,11 @@
       {title !== "" ? title : name}
     </span>
     {#if error !== ""}
-      <Tag color="red">Error</Tag>
+      <Tag color="red">{m.dashboard_error_tag()}</Tag>
     {/if}
+    {#each tags as tag (tag)}
+      <Tag color="gray">{tag}</Tag>
+    {/each}
   </div>
   <div
     class="flex gap-x-1 text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"
@@ -47,7 +52,10 @@
     {#if lastRefreshedDate}
       <span class="shrink-0">•</span>
       <Tooltip distance={8}>
-        <span class="shrink-0">Last refreshed {timeAgo(lastRefreshedDate)}</span
+        <span class="shrink-0"
+          >{m.dashboard_last_refreshed_ago({
+            time: timeAgo(lastRefreshedDate),
+          })}</span
         >
         <TooltipContent slot="tooltip-content">
           {lastRefreshedDate.toLocaleString()}

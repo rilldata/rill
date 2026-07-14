@@ -12,6 +12,7 @@
   import AnimatedDots from "../AnimatedDots.svelte";
   import ToolCall from "../tools/ToolCall.svelte";
   import type { ThinkingBlock } from "./thinking-block";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let block: ThinkingBlock;
   export let tools: V1Tool[] | undefined = undefined;
@@ -30,18 +31,13 @@
   }
 
   function formatDuration(seconds: number): string {
-    if (seconds < 1) return "less than a second";
-    if (seconds === 1) return "1 second";
-    if (seconds < 60) return `${seconds} seconds`;
-
+    if (seconds < 1) return m.chat_duration_less_than_second();
+    if (seconds < 60) return m.chat_duration_seconds({ count: seconds });
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-
-    if (remainingSeconds === 0) {
-      return minutes === 1 ? "1 minute" : `${minutes} minutes`;
-    }
-
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ${remainingSeconds} ${remainingSeconds === 1 ? "second" : "seconds"}`;
+    if (remainingSeconds === 0)
+      return m.chat_duration_minutes({ count: minutes });
+    return `${m.chat_duration_minutes({ count: minutes })} ${m.chat_duration_seconds({ count: remainingSeconds })}`;
   }
 
   function onUserInteraction() {
@@ -62,9 +58,9 @@
         </div>
         <div class="thinking-title">
           {#if block.isComplete}
-            Thought for {formatDuration(block.duration)}
+            {m.chat_thought_for({ duration: formatDuration(block.duration) })}
           {:else}
-            <AnimatedDots>Thinking</AnimatedDots>
+            <AnimatedDots>{m.chat_thinking()}</AnimatedDots>
           {/if}
         </div>
       </button>

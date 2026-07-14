@@ -41,11 +41,17 @@ import type { FileIO } from "./file-io";
 import type { EditorSelection } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 
+// Data files that can't be edited as text, but whose contents can be
+// previewed by querying them with DuckDB (see ParquetWorkspace).
+// NOTE: When adding an extension here, also map it to its preview query in
+// `invalidateDataFilePreview` (file-invalidators.ts) so edits on disk refresh
+// the preview.
+const PREVIEWABLE_DATA_EXTENSIONS = [".parquet"];
+
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
   ".db",
   ".db.wal",
-  ".parquet",
   ".xls",
   ".xlsx",
 
@@ -85,16 +91,19 @@ export class FileArtifact {
   );
   readonly fileExtension: string;
   readonly fileTypeUnsupported: boolean;
+  // True for data files (e.g. .parquet) that have no editable text content and
+  // are instead rendered as a queryable data preview.
+  readonly isPreviewableDataFile: boolean;
   readonly folderName: string;
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
   // Path is locked: file can't be renamed or deleted, and other files can't
   // be renamed onto this path.
-  readonly pinned: boolean;
+  pinned: boolean;
   // Content is managed outside of editors.
   // Currently **/.*.env files are managed from project settings page on cloud editor
-  readonly managed: boolean;
+  managed: boolean;
   readonly snapshot: Writable<{
     scroll?: ReturnType<EditorView["scrollSnapshot"]>;
     selection?: EditorSelection;
@@ -128,6 +137,9 @@ export class FileArtifact {
 
     this.fileExtension = extractFileExtension(filePath);
     this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
+      this.fileExtension,
+    );
+    this.isPreviewableDataFile = PREVIEWABLE_DATA_EXTENSIONS.includes(
       this.fileExtension,
     );
 
@@ -410,6 +422,11 @@ export class FileArtifact {
       this.getAllWarnings(queryClient),
       (warnings) => warnings.length > 0,
     );
+  }
+
+  recheckReadonlyStatus() {
+    this.pinned = isPinned(this.path);
+    this.managed = isManaged(this.path);
   }
 
   private updateResourceNameIfChanged(resource: V1Resource) {
