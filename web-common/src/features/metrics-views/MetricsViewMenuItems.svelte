@@ -22,7 +22,7 @@
     createCanvasDashboardFromMetricsView,
     createCanvasDashboardFromMetricsViewWithAgent,
   } from "./ai-generation/generateMetricsView";
-  import { createAndPreviewExplore } from "./create-and-preview-explore";
+  import { enableInlineExploreAndPreview } from "./inline-explore";
 
   const runtimeClient = useRuntimeClient();
   const { ai, developerChat } = featureFlags;
@@ -31,7 +31,6 @@
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: ({ instanceId } = runtimeClient);
   $: resourceQuery = fileArtifact.getResource(queryClient);
   $: resource = $resourceQuery.data;
 
@@ -121,13 +120,7 @@
   {/if}
   {#if resource}
     <NavigationMenuItem
-      onclick={() =>
-        createAndPreviewExplore(
-          runtimeClient,
-          queryClient,
-          instanceId,
-          resource,
-        )}
+      onclick={() => enableInlineExploreAndPreview(queryClient, filePath)}
     >
       <ExploreIcon slot="icon" />
       <div class="flex gap-x-2 items-center">

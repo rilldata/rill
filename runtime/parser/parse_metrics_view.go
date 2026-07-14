@@ -110,6 +110,8 @@ type MetricsViewYAML struct {
 		DisplayName          string                 `yaml:"display_name"`
 		Description          string                 `yaml:"description"`
 		Banner               string                 `yaml:"banner"`
+		Dimensions           *FieldSelectorYAML     `yaml:"dimensions"`
+		Measures             *FieldSelectorYAML     `yaml:"measures"`
 		Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 		TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 		TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
@@ -1128,6 +1130,18 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 		allowCustomTimeRange = *tmp.Explore.AllowCustomTimeRange
 	}
 
+	// Resolve the dimensions and measures selectors; when omitted, they default to all fields.
+	var dimensionsSelector *runtimev1.FieldSelector
+	dimensions, ok := tmp.Explore.Dimensions.TryResolve()
+	if !ok {
+		dimensionsSelector = tmp.Explore.Dimensions.Proto()
+	}
+	var measuresSelector *runtimev1.FieldSelector
+	measures, ok := tmp.Explore.Measures.TryResolve()
+	if !ok {
+		measuresSelector = tmp.Explore.Measures.Proto()
+	}
+
 	refs := []ResourceName{{Kind: ResourceKindMetricsView, Name: mvName}}
 	// Parse theme if present.
 	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
@@ -1162,8 +1176,10 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 	r.ExploreSpec.Description = tmp.Explore.Description
 	r.ExploreSpec.MetricsView = mvName
 	r.ExploreSpec.Banner = tmp.Explore.Banner
-	r.ExploreSpec.DimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
-	r.ExploreSpec.MeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	r.ExploreSpec.Dimensions = dimensions
+	r.ExploreSpec.DimensionsSelector = dimensionsSelector
+	r.ExploreSpec.Measures = measures
+	r.ExploreSpec.MeasuresSelector = measuresSelector
 	r.ExploreSpec.Theme = themeName
 	r.ExploreSpec.EmbeddedTheme = themeSpec
 	r.ExploreSpec.TimeRanges = timeRanges

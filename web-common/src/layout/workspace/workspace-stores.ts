@@ -5,6 +5,8 @@ import {
   DEFAULT_PREVIEW_TABLE_HEIGHT,
 } from "../config";
 
+export type WorkspaceView = "code" | "split" | "viz" | "explore";
+
 type WorkspaceLayout = {
   inspector: {
     width: number;
@@ -14,7 +16,7 @@ type WorkspaceLayout = {
     height: number;
     visible: boolean;
   };
-  view: "code" | "split" | "viz";
+  view: WorkspaceView;
 };
 
 class WorkspaceLayoutStore {
@@ -22,7 +24,7 @@ class WorkspaceLayoutStore {
   private inspectorWidth = writable<number>(DEFAULT_INSPECTOR_WIDTH);
   private tableVisible = writable<boolean>(true);
   private tableHeight = writable<number>(DEFAULT_PREVIEW_TABLE_HEIGHT);
-  public view = writable<"code" | "split" | "viz">("viz");
+  public view = writable<WorkspaceView>("viz");
 
   constructor(key: string) {
     const history = localStorage.getItem(key);

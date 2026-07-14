@@ -258,3 +258,41 @@ export const useGetExploresForMetricsView = (
     (res) => res.explore?.spec?.metricsView === metricsViewName,
   );
 };
+
+// Canvases don't reference metrics views directly: their rows contain components,
+// and each component's renderer properties name the metrics view it queries.
+export const useGetCanvasesForMetricsView = (
+  client: RuntimeClient,
+  metricsViewName: string,
+) => {
+  return createRuntimeServiceListResources(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => {
+          const componentNames = new Set(
+            data.resources
+              ?.filter(
+                (res) =>
+                  res.meta?.name?.kind === ResourceKind.Component &&
+                  res.component?.state?.validSpec?.rendererProperties
+                    ?.metrics_view === metricsViewName,
+              )
+              .map((res) => res.meta?.name?.name),
+          );
+          return (
+            data.resources?.filter(
+              (res) =>
+                res.meta?.name?.kind === ResourceKind.Canvas &&
+                res.canvas?.state?.validSpec?.rows?.some((row) =>
+                  row.items?.some((item) => componentNames.has(item.component)),
+                ),
+            ) ?? []
+          );
+        },
+      },
+    },
+    queryClient,
+  );
+};

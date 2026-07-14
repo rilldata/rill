@@ -60,6 +60,8 @@ driver: duckdb
 				"model: ad_bids",
 				"measures:",
 				"format_preset: humanize",
+				"explore:",
+				"display_name: Ad Bids dashboard",
 			},
 		},
 		{
@@ -108,6 +110,12 @@ driver: duckdb
 			}
 		})
 	}
+
+	// The generated metrics view should emit an inline explore.
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	explore := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindExplore, "generated_metrics_view")
+	require.Equal(t, "generated_metrics_view", explore.GetExplore().Spec.MetricsView)
+	require.True(t, explore.GetExplore().Spec.DefinedInMetricsView)
 }
 
 func TestGenerateMetricsViewWithAI(t *testing.T) {
@@ -171,8 +179,9 @@ func TestGenerateMetricsViewWithAI(t *testing.T) {
 			require.NoError(t, err)
 			require.True(t, res.AiSucceeded)
 
+			// Expecting 4 resources: the project parser, the model, the metrics view, and its inline explore.
 			testruntime.ReconcileParserAndWait(t, rt, instanceID)
-			testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+			testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
 			data, err := repo.Get(ctx, "/metrics/generated_metrics_view.yaml")
 			require.NoError(t, err)

@@ -11,9 +11,11 @@
   // svelte-ignore custom_element_props_identifier
   let {
     resources,
+    onNavigate = undefined,
     ...triggerProps
   }: {
     resources: V1Resource[];
+    onNavigate?: (resource: V1Resource) => void;
     [key: string]: unknown;
   } = $props();
 
@@ -33,6 +35,7 @@
       href={getFileHref(
         `/${removeLeadingSlash(firstResource.meta?.filePaths?.[0])}`,
       )}
+      onclick={() => onNavigate?.(firstResource)}
       class="text-inherit font-medium flex items-center border-r px-3 size-full hover:bg-surface-hover border-accent-primary-action hover:text-fg-accent"
     >
       Go to {firstResourceType}

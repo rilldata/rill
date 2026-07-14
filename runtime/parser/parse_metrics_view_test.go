@@ -1069,3 +1069,84 @@ rollups:
 	require.Len(t, mvSpec.Rollups, 1)
 	require.Equal(t, "-1Y to now", mvSpec.Rollups[0].DataTimeRange)
 }
+
+func TestMetricsViewInlineExploreFieldSelectors(t *testing.T) {
+	mvYAML := func(explore string) string {
+		return `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: foo
+  expression: id
+measures:
+- name: count
+  expression: COUNT(*)
+` + explore
+	}
+
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id`,
+		// No selectors: defaults to all dimensions and measures
+		`metrics_views/mv1.yaml`: mvYAML(`
+explore: {}
+`),
+		// Star and exclude selectors
+		`metrics_views/mv2.yaml`: mvYAML(`
+explore:
+  dimensions: '*'
+  measures:
+    exclude: count
+`),
+		// List and expression selectors
+		`metrics_views/mv3.yaml`: mvYAML(`
+explore:
+  dimensions: [foo]
+  measures:
+    regex: 'count.*'
+`),
+		// A null explore does not enable the inline explore
+		`metrics_views/mv4.yaml`: mvYAML(`
+explore:
+`),
+		// An explicitly skipped explore is not emitted either
+		`metrics_views/mv5.yaml`: mvYAML(`
+explore:
+  skip: true
+`),
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	explores := map[string]*runtimev1.ExploreSpec{}
+	for _, r := range p.Resources {
+		if r.Name.Kind == ResourceKindExplore {
+			explores[r.Name.Name] = r.ExploreSpec
+		}
+	}
+	require.Len(t, explores, 3)
+
+	e1 := explores["mv1"]
+	require.True(t, e1.DefinedInMetricsView)
+	require.Equal(t, "mv1", e1.MetricsView)
+	require.Empty(t, e1.Dimensions)
+	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}, e1.DimensionsSelector)
+	require.Empty(t, e1.Measures)
+	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}, e1.MeasuresSelector)
+
+	e2 := explores["mv2"]
+	require.True(t, e2.DefinedInMetricsView)
+	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}, e2.DimensionsSelector)
+	require.Equal(t, &runtimev1.FieldSelector{Invert: true, Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"count"}}}}, e2.MeasuresSelector)
+
+	e3 := explores["mv3"]
+	require.True(t, e3.DefinedInMetricsView)
+	require.Equal(t, []string{"foo"}, e3.Dimensions)
+	require.Nil(t, e3.DimensionsSelector)
+	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_Regex{Regex: "count.*"}}, e3.MeasuresSelector)
+}

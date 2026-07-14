@@ -8,7 +8,9 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getIconComponent } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
+  import CodeToggle, {
+    type ViewOption,
+  } from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { navigationOpen } from "../navigation/Navigation.svelte";
@@ -27,6 +29,7 @@
     hasUnsavedChanges,
     filePath,
     codeToggle = false,
+    codeToggleViews = undefined,
     showBreadcrumbs = true,
     onTitleChange,
     workspaceControls,
@@ -41,6 +44,7 @@
     hasUnsavedChanges: boolean;
     filePath: string;
     codeToggle?: boolean;
+    codeToggleViews?: ViewOption[] | undefined;
     showBreadcrumbs?: boolean;
     onTitleChange?: (title: string) => void;
     workspaceControls?: Snippet<[number]>;
@@ -79,7 +83,7 @@
   <div class="second-level-wrapper">
     <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>
       {#if codeToggle && resourceKind}
-        <CodeToggle bind:selectedView={$view} {resourceKind} />
+        <CodeToggle bind:selectedView={$view} {resourceKind} views={codeToggleViews} />
       {:else}
         <span class="flex-none">
           <IconComponent size="19px" />
