@@ -14,7 +14,7 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceResolveComponent } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { VisualizationSpec } from "svelte-vega";
+  import type { View, VisualizationSpec } from "svelte-vega";
 
   export let componentName: string;
   export let resource: V1Resource | undefined;
@@ -25,6 +25,8 @@
   const client = useRuntimeClient();
 
   const { developerChat } = featureFlags;
+
+  let inlineViewVL: View;
 
   function convertWithAI() {
     if (!filePath) return;
@@ -142,6 +144,7 @@
         spec={inlineSpec}
         canvasDashboard
         config={getRillTheme(true)}
+        bind:viewVL={inlineViewVL}
       />
     </div>
   {:else if $resolvedQuery.error && !optimisticProps}

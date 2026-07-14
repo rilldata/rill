@@ -381,6 +381,7 @@
   "component_extract_name_required": "El nombre es obligatorio",
   "component_extract_name_taken": "Ya existe un componente con este nombre",
   "component_extract_success": "Guardado como viz_library/{name}.yaml",
+  "component_extract_title": "Guardar como visualización personalizada",
   "component_fix_with_ai": "Corregir con IA",
   "component_copy_bindings": "Usar los valores de este dashboard",
   "component_no_params": "Declara params para que este componente sea reutilizable en dashboards.",
