@@ -149,10 +149,11 @@
     $config,
   );
 
-  // Per-measure conditional formatting. Domains are computed over leaf data
-  // cells only (excluding the totals row and the row-totals column), so
-  // aggregate magnitudes don't dominate the gradient. Recomputes when the row
-  // model or the formatting config changes.
+  // Per-measure conditional formatting. Domains prefer leaf data cells so
+  // aggregate magnitudes don't dominate the gradient, falling back to nested
+  // parent rows when no leaves are present (e.g. collapsed nested rows). The
+  // grand-totals row and the row-totals column are always excluded. Recomputes
+  // when the row model or the formatting config changes.
   $: cellFormatters = buildCellFormatters(
     $table.getRowModel().flatRows,
     $config.pivot.measureFormatting,
@@ -222,12 +223,19 @@
     const needsDomains = Object.values(measureFormatting).some(
       (fmt) => fmt.mode !== "rules",
     );
-    const values: { measureName: string; value: number }[] = [];
+    // Collect values from leaf rows and, separately, from nested parent rows.
+    // Leaf values are preferred for the domain so aggregate magnitudes don't
+    // dominate the gradient. But nested parent rows also render formatted
+    // measure cells, and when they're collapsed the leaf rows aren't in the row
+    // model at all: without a parent fallback the domain would be empty and no
+    // heatmap/data-bar formatter would be built until the user expands a row.
+    const leafValues: { measureName: string; value: number }[] = [];
+    const parentValues: { measureName: string; value: number }[] = [];
     if (needsDomains) {
       for (const row of flatRows) {
-        // Skip aggregate rows: the prepended totals row and nested parent rows.
+        // Always skip the prepended grand-totals row.
         if (hasTotalsRow && row.id === "0") continue;
-        if (row.subRows.length > 0) continue;
+        const target = row.subRows.length > 0 ? parentValues : leafValues;
         for (const cell of row.getAllCells()) {
           const meta = cell.column.columnDef.meta;
           if (
@@ -239,19 +247,21 @@
           }
           const value = cell.getValue();
           if (typeof value === "number") {
-            values.push({ measureName: meta.measureName, value });
+            target.push({ measureName: meta.measureName, value });
           }
         }
       }
     }
 
-    const domains = computeMeasureDomains(values);
+    const leafDomains = computeMeasureDomains(leafValues);
+    const parentDomains = computeMeasureDomains(parentValues);
     for (const [measureName, fmt] of Object.entries(measureFormatting)) {
       if (fmt.mode === "rules") {
         formatters.set(measureName, makeCellFormatter(fmt));
         continue;
       }
-      const domain = domains.get(measureName);
+      const domain =
+        leafDomains.get(measureName) ?? parentDomains.get(measureName);
       if (domain) {
         // Heatmap gradients flip for lower-is-better measures so low values
         // get the "good" end of the scheme.
