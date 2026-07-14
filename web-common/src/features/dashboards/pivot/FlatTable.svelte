@@ -386,6 +386,19 @@
     color: var(--cf-color);
   }
 
+  /* When a hover/selection state replaces the conditional background with a
+     light surface color, the formatter's text color (which may be white, chosen
+     for a dark heatmap fill) becomes illegible. Revert to the default
+     foreground so the value stays readable. */
+  tr:hover td.cell.has-conditional-format,
+  td.cell.has-conditional-format.active-cell,
+  td.cell.has-conditional-format.selected-cell,
+  td.cell.has-conditional-format.selected-context-cell,
+  td.cell.has-conditional-format.muted-cell,
+  .selected-row td.cell.has-conditional-format {
+    @apply text-fg-primary;
+  }
+
   tr > td {
     @apply font-normal;
   }

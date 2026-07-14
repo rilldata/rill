@@ -752,6 +752,25 @@
     color: var(--cf-color);
   }
 
+  /* When a hover/selection state replaces the conditional background with a
+     light surface color, the formatter's text color (which may be white, chosen
+     for a dark heatmap fill) becomes illegible. Revert to the default
+     foreground so the value stays readable. */
+  tbody tr:hover td.cell.has-conditional-format,
+  td.cell.has-conditional-format.active-cell,
+  td.cell.has-conditional-format.selected-cell,
+  td.cell.has-conditional-format.selected-col-body,
+  td.cell.has-conditional-format.cell-selected-col-dim-group-body,
+  td.cell.has-conditional-format.col-dim-hover-body,
+  td.cell.has-conditional-format.out-of-group-row-cell,
+  td.cell.has-conditional-format.cross-intersection,
+  td.cell.has-conditional-format.cross-row-arm,
+  td.cell.has-conditional-format.cross-col-arm,
+  td.cell.has-conditional-format.partial-aggregate-cell,
+  .selected-row td.cell.has-conditional-format {
+    @apply text-fg-primary;
+  }
+
   /* The leftmost header cells have no bottom border unless they're the last row */
   .with-row-dimension thead > tr:not(:last-of-type) > th:first-of-type {
     @apply border-b-0;
