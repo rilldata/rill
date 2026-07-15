@@ -7,9 +7,7 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 const gitRevertMock = vi.fn();
 vi.mock("@rilldata/web-common/runtime-client", async (importActual) => {
   const actual =
-    await importActual<
-      typeof import("@rilldata/web-common/runtime-client")
-    >();
+    await importActual<typeof import("@rilldata/web-common/runtime-client")>();
   return {
     ...actual,
     runtimeServiceGitRevert: (...args: unknown[]) => gitRevertMock(...args),
