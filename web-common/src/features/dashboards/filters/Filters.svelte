@@ -547,8 +547,21 @@
               toggleDimensionFilterMode={async (name) => {
                 toggleDimensionFilterMode(name);
               }}
-              toggleDimensionValueSelections={async (name, values) =>
-                toggleMultipleDimensionValueSelections(name, values, true)}
+              toggleDimensionValueSelections={async (
+                name,
+                values,
+                _metricsViewNames,
+                keepPillVisible,
+                isExclusiveFilter,
+                exclude,
+              ) =>
+                toggleMultipleDimensionValueSelections(
+                  name,
+                  values,
+                  keepPillVisible ?? true,
+                  isExclusiveFilter,
+                  exclude,
+                )}
               applyDimensionInListMode={async (name, values) =>
                 applyDimensionInListMode(name, values)}
               applyDimensionContainsMode={async (name, searchText) =>

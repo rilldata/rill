@@ -292,6 +292,7 @@ export class Filters {
     dimensionValues: string[],
     keepPillVisible?: boolean,
     isExclusiveFilter?: boolean,
+    exclude?: boolean,
   ) => {
     const tempFilter = get(this.temporaryFilterName);
     if (tempFilter !== null) {
@@ -299,7 +300,11 @@ export class Filters {
     }
 
     const excludeMode = get(this.dimensionFilterExcludeMode);
-    const isExclude = !!excludeMode.get(dimensionName);
+    if (exclude !== undefined) {
+      excludeMode.set(dimensionName, exclude);
+      this.dimensionFilterExcludeMode.set(excludeMode);
+    }
+    const isExclude = exclude ?? !!excludeMode.get(dimensionName);
     const wf = get(this.whereFilter);
 
     // Use the derived selector:

@@ -40,12 +40,17 @@ export function toggleMultipleDimensionValueSelections(
   dimensionValues: (string | null)[],
   keepPillVisible?: boolean,
   isExclusiveFilter?: boolean,
+  exclude?: boolean,
 ) {
   if (dashboard.temporaryFilterName !== null) {
     dashboard.temporaryFilterName = null;
   }
 
-  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  if (exclude !== undefined) {
+    dashboard.dimensionFilterExcludeMode.set(dimensionName, exclude);
+  }
+  const isExclude =
+    exclude ?? !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond?.exprs?.push(
