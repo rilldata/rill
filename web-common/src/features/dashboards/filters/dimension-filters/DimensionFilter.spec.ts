@@ -30,7 +30,7 @@ import {
   waitFor,
 } from "@testing-library/svelte";
 import { get } from "svelte/store";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 // bits-ui 2.x Select uses PointerEvent APIs that jsdom doesn't support.
 // Polyfill the missing types and methods so pointer-based interactions work in tests.
@@ -121,6 +121,10 @@ async function closeFilterMenu(label: string) {
   );
 }
 
+async function waitForBodyScrollCleanup() {
+  await new Promise((resolve) => window.setTimeout(resolve, 30));
+}
+
 /**
  * Returns the text content of the mode selector trigger button.
  */
@@ -153,6 +157,8 @@ describe("DimensionFilter", () => {
       AD_BIDS_EXPLORE_INIT,
     );
   });
+
+  afterAll(waitForBodyScrollCleanup);
 
   it("Select filter mode", async () => {
     const { stateManagers } = renderFilterComponent();
