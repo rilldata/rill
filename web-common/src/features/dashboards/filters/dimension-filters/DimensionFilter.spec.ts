@@ -214,6 +214,36 @@ describe("DimensionFilter", () => {
     );
   });
 
+  it("persists exclude operator when adding select values and toggling exclude", async () => {
+    const { stateManagers } = renderFilterComponent();
+
+    await addFilter("publisher");
+
+    await waitFor(() => expect(screen.getByText("Facebook")).toBeVisible());
+    await act(() => screen.getByText("Facebook").click());
+    await act(() => screen.getByText("Google").click());
+    await act(() =>
+      fireEvent.click(screen.getByLabelText("Include exclude toggle")),
+    );
+
+    expect(screen.getByLabelText("Include exclude toggle")).toHaveAttribute(
+      "data-state",
+      "checked",
+    );
+
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+
+    expect(get(stateManagers.dashboardStore).whereFilter).toEqual(
+      createAndExpression([
+        createInExpression(
+          AD_BIDS_PUBLISHER_DIMENSION,
+          ["Facebook", "Google"],
+          true,
+        ),
+      ]),
+    );
+  });
+
   it("Contains filter mode", async () => {
     const { stateManagers } = renderFilterComponent();
 
@@ -535,10 +565,6 @@ describe("DimensionFilter", () => {
         [AD_BIDS_METRICS_NAME],
       ),
     );
-    expect(toggleDimensionValueSelections).toHaveBeenCalledWith(
-      AD_BIDS_PUBLISHER_DIMENSION,
-      [],
-      [AD_BIDS_METRICS_NAME],
-    );
+    expect(toggleDimensionValueSelections).not.toHaveBeenCalled();
   });
 });
