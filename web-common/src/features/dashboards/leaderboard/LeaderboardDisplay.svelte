@@ -7,9 +7,16 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
+  import { clamp } from "@rilldata/web-common/lib/clamp";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
-  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import {
+    COMPARISON_COLUMN_WIDTH,
+    dimensionColumn,
+    MAX_DIMENSION_COLUMN_WIDTH,
+    MIN_DIMENSION_COLUMN_WIDTH,
+    valueColumn,
+  } from "./leaderboard-widths";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -57,7 +64,11 @@
     valueColumn.reset();
   }
 
-  $: dimensionColumnWidth = 164;
+  $: dimensionColumnWidth = clamp(
+    MIN_DIMENSION_COLUMN_WIDTH,
+    $dimensionColumn,
+    MAX_DIMENSION_COLUMN_WIDTH,
+  );
 
   $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
     $leaderboardSortByMeasureName,
@@ -124,6 +135,7 @@
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
+              onDimensionColumnResize={dimensionColumn.set}
             />
           {/if}
         {/each}
