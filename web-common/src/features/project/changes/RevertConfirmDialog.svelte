@@ -65,6 +65,8 @@
   }
 
   .file-list li {
-    @apply truncate;
+    /* shrink-0 keeps items at full height when the list overflows max-h; without it,
+       truncate's overflow:hidden lets flex shrink the items so they overlap instead of scrolling */
+    @apply truncate shrink-0;
   }
 </style>
