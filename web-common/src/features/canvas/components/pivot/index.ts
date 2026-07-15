@@ -120,7 +120,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 > {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 10 };
-  resetParams = ["measures", "row_dimensions", "col_dimensions"];
+  resetParams = [
+    "measures",
+    "row_dimensions",
+    "col_dimensions",
+    "conditional_format",
+  ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
   config: Readable<PivotDataStoreConfig>;
@@ -383,13 +388,17 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     const commonProperties: ComponentCommonProperties &
       ComponentFilterProperties &
-      Pick<PivotSpec, "hide_totals_row" | "hide_totals_col"> = {
+      Pick<
+        PivotSpec,
+        "hide_totals_row" | "hide_totals_col" | "conditional_format"
+      > = {
       title: currentSpec.title,
       description: currentSpec.description,
       dimension_filters: currentSpec.dimension_filters,
       time_filters: currentSpec.time_filters,
       hide_totals_row: currentSpec.hide_totals_row,
       hide_totals_col: currentSpec.hide_totals_col,
+      conditional_format: currentSpec.conditional_format,
     };
 
     if ("columns" in currentSpec) {
