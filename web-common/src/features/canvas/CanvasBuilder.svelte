@@ -25,6 +25,8 @@
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
+    canvasItemInstanceId,
+    componentNameFromInstanceId,
     generateNewAssets,
     mapGuard,
     mousePosition,
@@ -215,7 +217,9 @@
     dragComponent = component;
 
     const id = component.id;
-    const element = document.querySelector("#" + id);
+    // getElementById, not querySelector: instance ids of referenced components
+    // contain "::", which is not valid in a CSS selector.
+    const element = document.getElementById(id);
     if (!element) return;
 
     const width = element.clientWidth;
@@ -368,11 +372,13 @@
         });
 
       if (selectedId) {
-        const idsAtPositions = specRows.map((row) => {
+        // Selection ids are per-position instance ids (which for items that
+        // reference an external component differ from the item's component name).
+        const idsAtPositions = specRows.map((row, rowIdx) => {
           return {
-            items: row.items?.map((item) => {
-              return item.component ?? "";
-            }),
+            items: row.items?.map((item, colIdx) =>
+              canvasItemInstanceId(item, rowIdx, colIdx, namePrefix),
+            ),
           };
         });
 
@@ -387,7 +393,9 @@
         const colIndex = ids[rowIndex]?.items?.indexOf(selectedId);
 
         if (colIndex !== undefined && colIndex !== -1 && rowIndex !== -1) {
-          const newIdOfSelected = getId(rowIndex, colIndex, namePrefix);
+          const newIdOfSelected = selectedId.includes("::")
+            ? `${componentNameFromInstanceId(selectedId)}::${namePrefix}${rowIndex}-${colIndex}`
+            : getId(rowIndex, colIndex, namePrefix);
 
           if (selectedId && newIdOfSelected)
             setSelectedComponent(newIdOfSelected);

@@ -199,10 +199,17 @@ export function createComponent(
   parent: CanvasEntity,
   path: ComponentPath,
   item?: V1CanvasItem,
+  instanceId?: string,
 ): BaseCanvasComponent<any> {
   const type = getComponentInstanceType(resource, item);
   if (type === "component_ref") {
-    return new ComponentRefComponent(resource, parent, path, item);
+    const component = new ComponentRefComponent(resource, parent, path, item);
+    // Items referencing an external component share one resource, so the
+    // resource name can't identify the instance: use the positional instance id
+    // (also the components-store key and the selection id) so two references to
+    // the same component get distinct DOM ids and selection/cleanup state.
+    if (instanceId) component.id = instanceId;
+    return component;
   }
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];

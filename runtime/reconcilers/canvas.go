@@ -556,13 +556,31 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 	return nil
 }
 
-// metricsSQL parses and registers metrics view references found in a metrics SQL string.
+// metricsSQL parses and registers metrics view references found in a metrics_sql property,
+// which holds either a single query string or a list of query strings.
 func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
-	sqlStr, ok := sql.(string)
-	if !ok {
-		return fmt.Errorf("metrics_sql field is not a string")
+	switch v := sql.(type) {
+	case string:
+		return r.metricsSQLString(ctx, v)
+	case []any:
+		// Multi-query custom charts: register refs per query, best-effort,
+		// so one malformed query doesn't drop refs from the others.
+		for _, e := range v {
+			if s, ok := e.(string); ok {
+				_ = r.metricsSQLString(ctx, s)
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("metrics_sql field is not a string or a list of strings")
 	}
+}
 
+// metricsSQLString parses and registers metrics view references found in a single metrics SQL query.
+func (r *rendererRefs) metricsSQLString(ctx context.Context, sqlStr string) error {
 	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
 	if !ok {
 		return fmt.Errorf("metrics_sql resolver not registered")

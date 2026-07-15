@@ -777,7 +777,7 @@ export class CanvasEntity {
             existingClass?.destroy();
             this.componentsStore.set(
               instanceId,
-              createComponent(newResource, this, path, item),
+              createComponent(newResource, this, path, item, instanceId),
             );
           }
         });

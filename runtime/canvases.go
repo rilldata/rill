@@ -113,7 +113,9 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 		for k, v := range validSpec.RendererProperties.Fields {
 			switch k {
 			case "metrics_view":
-				if name := v.GetStringValue(); name != "" {
+				// Skip templated values (e.g. {{ .params.metrics_view }}):
+				// metrics views bound to params are collected from the canvas items below.
+				if name := v.GetStringValue(); name != "" && !strings.Contains(name, "{{") {
 					metricsViews[name] = true
 				}
 			case "metrics_sql":

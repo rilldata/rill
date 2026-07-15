@@ -1922,6 +1922,17 @@ params:
 kpi:
   metrics_view: "{{ .params.metrics_view }}"
 `,
+		// Component with a defaulted metrics_view param: the default must produce a ref,
+		// since the component depends on it even when no canvas binds the param.
+		`components/defaulted.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    default: mv_default
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
 		`canvases/d1.yaml`: `
 type: canvas
 rows:
@@ -1965,6 +1976,19 @@ rows:
 				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "{{ .params.metrics_view }}"})),
 				Params: []*runtimev1.ComponentParam{
 					{Name: "metrics_view", Type: "metrics_view", Required: true},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "defaulted"},
+			Paths: []string{"/components/defaulted.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "mv_default"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "Defaulted",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "{{ .params.metrics_view }}"})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Default: structpb.NewStringValue("mv_default")},
 				},
 			},
 		},

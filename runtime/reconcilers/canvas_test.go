@@ -308,6 +308,7 @@ func TestCanvasResolveTransitiveAccess(t *testing.T) {
 		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
 		"m2.sql": `SELECT 'bar' as bar, 2 as y`,
 		"m3.sql": `SELECT 'baz' as baz, 3 as z`,
+		"m4.sql": `SELECT 'qux' as qux, 4 as w`,
 		"mv1.yaml": `
 version: 1
 type: metrics_view
@@ -338,6 +339,16 @@ measures:
 - name: z
   expression: sum(z)
 `,
+		"mv4.yaml": `
+version: 1
+type: metrics_view
+model: m4
+dimensions:
+- column: qux
+measures:
+- name: w
+  expression: sum(w)
+`,
 		"c1.yaml": `
 type: canvas
 rows:
@@ -350,12 +361,17 @@ rows:
       - custom_chart:
           metrics_sql: "SELECT bar, y FROM mv2"
   - items:
+      - custom_chart:
+          metrics_sql:
+            - "SELECT bar, y FROM mv2"
+            - "SELECT qux, w FROM mv4"
+  - items:
       - markdown:
           content: 'Total z: {{ metrics_sql "SELECT z FROM mv3" }}'
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 11, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 14, 0, 0)
 
 	// Build claims with a transitive access rule on the canvas
 	ctx := t.Context()
@@ -389,6 +405,12 @@ rows:
 	// Resolve security for mv3 (referenced via metrics_sql in markdown content); should be accessible
 	mv3 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv3")
 	sec, err = rt.ResolveSecurity(ctx, id, claims, mv3)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+
+	// Resolve security for mv4 (referenced via a metrics_sql list in a multi-query custom chart); should be accessible
+	mv4 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv4")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv4)
 	require.NoError(t, err)
 	require.True(t, sec.CanAccess())
 }

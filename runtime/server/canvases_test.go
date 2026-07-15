@@ -805,6 +805,17 @@ custom_chart:
   metrics_sql: "SELECT country, {{ .params.measure }} AS value FROM {{ .params.metrics_view }}"
   vega_spec: '{"mark": "line"}'
 `,
+			// Built-in renderer with a templated metrics_view: ResolveCanvas must not
+			// treat the raw template string as a metrics view resource name.
+			"tplkpi.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
 			"c1.yaml": `
 type: canvas
 rows:
@@ -813,10 +824,13 @@ rows:
     params:
       metrics_view: mv1
       measure: count
+  - component: tplkpi
+    params:
+      metrics_view: mv1
 `,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
 
 	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
@@ -827,13 +841,15 @@ rows:
 	})
 	require.NoError(t, err)
 
-	// The referenced component should be returned, and the param-bound metrics view
+	// The referenced components should be returned, and the param-bound metrics view
 	// should be included in the referenced metrics views.
 	require.Contains(t, res.ResolvedComponents, "trend")
+	require.Contains(t, res.ResolvedComponents, "tplkpi")
 	require.Contains(t, res.ReferencedMetricsViews, "mv1")
+	require.Len(t, res.ReferencedMetricsViews, 1)
 
-	// The canvas item should carry the param bindings.
+	// The canvas items should carry the param bindings.
 	items := res.Canvas.GetCanvas().State.ValidSpec.Rows[0].Items
-	require.Len(t, items, 1)
+	require.Len(t, items, 2)
 	require.Equal(t, map[string]any{"metrics_view": "mv1", "measure": "count"}, items[0].Params.AsMap())
 }

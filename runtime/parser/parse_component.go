@@ -177,6 +177,18 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		return nil, nil, err
 	}
 
+	// Link metrics views set as defaults of metrics_view params:
+	// a component rendered with its defaults depends on the default metrics view
+	// even when no canvas binds the param, so it needs a ref for DAG ordering and invalidation.
+	for _, param := range params {
+		if param.Type != "metrics_view" || param.Default == nil {
+			continue
+		}
+		if name, ok := param.Default.AsInterface().(string); ok && name != "" && !strings.Contains(name, "{{") {
+			refs = append(refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
+		}
+	}
+
 	// When params are declared, require that all template references to .params (or its .args alias)
 	// in the renderer properties refer to declared params. This catches typos at parse time.
 	if len(params) > 0 {

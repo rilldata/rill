@@ -104,10 +104,14 @@ test.describe("custom viz components", () => {
       .getByRole("menuitem", { name: "Measure trend" })
       .click({ timeout: 10_000 });
 
-    // Both instances render independently.
+    // Both instances render independently, each with a positional instance id
+    // as its DOM id (never the shared component resource name, which would
+    // produce duplicate ids and confuse drag geometry and selection).
     await expect(page.locator(".vega-embed")).toHaveCount(2, {
       timeout: 15_000,
     });
+    await expect(page.locator('[id="measure_trend"]')).toHaveCount(0);
+    await expect(page.locator('[id^="measure_trend::"]')).toHaveCount(2);
   });
 });
 
