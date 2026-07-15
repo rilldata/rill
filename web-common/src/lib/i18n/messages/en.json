@@ -827,6 +827,7 @@
   "edit_branch_name": "Branch name",
   "edit_changes_checking": "Checking for changes…",
   "edit_changes_committed_pushed": "Changes committed and pushed",
+  "edit_changes_discard_all": "Discard all",
   "edit_changes_file_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -850,7 +851,42 @@
   "edit_changes_loading_diff": "Loading diff…",
   "edit_changes_no_diff": "No diff to display",
   "edit_changes_none_to_show": "No changes to show",
+  "edit_changes_revert": "Revert",
+  "edit_changes_revert_confirm_body": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This permanently discards local changes to {count} file and cannot be undone.",
+        "countPlural=other": "This permanently discards local changes to {count} files and cannot be undone."
+      }
+    }
+  ],
+  "edit_changes_revert_confirm_title": "Revert changes?",
+  "edit_changes_revert_failed": "Failed to revert changes",
+  "edit_changes_revert_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Revert {count} file",
+        "countPlural=other": "Revert {count} files"
+      }
+    }
+  ],
+  "edit_changes_reverted": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Reverted {count} file",
+        "countPlural=other": "Reverted {count} files"
+      }
+    }
+  ],
+  "edit_changes_reverting": "Reverting…",
   "edit_changes_review_title": "Review changes",
+  "edit_changes_select_all": "Select all",
   "edit_changes_status_added": "Added",
   "edit_changes_status_deleted": "Deleted",
   "edit_changes_status_modified": "Modified",

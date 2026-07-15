@@ -455,6 +455,30 @@ func (c *connection) Diff(ctx context.Context, remoteBranch string, includeDiff,
 	}, nil
 }
 
+func (c *connection) Revert(ctx context.Context, remoteBranch string, paths []string) ([]string, error) {
+	if !gitutil.IsGitRepo(c.root) {
+		return nil, nil
+	}
+
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
+	gitPath, subPath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		// should not happen because we already checked isGitRepo
+		return nil, err
+	}
+
+	config, err := c.loadGitConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Revert against the already-fetched ref, mirroring Diff with fetch=false: the caller has just
+	// listed the changes (which fetches), so what the user reverts matches what they saw.
+	return gitutil.Revert(ctx, gitPath, subPath, config.RemoteName(), remoteBranch, paths)
+}
+
 // Pull implements drivers.RepoStore.
 func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 	// If its a Git repository, pull the current branch. Otherwise, this is a no-op.

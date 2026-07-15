@@ -66,6 +66,7 @@ const (
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
 	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
 	RuntimeService_GitDiff_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitDiff"
+	RuntimeService_GitRevert_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitRevert"
 	RuntimeService_ListGitBranches_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListGitBranches"
 	RuntimeService_GitCommit_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitCommit"
 	RuntimeService_RestoreGitCommit_FullMethodName        = "/rill.runtime.v1.RuntimeService/RestoreGitCommit"
@@ -184,6 +185,9 @@ type RuntimeServiceClient interface {
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
 	// GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
 	GitDiff(ctx context.Context, in *GitDiffRequest, opts ...grpc.CallOption) (*GitDiffResponse, error)
+	// GitRevert discards local changes for the given files, resetting them to the comparison branch's state.
+	// If no paths are provided, all local changes are reverted.
+	GitRevert(ctx context.Context, in *GitRevertRequest, opts ...grpc.CallOption) (*GitRevertResponse, error)
 	ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
@@ -720,6 +724,16 @@ func (c *runtimeServiceClient) GitDiff(ctx context.Context, in *GitDiffRequest, 
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GitRevert(ctx context.Context, in *GitRevertRequest, opts ...grpc.CallOption) (*GitRevertResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitRevertResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitRevert_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListGitBranchesResponse)
@@ -908,6 +922,9 @@ type RuntimeServiceServer interface {
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
 	// GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
 	GitDiff(context.Context, *GitDiffRequest) (*GitDiffResponse, error)
+	// GitRevert discards local changes for the given files, resetting them to the comparison branch's state.
+	// If no paths are provided, all local changes are reverted.
+	GitRevert(context.Context, *GitRevertRequest) (*GitRevertResponse, error)
 	ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
@@ -1078,6 +1095,9 @@ func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRe
 }
 func (UnimplementedRuntimeServiceServer) GitDiff(context.Context, *GitDiffRequest) (*GitDiffResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitDiff not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitRevert(context.Context, *GitRevertRequest) (*GitRevertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitRevert not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGitBranches not implemented")
@@ -1942,6 +1962,24 @@ func _RuntimeService_GitDiff_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GitRevert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitRevertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitRevert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitRevert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitRevert(ctx, req.(*GitRevertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListGitBranches_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListGitBranchesRequest)
 	if err := dec(in); err != nil {
@@ -2264,6 +2302,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitDiff",
 			Handler:    _RuntimeService_GitDiff_Handler,
+		},
+		{
+			MethodName: "GitRevert",
+			Handler:    _RuntimeService_GitRevert_Handler,
 		},
 		{
 			MethodName: "ListGitBranches",
