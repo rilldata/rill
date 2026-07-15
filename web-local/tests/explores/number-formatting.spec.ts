@@ -10,8 +10,6 @@ test.describe("smoke tests for number formatting", () => {
   test("smoke tests for number formatting", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     // This is a metrics spec with all available formatting options
