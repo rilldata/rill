@@ -82,11 +82,7 @@
         </button>
       {/snippet}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content
-      class="dashboard-theme-boundary min-w-52"
-      align="start"
-      {side}
-    >
+    <DropdownMenu.Content class="min-w-52" align="start" {side}>
       {#each timeGrains as option (option.key)}
         <DropdownMenu.CheckboxItem
           checkRight

@@ -1,12 +1,9 @@
-<script lang="ts" context="module">
-  export const THEME_STORE_CONTEXT_KEY = Symbol("theme-store");
-</script>
-
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import { Theme } from "../themes/theme";
+  import { THEME_STORE_CONTEXT_KEY } from "../themes/theme-boundary";
   import { themeManager } from "../themes/theme-manager";
 
   export let theme: Theme | undefined;

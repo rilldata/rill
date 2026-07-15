@@ -293,7 +293,7 @@
 
   <Popover.Content
     align="start"
-    class="dashboard-theme-boundary p-0 w-fit overflow-hidden flex flex-col"
+    class="p-0 w-fit overflow-hidden flex flex-col"
   >
     <TimeRangeSearch
       inError={!parsedTime && !!timeString && !usingLegacyTime}
@@ -428,7 +428,7 @@
                 align="center"
                 side="right"
                 sideOffset={12}
-                class="dashboard-theme-boundary p-1 z-50"
+                class="p-1 z-50"
               >
                 <ZoneContent
                   {context}
@@ -477,7 +477,7 @@
                 align="center"
                 side="right"
                 sideOffset={12}
-                class="dashboard-theme-boundary p-1 z-50"
+                class="p-1 z-50"
               >
                 {#each timeDimensions as { value, label, description } (value)}
                   <Tooltip.Root>

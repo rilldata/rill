@@ -80,7 +80,7 @@
     </Tooltip>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="dashboard-theme-boundary">
+  <DropdownMenu.Content align="start">
     <div class="p-2">
       <Search
         placeholder={m.dashboard_search_dimension()}

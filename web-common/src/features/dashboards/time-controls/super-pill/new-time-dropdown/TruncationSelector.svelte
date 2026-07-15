@@ -213,10 +213,7 @@
     </Tooltip.Content>
   </Tooltip.Root>
 
-  <DropdownMenu.Content
-    align="start"
-    class="dashboard-theme-boundary w-52 flex flex-col p-0"
-  >
+  <DropdownMenu.Content align="start" class="w-52 flex flex-col p-0">
     <DropdownMenu.Group class="p-1">
       <h3 class="mt-1 px-2 uppercase text-fg-secondary font-semibold">
         {m.dashboard_reference()}
