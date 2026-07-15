@@ -260,7 +260,9 @@
   }
 
   th[data-dimension-header] {
-    @apply sticky left-0 z-30 bg-surface-background text-left;
+    /* z-40 keeps the resize handle (which hangs below the header, down the
+       whole column) above the rows' sticky dimension cells (z-30). */
+    @apply sticky left-0 z-40 bg-surface-background text-left;
   }
 
   /* Visible separator at the column boundary, marking where to pick up the
