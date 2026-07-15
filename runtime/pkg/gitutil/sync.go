@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -572,13 +573,11 @@ func trimSubpath(file, subpath string) string {
 }
 
 // joinSubpath is the inverse of trimSubpath: it prefixes a subpath-relative file with subpath so
-// it can be used as a git pathspec relative to the repo root. It uses a forward slash regardless
-// of platform, matching git's pathspec convention.
+// it can be used as a git pathspec relative to the repo root. It uses path.Join (forward slashes
+// regardless of platform, matching git's pathspec convention); it exists as a named helper because
+// callers shadow the path package with a `path` parameter.
 func joinSubpath(subpath, file string) string {
-	if subpath == "" {
-		return file
-	}
-	return subpath + "/" + file
+	return path.Join(subpath, file)
 }
 
 // changedFileStatusFromCode maps a `git diff --name-status` status code to a ChangedFileStatus.

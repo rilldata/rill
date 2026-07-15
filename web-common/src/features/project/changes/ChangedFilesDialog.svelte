@@ -99,13 +99,8 @@
   }
 
   // Multi-select: `selected` holds the checked subpath-relative paths. It is reset whenever the
-  // dialog opens so a prior session's selection does not carry over.
+  // dialog opens (via onOpenChange) so a prior session's selection does not carry over.
   let selected = $state<string[]>([]);
-  let lastOpen = false;
-  $effect(() => {
-    if (open && !lastOpen) selected = [];
-    lastOpen = open;
-  });
   let allSelected = $derived(
     changedFiles.length > 0 && selected.length === changedFiles.length,
   );
@@ -153,7 +148,12 @@
   }
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+  bind:open
+  onOpenChange={(isOpen) => {
+    if (isOpen) selected = [];
+  }}
+>
   <Dialog.Content
     class="flex flex-col gap-0 p-0 w-[90vw] max-w-screen-xl h-[85vh] max-h-[85vh]"
   >
