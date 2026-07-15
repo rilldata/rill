@@ -25,6 +25,7 @@ import {
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
+  AD_BIDS_TOGGLE_PUB_DIMENSION_FILTER_MODE,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
@@ -112,6 +113,24 @@ const TestCases: {
       ],
       expectedSearch:
         "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
+    },
+  },
+  {
+    title: "Explore <=> Pivot with excluded filter",
+    initView: {
+      view: "explore",
+      mutations: [AD_BIDS_TOGGLE_PUB_DIMENSION_FILTER_MODE],
+      expectedSearch:
+        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+NIN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
+    },
+    view: {
+      view: "pivot",
+      mutations: [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+      ],
+      expectedSearch:
+        "view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+NIN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC&table_mode=nest",
     },
   },
   {

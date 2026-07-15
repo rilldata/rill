@@ -1181,6 +1181,68 @@ func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
 	require.Equal(t, "Google", fieldsToString(rows[i], "pub"))
 }
 
+func TestMetricsViewsAggregation_pivot_2_measures_and_exclude_filter(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+			{
+				Name: "measure_0",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+		PivotOn: []string{
+			"timestamp",
+		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("pub"),
+			[]*runtimev1.Expression{expressionpb.String("Google")},
+		),
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+
+	require.Equal(t, q.Result.Schema.Fields[0].Name, "pub")
+	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_measure_1")
+	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-01-01 00:00:00_measure_0")
+
+	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-02-01 00:00:00_measure_1")
+	require.Equal(t, q.Result.Schema.Fields[4].Name, "2022-02-01 00:00:00_measure_0")
+
+	require.Equal(t, q.Result.Schema.Fields[5].Name, "2022-03-01 00:00:00_measure_1")
+	require.Equal(t, q.Result.Schema.Fields[6].Name, "2022-03-01 00:00:00_measure_0")
+
+	publishers := make([]string, 0, len(rows))
+	for _, row := range rows {
+		publishers = append(publishers, fieldsToString(row, "pub"))
+	}
+	require.NotContains(t, publishers, "Google")
+	require.ElementsMatch(t, []string{"Facebook", "Microsoft", "Yahoo", "null"}, publishers)
+}
+
 func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 

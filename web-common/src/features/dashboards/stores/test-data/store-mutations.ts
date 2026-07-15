@@ -7,6 +7,7 @@ import {
   applyDimensionContainsMode,
   applyDimensionInListMode,
   removeDimensionFilter,
+  toggleDimensionFilterMode,
   toggleDimensionValueSelection,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
 import { handleDimensionMeasureColumnHeaderClick } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-table.ts";
@@ -69,6 +70,9 @@ export type TestDashboardMutation = (mut: DashboardMutables) => void;
 export const AD_BIDS_APPLY_PUB_DIMENSION_FILTER: TestDashboardMutation = (
   mut,
 ) => toggleDimensionValueSelection(mut, AD_BIDS_PUBLISHER_DIMENSION, "Google");
+export const AD_BIDS_TOGGLE_PUB_DIMENSION_FILTER_MODE: TestDashboardMutation = (
+  mut,
+) => toggleDimensionFilterMode(mut, AD_BIDS_PUBLISHER_DIMENSION);
 export const AD_BIDS_REMOVE_PUB_DIMENSION_FILTER: TestDashboardMutation = (
   mut,
 ) => removeDimensionFilter(mut, AD_BIDS_PUBLISHER_DIMENSION);

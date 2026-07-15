@@ -1,4 +1,4 @@
-import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import { updateFilterOnSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import { calculateEffectiveRowLimit } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
 import type {
@@ -50,11 +50,8 @@ export function createPivotBaseQueryPlan(
   let whereFilter = config.whereFilter;
   if (config.searchText) {
     whereFilter =
-      getDimensionFilterWithSearch(
-        whereFilter,
-        config.searchText,
-        anchorDimension,
-      ) || config.whereFilter;
+      updateFilterOnSearch(whereFilter, config.searchText, anchorDimension) ||
+      config.whereFilter;
   }
 
   const {
