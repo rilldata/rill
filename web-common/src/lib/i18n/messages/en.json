@@ -1,4 +1,67 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "common_cancel": "Cancel",
+  "common_close": "Close",
+  "edit_changes_checking": "Checking for changes…",
+  "edit_changes_discard_all": "Discard all",
+  "edit_changes_file_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} file",
+        "countPlural=other": "{count} files"
+      }
+    }
+  ],
+  "edit_changes_files_changed": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} file changed",
+        "countPlural=other": "{count} files changed"
+      }
+    }
+  ],
+  "edit_changes_loading_diff": "Loading diff…",
+  "edit_changes_no_diff": "No diff to display",
+  "edit_changes_none_to_show": "No changes to show",
+  "edit_changes_revert": "Revert",
+  "edit_changes_revert_confirm_body": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This permanently discards local changes to {count} file and cannot be undone.",
+        "countPlural=other": "This permanently discards local changes to {count} files and cannot be undone."
+      }
+    }
+  ],
+  "edit_changes_revert_confirm_title": "Revert changes?",
+  "edit_changes_revert_failed": "Failed to revert changes",
+  "edit_changes_revert_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Revert {count} file",
+        "countPlural=other": "Revert {count} files"
+      }
+    }
+  ],
+  "edit_changes_reverted": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Reverted {count} file",
+        "countPlural=other": "Reverted {count} files"
+      }
+    }
+  ],
+  "edit_changes_review_title": "Review changes",
+  "edit_changes_select_all": "Select all",
+  "edit_changes_view_diff": "View diff",
   "organizations_overview_page_title": "{title} overview - Rill"
 }

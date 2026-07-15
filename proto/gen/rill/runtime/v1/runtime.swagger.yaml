@@ -1465,6 +1465,46 @@ paths:
             title: Request message for RuntimeService.RestoreGitCommit
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/git/revert:
+    post:
+      summary: |-
+        GitRevert discards local changes for the given files, resetting them to the comparison branch's state.
+        If no paths are provided, all local changes are reverted.
+      operationId: RuntimeService_GitRevert
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitRevertResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              remoteBranch:
+                type: string
+                description: |-
+                  remote_branch is the branch to compare against. Same semantics as GitDiffRequest:
+                  if empty, the upstream of the current local branch is used.
+              paths:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  paths are the files to revert, relative to the project subpath, matching the paths returned by
+                  GitDiff. Paths that are not actually changed are ignored. If empty, all changed files are reverted.
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/git/status:
     get:
       summary: GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
@@ -5734,6 +5774,14 @@ definitions:
         description: Conflict is true if the pull failed due to merge conflicts.
   v1GitPushResponse:
     type: object
+  v1GitRevertResponse:
+    type: object
+    properties:
+      revertedPaths:
+        type: array
+        items:
+          type: string
+        description: reverted_paths lists the files that were reverted, relative to the project subpath.
   v1GitStatusResponse:
     type: object
     properties:

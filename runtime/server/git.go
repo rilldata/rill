@@ -151,6 +151,27 @@ func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*r
 	}, nil
 }
 
+// GitRevert implements RuntimeService.
+func (s *Server) GitRevert(ctx context.Context, req *runtimev1.GitRevertRequest) (*runtimev1.GitRevertResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	reverted, err := repo.Revert(ctx, req.RemoteBranch, req.Paths)
+	if err != nil {
+		return nil, fmt.Errorf("failed to revert git changes: %w", err)
+	}
+
+	return &runtimev1.GitRevertResponse{
+		RevertedPaths: reverted,
+	}, nil
+}
+
 func gitFileStatusToPB(s drivers.RepoFileStatus) runtimev1.GitDiffResponse_GitFileStatus {
 	switch s {
 	case drivers.RepoFileStatusAdded:
