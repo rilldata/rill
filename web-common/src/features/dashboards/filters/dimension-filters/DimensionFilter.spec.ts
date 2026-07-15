@@ -68,8 +68,8 @@ async function selectMode(name: RegExp) {
   const trigger = document.getElementById("dimension-filter-mode-selector")!;
   trigger.focus();
   // Open the select dropdown
-  await act(() => {
-    fireEvent.keyDown(trigger, { key: " " });
+  await act(async () => {
+    await fireEvent.keyDown(trigger, { key: " " });
   });
   // Wait for options to appear
   await waitFor(() =>
@@ -88,13 +88,37 @@ async function selectMode(name: RegExp) {
       ? targetIndex - startIndex
       : options.length - startIndex + targetIndex;
   for (let i = 0; i < steps; i++) {
-    await act(() => {
-      fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    await act(async () => {
+      await fireEvent.keyDown(trigger, { key: "ArrowDown" });
     });
   }
-  await act(() => {
-    fireEvent.keyDown(trigger, { key: "Enter" });
+  await act(async () => {
+    await fireEvent.keyDown(trigger, { key: "Enter" });
   });
+}
+
+async function selectFirstMode() {
+  const trigger = document.getElementById("dimension-filter-mode-selector")!;
+  trigger.focus();
+  await act(async () => {
+    await fireEvent.keyDown(trigger, { key: " " });
+  });
+  await waitFor(() =>
+    expect(screen.getByRole("option", { name: /Select/ })).toBeVisible(),
+  );
+  await act(async () => {
+    await fireEvent.keyDown(trigger, { key: "Home" });
+  });
+  await act(async () => {
+    await fireEvent.keyDown(trigger, { key: "Enter" });
+  });
+}
+
+async function closeFilterMenu(label: string) {
+  await act(() => screen.getByLabelText(label).click());
+  await waitFor(() =>
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
+  );
 }
 
 /**
@@ -241,6 +265,58 @@ describe("DimensionFilter", () => {
           true,
         ),
       ]),
+    );
+  });
+
+  it("creates new select filters with the current exclude mode", async () => {
+    const toggleDimensionFilterMode = vi.fn().mockResolvedValue(undefined);
+    const toggleDimensionValueSelections = vi.fn().mockResolvedValue(undefined);
+
+    render(DimensionFilter, {
+      props: {
+        filterData: {
+          name: AD_BIDS_PUBLISHER_DIMENSION,
+          label: "Publisher",
+          mode: DimensionFilterMode.Select,
+          dimensions: new Map([[AD_BIDS_METRICS_NAME, {}]]),
+          selectedValues: [],
+          isInclude: true,
+        },
+        expressionMap: new Map(),
+        openOnMount: true,
+        timeStart: undefined,
+        timeEnd: undefined,
+        timeDimension: undefined,
+        timeControlsReady: true,
+        removeDimensionFilter: vi.fn(),
+        applyDimensionInListMode: vi.fn(),
+        toggleDimensionValueSelections,
+        applyDimensionContainsMode: vi.fn(),
+        toggleDimensionFilterMode,
+      },
+      context: new Map<string | symbol, unknown>([
+        [
+          RUNTIME_CONTEXT_KEY,
+          new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+        ],
+      ]),
+    });
+
+    await waitFor(() => expect(screen.getByText("Facebook")).toBeVisible());
+    await act(() => screen.getByText("Facebook").click());
+    await act(() =>
+      fireEvent.click(screen.getByLabelText("Include exclude toggle")),
+    );
+    await closeFilterMenu("Open publisher filter");
+
+    expect(toggleDimensionFilterMode).not.toHaveBeenCalled();
+    expect(toggleDimensionValueSelections).toHaveBeenCalledWith(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      ["Facebook"],
+      [AD_BIDS_METRICS_NAME],
+      undefined,
+      undefined,
+      true,
     );
   });
 
@@ -454,6 +530,54 @@ describe("DimensionFilter", () => {
     // jsdom is still alive (otherwise the deferred cleanup fires after teardown
     // and produces an unhandled "document is not defined" error).
     await act(() => screen.getByLabelText("Open publisher filter").click());
+  });
+
+  it("commits Select mode when leaving In List without value changes", async () => {
+    const toggleDimensionValueSelections = vi.fn().mockResolvedValue(undefined);
+
+    render(DimensionFilter, {
+      props: {
+        filterData: {
+          name: AD_BIDS_PUBLISHER_DIMENSION,
+          label: "Publisher",
+          mode: DimensionFilterMode.InList,
+          dimensions: new Map([[AD_BIDS_METRICS_NAME, {}]]),
+          selectedValues: ["Facebook"],
+          isInclude: true,
+        },
+        expressionMap: new Map(),
+        openOnMount: false,
+        timeStart: undefined,
+        timeEnd: undefined,
+        timeDimension: undefined,
+        timeControlsReady: false,
+        removeDimensionFilter: vi.fn(),
+        applyDimensionInListMode: vi.fn(),
+        toggleDimensionValueSelections,
+        applyDimensionContainsMode: vi.fn(),
+        toggleDimensionFilterMode: vi.fn(),
+      },
+      context: new Map<string | symbol, unknown>([
+        [
+          RUNTIME_CONTEXT_KEY,
+          new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+        ],
+      ]),
+    });
+
+    await act(() => screen.getByLabelText("Open publisher filter").click());
+    await selectFirstMode();
+    await waitFor(() => expect(getModeSelectorText()).toContain("Select"));
+    await closeFilterMenu("Open publisher filter");
+
+    expect(toggleDimensionValueSelections).toHaveBeenCalledWith(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      [],
+      [AD_BIDS_METRICS_NAME],
+      undefined,
+      undefined,
+      false,
+    );
   });
 
   it("rerenders the chip when only the include/exclude operator changes", async () => {

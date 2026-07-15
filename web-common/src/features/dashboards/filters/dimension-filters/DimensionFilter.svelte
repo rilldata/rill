@@ -376,22 +376,28 @@
       return wasSelected !== isSelected;
     });
     const shouldToggleExcludeMode = curExcludeMode !== excludeMode;
+    const shouldCommitSelectMode =
+      mode !== DimensionFilterMode.Select && currentValues.size > 0;
 
     if (!currentValues.size && !proxyValues.size) {
       // No changes
       return;
     }
 
-    // Apply the mode before values so new filters are created with the correct operator.
-    if (shouldToggleExcludeMode) {
+    // Existing filters still need to be negated. New filters get the operator
+    // from curExcludeMode when values are committed below.
+    if (shouldToggleExcludeMode && currentValues.size > 0) {
       await toggleDimensionFilterMode(name, metricsViewNames);
     }
 
-    if (changedValues.length) {
+    if (changedValues.length || shouldCommitSelectMode) {
       await toggleDimensionValueSelections(
         name,
         changedValues,
         metricsViewNames,
+        undefined,
+        undefined,
+        curExcludeMode,
       );
     }
   }
