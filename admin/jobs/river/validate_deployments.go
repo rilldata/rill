@@ -2,7 +2,6 @@ package river
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -24,57 +23,29 @@ type ValidateDeploymentsWorker struct {
 const validateDeploymentsForProjectTimeout = 5 * time.Minute
 
 func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[ValidateDeploymentsArgs]) error {
-	var wg sync.WaitGroup
-	ch := make(chan *database.Project)
-
-	concurrency := 30
-	if w.admin.ProvisionerMaxConcurrency > 0 {
-		concurrency = w.admin.ProvisionerMaxConcurrency
-	} else {
-		w.admin.Logger.Warn("validate deployments: provisioner max concurrency invalid, using default concurrency of 30", zap.Int("provisioner_max_concurrency", w.admin.ProvisionerMaxConcurrency), observability.ZapCtx(ctx))
-	}
-
-	// Setup concurrent workers
-	for range concurrency {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			// Read projects from shared channel
-			for proj := range ch {
-				w.admin.Logger.Info("validate deployments: validating project deployments", zap.String("project_id", proj.ID), observability.ZapCtx(ctx))
-				err := w.validateDeploymentsForProject(ctx, proj)
-				if err != nil {
-					// We log the error, but continue to the next project
-					w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
-				}
-			}
-		}()
-	}
-
-	// Iterate over batches of projects and add them to the shared channel
+	// Iterate over batches of projects and validate each project's deployments.
+	// The per-project work is lightweight (it only schedules reconcile jobs), so we process projects sequentially.
 	limit := 100
 	afterID := ""
-	stop := false
-	for !stop {
-		// Get batch and update iterator variables
+	for {
 		projs, err := w.admin.DB.FindProjects(ctx, afterID, limit)
 		if err != nil {
 			return err
 		}
-		if len(projs) < limit {
-			stop = true
-		}
-		if len(projs) != 0 {
-			afterID = projs[len(projs)-1].ID
-		}
 
 		for _, proj := range projs {
-			ch <- proj
+			w.admin.Logger.Info("validate deployments: validating project deployments", zap.String("project_id", proj.ID), observability.ZapCtx(ctx))
+			if err := w.validateDeploymentsForProject(ctx, proj); err != nil {
+				// We log the error, but continue to the next project
+				w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
+			}
 		}
-	}
 
-	close(ch)
-	wg.Wait()
+		if len(projs) < limit {
+			break
+		}
+		afterID = projs[len(projs)-1].ID
+	}
 
 	return nil
 }
@@ -121,28 +92,18 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 			continue
 		}
 
-		// Retrieve the deployment's provisioned resources
-		prs, err := w.admin.DB.FindProvisionerResourcesForDeployment(ctx, depl.ID)
+		// Schedule a reconcile job. We deliberately do not check the deployment's provisioner resources directly
+		// here: all modifications to provisioner resources must happen inside the reconcile loop to avoid racing
+		// with other deployment operations (see Service.CheckDeploymentInner / Service.UpdateDeploymentInner).
+		// Reconcile only ever drives a deployment toward its own DesiredStatus, is a no-op for already-consistent
+		// deployments (e.g. stopped/stopped, deleted/deleted), and is de-duplicated per deployment, so scheduling
+		// for every deployment is safe and self-healing.
+		_, err := w.admin.Jobs.ReconcileDeployment(ctx, depl.ID)
 		if err != nil {
-			return err
-		}
-		if len(prs) == 0 {
+			w.admin.Logger.Error("validate deployments: failed to schedule reconcile", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
-
-		// Build annotations for the deployment
-		annotations := w.admin.NewDeploymentAnnotations(org, proj, depl.Environment)
-
-		// Validate each provisioned resource
-		for _, pr := range prs {
-			w.admin.Logger.Info("validate deployments: checking resource", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("resource_id", pr.ID), zap.String("provisioner", pr.Provisioner), observability.ZapCtx(ctx))
-			err := w.admin.CheckProvisionerResource(ctx, pr, annotations)
-			if err != nil {
-				w.admin.Logger.Error("validate deployments: failed to check resource", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("resource_id", pr.ID), zap.String("provisioner", pr.Provisioner), zap.Error(err), observability.ZapCtx(ctx))
-				continue
-			}
-			w.admin.Logger.Info("validate deployments: checked resource", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("resource_id", pr.ID), zap.String("provisioner", pr.Provisioner), observability.ZapCtx(ctx))
-		}
+		w.admin.Logger.Info("validate deployments: scheduled reconcile", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx))
 	}
 
 	return nil

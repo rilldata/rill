@@ -7,7 +7,6 @@ test.describe("custom timerange in Explore", () => {
   test.use({ project: "AdBids" });
 
   test("Custom time range should be visible by default", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     await page.getByRole("button", { name: "Preview" }).click();
@@ -20,7 +19,6 @@ test.describe("custom timerange in Explore", () => {
   test("Custom time range should not be visible when toggled off", async ({
     page,
   }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     const watcher = new ResourceWatcher(page);

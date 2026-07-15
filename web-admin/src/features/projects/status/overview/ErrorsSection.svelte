@@ -5,10 +5,7 @@
     SingletonProjectParserName,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import {
-    createRuntimeServiceGetResource,
-    type V1Resource,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetResource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
@@ -36,7 +33,7 @@
   // Note: parser reconcile errors (e.g. git branch not found) are surfaced
   // in the Deployment card, not here, to avoid redundancy.
   $: resourcesQuery = useResources(runtimeClient);
-  $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
+  $: allResources = $resourcesQuery.data?.resources ?? [];
   $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
 
   $: errorsByKind = groupErrorsByKind(erroredResources);
@@ -65,7 +62,7 @@
 
       {#each errorsByKind as { kind, label, count } (kind)}
         <a
-          href="{basePage}/resources?status=error&kind={kind}"
+          href="{basePage}/resources?status=error&type={kind}"
           class="error-chip"
         >
           {#if resourceIconMapping[kind]}

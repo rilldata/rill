@@ -6,6 +6,7 @@
     suggestions?: string[];
     label?: string;
     placeholder?: string;
+    size?: "sm" | "md";
     onChange: (tags: string[]) => void;
   };
 
@@ -14,6 +15,7 @@
     suggestions = [],
     label = "Tags",
     placeholder = "Add a tag and press Enter",
+    size = "md",
     onChange,
   }: Props = $props();
 
@@ -41,6 +43,7 @@
   const DROPDOWN_MAX_HEIGHT = 240;
   const VIEWPORT_PADDING = 8;
 
+  let isSmall = $derived(size === "sm");
   let trimmedInput = $derived(inputValue.trim());
 
   let filteredSuggestions = $derived.by(() => {
@@ -206,9 +209,19 @@
 </script>
 
 <div class="flex flex-col gap-y-1" bind:this={wrapperRef}>
-  <span class="text-fg-secondary text-sm font-medium">{label}</span>
+  <span
+    class="text-fg-secondary font-medium"
+    class:text-xs={isSmall}
+    class:text-sm={!isSmall}
+  >
+    {label}
+  </span>
   <div
-    class="input-wrapper flex flex-wrap items-center gap-1 px-1.5 py-1 min-h-8 cursor-text"
+    class="input-wrapper flex flex-wrap items-center gap-1 px-1.5 cursor-text"
+    class:min-h-6={isSmall}
+    class:min-h-8={!isSmall}
+    class:py-0.5={isSmall}
+    class:py-1={!isSmall}
     role="presentation"
     onclick={() => inputRef?.focus()}
   >
@@ -236,7 +249,9 @@
       onkeydown={handleKeyDown}
       onfocus={handleFocusIn}
       onblur={handleInputBlur}
-      class="flex-1 min-w-[100px] bg-transparent outline-none text-sm py-0.5"
+      class="flex-1 min-w-[100px] bg-transparent outline-none py-0.5"
+      class:text-xs={isSmall}
+      class:text-sm={!isSmall}
       {placeholder}
       autocomplete="off"
       aria-label={label}
@@ -265,7 +280,9 @@
         type="button"
         role="option"
         aria-selected={highlightedIndex === i}
-        class="w-full text-left px-2.5 py-1 text-sm text-fg-primary hover:bg-popover-accent flex items-center"
+        class="w-full text-left px-2.5 py-1 text-fg-primary hover:bg-popover-accent flex items-center"
+        class:text-xs={isSmall}
+        class:text-sm={!isSmall}
         class:bg-popover-accent={highlightedIndex === i}
         onmousedown={(e) => e.preventDefault()}
         onclick={() => pickSuggestion(s)}

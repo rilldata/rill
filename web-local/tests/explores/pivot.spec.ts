@@ -576,8 +576,6 @@ test.describe("pivot run through", () => {
 
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 

@@ -6,7 +6,6 @@ test.describe("canvas time filters", () => {
   test.use({ project: "AdBids" });
 
   test("save default filters button works", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.getByRole("button", { name: "Options" }).click();
@@ -50,7 +49,6 @@ test.describe("canvas time filters", () => {
   });
 
   test("default filters load", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.getByRole("button", { name: "Options" }).click();
@@ -91,7 +89,6 @@ test.describe("canvas time filters", () => {
   });
 
   test("legacy filters without prefix still work", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
     const currentUrl = new URL(page.url());
 

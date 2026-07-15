@@ -27,7 +27,6 @@ type Options struct {
 	ExternalURL                string
 	FrontendURL                string
 	ProvisionerSetJSON         string
-	ProvisionerMaxConcurrency  int
 	DefaultProvisioner         string
 	Version                    version.Version
 	MetricsProjectOrg          string
@@ -43,7 +42,6 @@ type Service struct {
 	Jobs                       jobs.Client
 	URLs                       *URLs
 	ProvisionerSet             map[string]provisioner.Provisioner
-	ProvisionerMaxConcurrency  int
 	Email                      *email.Client
 	Github                     Github
 	AI                         drivers.AIService
@@ -129,7 +127,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		DB:                         db,
 		URLs:                       urls,
 		ProvisionerSet:             provSet,
-		ProvisionerMaxConcurrency:  opts.ProvisionerMaxConcurrency,
 		Email:                      emailClient,
 		Github:                     github,
 		AI:                         aiService,

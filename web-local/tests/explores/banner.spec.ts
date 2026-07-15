@@ -7,7 +7,6 @@ test.describe("banner in explore preview", () => {
   test.use({ project: "AdBids" });
 
   test("Banner should not be visible in explore preview", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     await page.getByRole("button", { name: "Preview" }).click();
@@ -17,7 +16,6 @@ test.describe("banner in explore preview", () => {
   });
 
   test("Banner should be visible in explore preview", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     const watcher = new ResourceWatcher(page);
