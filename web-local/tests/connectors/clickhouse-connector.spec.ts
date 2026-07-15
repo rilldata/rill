@@ -301,9 +301,6 @@ test.describe("ClickHouse connector", () => {
 
       await selectAdImpressionsAndSubmit(page, "clickhouse_1");
 
-      // Open the connectors folder
-      await page.getByLabel("/connectors").click();
-
       // Assert that "connector" is created
       await gotoNavEntry(page, "/connectors/clickhouse.yaml");
       await validateYamlContents(page, [
@@ -351,9 +348,6 @@ test.describe("ClickHouse connector", () => {
 
       await selectAdImpressionsAndSubmit(page, "clickhouse");
 
-      // Open the connectors folder
-      await page.getByLabel("/connectors").click();
-
       // Assert that "connector" is created with the second clickhouse instance
       await gotoNavEntry(page, "/connectors/clickhouse.yaml");
       await validateYamlContents(page, [
@@ -394,9 +388,6 @@ test.describe("ClickHouse connector", () => {
 
       // Go back to the connector form
       await page.getByRole("button", { name: "Back" }).click();
-
-      // Open the connectors folder
-      await page.getByLabel("/connectors").click();
 
       // Assert that "connector" is not created
       await expect
