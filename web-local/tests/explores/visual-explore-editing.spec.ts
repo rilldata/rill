@@ -13,7 +13,6 @@ test.describe("visual explore editing", () => {
     // before interacting with the visual editor
     await waitForReconciliation(page);
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
