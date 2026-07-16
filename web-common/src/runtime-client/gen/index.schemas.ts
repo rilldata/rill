@@ -947,6 +947,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotRowLimit?: number;
   pivotShowTotalsColumn?: boolean;
   pivotShowTotalsRow?: boolean;
+  /** Per-measure pivot conditional formatting, serialized in the URL param format. */
+  pivotFormatting?: string;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
