@@ -21,8 +21,10 @@ func GrantTrialCreditsCmd(ch *cmdutil.Helper) *cobra.Command {
 			if org == "" {
 				return fmt.Errorf("please set --org")
 			}
-			if amountUSD <= 0 {
-				return fmt.Errorf("please set --amount-usd to a positive value")
+
+			ch.PrintfWarn("Warn: This will grant $%.2f in trial credits to organization %q\n", amountUSD, org)
+			if err := cmdutil.ConfirmPrompt("Do you want to continue?", false); err != nil {
+				return err
 			}
 
 			client, err := ch.Client()
@@ -46,7 +48,7 @@ func GrantTrialCreditsCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&org, "org", "", "Organization Name")
-	cmd.Flags().Float64Var(&amountUSD, "amount-usd", 0, "Amount of trial credits to grant in USD")
+	cmd.Flags().Float64Var(&amountUSD, "amount-usd", 0, "Amount of trial credits to grant in USD, less than or equal to 250")
 	cmd.Flags().StringVar(&description, "description", "", "Optional description for the Orb ledger entry")
 	return cmd
 }

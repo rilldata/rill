@@ -2210,7 +2210,7 @@ message SudoExtendTrialResponse {
 message SudoGrantTrialCreditsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   // Amount of trial credits to grant in USD.
-  double amount_usd = 2 [(validate.rules).double = {gt: 0}];
+  double amount_usd = 2 [(validate.rules).double = {gt: 0, lte: 250}];
   // Optional human-readable reason for the grant.
   string description = 3;
 }
