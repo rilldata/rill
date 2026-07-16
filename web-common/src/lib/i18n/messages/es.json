@@ -836,6 +836,7 @@
   "edit_branch_name": "Nombre de rama",
   "edit_changes_checking": "Buscando cambios…",
   "edit_changes_committed_pushed": "Cambios confirmados y enviados",
+  "edit_changes_discard_all": "Descartar todo",
   "edit_changes_file_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -859,7 +860,42 @@
   "edit_changes_loading_diff": "Cargando diff…",
   "edit_changes_no_diff": "No hay diff para mostrar",
   "edit_changes_none_to_show": "No hay cambios para mostrar",
+  "edit_changes_revert": "Revertir",
+  "edit_changes_revert_confirm_body": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Esto descarta permanentemente los cambios locales de {count} archivo y no se puede deshacer.",
+        "countPlural=other": "Esto descarta permanentemente los cambios locales de {count} archivos y no se puede deshacer."
+      }
+    }
+  ],
+  "edit_changes_revert_confirm_title": "¿Revertir cambios?",
+  "edit_changes_revert_failed": "No se pudieron revertir los cambios",
+  "edit_changes_revert_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Revertir {count} archivo",
+        "countPlural=other": "Revertir {count} archivos"
+      }
+    }
+  ],
+  "edit_changes_reverted": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Se revirtió {count} archivo",
+        "countPlural=other": "Se revirtieron {count} archivos"
+      }
+    }
+  ],
+  "edit_changes_reverting": "Revirtiendo…",
   "edit_changes_review_title": "Revisar cambios",
+  "edit_changes_select_all": "Seleccionar todo",
   "edit_changes_status_added": "Agregado",
   "edit_changes_status_deleted": "Eliminado",
   "edit_changes_status_modified": "Modificado",

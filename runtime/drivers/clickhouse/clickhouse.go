@@ -629,7 +629,7 @@ func (c *Connection) periodicallyEmitStats() {
 			// Emit the estimated size of the database.
 			size, err := c.estimateSize(c.ctx)
 			if err == nil {
-				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size))
+				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size), attribute.Bool("managed_clickhouse", c.config.Managed))
 			} else if !errors.Is(err, c.ctx.Err()) {
 				lvl := zap.WarnLevel
 				if c.config.Managed {

@@ -43,7 +43,7 @@ func (t *ReadFile) Spec() *mcp.Tool {
 }
 
 func (t *ReadFile) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, true)
+	return checkDeveloperAccess(ctx, t.Runtime, false)
 }
 
 func (t *ReadFile) Handler(ctx context.Context, args *ReadFileArgs) (*ReadFileResult, error) {
