@@ -19,6 +19,8 @@ display:contents. This is useful when nesting a floating element within a toolti
     FloatingElementRelationship,
   } from "../../lib/place-element";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let target: HTMLElement;
   export let relationship: FloatingElementRelationship = "parent"; // parent, mouse {x, y}
@@ -32,6 +34,8 @@ display:contents. This is useful when nesting a floating element within a toolti
   export let overflowFlipY = true;
   // mouse position to be used when relationship is `mouse`
   export let mousePos = { x: 0, y: 0 };
+
+  const themeBoundaryClass = getThemeBoundaryClass();
 
   let top = 0;
   let left = 0;
@@ -148,7 +152,7 @@ display:contents. This is useful when nesting a floating element within a toolti
   use:portal
   transition:fade={{ duration: 25 }}
   bind:this={child}
-  class="absolute"
+  class={cn(themeBoundaryClass, "absolute")}
   style:z-index="200"
   style:left="{left}px"
   style:top="{top}px"
