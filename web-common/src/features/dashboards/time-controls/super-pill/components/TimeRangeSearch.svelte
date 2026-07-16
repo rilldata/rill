@@ -109,7 +109,7 @@
   }
 
   form:focus-within {
-    @apply border-primary-500;
+    @apply border-theme-500;
   }
 
   form.error {

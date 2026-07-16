@@ -12,9 +12,8 @@
 
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
-  import ThemeProvider, {
-    THEME_STORE_CONTEXT_KEY,
-  } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
+  import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
+  import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/themes/theme-boundary";
   import { getContext, hasContext } from "svelte";
   import type { View } from "svelte-vega";
   import type { Readable, Writable } from "svelte/store";
