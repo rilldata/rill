@@ -52,6 +52,68 @@ sql: SELECT '{{.partition.now}}::TIMESTAMP' AS now
 	})
 }
 
+// TestPatchModeOutputConnectorChangePreservesData verifies that in change_mode=patch,
+// changing the model's output connector never drops the existing data in the old connector.
+// The reconciler leaves the old output in place (for the user to remove manually),
+// on both automatic runs and explicit triggers.
+func TestPatchModeOutputConnectorChangePreservesData(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	// Declare a second output connector to migrate to.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"connectors/alt.yaml": `
+type: connector
+driver: duckdb
+`,
+		// An upstream model whose refreshes drive an automatic (ref_update) reconcile of the downstream model.
+		"models/up.yaml": `
+type: model
+sql: SELECT 1 AS id
+`,
+		// The downstream incremental patch-mode model, initially writing to the default connector.
+		"models/down.yaml": `
+type: model
+incremental: true
+change_mode: patch
+refresh:
+  ref_update: true
+sql: SELECT * FROM up
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	// Explicitly build the downstream model so it has prior state on the default connector.
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "down", Full: true})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
+
+	// Change the output connector.
+	// In patch mode this is absorbed (spec hash patched) without triggering execution, so nothing is dropped yet.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"models/down.yaml": `
+type: model
+incremental: true
+change_mode: patch
+refresh:
+  ref_update: true
+output:
+  connector: alt
+sql: SELECT * FROM up
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
+
+	// Drive an automatic reconcile of the downstream model by refreshing the upstream model (ref_update).
+	// This is not an explicit trigger of "down", so the old connector's data must not be dropped.
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "up", Full: true})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
+
+	// An explicit full trigger of the downstream model must also leave the old connector's data in place.
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "down", Full: true})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
+}
+
 func TestPartitionedIncrementalPostExecSeesIncrementalFlag(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 
