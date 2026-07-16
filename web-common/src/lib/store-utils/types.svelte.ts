@@ -34,7 +34,7 @@ export class ArrayRuneStore<Val> implements RuneStore<Val[]> {
 
   public constructor(
     store: RuneStore<Val[]>,
-    private readonly compare: (a: Val, b: Val) => boolean = (a, b) => a !== b,
+    private readonly compare: (a: Val, b: Val) => boolean = (a, b) => a === b,
   ) {
     this.value = $derived(store.value);
     this.getter = store.getter;
@@ -54,30 +54,6 @@ export class ArrayRuneStore<Val> implements RuneStore<Val[]> {
 
   public delete = (value: Val) => {
     const newValue = this.value.filter((v) => this.compare(v, value));
-    this.setter(newValue);
-  };
-}
-
-export class RecordRuneStore<Val> implements RuneStore<Record<string, Val>> {
-  public value: Record<string, Val>;
-  public getter: () => Record<string, Val>;
-  public setter: (newValue: Record<string, Val>) => void;
-
-  public constructor(store: RuneStore<Record<string, Val>>) {
-    this.value = $derived(store.value);
-    this.getter = store.getter;
-    this.setter = store.setter;
-  }
-
-  public set = (key: string, value: Val | null) => {
-    const newValue = {
-      ...this.value,
-    };
-    if (value === null) {
-      delete newValue[key];
-    } else {
-      newValue[key] = value;
-    }
     this.setter(newValue);
   };
 }

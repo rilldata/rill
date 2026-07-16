@@ -25,6 +25,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
 
   let {
     isEmbedded = false,
@@ -82,8 +83,11 @@
   );
 
   let validDashboardFavourites = $derived(
-    dashboardFavourites.value.filter((f) =>
-      filteredDashboards.find((r) => r.meta?.name?.name?.toLowerCase() === f),
+    dedupe(
+      dashboardFavourites.value.filter((f) =>
+        filteredDashboards.find((r) => r.meta?.name?.name?.toLowerCase() === f),
+      ),
+      (e) => e,
     ),
   );
 
