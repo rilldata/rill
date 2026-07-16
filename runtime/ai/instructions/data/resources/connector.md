@@ -14,7 +14,7 @@ Connectors are usually lightweight resources. When reconciled, they validate the
 
 Each connector uses a **driver** that implements one or more capabilities:
 
-- **OLAP database**: Can power metrics views and dashboards (e.g., `duckdb`, `clickhouse`, `druid`, `pinot`, `starrocks`; `snowflake`, `bigquery`, `databricks` as live connectors)
+- **OLAP database**: Can power metrics views and dashboards (e.g., `duckdb`, `clickhouse`, `druid`, `pinot`, `starrocks`, `snowflake`, `bigquery`, `databricks` as live connectors)
 - **SQL database**: Can run SQL queries as model inputs (e.g., `postgres`, `bigquery`, `snowflake`)
 - **Information schema**: Can list tables and their schemas (e.g., `duckdb`, `bigquery`)
 - **Object store**: Can list, read, and write flat files (e.g., `s3`, `gcs`)
