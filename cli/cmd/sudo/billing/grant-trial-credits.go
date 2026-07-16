@@ -48,7 +48,7 @@ func GrantTrialCreditsCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&org, "org", "", "Organization Name")
-	cmd.Flags().Float64Var(&amountUSD, "amount-usd", 0, "Amount of trial credits to grant in USD, less than or equal to 250")
+	cmd.Flags().Float64Var(&amountUSD, "amount-usd", 0, "Amount of trial credits to grant in USD, less than or equal to 2500")
 	cmd.Flags().StringVar(&description, "description", "", "Optional description for the Orb ledger entry")
 	return cmd
 }

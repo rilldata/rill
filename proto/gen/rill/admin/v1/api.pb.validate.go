@@ -17220,10 +17220,10 @@ func (m *SudoGrantTrialCreditsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if val := m.GetAmountUsd(); val <= 0 || val > 250 {
+	if val := m.GetAmountUsd(); val <= 0 || val > 2500 {
 		err := SudoGrantTrialCreditsRequestValidationError{
 			field:  "AmountUsd",
-			reason: "value must be inside range (0, 250]",
+			reason: "value must be inside range (0, 2500]",
 		}
 		if !all {
 			return err
