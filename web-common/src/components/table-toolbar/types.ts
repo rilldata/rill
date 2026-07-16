@@ -28,6 +28,6 @@ export type FilterGroup = {
 );
 
 export type SortOption = {
-  value: string;
+  id: string;
   label: string;
 };

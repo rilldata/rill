@@ -10,14 +10,13 @@
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards, useIsInitialBuild } from "./selectors";
-  import { Search } from "@rilldata/web-common/components/search";
   import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
   import {
-    DashboardTableSort,
+    createDashboardTableSortStore,
     DashboardTableSortOptions,
     getDashboardFavouritesStore,
     RecentlyUsedDashboards,
@@ -25,10 +24,7 @@
   import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
-  import {
-    type SortOption,
-    TableToolbar,
-  } from "@rilldata/web-common/components/table-toolbar";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
 
   let {
     isEmbedded = false,
@@ -47,13 +43,7 @@
     500,
   );
 
-  const sortStore = new DashboardTableSort();
-  let sorting = $derived(
-    Object.entries(sortStore.value).map(([key, value]) => ({
-      id: key,
-      desc: value,
-    })),
-  );
+  const sortStore = createDashboardTableSortStore();
 
   const runtimeClient = useRuntimeClient();
   let { organization, project } = $derived(page.params);
@@ -230,7 +220,7 @@
           data={displayData}
           {columns}
           {columnVisibility}
-          {sorting}
+          sorting={sortStore.value}
           toolbar={false}
           pinnedRows={validDashboardFavourites}
           maxRows={previewLimit}

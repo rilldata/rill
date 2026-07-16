@@ -1,7 +1,8 @@
 import { SvelteLocalStorage } from "@rilldata/web-common/lib/store-utils/svelte-local-storage.svelte.ts";
-import { RecordRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+import { ArrayRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
 import type { SortOption } from "@rilldata/web-common/components/table-toolbar";
+import type { ColumnSort } from "tanstack-table-8-svelte-5";
 
 export function getDashboardFavouritesStore(org: string, project: string) {
   const key = `rill:app:${org}:${project}:dashboard:favourites`;
@@ -15,54 +16,39 @@ export function getDashboardTagFavouritesStore(org: string, project: string) {
 
 export const DashboardTableSortOptions: SortOption[] = [
   {
-    value: "lastUsed",
+    id: "lastUsed",
     label: "Last Used",
   },
   {
-    value: "name",
+    id: "name",
     label: "Name",
   },
 ];
 
-export class DashboardTableSort {
-  public value: Record<string, boolean>;
-  public getter: () => Record<string, boolean>;
-  public setter: (newValue: Record<string, boolean>) => void;
-  public set: (key: string, value: boolean) => void;
+const DashboardTableSortDefault: ColumnSort[] = [
+  { id: "lastUsed", desc: true },
+];
 
-  private store: RecordRuneStore<boolean>;
-
-  public constructor(
-    defaultValue: Record<string, boolean> = {
-      lastUsed: true,
-      name: false,
-    },
-  ) {
-    this.store = new RecordRuneStore<boolean>(
-      new UrlParamsState(
-        "sort",
-        (value: Record<string, boolean>) => {
-          const values = Object.entries(value).map(
-            ([key, order]) => `${key}:${order}`,
-          );
-          return values.length ? values.join(",") : null;
-        },
-        (value) => {
-          const values =
-            value?.split(",").map((kv) => {
-              const [k, v] = kv.split(":");
-              return [k, v === "true"] as [string, boolean];
-            }) ?? [];
-          return Object.fromEntries(values);
-        },
-        defaultValue ?? {},
-      ),
-    );
-    this.value = $derived(this.store.value);
-    this.getter = this.store.getter;
-    this.setter = this.store.setter;
-    this.set = this.store.set;
-  }
+export function createDashboardTableSortStore() {
+  return new ArrayRuneStore<ColumnSort>(
+    new UrlParamsState(
+      "sort",
+      (value: ColumnSort[]) => {
+        const sortValues = value.map(({ id, desc }) => `${id}:${desc}`);
+        return sortValues.length ? sortValues.join(",") : null;
+      },
+      (value) => {
+        const values: ColumnSort[] =
+          value?.split(",").map((kv) => {
+            const [id, desc] = kv.split(":");
+            return { id, desc: desc === "true" };
+          }) ?? [];
+        return values.length === 0 ? DashboardTableSortDefault : values;
+      },
+      DashboardTableSortDefault ?? [],
+    ),
+    (a, b) => a.id === b.id,
+  );
 }
 
 export class RecentlyUsedDashboards {

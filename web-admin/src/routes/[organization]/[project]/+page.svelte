@@ -17,7 +17,7 @@
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import TableToolbarSort from "@rilldata/web-common/components/table-toolbar/TableToolbarSort.svelte";
   import {
-    DashboardTableSort,
+    createDashboardTableSortStore,
     DashboardTableSortOptions,
   } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.svelte.ts";
 
@@ -47,7 +47,7 @@
     ($personalCanvasesQuery.data?.length ?? 0) === 0;
 
   const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
-  const sortStore = new DashboardTableSort();
+  const sortStore = createDashboardTableSortStore();
 </script>
 
 <svelte:head>

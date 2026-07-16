@@ -98,6 +98,13 @@
 
     if (!dragElement) return;
 
+    // Ignore mousedown originating from an interactive element nested inside the
+    // row (e.g. the sort label / direction buttons) so its click handler fires
+    // instead of starting a drag. The row itself may be a button in onItemClick
+    // mode, so only bail for interactive descendants, not the drag item itself.
+    const interactive = (e.target as Element).closest("button, a, input");
+    if (interactive && interactive !== dragElement) return;
+
     const { index, itemId } = dragElement.dataset;
     if (!itemId || index === undefined) return;
 

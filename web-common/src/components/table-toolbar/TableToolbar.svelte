@@ -7,9 +7,10 @@
   import type { FilterGroup, SortOption, ViewMode } from "./types";
   import type { Snippet } from "svelte";
   import {
-    RecordRuneStore,
+    ArrayRuneStore,
     type RuneStore,
   } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import type { ColumnSort } from "tanstack-table-8-svelte-5";
 
   let {
     searchTextStore,
@@ -22,7 +23,7 @@
   }: {
     searchTextStore?: RuneStore<string>;
     filterGroups?: FilterGroup[];
-    sortStore?: RecordRuneStore<boolean>;
+    sortStore?: ArrayRuneStore<ColumnSort>;
     sortOptions?: SortOption[];
     viewModeStore?: RuneStore<ViewMode>;
     onClearAllFilters?: () => void;
