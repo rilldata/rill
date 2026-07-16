@@ -605,6 +605,8 @@ components:
                     type: string
                 projectId:
                     type: string
+                readOnlyModels:
+                    type: boolean
                 runtimeHost:
                     type: string
                 runtimeInstanceId:

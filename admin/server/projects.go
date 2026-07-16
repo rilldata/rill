@@ -2328,6 +2328,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		Environment:       d.Environment,
 		Branch:            d.Branch,
 		Editable:          d.Editable,
+		ReadOnlyModels:    d.ReadOnlyModels,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,
 		Status:            s,

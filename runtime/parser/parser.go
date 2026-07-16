@@ -249,6 +249,33 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment,
 	return p, nil
 }
 
+// FileResourceKind infers the ResourceKind that the file at path would parse to,
+// without parsing the surrounding project.
+func FileResourceKind(path string, contents []byte) (ResourceKind, error) {
+	path = normalizePath(path)
+
+	// Mirror the dispatch in parsePaths/parseStemPaths for non-resource files.
+	if pathIsRillYAML(path) || pathIsDotEnv(path) || pathIsIgnored(path) {
+		return ResourceKindUnspecified, nil
+	}
+
+	p := &Parser{} // parseStem is safe to call on a zero-value Parser
+	var node *Node
+	var err error
+	switch {
+	case pathIsSQL(path):
+		node, err = p.parseStem([]string{path}, "", "", path, string(contents))
+	case pathIsYAML(path):
+		node, err = p.parseStem([]string{path}, path, string(contents), "", "")
+	default:
+		return ResourceKindUnspecified, nil
+	}
+	if err != nil {
+		return ResourceKindUnspecified, err
+	}
+	return node.Kind, nil
+}
+
 // Reparse re-parses the indicated file paths, updating the Parser's state.
 // If rill.yaml has previously errored, or if rill.yaml is included in paths, it will reload the entire project.
 // If a previous call to Reparse has returned an error, the Parser may not be accessed or called again.

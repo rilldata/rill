@@ -620,6 +620,7 @@ type Deployment struct {
 	Environment            string           `db:"environment"`
 	Branch                 string           `db:"branch"`
 	Editable               bool             `db:"editable"`
+	ReadOnlyModels         bool             `db:"read_only_models"`
 	RuntimeHost            string           `db:"runtime_host"`
 	RuntimeInstanceID      string           `db:"runtime_instance_id"`
 	RuntimeAudience        string           `db:"runtime_audience"`
@@ -639,6 +640,7 @@ type InsertDeploymentOptions struct {
 	Environment       string
 	Branch            string
 	Editable          bool
+	ReadOnlyModels    bool
 	RuntimeHost       string
 	RuntimeInstanceID string
 	RuntimeAudience   string

@@ -472,6 +472,7 @@ export interface V1Deployment {
   environment?: string;
   branch?: string;
   editable?: boolean;
+  readOnlyModels?: boolean;
   runtimeHost?: string;
   runtimeInstanceId?: string;
   status?: V1DeploymentStatus;
@@ -2085,6 +2086,8 @@ Optional for `dev` deployments. */
   /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
 Can't be set for `prod` deployments. */
   editable?: boolean;
+  /** Set for editable projects when edits to models is not allowed. */
+  readOnlyModels?: boolean;
 };
 
 export type AdminServiceCreateGithubPullRequestBody = {

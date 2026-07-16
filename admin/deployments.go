@@ -28,11 +28,12 @@ import (
 var ErrDeploymentNotReady = errors.New("deployment not ready")
 
 type CreateDeploymentOptions struct {
-	ProjectID   string
-	OwnerUserID *string
-	Environment string
-	Branch      string
-	Editable    bool
+	ProjectID      string
+	OwnerUserID    *string
+	Environment    string
+	Branch         string
+	Editable       bool
+	ReadOnlyModels bool
 }
 
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
@@ -43,6 +44,7 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		Environment:       opts.Environment,
 		Branch:            opts.Branch,
 		Editable:          opts.Editable,
+		ReadOnlyModels:    opts.ReadOnlyModels,
 		RuntimeHost:       "",                               // Will be populated after provisioning in startDeploymentInner
 		RuntimeInstanceID: "",                               // Will be populated after provisioning in startDeploymentInner
 		RuntimeAudience:   "",                               // Will be populated after provisioning in startDeploymentInner

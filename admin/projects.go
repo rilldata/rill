@@ -94,11 +94,12 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
-		ProjectID:   proj.ID,
-		OwnerUserID: nil,
-		Environment: "prod",
-		Branch:      proj.PrimaryBranch,
-		Editable:    false,
+		ProjectID:      proj.ID,
+		OwnerUserID:    nil,
+		Environment:    "prod",
+		Branch:         proj.PrimaryBranch,
+		Editable:       false,
+		ReadOnlyModels: false,
 	})
 	if err != nil {
 		return nil, err
@@ -336,21 +337,23 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
 	// Provision new deployment
 	var branch, environment string
-	var editable bool
+	var editable, readOnlyModels bool
 	if prevDepl != nil {
 		branch = prevDepl.Branch
 		environment = prevDepl.Environment
 		editable = prevDepl.Editable
+		readOnlyModels = prevDepl.ReadOnlyModels
 	} else {
 		branch = proj.PrimaryBranch
 		environment = "prod"
 	}
 	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
-		ProjectID:   proj.ID,
-		OwnerUserID: nil,
-		Environment: environment,
-		Branch:      branch,
-		Editable:    editable,
+		ProjectID:      proj.ID,
+		OwnerUserID:    nil,
+		Environment:    environment,
+		Branch:         branch,
+		Editable:       editable,
+		ReadOnlyModels: readOnlyModels,
 	})
 	if err != nil {
 		return nil, err
@@ -552,7 +555,8 @@ func (s *Service) ResolveVariables(ctx context.Context, depl *database.Deploymen
 	})
 	// Enable the file watcher for editable deployments.
 	systemVars := map[string]string{
-		"rill.watch_repo": strconv.FormatBool(depl.Editable),
+		"rill.watch_repo":                 strconv.FormatBool(depl.Editable),
+		"rill.models.assume_materialized": strconv.FormatBool(depl.ReadOnlyModels),
 	}
 	return vars, systemVars, nil
 }

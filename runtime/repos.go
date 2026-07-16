@@ -1,11 +1,14 @@
 package runtime
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 )
 
 func (r *Runtime) ListFiles(ctx context.Context, instanceID, glob string) ([]drivers.DirEntry, error) {
@@ -48,6 +51,25 @@ func (r *Runtime) PutFile(ctx context.Context, instanceID, path string, blob io.
 
 	// TODO: Handle create, createOnly
 
+	instCfg, err := r.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	if instCfg.AssumeModelsMaterialized || instCfg.DisableModels {
+		b, err := io.ReadAll(blob)
+		if err != nil {
+			return err
+		}
+		kind, err := parser.FileResourceKind(path, b)
+		if err != nil {
+			return err
+		}
+		if kind == parser.ResourceKindModel {
+			return fmt.Errorf("cannot create model file %q because models are disabled for this instance", path)
+		}
+		blob = bytes.NewBuffer(b) // bcz we already read it, we need to create a new reader for the next step
+	}
+
 	err = repo.Put(ctx, path, blob)
 	if err != nil {
 		return err
@@ -78,6 +100,24 @@ func (r *Runtime) DeleteFile(ctx context.Context, instanceID, path string, force
 	}
 	defer release()
 
+	instCfg, err := r.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	if instCfg.AssumeModelsMaterialized || instCfg.DisableModels {
+		contents, err := repo.Get(ctx, path)
+		if err != nil {
+			return err
+		}
+		kind, err := parser.FileResourceKind(path, []byte(contents))
+		if err != nil {
+			return err
+		}
+		if kind == parser.ResourceKindModel {
+			return fmt.Errorf("cannot delete model file %q because models are disabled for this instance", path)
+		}
+	}
+
 	err = repo.Delete(ctx, path, force)
 	if err != nil {
 		return err
@@ -92,6 +132,24 @@ func (r *Runtime) RenameFile(ctx context.Context, instanceID, fromPath, toPath s
 		return err
 	}
 	defer release()
+
+	instCfg, err := r.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	if instCfg.AssumeModelsMaterialized || instCfg.DisableModels {
+		contents, err := repo.Get(ctx, fromPath)
+		if err != nil {
+			return err
+		}
+		kind, err := parser.FileResourceKind(fromPath, []byte(contents))
+		if err != nil {
+			return err
+		}
+		if kind == parser.ResourceKindModel {
+			return fmt.Errorf("cannot rename model file %q because models are disabled for this instance", fromPath)
+		}
+	}
 
 	err = repo.Rename(ctx, fromPath, toPath)
 	if err != nil {

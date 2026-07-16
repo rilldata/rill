@@ -1602,6 +1602,9 @@ paths:
                 description: |-
                   Whether the deployment is editable and the edited changes are persisted back to the git repo.
                   Can't be set for `prod` deployments.
+              readOnlyModels:
+                type: boolean
+                description: Set for editable projects when edits to models is not allowed.
   /v1/orgs/{org}/projects/{project}/github/pr:
     post:
       summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
@@ -5380,6 +5383,8 @@ definitions:
       branch:
         type: string
       editable:
+        type: boolean
+      readOnlyModels:
         type: boolean
       runtimeHost:
         type: string

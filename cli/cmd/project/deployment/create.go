@@ -12,7 +12,7 @@ import (
 
 func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, environment string
-	var editable bool
+	var editable, readOnlyModels bool
 
 	createCmd := &cobra.Command{
 		Use:   "create [<project>] <branch>",
@@ -39,7 +39,12 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			if environment == "prod" {
+			if readOnlyModels && !cmd.Flags().Changed("environment") {
+				// If read-only-models is set and environment is not explicitly set, default to prod
+				environment = "prod"
+			}
+
+			if environment == "prod" && !readOnlyModels {
 				// editable defaults to true, so only error if it was explicitly requested
 				if cmd.Flags().Changed("editable") && editable {
 					return fmt.Errorf("prod deployments cannot be editable")
@@ -54,11 +59,12 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfBold("Creating %q deployment for branch %q...\n", environment, branch)
 
 			resp, err := client.CreateDeployment(cmd.Context(), &adminv1.CreateDeploymentRequest{
-				Org:         ch.Org,
-				Project:     project,
-				Environment: environment,
-				Branch:      branch,
-				Editable:    editable,
+				Org:            ch.Org,
+				Project:        project,
+				Environment:    environment,
+				Branch:         branch,
+				Editable:       editable,
+				ReadOnlyModels: readOnlyModels,
 			})
 			if err != nil {
 				return err
@@ -76,6 +82,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	createCmd.Flags().StringVar(&environment, "environment", "dev", "Optional environment to create for (options: dev, prod)")
 	createCmd.Flags().BoolVar(&editable, "editable", true, "Make the deployment editable (changes are persisted back to git repo)")
+	createCmd.Flags().BoolVar(&readOnlyModels, "read-only-models", false, "Project editing is allowed but models are read-only. Assumes models have already been materialized in the output connector. Allows quick setup of editable deployments.")
 	_ = createCmd.Flags().MarkHidden("environment") // Hide the environment flag since editable deployments are only supported for dev environment and non editable deployments are not supported in UI yet
 	_ = createCmd.Flags().MarkHidden("editable")    // Hide the editable flag since non editable deployments are not supported in UI yet
 
