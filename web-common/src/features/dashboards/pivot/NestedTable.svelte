@@ -745,9 +745,9 @@
   }
 
   /* Conditional formatting (heatmap / data bar). Placed before the
-     selection/hover rules below so those win on equal specificity, keeping
-     selected and hovered cells legible. */
-  td.cell.has-conditional-format {
+     selection/hover rules below and kept at equal specificity (0,2,0) so
+     those win by source order, keeping selected and hovered cells legible. */
+  .cell.has-conditional-format {
     background: var(--cf-bg);
     color: var(--cf-color);
   }

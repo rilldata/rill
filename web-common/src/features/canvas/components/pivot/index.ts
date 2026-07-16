@@ -52,23 +52,30 @@ const DEFAULT_FORMAT_SCHEME = "theme-sequential";
 
 /**
  * Map the YAML conditional_format list to the per-measure formatting config
- * consumed by the pivot renderer. Malformed entries are skipped.
+ * consumed by the pivot renderer. The YAML is hand-editable and reaches here
+ * unvalidated, so malformed values and entries are skipped rather than trusted
+ * to match the declared type.
  */
 export function conditionalFormatSpecToMeasureFormatting(
   specs: PivotConditionalFormatSpec[] | undefined,
 ): Record<string, PivotMeasureFormatting> {
   const measureFormatting: Record<string, PivotMeasureFormatting> = {};
-  for (const spec of specs ?? []) {
+  if (!Array.isArray(specs)) return measureFormatting;
+  for (const spec of specs) {
+    if (!spec || typeof spec !== "object" || typeof spec.measure !== "string") {
+      continue;
+    }
     if (spec.mode === "heatmap" || spec.mode === "data_bar") {
       measureFormatting[spec.measure] = {
         mode: spec.mode,
-        scheme: spec.scheme ?? DEFAULT_FORMAT_SCHEME,
+        scheme:
+          typeof spec.scheme === "string" ? spec.scheme : DEFAULT_FORMAT_SCHEME,
       };
-    } else if (spec.mode === "rules" && spec.rules?.length) {
-      measureFormatting[spec.measure] = {
-        mode: "rules",
-        rules: spec.rules,
-      };
+    } else if (spec.mode === "rules" && Array.isArray(spec.rules)) {
+      const rules = spec.rules.filter((r) => r && typeof r === "object");
+      if (rules.length) {
+        measureFormatting[spec.measure] = { mode: "rules", rules };
+      }
     }
   }
   return measureFormatting;
