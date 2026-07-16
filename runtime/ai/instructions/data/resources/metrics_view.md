@@ -369,6 +369,34 @@ cache:
 
 You should not add a `cache:` config when the metrics view references a model inside the project since Rill does automatic cache management in that case.
 
+### Tags on dimensions and measures
+
+Add `tags:` (free-form labels) to a dimension or measure to group and filter the dropdowns and pivot tables:
+
+```yaml
+dimensions:
+  - name: campaign_name
+    column: campaign_name
+    tags: [marketing]
+measures:
+  - name: total_spend
+    expression: SUM(spend)
+    tags: [marketing, finance]
+```
+
+### Rollups
+
+Rollups back a metrics view with pre-aggregated tables. When a query's grain, dimensions, measures, time range, and filters match a rollup, Rill reads the smaller table instead of the base table for faster results. Requires a `timeseries:`.
+
+```yaml
+rollups:
+  - model: events_daily       # Pre-aggregated model
+    time_grain: day           # Required
+    dimensions: [country]     # Optional; defaults to all
+    measures: [total_events]  # Optional; defaults to all
+    data_time_range: P90D     # Optional; only route queries in this range
+```
+
 ## Dialect-Specific Notes
 
 SQL expressions in dimensions and measures use the underlying OLAP database's dialect.

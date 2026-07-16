@@ -24,6 +24,10 @@ The `olap_connector` property sets the default OLAP database for the project. Mo
 
 Common values are `duckdb` or `clickhouse`. If not specified, Rill initializes a managed DuckDB database and uses it as the default OLAP connector. 
 
+### Default AI connector
+
+The `ai_connector` property selects the connector powering AI features (developer agent, AI charts, chat). Point it at a project AI connector such as `openai`, `claude`, or `gemini`. Defaults to Rill's built-in AI service.
+
 ### Mock users for security testing
 
 The `mock_users` property defines test users for validating security policies during local development. Each mock user can have:
@@ -51,6 +55,10 @@ Project-wide defaults can be set for resource types using plural keys:
 
 Individual resources can override these defaults.
 
+### Resource tags
+
+Any resource can carry a top-level `tags:` list (free-form labels) for organizing and filtering resources across a project. Set per resource file, not in `rill.yaml`. Distinct from dimension/measure tags inside a metrics view.
+
 ### Path management
 
 - `ignore_paths`: List of paths to exclude from parsing (use leading `/`)
@@ -77,6 +85,9 @@ display_name: Sales Analytics
 description: Sales performance dashboards with partner access controls
 
 olap_connector: duckdb
+
+# Use a project-defined Claude connector to power AI features
+ai_connector: claude
 
 # Non-sensitive environment variables
 env:
