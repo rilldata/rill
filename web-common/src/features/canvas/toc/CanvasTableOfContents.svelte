@@ -113,9 +113,10 @@
   }
 </script>
 
-{#if entries.length > 0}
+{#if entries.length > 1}
   <!-- Rest state shows a rail of tick bars; hovering or focusing into it reveals the full list.
-       The same links back both states, so the accessible name is always the full heading text. -->
+       The same links back both states, so the accessible name is always the full heading text.
+       Hidden when there's only one section, where a table of contents adds no value. -->
   <nav aria-label="Table of contents" class="toc" class:toc--compact={compact}>
     <div class="toc__panel">
       <ul class="toc__list">
