@@ -168,6 +168,26 @@ rows:
 - `width: 4` - Third width; use for three equal charts
 - `width: 3` - Quarter width; use for four small components (minimum practical width)
 
+### Tab groups
+
+A row entry can be a tab group instead of a plain row. A tab group has a `name` (URL key) and a list of `tabs`, each with a `label`, optional `name`, and its own `rows`. Only the active tab loads data. Allowed only at the top level, not nested inside a tab.
+
+```yaml
+rows:
+  - name: by_region
+    tabs:
+      - label: North America
+        rows:
+          - items:
+              - width: 6
+                bar_chart: # ...
+      - label: EMEA
+        rows:
+          - items:
+              - width: 6
+                bar_chart: # ...
+```
+
 ## Dashboard Composition Best Practices
 
 When building a new canvas dashboard, follow this recommended structure:
