@@ -26,7 +26,7 @@ Common values are `duckdb` or `clickhouse`. If not specified, Rill initializes a
 
 ### Default AI connector
 
-The `ai_connector` property selects the connector powering AI features (developer agent, AI charts, chat). Point it at a project AI connector such as `openai`, `claude`, or `gemini`. Defaults to Rill's built-in AI service.
+The `ai_connector` property selects the connector powering AI features (developer agent, AI charts, chat). Point it to an AI connector defined in the project, such as `openai`, `claude`, or `gemini`. Defaults to Rill's built-in AI service.
 
 ### Mock users for security testing
 
