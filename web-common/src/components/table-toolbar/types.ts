@@ -29,7 +29,7 @@ export type FilterGroup = {
 );
 
 export type SortOption = {
-  id: string;
+  value: string;
   label: string;
   sort: ColumnSort;
 };

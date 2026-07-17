@@ -45,10 +45,21 @@
 
   let hovered = false;
 
+  function toggleFavourite() {
+    dashboardFavourites?.toggle(name?.toLowerCase());
+  }
+
   function onDashboardFavouriteToggle(e: MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
-    dashboardFavourites?.toggle(name?.toLowerCase());
+    toggleFavourite();
+  }
+
+  function onDashboardFavouriteKeydown(e: KeyboardEvent) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.stopPropagation();
+    e.preventDefault();
+    toggleFavourite();
   }
 </script>
 
@@ -73,11 +84,22 @@
     {/each}
     <div class="grow"></div>
     {#if dashboardFavourites && (hovered || isFavourite)}
-      <Star
-        size="16px"
-        class={isFavourite ? "fill-accent-primary-action" : "none"}
+      <span
+        role="button"
+        tabindex="0"
+        aria-label={isFavourite
+          ? m.dashboard_remove_favourite()
+          : m.dashboard_add_favourite()}
+        aria-pressed={isFavourite}
+        class="shrink-0 flex cursor-pointer"
         onclick={onDashboardFavouriteToggle}
-      />
+        onkeydown={onDashboardFavouriteKeydown}
+      >
+        <Star
+          size="16px"
+          class={isFavourite ? "fill-accent-primary-action" : "none"}
+        />
+      </span>
     {/if}
   </div>
   <div

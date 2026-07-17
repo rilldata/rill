@@ -1,15 +1,14 @@
 <script lang="ts">
   import DashboardChat from "@rilldata/web-common/features/chat/DashboardChat.svelte";
   import { RecentlyUsedDashboards } from "../../../../../features/dashboards/listing/dashboard-favourites.ts";
-  import { onMount } from "svelte";
   import { page } from "$app/stores";
 
   $: ({ organization, project, dashboard } = $page.params);
   $: recentlyUsedDashboards = new RecentlyUsedDashboards(organization, project);
 
-  onMount(() => {
-    recentlyUsedDashboards.update(dashboard.toLowerCase());
-  });
+  // Record usage on every dashboard change. The layout persists across
+  // param-only navigations, so onMount would only capture the first visit.
+  $: if (dashboard) recentlyUsedDashboards.update(dashboard.toLowerCase());
 </script>
 
 <div class="flex h-full overflow-hidden">

@@ -12,7 +12,10 @@
     InMemoryRuneStore,
   } from "web-common/src/lib/store-utils/types.svelte.ts";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
-  import { getDashboardFavouritesStore } from "../../dashboards/listing/dashboard-favourites.ts";
+  import {
+    getDashboardFavouritesStore,
+    sortByFavourites,
+  } from "../../dashboards/listing/dashboard-favourites.ts";
   import { page } from "$app/state";
 
   let {
@@ -55,13 +58,7 @@
   );
 
   let sortedOptions = $derived(
-    [...filteredOptions].sort(([a], [b]) => {
-      let aIndex = dashboardFavourites.value.indexOf(a);
-      if (aIndex === -1) aIndex = dashboardFavourites.value.length;
-      let bIndex = dashboardFavourites.value.indexOf(b);
-      if (bIndex === -1) bIndex = dashboardFavourites.value.length;
-      return aIndex - bIndex;
-    }),
+    sortByFavourites(filteredOptions, dashboardFavourites.value, ([id]) => id),
   );
 </script>
 

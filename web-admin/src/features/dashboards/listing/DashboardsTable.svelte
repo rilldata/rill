@@ -26,6 +26,8 @@
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
   import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
 
+  type DashboardRow = V1Resource & { lastUsed: number };
+
   let {
     isEmbedded = false,
     isPreview = false,
@@ -45,8 +47,9 @@
 
   const sortStore = UrlParamsState.createStringParam("sort");
   let sortingOption = $derived(
-    DashboardTableSortOptions.find((option) => option.id === sortStore.value) ??
-      DashboardTableSortOptions[0],
+    DashboardTableSortOptions.find(
+      (option) => option.value === sortStore.value,
+    ) ?? DashboardTableSortOptions[0],
   );
 
   const runtimeClient = useRuntimeClient();
@@ -99,13 +102,15 @@
   );
 
   let displayData = $derived(
-    filteredDashboards.map((r) => ({
-      ...r,
-      lastUsed:
-        recentlyUsedDashboards.recentlyUsed.value[
-          r.meta?.name?.name?.toLowerCase()
-        ] ?? 0,
-    })) as V1Resource[],
+    filteredDashboards.map(
+      (r): DashboardRow => ({
+        ...r,
+        lastUsed:
+          recentlyUsedDashboards.recentlyUsed.value[
+            r.meta?.name?.name?.toLowerCase() ?? ""
+          ] ?? 0,
+      }),
+    ),
   );
 
   const columns = [
@@ -173,9 +178,7 @@
     },
     {
       id: "lastUsed",
-      accessorFn: (row: V1Resource) => {
-        return (row as any).lastUsed;
-      },
+      accessorFn: (row: DashboardRow) => row.lastUsed,
     },
   ];
 

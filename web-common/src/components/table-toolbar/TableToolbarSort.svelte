@@ -21,7 +21,7 @@
 
   let sortLabel = $derived(
     "Sort by " +
-      (sortOptions.find((o) => o.id === sortStore.value)?.label ?? "None"),
+      (sortOptions.find((o) => o.value === sortStore.value)?.label ?? "None"),
   );
 
   const ClassForSize: Record<SortSize, string> = {
@@ -43,11 +43,11 @@
     <span>{sortLabel}</span>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
-    {#each sortOptions as option (option.id)}
+    {#each sortOptions as option (option.value)}
       <DropdownMenu.CheckboxItem
         closeOnSelect
-        checked={sortStore.value === option.id}
-        onCheckedChange={() => sortStore.setter(option.id)}
+        checked={sortStore.value === option.value}
+        onCheckedChange={() => sortStore.setter(option.value)}
       >
         {option.label}
       </DropdownMenu.CheckboxItem>

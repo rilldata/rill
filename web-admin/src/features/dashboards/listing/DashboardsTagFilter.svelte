@@ -9,7 +9,10 @@
     getTagFilterLabel,
   } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import type { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
-  import { getDashboardTagFavouritesStore } from "./dashboard-favourites.ts";
+  import {
+    getDashboardTagFavouritesStore,
+    sortByFavourites,
+  } from "./dashboard-favourites.ts";
   import { page } from "$app/state";
 
   let {
@@ -36,13 +39,7 @@
   );
 
   let sortedTags = $derived(
-    [...availableTags].sort((a, b) => {
-      let aIndex = tagsFavourites.value.indexOf(a.name);
-      if (aIndex === -1) aIndex = tagsFavourites.value.length;
-      let bIndex = tagsFavourites.value.indexOf(b.name);
-      if (bIndex === -1) bIndex = tagsFavourites.value.length;
-      return aIndex - bIndex;
-    }),
+    sortByFavourites(availableTags, tagsFavourites.value, (t) => t.name),
   );
 </script>
 

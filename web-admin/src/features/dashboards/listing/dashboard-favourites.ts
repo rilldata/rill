@@ -11,9 +11,28 @@ export function getDashboardTagFavouritesStore(org: string, project: string) {
   return SvelteLocalStorage.createStringArrayStore(key);
 }
 
+/**
+ * Sorts items so that favourites come first, in the order they were favourited,
+ * with everything else following in its original (stable) order.
+ */
+export function sortByFavourites<T>(
+  items: T[],
+  favourites: string[],
+  key: (item: T) => string,
+): T[] {
+  return [...items].sort((a, b) => {
+    const aIndex = favourites.indexOf(key(a));
+    const bIndex = favourites.indexOf(key(b));
+    return (
+      (aIndex === -1 ? favourites.length : aIndex) -
+      (bIndex === -1 ? favourites.length : bIndex)
+    );
+  });
+}
+
 export const DashboardTableSortOptions: SortOption[] = [
   {
-    id: "last_used_desc",
+    value: "last_used_desc",
     label: "Last Used",
     sort: {
       id: "lastUsed",
@@ -21,7 +40,7 @@ export const DashboardTableSortOptions: SortOption[] = [
     },
   },
   {
-    id: "name_asc",
+    value: "name_asc",
     label: "Name",
     sort: {
       id: "name",

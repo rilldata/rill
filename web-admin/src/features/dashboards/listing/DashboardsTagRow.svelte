@@ -30,6 +30,13 @@
     e.preventDefault();
     onFavouriteToggle();
   }
+
+  function handleFavouriteKeydown(e: KeyboardEvent) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.stopPropagation();
+    e.preventDefault();
+    onFavouriteToggle();
+  }
 </script>
 
 <button
@@ -60,13 +67,24 @@
   </Tooltip.Root>
 
   {#if hovered || isFavourite}
-    <Star
-      size="14px"
-      class="text-accent-primary-action {isFavourite
-        ? 'fill-accent-primary-action'
-        : ''}"
+    <span
+      role="button"
+      tabindex="0"
+      aria-label={isFavourite
+        ? `Remove ${name} from favourites`
+        : `Add ${name} to favourites`}
+      aria-pressed={isFavourite}
+      class="flex cursor-pointer"
       onclick={handleFavouriteToggle}
-    />
+      onkeydown={handleFavouriteKeydown}
+    >
+      <Star
+        size="14px"
+        class="text-accent-primary-action {isFavourite
+          ? 'fill-accent-primary-action'
+          : ''}"
+      />
+    </span>
   {/if}
 
   <span class="count-tile" title={`${count} dashboards`}>{count}</span>
