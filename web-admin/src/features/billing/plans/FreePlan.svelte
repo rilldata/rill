@@ -3,7 +3,6 @@
   import { formatCredit } from "@rilldata/web-admin/features/billing/plans/utils.ts";
   import { getPlanCredits } from "@rilldata/web-admin/features/billing/plans/selectors.ts";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors.ts";
-  import { PricingDetailsCompact } from "@rilldata/web-common/features/billing/pricing-details.ts";
   import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -30,14 +29,14 @@
 >
   {#snippet info()}
     {m.billing_no_time_limit()}<br />
-    {PricingDetailsCompact}<br />
+    {m.billing_pricing_details_compact()}<br />
     {m.billing_unit_spec()}
   {/snippet}
 
   {#snippet action()}
-    <button class="subscribe-btn" onclick={upgrade}
-      >{m.billing_upgrade_to_pro()}</button
-    >
+    <button class="subscribe-btn" onclick={upgrade}>
+      {m.billing_upgrade_to_paid_plan()}
+    </button>
   {/snippet}
 
   <div class="credit-section">
