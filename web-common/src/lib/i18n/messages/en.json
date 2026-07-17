@@ -231,7 +231,7 @@
   "billing_plan_tagline_growth": "For growing teams and embedded analytics.",
   "billing_plan_tagline_starter": "For small teams getting started.",
   "billing_plan_was_cancelled": "Your {planName} plan was cancelled",
-  "billing_pricing_details": "You'll be billed monthly based on usage at $0.15/compute unit/hr and $1/GB storage/mo.",
+  "billing_pricing_details": "You'll be billed monthly based on usage at $20/seat, $0.15/compute unit/hr and $1/GB storage/mo.",
   "billing_pricing_details_compact": "$20/seat · $0.15/compute unit/hr · $1/GB storage/mo.",
   "billing_prod_compute_units": "{count} Prod Compute Units",
   "billing_projects": "Projects",

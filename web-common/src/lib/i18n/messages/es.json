@@ -231,7 +231,7 @@
   "billing_plan_tagline_growth": "Para equipos en crecimiento y analítica embebida.",
   "billing_plan_tagline_starter": "Para equipos pequeños que están comenzando.",
   "billing_plan_was_cancelled": "Su plan {planName} ha sido cancelado",
-  "billing_pricing_details": "Se le facturará mensualmente según el uso a $0.15/unidad de cómputo/h y $1/GB de almacenamiento/mes.",
+  "billing_pricing_details": "Se le facturará mensualmente según el uso a $20/puesto, $0.15/unidad de cómputo/h y $1/GB de almacenamiento/mes.",
   "billing_pricing_details_compact": "$20/puesto · $0.15/unidad de cómputo/h · $1/GB de almacenamiento/mes.",
   "billing_prod_compute_units": "{count} unidades de cómputo de producción",
   "billing_projects": "Proyectos",
