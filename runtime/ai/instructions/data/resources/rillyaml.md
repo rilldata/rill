@@ -55,10 +55,6 @@ Project-wide defaults can be set for resource types using plural keys:
 
 Individual resources can override these defaults.
 
-### Resource tags
-
-Any resource can carry a top-level `tags:` list (free-form labels) for organizing and filtering resources across a project. Set per resource file, not in `rill.yaml`. Distinct from dimension/measure tags inside a metrics view.
-
 ### Path management
 
 - `ignore_paths`: List of paths to exclude from parsing (use leading `/`)
