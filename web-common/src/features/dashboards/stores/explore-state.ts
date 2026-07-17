@@ -101,11 +101,6 @@ export interface ExploreState {
   temporaryFilterName: string | null;
 
   /**
-   * Filter pills that are always present even when no values are selected
-   */
-  pinnedFilters: Set<string>;
-
-  /**
    * user selected time range
    */
   selectedTimeRange?: DashboardTimeControls;

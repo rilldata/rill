@@ -23,22 +23,10 @@ export function setTemporaryFilterName(
   dashboard.temporaryFilterName = name;
 }
 
-export function toggleFilterPin(
-  { dashboard }: DashboardMutables,
-  name: string,
-) {
-  const deleted = dashboard.pinnedFilters.delete(name);
-
-  if (!deleted) {
-    dashboard.pinnedFilters.add(name);
-  }
-}
-
 export const filterActions = {
   /**
    * Clears all filters and resets related fields
    */
   clearAllFilters,
   setTemporaryFilterName,
-  toggleFilterPin,
 };

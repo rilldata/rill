@@ -49,7 +49,6 @@ export function getRillDefaultExploreState(
     dimensionsWithInlistFilter: [],
     dimensionFilterExcludeMode: new Map(),
     temporaryFilterName: null,
-    pinnedFilters: new Set<string>(),
 
     ...getRillDefaultExploreTimeState(
       metricsViewSpec,

@@ -147,13 +147,16 @@ export type DimensionFilterItem = {
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
-  return (dimensionIdMap: Map<string, MetricsViewSpecDimension>) => {
+  return (
+    dimensionIdMap: Map<string, MetricsViewSpecDimension>,
+    pinnedFilters: Set<string> = new Set(),
+  ) => {
     return getDimensionFilters(
       dimensionIdMap,
       dashData.dashboard.whereFilter,
       dashData.dashboard.dimensionsWithInlistFilter,
       dashData.validExplore?.metricsView,
-      dashData.dashboard.pinnedFilters,
+      pinnedFilters,
     );
   };
 }
@@ -240,6 +243,7 @@ export const getAllDimensionFilterItems = (
   return (
     dimensionFilterItem: DimensionFilterItem[],
     dimensionIdMap: Map<string, MetricsViewSpecDimension>,
+    pinnedFilters: Set<string> = new Set(),
   ) => {
     const allDimensionFilterItem = [...dimensionFilterItem];
 
@@ -263,9 +267,7 @@ export const getAllDimensionFilterItems = (
             dimensionIdMap.get(dashData.dashboard.temporaryFilterName)!,
           ],
         ]),
-        pinned: dashData.dashboard.pinnedFilters?.has(
-          dashData.dashboard.temporaryFilterName,
-        ),
+        pinned: pinnedFilters.has(dashData.dashboard.temporaryFilterName),
       });
     }
 

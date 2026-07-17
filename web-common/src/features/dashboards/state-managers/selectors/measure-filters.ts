@@ -33,11 +33,14 @@ export type MeasureFilterItem = {
 export const getMeasureFilterItems = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
-  return (measureIdMap: Map<string, MetricsViewSpecMeasure>) => {
+  return (
+    measureIdMap: Map<string, MetricsViewSpecMeasure>,
+    pinnedFilters: Set<string> = new Set(),
+  ) => {
     return getMeasureFilters(
       measureIdMap,
       dashData.dashboard.dimensionThresholdFilters,
-      dashData.dashboard.pinnedFilters,
+      pinnedFilters,
     );
   };
 };
@@ -104,6 +107,7 @@ export const getAllMeasureFilterItems = (
   return (
     measureFilterItems: Array<MeasureFilterItem>,
     measureIdMap: Map<string, MetricsViewSpecMeasure>,
+    pinnedFilters: Set<string> = new Set(),
   ) => {
     const allMeasureFilterItems = [...measureFilterItems];
 
@@ -118,9 +122,7 @@ export const getAllMeasureFilterItems = (
         label: getMeasureDisplayName(
           measureIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
-        pinned: dashData.dashboard.pinnedFilters?.has(
-          dashData.dashboard.temporaryFilterName,
-        ),
+        pinned: pinnedFilters.has(dashData.dashboard.temporaryFilterName),
       });
     }
 

@@ -100,7 +100,7 @@ export function getExploreFilterStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
 ): Partial<ExploreState> {
   const filter = exploreSpec.defaultPreset?.where;
-  if (!filter && !exploreSpec.defaultPreset?.pinnedFilters?.length) {
+  if (!filter) {
     return {};
   }
 
@@ -125,7 +125,6 @@ export function getExploreFilterStateFromYAMLConfig(
     whereFilter: dimensionFilters,
     dimensionThresholdFilters,
     dimensionFilterExcludeMode,
-    pinnedFilters: new Set(exploreSpec.defaultPreset?.pinnedFilters ?? []),
   };
 }
 

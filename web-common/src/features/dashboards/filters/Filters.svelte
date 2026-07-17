@@ -50,6 +50,7 @@
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { type YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
 
   const { rillTime } = featureFlags;
 
@@ -57,6 +58,7 @@
   export let timeRanges: V1ExploreTimeRange[];
   export let metricsViewName: string;
   export let hasTimeSeries: boolean;
+  export let yamlOnlyState: YAMLOnlyExploreState;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -75,7 +77,7 @@
       },
 
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
-      filters: { clearAllFilters, setTemporaryFilterName, toggleFilterPin },
+      filters: { clearAllFilters, setTemporaryFilterName },
     },
     selectors: {
       dimensions: { allDimensions, timeDimensions },
@@ -152,16 +154,21 @@
   $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
-  $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
+  $: currentDimensionFilters = $getDimensionFilterItems(
+    dimensionIdMap,
+    new Set(yamlOnlyState.pinnedFilters.value),
+  );
   $: allDimensionFilters = $getAllDimensionFilterItems(
     currentDimensionFilters,
     dimensionIdMap,
+    new Set(yamlOnlyState.pinnedFilters.value),
   );
 
   $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
   $: allMeasureFilters = $getAllMeasureFilterItems(
     currentMeasureFilters,
     measureIdMap,
+    new Set(yamlOnlyState.pinnedFilters.value),
   );
 
   // hasFilter only checks for complete filters and excludes temporary ones
@@ -429,6 +436,13 @@
     const url = dashboardStateSync.getUrlForExploreState(exploreState);
     return isUrlTooLong(url);
   }
+
+  $: toggleFilterPin = yamlOnlyState?.editable
+    ? (name: string) => yamlOnlyState.pinnedFilters.toggle(name)
+    : undefined;
+  $: toggleFilterRequired = yamlOnlyState?.editable
+    ? (name: string) => yamlOnlyState.requiredFilters.toggle(name)
+    : undefined;
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
@@ -569,6 +583,7 @@
               applyDimensionContainsMode={async (name, searchText) =>
                 applyDimensionContainsMode(name, searchText)}
               {toggleFilterPin}
+              {toggleFilterRequired}
               isUrlTooLongAfterInListFilter={(values) =>
                 isUrlTooLongAfterInListFilter(filterData.name, values)}
             />
@@ -580,6 +595,7 @@
               {filterData}
               allDimensions={dimensions}
               {toggleFilterPin}
+              {toggleFilterRequired}
               onRemove={() =>
                 removeMeasureFilter(filterData.dimensionName, filterData.name)}
               onApply={({ dimension, oldDimension, filter }) =>

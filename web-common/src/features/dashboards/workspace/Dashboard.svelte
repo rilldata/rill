@@ -38,11 +38,16 @@
     exploreTimeseriesWidth,
     tddChartHeight,
   } from "./dashboard-layout-store";
+  import {
+    ReadonlyYAMLExploreState,
+    type YAMLOnlyExploreState,
+  } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
 
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
   export let embedThemeName: Readable<string | null> | null = null;
+  export let yamlOnlyState: YAMLOnlyExploreState | undefined = undefined;
 
   // Vertical space reserved below the chart for the chart toolbar, axis, big
   // number, and a minimum detail table height when computing the drag maximum.
@@ -145,6 +150,14 @@
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);
 
+  $: resolvedYamlOnlyState = yamlOnlyState ?? new ReadonlyYAMLExploreState();
+  $: if (
+    resolvedYamlOnlyState instanceof ReadonlyYAMLExploreState &&
+    exploreSpec
+  ) {
+    resolvedYamlOnlyState.sync(exploreSpec);
+  }
+
   // Clear the active theme when this dashboard is destroyed
   onDestroy(() => activeDashboardTheme.set(undefined));
 </script>
@@ -166,7 +179,12 @@
       {:else}
         {#key exploreName}
           <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-            <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
+            <Filters
+              {timeRanges}
+              {metricsViewName}
+              {hasTimeSeries}
+              yamlOnlyState={resolvedYamlOnlyState}
+            />
             <div class="absolute bottom-0 flex flex-col right-0">
               <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
             </div>
