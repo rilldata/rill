@@ -44,6 +44,7 @@ The other YAML and SQL files define individual resources in the project. They fo
 - Resources can reference other resources, which forms a dependency graph (DAG) that informs the sequence they are executed.
 - Resource names are unique within a resource type. For example, only one model can be named `events` (regardless of directory), but it is possible for both a model and a metrics view to be called `events`.
 - Clear resource names are important as they are widely used as unique identifiers throughout the platform (e.g. in CLI commands, URL slugs, API calls). They are usually lowercase and snake case, but that is not enforced.
+- Any resource can carry a top-level `tags:` list (free-form labels) for organizing and filtering resources across a project. Distinct from dimension/measure tags inside a metrics view.
 
 ## Project execution
 
@@ -83,11 +84,12 @@ They are usually lightweight as their reconcile logic usually only validates the
 They are normally found at the root of the DAG, powering other downstream resource types.
 
 There are a variety of built-in connector _drivers_, which each implements one or more capabilities:
-- **OLAP database:** can power dashboards (e.g. `duckdb`, `clickhouse`)
+- **OLAP database:** can power dashboards (e.g. `duckdb`, `clickhouse`, `druid`, `pinot`, `starrocks`, and `snowflake`, `bigquery`, `databricks` as live connectors)
 - **SQL database:** can run SQL queries and models (e.g. `postgres`, `bigquery`, `snowflake`)
 - **Information schema:** can list tables and their schemas (e.g. `duckdb`, `bigquery`, `postgres`)
 - **Object store:** can list, read and write flat files (e.g. `s3`)
 - **Notifier:** can send notifications (e.g. `slack`)
+- **AI:** can generate embeddings or responses (e.g. `openai`, `claude`, `gemini`)
 
 Here are some useful things to know when developing connectors:
 - Actual secrets like database passwords should go in `.env` and be referenced from the connector's YAML file
