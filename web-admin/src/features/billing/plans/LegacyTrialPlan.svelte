@@ -6,6 +6,7 @@
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
   import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     organization,
@@ -58,8 +59,9 @@
   {/snippet}
 
   {#snippet action()}
-    <button class="subscribe-btn" onclick={upgrade}>Upgrade to Team plan</button
-    >
+    <button class="subscribe-btn" onclick={upgrade}>
+      {m.billing_upgrade_to_paid_plan()}
+    </button>
   {/snippet}
 
   <div class="trial-section">
