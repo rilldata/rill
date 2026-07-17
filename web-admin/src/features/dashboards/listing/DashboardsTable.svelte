@@ -16,11 +16,10 @@
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
   import {
-    createDashboardTableSortStore,
     DashboardTableSortOptions,
     getDashboardFavouritesStore,
     RecentlyUsedDashboards,
-  } from "./dashboard-favourites.svelte.ts";
+  } from "./dashboard-favourites.ts";
   import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
@@ -44,7 +43,11 @@
     500,
   );
 
-  const sortStore = createDashboardTableSortStore();
+  const sortStore = UrlParamsState.createStringParam("sort");
+  let sortingOption = $derived(
+    DashboardTableSortOptions.find((option) => option.id === sortStore.value) ??
+      DashboardTableSortOptions[0],
+  );
 
   const runtimeClient = useRuntimeClient();
   let { organization, project } = $derived(page.params);
@@ -224,7 +227,7 @@
           data={displayData}
           {columns}
           {columnVisibility}
-          sorting={sortStore.value}
+          sorting={[sortingOption.sort]}
           toolbar={false}
           pinnedRows={validDashboardFavourites}
           maxRows={previewLimit}

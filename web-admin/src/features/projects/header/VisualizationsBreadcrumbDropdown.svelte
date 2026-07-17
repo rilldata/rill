@@ -12,7 +12,7 @@
     InMemoryRuneStore,
   } from "web-common/src/lib/store-utils/types.svelte.ts";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
-  import { getDashboardFavouritesStore } from "../../dashboards/listing/dashboard-favourites.svelte.ts";
+  import { getDashboardFavouritesStore } from "../../dashboards/listing/dashboard-favourites.ts";
   import { page } from "$app/state";
 
   let {

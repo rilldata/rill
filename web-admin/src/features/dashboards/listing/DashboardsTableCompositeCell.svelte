@@ -8,7 +8,7 @@
   import { Star } from "lucide-svelte";
   import { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import type { RecentlyUsedDashboards } from "./dashboard-favourites.svelte.ts";
+  import type { RecentlyUsedDashboards } from "./dashboard-favourites.ts";
 
   export let name: string;
   export let title: string;

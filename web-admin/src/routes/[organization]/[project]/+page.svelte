@@ -16,10 +16,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import TableToolbarSort from "@rilldata/web-common/components/table-toolbar/TableToolbarSort.svelte";
-  import {
-    createDashboardTableSortStore,
-    DashboardTableSortOptions,
-  } from "@rilldata/web-admin/features/dashboards/listing/dashboard-favourites.svelte.ts";
+  import { DashboardTableSortOptions } from "../../../features/dashboards/listing/dashboard-favourites.ts";
 
   const { chat, personalCanvases } = featureFlags;
 
@@ -47,7 +44,7 @@
     ($personalCanvasesQuery.data?.length ?? 0) === 0;
 
   const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
-  const sortStore = createDashboardTableSortStore();
+  const sortStore = UrlParamsState.createStringParam("sort");
 </script>
 
 <svelte:head>

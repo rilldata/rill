@@ -24,6 +24,7 @@
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.55.0",
     "@tanstack/svelte-query": "~5.76.0",
+    "tanstack-table-8-svelte-5": "^0.1.2",
     "autoprefixer": "^10.4.20",
     "axios": "1.13.6",
     "cronstrue": "^2.41.0",
@@ -34,12 +35,8 @@
     "svelte-check": "^4.0.4",
     "svelte-preprocess": "^6.0.3",
     "tailwindcss": "^3.4.13",
-    "tanstack-table-8-svelte-5": "^0.1.2",
     "vitest": "^4.1.1",
     "web-common": "*"
   },
-  "type": "module",
-  "dependencies": {
-    "install": "^0.13.0"
-  }
+  "type": "module"
 }

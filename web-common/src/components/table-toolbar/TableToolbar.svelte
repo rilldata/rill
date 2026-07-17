@@ -6,11 +6,7 @@
   import TableToolbarViewToggle from "./TableToolbarViewToggle.svelte";
   import type { FilterGroup, SortOption, ViewMode } from "./types";
   import type { Snippet } from "svelte";
-  import {
-    ArrayRuneStore,
-    type RuneStore,
-  } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
-  import type { ColumnSort } from "tanstack-table-8-svelte-5";
+  import { type RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   let {
     searchTextStore,
@@ -23,7 +19,7 @@
   }: {
     searchTextStore?: RuneStore<string>;
     filterGroups?: FilterGroup[];
-    sortStore?: ArrayRuneStore<ColumnSort>;
+    sortStore?: RuneStore<string>;
     sortOptions?: SortOption[];
     viewModeStore?: RuneStore<ViewMode>;
     onClearAllFilters?: () => void;

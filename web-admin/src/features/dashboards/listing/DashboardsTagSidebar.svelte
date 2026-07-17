@@ -3,7 +3,7 @@
   import DashboardsTagRow from "./DashboardsTagRow.svelte";
   import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
-  import { getDashboardTagFavouritesStore } from "./dashboard-favourites.svelte.ts";
+  import { getDashboardTagFavouritesStore } from "./dashboard-favourites.ts";
   import { page } from "$app/state";
   import { flip } from "svelte/animate";
 

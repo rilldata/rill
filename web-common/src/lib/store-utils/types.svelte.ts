@@ -53,7 +53,7 @@ export class ArrayRuneStore<Val> implements RuneStore<Val[]> {
   };
 
   public delete = (value: Val) => {
-    const newValue = this.value.filter((v) => this.compare(v, value));
+    const newValue = this.value.filter((v) => !this.compare(v, value));
     this.setter(newValue);
   };
 }

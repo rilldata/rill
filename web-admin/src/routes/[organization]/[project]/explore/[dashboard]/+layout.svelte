@@ -1,6 +1,6 @@
 <script lang="ts">
   import DashboardChat from "@rilldata/web-common/features/chat/DashboardChat.svelte";
-  import { RecentlyUsedDashboards } from "../../../../../features/dashboards/listing/dashboard-favourites.svelte.ts";
+  import { RecentlyUsedDashboards } from "../../../../../features/dashboards/listing/dashboard-favourites.ts";
   import { onMount } from "svelte";
   import { page } from "$app/stores";
 

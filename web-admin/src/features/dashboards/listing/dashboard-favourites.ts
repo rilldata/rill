@@ -1,8 +1,5 @@
 import { SvelteLocalStorage } from "@rilldata/web-common/lib/store-utils/svelte-local-storage.svelte.ts";
-import { ArrayRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
-import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
 import type { SortOption } from "@rilldata/web-common/components/table-toolbar";
-import type { ColumnSort } from "tanstack-table-8-svelte-5";
 
 export function getDashboardFavouritesStore(org: string, project: string) {
   const key = `rill:app:${org}:${project}:dashboard:favourites`;
@@ -16,40 +13,22 @@ export function getDashboardTagFavouritesStore(org: string, project: string) {
 
 export const DashboardTableSortOptions: SortOption[] = [
   {
-    id: "lastUsed",
+    id: "last_used_desc",
     label: "Last Used",
+    sort: {
+      id: "lastUsed",
+      desc: true,
+    },
   },
   {
-    id: "name",
+    id: "name_asc",
     label: "Name",
+    sort: {
+      id: "name",
+      desc: false,
+    },
   },
 ];
-
-const DashboardTableSortDefault: ColumnSort[] = [
-  { id: "lastUsed", desc: true },
-];
-
-export function createDashboardTableSortStore() {
-  return new ArrayRuneStore<ColumnSort>(
-    new UrlParamsState(
-      "sort",
-      (value: ColumnSort[]) => {
-        const sortValues = value.map(({ id, desc }) => `${id}:${desc}`);
-        return sortValues.length ? sortValues.join(",") : null;
-      },
-      (value) => {
-        const values: ColumnSort[] =
-          value?.split(",").map((kv) => {
-            const [id, desc] = kv.split(":");
-            return { id, desc: desc === "true" };
-          }) ?? [];
-        return values.length === 0 ? DashboardTableSortDefault : values;
-      },
-      DashboardTableSortDefault ?? [],
-    ),
-    (a, b) => a.id === b.id,
-  );
-}
 
 export class RecentlyUsedDashboards {
   public readonly recentlyUsed: SvelteLocalStorage<
