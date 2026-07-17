@@ -5,6 +5,7 @@
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1Conversation } from "../../../../runtime-client";
+  import ConnectClientPopover from "../../connect/ConnectClientPopover.svelte";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
@@ -40,6 +41,8 @@
 <div class="chatbot-header">
   <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
   <div class="chatbot-header-actions">
+    <ConnectClientPopover />
+
     <IconButton
       ariaLabel="New conversation"
       bgGray

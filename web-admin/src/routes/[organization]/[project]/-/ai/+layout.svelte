@@ -8,6 +8,8 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import APIIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
   import ProjectChat from "@rilldata/web-common/features/chat/ProjectChat.svelte";
+  import { setConnectClientContext } from "@rilldata/web-common/features/chat/connect/connect-client-context";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -16,6 +18,9 @@
   $: isPublic = $projectQuery.data?.project?.public ?? true;
 
   let mcpDialogOpen = false;
+
+  // Lets the ConnectClientPopover in the chat header open the MCPConnectDialog below.
+  setConnectClientContext({ open: () => (mcpDialogOpen = true) });
 </script>
 
 <div class="chat-page-wrapper">
