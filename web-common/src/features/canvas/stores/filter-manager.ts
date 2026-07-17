@@ -9,22 +9,16 @@ import type {
   V1Expression,
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
-import {
-  V1Operation,
-  type MetricsViewSpecMeasure,
-} from "@rilldata/web-common/runtime-client";
+import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import {
   derived,
   get,
-  writable,
   type Readable,
+  writable,
   type Writable,
 } from "svelte/store";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
-import {
-  createAndExpression,
-  flattenInExpressionValues,
-} from "../../dashboards/stores/filter-utils";
+import { flattenExpression } from "../../dashboards/stores/filter-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import type { ParsedFilters } from "./filter-state";
 import { FilterState } from "./filter-state";
@@ -950,61 +944,6 @@ function isDimensionItemEmpty(item: DimensionFilterItem): boolean {
 
 function isMeasureItemEmpty(item: MeasureFilterItem): boolean {
   return !item.filter;
-}
-
-// This should be deprecated eventually in favor of better support for variously formatted expressions
-export function flattenExpression(
-  expression: V1Expression | undefined,
-): V1Expression {
-  if (!expression) {
-    return createAndExpression([]);
-  }
-
-  let root: V1Expression;
-
-  // Ensure top level is an OPERATION_AND
-  if (!expression.cond || expression.cond.op !== V1Operation.OPERATION_AND) {
-    root = createAndExpression([expression]);
-  } else {
-    root = expression;
-  }
-
-  const rootCond = root.cond;
-  if (
-    !rootCond ||
-    rootCond.op !== V1Operation.OPERATION_AND ||
-    !Array.isArray(rootCond.exprs)
-  ) {
-    return root;
-  }
-
-  // Recursively flatten all nested ANDs, preserving order
-  rootCond.exprs = flattenAndExprs(rootCond.exprs);
-
-  // Normalize array-valued IN/NIN expressions into individual value expressions
-  rootCond.exprs = rootCond.exprs.map(flattenInExpressionValues);
-
-  return root;
-}
-
-function flattenAndExprs(exprs: V1Expression[]): V1Expression[] {
-  const result: V1Expression[] = [];
-
-  for (const expr of exprs) {
-    const cond = expr.cond;
-    if (
-      cond &&
-      cond.op === V1Operation.OPERATION_AND &&
-      Array.isArray(cond.exprs)
-    ) {
-      // Inline children in order
-      result.push(...flattenAndExprs(cond.exprs));
-    } else {
-      result.push(expr);
-    }
-  }
-
-  return result;
 }
 
 // wip - bgh

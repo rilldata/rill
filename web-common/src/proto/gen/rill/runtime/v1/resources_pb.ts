@@ -3103,6 +3103,21 @@ export class ExplorePreset extends Message<ExplorePreset> {
   dimensionsWithInlistFilter: string[] = [];
 
   /**
+   * Array of dimension or measure names
+   *
+   * @generated from field: repeated string pinned_filters = 39;
+   */
+  pinnedFilters: string[] = [];
+
+  /**
+   * Array of dimension or measure names that must have a value before the explore can render.
+   * Required filters are implicitly pinned.
+   *
+   * @generated from field: repeated string required_filters = 40;
+   */
+  requiredFilters: string[] = [];
+
+  /**
    * Time range for the explore.
    * It corresponds to the `range` property of the explore's `time_ranges`.
    * If not found in `time_ranges`, it should be added to the list.
@@ -3268,6 +3283,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 11, name: "where", kind: "message", T: Expression, opt: true },
     { no: 29, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 39, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 40, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },

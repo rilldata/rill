@@ -7,13 +7,15 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 
 type ExploreYAML struct {
-	commonYAML           `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	commonYAML           `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName          string                 `yaml:"display_name"`
 	Title                string                 `yaml:"title"` // Deprecated: use display_name
 	Description          string                 `yaml:"description"`
@@ -32,6 +34,9 @@ type ExploreYAML struct {
 		TimeRange           string             `yaml:"time_range"`
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
+		Filter              string             `yaml:"filter"`
+		Pinned              []string           `yaml:"pinned"`
+		Required            []string           `yaml:"required"`
 	} `yaml:"defaults"`
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
@@ -246,6 +251,27 @@ func (p *Parser) parseExplore(node *Node) error {
 		if tmp.Defaults.ComparisonDimension != "" {
 			compareDim = &tmp.Defaults.ComparisonDimension
 		}
+
+		var filter *runtimev1.Expression
+		if tmp.Defaults.Filter != "" {
+			expr, err := metricssql.ParseFilter(tmp.Defaults.Filter)
+			if err != nil {
+				return fmt.Errorf("invalid filter expression: %q: %w", tmp.Defaults.Filter, err)
+			}
+
+			filter = metricsview.ExpressionToProto(expr)
+		}
+
+		var pinnedMeasuresOrDimensions []string
+		if len(tmp.Defaults.Pinned) > 0 {
+			pinnedMeasuresOrDimensions = tmp.Defaults.Pinned
+		}
+
+		var requiredFilters []string
+		if len(tmp.Defaults.Required) > 0 {
+			requiredFilters = tmp.Defaults.Required
+		}
+
 		defaultPreset = &runtimev1.ExplorePreset{
 			Dimensions:          presetDimensions,
 			DimensionsSelector:  presetDimensionsSelector,
@@ -254,6 +280,9 @@ func (p *Parser) parseExplore(node *Node) error {
 			TimeRange:           tr,
 			ComparisonMode:      mode,
 			ComparisonDimension: compareDim,
+			Where:               filter,
+			PinnedFilters:       pinnedMeasuresOrDimensions,
+			RequiredFilters:     requiredFilters,
 		}
 	}
 

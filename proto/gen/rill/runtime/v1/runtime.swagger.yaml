@@ -5342,6 +5342,18 @@ definitions:
         items:
           type: string
         description: Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
+      pinnedFilters:
+        type: array
+        items:
+          type: string
+        title: Array of dimension or measure names
+      requiredFilters:
+        type: array
+        items:
+          type: string
+        description: |-
+          Array of dimension or measure names that must have a value before the explore can render.
+          Required filters are implicitly pinned.
       timeRange:
         type: string
         description: |-

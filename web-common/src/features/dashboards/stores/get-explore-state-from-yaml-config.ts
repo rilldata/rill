@@ -21,6 +21,7 @@ import {
   V1TimeGrain,
   type V1ExploreSpec,
   type V1TimeRangeSummary,
+  V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
@@ -28,6 +29,11 @@ import {
   DateTimeUnitToV1TimeGrain,
   isGrainAllowed,
 } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  createAndExpression,
+  flattenExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 
 export function getExploreStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
@@ -38,6 +44,7 @@ export function getExploreStateFromYAMLConfig(
   return <Partial<ExploreState>>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
+    ...getExploreFilterStateFromYAMLConfig(exploreSpec),
     ...getExploreTimeStateFromYAMLConfig(
       exploreSpec,
       timeRangeSummary,
@@ -87,6 +94,39 @@ export function createUrlForExploreYAMLDefaultState(
       return `?${urlParams.toString()}`;
     },
   );
+}
+
+export function getExploreFilterStateFromYAMLConfig(
+  exploreSpec: V1ExploreSpec,
+): Partial<ExploreState> {
+  const filter = exploreSpec.defaultPreset?.where;
+  if (!filter && !exploreSpec.defaultPreset?.pinnedFilters?.length) {
+    return {};
+  }
+
+  const flattened = filter
+    ? flattenExpression(filter)
+    : createAndExpression([]);
+
+  const { dimensionThresholdFilters, dimensionFilters } =
+    splitWhereFilter(flattened);
+
+  // Build dimensionFilterExcludeMode from the parsed filter expressions.
+  // NIN (NOT IN) operations indicate exclude mode for that dimension.
+  const dimensionFilterExcludeMode = new Map<string, boolean>();
+  for (const expr of dimensionFilters.cond?.exprs ?? []) {
+    const ident = expr.cond?.exprs?.[0]?.ident;
+    if (ident && expr.cond?.op === V1Operation.OPERATION_NIN) {
+      dimensionFilterExcludeMode.set(ident, true);
+    }
+  }
+
+  return {
+    whereFilter: dimensionFilters,
+    dimensionThresholdFilters,
+    dimensionFilterExcludeMode,
+    pinnedFilters: new Set(exploreSpec.defaultPreset?.pinnedFilters ?? []),
+  };
 }
 
 function getExploreTimeStateFromYAMLConfig(

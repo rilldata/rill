@@ -153,6 +153,7 @@ export function getDimensionFilterItems(
       dashData.dashboard.whereFilter,
       dashData.dashboard.dimensionsWithInlistFilter,
       dashData.validExplore?.metricsView,
+      dashData.dashboard.pinnedFilters,
     );
   };
 }
@@ -162,6 +163,7 @@ export function getDimensionFiltersMap(
   filter: V1Expression | undefined,
   dimensionsWithInlistFilter: string[],
   metricsViewName: string | undefined,
+  pinnedFilters: Set<string>,
 ): Map<string, DimensionFilterItem> {
   if (!filter || !metricsViewName) return new Map();
   const filteredDimensions: Map<string, DimensionFilterItem> = new Map();
@@ -186,7 +188,7 @@ export function getDimensionFiltersMap(
         selectedValues: getValuesInExpression(e),
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
         inputText: undefined,
-        pinned: false,
+        pinned: pinnedFilters?.has(ident),
 
         dimensions: new Map<string, MetricsViewSpecDimension>([
           [metricsViewName, dim],
@@ -206,7 +208,7 @@ export function getDimensionFiltersMap(
         dimensions: new Map<string, MetricsViewSpecDimension>([
           [metricsViewName, dim],
         ]),
-        pinned: false,
+        pinned: pinnedFilters?.has(ident),
       });
     }
   });
@@ -219,6 +221,7 @@ export function getDimensionFilters(
   filter: V1Expression | undefined,
   dimensionsWithInlistFilter: string[],
   metricsViewName: string | undefined,
+  pinnedFilters: Set<string>,
 ) {
   return Array.from(
     getDimensionFiltersMap(
@@ -226,6 +229,7 @@ export function getDimensionFilters(
       filter,
       dimensionsWithInlistFilter,
       metricsViewName,
+      pinnedFilters,
     ).values(),
   );
 }
@@ -259,7 +263,9 @@ export const getAllDimensionFilterItems = (
             dimensionIdMap.get(dashData.dashboard.temporaryFilterName)!,
           ],
         ]),
-        pinned: false,
+        pinned: dashData.dashboard.pinnedFilters?.has(
+          dashData.dashboard.temporaryFilterName,
+        ),
       });
     }
 

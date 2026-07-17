@@ -540,6 +540,11 @@ message ExplorePreset {
   optional Expression where = 11;
   // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
   repeated string dimensions_with_inlist_filter = 29;
+  // Array of dimension or measure names
+  repeated string pinned_filters = 39;
+  // Array of dimension or measure names that must have a value before the explore can render.
+  // Required filters are implicitly pinned.
+  repeated string required_filters = 40;
 
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.

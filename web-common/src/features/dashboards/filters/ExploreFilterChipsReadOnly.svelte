@@ -19,6 +19,7 @@
   // But we need resolved start and end based on current time in dimension filters to get query for accurate results.
   export let queryTimeStart: string | undefined = undefined;
   export let queryTimeEnd: string | undefined = undefined;
+  export let pinnedFilters: Set<string> = new Set();
 
   const runtimeClient = useRuntimeClient();
 
@@ -44,4 +45,5 @@
   {displayTimeRange}
   {queryTimeStart}
   {queryTimeEnd}
+  {pinnedFilters}
 />

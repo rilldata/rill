@@ -75,7 +75,7 @@
       },
 
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
-      filters: { clearAllFilters, setTemporaryFilterName },
+      filters: { clearAllFilters, setTemporaryFilterName, toggleFilterPin },
     },
     selectors: {
       dimensions: { allDimensions, timeDimensions },
@@ -568,6 +568,7 @@
                 applyDimensionInListMode(name, values)}
               applyDimensionContainsMode={async (name, searchText) =>
                 applyDimensionContainsMode(name, searchText)}
+              {toggleFilterPin}
               isUrlTooLongAfterInListFilter={(values) =>
                 isUrlTooLongAfterInListFilter(filterData.name, values)}
             />
@@ -578,6 +579,7 @@
             <MeasureFilter
               {filterData}
               allDimensions={dimensions}
+              {toggleFilterPin}
               onRemove={() =>
                 removeMeasureFilter(filterData.dimensionName, filterData.name)}
               onApply={({ dimension, oldDimension, filter }) =>
