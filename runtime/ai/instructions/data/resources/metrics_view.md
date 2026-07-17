@@ -390,11 +390,11 @@ Rollups back a metrics view with pre-aggregated tables. When a query's grain, di
 
 ```yaml
 rollups:
-  - model: events_daily       # Pre-aggregated model
-    time_grain: day           # Required
-    dimensions: [country]     # Optional; defaults to all
-    measures: [total_events]  # Optional; defaults to all
-    data_time_range: -90D to now     # Optional; indicates rollup data time range if set otherwise min/max queries are done on the timeseries column to figure out rollup's data time range
+  - model: events_daily           # Pre-aggregated model
+    time_grain: day               # Required
+    dimensions: [country]         # Optional; defaults to all
+    measures: [total_events]      # Optional; defaults to all
+    data_time_range: -90D to now  # Optional; indicates rollup data time range if set otherwise min/max queries are done on the timeseries column to figure out rollup's data time range
 ```
 
 ## Dialect-Specific Notes
