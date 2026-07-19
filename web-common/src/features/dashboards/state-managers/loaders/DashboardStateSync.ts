@@ -214,89 +214,92 @@ export class DashboardStateSync {
     if (this.updating || !this.initialized) return;
     this.updating = true;
 
-    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-    const metricsViewSpec = validSpecData?.metricsView ?? {};
-    const exploreSpec = validSpecData?.explore ?? {};
-    const { data: rillDefaultExploreURLParams } = get(
-      this.rillDefaultExploreURLParams,
-    );
+    try {
+      const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+      const metricsViewSpec = validSpecData?.metricsView ?? {};
+      const exploreSpec = validSpecData?.explore ?? {};
+      const { data: rillDefaultExploreURLParams } = get(
+        this.rillDefaultExploreURLParams,
+      );
 
-    // Type-safety
-    if (!rillDefaultExploreURLParams) return;
+      // Type-safety
+      if (!rillDefaultExploreURLParams) return;
 
-    const partialExplore = this.dataLoader.getExploreStateFromURLParams(
-      urlSearchParams,
-      type,
-    );
+      const partialExplore = this.dataLoader.getExploreStateFromURLParams(
+        urlSearchParams,
+        type,
+      );
 
-    // This can be undefined when one of the queries has not loaded yet.
-    // Rest of the code can be indeterminate when queries have not loaded.
-    // This shouldn't ideally happen.
-    if (!partialExplore) return;
+      // This can be undefined when one of the queries has not loaded yet.
+      // Rest of the code can be indeterminate when queries have not loaded.
+      // This shouldn't ideally happen.
+      if (!partialExplore) return;
 
-    const pageState = get(page);
+      const pageState = get(page);
 
-    if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
-      // Resolve start/end by making a network call.
-      [
-        partialExplore.selectedTimeRange,
-        // partialExplore.selectedComparisonTimeRange,
-      ] = await resolveTimeRanges(
-        this.client,
-        exploreSpec,
+      if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
+        // Resolve start/end by making a network call.
         [
           partialExplore.selectedTimeRange,
           // partialExplore.selectedComparisonTimeRange,
-        ],
-        partialExplore.selectedTimezone,
-        undefined,
-        partialExplore.selectedTimeDimension,
+        ] = await resolveTimeRanges(
+          this.client,
+          exploreSpec,
+          [
+            partialExplore.selectedTimeRange,
+            // partialExplore.selectedComparisonTimeRange,
+          ],
+          partialExplore.selectedTimezone,
+          undefined,
+          partialExplore.selectedTimeDimension,
+        );
+      }
+
+      // Merge the partial state from url into the store
+      metricsExplorerStore.mergePartialExplorerEntity(
+        this.exploreName,
+        partialExplore,
       );
-    }
+      // Get time controls state after explore state is updated.
+      const timeControlsState = get(this.timeControlStore);
+      // Get the updated URL, this could be different from the page url if we added extra state.
+      // The extra state could come from session storage, home bookmark or yaml defaults
+      const redirectUrl = this.getUrlForExploreState(partialExplore);
 
-    // Merge the partial state from url into the store
-    metricsExplorerStore.mergePartialExplorerEntity(
-      this.exploreName,
-      partialExplore,
-    );
-    // Get time controls state after explore state is updated.
-    const timeControlsState = get(this.timeControlStore);
-    // Get the updated URL, this could be different from the page url if we added extra state.
-    // The extra state could come from session storage, home bookmark or yaml defaults
-    const redirectUrl = this.getUrlForExploreState(partialExplore);
-
-    // Get the full updated state and save to session storage
-    const updatedExploreState =
-      get(metricsExplorerStore).entities[this.exploreName];
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      updatedExploreState,
-      exploreSpec,
-      metricsViewSpec,
-      timeControlsState,
-    );
-    if (!this.dataLoader.disableMostRecentDashboardState) {
-      // Update "most recent explore state" with updated state from url
-      saveMostRecentPartialExploreState(
+      // Get the full updated state and save to session storage
+      const updatedExploreState =
+        get(metricsExplorerStore).entities[this.exploreName];
+      updateExploreSessionStore(
         this.exploreName,
         this.extraPrefix,
         updatedExploreState,
+        exploreSpec,
+        metricsViewSpec,
+        timeControlsState,
       );
-    }
+      if (!this.dataLoader.disableMostRecentDashboardState) {
+        // Update "most recent explore state" with updated state from url
+        saveMostRecentPartialExploreState(
+          this.exploreName,
+          this.extraPrefix,
+          updatedExploreState,
+        );
+      }
 
-    this.updating = false;
-    // If the url doesn't need to be changed further then we can skip the goto
-    if (redirectUrl.search === pageState.url.search) {
-      return;
-    }
+      // If the url doesn't need to be changed further then we can skip the goto
+      if (redirectUrl.search === pageState.url.search) {
+        return;
+      }
 
-    // using `replaceState` directly messes up the navigation entries,
-    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    return goto(redirectUrl, {
-      replaceState: true,
-      state: pageState.state,
-    });
+      // using `replaceState` directly messes up the navigation entries,
+      // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
+      await goto(redirectUrl, {
+        replaceState: true,
+        state: pageState.state,
+      });
+    } finally {
+      this.updating = false;
+    }
   }
 
   /**
@@ -311,44 +314,46 @@ export class DashboardStateSync {
     if (this.updating) return;
     this.updating = true;
 
-    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-    const exploreSpec = validSpecData?.explore ?? {};
-    const metricsViewSpec = validSpecData?.metricsView ?? {};
-    const timeControlsState = get(this.timeControlStore);
+    try {
+      const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+      const exploreSpec = validSpecData?.explore ?? {};
+      const metricsViewSpec = validSpecData?.metricsView ?? {};
+      const timeControlsState = get(this.timeControlStore);
 
-    const pageState = get(page);
+      const pageState = get(page);
 
-    // Get the new url params for the updated state
-    const newUrl = this.getUrlForExploreState(exploreState);
+      // Get the new url params for the updated state
+      const newUrl = this.getUrlForExploreState(exploreState);
 
-    // Update the session storage with the new explore state.
-    updateExploreSessionStore(
-      this.exploreName,
-      this.extraPrefix,
-      exploreState,
-      exploreSpec,
-      metricsViewSpec,
-      timeControlsState,
-    );
-    if (!this.dataLoader.disableMostRecentDashboardState) {
-      // Update "most recent explore state" with updated state.
-      // Since we do not update the state per action we do it here as blanket update.
-      saveMostRecentPartialExploreState(
+      // Update the session storage with the new explore state.
+      updateExploreSessionStore(
         this.exploreName,
         this.extraPrefix,
         exploreState,
+        exploreSpec,
+        metricsViewSpec,
+        timeControlsState,
       );
-    }
+      if (!this.dataLoader.disableMostRecentDashboardState) {
+        // Update "most recent explore state" with updated state.
+        // Since we do not update the state per action we do it here as blanket update.
+        saveMostRecentPartialExploreState(
+          this.exploreName,
+          this.extraPrefix,
+          exploreState,
+        );
+      }
 
-    // If the state didnt result in a new url then skip goto.
-    // This avoids adding redundant urls to the history.
-    if (newUrl.search === pageState.url.search) {
+      // If the state didnt result in a new url then skip goto.
+      // This avoids adding redundant urls to the history.
+      if (newUrl.search === pageState.url.search) {
+        return;
+      }
+
+      // dashboard changed so we should update the url
+      await goto(newUrl);
+    } finally {
       this.updating = false;
-      return;
     }
-
-    // dashboard changed so we should update the url
-    await goto(newUrl);
-    this.updating = false;
   }
 }
