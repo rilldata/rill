@@ -924,16 +924,21 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					if err != nil {
 						return err
 					}
-					urls, ok := adminMeta.RecipientURLs[""]
-					if !ok {
-						return fmt.Errorf("failed to get recipient URLs for anon user")
+					// Note: adminMeta may not always be available (if outside of cloud). In that case, we leave the links blank (no clickthrough available).
+					msg.OpenLink = ""
+					msg.EditLink = ""
+					if adminMeta != nil && adminMeta.RecipientURLs != nil {
+						urls, ok := adminMeta.RecipientURLs[""]
+						if !ok {
+							return fmt.Errorf("failed to get recipient URLs for anon user")
+						}
+						openLink, err := addExecutionTime(urls.OpenURL, executionTime)
+						if err != nil {
+							return fmt.Errorf("failed to build recipient open url: %w", err)
+						}
+						msg.OpenLink = openLink
+						msg.EditLink = urls.EditURL
 					}
-					openLink, err := addExecutionTime(urls.OpenURL, executionTime)
-					if err != nil {
-						return fmt.Errorf("failed to build recipient open url: %w", err)
-					}
-					msg.OpenLink = openLink
-					msg.EditLink = urls.EditURL
 					start := time.Now()
 					defer func() {
 						totalLatency := time.Since(start).Milliseconds()
