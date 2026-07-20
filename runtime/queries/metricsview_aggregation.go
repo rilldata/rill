@@ -162,8 +162,12 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
+	qryTimeDim := ""
+	if q.TimeRange != nil {
+		qryTimeDim = q.TimeRange.TimeDimension
+	}
 	if mv.ValidSpec.TimeDimension != "" {
-		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.TimeRange.TimeDimension, q.SecurityClaims, opts.Priority)
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, qryTimeDim, q.SecurityClaims, opts.Priority)
 		if err != nil {
 			return err
 		}
@@ -520,7 +524,7 @@ func (q *MetricsViewAggregation) generateExportHeaders(ctx context.Context, rt *
 	headers = append(headers, title)
 
 	// Build date range
-	if !qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero() {
+	if qry.TimeRange != nil && (!qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero()) {
 		timeRange := fmt.Sprintf("Date range: %s to %s", qry.TimeRange.Start.Format(time.RFC3339), qry.TimeRange.End.Format(time.RFC3339))
 		headers = append(headers, timeRange)
 	}
