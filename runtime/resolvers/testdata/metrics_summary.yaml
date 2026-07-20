@@ -224,6 +224,8 @@ tests:
           max_value: "2024-01-08T00:00:00Z"
           min_value: "2024-01-01T00:00:00Z"
           name: event_time
+  # The time range is intentionally unfiltered (see the Timestamps docstring), and since this user's accessible
+  # rows are all older than the sample interval, the dimension summary values are null (instead of leaking values).
   - name: duckdb_summary_with_security
     resolver: metrics_summary
     properties:
@@ -234,17 +236,14 @@ tests:
     result:
       - dimensions:
           - data_type: CODE_TIMESTAMP
-            max_value: "2024-01-06T00:00:00Z"
+            max_value: "2024-01-08T00:00:00Z"
             min_value: "2024-01-01T00:00:00Z"
             name: event_time
           - data_type: CODE_STRING
-            example_value: Home
-            max_value: Home
-            min_value: Home
             name: category
         time_range:
           data_type: CODE_TIMESTAMP
-          max_value: "2024-01-06T00:00:00Z"
+          max_value: "2024-01-08T00:00:00Z"
           min_value: "2024-01-01T00:00:00Z"
           name: event_time
   - name: duckdb_summary_with_security_admin
@@ -257,8 +256,8 @@ tests:
     result:
       - dimensions:
           - data_type: CODE_TIMESTAMP
-            max_value: "2024-01-07T00:00:00Z"
-            min_value: "2024-01-02T00:00:00Z"
+            max_value: "2024-01-08T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
             name: event_time
           - data_type: CODE_STRING
             example_value: Electronics
@@ -272,8 +271,8 @@ tests:
             name: country
         time_range:
           data_type: CODE_TIMESTAMP
-          max_value: "2024-01-07T00:00:00Z"
-          min_value: "2024-01-02T00:00:00Z"
+          max_value: "2024-01-08T00:00:00Z"
+          min_value: "2024-01-01T00:00:00Z"
           name: event_time
   - name: duckdb_summary_with_additional_row_filter
     resolver: metrics_summary
@@ -284,8 +283,8 @@ tests:
     result:
       - dimensions:
           - data_type: CODE_TIMESTAMP
-            max_value: "2024-01-07T00:00:00Z"
-            min_value: "2024-01-02T00:00:00Z"
+            max_value: "2024-01-08T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
             name: event_time
           - data_type: CODE_STRING
             example_value: CA
@@ -310,34 +309,34 @@ tests:
             name: is_active
         time_range:
           data_type: CODE_TIMESTAMP
-          max_value: "2024-01-07T00:00:00Z"
-          min_value: "2024-01-02T00:00:00Z"
+          max_value: "2024-01-08T00:00:00Z"
+          min_value: "2024-01-01T00:00:00Z"
           name: event_time
   - name: clickhouse_summary_with_security
     resolver: metrics_summary
     properties:
       metrics_view: clickhouse_metrics_restricted
     user_attributes:
-      country: "US"
+      country: "CA"
     result:
       - dimensions:
           - data_type: CODE_TIMESTAMP
-            max_value: "2024-01-06T00:00:00Z"
+            max_value: "2024-01-08T00:00:00Z"
             min_value: "2024-01-01T00:00:00Z"
             name: event_time
           - data_type: CODE_STRING
-            example_value: Home
-            max_value: Home
-            min_value: Home
+            example_value: Electronics
+            max_value: Electronics
+            min_value: Electronics
             name: category
           - data_type: CODE_STRING
-            example_value: US
-            max_value: US
-            min_value: US
+            example_value: CA
+            max_value: CA
+            min_value: CA
             name: country
         time_range:
           data_type: CODE_TIMESTAMP
-          max_value: "2024-01-06T00:00:00Z"
+          max_value: "2024-01-08T00:00:00Z"
           min_value: "2024-01-01T00:00:00Z"
           name: event_time
   - name: duckdb_empty_summary

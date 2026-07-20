@@ -92,11 +92,13 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		timeDimensions = timeDimensions[0:SummaryTimeDimensionsLimit]
 	}
 
-	// Compute the time dimension summaries
+	// Compute the time dimension summaries.
+	// Note that Timestamps intentionally does not apply the security policy's filters (see its docstring),
+	// so unlike the dimension summaries below, the time ranges reflect all rows in the underlying table.
 	var summaries []DimensionSummary
 	var defaultTimeDimensionSummary DimensionSummary
 	for _, dim := range timeDimensions {
-		timeRange, err := e.summaryTimestamps(ctx, dim.Name, securityFilter, securityFilterArgs)
+		timeRange, err := e.Timestamps(ctx, dim.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get time range for dimension %q: %w", dim.Name, err)
 		}
@@ -166,6 +168,8 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			args = append(args, maxTime.Add(-SummarySampleInterval))
 		}
 	}
+	// Note the sample interval is derived from the unfiltered max timestamp,
+	// so if the user's accessible rows are all older than the sample interval, the summary values will be null.
 	if securityFilter != "" {
 		whereClauses = append(whereClauses, fmt.Sprintf("(%s)", securityFilter))
 		args = append(args, securityFilterArgs...)
@@ -240,30 +244,4 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		Dimensions:           summaries,
 		DefaultTimeDimension: defaultTimeDimensionSummary,
 	}, nil
-}
-
-// summaryTimestamps resolves the time range for a time dimension, applying the compiled security filter when one is present.
-// Without a security filter it delegates to Timestamps;
-// with one it mirrors the resolution logic of Timestamps, minus rollups (not used by the summary)
-// and minus the executor-level cache (which doesn't account for security filters).
-func (e *Executor) summaryTimestamps(ctx context.Context, timeDim, securityFilter string, securityFilterArgs []any) (metricsview.TimestampsResult, error) {
-	if securityFilter == "" {
-		return e.Timestamps(ctx, timeDim)
-	}
-
-	timeExpr, err := e.timeColumnOrExpr(timeDim)
-	if err != nil {
-		return metricsview.TimestampsResult{}, fmt.Errorf("failed to resolve time column or expression: %w", err)
-	}
-
-	if timeDim == e.metricsView.TimeDimension && e.metricsView.DataTimeRange != "" {
-		// The declared data_time_range is metadata, not derived from restricted rows, so no filter is needed.
-		res, err := e.resolveDeclaredTimestamps(e.metricsView.DataTimeRange)
-		if err != nil {
-			return metricsview.TimestampsResult{}, fmt.Errorf(`failed to resolve "data_time_range": %w`, err)
-		}
-		return res, nil
-	}
-
-	return e.resolveTimestampsForTable(ctx, e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table, timeExpr, e.metricsView.WatermarkExpression, securityFilter, securityFilterArgs)
 }
