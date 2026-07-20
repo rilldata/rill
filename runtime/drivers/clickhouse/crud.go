@@ -21,10 +21,7 @@ type tableWriteMetrics struct {
 }
 
 func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties, beforeCreate, afterCreate string) (*tableWriteMetrics, error) {
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 
 	// Execute beforeCreate query
 	if beforeCreate != "" {
@@ -116,10 +113,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
-		onClusterClause := ""
-		if c.config.Cluster != "" {
-			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-		}
+		onClusterClause := c.onClusterClause()
 		// Get the engine info of the given table
 		engine, err := c.getTableEngine(ctx, name)
 		if err != nil {
@@ -246,33 +240,32 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 		return err
 	}
 
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 
 	switch typ {
 	case "VIEW":
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP VIEW %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
 	case "DICTIONARY":
 		// first drop the dictionary
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP DICTIONARY %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP DICTIONARY IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
 		// then drop the temp table
 		_ = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
 			Priority: 100,
 		})
 		return err
 	case "TABLE":
 		// drop the main table
+		// use IF EXISTS so drops succeed in cluster mode even for tables that don't exist on every node,
+		// e.g. tables created before the cluster was configured or without a `_local` counterpart
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
 		if err != nil {
@@ -281,7 +274,7 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 		// then drop the local table in case of cluster
 		if c.config.Cluster != "" && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(localTableName(name)), onClusterClause),
+				Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(localTableName(name)), onClusterClause),
 				Priority: 100,
 			})
 		}
@@ -296,10 +289,7 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 	if err != nil {
 		return err
 	}
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 
 	switch typ {
 	case "VIEW":
@@ -441,10 +431,7 @@ func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluste
 }
 
 func (c *Connection) createTable(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) error {
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 	var create strings.Builder
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	if c.config.Cluster != "" {
@@ -506,7 +493,7 @@ func (c *Connection) createDistributedTable(ctx context.Context, name string, ou
 	if c.config.Cluster == "" {
 		return fmt.Errorf("clickhouse: cannot create distributed table without a cluster")
 	}
-	onClusterClause := "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	onClusterClause := c.onClusterClause()
 
 	var distributed strings.Builder
 	database := "currentDatabase()"
@@ -528,10 +515,7 @@ func (c *Connection) createDistributedTable(ctx context.Context, name string, ou
 }
 
 func (c *Connection) createDictionary(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) error {
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 	if sql == "" {
 		if outputProps.Columns == "" {
 			return fmt.Errorf("clickhouse: no columns specified for dictionary %q", name)
@@ -636,16 +620,16 @@ func (c *Connection) getTableEngine(ctx context.Context, name string) (string, e
 		return "", err
 	}
 	defer res.Close()
-	if res.Next() {
-		if err := res.Scan(&engine); err != nil {
+	if !res.Next() {
+		if err := res.Err(); err != nil {
 			return "", err
 		}
+		return "", fmt.Errorf("clickhouse: table %q not found", name)
 	}
-	err = res.Err()
-	if err != nil {
+	if err := res.Scan(&engine); err != nil {
 		return "", err
 	}
-	return engine, nil
+	return engine, res.Err()
 }
 
 func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
@@ -689,9 +673,8 @@ func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]str
 }
 
 func (c *Connection) replacePartition(ctx context.Context, src, dest, part string) error {
-	var onClusterClause string
+	onClusterClause := c.onClusterClause()
 	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 		dest = localTableName(dest)
 		src = localTableName(src)
 	}
@@ -712,9 +695,8 @@ func (c *Connection) syncReplica(ctx context.Context, tableName string) error {
 	if err != nil {
 		return err
 	}
-	onClusterClause := "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s.%s", onClusterClause, safeSQLName(database), safeSQLName(localTableName(tableName))),
+		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s.%s", c.onClusterClause(), safeSQLName(database), safeSQLName(localTableName(tableName))),
 		Priority: 1,
 	})
 }
@@ -742,6 +724,14 @@ func (c *Connection) currentDatabase(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return database, nil
+}
+
+// onClusterClause returns the ON CLUSTER clause for DDL statements, or an empty string if no cluster is configured.
+func (c *Connection) onClusterClause() string {
+	if c.config.Cluster == "" {
+		return ""
+	}
+	return "ON CLUSTER " + safeSQLName(c.config.Cluster)
 }
 
 func isReplicatedEngine(engine string) bool {

@@ -481,24 +481,11 @@ func (c *Connection) entityType(ctx context.Context, db, name string) (typ strin
 	}
 	defer func() { _ = release() }()
 
-	var q string
-	if c.config.Cluster == "" {
-		q = `SELECT
-	multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type
-	FROM system.tables AS t
-	JOIN system.databases AS db ON t.database = db.name
-	WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?`
-	} else {
-		// Query through view so ClickHouse applies normal SELECT access checks on system.tables.
-		// Targeting system.tables directly requires SHOW COLUMNS on system.tables starting in ClickHouse 26.3.
-		q = `SELECT type
-		FROM clusterAllReplicas(` + safeSQLString(c.config.Cluster) + `, view(
-			SELECT multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type
-			FROM system.tables
-			WHERE database = coalesce(?, currentDatabase()) AND name = ?
-		))
-		GROUP BY type`
-	}
+	// A local system.tables lookup suffices even when a cluster is configured:
+	// all DDL in cluster mode runs ON CLUSTER, so the entity always exists on the connected node.
+	q := `SELECT multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type
+	FROM system.tables
+	WHERE database = coalesce(?, currentDatabase()) AND name = ?`
 	var args []any
 	if db == "" {
 		args = []any{nil, name}

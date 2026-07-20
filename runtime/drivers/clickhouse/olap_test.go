@@ -1070,13 +1070,21 @@ func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, clu
 		Query: fmt.Sprintf("GRANT ON CLUSTER %s CLUSTER, REMOTE ON *.* TO %s", safeSQLName(cluster), safeSQLName(username)),
 	}))
 
+	// create a dedicated table: other subtests rename or drop the shared tables created by prepareClusterConn
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("CREATE OR REPLACE TABLE entity_type_restricted ON CLUSTER %s (x Int32) engine=MergeTree ORDER BY x", safeSQLName(cluster)),
+	}))
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS entity_type_restricted ON CLUSTER %s", safeSQLName(cluster))})
+	})
+
 	restrictedDSN := strings.Replace(dsn, "clickhouse://default@", fmt.Sprintf("clickhouse://%s:%s@", username, password), 1)
 	handle, err := drivers.Open("clickhouse", "", "restricted", map[string]any{"dsn": restrictedDSN, "cluster": cluster}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer handle.Close()
 
 	restrictedConnection := handle.(*Connection)
-	typ, err := restrictedConnection.entityType(ctx, "default", "foo")
+	typ, err := restrictedConnection.entityType(ctx, "default", "entity_type_restricted")
 	require.NoError(t, err)
 	require.Equal(t, "TABLE", typ)
 
