@@ -145,7 +145,7 @@ func TestCompile(t *testing.T) {
 			nil,
 		},
 		{
-			"select pub, dom, measure_0 as \"click rate\" from ad_bids_metrics where (pub is not null and dom is null) or (pub = '__default__')",
+			"select pub, dom, measure_0 from ad_bids_metrics where (pub is not null and dom is null) or (pub = '__default__')",
 			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((((\"publisher\") IS NOT NULL) AND ((\"domain\") IS NULL)) OR ((\"publisher\") = ?)) GROUP BY 1, 2",
 			mv,
 			[]any{"__default__"},
@@ -180,6 +180,65 @@ func TestCompile(t *testing.T) {
 			advancedMV,
 			[]any{parseTestTime(t, "2022-03-24T00:00:00Z"), parseTestTime(t, "2022-03-31T00:00:00Z")},
 		},
+		{
+			// DISTINCT is a no-op since results are always grouped by the selected dimensions
+			"select distinct pub, dom from ad_bids_metrics",
+			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\" FROM \"ad_bids\" GROUP BY 1, 2",
+			mv,
+			nil,
+		},
+		{
+			// an explicit GROUP BY is allowed when it matches the selected dimensions
+			"select pub, dom, measure_0 from ad_bids_metrics group by pub, dom",
+			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" GROUP BY 1, 2",
+			mv,
+			nil,
+		},
+		{
+			// positional GROUP BY references are also allowed
+			"select pub, dom, measure_0 from ad_bids_metrics group by 1, 2",
+			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" GROUP BY 1, 2",
+			mv,
+			nil,
+		},
+	}
+
+	errTests := []struct {
+		inSQL   string
+		wantErr string
+	}{
+		{
+			"with x as (select pub from ad_bids_metrics) select pub from x",
+			"WITH clause is not supported",
+		},
+		{
+			"select pub as publisher from ad_bids_metrics",
+			"aliasing a dimension or measure is not supported (found `pub AS publisher`)",
+		},
+		{
+			"select pub, measure_0 as total from ad_bids_metrics",
+			"aliasing a dimension or measure is not supported (found `measure_0 AS total`)",
+		},
+		{
+			"select pub, measure_0 from ad_bids_metrics group by dom",
+			"GROUP BY column \"dom\" must be a selected dimension",
+		},
+		{
+			"select pub, dom, measure_0 from ad_bids_metrics group by pub",
+			"GROUP BY must include all selected dimensions (missing \"dom\")",
+		},
+		{
+			"select pub, measure_0 from ad_bids_metrics group by 2",
+			"GROUP BY column \"measure_0\" must be a selected dimension",
+		},
+		{
+			"select pub, measure_0 from ad_bids_metrics group by 3",
+			"GROUP BY position 3 is not in the select list",
+		},
+		{
+			"select pub from ad_bids_metrics union select dom from ad_bids_metrics",
+			"expected a SELECT statement",
+		},
 	}
 
 	clm, err := rt.ResolveSecurity(t.Context(), instanceID, claims, mv)
@@ -199,6 +258,11 @@ func TestCompile(t *testing.T) {
 		res, err := olap.Query(t.Context(), &drivers.Statement{Query: sql, Args: args})
 		require.NoError(t, err)
 		require.NoError(t, res.Close())
+	}
+
+	for _, test := range errTests {
+		_, err := compiler.Parse(t.Context(), test.inSQL)
+		require.ErrorContains(t, err, test.wantErr, "input = %v", test.inSQL)
 	}
 }
 
