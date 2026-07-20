@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"golang.org/x/sync/errgroup"
@@ -15,11 +16,16 @@ func (s *Server) QueryBatch(req *runtimev1.QueryBatchRequest, srv runtimev1.Quer
 
 	g, ctx := errgroup.WithContext(srv.Context())
 
+	// gRPC server streams are not safe for concurrent sends, so a mutex serializes calls to srv.Send.
+	var sendMu sync.Mutex
+
 	for idx, qry := range req.Queries {
 		idx := idx
 		qry := qry
 		g.Go(func() error {
 			resp := s.forwardQuery(ctx, req.InstanceId, idx, qry)
+			sendMu.Lock()
+			defer sendMu.Unlock()
 			return srv.Send(resp)
 		})
 	}
