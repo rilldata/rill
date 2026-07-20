@@ -244,37 +244,14 @@ func parseInSubquery(ctx context.Context, n ast.ExprNode, q *query) (*metricsvie
 	}
 
 	// You can do a lot of stuff in a SELECT statement. Check it doesn't do anything we don't support.
-	switch {
-	case sel.Kind != ast.SelectStmtKindSelect:
-		return nil, fmt.Errorf("metrics sql: subquery of kind %s is not supported", sel.Kind.String())
-	case sel.SelectStmtOpts != nil && sel.SelectStmtOpts.Distinct:
-		return nil, fmt.Errorf("metrics sql: subquery with DISTINCT is not supported")
-	case len(sel.WindowSpecs) > 0:
-		return nil, fmt.Errorf("metrics sql: subquery with window specifications is not supported")
-	case sel.OrderBy != nil:
+	if err := validateSelectStmt(sel); err != nil {
+		return nil, err
+	}
+	if sel.OrderBy != nil {
 		return nil, fmt.Errorf("metrics sql: subquery with ORDER BY is not supported")
-	case sel.Limit != nil:
+	}
+	if sel.Limit != nil {
 		return nil, fmt.Errorf("metrics sql: subquery with LIMIT is not supported")
-	case sel.LockInfo != nil:
-		return nil, fmt.Errorf("metrics sql: subquery with lock info is not supported")
-	case len(sel.TableHints) > 0:
-		return nil, fmt.Errorf("metrics sql: subquery with table hints is not supported")
-	case sel.IsInBraces:
-		return nil, fmt.Errorf("metrics sql: subquery with braces is not supported")
-	case sel.WithBeforeBraces:
-		return nil, fmt.Errorf("metrics sql: subquery with WITH before braces is not supported")
-	case sel.QueryBlockOffset != 0:
-		return nil, fmt.Errorf("metrics sql: subquery with query block offset is not supported")
-	case sel.SelectIntoOpt != nil:
-		return nil, fmt.Errorf("metrics sql: subquery with SELECT INTO is not supported")
-	case sel.AfterSetOperator != nil:
-		return nil, fmt.Errorf("metrics sql: subquery with set operations is not supported")
-	case len(sel.Lists) > 0:
-		return nil, fmt.Errorf("metrics sql: subquery with row expressions is not supported")
-	case sel.With != nil:
-		return nil, fmt.Errorf("metrics sql: subquery with WITH clause is not supported")
-	case sel.AsViewSchema:
-		return nil, fmt.Errorf("metrics sql: subquery as view schema is not supported")
 	}
 
 	// Validate the FROM clause is a plain `FROM metrics_view`
@@ -318,7 +295,7 @@ func parseInSubquery(ctx context.Context, n ast.ExprNode, q *query) (*metricsvie
 		if len(sel.GroupBy.Items) != 1 {
 			return nil, fmt.Errorf("metrics sql: subquery must group by exactly one dimension")
 		}
-		groupByName, err := parseColumnNameExpr(sel.GroupBy.Items[0])
+		groupByName, err := parseColumnNameExpr(sel.GroupBy.Items[0].Expr)
 		if err != nil {
 			return nil, fmt.Errorf("metrics sql: failed to parse GROUP BY expression in subquery: %w", err)
 		}

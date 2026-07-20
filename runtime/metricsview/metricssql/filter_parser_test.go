@@ -191,6 +191,46 @@ func TestParseFilter(t *testing.T) {
 			false,
 		},
 		{
+			"subquery expression with distinct",
+			"dim IN (SELECT DISTINCT dim FROM mv)",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorIn,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Subquery: &metricsview.Subquery{
+								Dimension: metricsview.Dimension{Name: "dim"},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"subquery expression with matching group by",
+			"dim IN (SELECT dim FROM mv GROUP BY dim)",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorIn,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Subquery: &metricsview.Subquery{
+								Dimension: metricsview.Dimension{Name: "dim"},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
 			"is true expression",
 			"dim IS TRUE",
 			&metricsview.Expression{
