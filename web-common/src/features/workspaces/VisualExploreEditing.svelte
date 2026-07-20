@@ -1,10 +1,7 @@
 <script lang="ts">
   import { replaceState } from "$app/navigation";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import TagInput from "@rilldata/web-common/components/forms/TagInput.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     DEFAULT_RANGES,
     isString,
@@ -17,16 +14,11 @@
   } from "@rilldata/web-common/lib/time/config";
   import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
   import {
-    TimeRangePreset,
-    type DashboardTimeControls,
-  } from "@rilldata/web-common/lib/time/types";
-  import {
     createRuntimeServiceGetInstance,
     createRuntimeServiceListResources,
     type V1Explore,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
@@ -53,21 +45,11 @@
   export let exploreName: string;
   export let exploreResource: V1Explore | undefined;
   export let metricsViewName: string | undefined;
-  export let viewingDashboard: boolean;
   export let autoSave: boolean;
-  export let switchView: () => void;
 
   const runtimeClient = useRuntimeClient();
   const StateManagers = getStateManagers();
   const timeControlsStore = useTimeControlStore(StateManagers);
-
-  const {
-    selectors: {
-      dimensions: { visibleDimensions },
-      measures: { visibleMeasures },
-    },
-    dashboardStore,
-  } = StateManagers;
 
   $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
 
@@ -178,7 +160,7 @@
 
   $: defaults = (
     rawDefaults instanceof YAMLMap ? rawDefaults.toJSON() : {}
-  ) as Defaults;
+  ) as Record<string, unknown>;
 
   $: measureExpression =
     rawMeasures instanceof YAMLMap ? rawMeasures?.get("expr") : "";
@@ -210,32 +192,6 @@
       : rawTheme instanceof YAMLMap
         ? exploreSpec?.embeddedTheme
         : undefined;
-
-  $: visibleDimensionNames = $visibleDimensions
-    .map((d) => d.name)
-    .filter(isString);
-  $: visibleMeasureNames = $visibleMeasures.map((m) => m.name).filter(isString);
-
-  $: newDefaults = constructDefaultState(
-    showTimeComparison,
-    $dashboardStore?.selectedComparisonDimension,
-    visibleDimensionNames,
-    visibleMeasureNames,
-    selectedTimeRange,
-  );
-
-  $: hasDefaultsSet = rawDefaults instanceof YAMLMap;
-
-  $: viewingDefaults =
-    hasDefaultsSet &&
-    Object.entries(newDefaults).every(([key, value]) => {
-      if (Array.isArray(value) && Array.isArray(defaults[key])) {
-        return (
-          JSON.stringify(value.sort()) === JSON.stringify(defaults[key].sort())
-        );
-      }
-      return JSON.stringify(value) === JSON.stringify(defaults[key]);
-    });
 
   function getMeasureOrDimensionState(
     node: unknown,
@@ -295,57 +251,6 @@
     localStorage.removeItem(`${exploreName}-persistentDashboardStore`);
 
     replaceState(window.location.origin + window.location.pathname, {});
-  }
-
-  type Defaults = {
-    measures?: string[] | undefined;
-    dimensions?: string[] | undefined;
-    comparison_mode?: "time" | "dimension" | "none" | undefined;
-    comparison_dimension?: string | undefined;
-    time_comparison?: boolean | undefined;
-    time_range?: string | undefined;
-  };
-
-  function constructDefaultState(
-    showTimeComparison?: boolean,
-    selectedComparisonDimension?: string | undefined,
-    visibleDimensions?: string[],
-    visibleMeasures?: string[],
-    selectedTimeRange?: DashboardTimeControls | undefined,
-  ): Defaults {
-    const newDefaults: Defaults = {
-      measures: undefined,
-      dimensions: undefined,
-      comparison_mode: undefined,
-      comparison_dimension: undefined,
-      time_comparison: undefined,
-      time_range: undefined,
-    };
-
-    if (showTimeComparison) {
-      newDefaults.comparison_mode = "time";
-    } else if (selectedComparisonDimension) {
-      newDefaults.comparison_mode = "dimension";
-      newDefaults.comparison_dimension = selectedComparisonDimension;
-    }
-
-    if (visibleDimensions?.length) {
-      newDefaults.dimensions = [...visibleDimensions];
-    }
-
-    if (visibleMeasures?.length) {
-      newDefaults.measures = [...visibleMeasures];
-    }
-
-    if (
-      selectedTimeRange &&
-      selectedTimeRange.name !== TimeRangePreset.CUSTOM &&
-      selectedTimeRange.name !== TimeRangePreset.ALL_TIME
-    ) {
-      newDefaults.time_range = selectedTimeRange.name;
-    }
-
-    return newDefaults;
   }
 
   function onSelectTimeRangeItem(item: string) {
@@ -574,59 +479,6 @@
       }}
     />
 
-    <!-- <svelte:fragment slot="footer"> -->
-    {#if viewingDashboard}
-      <footer
-        class="flex flex-col gap-y-4 mt-auto border-t py-5 pb-6 w-full text-sm text-fg-muted"
-      >
-        <p>
-          For more options,
-          <button onclick={switchView} class="text-primary-600 font-medium">
-            edit in YAML
-          </button>
-        </p>
-
-        <Button
-          class="group"
-          type={viewingDefaults ? "tertiary" : "secondary"}
-          large
-          onClick={() => {
-            if (viewingDefaults) {
-              updateProperties({}, ["defaults"]);
-            } else {
-              updateProperties({ defaults: newDefaults });
-            }
-          }}
-        >
-          {#if viewingDefaults}
-            <span class="flex gap-x-1">
-              <p class="group-hover:block hidden">Remove</p>
-              <p class="group-hover:hidden">Viewing</p>
-              <p>default state</p>
-            </span>
-          {:else}
-            Save dashboard state as default
-          {/if}
-
-          <Tooltip distance={8} location="top">
-            <InfoIcon
-              size="14px"
-              strokeWidth={2}
-              class={viewingDefaults ? "group-hover:block hidden" : ""}
-            />
-            <TooltipContent slot="tooltip-content">
-              {#if viewingDefaults}
-                Remove default settings for time range, comparison modes and
-                displayed measures/dimensions
-              {:else}
-                Overwrite default settings for time range, comparison modes and
-                displayed measures/dimensions with the current dashboard view
-              {/if}
-            </TooltipContent>
-          </Tooltip>
-        </Button>
-      </footer>
-    {/if}
     <!-- </svelte:fragment> -->
   </SidebarWrapper>
 </Inspector>

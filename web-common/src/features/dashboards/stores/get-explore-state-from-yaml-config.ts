@@ -22,6 +22,7 @@ import {
   type V1ExploreSpec,
   type V1TimeRangeSummary,
   V1Operation,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
@@ -54,6 +55,30 @@ export function getExploreStateFromYAMLConfig(
   };
 }
 
+export function getUrlForExploreYAMLDefaultState(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+) {
+  const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
+    exploreSpec,
+    timeRangeSummary,
+    metricsViewSpec.smallestTimeGrain,
+  );
+  const timeControlState = getTimeControlState(
+    metricsViewSpec,
+    exploreSpec,
+    timeRangeSummary,
+    exploreStateFromYAMLConfig as ExploreState,
+  );
+  return convertPartialExploreStateToUrlParams(
+    exploreSpec,
+    metricsViewSpec,
+    exploreStateFromYAMLConfig,
+    timeControlState,
+  );
+}
+
 export function createUrlForExploreYAMLDefaultState(
   client: RuntimeClient,
   exploreNameStore: Readable<string>,
@@ -72,24 +97,10 @@ export function createUrlForExploreYAMLDefaultState(
       const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
       const timeRangeSummary = timeRangeResp.data?.timeRangeSummary;
 
-      const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
-        exploreSpec,
-        timeRangeSummary,
-        metricsViewSpec.smallestTimeGrain,
-      );
-
-      const timeControlState = getTimeControlState(
+      const urlParams = getUrlForExploreYAMLDefaultState(
         metricsViewSpec,
         exploreSpec,
         timeRangeSummary,
-        exploreStateFromYAMLConfig as ExploreState,
-      );
-
-      const urlParams = convertPartialExploreStateToUrlParams(
-        exploreSpec,
-        metricsViewSpec,
-        exploreStateFromYAMLConfig,
-        timeControlState,
       );
       return `?${urlParams.toString()}`;
     },

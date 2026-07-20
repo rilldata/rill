@@ -26,6 +26,7 @@
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "../dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import Dashboard from "../dashboards/workspace/Dashboard.svelte";
+  import SaveDefaultsButton from "@rilldata/web-common/features/dashboards/workspace/SaveDefaultsButton.svelte";
 
   export let fileArtifact: FileArtifact;
   export let hideCodeToggle = false;
@@ -40,6 +41,7 @@
     resourceName,
     fileName,
     remoteContent,
+    saveState: { saving },
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
@@ -108,6 +110,9 @@
       >
         {#snippet cta()}
           <div class="flex gap-x-2">
+            {#if ready && selectedView === "viz"}
+              <SaveDefaultsButton {fileArtifact} saving={$saving} />
+            {/if}
             {#if !inPreviewMode}
               <PreviewButton
                 href={withEditorPrefix(`/explore/${exploreName}`)}
@@ -172,8 +177,6 @@
             autoSave={selectedView === "viz" || $autoSave}
             exploreResource={exploreResource?.explore}
             {fileArtifact}
-            viewingDashboard={selectedView === "viz"}
-            switchView={() => selectedViewStore.set("code")}
           />
         {/if}
       </svelte:fragment>
