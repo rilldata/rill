@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 const (
@@ -40,6 +41,12 @@ type DimensionSummary struct {
 func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
+	}
+
+	// Compile the security policy's row filter and query filter so the summary only reflects rows the user can access
+	securityFilter, securityFilterArgs, err := metricsview.SecurityFilterSQL(e.metricsView, e.security, e.olap.Dialect())
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile the security policy's filters: %w", err)
 	}
 
 	// Gather the categorical and time dimensions
@@ -89,7 +96,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	var summaries []DimensionSummary
 	var defaultTimeDimensionSummary DimensionSummary
 	for _, dim := range timeDimensions {
-		timeRange, err := e.Timestamps(ctx, dim.Name)
+		timeRange, err := e.summaryTimestamps(ctx, dim.Name, securityFilter, securityFilterArgs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get time range for dimension %q: %w", dim.Name, err)
 		}
@@ -149,15 +156,19 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		}
 	}
 
-	// Create a where clause that applies the SummarySampleInterval to the default time dimension
-	var whereClause string
+	// Create a where clause that applies the SummarySampleInterval to the default time dimension and the security policy's filters
+	var whereClauses []string
 	var args []any
 	if timeDimExpr != "" && defaultTimeDimensionSummary.MaxValue != nil {
 		maxTime, _ := defaultTimeDimensionSummary.MaxValue.(time.Time)
 		if !maxTime.IsZero() {
-			whereClause = fmt.Sprintf("WHERE %s >= ?", timeDimExpr)
-			args = []any{maxTime.Add(-SummarySampleInterval)}
+			whereClauses = append(whereClauses, fmt.Sprintf("%s >= ?", timeDimExpr))
+			args = append(args, maxTime.Add(-SummarySampleInterval))
 		}
+	}
+	if securityFilter != "" {
+		whereClauses = append(whereClauses, fmt.Sprintf("(%s)", securityFilter))
+		args = append(args, securityFilterArgs...)
 	}
 
 	// Build the SQL query
@@ -166,9 +177,9 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	sqlBuilder.WriteString(strings.Join(selectClauses, ", "))
 	sqlBuilder.WriteString(" FROM ")
 	sqlBuilder.WriteString(e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
-	if whereClause != "" {
-		sqlBuilder.WriteString(" ")
-		sqlBuilder.WriteString(whereClause)
+	if len(whereClauses) > 0 {
+		sqlBuilder.WriteString(" WHERE ")
+		sqlBuilder.WriteString(strings.Join(whereClauses, " AND "))
 	}
 	sqlBuilder.WriteString(" LIMIT 1")
 	sql := sqlBuilder.String()
@@ -229,4 +240,30 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		Dimensions:           summaries,
 		DefaultTimeDimension: defaultTimeDimensionSummary,
 	}, nil
+}
+
+// summaryTimestamps resolves the time range for a time dimension, applying the compiled security filter when one is present.
+// Without a security filter it delegates to Timestamps;
+// with one it mirrors the resolution logic of Timestamps, minus rollups (not used by the summary)
+// and minus the executor-level cache (which doesn't account for security filters).
+func (e *Executor) summaryTimestamps(ctx context.Context, timeDim, securityFilter string, securityFilterArgs []any) (metricsview.TimestampsResult, error) {
+	if securityFilter == "" {
+		return e.Timestamps(ctx, timeDim)
+	}
+
+	timeExpr, err := e.timeColumnOrExpr(timeDim)
+	if err != nil {
+		return metricsview.TimestampsResult{}, fmt.Errorf("failed to resolve time column or expression: %w", err)
+	}
+
+	if timeDim == e.metricsView.TimeDimension && e.metricsView.DataTimeRange != "" {
+		// The declared data_time_range is metadata, not derived from restricted rows, so no filter is needed.
+		res, err := e.resolveDeclaredTimestamps(e.metricsView.DataTimeRange)
+		if err != nil {
+			return metricsview.TimestampsResult{}, fmt.Errorf(`failed to resolve "data_time_range": %w`, err)
+		}
+		return res, nil
+	}
+
+	return e.resolveTimestampsForTable(ctx, e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table, timeExpr, e.metricsView.WatermarkExpression, securityFilter, securityFilterArgs)
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/proto"
 )
 
 var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
@@ -213,6 +214,25 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 			return nil, nil, err
 		}
 		if _, err = hash.Write([]byte(strconv.FormatUint(h, 16))); err != nil {
+			return nil, nil, err
+		}
+	}
+	// The claims' additional rules also affect results (e.g. row filters from magic auth tokens), so they must be part of the cache key.
+	for _, rule := range opts.Claims.AdditionalRules {
+		data, err := proto.MarshalOptions{Deterministic: true}.Marshal(rule)
+		if err != nil {
+			return nil, nil, err
+		}
+		// Length-prefix each rule so different rule lists can't produce the same byte stream.
+		if err := binary.Write(hash, binary.BigEndian, uint64(len(data))); err != nil {
+			return nil, nil, err
+		}
+		if _, err := hash.Write(data); err != nil {
+			return nil, nil, err
+		}
+	}
+	if opts.Claims.SkipChecks {
+		if _, err := hash.Write([]byte("skip_checks")); err != nil {
 			return nil, nil, err
 		}
 	}

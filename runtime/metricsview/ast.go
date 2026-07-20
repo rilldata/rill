@@ -1049,6 +1049,28 @@ func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error)
 	return res, nil
 }
 
+// SecurityFilterSQL compiles the security policy's query filter and row filter for the given metrics view
+// into a SQL expression and args that can be used in a WHERE clause against the metrics view's underlying table.
+// It returns an empty SQL string if the security policy does not restrict row access.
+// It is intended for queries that are built manually instead of through an AST, such as dimension summaries.
+func SecurityFilterSQL(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, dialect drivers.Dialect) (string, []any, error) {
+	a := &AST{
+		MetricsView: mv,
+		Security:    sec,
+		Query:       &Query{},
+		Dialect:     dialect,
+	}
+
+	res, err := a.buildWhereForUnderlyingTable(nil)
+	if err != nil {
+		return "", nil, err
+	}
+	if res == nil {
+		return "", nil, nil
+	}
+	return res.Expr, res.Args, nil
+}
+
 // buildBaseSelect constructs a base SELECT node against the underlying table.
 func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error) {
 	n := &SelectNode{

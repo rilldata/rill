@@ -16,24 +16,25 @@ const (
 )
 
 // resolveTimestampsForTable dispatches to the appropriate dialect-specific method.
-func (e *Executor) resolveTimestampsForTable(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
+// If filterExpr is non-empty, it is applied as a WHERE clause (with filterArgs as its query args).
+func (e *Executor) resolveTimestampsForTable(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr string, filterArgs []any) (metricsview.TimestampsResult, error) {
 	switch e.olap.Dialect().String() {
 	case drivers.DialectNameDuckDB, drivers.DialectNameSnowflake, drivers.DialectNameDatabricks, drivers.DialectNameStarRocks:
-		return e.resolveWithTimestampQuery(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
+		return e.resolveWithTimestampQuery(ctx, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr, filterArgs)
 	case drivers.DialectNameClickHouse:
-		return e.resolveClickHouse(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
+		return e.resolveClickHouse(ctx, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr, filterArgs)
 	case drivers.DialectNamePinot:
-		return e.resolvePinot(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
+		return e.resolvePinot(ctx, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr, filterArgs)
 	case drivers.DialectNameDruid:
-		return e.resolveDruid(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
+		return e.resolveDruid(ctx, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr, filterArgs)
 	case drivers.DialectNameBigQuery:
-		return e.resolveBigQuery(ctx, database, databaseSchema, table, timeExpr, watermarkExpr)
+		return e.resolveBigQuery(ctx, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr, filterArgs)
 	default:
 		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
 }
 
-func (e *Executor) resolveWithTimestampQuery(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
+func (e *Executor) resolveWithTimestampQuery(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr string, filterArgs []any) (metricsview.TimestampsResult, error) {
 	d := e.olap.Dialect()
 	escapedTableName := d.EscapeTable(database, databaseSchema, table)
 	if watermarkExpr == "" {
@@ -49,9 +50,13 @@ func (e *Executor) resolveWithTimestampQuery(ctx context.Context, database, data
 		d.EscapeAlias("max"),
 		d.EscapeAlias("watermark"),
 	)
+	if filterExpr != "" {
+		rangeSQL += " WHERE " + filterExpr
+	}
 
 	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
+		Args:             filterArgs,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
 		QueryAttributes:  e.queryAttributes,
@@ -82,7 +87,7 @@ func (e *Executor) resolveWithTimestampQuery(ctx context.Context, database, data
 	return metricsview.TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolveClickHouse(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
+func (e *Executor) resolveClickHouse(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr string, filterArgs []any) (metricsview.TimestampsResult, error) {
 	escapedTableName := e.olap.Dialect().EscapeTable(database, databaseSchema, table)
 	if watermarkExpr == "" {
 		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
@@ -94,9 +99,13 @@ func (e *Executor) resolveClickHouse(ctx context.Context, database, databaseSche
 		watermarkExpr,
 		escapedTableName,
 	)
+	if filterExpr != "" {
+		rangeSQL += " WHERE " + filterExpr
+	}
 
 	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
+		Args:             filterArgs,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
 		QueryAttributes:  e.queryAttributes,
@@ -133,7 +142,7 @@ func (e *Executor) resolveClickHouse(ctx context.Context, database, databaseSche
 	return metricsview.TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolvePinot(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
+func (e *Executor) resolvePinot(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr string, filterArgs []any) (metricsview.TimestampsResult, error) {
 	escapedTableName := e.olap.Dialect().EscapeTable(database, databaseSchema, table)
 	if watermarkExpr == "" {
 		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
@@ -145,9 +154,13 @@ func (e *Executor) resolvePinot(ctx context.Context, database, databaseSchema, t
 		watermarkExpr,
 		escapedTableName,
 	)
+	if filterExpr != "" {
+		rangeSQL += " WHERE " + filterExpr
+	}
 
 	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
+		Args:             filterArgs,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
 		QueryAttributes:  e.queryAttributes,
@@ -188,8 +201,12 @@ func (e *Executor) resolvePinot(ctx context.Context, database, databaseSchema, t
 	return metricsview.TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolveDruid(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
+func (e *Executor) resolveDruid(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr string, filterArgs []any) (metricsview.TimestampsResult, error) {
 	escapedTableName := e.olap.Dialect().EscapeTable(database, databaseSchema, table)
+	var whereClause string
+	if filterExpr != "" {
+		whereClause = " WHERE " + filterExpr
+	}
 
 	var ts metricsview.TimestampsResult
 	group, ctx := errgroup.WithContext(ctx)
@@ -200,13 +217,15 @@ func (e *Executor) resolveDruid(ctx context.Context, database, databaseSchema, t
 
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
-			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
+			"SELECT min(%[1]s) as \"min\" FROM %[2]s%[3]s",
 			timeExpr,
 			escapedTableName,
+			whereClause,
 		)
 
 		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            minSQL,
+			Args:             filterArgs,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
 			UseCache:         &useCache,
@@ -236,13 +255,15 @@ func (e *Executor) resolveDruid(ctx context.Context, database, databaseSchema, t
 
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
-			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
+			"SELECT max(%[1]s) as \"max\" FROM %[2]s%[3]s",
 			timeExpr,
 			escapedTableName,
+			whereClause,
 		)
 
 		rows, err := e.olap.Query(ctx, &drivers.Statement{
 			Query:            maxSQL,
+			Args:             filterArgs,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
 			UseCache:         &useCache,
@@ -272,13 +293,15 @@ func (e *Executor) resolveDruid(ctx context.Context, database, databaseSchema, t
 	if watermarkExpr != "" {
 		group.Go(func() error {
 			maxSQL := fmt.Sprintf(
-				"SELECT %[1]s as \"watermark\" FROM %[2]s",
+				"SELECT %[1]s as \"watermark\" FROM %[2]s%[3]s",
 				watermarkExpr,
 				escapedTableName,
+				whereClause,
 			)
 
 			rows, err := e.olap.Query(ctx, &drivers.Statement{
 				Query:            maxSQL,
+				Args:             filterArgs,
 				Priority:         e.priority,
 				ExecutionTimeout: defaultExecutionTimeout,
 				UseCache:         &useCache,
@@ -319,7 +342,7 @@ func (e *Executor) resolveDruid(ctx context.Context, database, databaseSchema, t
 	return ts, nil
 }
 
-func (e *Executor) resolveBigQuery(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr string) (metricsview.TimestampsResult, error) {
+func (e *Executor) resolveBigQuery(ctx context.Context, database, databaseSchema, table, timeExpr, watermarkExpr, filterExpr string, filterArgs []any) (metricsview.TimestampsResult, error) {
 	escapedTableName := e.olap.Dialect().EscapeTable(database, databaseSchema, table)
 	if watermarkExpr == "" {
 		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
@@ -332,9 +355,13 @@ func (e *Executor) resolveBigQuery(ctx context.Context, database, databaseSchema
 		watermarkExpr,
 		escapedTableName,
 	)
+	if filterExpr != "" {
+		rangeSQL += " WHERE " + filterExpr
+	}
 
 	rows, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            rangeSQL,
+		Args:             filterArgs,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
 		QueryAttributes:  e.queryAttributes,
