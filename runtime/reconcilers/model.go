@@ -166,7 +166,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			defer r.execSem.Release(1)
 
 			err = prevManager.Delete(ctx, prevResult)
-			return runtime.ReconcileResult{Err: err}
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
 		}
 
 		err := r.clearPartitions(ctx, model)
