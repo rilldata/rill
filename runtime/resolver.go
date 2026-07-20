@@ -205,10 +205,14 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	if _, err := hash.Write(cacheKey); err != nil {
 		return nil, nil, err
 	}
-	// Hash the full security claims, not just the user attributes:
+	// Hash the security claims, not just the user attributes:
 	// permissions, additional rules (e.g. locked filters on magic auth tokens) and skipped checks
 	// all change the resolved security policy, and results must not be shared across them.
-	claimsJSON, err := json.Marshal(opts.Claims)
+	// The user ID is excluded since it does not affect the resolved policy,
+	// which enables sharing results between users that resolve to the same policy (common for embeds).
+	claimsForKey := *opts.Claims
+	claimsForKey.UserID = ""
+	claimsJSON, err := json.Marshal(&claimsForKey)
 	if err != nil {
 		return nil, nil, err
 	}
