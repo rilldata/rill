@@ -191,6 +191,82 @@ func TestParseFilter(t *testing.T) {
 			false,
 		},
 		{
+			"between expression",
+			"x BETWEEN 1 AND 10",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorAnd,
+					Expressions: []*metricsview.Expression{
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorGte,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "x",
+									},
+									{
+										Value: 1,
+									},
+								},
+							},
+						},
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorLte,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "x",
+									},
+									{
+										Value: 10,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"not between expression",
+			"x NOT BETWEEN 1 AND 10",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorOr,
+					Expressions: []*metricsview.Expression{
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorLt,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "x",
+									},
+									{
+										Value: 1,
+									},
+								},
+							},
+						},
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorGt,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "x",
+									},
+									{
+										Value: 10,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
 			"date_add expression",
 			"time >= '2021-01-01' + INTERVAL 1 DAY",
 			&metricsview.Expression{
