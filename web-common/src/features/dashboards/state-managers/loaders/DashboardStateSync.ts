@@ -212,31 +212,33 @@ export class DashboardStateSync {
     // Since we call this in afterNavigation, there could be a scenario where navigation completes but data for init isnt loaded yet.
     // Init already incorporates the url into the state so we can skip this processing.
     if (this.updating || !this.initialized) return;
+
+    const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
+    const exploreSpec = validSpecData?.explore ?? {};
+    const { data: rillDefaultExploreURLParams } = get(
+      this.rillDefaultExploreURLParams,
+    );
+
+    // Type-safety
+    if (!rillDefaultExploreURLParams) return;
+
+    const partialExplore = this.dataLoader.getExploreStateFromURLParams(
+      urlSearchParams,
+      type,
+    );
+
+    // This can be undefined when one of the queries has not loaded yet.
+    // Rest of the code can be indeterminate when queries have not loaded.
+    // This shouldn't ideally happen.
+    if (!partialExplore) return;
+
+    const pageState = get(page);
+
+    // Take the lock only once the guards have passed;
+    // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
-
     try {
-      const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
-      const metricsViewSpec = validSpecData?.metricsView ?? {};
-      const exploreSpec = validSpecData?.explore ?? {};
-      const { data: rillDefaultExploreURLParams } = get(
-        this.rillDefaultExploreURLParams,
-      );
-
-      // Type-safety
-      if (!rillDefaultExploreURLParams) return;
-
-      const partialExplore = this.dataLoader.getExploreStateFromURLParams(
-        urlSearchParams,
-        type,
-      );
-
-      // This can be undefined when one of the queries has not loaded yet.
-      // Rest of the code can be indeterminate when queries have not loaded.
-      // This shouldn't ideally happen.
-      if (!partialExplore) return;
-
-      const pageState = get(page);
-
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
         // Resolve start/end by making a network call.
         [
