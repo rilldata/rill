@@ -55,11 +55,11 @@ func (o *Orb) DefaultQuotas() Quotas {
 	return Quotas{
 		StorageLimitBytesPerDeployment: toPtr(int64(10737418240)), // 10GB
 		NumProjects:                    toPtr(1),
-		NumDeployments:                 toPtr(20),
-		NumSlotsTotal:                  toPtr(40),
-		NumSlotsPerDeployment:          toPtr(8),
+		NumDeployments:                 toPtr(4),
+		NumSlotsTotal:                  toPtr(32),
+		NumSlotsPerDeployment:          toPtr(32),
 		NumOutstandingInvites:          toPtr(200),
-		NumSeats:                       toPtr(10),
+		NumSeats:                       toPtr(8),
 		NumAPICallsPerSeat:             toPtr(2500),
 		NumTokensPerSeat:               toPtr(1000000),
 	}
