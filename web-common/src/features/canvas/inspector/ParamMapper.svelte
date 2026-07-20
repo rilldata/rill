@@ -17,6 +17,7 @@
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
+  import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
   import LabelsInput from "./LabelsInput.svelte";
@@ -129,6 +130,18 @@
             onMultiSelect={(field) => {
               component.updateProperty(key, field);
             }}
+          />
+
+          <!-- MULTIPLE FIELDS WITH PER-MEASURE CONDITIONAL FORMATTING -->
+        {:else if metricsView && config.type === "multi_fields_format" && component instanceof PivotCanvasComponent}
+          <MultiFieldFormatInput
+            {component}
+            {canvasName}
+            label={config.label ?? key}
+            metricName={metricsView}
+            id={key}
+            types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
+            selectedItems={localParamValues[key]}
           />
 
           <!-- BOOLEAN SWITCH -->

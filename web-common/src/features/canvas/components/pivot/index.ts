@@ -7,6 +7,8 @@ import type { InputParams } from "@rilldata/web-common/features/canvas/inspector
 import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import type {
   PivotDataStoreConfig,
+  PivotFormatRule,
+  PivotMeasureFormatting,
   PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -30,6 +32,69 @@ import {
   usePivotForCanvas,
 } from "./util";
 
+// Per-measure conditional formatting persisted in the canvas YAML. A list (not
+// a map) keeps the YAML readable and mirrors the proto representation.
+export interface PivotConditionalFormatSpec {
+  measure: string;
+  mode: "heatmap" | "data_bar" | "rules";
+  // Color scheme; only for "heatmap" and "data_bar" modes.
+  scheme?: string;
+  // Ordered threshold rules (first match wins); only for "rules" mode.
+  rules?: {
+    operator: PivotFormatRule["operator"];
+    value: number;
+    value2?: number;
+    color: string;
+  }[];
+}
+
+const DEFAULT_FORMAT_SCHEME = "theme-sequential";
+
+/**
+ * Map the YAML conditional_format list to the per-measure formatting config
+ * consumed by the pivot renderer. The YAML is hand-editable and reaches here
+ * unvalidated, so malformed values and entries are skipped rather than trusted
+ * to match the declared type.
+ */
+export function conditionalFormatSpecToMeasureFormatting(
+  specs: PivotConditionalFormatSpec[] | undefined,
+): Record<string, PivotMeasureFormatting> {
+  const measureFormatting: Record<string, PivotMeasureFormatting> = {};
+  if (!Array.isArray(specs)) return measureFormatting;
+  for (const spec of specs) {
+    if (!spec || typeof spec !== "object" || typeof spec.measure !== "string") {
+      continue;
+    }
+    if (spec.mode === "heatmap" || spec.mode === "data_bar") {
+      measureFormatting[spec.measure] = {
+        mode: spec.mode,
+        scheme:
+          typeof spec.scheme === "string" ? spec.scheme : DEFAULT_FORMAT_SCHEME,
+      };
+    } else if (spec.mode === "rules" && Array.isArray(spec.rules)) {
+      const rules = spec.rules.filter((r) => r && typeof r === "object");
+      if (rules.length) {
+        measureFormatting[spec.measure] = { mode: "rules", rules };
+      }
+    }
+  }
+  return measureFormatting;
+}
+
+/**
+ * Inverse of conditionalFormatSpecToMeasureFormatting, used when writing the
+ * inspector state back to the YAML.
+ */
+export function measureFormattingToConditionalFormatSpec(
+  measureFormatting: Record<string, PivotMeasureFormatting>,
+): PivotConditionalFormatSpec[] {
+  return Object.entries(measureFormatting).map(([measure, fmt]) =>
+    fmt.mode === "rules"
+      ? { measure, mode: fmt.mode, rules: fmt.rules }
+      : { measure, mode: fmt.mode, scheme: fmt.scheme },
+  );
+}
+
 export interface PivotSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
@@ -39,6 +104,7 @@ export interface PivotSpec
   col_dimensions?: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  conditional_format?: PivotConditionalFormatSpec[];
   row_limit?: string;
 }
 
@@ -49,6 +115,7 @@ export interface TableSpec
   columns: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  conditional_format?: PivotConditionalFormatSpec[];
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
@@ -60,7 +127,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 > {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 10 };
-  resetParams = ["measures", "row_dimensions", "col_dimensions"];
+  resetParams = [
+    "measures",
+    "row_dimensions",
+    "col_dimensions",
+    "conditional_format",
+  ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
   config: Readable<PivotDataStoreConfig>;
@@ -148,6 +220,25 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       activePage: DashboardState_ActivePage.PIVOT,
     };
   }
+
+  /** Update a single measure's conditional formatting in the YAML; pass null to clear it. */
+  setMeasureFormatting(
+    measureName: string,
+    fmt: PivotMeasureFormatting | null,
+  ) {
+    const measureFormatting = conditionalFormatSpecToMeasureFormatting(
+      get(this.specStore).conditional_format,
+    );
+    if (fmt) {
+      measureFormatting[measureName] = fmt;
+    } else {
+      delete measureFormatting[measureName];
+    }
+    this.updateProperty(
+      "conditional_format",
+      measureFormattingToConditionalFormatSpec(measureFormatting),
+    );
+  }
   inputParams(type: "pivot" | "table"): InputParams<PivotSpec | TableSpec> {
     const spec = get(this.specStore);
 
@@ -170,7 +261,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: m.canvas_metrics_view_label(),
           },
           measures: {
-            type: "multi_fields",
+            type: "multi_fields_format",
             meta: { allowedTypes: ["measure"] },
             label: m.canvas_measures_label(),
           },
@@ -233,7 +324,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: m.canvas_metrics_view_label(),
           },
           columns: {
-            type: "multi_fields",
+            type: "multi_fields_format",
             label: m.canvas_columns_label(),
             meta: { allowedTypes: ["time", "dimension", "measure"] },
           },
@@ -304,13 +395,17 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     const commonProperties: ComponentCommonProperties &
       ComponentFilterProperties &
-      Pick<PivotSpec, "hide_totals_row" | "hide_totals_col"> = {
+      Pick<
+        PivotSpec,
+        "hide_totals_row" | "hide_totals_col" | "conditional_format"
+      > = {
       title: currentSpec.title,
       description: currentSpec.description,
       dimension_filters: currentSpec.dimension_filters,
       time_filters: currentSpec.time_filters,
       hide_totals_row: currentSpec.hide_totals_row,
       hide_totals_col: currentSpec.hide_totals_col,
+      conditional_format: currentSpec.conditional_format,
     };
 
     if ("columns" in currentSpec) {

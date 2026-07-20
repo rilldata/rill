@@ -3105,7 +3105,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
   /**
    * Array of dimension or measure names
    *
-   * @generated from field: repeated string pinned_filters = 39;
+   * @generated from field: repeated string pinned_filters = 40;
    */
   pinnedFilters: string[] = [];
 
@@ -3113,7 +3113,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
    * Array of dimension or measure names that must have a value before the explore can render.
    * Required filters are implicitly pinned.
    *
-   * @generated from field: repeated string required_filters = 40;
+   * @generated from field: repeated string required_filters = 41;
    */
   requiredFilters: string[] = [];
 
@@ -3263,6 +3263,14 @@ export class ExplorePreset extends Message<ExplorePreset> {
   pivotShowTotalsRow?: boolean;
 
   /**
+   * Per-measure pivot conditional formatting, serialized in the URL param
+   * format (frontend-only; persisted in URL state).
+   *
+   * @generated from field: optional string pivot_formatting = 39;
+   */
+  pivotFormatting?: string;
+
+  /**
    * Chart display settings (frontend-only; persisted in URL state)
    *
    * @generated from field: optional bool chart_dynamic_y_axis = 35;
@@ -3283,8 +3291,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 11, name: "where", kind: "message", T: Expression, opt: true },
     { no: 29, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 39, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 40, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 40, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 41, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -3312,6 +3320,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 37, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 38, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 39, name: "pivot_formatting", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 

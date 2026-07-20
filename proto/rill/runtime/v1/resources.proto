@@ -541,10 +541,10 @@ message ExplorePreset {
   // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
   repeated string dimensions_with_inlist_filter = 29;
   // Array of dimension or measure names
-  repeated string pinned_filters = 39;
+  repeated string pinned_filters = 40;
   // Array of dimension or measure names that must have a value before the explore can render.
   // Required filters are implicitly pinned.
-  repeated string required_filters = 40;
+  repeated string required_filters = 41;
 
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.
@@ -586,6 +586,9 @@ message ExplorePreset {
   optional int32 pivot_row_limit = 33;
   optional bool pivot_show_totals_column = 37;
   optional bool pivot_show_totals_row = 38;
+  // Per-measure pivot conditional formatting, serialized in the URL param
+  // format (frontend-only; persisted in URL state).
+  optional string pivot_formatting = 39;
 
   // Chart display settings (frontend-only; persisted in URL state)
   optional bool chart_dynamic_y_axis = 35;

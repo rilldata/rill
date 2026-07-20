@@ -88,6 +88,13 @@
     });
   }
 
+  $: lowerIsBetterMap = Object.fromEntries(
+    ($validSpecStore.data?.metricsView?.measures ?? []).map((m) => [
+      m.name as string,
+      m.lowerIsBetter ?? false,
+    ]),
+  );
+
   $: enrichedPivotState = {
     ...$dashboardStore.pivot,
     rows: enrichDescriptions($dashboardStore.pivot.rows),
@@ -157,6 +164,13 @@
           metricsExplorerStore.setPivotRows($exploreName, rows)}
         setColumns={(columns) =>
           metricsExplorerStore.setPivotColumns($exploreName, columns)}
+        setMeasureFormatting={(measureName, fmt) =>
+          metricsExplorerStore.setPivotMeasureFormatting(
+            $exploreName,
+            measureName,
+            fmt,
+          )}
+        {lowerIsBetterMap}
       />
     {/if}
     <div
