@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -29,6 +30,7 @@ func TestClickhouseSingle(t *testing.T) {
 	require.True(t, ok)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
+	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -59,6 +61,7 @@ func TestClickhouseCluster(t *testing.T) {
 	prepareClusterConn(t, olap, cluster)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
+	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -69,6 +72,8 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("SyncReplica_NonDefaultDatabase", func(t *testing.T) { testSyncReplicaNonDefaultDatabase(t, olap, dsn, cluster) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
+	t.Run("EntityTypeRestrictedUser", func(t *testing.T) { testEntityTypeRestrictedUser(t, olap, dsn, cluster) })
+
 }
 
 func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
@@ -96,6 +101,23 @@ func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
 		return nil
 	})
 	require.NoError(t, err)
+}
+
+func testDropTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	ctx := context.Background()
+
+	_, err := c.createTableAsSelect(ctx, "drop_table", "SELECT 1 AS id", &ModelOutputProperties{Engine: "MergeTree"}, "", "")
+	require.NoError(t, err)
+	require.NoError(t, c.dropTable(ctx, "drop_table"))
+	notExists(t, olap, "drop_table")
+	if c.config.Cluster != "" {
+		notExists(t, olap, localTableName("drop_table"))
+	}
+
+	_, err = c.createTableAsSelect(ctx, "drop_view", "SELECT 1 AS id", &ModelOutputProperties{Typ: "VIEW"}, "", "")
+	require.NoError(t, err)
+	require.NoError(t, c.dropTable(ctx, "drop_view"))
+	notExists(t, olap, "drop_view")
 }
 
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
@@ -1026,4 +1048,39 @@ func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "neither a builtin setting nor")
 	})
+}
+
+func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, cluster string) {
+	ctx := context.Background()
+	const (
+		username = "rill_restricted"
+		password = "test_password"
+	)
+
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("CREATE USER %s ON CLUSTER %s IDENTIFIED WITH sha256_password BY %s", safeSQLName(username), safeSQLName(cluster), safeSQLString(password)),
+	}))
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP USER IF EXISTS %s ON CLUSTER %s", safeSQLName(username), safeSQLName(cluster))})
+	})
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("GRANT ON CLUSTER %s SELECT ON default.* TO %s", safeSQLName(cluster), safeSQLName(username)),
+	}))
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("GRANT ON CLUSTER %s CLUSTER, REMOTE ON *.* TO %s", safeSQLName(cluster), safeSQLName(username)),
+	}))
+
+	restrictedDSN := strings.Replace(dsn, "clickhouse://default@", fmt.Sprintf("clickhouse://%s:%s@", username, password), 1)
+	handle, err := drivers.Open("clickhouse", "", "restricted", map[string]any{"dsn": restrictedDSN, "cluster": cluster}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer handle.Close()
+
+	restrictedConnection := handle.(*Connection)
+	typ, err := restrictedConnection.entityType(ctx, "default", "foo")
+	require.NoError(t, err)
+	require.Equal(t, "TABLE", typ)
+
+	exists, err := restrictedConnection.checkBillingTableExists(ctx, cluster)
+	require.NoError(t, err)
+	require.False(t, exists)
 }

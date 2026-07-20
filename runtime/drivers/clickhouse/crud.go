@@ -116,12 +116,8 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
-		_, onCluster, err := c.entityType(ctx, c.config.Database, name)
-		if err != nil {
-			return nil, err
-		}
 		onClusterClause := ""
-		if onCluster {
+		if c.config.Cluster != "" {
 			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 		}
 		// Get the engine info of the given table
@@ -210,13 +206,9 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		_, onCluster, err := c.entityType(ctx, c.config.Database, name)
-		if err != nil {
-			return nil, err
-		}
 		// get the engine info of the given table - local table for distributed tables
 		var n string
-		if onCluster {
+		if c.config.Cluster != "" {
 			n = localTableName(name)
 		} else {
 			n = name
@@ -249,14 +241,16 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 func (c *Connection) dropTable(ctx context.Context, name string) error {
-	typ, onCluster, err := c.entityType(ctx, c.config.Database, name)
+	typ, err := c.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
 	}
+
 	var onClusterClause string
-	if onCluster {
+	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	}
+
 	switch typ {
 	case "VIEW":
 		return c.Exec(ctx, &drivers.Statement{
@@ -285,7 +279,7 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 			return err
 		}
 		// then drop the local table in case of cluster
-		if onCluster && !strings.HasSuffix(name, "_local") {
+		if c.config.Cluster != "" && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(localTableName(name)), onClusterClause),
 				Priority: 100,
@@ -298,12 +292,12 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 }
 
 func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) error {
-	typ, onCluster, err := c.entityType(ctx, c.config.Database, oldName)
+	typ, err := c.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
 	}
 	var onClusterClause string
-	if onCluster {
+	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 	}
 
@@ -313,7 +307,7 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 	case "DICTIONARY":
 		return c.renameTable(ctx, oldName, newName, onClusterClause)
 	case "TABLE":
-		if !onCluster {
+		if c.config.Cluster == "" {
 			return c.renameTable(ctx, oldName, newName, onClusterClause)
 		}
 		// capture the full engine of the old distributed table
