@@ -267,6 +267,158 @@ func TestParseFilter(t *testing.T) {
 			false,
 		},
 		{
+			"subquery expression with distinct",
+			"dim IN (SELECT DISTINCT dim FROM mv)",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorIn,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Subquery: &metricsview.Subquery{
+								Dimension: metricsview.Dimension{Name: "dim"},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"subquery expression with matching group by",
+			"dim IN (SELECT dim FROM mv GROUP BY dim)",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorIn,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Subquery: &metricsview.Subquery{
+								Dimension: metricsview.Dimension{Name: "dim"},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"is true expression",
+			"dim IS TRUE",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorEq,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Value: true,
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"is false expression",
+			"dim IS FALSE",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorEq,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "dim",
+						},
+						{
+							Value: false,
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"is not true expression",
+			"dim IS NOT TRUE",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorOr,
+					Expressions: []*metricsview.Expression{
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorNeq,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "dim",
+									},
+									{
+										Value: true,
+									},
+								},
+							},
+						},
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorEq,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "dim",
+									},
+									{
+										Value: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"is not false expression",
+			"dim IS NOT FALSE",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorOr,
+					Expressions: []*metricsview.Expression{
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorNeq,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "dim",
+									},
+									{
+										Value: false,
+									},
+								},
+							},
+						},
+						{
+							Condition: &metricsview.Condition{
+								Operator: metricsview.OperatorEq,
+								Expressions: []*metricsview.Expression{
+									{
+										Name: "dim",
+									},
+									{
+										Value: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
 			"date_add expression",
 			"time >= '2021-01-01' + INTERVAL 1 DAY",
 			&metricsview.Expression{

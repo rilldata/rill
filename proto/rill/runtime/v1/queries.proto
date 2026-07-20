@@ -20,14 +20,6 @@ service QueryService {
     };
   }
 
-  // Batch request with different queries
-  rpc QueryBatch(QueryBatchRequest) returns (stream QueryBatchResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/query/batch",
-      body: "*"
-    };
-  }
-
   // Export builds a URL to download the results of a query as a file.
   rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
@@ -312,17 +304,6 @@ message QueryResponse {
   repeated google.protobuf.Struct data = 2;
 }
 
-message QueryBatchRequest {
-  string instance_id = 1;
-  repeated Query queries = 2;
-}
-
-message QueryBatchResponse {
-  uint32 index = 1;
-  QueryResult result = 2;
-  string error = 3;
-}
-
 message ExportRequest {
   // Instance ID to run the query against.
   string instance_id = 1;
@@ -393,31 +374,6 @@ message Query {
     TableCardinalityRequest table_cardinality_request = 17;
     TableColumnsRequest table_columns_request = 18;
     TableRowsRequest table_rows_request = 19;
-  }
-}
-
-message QueryResult {
-  oneof result {
-    ProjectStorageResponse project_storage_response = 22;
-    MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
-    MetricsViewToplistResponse metrics_view_toplist_response = 3;
-    MetricsViewComparisonResponse metrics_view_comparison_response = 4;
-    MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;
-    MetricsViewTotalsResponse metrics_view_totals_response = 6;
-    MetricsViewRowsResponse metrics_view_rows_response = 7;
-    ColumnRollupIntervalResponse column_rollup_interval_response = 8;
-    ColumnTopKResponse column_top_k_response = 9;
-    ColumnNullCountResponse column_null_count_response = 10;
-    ColumnDescriptiveStatisticsResponse column_descriptive_statistics_response = 11;
-    ColumnTimeGrainResponse column_time_grain_response = 12;
-    ColumnNumericHistogramResponse column_numeric_histogram_response = 13;
-    ColumnRugHistogramResponse column_rug_histogram_response = 14;
-    ColumnTimeRangeResponse column_time_range_response = 15;
-    ColumnCardinalityResponse column_cardinality_response = 16;
-    ColumnTimeSeriesResponse column_time_series_response = 17;
-    TableCardinalityResponse table_cardinality_response = 18;
-    TableColumnsResponse table_columns_response = 19;
-    TableRowsResponse table_rows_response = 20;
   }
 }
 

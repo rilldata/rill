@@ -19,8 +19,6 @@ export const methodOverrides: Record<
     export: "mutation",
     exportReport: "mutation",
     query: "mutation",
-    // Streaming
-    queryBatch: "skip",
   },
   RuntimeService: {
     // Instance-management: admin-plane only, not used by frontend
