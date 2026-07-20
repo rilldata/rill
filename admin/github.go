@@ -209,6 +209,17 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string, autoI
 		}
 	}
 
+	// Without a rill.yaml edit sessions for new projects temporarily trigger missing rill.yaml error.
+	if autoInit {
+		_, _, err = client.Repositories.CreateFile(ctx, g.managedAcct, repoName, "rill.yaml", &github.RepositoryContentFileOptions{
+			Message: github.Ptr("Add Rill project config"),
+			Content: []byte("compiler: rillv1\n"),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create rill.yaml: %w", err)
+		}
+	}
+
 	return repo, nil
 }
 
