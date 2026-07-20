@@ -139,18 +139,46 @@ func parseIsTruthOperation(ctx context.Context, node *ast.IsTruthExpr, q *query)
 		return nil, err
 	}
 
-	var op metricsview.Operator
-	if node.Not {
-		op = metricsview.OperatorNeq
-	} else {
-		op = metricsview.OperatorEq
+	// node.True distinguishes IS [NOT] TRUE (1) from IS [NOT] FALSE (0)
+	target := node.True != 0
+
+	if !node.Not {
+		// `expr IS TRUE` and `expr IS FALSE` exclude NULL rows, matching the semantics of `=`.
+		return &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorEq,
+				Expressions: []*metricsview.Expression{
+					expr,
+					{Value: target},
+				},
+			},
+		}, nil
 	}
+
+	// `expr IS NOT TRUE` and `expr IS NOT FALSE` include NULL rows,
+	// so `!=` alone is not sufficient: add an explicit IS NULL check.
 	return &metricsview.Expression{
 		Condition: &metricsview.Condition{
-			Operator: op,
+			Operator: metricsview.OperatorOr,
 			Expressions: []*metricsview.Expression{
-				expr,
-				{Value: "TRUE"},
+				{
+					Condition: &metricsview.Condition{
+						Operator: metricsview.OperatorNeq,
+						Expressions: []*metricsview.Expression{
+							expr,
+							{Value: target},
+						},
+					},
+				},
+				{
+					Condition: &metricsview.Condition{
+						Operator: metricsview.OperatorEq,
+						Expressions: []*metricsview.Expression{
+							expr,
+							{Value: nil},
+						},
+					},
+				},
 			},
 		},
 	}, nil
