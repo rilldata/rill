@@ -927,6 +927,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					// Note: adminMeta may not always be available (if outside of cloud). In that case, we leave the links blank (no clickthrough available).
 					msg.OpenLink = ""
 					msg.EditLink = ""
+					msg.UnsubscribeLink = ""
 					if adminMeta != nil && adminMeta.RecipientURLs != nil {
 						urls, ok := adminMeta.RecipientURLs[""]
 						if !ok {
