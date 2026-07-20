@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"crypto/md5"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -628,9 +629,6 @@ func (c *Connection) getTableEngine(ctx context.Context, name string) (string, e
 	err = res.Err()
 	if err != nil {
 		return "", err
-	}
-	if engine == "" {
-		return "", fmt.Errorf("clickhouse: table %q not found", name)
 	}
 	return engine, nil
 }
