@@ -620,16 +620,19 @@ func (c *Connection) getTableEngine(ctx context.Context, name string) (string, e
 		return "", err
 	}
 	defer res.Close()
-	if !res.Next() {
-		if err := res.Err(); err != nil {
+	for res.Next() {
+		if err := res.Scan(&engine); err != nil {
 			return "", err
 		}
-		return "", fmt.Errorf("clickhouse: table %q not found", name)
 	}
-	if err := res.Scan(&engine); err != nil {
+	err = res.Err()
+	if err != nil {
 		return "", err
 	}
-	return engine, res.Err()
+	if engine == "" {
+		return "", fmt.Errorf("clickhouse: table %q not found", name)
+	}
+	return engine, nil
 }
 
 func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
