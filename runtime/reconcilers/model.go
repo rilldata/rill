@@ -190,6 +190,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 				renameRes, err := prevManager.Rename(ctx, prevResult, self.Meta.Name.Name, modelEnv)
 				if err == nil {
+					// Update prevResult to point to the renamed output, so the existence check later in this function targets the renamed table instead of the old one.
+					prevResult = renameRes
 					err = r.updateStateWithResult(ctx, self, renameRes)
 				}
 				if err != nil {

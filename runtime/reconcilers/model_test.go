@@ -114,6 +114,42 @@ sql: SELECT * FROM up
 	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
 }
 
+// TestRenameDoesNotRebuild verifies that renaming a model file renames the underlying table
+// without re-executing the model or discarding its incremental state.
+func TestRenameDoesNotRebuild(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/foo.yaml": `
+type: model
+incremental: true
+sql: SELECT 1 AS num
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo", 1)
+
+	// Run an incremental refresh so the model accumulates output that a full rebuild would lose.
+	testruntime.RefreshAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo", 2)
+
+	refreshedOn := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo").GetModel().State.RefreshedOn
+
+	// Rename the model file without changing its contents.
+	testruntime.RenameFile(t, rt, instanceID, "models/foo.yaml", "models/foo2.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// The output table should have been renamed, not rebuilt: the appended row survives and RefreshedOn is unchanged.
+	testruntime.RequireNoOLAPTable(t, rt, instanceID, "foo")
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo2", 2)
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo2").GetModel()
+	require.Equal(t, "foo2", model.State.ResultTable)
+	require.Equal(t, refreshedOn.AsTime(), model.State.RefreshedOn.AsTime())
+}
+
 func TestPartitionedIncrementalPostExecSeesIncrementalFlag(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 
