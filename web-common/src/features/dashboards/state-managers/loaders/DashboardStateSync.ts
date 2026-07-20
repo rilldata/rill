@@ -238,6 +238,7 @@ export class DashboardStateSync {
     // Take the lock only once the guards have passed;
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
+    let redirectUrl: URL;
     try {
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
         // Resolve start/end by making a network call.
@@ -266,7 +267,7 @@ export class DashboardStateSync {
       const timeControlsState = get(this.timeControlStore);
       // Get the updated URL, this could be different from the page url if we added extra state.
       // The extra state could come from session storage, home bookmark or yaml defaults
-      const redirectUrl = this.getUrlForExploreState(partialExplore);
+      redirectUrl = this.getUrlForExploreState(partialExplore);
 
       // Get the full updated state and save to session storage
       const updatedExploreState =
@@ -287,21 +288,23 @@ export class DashboardStateSync {
           updatedExploreState,
         );
       }
-
-      // If the url doesn't need to be changed further then we can skip the goto
-      if (redirectUrl.search === pageState.url.search) {
-        return;
-      }
-
-      // using `replaceState` directly messes up the navigation entries,
-      // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-      await goto(redirectUrl, {
-        replaceState: true,
-        state: pageState.state,
-      });
     } finally {
+      // Release before the goto below: state changes made while the navigation is in flight
+      // must still be picked up by gotoNewState.
       this.updating = false;
     }
+
+    // If the url doesn't need to be changed further then we can skip the goto
+    if (redirectUrl.search === pageState.url.search) {
+      return;
+    }
+
+    // using `replaceState` directly messes up the navigation entries,
+    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
+    return goto(redirectUrl, {
+      replaceState: true,
+      state: pageState.state,
+    });
   }
 
   /**
