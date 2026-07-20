@@ -454,6 +454,54 @@ sql: SELECT {{.partition.v}} AS n
 	}
 }
 
+// TestPartitionsClearedOnDelete verifies that deleting a partitioned model that produced output
+// also removes its partition rows from the catalog (they would otherwise be orphaned forever,
+// since each model gets a fresh partitions model ID).
+func TestPartitionsClearedOnDelete(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+materialize: true
+partitions:
+  sql: SELECT range AS num FROM range(0, 3)
+sql: SELECT {{ .partition.num }} AS num
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Capture the partitions model ID and verify the partition rows exist in the catalog.
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.NotNil(t, model)
+	require.NotEmpty(t, model.State.PartitionsModelId)
+
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	defer release()
+
+	partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID: model.State.PartitionsModelId,
+	})
+	require.NoError(t, err)
+	require.Len(t, partitions, 3)
+
+	// Delete the model file and reconcile. The output table is dropped and the partition rows must be cleared.
+	testruntime.DeleteFiles(t, rt, instanceID, "models/partitioned.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 1, 0, 0)
+
+	partitions, err = catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID: model.State.PartitionsModelId,
+	})
+	require.NoError(t, err)
+	require.Empty(t, partitions)
+}
+
 func TestExplicitPartitionRefreshDoesNotProcessNewPartitions(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 	ctx := t.Context()
