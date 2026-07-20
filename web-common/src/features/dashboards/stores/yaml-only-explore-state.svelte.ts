@@ -4,18 +4,11 @@ import {
 } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 
-export interface YAMLOnlyExploreState {
-  editable: boolean;
-  pinnedFilters: ArrayRuneStore<string>;
-  requiredFilters: ArrayRuneStore<string>;
-}
-
-export class ReadonlyYAMLExploreState implements YAMLOnlyExploreState {
-  public readonly editable = false;
+export class YAMLOnlyExploreState {
   public pinnedFilters: ArrayRuneStore<string>;
   public requiredFilters: ArrayRuneStore<string>;
 
-  public constructor() {
+  public constructor(public readonly editable: boolean) {
     this.pinnedFilters = new ArrayRuneStore(new InMemoryRuneStore([]));
     this.requiredFilters = new ArrayRuneStore(new InMemoryRuneStore([]));
   }
@@ -27,3 +20,8 @@ export class ReadonlyYAMLExploreState implements YAMLOnlyExploreState {
     );
   }
 }
+
+export type YAMLOnlyExploreConfig = {
+  pinnedFilters: string[];
+  requiredFilters: string[];
+};

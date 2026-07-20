@@ -1,4 +1,7 @@
-import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+import {
+  getDimensionDisplayName,
+  getMeasureDisplayName,
+} from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
@@ -7,6 +10,7 @@ import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
 export const measureHasFilter = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
@@ -125,6 +129,20 @@ export const getAllMeasureFilterItems = (
         pinned: pinnedFilters.has(dashData.dashboard.temporaryFilterName),
       });
     }
+
+    pinnedFilters.values().forEach((pinnedFilter) => {
+      const existing = allMeasureFilterItems.find(
+        (mfi) => mfi.name === pinnedFilter,
+      );
+      if (existing || !measureIdMap.has(pinnedFilter)) return;
+
+      allMeasureFilterItems.push({
+        dimensionName: "",
+        name: pinnedFilter,
+        label: getMeasureDisplayName(measureIdMap.get(pinnedFilter)),
+        pinned: true,
+      });
+    });
 
     return allMeasureFilterItems;
   };

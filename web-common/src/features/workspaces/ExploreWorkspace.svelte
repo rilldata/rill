@@ -27,6 +27,7 @@
   import DashboardStateManager from "../dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import Dashboard from "../dashboards/workspace/Dashboard.svelte";
   import SaveDefaultsButton from "@rilldata/web-common/features/dashboards/workspace/SaveDefaultsButton.svelte";
+  import { YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
 
   export let fileArtifact: FileArtifact;
   export let hideCodeToggle = false;
@@ -79,6 +80,8 @@
     ? ($rootCauseQuery?.data ?? reconcileError)
     : undefined;
 
+  const yamlOnlyState = new YAMLOnlyExploreState(true);
+
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       runtimeClient,
@@ -111,7 +114,11 @@
         {#snippet cta()}
           <div class="flex gap-x-2">
             {#if ready && selectedView === "viz"}
-              <SaveDefaultsButton {fileArtifact} saving={$saving} />
+              <SaveDefaultsButton
+                {fileArtifact}
+                saving={$saving}
+                {yamlOnlyState}
+              />
             {/if}
             {#if !inPreviewMode}
               <PreviewButton
@@ -157,7 +164,11 @@
                   </ErrorPage>
                 {:else if exploreName && metricsViewName}
                   <DashboardStateManager {exploreName}>
-                    <Dashboard {metricsViewName} {exploreName} />
+                    <Dashboard
+                      {metricsViewName}
+                      {exploreName}
+                      {yamlOnlyState}
+                    />
                   </DashboardStateManager>
                 {:else}
                   <Spinner status={1} size="48px" />

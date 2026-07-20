@@ -7,12 +7,15 @@ import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/da
 import { getUrlForExploreYAMLDefaultState } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
 import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
 import { unorderedParamsAreEqual } from "@rilldata/web-common/lib/url-utils.ts";
+import type { YAMLOnlyExploreConfig } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
+import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
 
 export function viewingExploreDefaults(
   curUrlParams: URLSearchParams,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
+  yamlOnlyConfig: YAMLOnlyExploreConfig,
 ) {
   const rillDefaultUrlParams = getRillDefaultExploreUrlParams(
     metricsViewSpec,
@@ -31,5 +34,19 @@ export function viewingExploreDefaults(
     yamlDefaultUrlParams,
     rillDefaultUrlParams,
   );
-  return unorderedParamsAreEqual(cleanedYamlDefaults, curUrlParams);
+  const paramsAreEqual = unorderedParamsAreEqual(
+    cleanedYamlDefaults,
+    curUrlParams,
+  );
+
+  const pinnedFiltersAreEqual = arrayUnorderedEquals(
+    yamlOnlyConfig.pinnedFilters,
+    exploreSpec.defaultPreset?.pinnedFilters ?? [],
+  );
+  const requiredFiltersAreEqual = arrayUnorderedEquals(
+    yamlOnlyConfig.requiredFilters,
+    exploreSpec.defaultPreset?.requiredFilters ?? [],
+  );
+
+  return paramsAreEqual && pinnedFiltersAreEqual && requiredFiltersAreEqual;
 }

@@ -271,6 +271,28 @@ export const getAllDimensionFilterItems = (
       });
     }
 
+    pinnedFilters.values().forEach((pinnedFilter) => {
+      const existing = allDimensionFilterItem.find(
+        (dfi) => dfi.name === pinnedFilter,
+      );
+      if (existing) return;
+
+      const dim = dimensionIdMap.get(pinnedFilter);
+      if (!dim) return;
+
+      allDimensionFilterItem.push({
+        name: pinnedFilter,
+        label: getDimensionDisplayName(dim),
+        mode: DimensionFilterMode.Select,
+        selectedValues: [],
+        isInclude: true,
+        dimensions: new Map<string, MetricsViewSpecDimension>([
+          [dashData.validExplore!.metricsView!, dim],
+        ]),
+        pinned: true,
+      });
+    });
+
     // sort based on name to make sure toggling include/exclude is not jarring
     return allDimensionFilterItem.sort(filterItemsSortFunction);
   };

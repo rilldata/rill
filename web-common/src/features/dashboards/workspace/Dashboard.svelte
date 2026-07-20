@@ -38,10 +38,10 @@
     exploreTimeseriesWidth,
     tddChartHeight,
   } from "./dashboard-layout-store";
-  import {
-    ReadonlyYAMLExploreState,
-    type YAMLOnlyExploreState,
-  } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
+  import { YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
+  import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/required/required-filters.ts";
+  import RequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/required/RequiredFiltersMessage.svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -55,8 +55,10 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures },
-      dimensions: { getDimensionByName },
+      measures: { allMeasures, visibleMeasures },
+      measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
+      dimensions: { allDimensions, getDimensionByName },
+      dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
       pivot: { showPivot },
     },
     dashboardStore,
@@ -150,13 +152,42 @@
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);
 
-  $: resolvedYamlOnlyState = yamlOnlyState ?? new ReadonlyYAMLExploreState();
-  $: if (
-    resolvedYamlOnlyState instanceof ReadonlyYAMLExploreState &&
-    exploreSpec
-  ) {
+  $: resolvedYamlOnlyState = yamlOnlyState ?? new YAMLOnlyExploreState(false);
+  $: if (exploreSpec) {
     resolvedYamlOnlyState.sync(exploreSpec);
   }
+
+  $: dimensions = $allDimensions;
+  $: dimensionIdMap = getMapFromArray(
+    dimensions,
+    (dimension) => (dimension.name || dimension.column) as string,
+  );
+
+  $: measures = $allMeasures;
+  $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
+
+  $: currentDimensionFilters = $getDimensionFilterItems(
+    dimensionIdMap,
+    new Set(resolvedYamlOnlyState.pinnedFilters.value),
+  );
+  $: allDimensionFilters = $getAllDimensionFilterItems(
+    currentDimensionFilters,
+    dimensionIdMap,
+    new Set(resolvedYamlOnlyState.pinnedFilters.value),
+  );
+
+  $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
+  $: allMeasureFilters = $getAllMeasureFilterItems(
+    currentMeasureFilters,
+    measureIdMap,
+    new Set(resolvedYamlOnlyState.pinnedFilters.value),
+  );
+
+  $: missingRequiredFilters = getMissingRequiredFilters(
+    exploreSpec ?? {},
+    allDimensionFilters,
+    allMeasureFilters,
+  );
 
   // Clear the active theme when this dashboard is destroyed
   onDestroy(() => activeDashboardTheme.set(undefined));
@@ -193,7 +224,9 @@
       {/if}
     </div>
 
-    {#if mockUserHasNoAccess}
+    {#if missingRequiredFilters.length}
+      <RequiredFiltersMessage {missingRequiredFilters} />
+    {:else if mockUserHasNoAccess}
       <!-- Additional safeguard for mock users without dashboard access. -->
       <ErrorPage
         statusCode={extractErrorStatusCode(exploreError)}
@@ -300,7 +333,7 @@
 
     <CellInspector />
 
-    {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
+    {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess && !missingRequiredFilters.length}
       <RowsViewerAccordion {metricsViewName} {exploreName} />
     {/if}
   </article>

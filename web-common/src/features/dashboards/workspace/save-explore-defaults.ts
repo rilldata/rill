@@ -6,33 +6,26 @@ import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/
 import { get } from "svelte/store";
 import { parseDocument } from "yaml";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import type { YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
 
-export type ComparisonModeValue =
-  | "none"
-  | "time"
-  | "dimension"
-  | "rill-PP"
-  | "rill-PD"
-  | "rill-PW"
-  | "rill-PM"
-  | "rill-PQ"
-  | "rill-PY";
+export type ComparisonModeValue = "none" | "time" | "dimension";
 
 export type ExploreDefaults = {
   filter?: string;
+  pinned_filters?: string[];
+  required_filters?: string[];
   measures?: string[];
   dimensions?: string[];
   comparison_mode?: ComparisonModeValue;
   comparison_dimension?: string;
   time_range?: string;
-  pinned?: string[];
 };
 
 export async function saveExploreDefaults(
   runtimeClient: RuntimeClient,
   fileArtifact: FileArtifact,
   exploreState: ExploreState,
-  autoSave: boolean,
+  yamlOnlyConfig: YAMLOnlyExploreState,
 ) {
   const doc = parseDocument(get(fileArtifact.editorContent) ?? "");
   const defaults: ExploreDefaults = {};
@@ -81,10 +74,17 @@ export async function saveExploreDefaults(
   }
 
   // Pinned filters
-  if (exploreState.pinnedFilters?.size) {
-    defaults.pinned = Array.from(exploreState.pinnedFilters);
+  if (yamlOnlyConfig.pinnedFilters.value.length) {
+    defaults.pinned_filters = Array.from(yamlOnlyConfig.pinnedFilters.value);
+  }
+
+  // Required filters
+  if (yamlOnlyConfig.requiredFilters.value.length) {
+    defaults.required_filters = Array.from(
+      yamlOnlyConfig.requiredFilters.value,
+    );
   }
 
   doc.set("defaults", defaults);
-  fileArtifact.updateEditorContent(doc.toString(), false, autoSave);
+  fileArtifact.updateEditorContent(doc.toString(), false, true);
 }

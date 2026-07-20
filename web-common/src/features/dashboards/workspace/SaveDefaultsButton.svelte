@@ -9,13 +9,16 @@
   import { useRuntimeClient } from "web-common/src/runtime-client/v2";
   import { viewingExploreDefaults } from "@rilldata/web-common/features/dashboards/workspace/viewing-explore-defaults.ts";
   import { page } from "$app/state";
+  import type { YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
 
   let {
     fileArtifact,
     saving,
+    yamlOnlyState,
   }: {
     fileArtifact: FileArtifact;
     saving: boolean;
+    yamlOnlyState: YAMLOnlyExploreState;
   } = $props();
 
   const runtimeClient = useRuntimeClient();
@@ -36,6 +39,10 @@
       metricsViewSpec,
       exploreSpec,
       timeRangeSummary,
+      {
+        pinnedFilters: yamlOnlyState.pinnedFilters.value,
+        requiredFilters: yamlOnlyState.requiredFilters.value,
+      },
     ),
   );
 </script>
@@ -51,7 +58,7 @@
       runtimeClient,
       fileArtifact,
       $dashboardStore,
-      true,
+      yamlOnlyState,
     );
     setTimeout(() => {
       justClickedSaveAsDefault = false;

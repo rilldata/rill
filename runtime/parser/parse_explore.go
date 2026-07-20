@@ -35,8 +35,8 @@ type ExploreYAML struct {
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
 		Filter              string             `yaml:"filter"`
-		Pinned              []string           `yaml:"pinned"`
-		Required            []string           `yaml:"required"`
+		PinnedFilters       []string           `yaml:"pinned_filters"`
+		RequiredFilters     []string           `yaml:"required_filters"`
 	} `yaml:"defaults"`
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
@@ -263,13 +263,13 @@ func (p *Parser) parseExplore(node *Node) error {
 		}
 
 		var pinnedMeasuresOrDimensions []string
-		if len(tmp.Defaults.Pinned) > 0 {
-			pinnedMeasuresOrDimensions = tmp.Defaults.Pinned
+		if len(tmp.Defaults.PinnedFilters) > 0 {
+			pinnedMeasuresOrDimensions = tmp.Defaults.PinnedFilters
 		}
 
 		var requiredFilters []string
-		if len(tmp.Defaults.Required) > 0 {
-			requiredFilters = tmp.Defaults.Required
+		if len(tmp.Defaults.RequiredFilters) > 0 {
+			requiredFilters = tmp.Defaults.RequiredFilters
 		}
 
 		defaultPreset = &runtimev1.ExplorePreset{

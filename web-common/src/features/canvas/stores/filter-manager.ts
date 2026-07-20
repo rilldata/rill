@@ -22,6 +22,7 @@ import { flattenExpression } from "../../dashboards/stores/filter-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import type { ParsedFilters } from "./filter-state";
 import { FilterState } from "./filter-state";
+import type { MissingRequiredFilter } from "@rilldata/web-common/features/dashboards/filters/required/required-filters.ts";
 
 export type UIFilters = {
   dimensionFilters: Map<string, DimensionFilterItem>;
@@ -29,12 +30,6 @@ export type UIFilters = {
   complexFilters: V1Expression[];
   hasFilters: boolean;
   hasClearableFilters: boolean;
-};
-
-export type MissingRequiredFilter = {
-  key: string;
-  name: string;
-  label: string;
 };
 
 export type MetricsViewName = string;
