@@ -271,7 +271,7 @@ export const getAllDimensionFilterItems = (
       });
     }
 
-    pinnedFilters.values().forEach((pinnedFilter) => {
+    pinnedFilters.forEach((pinnedFilter) => {
       const existing = allDimensionFilterItem.find(
         (dfi) => dfi.name === pinnedFilter,
       );

@@ -7,6 +7,7 @@ import {
   RuntimeClient,
 } from "@rilldata/web-common/runtime-client/v2";
 import { render } from "@testing-library/svelte";
+import { YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
 
 export function renderFilterComponent(hasTimeSeries = false) {
   const { stateManagers, queryClient } = initStateManagers();
@@ -16,6 +17,7 @@ export function renderFilterComponent(hasTimeSeries = false) {
       timeRanges: [],
       metricsViewName: AD_BIDS_METRICS_NAME,
       hasTimeSeries,
+      yamlOnlyState: new YAMLOnlyExploreState(false),
     },
     context: new Map<string | symbol, unknown>([
       [DEFAULT_STORE_KEY as unknown as string, stateManagers as unknown],

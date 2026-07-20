@@ -30,10 +30,7 @@ import {
   DateTimeUnitToV1TimeGrain,
   isGrainAllowed,
 } from "@rilldata/web-common/lib/time/new-grains";
-import {
-  createAndExpression,
-  flattenExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 
 export function getExploreStateFromYAMLConfig(
@@ -115,10 +112,7 @@ export function getExploreFilterStateFromYAMLConfig(
     return {};
   }
 
-  const flattened = filter
-    ? flattenExpression(filter)
-    : createAndExpression([]);
-
+  const flattened = flattenExpression(filter);
   const { dimensionThresholdFilters, dimensionFilters } =
     splitWhereFilter(flattened);
 

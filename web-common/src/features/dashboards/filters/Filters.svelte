@@ -154,21 +154,26 @@
   $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
+  $: pinnedFilters = new Set([
+    ...yamlOnlyState.pinnedFilters.value,
+    ...yamlOnlyState.requiredFilters.value,
+  ]);
+
   $: currentDimensionFilters = $getDimensionFilterItems(
     dimensionIdMap,
-    new Set(yamlOnlyState.pinnedFilters.value),
+    pinnedFilters,
   );
   $: allDimensionFilters = $getAllDimensionFilterItems(
     currentDimensionFilters,
     dimensionIdMap,
-    new Set(yamlOnlyState.pinnedFilters.value),
+    pinnedFilters,
   );
 
   $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
   $: allMeasureFilters = $getAllMeasureFilterItems(
     currentMeasureFilters,
     measureIdMap,
-    new Set(yamlOnlyState.pinnedFilters.value),
+    pinnedFilters,
   );
 
   // hasFilter only checks for complete filters and excludes temporary ones

@@ -20,10 +20,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
-  import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
@@ -48,12 +46,8 @@
   export let autoSave: boolean;
 
   const runtimeClient = useRuntimeClient();
-  const StateManagers = getStateManagers();
-  const timeControlsStore = useTimeControlStore(StateManagers);
 
   $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
-
-  $: ({ selectedTimeRange, showTimeComparison } = $timeControlsStore);
 
   $: ({ editorContent, path, updateEditorContent } = fileArtifact);
 

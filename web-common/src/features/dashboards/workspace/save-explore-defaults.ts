@@ -42,7 +42,7 @@ export async function saveExploreDefaults(
 
   // Comparison
   if (exploreState.showTimeComparison) {
-    defaults.comparison_mode = "time"; // TODO: set comparison time
+    defaults.comparison_mode = "time";
   } else if (exploreState.selectedComparisonDimension) {
     defaults.comparison_mode = "dimension";
     defaults.comparison_dimension = exploreState.selectedComparisonDimension;

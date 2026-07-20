@@ -262,16 +262,6 @@ func (p *Parser) parseExplore(node *Node) error {
 			filter = metricsview.ExpressionToProto(expr)
 		}
 
-		var pinnedMeasuresOrDimensions []string
-		if len(tmp.Defaults.PinnedFilters) > 0 {
-			pinnedMeasuresOrDimensions = tmp.Defaults.PinnedFilters
-		}
-
-		var requiredFilters []string
-		if len(tmp.Defaults.RequiredFilters) > 0 {
-			requiredFilters = tmp.Defaults.RequiredFilters
-		}
-
 		defaultPreset = &runtimev1.ExplorePreset{
 			Dimensions:          presetDimensions,
 			DimensionsSelector:  presetDimensionsSelector,
@@ -281,8 +271,8 @@ func (p *Parser) parseExplore(node *Node) error {
 			ComparisonMode:      mode,
 			ComparisonDimension: compareDim,
 			Where:               filter,
-			PinnedFilters:       pinnedMeasuresOrDimensions,
-			RequiredFilters:     requiredFilters,
+			PinnedFilters:       tmp.Defaults.PinnedFilters,
+			RequiredFilters:     tmp.Defaults.RequiredFilters,
 		}
 	}
 

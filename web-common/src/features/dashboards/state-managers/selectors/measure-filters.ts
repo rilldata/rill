@@ -64,7 +64,7 @@ export function getMeasureFilters(
         dtf.filters,
         dtf.name,
         addedMeasure,
-        pinnedFilters.has(dtf.filters[0].measure),
+        dtf.filters[0] ? pinnedFilters.has(dtf.filters[0].measure) : false,
       ),
     );
   }
@@ -130,7 +130,7 @@ export const getAllMeasureFilterItems = (
       });
     }
 
-    pinnedFilters.values().forEach((pinnedFilter) => {
+    pinnedFilters.forEach((pinnedFilter) => {
       const existing = allMeasureFilterItems.find(
         (mfi) => mfi.name === pinnedFilter,
       );

@@ -166,21 +166,26 @@
   $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
+  $: pinnedFilters = new Set([
+    ...resolvedYamlOnlyState.pinnedFilters.value,
+    ...resolvedYamlOnlyState.requiredFilters.value,
+  ]);
+
   $: currentDimensionFilters = $getDimensionFilterItems(
     dimensionIdMap,
-    new Set(resolvedYamlOnlyState.pinnedFilters.value),
+    pinnedFilters,
   );
   $: allDimensionFilters = $getAllDimensionFilterItems(
     currentDimensionFilters,
     dimensionIdMap,
-    new Set(resolvedYamlOnlyState.pinnedFilters.value),
+    pinnedFilters,
   );
 
   $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
   $: allMeasureFilters = $getAllMeasureFilterItems(
     currentMeasureFilters,
     measureIdMap,
-    new Set(resolvedYamlOnlyState.pinnedFilters.value),
+    pinnedFilters,
   );
 
   $: missingRequiredFilters = getMissingRequiredFilters(
