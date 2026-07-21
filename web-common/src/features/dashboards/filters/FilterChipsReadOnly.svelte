@@ -84,7 +84,6 @@ The main feature-set component for dashboard filters
   {#if dimensionFilters.length > 0}
     {#each dimensionFilters as filterData (filterData.name)}
       {@const dimension = filterData.dimensions.get(metricsViewNames[0])}
-      <!-- <div animate:flip={{ duration: 200 }}> -->
       {#if dimension}
         <DimensionFilterReadOnlyChip
           pinned={filterData.pinned}
@@ -102,7 +101,6 @@ The main feature-set component for dashboard filters
           timeEnd={queryTimeEnd}
         />
       {/if}
-      <!-- </div> -->
     {/each}
   {/if}
   {#if measureFilters.length > 0}

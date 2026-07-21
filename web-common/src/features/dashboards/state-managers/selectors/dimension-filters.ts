@@ -226,7 +226,7 @@ export function getDimensionFilters(
   metricsViewName: string | undefined,
   pinnedFilters: Set<string>,
 ) {
-  return Array.from(
+  const dimensionFilters = Array.from(
     getDimensionFiltersMap(
       dimensionIdMap,
       filter,
@@ -235,6 +235,30 @@ export function getDimensionFilters(
       pinnedFilters,
     ).values(),
   );
+  if (!metricsViewName) return dimensionFilters;
+
+  // Add pinned filters that dont have values selected
+  pinnedFilters.forEach((pinnedFilter) => {
+    const existing = dimensionFilters.some((dfi) => dfi.name === pinnedFilter);
+    if (existing) return;
+
+    const dim = dimensionIdMap.get(pinnedFilter);
+    if (!dim) return;
+
+    dimensionFilters.push({
+      name: pinnedFilter,
+      label: getDimensionDisplayName(dim),
+      mode: DimensionFilterMode.Select,
+      selectedValues: [],
+      isInclude: true,
+      dimensions: new Map<string, MetricsViewSpecDimension>([
+        [metricsViewName, dim],
+      ]),
+      pinned: true,
+    });
+  });
+
+  return dimensionFilters;
 }
 
 export const getAllDimensionFilterItems = (
@@ -251,7 +275,10 @@ export const getAllDimensionFilterItems = (
     if (
       dashData.dashboard.temporaryFilterName &&
       dimensionIdMap.has(dashData.dashboard.temporaryFilterName) &&
-      dashData.validExplore?.metricsView
+      dashData.validExplore?.metricsView &&
+      allDimensionFilterItem.every(
+        (dfi) => dfi.name !== dashData.dashboard.temporaryFilterName,
+      )
     ) {
       allDimensionFilterItem.push({
         name: dashData.dashboard.temporaryFilterName,
@@ -270,28 +297,6 @@ export const getAllDimensionFilterItems = (
         pinned: pinnedFilters.has(dashData.dashboard.temporaryFilterName),
       });
     }
-
-    pinnedFilters.forEach((pinnedFilter) => {
-      const existing = allDimensionFilterItem.find(
-        (dfi) => dfi.name === pinnedFilter,
-      );
-      if (existing) return;
-
-      const dim = dimensionIdMap.get(pinnedFilter);
-      if (!dim) return;
-
-      allDimensionFilterItem.push({
-        name: pinnedFilter,
-        label: getDimensionDisplayName(dim),
-        mode: DimensionFilterMode.Select,
-        selectedValues: [],
-        isInclude: true,
-        dimensions: new Map<string, MetricsViewSpecDimension>([
-          [dashData.validExplore!.metricsView!, dim],
-        ]),
-        pinned: true,
-      });
-    });
 
     // sort based on name to make sure toggling include/exclude is not jarring
     return allDimensionFilterItem.sort(filterItemsSortFunction);

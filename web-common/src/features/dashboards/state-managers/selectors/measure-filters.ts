@@ -1,7 +1,4 @@
-import {
-  getDimensionDisplayName,
-  getMeasureDisplayName,
-} from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
@@ -10,7 +7,6 @@ import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
 export const measureHasFilter = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
@@ -69,6 +65,18 @@ export function getMeasureFilters(
     );
   }
 
+  pinnedFilters.forEach((pinnedFilter) => {
+    const existing = filteredMeasures.some((mfi) => mfi.name === pinnedFilter);
+    if (existing || !measureIdMap.has(pinnedFilter)) return;
+
+    filteredMeasures.push({
+      dimensionName: "",
+      name: pinnedFilter,
+      label: getMeasureDisplayName(measureIdMap.get(pinnedFilter)),
+      pinned: true,
+    });
+  });
+
   return filteredMeasures;
 }
 
@@ -118,7 +126,10 @@ export const getAllMeasureFilterItems = (
     // if the temporary filter is a dimension filter add it
     if (
       dashData.dashboard.temporaryFilterName &&
-      measureIdMap.has(dashData.dashboard.temporaryFilterName)
+      measureIdMap.has(dashData.dashboard.temporaryFilterName) &&
+      allMeasureFilterItems.every(
+        (mfi) => mfi.name !== dashData.dashboard.temporaryFilterName,
+      )
     ) {
       allMeasureFilterItems.push({
         dimensionName: "",
@@ -129,20 +140,6 @@ export const getAllMeasureFilterItems = (
         pinned: pinnedFilters.has(dashData.dashboard.temporaryFilterName),
       });
     }
-
-    pinnedFilters.forEach((pinnedFilter) => {
-      const existing = allMeasureFilterItems.find(
-        (mfi) => mfi.name === pinnedFilter,
-      );
-      if (existing || !measureIdMap.has(pinnedFilter)) return;
-
-      allMeasureFilterItems.push({
-        dimensionName: "",
-        name: pinnedFilter,
-        label: getMeasureDisplayName(measureIdMap.get(pinnedFilter)),
-        pinned: true,
-      });
-    });
 
     return allMeasureFilterItems;
   };

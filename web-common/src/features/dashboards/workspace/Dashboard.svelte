@@ -181,7 +181,10 @@
     pinnedFilters,
   );
 
-  $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
+  $: currentMeasureFilters = $getMeasureFilterItems(
+    measureIdMap,
+    pinnedFilters,
+  );
   $: allMeasureFilters = $getAllMeasureFilterItems(
     currentMeasureFilters,
     measureIdMap,
