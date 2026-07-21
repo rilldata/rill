@@ -12,11 +12,15 @@
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { Query } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
+  import { ToProtoExportFormatMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+  import type { JsonValue } from "@bufbuild/protobuf";
   import { onMount } from "svelte";
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { stripUndefined } from "@rilldata/web-common/runtime-client/v2/strip-undefined.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -50,8 +54,10 @@
     const { format, includeHeader = false } = options;
     try {
       const result = await $exportDash.mutateAsync({
-        query: exportQuery as any,
-        format: format as any,
+        query: exportQuery
+          ? Query.fromJson(stripUndefined(exportQuery) as unknown as JsonValue)
+          : undefined,
+        format: ToProtoExportFormatMap[format],
         includeHeader,
         // Include metadata for CSV/XLSX exports in Cloud context.
         ...(includeHeader &&
