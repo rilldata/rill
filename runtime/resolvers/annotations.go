@@ -53,6 +53,10 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		return nil, err
 	}
 
+	if !security.CanAccess() {
+		return nil, runtime.ErrForbidden
+	}
+
 	var userAttrs map[string]any
 	if opts.Claims != nil {
 		userAttrs = opts.Claims.UserAttributes

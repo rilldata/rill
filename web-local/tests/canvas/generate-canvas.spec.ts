@@ -9,9 +9,6 @@ test.describe.skip("canvas generation", () => {
   test.setTimeout(120_000);
 
   test("Generate canvas dashboard from metrics view", async ({ page }) => {
-    // Expand the metrics folder first
-    await page.getByLabel("/metrics").click();
-
     // Navigate to the metrics view file
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 

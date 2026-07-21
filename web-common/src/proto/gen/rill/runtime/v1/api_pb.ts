@@ -6184,6 +6184,100 @@ export class GitDiffResponse_GitFileChange extends Message$1<GitDiffResponse_Git
 }
 
 /**
+ * @generated from message rill.runtime.v1.GitRevertRequest
+ */
+export class GitRevertRequest extends Message$1<GitRevertRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * remote_branch is the branch to compare against. Same semantics as GitDiffRequest:
+   * if empty, the upstream of the current local branch is used.
+   *
+   * @generated from field: string remote_branch = 2;
+   */
+  remoteBranch = "";
+
+  /**
+   * paths are the files to revert, relative to the project subpath, matching the paths returned by
+   * GitDiff. Paths that are not actually changed are ignored. If empty, all changed files are reverted.
+   *
+   * @generated from field: repeated string paths = 3;
+   */
+  paths: string[] = [];
+
+  constructor(data?: PartialMessage<GitRevertRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitRevertRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitRevertRequest {
+    return new GitRevertRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitRevertRequest {
+    return new GitRevertRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitRevertRequest {
+    return new GitRevertRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitRevertRequest | PlainMessage<GitRevertRequest> | undefined, b: GitRevertRequest | PlainMessage<GitRevertRequest> | undefined): boolean {
+    return proto3.util.equals(GitRevertRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GitRevertResponse
+ */
+export class GitRevertResponse extends Message$1<GitRevertResponse> {
+  /**
+   * reverted_paths lists the files that were reverted, relative to the project subpath.
+   *
+   * @generated from field: repeated string reverted_paths = 1;
+   */
+  revertedPaths: string[] = [];
+
+  constructor(data?: PartialMessage<GitRevertResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitRevertResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "reverted_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitRevertResponse {
+    return new GitRevertResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitRevertResponse {
+    return new GitRevertResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitRevertResponse {
+    return new GitRevertResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitRevertResponse | PlainMessage<GitRevertResponse> | undefined, b: GitRevertResponse | PlainMessage<GitRevertResponse> | undefined): boolean {
+    return proto3.util.equals(GitRevertResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ListGitBranchesRequest
  */
 export class ListGitBranchesRequest extends Message$1<ListGitBranchesRequest> {

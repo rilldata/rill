@@ -56,7 +56,6 @@ test.describe("time dimension selection", () => {
   test("time dimensions appear when configured", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
@@ -65,7 +64,6 @@ test.describe("time dimension selection", () => {
       "AdBids_metrics",
     );
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -81,7 +79,6 @@ test.describe("time dimension selection", () => {
   });
 
   test("URL parameters are preserved for time range", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -104,7 +101,6 @@ test.describe("time dimension selection", () => {
   test("dashboard displays correctly with time range selection", async ({
     page,
   }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -123,7 +119,6 @@ test.describe("time dimension selection", () => {
   });
 
   test("leaderboard data displays correctly", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -147,7 +142,6 @@ test.describe("time dimension selection", () => {
   }) => {
     const watcher = new ResourceWatcher(page);
 
-    await page.getByLabel("/metrics").click();
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
@@ -156,7 +150,6 @@ test.describe("time dimension selection", () => {
       "AdBids_metrics",
     );
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await page.getByRole("button", { name: "Preview" }).click();
     await waitForDashboard(page);

@@ -4,7 +4,6 @@ import { gotoNavEntry } from "../utils/waitHelpers";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 
 async function setupDashboard(page: Page) {
-  await page.getByLabel("/dashboards").click();
   await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
   const bigNumber = page

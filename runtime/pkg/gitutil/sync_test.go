@@ -671,6 +671,104 @@ func TestChangedFiles_RemoteDiverged(t *testing.T) {
 	}, got)
 }
 
+func TestRevert_All(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// A mix of every change type relative to origin/<mainBranch> (which stays at test1-3.txt).
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test1.txt"), []byte("edited"), 0644), "failed to modify")
+	require.NoError(t, os.Remove(filepath.Join(tempDir, "test2.txt")), "failed to delete")
+	createCommit(t, tempDir, "added_committed.txt", "new", "add committed file") // committed add
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "untracked.txt"), []byte("x"), 0644), "failed to create untracked")
+
+	// Empty paths reverts every changed file.
+	reverted, err := Revert(context.Background(), tempDir, "", "origin", mainBranch, nil)
+	require.NoError(t, err, "Revert failed")
+	require.Equal(t, []string{"added_committed.txt", "test1.txt", "test2.txt", "untracked.txt"}, reverted)
+
+	// The working tree is back to the target-branch state.
+	require.Equal(t, "content of file 1", readFile(t, tempDir, "test1.txt"), "modified file should be restored")
+	require.Equal(t, "content of file 2", readFile(t, tempDir, "test2.txt"), "deleted file should be restored")
+	require.NoFileExists(t, filepath.Join(tempDir, "added_committed.txt"), "committed add should be removed")
+	require.NoFileExists(t, filepath.Join(tempDir, "untracked.txt"), "untracked add should be removed")
+
+	// Nothing differs from the target branch anymore.
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err)
+	require.Empty(t, files, "no changes should remain after reverting all")
+}
+
+func TestRevert_Selective(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test1.txt"), []byte("edited"), 0644), "failed to modify")
+	require.NoError(t, os.Remove(filepath.Join(tempDir, "test2.txt")), "failed to delete")
+
+	reverted, err := Revert(context.Background(), tempDir, "", "origin", mainBranch, []string{"test1.txt"})
+	require.NoError(t, err, "Revert failed")
+	require.Equal(t, []string{"test1.txt"}, reverted)
+
+	// Only test1.txt is restored; test2.txt is left deleted.
+	require.Equal(t, "content of file 1", readFile(t, tempDir, "test1.txt"))
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err)
+	require.Equal(t, []ChangedFile{{Path: "test2.txt", Status: ChangedFileStatusDeleted}}, files)
+}
+
+func TestRevert_Rename(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	// Committed rename, which git reports as a single Renamed change (old + new path).
+	require.NoError(t, exec.Command("git", "-C", tempDir, "mv", "test1.txt", "renamed1.txt").Run(), "failed to rename")
+	require.NoError(t, exec.Command("git", "-C", tempDir, "commit", "-m", "rename").Run(), "failed to commit rename")
+
+	reverted, err := Revert(context.Background(), tempDir, "", "origin", mainBranch, []string{"renamed1.txt"})
+	require.NoError(t, err, "Revert failed")
+	require.Equal(t, []string{"renamed1.txt"}, reverted)
+
+	// The pre-rename file is restored and the renamed-to file is removed.
+	assertFileExists(t, tempDir, "test1.txt")
+	require.Equal(t, "content of file 1", readFile(t, tempDir, "test1.txt"))
+	require.NoFileExists(t, filepath.Join(tempDir, "renamed1.txt"))
+
+	files, err := ChangedFiles(context.Background(), tempDir, "", "origin", mainBranch)
+	require.NoError(t, err)
+	require.Empty(t, files, "rename should be fully undone")
+}
+
+func TestRevert_Monorepo(t *testing.T) {
+	tempDir, _ := setupMonorepoTestRepository(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	createCommit(t, tempDir, "subproject1/new.txt", "new", "subproject1: add file")
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "subproject2", "file2.txt"), []byte("edit"), 0644), "failed to modify")
+
+	// Reverting subproject1 leaves subproject2's change untouched.
+	reverted, err := Revert(context.Background(), tempDir, "subproject1", "origin", mainBranch, nil)
+	require.NoError(t, err, "Revert failed")
+	require.Equal(t, []string{"new.txt"}, reverted)
+	require.NoFileExists(t, filepath.Join(tempDir, "subproject1", "new.txt"))
+
+	files, err := ChangedFiles(context.Background(), tempDir, "subproject2", "origin", mainBranch)
+	require.NoError(t, err)
+	require.Equal(t, []ChangedFile{{Path: "file2.txt", Status: ChangedFileStatusModified}}, files)
+}
+
+func TestRevert_SkipsUnchanged(t *testing.T) {
+	tempDir, _ := setupRepoWithRemote(t)
+	mainBranch := getCurrentBranch(t, tempDir)
+
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "test1.txt"), []byte("edited"), 0644), "failed to modify")
+
+	// A path that is not actually changed is silently skipped; an unchanged working tree is untouched.
+	reverted, err := Revert(context.Background(), tempDir, "", "origin", mainBranch, []string{"test3.txt", "does_not_exist.txt"})
+	require.NoError(t, err, "Revert failed")
+	require.Empty(t, reverted)
+	require.Equal(t, "edited", readFile(t, tempDir, "test1.txt"), "unrelated change should remain")
+}
+
 // Helper: compare canonicalized paths
 func assertPathsEqual(t *testing.T, p1, p2 string) {
 	t.Helper()

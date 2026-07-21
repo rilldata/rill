@@ -7,7 +7,7 @@
     setExternalHover,
   } from "@rilldata/web-common/features/components/charts/highlight-controller";
   import type { ChartProvider } from "@rilldata/web-common/features/components/charts/types";
-  import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
+  import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/themes/theme-boundary";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     chartBrushStore,

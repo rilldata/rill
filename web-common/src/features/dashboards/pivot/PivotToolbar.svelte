@@ -234,6 +234,7 @@
         {/if}
       </div>
     {/if}
+
     <slot name="export-menu" />
 
     {#if isFetching}

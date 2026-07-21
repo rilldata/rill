@@ -11,6 +11,7 @@
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
+  import ConnectClientPopover from "../../connect/ConnectClientPopover.svelte";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
   import {
@@ -80,13 +81,16 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
-    {#if currentConversation?.id && $adminServer}
+    {#if $adminServer}
       <div class="chat-header">
-        <ShareChatPopover
-          conversationId={currentConversation.id}
-          {organization}
-          {project}
-        />
+        <ConnectClientPopover />
+        {#if currentConversation?.id}
+          <ShareChatPopover
+            conversationId={currentConversation.id}
+            {organization}
+            {project}
+          />
+        {/if}
       </div>
     {/if}
     <div class="chat-content">
@@ -125,7 +129,7 @@
 
   .chat-header {
     @apply absolute top-0 right-0;
-    @apply flex items-center justify-end;
+    @apply flex items-center justify-end gap-x-0.5;
     @apply py-2 px-4 z-10 pointer-events-none;
   }
 

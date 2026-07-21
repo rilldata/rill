@@ -860,14 +860,14 @@ func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string
 			return false, fmt.Errorf("failed to check if billing table exists: %w", err)
 		}
 	} else {
+		// Query through view so ClickHouse applies normal SELECT access checks on system.tables.
+		// Targeting system.tables directly requires SHOW COLUMNS on system.tables starting in ClickHouse 26.3.
 		err := c.readDB.QueryRowxContext(ctx, fmt.Sprintf(`
 				SELECT countIf(found) = count() AS exists_everywhere, countIf(found) > 0 AS exists_somewhere
-				FROM
-				(
-					SELECT hostName() AS host, max((database = 'billing') AND (name = 'events')) AS found
-					FROM clusterAllReplicas('%s', system.tables)
-					GROUP BY host
-				)`, cluster)).Scan(&existsEverywhere, &existsSomewhere)
+				FROM clusterAllReplicas(%s, view(
+					SELECT max((database = 'billing') AND (name = 'events')) AS found
+					FROM system.tables
+				))`, safeSQLString(cluster))).Scan(&existsEverywhere, &existsSomewhere)
 		if err != nil {
 			return false, fmt.Errorf("failed to check if billing table exists in cluster %q: %w", cluster, err)
 		}

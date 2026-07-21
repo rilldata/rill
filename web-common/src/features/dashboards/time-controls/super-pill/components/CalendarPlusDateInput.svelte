@@ -109,7 +109,7 @@
   />
 
   <!-- {#if usingRillTime} -->
-  <div class="w-full h-px bg-gray-200"></div>
+  <div class="w-full h-px bg-border"></div>
 
   <div class="flex flex-col gap-y-2">
     <DateInput
@@ -148,6 +148,7 @@
     <Button
       fit
       compact
+      theme
       type="secondary"
       disabled={!inputInterval?.isValid || exceedsCap}
       onClick={() => {

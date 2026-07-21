@@ -363,6 +363,38 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 	return ast, nil
 }
 
+// SecurityFilterSQL compiles the security policy's query filter and row filter for the given metrics view
+// into a SQL expression and args that can be used in a WHERE clause against the metrics view's underlying table.
+// It returns an empty SQL string if the security policy does not restrict row access.
+// It is used when building an AST, and can also be used directly for queries that are built manually, such as dimension summaries.
+func SecurityFilterSQL(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, dialect drivers.Dialect) (string, []any, error) {
+	var res *ExprNode
+
+	if qf := sec.QueryFilter(); qf != nil {
+		// Compiling an expression requires an AST value for contextual info such as dimension lookups.
+		a := &AST{
+			MetricsView: mv,
+			Security:    sec,
+			Query:       &Query{},
+			Dialect:     dialect,
+		}
+		expr, args, err := a.SQLForExpression(NewExpressionFromProto(qf), nil, false, false)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to compile the security policy's query filter: %w", err)
+		}
+		res = res.And(expr, args)
+	}
+
+	if rf := sec.RowFilter(); rf != "" {
+		res = res.And(rf, nil)
+	}
+
+	if res == nil {
+		return "", nil, nil
+	}
+	return res.Expr, res.Args, nil
+}
+
 // ResolveDimension returns a dimension spec for the given dimension query.
 // If the dimension query specifies a computed dimension, it constructs a dimension spec to match it.
 func (a *AST) ResolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsViewSpec_Dimension, error) {
@@ -1022,7 +1054,7 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 }
 
 // buildWhereForUnderlyingTable constructs an expression for a WHERE clause for the underlying table.
-// It combines the provided where expression with any security policy filters.
+// It combines the provided where expression with the security policy's filters.
 // It allows the input `where` to be nil, and returns nil if there are no conditions to apply.
 func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error) {
 	var res *ExprNode
@@ -1033,18 +1065,11 @@ func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error)
 	}
 	res = res.And(expr, args)
 
-	if qf := a.Security.QueryFilter(); qf != nil {
-		e := NewExpressionFromProto(qf)
-		expr, args, err = a.SQLForExpression(e, nil, false, false)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile the security policy's query filter: %w", err)
-		}
-		res = res.And(expr, args)
+	secExpr, secArgs, err := SecurityFilterSQL(a.MetricsView, a.Security, a.Dialect)
+	if err != nil {
+		return nil, err
 	}
-
-	if rf := a.Security.RowFilter(); rf != "" {
-		res = res.And(rf, nil)
-	}
+	res = res.And(secExpr, secArgs)
 
 	return res, nil
 }
