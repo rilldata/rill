@@ -114,7 +114,6 @@ test.describe("timeseries charts (rendering)", () => {
     test(`chart data matches API response (dashboard: ${dashboardTZ})`, async ({
       page,
     }) => {
-      await page.getByLabel("/dashboards").click();
       await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
       await expect(
@@ -176,7 +175,6 @@ test.describe("timeseries charts system TZ independence", () => {
   }) => {
     const dashboardTZ = "America/Los_Angeles";
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     await expect(

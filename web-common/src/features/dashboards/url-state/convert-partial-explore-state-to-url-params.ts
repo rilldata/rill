@@ -1,4 +1,5 @@
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { toPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
   type PivotChipData,
   PivotChipType,
@@ -448,6 +449,13 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
   if (partialExploreState.pivot.showTotalsRow === false) {
     searchParams.set(ExploreStateURLParams.PivotShowTotalsRow, "false");
   }
+
+  // Always set so clearing formatting removes it from the URL; cleanUrlParams
+  // strips the empty value.
+  searchParams.set(
+    ExploreStateURLParams.PivotFormatting,
+    toPivotFormattingParam(partialExploreState.pivot.measureFormatting),
+  );
 
   // TODO: other fields like expanded state and pin are not supported right now
   return searchParams;

@@ -191,7 +191,7 @@
 
   .input-wrapper:focus-within {
     outline: none;
-    @apply border-primary-600;
+    @apply border-theme-600;
   }
 
   input:focus {

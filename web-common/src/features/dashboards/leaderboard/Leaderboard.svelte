@@ -90,6 +90,9 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void = () => {};
+  // When set, the dimension column becomes resizable and the new width is
+  // reported through this callback.
+  export let onDimensionColumnResize: ((width: number) => void) | null = null;
 
   onMount(() => {
     if (!parentElement) return;
@@ -113,6 +116,8 @@
   let container: HTMLElement;
 
   let hovered: boolean;
+
+  let tableHeight = 0;
 
   $: queryLimit = slice + 1;
   $: maxValuesToShow = slice * 2;
@@ -325,7 +330,10 @@
   onmouseenter={() => (hovered = true)}
   onmouseleave={() => (hovered = false)}
 >
-  <table style:width="{tableWidth + gutterWidth}px">
+  <table
+    style:width="{tableWidth + gutterWidth}px"
+    bind:clientHeight={tableHeight}
+  >
     <colgroup>
       <col data-gutter-column style:width="{gutterWidth}px" />
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
@@ -370,6 +378,9 @@
       {toggleComparisonDimension}
       {leaderboardSortByMeasureName}
       {measureLabel}
+      {dimensionColumnWidth}
+      {onDimensionColumnResize}
+      {tableHeight}
     />
 
     <tbody>

@@ -302,11 +302,16 @@ export class FilterState {
           },
         });
 
-        expr = createInExpression(dimensionName, dimensionValues, exclude);
-        wf.cond?.exprs?.splice(exprIndex, 1, expr);
-
         if (wasInListFilter) {
-          dimensionsWithInListFilter.filter((d) => d !== dimensionName);
+          const idx = dimensionsWithInListFilter.indexOf(dimensionName);
+          if (idx !== -1) {
+            dimensionsWithInListFilter.splice(idx, 1);
+          }
+        }
+
+        if (dimensionValues.length) {
+          expr = createInExpression(dimensionName, dimensionValues, exclude);
+          wf.cond?.exprs?.splice(exprIndex, 1, expr);
         }
       } else if (expr) {
         dimensionValues.forEach((dimensionValue) => {

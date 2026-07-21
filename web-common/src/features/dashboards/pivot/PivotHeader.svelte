@@ -6,14 +6,23 @@
   import DragList from "./DragList.svelte";
   import PivotAutoArrangeZone from "./PivotAutoArrangeZone.svelte";
   import { lastNestState } from "./PivotToolbar.svelte";
-  import { PivotChipType, type PivotChipData, type PivotState } from "./types";
+  import {
+    PivotChipType,
+    type PivotChipData,
+    type PivotMeasureFormatting,
+    type PivotState,
+  } from "./types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let pivotState: PivotState;
   export let setRows: (items: PivotChipData[]) => void;
   export let setColumns: (items: PivotChipData[]) => void;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 
-  $: ({ rows, columns, tableMode } = pivotState);
+  $: ({ rows, columns, tableMode, measureFormatting } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: fullColumns = splitColumns.dimension.concat(splitColumns.measure);
   $: isFlat = tableMode === "flat";
@@ -66,6 +75,9 @@
       items={columnsForList}
       placeholder={m.dashboard_drag_dimensions_or_measures()}
       onUpdate={updateColumn}
+      {measureFormatting}
+      {setMeasureFormatting}
+      {lowerIsBetterMap}
     />
   </div>
 </div>

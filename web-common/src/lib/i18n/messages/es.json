@@ -231,6 +231,8 @@
   "billing_plan_tagline_growth": "Para equipos en crecimiento y analítica embebida.",
   "billing_plan_tagline_starter": "Para equipos pequeños que están comenzando.",
   "billing_plan_was_cancelled": "Su plan {planName} ha sido cancelado",
+  "billing_pricing_details": "Se le facturará mensualmente según el uso a $20/puesto, $0.15/unidad de cómputo/h y $1/GB de almacenamiento/mes.",
+  "billing_pricing_details_compact": "$20/puesto · $0.15/unidad de cómputo/h · $1/GB de almacenamiento/mes.",
   "billing_prod_compute_units": "{count} unidades de cómputo de producción",
   "billing_projects": "Proyectos",
   "billing_projects_hibernating": " y los proyectos de esta organización están en hibernación",
@@ -263,8 +265,7 @@
   "billing_unlimited": "Ilimitado",
   "billing_update_payment": "Actualizar pago",
   "billing_update_payment_methods": "Actualizar métodos de pago",
-  "billing_upgrade_to_pro": "Actualizar a Pro",
-  "billing_upgrade_to_team": "Actualizar al plan Equipo",
+  "billing_upgrade_to_paid_plan": "Actualizar a plan de pago",
   "billing_upgrade_to_wake": "Actualice para reactivar los proyectos y recuperar el acceso completo.",
   "billing_upgrade_within_to_maintain": "Actualice dentro de {duration} para mantener el acceso.",
   "billing_upgrading_plan": "Actualizando al plan {plan}...",
@@ -556,6 +557,8 @@
   "chat_cancel_streaming": "Cancelar transmisión",
   "chat_close": "Cerrar chat",
   "chat_connect_client": "Conecta tu propio cliente",
+  "chat_connect_client_description": "Consulta tus métricas de Rill desde tu cliente de IA favorito.",
+  "chat_connect_client_other": "Otro cliente",
   "chat_conversation_history": "Historial de conversaciones",
   "chat_diff_new_badge": "nuevo",
   "chat_downvote_aria": "Valorar negativamente",
@@ -874,6 +877,7 @@
   "edit_branch_name": "Nombre de rama",
   "edit_changes_checking": "Buscando cambios…",
   "edit_changes_committed_pushed": "Cambios confirmados y enviados",
+  "edit_changes_discard_all": "Descartar todo",
   "edit_changes_file_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -897,7 +901,42 @@
   "edit_changes_loading_diff": "Cargando diff…",
   "edit_changes_no_diff": "No hay diff para mostrar",
   "edit_changes_none_to_show": "No hay cambios para mostrar",
+  "edit_changes_revert": "Revertir",
+  "edit_changes_revert_confirm_body": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Esto descarta permanentemente los cambios locales de {count} archivo y no se puede deshacer.",
+        "countPlural=other": "Esto descarta permanentemente los cambios locales de {count} archivos y no se puede deshacer."
+      }
+    }
+  ],
+  "edit_changes_revert_confirm_title": "¿Revertir cambios?",
+  "edit_changes_revert_failed": "No se pudieron revertir los cambios",
+  "edit_changes_revert_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Revertir {count} archivo",
+        "countPlural=other": "Revertir {count} archivos"
+      }
+    }
+  ],
+  "edit_changes_reverted": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Se revirtió {count} archivo",
+        "countPlural=other": "Se revirtieron {count} archivos"
+      }
+    }
+  ],
+  "edit_changes_reverting": "Revirtiendo…",
   "edit_changes_review_title": "Revisar cambios",
+  "edit_changes_select_all": "Seleccionar todo",
   "edit_changes_status_added": "Agregado",
   "edit_changes_status_deleted": "Eliminado",
   "edit_changes_status_modified": "Modificado",

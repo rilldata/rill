@@ -1,14 +1,17 @@
 import { expect } from "@playwright/test";
 import { gotoNavEntry } from "./utils/waitHelpers";
 import { updateCodeEditor, wrapRetryAssertion } from "./utils/commonHelpers";
+import { waitForReconciliation } from "./utils/wait-for-reconciliation";
 import { test } from "./setup/base";
 
 test.describe("Metrics editor", () => {
   test.use({ project: "AdBids" });
 
   test("Can add and remove measures and dimensions", async ({ page }) => {
-    await page.getByLabel("/metrics").click();
-    await page.getByLabel("/dashboards").click();
+    // Both tests need the AdBids model ingested: the measure/dimension dialogs
+    // and the inspector read its columns, which are empty until then.
+    await waitForReconciliation(page);
+
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     await page.getByRole("button", { name: "Add new measure" }).click();
@@ -59,8 +62,8 @@ test.describe("Metrics editor", () => {
   });
 
   test("Metrics editor", async ({ page }) => {
-    await page.getByLabel("/metrics").click();
-    await page.getByLabel("/dashboards").click();
+    await waitForReconciliation(page);
+
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
 
     await page.getByRole("button", { name: "switch to code editor" }).click();

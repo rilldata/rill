@@ -581,6 +581,9 @@ message ExplorePreset {
   optional int32 pivot_row_limit = 33;
   optional bool pivot_show_totals_column = 37;
   optional bool pivot_show_totals_row = 38;
+  // Per-measure pivot conditional formatting, serialized in the URL param
+  // format (frontend-only; persisted in URL state).
+  optional string pivot_formatting = 39;
 
   // Chart display settings (frontend-only; persisted in URL state)
   optional bool chart_dynamic_y_axis = 35;
