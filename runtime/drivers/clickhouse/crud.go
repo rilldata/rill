@@ -3,7 +3,6 @@ package clickhouse
 import (
 	"context"
 	"crypto/md5"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
