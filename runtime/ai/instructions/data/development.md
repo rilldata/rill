@@ -273,6 +273,7 @@ If you don't have access to a matching skill, try searching the reference docume
 ### Common pitfalls
 
 Avoid these mistakes when developing a project:
+- **Inspecting Rill's internal state with external tools**: Never attempt to inspect Rill's internal state in the project's `tmp` directory (or elsewhere) using external tools. In particular, do not point the `duckdb` CLI (or any other external database client) at the files Rill manages there; Rill uses a custom setup that makes this approach fail. Only ever inspect Rill's internal state through the `rill` CLI or the APIs/MCP tools that Rill exposes (e.g. `query_sql`, `show_table`, `project_status`).
 - **Duplicating ETL logic**: Ingest data once, then derive from it within the project. Do not create multiple models that pull the same data from an external source.
 - **Models as SQL files:** Always create new models as `.yaml` files, not `.sql` files (which are harder to extend later).
 - **Not creating connector files:** When Rill has native support for a connector (like S3 or BigQuery), always create a dedicated connector resource file for it.
