@@ -392,19 +392,26 @@ func parseBetween(ctx context.Context, n *ast.BetweenExpr, q *query) (*metricsvi
 	if err != nil {
 		return nil, err
 	}
+
+	// NOT BETWEEN is the negation of BETWEEN: (expr < left OR expr > right)
+	outerOp, leftOp, rightOp := metricsview.OperatorAnd, metricsview.OperatorGte, metricsview.OperatorLte
+	if n.Not {
+		outerOp, leftOp, rightOp = metricsview.OperatorOr, metricsview.OperatorLt, metricsview.OperatorGt
+	}
+
 	return &metricsview.Expression{
 		Condition: &metricsview.Condition{
-			Operator: metricsview.OperatorAnd,
+			Operator: outerOp,
 			Expressions: []*metricsview.Expression{
 				{
 					Condition: &metricsview.Condition{
-						Operator:    metricsview.OperatorGte,
+						Operator:    leftOp,
 						Expressions: []*metricsview.Expression{expr, left},
 					},
 				},
 				{
 					Condition: &metricsview.Condition{
-						Operator:    metricsview.OperatorLte,
+						Operator:    rightOp,
 						Expressions: []*metricsview.Expression{expr, right},
 					},
 				},
