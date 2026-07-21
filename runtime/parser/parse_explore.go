@@ -15,7 +15,7 @@ import (
 )
 
 type ExploreYAML struct {
-	commonYAML           `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	commonYAML           `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName          string                 `yaml:"display_name"`
 	Title                string                 `yaml:"title"` // Deprecated: use display_name
 	Description          string                 `yaml:"description"`
@@ -32,6 +32,7 @@ type ExploreYAML struct {
 		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
 		Measures            *FieldSelectorYAML `yaml:"measures"`
 		TimeRange           string             `yaml:"time_range"`
+		TimeGrain           string             `yaml:"time_grain"`
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
 		Filter              string             `yaml:"filter"`
@@ -247,6 +248,11 @@ func (p *Parser) parseExplore(node *Node) error {
 		if tmp.Defaults.TimeRange != "" {
 			tr = &tmp.Defaults.TimeRange
 		}
+		var tg *string
+		if tmp.Defaults.TimeGrain != "" {
+			tg = &tmp.Defaults.TimeGrain
+		}
+
 		var compareDim *string
 		if tmp.Defaults.ComparisonDimension != "" {
 			compareDim = &tmp.Defaults.ComparisonDimension
@@ -268,6 +274,7 @@ func (p *Parser) parseExplore(node *Node) error {
 			Measures:            presetMeasures,
 			MeasuresSelector:    presetMeasuresSelector,
 			TimeRange:           tr,
+			TimeGrain:           tg,
 			ComparisonMode:      mode,
 			ComparisonDimension: compareDim,
 			Where:               filter,

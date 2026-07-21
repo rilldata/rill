@@ -7,6 +7,7 @@ import { get } from "svelte/store";
 import { parseDocument } from "yaml";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains.ts";
 
 export type ComparisonModeValue = "none" | "time" | "dimension";
 
@@ -19,6 +20,8 @@ export type ExploreDefaults = {
   comparison_mode?: ComparisonModeValue;
   comparison_dimension?: string;
   time_range?: string;
+  // TODO: comparison time range
+  time_grain?: string;
 };
 
 export async function saveExploreDefaults(
@@ -38,6 +41,9 @@ export async function saveExploreDefaults(
     timeRangeName !== TimeRangePreset.ALL_TIME
   ) {
     defaults.time_range = timeRangeName;
+    if (exploreState.selectedTimeRange!.interval)
+      defaults.time_grain =
+        V1TimeGrainToDateTimeUnit[exploreState.selectedTimeRange!.interval];
   }
 
   // Comparison

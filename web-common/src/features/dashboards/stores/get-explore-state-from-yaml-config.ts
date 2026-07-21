@@ -68,6 +68,14 @@ export function getUrlForExploreYAMLDefaultState(
     timeRangeSummary,
     exploreStateFromYAMLConfig as ExploreState,
   );
+  // Temp fix to avoid refactoring TimeControlState
+  if (
+    exploreStateFromYAMLConfig.selectedTimeRange?.interval &&
+    timeControlState?.selectedTimeRange
+  ) {
+    timeControlState.selectedTimeRange.interval =
+      exploreStateFromYAMLConfig.selectedTimeRange.interval;
+  }
   return convertPartialExploreStateToUrlParams(
     exploreSpec,
     metricsViewSpec,
