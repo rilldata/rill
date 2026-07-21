@@ -109,6 +109,15 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 	})
 }
 
+// AuthenticateToken validates a raw token for a PostgreSQL wire-compatible connection.
+// Unlike HTTP authentication, token must not include the "Bearer" scheme.
+func AuthenticateToken(ctx context.Context, aud *Audience, token string) (context.Context, error) {
+	if token == "" {
+		return parseClaims(ctx, aud, "")
+	}
+	return parseClaims(ctx, aud, "Bearer "+token)
+}
+
 func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
 	// When aud == nil, it means auth is disabled.
 	if aud == nil {
