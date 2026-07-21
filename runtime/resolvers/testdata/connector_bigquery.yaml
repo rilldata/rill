@@ -79,20 +79,20 @@ tests:
       string_col,Nullable(String)
       bytes_col,Nullable(String)
       date_col,Nullable(Date32)
-      datetime_col,Nullable(DateTime64(6))
-      time_col,Nullable(DateTime64(6))
-      timestamp_col,Nullable(DateTime64(6))
-      array_int_col,Array(Nullable(Int64))
-      array_float_col,Array(Nullable(Float64))
-      array_numeric_col,"Array(Nullable(Decimal(38, 9)))"
-      array_bignumeric_col,"Array(Nullable(Decimal(76, 38)))"
-      array_bool_col,Array(Nullable(Bool))
-      array_string_col,Array(Nullable(String))
-      array_bytes_col,Array(Nullable(String))
-      array_date_col,Array(Nullable(Date32))
-      array_datetime_col,Array(Nullable(DateTime64(6)))
-      array_time_col,Array(Nullable(DateTime64(6)))
-      array_timestamp_col,Array(Nullable(DateTime64(6)))
+      datetime_col,"Nullable(DateTime64(6, 'UTC'))"
+      time_col,"Nullable(DateTime64(6, 'UTC'))"
+      timestamp_col,"Nullable(DateTime64(6, 'UTC'))"
+      array_int_col,Array(Int64)
+      array_float_col,Array(Float64)
+      array_numeric_col,"Array(Decimal(38, 9))"
+      array_bignumeric_col,"Array(Decimal(76, 38))"
+      array_bool_col,Array(Bool)
+      array_string_col,Array(String)
+      array_bytes_col,Array(String)
+      array_date_col,Array(Date32)
+      array_datetime_col,"Array(DateTime64(6, 'UTC'))"
+      array_time_col,"Array(DateTime64(6, 'UTC'))"
+      array_timestamp_col,"Array(DateTime64(6, 'UTC'))"
   - name: test_all_results_for_model_bigquery_to_duckdb_for_external_google_sheet
     resolver: sql
     properties:
