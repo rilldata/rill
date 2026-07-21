@@ -239,6 +239,18 @@ func TestCompile(t *testing.T) {
 			"select pub from ad_bids_metrics union select dom from ad_bids_metrics",
 			"expected a SELECT statement",
 		},
+		{
+			"select pub from ad_bids_metrics join ad_bids_metrics_advanced on ad_bids_metrics.pub = ad_bids_metrics_advanced.pub",
+			"metrics sql: join is not supported",
+		},
+		{
+			"select pub from ad_bids_metrics cross join ad_bids_metrics_advanced",
+			"metrics sql: join is not supported",
+		},
+		{
+			"select pub from ad_bids_metrics, ad_bids_metrics_advanced",
+			"metrics sql: join is not supported",
+		},
 	}
 
 	clm, err := rt.ResolveSecurity(t.Context(), instanceID, claims, mv)

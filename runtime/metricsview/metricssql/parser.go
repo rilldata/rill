@@ -192,6 +192,9 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 	if n == nil || n.Left == nil {
 		return fmt.Errorf("metrics sql: need `FROM metrics_view` clause")
 	}
+	if n.Right != nil {
+		return fmt.Errorf("metrics sql: join is not supported")
+	}
 
 	tblSrc, ok := n.Left.(*ast.TableSource)
 	if !ok {
