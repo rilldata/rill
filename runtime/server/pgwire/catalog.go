@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgproto3"
@@ -95,6 +96,9 @@ func createMetricsViewTables(ctx context.Context, db *sql.DB, rt *runtime.Runtim
 	if err != nil {
 		return err
 	}
+	sort.Slice(resources, func(i, j int) bool {
+		return resources[i].Meta.Name.Name < resources[j].Meta.Name.Name
+	})
 	for _, resource := range resources {
 		state := resource.GetMetricsView()
 		if state == nil || state.State == nil || state.State.ValidSpec == nil {
@@ -109,19 +113,21 @@ func createMetricsViewTables(ctx context.Context, db *sql.DB, rt *runtime.Runtim
 		}
 
 		spec := state.State.ValidSpec
-		columns := make(map[string]string)
-		if spec.TimeDimension != "" && security.CanAccessField(spec.TimeDimension) {
-			columns[spec.TimeDimension] = "TIMESTAMPTZ"
-		}
-		for _, dimension := range spec.Dimensions {
-			if security.CanAccessField(dimension.Name) {
-				columns[dimension.Name] = "VARCHAR"
+		columns := make([]struct{ name, typ string }, 0, len(spec.Dimensions)+len(spec.Measures)+1)
+		seen := make(map[string]bool)
+		addColumn := func(name, typ string) {
+			if name == "" || seen[name] || !security.CanAccessField(name) {
+				return
 			}
+			seen[name] = true
+			columns = append(columns, struct{ name, typ string }{name: name, typ: typ})
+		}
+		addColumn(spec.TimeDimension, "TIMESTAMPTZ")
+		for _, dimension := range spec.Dimensions {
+			addColumn(dimension.Name, "VARCHAR")
 		}
 		for _, measure := range spec.Measures {
-			if security.CanAccessField(measure.Name) {
-				columns[measure.Name] = "DOUBLE PRECISION"
-			}
+			addColumn(measure.Name, "DOUBLE PRECISION")
 		}
 		if len(columns) == 0 {
 			continue
@@ -131,15 +137,13 @@ func createMetricsViewTables(ctx context.Context, db *sql.DB, rt *runtime.Runtim
 		statement.WriteString("CREATE TABLE ")
 		statement.WriteString(quoteIdentifier(resource.Meta.Name.Name))
 		statement.WriteString(" (")
-		first := true
-		for name, typ := range columns {
-			if !first {
+		for i, column := range columns {
+			if i != 0 {
 				statement.WriteString(", ")
 			}
-			first = false
-			statement.WriteString(quoteIdentifier(name))
+			statement.WriteString(quoteIdentifier(column.name))
 			statement.WriteByte(' ')
-			statement.WriteString(typ)
+			statement.WriteString(column.typ)
 		}
 		statement.WriteByte(')')
 		if _, err := db.ExecContext(ctx, statement.String()); err != nil {
@@ -156,7 +160,19 @@ func rewriteCatalogSQL(query string) string {
 	query = strings.ReplaceAll(query, "ix.indrelid = c.conrelid and\n                                ix.indexrelid = c.conindid and\n                                c.contype in ('p', 'u', 'x')", "ix.indrelid = c.conrelid")
 	query = strings.ReplaceAll(query, "t.oid = a.attrelid and a.attnum = ANY(ix.indkey)", "t.oid = a.attrelid")
 	query = strings.ReplaceAll(query, "pg_get_constraintdef(cons.oid)", "pg_get_constraintdef(cons.oid, false)")
-	query = strings.ReplaceAll(query, "pg_catalog.format_type(a.atttypid, a.atttypmod)", "CASE WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) = 'hugeint' THEN 'bigint' ELSE pg_catalog.format_type(a.atttypid, a.atttypmod) END")
+	query = strings.ReplaceAll(query, "pg_catalog.format_type(a.atttypid, a.atttypmod)", `CASE pg_catalog.format_type(a.atttypid, a.atttypmod)
+		WHEN 'bool' THEN 'boolean'
+		WHEN 'float4' THEN 'real'
+		WHEN 'float8' THEN 'double precision'
+		WHEN 'hugeint' THEN 'bigint'
+		WHEN 'int2' THEN 'smallint'
+		WHEN 'int4' THEN 'integer'
+		WHEN 'int8' THEN 'bigint'
+		WHEN 'timestamptz' THEN 'timestamp with time zone'
+		WHEN 'timetz' THEN 'time with time zone'
+		WHEN 'varchar' THEN 'character varying'
+		ELSE pg_catalog.format_type(a.atttypid, a.atttypmod)
+	END`)
 
 	if strings.EqualFold(query, "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' ORDER BY nspname") {
 		query = "SELECT nspname FROM pg_namespace WHERE nspname NOT IN ('pg_catalog', 'information_schema', 'main') ORDER BY nspname"
@@ -289,7 +305,7 @@ func (r *sqlRows) Next() bool {
 			r.err = err
 			return false
 		}
-		r.values[i], err = r.types.Encode(r.fields[i].DataTypeOID, r.fields[i].Format, value, nil)
+		r.values[i], err = encodeValue(r.types, r.fields[i].DataTypeOID, r.fields[i].Format, value)
 		if err != nil {
 			r.err = err
 			return false

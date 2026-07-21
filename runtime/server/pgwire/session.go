@@ -117,7 +117,7 @@ func (r *resolverRows) Next() bool {
 			r.err = err
 			return false
 		}
-		r.values[i], err = r.types.Encode(field.DataTypeOID, field.Format, value, nil)
+		r.values[i], err = encodeValue(r.types, field.DataTypeOID, field.Format, value)
 		if err != nil {
 			r.err = fmt.Errorf("failed to encode column %q: %w", field.Name, err)
 			return false
@@ -248,6 +248,18 @@ func resultFormat(formats []int16, index, fieldCount int) (int16, error) {
 		return 0, &base.Error{Code: "08P01", Message: fmt.Sprintf("unsupported result format %d", format)}
 	}
 	return format, nil
+}
+
+func encodeValue(types *pgtype.Map, oid uint32, format int16, value any) ([]byte, error) {
+	// pgtype emits UTC timestamptz values with a trailing "Z" in text format.
+	// PostgreSQL emits a numeric offset, which is required for psycopg2 to parse
+	// the value reliably (a trailing "Z" can retain seconds from its input buffer).
+	if oid == pgtype.TimestamptzOID && format == pgtype.TextFormatCode {
+		if value, ok := value.(time.Time); ok {
+			return []byte(value.Format("2006-01-02 15:04:05.999999999-07:00")), nil
+		}
+	}
+	return types.Encode(oid, format, value, nil)
 }
 
 func normalizeValue(value any, oid uint32) (any, error) {
