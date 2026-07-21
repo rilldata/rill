@@ -45,11 +45,14 @@
     500,
   );
 
-  const sortStore = UrlParamsState.createStringParam("sort");
+  const sortStore = UrlParamsState.createStringParam(
+    "sort",
+    DashboardTableSortOptions[0].value,
+  );
   let sortingOption = $derived(
     DashboardTableSortOptions.find(
       (option) => option.value === sortStore.value,
-    ) ?? DashboardTableSortOptions[0],
+    ),
   );
 
   const runtimeClient = useRuntimeClient();

@@ -44,7 +44,10 @@
     ($personalCanvasesQuery.data?.length ?? 0) === 0;
 
   const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
-  const sortStore = UrlParamsState.createStringParam("sort");
+  const sortStore = UrlParamsState.createStringParam(
+    "sort",
+    DashboardTableSortOptions[0].value,
+  );
 </script>
 
 <svelte:head>
