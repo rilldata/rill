@@ -70,6 +70,42 @@ func TestParseFilter(t *testing.T) {
 			false,
 		},
 		{
+			"greater than decimal expression",
+			"measure > 10.5",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorGt,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "measure",
+						},
+						{
+							Value: 10.5,
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
+			"in decimal expression",
+			"measure IN (1.5, 2.5)",
+			&metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorIn,
+					Expressions: []*metricsview.Expression{
+						{
+							Name: "measure",
+						},
+						{
+							Value: []any{1.5, 2.5},
+						},
+					},
+				},
+			},
+			false,
+		},
+		{
 			"subquery expression with having",
 			"dim IN (SELECT dim FROM mv HAVING count > 10)",
 			&metricsview.Expression{
