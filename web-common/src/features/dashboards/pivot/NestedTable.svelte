@@ -3,7 +3,7 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { writable } from "svelte/store";
-  import type { HeaderGroup, Row } from "tanstack-table-8-svelte-5";
+  import type { Cell, HeaderGroup, Row } from "tanstack-table-8-svelte-5";
   import { flexRender } from "tanstack-table-8-svelte-5";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
@@ -40,6 +40,7 @@
     isInSelectedColRange,
     type HoveredColRange,
   } from "./pivot-selection-indices";
+  import type { CellFormatter } from "./pivot-conditional-formatting";
   import { isShowMoreRow } from "./pivot-utils";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
   import type { PivotDataRow } from "./types";
@@ -52,6 +53,7 @@
   export let rowDimensions: DimensionColumnProps;
   export let dataRows: PivotDataRow[];
   export let measures: MeasureColumnProps;
+  export let cellFormatters: Map<string, CellFormatter> = new Map();
   export let totalsRow: PivotDataRow | undefined;
   export let canShowDataViewer = false;
   export let enableClickToFilter = false;
@@ -178,6 +180,25 @@
   }
 
   $: measureCount = measures.length;
+
+  // Resolve conditional-formatting styling for a measure cell. Returns null for
+  // cells that should not be formatted (no config, the row-totals column, the
+  // grand-totals row, non-numeric values, or no matching threshold rule).
+  function getCellFormatting(
+    cell: Cell<PivotDataRow, unknown>,
+    isTotalsRow: boolean,
+  ): { background: string; color: string } | null {
+    if (isTotalsRow) return null;
+    const meta = cell.column.columnDef.meta;
+    if (!meta?.conditionalFormat || meta.isRowTotal || !meta.measureName) {
+      return null;
+    }
+    const formatter = cellFormatters.get(meta.measureName);
+    if (!formatter) return null;
+    const value = cell.getValue();
+    if (typeof value !== "number" || !Number.isFinite(value)) return null;
+    return formatter(value);
+  }
 
   $: subHeaders = [
     {
@@ -563,6 +584,7 @@
           : filterSelected}
       {@const isAncestorOfSelectedHeader =
         ancestorRowIdsOfSelectedHeaders.has(rowId)}
+      {@const isShowMore = isShowMoreRow(rows[row.index])}
       {@const rs = nestedRowState({
         isSelected,
         hasSelection: rowSelectionState?.hasActiveSelection ?? false,
@@ -570,7 +592,7 @@
         hasClickedCell,
         hasCrossSelection,
         isAncestorOfSelectedHeader,
-        isShowMore: isShowMoreRow(rows[row.index]),
+        isShowMore,
       })}
       <tr
         class:show-more-row={rs.showMoreRow}
@@ -596,14 +618,19 @@
             hasCrossSelection,
             isAncestorOfSelectedHeader,
             isTotalsRow,
+            isShowMore,
             canShowDataViewer,
             enableClickToFilter,
           })}
           {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
             ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
             : cell.getValue()}
+          {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
           <td
             class="ui-copy-number cell truncate group/cell"
+            class:has-conditional-format={cellFmt !== null}
+            style:--cf-bg={cellFmt?.background ?? null}
+            style:--cf-color={cellFmt?.color ?? null}
             class:active-cell={cs.activeCell}
             class:selected-cell={cs.selectedCell}
             class:col-dim-hover-body={cs.colDimHoverBody}
@@ -715,6 +742,33 @@
 
   .cell {
     @apply size-full p-1 px-2 text-fg-primary;
+  }
+
+  /* Conditional formatting (heatmap / data bar). Placed before the
+     selection/hover rules below and kept at equal specificity (0,2,0) so
+     those win by source order, keeping selected and hovered cells legible. */
+  .cell.has-conditional-format {
+    background: var(--cf-bg);
+    color: var(--cf-color);
+  }
+
+  /* When a hover/selection state replaces the conditional background with a
+     light surface color, the formatter's text color (which may be white, chosen
+     for a dark heatmap fill) becomes illegible. Revert to the default
+     foreground so the value stays readable. */
+  tbody tr:hover td.cell.has-conditional-format,
+  td.cell.has-conditional-format.active-cell,
+  td.cell.has-conditional-format.selected-cell,
+  td.cell.has-conditional-format.selected-col-body,
+  td.cell.has-conditional-format.cell-selected-col-dim-group-body,
+  td.cell.has-conditional-format.col-dim-hover-body,
+  td.cell.has-conditional-format.out-of-group-row-cell,
+  td.cell.has-conditional-format.cross-intersection,
+  td.cell.has-conditional-format.cross-row-arm,
+  td.cell.has-conditional-format.cross-col-arm,
+  td.cell.has-conditional-format.partial-aggregate-cell,
+  .selected-row td.cell.has-conditional-format {
+    @apply text-fg-primary;
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */

@@ -9,7 +9,14 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
+  // `title` is the stable, non-localized section identifier. It doubles as the
+  // drag `zone` key (DragList compares zone === "Time"/"Measures"/"Dimensions"),
+  // so it must NOT be localized. `label` is the localized header shown to the
+  // user and defaults to `title` when omitted.
   export let title: PivotSidebarSection;
+  export let label: string = title;
   export let items: PivotChipData[];
   export let collapsed = false;
   export let tableMode: PivotTableMode = "nest";
@@ -24,7 +31,7 @@
     class="flex gap-1 w-full items-start flex-none"
     onclick={toggleCollapse}
   >
-    <span class="header">{title}</span>
+    <span class="header">{label}</span>
     <div class="transition-transform" class:-rotate-180={!collapsed}>
       <CaretDownIcon size="12px" />
     </div>
@@ -35,7 +42,9 @@
       {#if items.length}
         <DragList {items} zone={title} {tableMode} />
       {:else}
-        <p class="text-fg-secondary my-1">No available fields</p>
+        <p class="text-fg-secondary my-1">
+          {m.dashboard_no_available_fields()}
+        </p>
       {/if}
     </div>
   {/if}

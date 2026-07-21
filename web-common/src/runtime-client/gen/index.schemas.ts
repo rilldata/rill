@@ -747,6 +747,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotRowLimit?: number;
   pivotShowTotalsColumn?: boolean;
   pivotShowTotalsRow?: boolean;
+  /** Per-measure pivot conditional formatting, serialized in the URL param format. */
+  pivotFormatting?: string;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
@@ -1937,7 +1939,6 @@ export interface V1QueryResponse {
   data?: V1QueryResponseDataItem[];
 }
 
-
 export type V1ReconcileStatus =
   (typeof V1ReconcileStatus)[keyof typeof V1ReconcileStatus];
 
@@ -2118,6 +2119,8 @@ export interface V1ResourceMeta {
   refs?: V1ResourceName[];
   owner?: V1ResourceName;
   filePaths?: string[];
+  /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
+  tags?: string[];
   hidden?: boolean;
   version?: string;
   specVersion?: string;

@@ -22,6 +22,8 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 const DEFAULT_NOMINAL_LIMIT = 40;
 const DEFAULT_SORT = ChartSortType.COLOR_DESC;
 
@@ -30,72 +32,77 @@ export type HeatmapCanvasChartSpec = BaseChartConfig & HeatmapChartSpecBase;
 export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
   private provider: HeatmapChartProvider;
 
-  static chartInputParams: Record<string, ComponentInputParam> = {
-    x: {
-      type: "positional",
-      label: "X-axis",
-      meta: {
-        chartFieldInput: {
-          type: "dimension",
-          limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
-          sortSelector: {
-            enable: true,
-            defaultSort: DEFAULT_SORT,
-            options: [
-              ChartSortType.X_ASC,
-              ChartSortType.X_DESC,
-              ChartSortType.COLOR_ASC,
-              ChartSortType.COLOR_DESC,
-              ChartSortType.CUSTOM,
-            ],
-          },
-          axisTitleSelector: true,
-          nullSelector: true,
-          labelAngleSelector: true,
-        },
-      },
-    },
-    y: {
-      type: "positional",
-      label: "Y-axis",
-      meta: {
-        chartFieldInput: {
-          type: "dimension",
-          limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
-          sortSelector: {
-            enable: true,
-            defaultSort: DEFAULT_SORT,
-            options: [
-              ChartSortType.Y_ASC,
-              ChartSortType.Y_DESC,
-              ChartSortType.COLOR_ASC,
-              ChartSortType.COLOR_DESC,
-              ChartSortType.CUSTOM,
-            ],
-          },
-          axisTitleSelector: true,
-          nullSelector: true,
-        },
-      },
-    },
-    color: {
-      type: "positional",
-      label: "Color",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          defaultLegendOrientation: "right",
-          colorRangeSelector: {
-            enable: true,
+  // Static getter (not a static field) so the localized labels inside resolve
+  // in the active locale at access time (render) rather than freezing to the
+  // locale active when this class was defined at module load.
+  static get chartInputParams(): Record<string, ComponentInputParam> {
+    return {
+      x: {
+        type: "positional",
+        label: m.canvas_x_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
+            sortSelector: {
+              enable: true,
+              defaultSort: DEFAULT_SORT,
+              options: [
+                ChartSortType.X_ASC,
+                ChartSortType.X_DESC,
+                ChartSortType.COLOR_ASC,
+                ChartSortType.COLOR_DESC,
+                ChartSortType.CUSTOM,
+              ],
+            },
+            axisTitleSelector: true,
+            nullSelector: true,
+            labelAngleSelector: true,
           },
         },
       },
-    },
-    show_data_labels: {
-      type: "boolean",
-      label: "Data labels",
-    },
-  };
+      y: {
+        type: "positional",
+        label: m.canvas_y_axis_label(),
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
+            sortSelector: {
+              enable: true,
+              defaultSort: DEFAULT_SORT,
+              options: [
+                ChartSortType.Y_ASC,
+                ChartSortType.Y_DESC,
+                ChartSortType.COLOR_ASC,
+                ChartSortType.COLOR_DESC,
+                ChartSortType.CUSTOM,
+              ],
+            },
+            axisTitleSelector: true,
+            nullSelector: true,
+          },
+        },
+      },
+      color: {
+        type: "positional",
+        label: m.canvas_color_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            defaultLegendOrientation: "right",
+            colorRangeSelector: {
+              enable: true,
+            },
+          },
+        },
+      },
+      show_data_labels: {
+        type: "boolean",
+        label: m.canvas_data_labels_label(),
+      },
+    };
+  }
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);

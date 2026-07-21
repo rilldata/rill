@@ -9,6 +9,7 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
+  import MeasureFormatChip from "./MeasureFormatChip.svelte";
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
@@ -16,6 +17,7 @@
   import {
     type PivotChipData,
     PivotChipType,
+    type PivotMeasureFormatting,
     type PivotTableMode,
   } from "./types";
   import {
@@ -55,11 +57,22 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
   export let zone: Zone;
   export let tableMode: PivotTableMode = "nest";
   export let onUpdate: (items: PivotChipData[]) => void = () => {};
+  // When provided, measure chips in drop zones expose per-measure conditional
+  // formatting controls in a dropdown on the chip.
+  export let measureFormatting:
+    | Record<string, PivotMeasureFormatting>
+    | undefined = undefined;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 
   const isDropLocation = zone === "columns" || zone === "rows";
   const DRAG_START_THRESHOLD_PX = 4;
@@ -113,7 +126,11 @@
 
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     const target = e.target as HTMLElement;
-    if (target.closest(".grain-dropdown") || target.closest(".grain-label"))
+    if (
+      target.closest(".grain-dropdown") ||
+      target.closest(".grain-label") ||
+      target.closest(".format-dropdown")
+    )
       return;
 
     if (e.button !== 0) return;
@@ -338,7 +355,7 @@
     orientation: "horizontal",
   }}
   bind:this={container}
-  aria-label="Drag list {zone}"
+  aria-label={m.dashboard_drag_list_zone({ zone })}
 >
   {#each items as item, index (item.id)}
     <div
@@ -378,6 +395,21 @@
               onUpdate(items);
             }}
           />
+        {:else if isDropLocation && item.type === PivotChipType.Measure && setMeasureFormatting}
+          <MeasureFormatChip
+            {item}
+            grab
+            removable
+            fmt={measureFormatting?.[item.id]}
+            lowerIsBetter={lowerIsBetterMap[item.id] ?? false}
+            onFormatChange={(fmt: PivotMeasureFormatting | null) =>
+              setMeasureFormatting?.(item.id, fmt)}
+            onmousedown={(e: MouseEvent) => handleMouseDown(e, item)}
+            onRemove={() => {
+              items = items.filter((i) => i.id !== item.id);
+              onUpdate(items);
+            }}
+          />
         {:else}
           <PivotChip
             {item}
@@ -399,12 +431,13 @@
               <button
                 class="icon-wrapper"
                 onclick={() => handleRowClick(item)}
-                aria-label="Add Row"
+                aria-label={m.dashboard_add_row()}
                 type="button"
               >
                 <Row size="16px" />
               </button>
-              <TooltipContent slot="tooltip-content">Add to rows</TooltipContent
+              <TooltipContent slot="tooltip-content"
+                >{m.dashboard_add_to_rows()}</TooltipContent
               >
             </Tooltip>
           {/if}
@@ -413,13 +446,13 @@
             <button
               class="icon-wrapper"
               onclick={() => handleColumnClick(item)}
-              aria-label="Add Column"
+              aria-label={m.dashboard_add_column()}
               type="button"
             >
               <Column size="16px" />
             </button>
             <TooltipContent slot="tooltip-content">
-              Add to columns
+              {m.dashboard_add_to_columns()}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -445,7 +478,7 @@
           onUpdate([]);
         }}
       >
-        Clear
+        {m.dashboard_clear()}
       </Button>
     {/if}
   {/if}

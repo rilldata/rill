@@ -4,10 +4,12 @@ ColumnHeaders – sticky column headers. Utilizes the columnVirtualizer (for now
 TableCells – the cell contents.
 -->
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { setContext } from "svelte";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -190,7 +192,8 @@ TableCells – the cell contents.
   bind:clientWidth={containerWidth}
   style="height: 100%;"
   role="table"
-  aria-label="Dimension table"
+  class="relative"
+  aria-label={m.dashboard_dimension_table_aria()}
 >
   <div
     bind:this={container}
@@ -269,18 +272,24 @@ TableCells – the cell contents.
             {excludeMode}
             onSelectItem={onSelectItemHandler}
             onInspect={setActiveIndex}
-            cellLabel="Filter dimension value"
+            cellLabel={m.dashboard_filter_dimension_value()}
           />
-        {:else if isFetching || $selectedValues.isFetching}
-          <div class="flex text-fg-secondary justify-center mt-[30vh]">
-            Loading...
-          </div>
-        {:else}
-          <div class="flex text-fg-secondary justify-center mt-[30vh]">
-            No results to show
-          </div>
         {/if}
       </div>
     {/if}
   </div>
+  {#if !rows.length}
+    <!-- The virtualized grid above is sized to its rows and uses paint containment,
+      so empty states must render outside it to be visible. -->
+    <div
+      class="absolute inset-0 flex items-center justify-center pointer-events-none"
+      style:padding-top="{config.columnHeaderHeight}px"
+    >
+      {#if isFetching || $selectedValues.isFetching}
+        <DelayedSpinner isLoading size="24px" />
+      {:else}
+        <span class="text-fg-secondary">No results to show</span>
+      {/if}
+    </div>
+  {/if}
 </div>

@@ -139,18 +139,46 @@ func parseIsTruthOperation(ctx context.Context, node *ast.IsTruthExpr, q *query)
 		return nil, err
 	}
 
-	var op metricsview.Operator
-	if node.Not {
-		op = metricsview.OperatorNeq
-	} else {
-		op = metricsview.OperatorEq
+	// node.True distinguishes IS [NOT] TRUE (1) from IS [NOT] FALSE (0)
+	target := node.True != 0
+
+	if !node.Not {
+		// `expr IS TRUE` and `expr IS FALSE` exclude NULL rows, matching the semantics of `=`.
+		return &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorEq,
+				Expressions: []*metricsview.Expression{
+					expr,
+					{Value: target},
+				},
+			},
+		}, nil
 	}
+
+	// `expr IS NOT TRUE` and `expr IS NOT FALSE` include NULL rows,
+	// so `!=` alone is not sufficient: add an explicit IS NULL check.
 	return &metricsview.Expression{
 		Condition: &metricsview.Condition{
-			Operator: op,
+			Operator: metricsview.OperatorOr,
 			Expressions: []*metricsview.Expression{
-				expr,
-				{Value: "TRUE"},
+				{
+					Condition: &metricsview.Condition{
+						Operator: metricsview.OperatorNeq,
+						Expressions: []*metricsview.Expression{
+							expr,
+							{Value: target},
+						},
+					},
+				},
+				{
+					Condition: &metricsview.Condition{
+						Operator: metricsview.OperatorEq,
+						Expressions: []*metricsview.Expression{
+							expr,
+							{Value: nil},
+						},
+					},
+				},
 			},
 		},
 	}, nil
@@ -216,37 +244,14 @@ func parseInSubquery(ctx context.Context, n ast.ExprNode, q *query) (*metricsvie
 	}
 
 	// You can do a lot of stuff in a SELECT statement. Check it doesn't do anything we don't support.
-	switch {
-	case sel.Kind != ast.SelectStmtKindSelect:
-		return nil, fmt.Errorf("metrics sql: subquery of kind %s is not supported", sel.Kind.String())
-	case sel.SelectStmtOpts != nil && sel.SelectStmtOpts.Distinct:
-		return nil, fmt.Errorf("metrics sql: subquery with DISTINCT is not supported")
-	case len(sel.WindowSpecs) > 0:
-		return nil, fmt.Errorf("metrics sql: subquery with window specifications is not supported")
-	case sel.OrderBy != nil:
+	if err := validateSelectStmt(sel); err != nil {
+		return nil, err
+	}
+	if sel.OrderBy != nil {
 		return nil, fmt.Errorf("metrics sql: subquery with ORDER BY is not supported")
-	case sel.Limit != nil:
+	}
+	if sel.Limit != nil {
 		return nil, fmt.Errorf("metrics sql: subquery with LIMIT is not supported")
-	case sel.LockInfo != nil:
-		return nil, fmt.Errorf("metrics sql: subquery with lock info is not supported")
-	case len(sel.TableHints) > 0:
-		return nil, fmt.Errorf("metrics sql: subquery with table hints is not supported")
-	case sel.IsInBraces:
-		return nil, fmt.Errorf("metrics sql: subquery with braces is not supported")
-	case sel.WithBeforeBraces:
-		return nil, fmt.Errorf("metrics sql: subquery with WITH before braces is not supported")
-	case sel.QueryBlockOffset != 0:
-		return nil, fmt.Errorf("metrics sql: subquery with query block offset is not supported")
-	case sel.SelectIntoOpt != nil:
-		return nil, fmt.Errorf("metrics sql: subquery with SELECT INTO is not supported")
-	case sel.AfterSetOperator != nil:
-		return nil, fmt.Errorf("metrics sql: subquery with set operations is not supported")
-	case len(sel.Lists) > 0:
-		return nil, fmt.Errorf("metrics sql: subquery with row expressions is not supported")
-	case sel.With != nil:
-		return nil, fmt.Errorf("metrics sql: subquery with WITH clause is not supported")
-	case sel.AsViewSchema:
-		return nil, fmt.Errorf("metrics sql: subquery as view schema is not supported")
 	}
 
 	// Validate the FROM clause is a plain `FROM metrics_view`
@@ -290,7 +295,7 @@ func parseInSubquery(ctx context.Context, n ast.ExprNode, q *query) (*metricsvie
 		if len(sel.GroupBy.Items) != 1 {
 			return nil, fmt.Errorf("metrics sql: subquery must group by exactly one dimension")
 		}
-		groupByName, err := parseColumnNameExpr(sel.GroupBy.Items[0])
+		groupByName, err := parseColumnNameExpr(sel.GroupBy.Items[0].Expr)
 		if err != nil {
 			return nil, fmt.Errorf("metrics sql: failed to parse GROUP BY expression in subquery: %w", err)
 		}
@@ -387,19 +392,26 @@ func parseBetween(ctx context.Context, n *ast.BetweenExpr, q *query) (*metricsvi
 	if err != nil {
 		return nil, err
 	}
+
+	// NOT BETWEEN is the negation of BETWEEN: (expr < left OR expr > right)
+	outerOp, leftOp, rightOp := metricsview.OperatorAnd, metricsview.OperatorGte, metricsview.OperatorLte
+	if n.Not {
+		outerOp, leftOp, rightOp = metricsview.OperatorOr, metricsview.OperatorLt, metricsview.OperatorGt
+	}
+
 	return &metricsview.Expression{
 		Condition: &metricsview.Condition{
-			Operator: metricsview.OperatorAnd,
+			Operator: outerOp,
 			Expressions: []*metricsview.Expression{
 				{
 					Condition: &metricsview.Condition{
-						Operator:    metricsview.OperatorGte,
+						Operator:    leftOp,
 						Expressions: []*metricsview.Expression{expr, left},
 					},
 				},
 				{
 					Condition: &metricsview.Condition{
-						Operator:    metricsview.OperatorLte,
+						Operator:    rightOp,
 						Expressions: []*metricsview.Expression{expr, right},
 					},
 				},

@@ -216,10 +216,7 @@ describe("generateRawFunction", () => {
 
   it("bridges to and from JSON for Orval-typed methods", () => {
     const ctx = makeCtx({
-      orvalTypes: new Set([
-        "V1FakeRequestWithInstanceId",
-        "V1FakeResponse",
-      ]),
+      orvalTypes: new Set(["V1FakeRequestWithInstanceId", "V1FakeResponse"]),
     });
     const code = generateRawFunction(ctx).join("\n");
     expect(code).toContain("fromJson(stripUndefined(");

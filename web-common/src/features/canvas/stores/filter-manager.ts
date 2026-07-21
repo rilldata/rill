@@ -699,6 +699,7 @@ export class FilterManager {
       metricsViewNames: string[],
       keepPillVisible?: boolean,
       isExclusiveFilter?: boolean,
+      exclude?: boolean,
     ) => {
       this.onFilterChange?.();
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
@@ -715,6 +716,7 @@ export class FilterManager {
           dimensionValues,
           keepPillVisible,
           isExclusiveFilter,
+          exclude,
         );
 
         newFilters.set(name, string || null);

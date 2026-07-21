@@ -4,6 +4,7 @@
 // IntervalStore and MetricsTimeControls are WIP references, but are not currently being used
 // The functions below UTILS are being used
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
   overrideRillTimeRef,
@@ -49,19 +50,43 @@ export const RILL_TO_LABEL: Record<
   RillPeriodToDate | RillPreviousPeriod | AllTime | CustomRange,
   string
 > = {
-  inf: "All Time",
-  CUSTOM: "Custom",
-  "rill-PDC": "Yesterday",
-  "rill-PWC": "Previous week",
-  "rill-PMC": "Previous month",
-  "rill-PQC": "Previous quarter",
-  "rill-PYC": "Previous year",
-  "rill-TD": "Today",
-  "rill-WTD": "Week to date",
-  "rill-MTD": "Month to date",
-  "rill-QTD": "Quarter to date",
-  "rill-YTD": "Year to date",
-};
+  get inf() {
+    return m.time_all_time();
+  },
+  get CUSTOM() {
+    return m.time_custom();
+  },
+  get "rill-PDC"() {
+    return m.time_yesterday();
+  },
+  get "rill-PWC"() {
+    return m.time_previous_week();
+  },
+  get "rill-PMC"() {
+    return m.time_previous_month();
+  },
+  get "rill-PQC"() {
+    return m.time_previous_quarter();
+  },
+  get "rill-PYC"() {
+    return m.time_previous_year();
+  },
+  get "rill-TD"() {
+    return m.time_today();
+  },
+  get "rill-WTD"() {
+    return m.time_week_to_date();
+  },
+  get "rill-MTD"() {
+    return m.time_month_to_date();
+  },
+  get "rill-QTD"() {
+    return m.time_quarter_to_date();
+  },
+  get "rill-YTD"() {
+    return m.time_year_to_date();
+  },
+} as any;
 
 export const RILL_PERIOD_TO_DATE = [
   "rill-TD",
@@ -500,11 +525,11 @@ export function getDurationLabel(isoDuration: string): string {
     throw new Error("Invalid ISO duration");
   }
 
-  return `Last ${humaniseISODuration(isoDuration)}`;
+  return m.time_last_duration({ duration: humaniseISODuration(isoDuration) });
 }
 
 export function getRangeLabel(range: string | undefined): string {
-  if (!range) return "Custom";
+  if (!range) return m.time_custom();
   if (isRillPeriodToDate(range) || isRillPreviousPeriod(range)) {
     return RILL_TO_LABEL[range];
   }
@@ -525,7 +550,7 @@ export function getRangeLabel(range: string | undefined): string {
     return label;
   } catch (e) {
     console.error("Error parsing RillTime", e);
-    return "Custom";
+    return m.time_custom();
   }
 }
 

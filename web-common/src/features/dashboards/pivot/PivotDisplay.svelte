@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getPivotExportQuery } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -87,6 +88,13 @@
     });
   }
 
+  $: lowerIsBetterMap = Object.fromEntries(
+    ($validSpecStore.data?.metricsView?.measures ?? []).map((m) => [
+      m.name as string,
+      m.lowerIsBetter ?? false,
+    ]),
+  );
+
   $: enrichedPivotState = {
     ...$dashboardStore.pivot,
     rows: enrichDescriptions($dashboardStore.pivot.rows),
@@ -156,6 +164,13 @@
           metricsExplorerStore.setPivotRows($exploreName, rows)}
         setColumns={(columns) =>
           metricsExplorerStore.setPivotColumns($exploreName, columns)}
+        setMeasureFormatting={(measureName, fmt) =>
+          metricsExplorerStore.setPivotMeasureFormatting(
+            $exploreName,
+            measureName,
+            fmt,
+          )}
+        {lowerIsBetterMap}
       />
     {/if}
     <div
@@ -191,7 +206,7 @@
         <svelte:fragment slot="export-menu">
           {#if $exports}
             <ExportMenu
-              label="Export pivot data"
+              label={m.dashboard_export_pivot_data()}
               includeScheduledReport={$adminServer && exploreHasTimeDimension}
               getQuery={(isScheduled) =>
                 getPivotExportQuery(stateManagers, isScheduled)}

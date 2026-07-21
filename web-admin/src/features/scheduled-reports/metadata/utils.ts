@@ -2,19 +2,20 @@ import { ordinal } from "@rilldata/web-common/lib/ordinal";
 import cronstrue from "cronstrue";
 import { DateTime } from "luxon";
 import { V1ExportFormat } from "../../../client";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export function exportFormatToPrettyString(format: V1ExportFormat): string {
   switch (format) {
     case V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED:
-      return "Unspecified Format";
+      return m.report_format_unspecified();
     case V1ExportFormat.EXPORT_FORMAT_CSV:
-      return "CSV";
+      return m.report_format_csv();
     case V1ExportFormat.EXPORT_FORMAT_XLSX:
-      return "Excel (XLSX)";
+      return m.report_format_xlsx();
     case V1ExportFormat.EXPORT_FORMAT_PARQUET:
-      return "Parquet";
+      return m.report_format_parquet();
     default:
-      return "Unknown";
+      return m.report_format_unknown();
   }
 }
 

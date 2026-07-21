@@ -41,6 +41,8 @@ import {
   GitMergeToBranchRequest,
   GitPullRequest,
   GitPushRequest,
+  GitRevertRequest,
+  GitRevertResponse,
   GitStatusRequest,
   GitSwitchBranchRequest,
   HealthRequest,
@@ -3157,6 +3159,63 @@ export function createRuntimeServiceCompleteMutation(
   Omit<PartialMessage<CompleteRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCompleteMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.GitRevert
+ */
+export async function runtimeServiceGitRevert(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GitRevertRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<GitRevertResponse> {
+  const r = await client.runtimeService.gitRevert(
+    { instanceId: client.instanceId, ...request },
+    { signal: options?.signal },
+  );
+  return r;
+}
+
+export function getRuntimeServiceGitRevertMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      GitRevertResponse,
+      unknown,
+      Omit<PartialMessage<GitRevertRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  GitRevertResponse,
+  unknown,
+  Omit<PartialMessage<GitRevertRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceGitRevert(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceGitRevertMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      GitRevertResponse,
+      unknown,
+      Omit<PartialMessage<GitRevertRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  GitRevertResponse,
+  unknown,
+  Omit<PartialMessage<GitRevertRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceGitRevertMutationOptions(
     client,
     options,
   );

@@ -33,6 +33,7 @@ export enum ExploreStateURLParams {
   PivotRowLimit = "row_limit",
   PivotShowTotalsColumn = "show_totals_column",
   PivotShowTotalsRow = "show_totals_row",
+  PivotFormatting = "format",
 
   DynamicYAxisScale = "dyn_y",
 

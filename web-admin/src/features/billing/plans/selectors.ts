@@ -25,6 +25,7 @@ import {
   isTeamPlan,
 } from "@rilldata/web-admin/features/billing/plans/utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import type { Page } from "@sveltejs/kit";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
@@ -91,7 +92,7 @@ export function getBillingUpgradeUrl(
 
 export function getNextBillingCycleDate(curEndDateRaw: string): string {
   const curEndDate = DateTime.fromJSDate(new Date(curEndDateRaw));
-  if (!curEndDate.isValid) return "Unknown";
+  if (!curEndDate.isValid) return m.billing_unknown();
   return curEndDate.toLocaleString(DateTime.DATE_MED);
 }
 

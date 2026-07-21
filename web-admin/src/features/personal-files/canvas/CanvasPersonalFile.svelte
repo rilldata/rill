@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import VirtualCanvasEditor from "@rilldata/web-admin/features/personal-files/canvas/VirtualCanvasEditor.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { getPersonalFilteredResourceByName } from "@rilldata/web-admin/features/personal-files/selectors.ts";
@@ -127,10 +128,10 @@
 
 <AlertDialogGuardedConfirmation
   bind:open={showDeleteConfirmation}
-  title="Delete dashboard?"
-  description={`The dashboard "${displayName}" will be permanently deleted. This action cannot be undone.`}
+  title={m.canvas_delete_dashboard_title()}
+  description={m.canvas_delete_dashboard_desc({ name: displayName })}
   confirmText={`delete ${displayName}`}
-  confirmButtonText="Delete"
+  confirmButtonText={m.settings_delete_button()}
   confirmButtonType="destructive"
   loading={$deleteDashboardMutation.isPending}
   error={$deleteDashboardMutation.error?.message}

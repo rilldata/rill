@@ -1465,6 +1465,46 @@ paths:
             title: Request message for RuntimeService.RestoreGitCommit
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/git/revert:
+    post:
+      summary: |-
+        GitRevert discards local changes for the given files, resetting them to the comparison branch's state.
+        If no paths are provided, all local changes are reverted.
+      operationId: RuntimeService_GitRevert
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitRevertResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              remoteBranch:
+                type: string
+                description: |-
+                  remote_branch is the branch to compare against. Same semantics as GitDiffRequest:
+                  if empty, the upstream of the current local branch is used.
+              paths:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  paths are the files to revert, relative to the project subpath, matching the paths returned by
+                  GitDiff. Paths that are not actually changed are ignored. If empty, all changed files are reverted.
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/git/status:
     get:
       summary: GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
@@ -3311,43 +3351,6 @@ paths:
               limit:
                 type: integer
                 format: int32
-      tags:
-        - QueryService
-  /v1/instances/{instanceId}/query/batch:
-    post:
-      summary: Batch request with different queries
-      operationId: QueryService_QueryBatch
-      responses:
-        "200":
-          description: A successful response.(streaming responses)
-          schema:
-            type: object
-            properties:
-              result:
-                $ref: '#/definitions/v1QueryBatchResponse'
-              error:
-                $ref: '#/definitions/rpcStatus'
-            title: Stream result of v1QueryBatchResponse
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              queries:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1Query'
       tags:
         - QueryService
   /v1/instances/{instanceId}/query/resolver:
@@ -5371,6 +5374,11 @@ definitions:
         type: boolean
       pivotShowTotalsRow:
         type: boolean
+      pivotFormatting:
+        type: string
+        description: |-
+          Per-measure pivot conditional formatting, serialized in the URL param
+          format (frontend-only; persisted in URL state).
       chartDynamicYAxis:
         type: boolean
         title: Chart display settings (frontend-only; persisted in URL state)
@@ -5734,6 +5742,14 @@ definitions:
         description: Conflict is true if the pull failed due to merge conflicts.
   v1GitPushResponse:
     type: object
+  v1GitRevertResponse:
+    type: object
+    properties:
+      revertedPaths:
+        type: array
+        items:
+          type: string
+        description: reverted_paths lists the files that were reverted, relative to the project subpath.
   v1GitStatusResponse:
     type: object
     properties:
@@ -7528,16 +7544,6 @@ definitions:
         $ref: '#/definitions/v1TableColumnsRequest'
       tableRowsRequest:
         $ref: '#/definitions/v1TableRowsRequest'
-  v1QueryBatchResponse:
-    type: object
-    properties:
-      index:
-        type: integer
-        format: int64
-      result:
-        $ref: '#/definitions/v1QueryResult'
-      error:
-        type: string
   v1QueryResolverResponse:
     type: object
     properties:
@@ -7558,49 +7564,6 @@ definitions:
         type: array
         items:
           type: object
-  v1QueryResult:
-    type: object
-    properties:
-      projectStorageResponse:
-        $ref: '#/definitions/v1ProjectStorageResponse'
-      metricsViewAggregationResponse:
-        $ref: '#/definitions/v1MetricsViewAggregationResponse'
-      metricsViewToplistResponse:
-        $ref: '#/definitions/v1MetricsViewToplistResponse'
-      metricsViewComparisonResponse:
-        $ref: '#/definitions/v1MetricsViewComparisonResponse'
-      metricsViewTimeSeriesResponse:
-        $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
-      metricsViewTotalsResponse:
-        $ref: '#/definitions/v1MetricsViewTotalsResponse'
-      metricsViewRowsResponse:
-        $ref: '#/definitions/v1MetricsViewRowsResponse'
-      columnRollupIntervalResponse:
-        $ref: '#/definitions/v1ColumnRollupIntervalResponse'
-      columnTopKResponse:
-        $ref: '#/definitions/v1ColumnTopKResponse'
-      columnNullCountResponse:
-        $ref: '#/definitions/v1ColumnNullCountResponse'
-      columnDescriptiveStatisticsResponse:
-        $ref: '#/definitions/v1ColumnDescriptiveStatisticsResponse'
-      columnTimeGrainResponse:
-        $ref: '#/definitions/v1ColumnTimeGrainResponse'
-      columnNumericHistogramResponse:
-        $ref: '#/definitions/v1ColumnNumericHistogramResponse'
-      columnRugHistogramResponse:
-        $ref: '#/definitions/v1ColumnRugHistogramResponse'
-      columnTimeRangeResponse:
-        $ref: '#/definitions/v1ColumnTimeRangeResponse'
-      columnCardinalityResponse:
-        $ref: '#/definitions/v1ColumnCardinalityResponse'
-      columnTimeSeriesResponse:
-        $ref: '#/definitions/v1ColumnTimeSeriesResponse'
-      tableCardinalityResponse:
-        $ref: '#/definitions/v1TableCardinalityResponse'
-      tableColumnsResponse:
-        $ref: '#/definitions/v1TableColumnsResponse'
-      tableRowsResponse:
-        $ref: '#/definitions/v1TableRowsResponse'
   v1ReconcileStatus:
     type: string
     enum:
@@ -7872,6 +7835,11 @@ definitions:
         type: array
         items:
           type: string
+      tags:
+        type: array
+        items:
+          type: string
+        description: Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
       hidden:
         type: boolean
       version:

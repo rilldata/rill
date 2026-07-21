@@ -23,8 +23,16 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { eventBus } from "../../lib/event-bus/event-bus";
   import { fileArtifacts } from "../entity-management/file-artifacts";
+  import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
+  import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
+  import { ChevronsDownUp, ChevronsUpDown } from "lucide-svelte";
   import NavDirectory from "./NavDirectory.svelte";
-  import { findDirectory, transformFileList } from "./transform-file-list";
+  import { directoryState } from "./directory-store";
+  import {
+    collectDirectoryPaths,
+    findDirectory,
+    transformFileList,
+  } from "./transform-file-list";
   import QuickView from "@rilldata/web-common/features/resource-graph/quick-view/QuickView.svelte";
   import {
     isPinned,
@@ -71,6 +79,39 @@
   );
 
   $: ({ data: fileTree } = $getFileTree);
+
+  $: projectTitleQuery = useProjectTitle(runtimeClient);
+  $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
+
+  // Scope the persisted expand/collapse state per project. In the cloud the
+  // instanceId is unique per project; in Rill Developer it is always "default",
+  // so fall back to the on-disk project path there (GetMetadata is a local-only
+  // endpoint that simply errors in the cloud).
+  $: ({ instanceId } = runtimeClient);
+  $: projectMetadataQuery = createLocalServiceGetMetadata({
+    query: { retry: false },
+  });
+  $: projectScopeId = $projectMetadataQuery.isLoading
+    ? undefined
+    : ($projectMetadataQuery.data?.projectPath ?? instanceId);
+  $: if (projectScopeId) directoryState.setProjectScope(projectScopeId);
+
+  $: directoryPaths = fileTree ? collectDirectoryPaths(fileTree) : [];
+  $: allDirectoriesCollapsed =
+    directoryPaths.length > 0 &&
+    directoryPaths.every((path) => $directoryState[path] === false);
+  $: toggleAllDirectoriesLabel = allDirectoriesCollapsed
+    ? "Expand all folders"
+    : "Collapse all folders";
+
+  function toggleAllDirectories() {
+    if (!fileTree) return;
+    if (allDirectoriesCollapsed) {
+      directoryState.expandAll(directoryPaths);
+    } else {
+      directoryState.collapseAll(directoryPaths);
+    }
+  }
 
   let showRenameModelModal = false;
   let renameFilePath: string;
@@ -178,6 +219,26 @@
   onkeydown={saveAll}
 />
 
+<!-- Project header with a collapse-all control -->
+<div class="project-header">
+  <h3 class="truncate" title={projectTitle}>{projectTitle}</h3>
+  {#if directoryPaths.length}
+    <button
+      type="button"
+      class="collapse-all"
+      aria-label={toggleAllDirectoriesLabel}
+      title={toggleAllDirectoriesLabel}
+      onclick={toggleAllDirectories}
+    >
+      {#if allDirectoriesCollapsed}
+        <ChevronsUpDown size="14px" />
+      {:else}
+        <ChevronsDownUp size="14px" />
+      {/if}
+    </button>
+  {/if}
+</div>
+
 <!-- File tree -->
 <ul class="flex flex-col w-full items-start justify-start overflow-auto">
   {#if fileTree}
@@ -218,3 +279,25 @@
 <ForceDeleteConfirmation bind:open={showForceDelete} onDelete={onForceDelete} />
 
 <QuickView />
+
+<style lang="postcss">
+  .project-header {
+    @apply sticky top-0 z-10 bg-surface-base;
+    @apply flex items-center justify-between gap-x-1;
+    @apply h-7 w-full pl-2 pr-1.5;
+  }
+
+  h3 {
+    @apply truncate font-semibold text-[10px] uppercase text-fg-muted;
+  }
+
+  .collapse-all {
+    @apply flex flex-none items-center justify-center;
+    @apply size-5 rounded text-fg-secondary;
+  }
+
+  .collapse-all:hover,
+  .collapse-all:focus-visible {
+    @apply bg-surface-hover text-fg-primary;
+  }
+</style>

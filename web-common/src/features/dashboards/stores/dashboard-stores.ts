@@ -30,6 +30,7 @@ import { SortType } from "web-common/src/features/dashboards/proto-state/derived
 import {
   PivotChipType,
   type PivotChipData,
+  type PivotMeasureFormatting,
   type PivotTableMode,
 } from "../pivot/types";
 
@@ -592,6 +593,25 @@ const metricsViewReducers = {
         expanded: {},
         activeCell: null,
         rowPage: 1,
+      };
+    });
+  },
+
+  setPivotMeasureFormatting(
+    name: string,
+    measureName: string,
+    fmt: PivotMeasureFormatting | null,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      const measureFormatting = { ...exploreState.pivot.measureFormatting };
+      if (fmt) {
+        measureFormatting[measureName] = fmt;
+      } else {
+        delete measureFormatting[measureName];
+      }
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        measureFormatting,
       };
     });
   },

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -29,9 +30,9 @@ func (y *ComponentVariableYAML) Proto() (*runtimev1.ComponentVariable, error) {
 	if y == nil {
 		return nil, fmt.Errorf("is empty")
 	}
-	val, err := structpb.NewValue(y.Value)
+	val, err := pbutil.ToValue(y.Value, nil)
 	if err != nil {
-		panic(fmt.Errorf("invalid default value: %w", err))
+		return nil, fmt.Errorf("invalid default value: %w", err)
 	}
 	return &runtimev1.ComponentVariable{
 		Name:         y.Name,
@@ -64,7 +65,7 @@ func (p *Parser) parseComponent(node *Node) error {
 	node.Refs = append(node.Refs, refs...)
 
 	// Track component
-	r, err := p.insertResource(ResourceKindComponent, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindComponent, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}
