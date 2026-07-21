@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"crypto/tls"
 
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	base "github.com/rilldata/rill/runtime/pkg/pgwire"
@@ -12,22 +11,8 @@ import (
 
 // ServePGWire starts the PostgreSQL wire-compatible Metrics SQL endpoint.
 func (s *Server) ServePGWire(ctx context.Context, requirePassword bool) error {
-	var tlsConfig *tls.Config
-	if s.opts.TLSCertPath != "" && s.opts.TLSKeyPath != "" {
-		tlsConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
-			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-				certificate, err := tls.LoadX509KeyPair(s.opts.TLSCertPath, s.opts.TLSKeyPath)
-				if err != nil {
-					return nil, err
-				}
-				return &certificate, nil
-			},
-		}
-	}
-
 	server, err := base.NewServer(base.Options{
-		TLSConfig:       tlsConfig,
+		TLSConfig:       base.NewTLSConfig(s.opts.TLSCertPath, s.opts.TLSKeyPath),
 		RequirePassword: requirePassword,
 		Logger:          s.logger,
 		NewSession: func(ctx context.Context, parameters map[string]string, password string) (base.Session, error) {

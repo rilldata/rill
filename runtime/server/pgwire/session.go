@@ -48,7 +48,11 @@ func (s *Session) Describe(ctx context.Context, query string, parameterOIDs []ui
 	parameterOIDs = inferParameterOIDs(query, parameterOIDs)
 	// Resolving here is currently necessary because resolver schemas are produced
 	// by the underlying OLAP query. The result is closed without consuming rows.
-	rows, err := s.Query(ctx, query, nilParameters(parameterOIDs), nil)
+	parameters := make([]base.Parameter, len(parameterOIDs))
+	for i, oid := range parameterOIDs {
+		parameters[i].OID = oid
+	}
+	rows, err := s.Query(ctx, query, parameters, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +99,6 @@ type resolverRows struct {
 	types  *pgtype.Map
 	values [][]byte
 	err    error
-	count  int64
 }
 
 func (r *resolverRows) Fields() []pgproto3.FieldDescription { return r.fields }
@@ -123,16 +126,13 @@ func (r *resolverRows) Next() bool {
 			return false
 		}
 	}
-	r.count++
 	return true
 }
 
-func (r *resolverRows) Values() [][]byte { return r.values }
-func (r *resolverRows) Err() error       { return r.err }
-func (r *resolverRows) CommandTag() string {
-	return fmt.Sprintf("SELECT %d", r.count)
-}
-func (r *resolverRows) Close() error { return r.result.Close() }
+func (r *resolverRows) Values() [][]byte   { return r.values }
+func (r *resolverRows) Err() error         { return r.err }
+func (r *resolverRows) CommandTag() string { return "" }
+func (r *resolverRows) Close() error       { return r.result.Close() }
 
 func fieldsForSchema(schema *runtimev1.StructType, resultFormats []int16) ([]pgproto3.FieldDescription, error) {
 	if schema == nil {
@@ -141,113 +141,65 @@ func fieldsForSchema(schema *runtimev1.StructType, resultFormats []int16) ([]pgp
 	fields := make([]pgproto3.FieldDescription, len(schema.Fields))
 	for i, field := range schema.Fields {
 		oid, size := postgresType(field.Type)
-		format, err := resultFormat(resultFormats, i, len(schema.Fields))
-		if err != nil {
-			return nil, err
-		}
 		fields[i] = pgproto3.FieldDescription{
-			Name:                 []byte(field.Name),
-			DataTypeOID:          oid,
-			DataTypeSize:         size,
-			TypeModifier:         -1,
-			Format:               format,
-			TableAttributeNumber: 0,
+			Name:         []byte(field.Name),
+			DataTypeOID:  oid,
+			DataTypeSize: size,
+			TypeModifier: -1,
 		}
 	}
-	return fields, nil
+	return base.ApplyResultFormats(fields, resultFormats)
+}
+
+type postgresTypeInfo struct {
+	oid      uint32
+	arrayOID uint32
+	size     int16
+}
+
+var postgresTypes = map[runtimev1.Type_Code]postgresTypeInfo{
+	runtimev1.Type_CODE_BOOL:      {pgtype.BoolOID, pgtype.BoolArrayOID, 1},
+	runtimev1.Type_CODE_INT8:      {pgtype.Int2OID, pgtype.Int2ArrayOID, 2},
+	runtimev1.Type_CODE_INT16:     {pgtype.Int2OID, pgtype.Int2ArrayOID, 2},
+	runtimev1.Type_CODE_UINT8:     {pgtype.Int2OID, pgtype.Int2ArrayOID, 2},
+	runtimev1.Type_CODE_INT32:     {pgtype.Int4OID, pgtype.Int4ArrayOID, 4},
+	runtimev1.Type_CODE_UINT16:    {pgtype.Int4OID, pgtype.Int4ArrayOID, 4},
+	runtimev1.Type_CODE_INT64:     {pgtype.Int8OID, pgtype.Int8ArrayOID, 8},
+	runtimev1.Type_CODE_UINT32:    {pgtype.Int8OID, pgtype.Int8ArrayOID, 8},
+	runtimev1.Type_CODE_INT128:    {pgtype.NumericOID, pgtype.NumericArrayOID, -1},
+	runtimev1.Type_CODE_INT256:    {pgtype.NumericOID, pgtype.NumericArrayOID, -1},
+	runtimev1.Type_CODE_UINT64:    {pgtype.NumericOID, pgtype.NumericArrayOID, -1},
+	runtimev1.Type_CODE_UINT128:   {pgtype.NumericOID, pgtype.NumericArrayOID, -1},
+	runtimev1.Type_CODE_UINT256:   {pgtype.NumericOID, pgtype.NumericArrayOID, -1},
+	runtimev1.Type_CODE_DECIMAL:   {pgtype.NumericOID, pgtype.NumericArrayOID, -1},
+	runtimev1.Type_CODE_FLOAT32:   {pgtype.Float4OID, pgtype.Float4ArrayOID, 4},
+	runtimev1.Type_CODE_FLOAT64:   {pgtype.Float8OID, pgtype.Float8ArrayOID, 8},
+	runtimev1.Type_CODE_TIMESTAMP: {pgtype.TimestamptzOID, pgtype.TimestamptzArrayOID, 8},
+	runtimev1.Type_CODE_DATE:      {pgtype.DateOID, pgtype.DateArrayOID, 4},
+	runtimev1.Type_CODE_TIME:      {pgtype.TimeOID, pgtype.TimeArrayOID, 8},
+	runtimev1.Type_CODE_BYTES:     {pgtype.ByteaOID, pgtype.ByteaArrayOID, -1},
+	runtimev1.Type_CODE_JSON:      {pgtype.JSONBOID, pgtype.JSONBArrayOID, -1},
+	runtimev1.Type_CODE_MAP:       {pgtype.JSONBOID, pgtype.JSONBArrayOID, -1},
+	runtimev1.Type_CODE_STRUCT:    {pgtype.JSONBOID, pgtype.JSONBArrayOID, -1},
+	runtimev1.Type_CODE_UUID:      {pgtype.UUIDOID, pgtype.UUIDArrayOID, 16},
 }
 
 func postgresType(typ *runtimev1.Type) (uint32, int16) {
 	if typ == nil {
 		return pgtype.TextOID, -1
 	}
-	switch typ.Code {
-	case runtimev1.Type_CODE_BOOL:
-		return pgtype.BoolOID, 1
-	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_UINT8:
-		return pgtype.Int2OID, 2
-	case runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_UINT16:
-		return pgtype.Int4OID, 4
-	case runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_UINT32:
-		return pgtype.Int8OID, 8
-	case runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256, runtimev1.Type_CODE_DECIMAL:
-		return pgtype.NumericOID, -1
-	case runtimev1.Type_CODE_FLOAT32:
-		return pgtype.Float4OID, 4
-	case runtimev1.Type_CODE_FLOAT64:
-		return pgtype.Float8OID, 8
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return pgtype.TimestamptzOID, 8
-	case runtimev1.Type_CODE_DATE:
-		return pgtype.DateOID, 4
-	case runtimev1.Type_CODE_TIME:
-		return pgtype.TimeOID, 8
-	case runtimev1.Type_CODE_BYTES:
-		return pgtype.ByteaOID, -1
-	case runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_STRUCT:
-		return pgtype.JSONBOID, -1
-	case runtimev1.Type_CODE_UUID:
-		return pgtype.UUIDOID, 16
-	case runtimev1.Type_CODE_ARRAY:
-		return postgresArrayType(typ.ArrayElementType), -1
-	default:
-		return pgtype.TextOID, -1
-	}
-}
-
-func postgresArrayType(typ *runtimev1.Type) uint32 {
-	if typ == nil {
-		return pgtype.TextArrayOID
-	}
-	switch typ.Code {
-	case runtimev1.Type_CODE_BOOL:
-		return pgtype.BoolArrayOID
-	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_UINT8:
-		return pgtype.Int2ArrayOID
-	case runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_UINT16:
-		return pgtype.Int4ArrayOID
-	case runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_UINT32:
-		return pgtype.Int8ArrayOID
-	case runtimev1.Type_CODE_FLOAT32:
-		return pgtype.Float4ArrayOID
-	case runtimev1.Type_CODE_FLOAT64:
-		return pgtype.Float8ArrayOID
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return pgtype.TimestamptzArrayOID
-	case runtimev1.Type_CODE_DATE:
-		return pgtype.DateArrayOID
-	case runtimev1.Type_CODE_TIME:
-		return pgtype.TimeArrayOID
-	case runtimev1.Type_CODE_BYTES:
-		return pgtype.ByteaArrayOID
-	case runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_STRUCT:
-		return pgtype.JSONBArrayOID
-	case runtimev1.Type_CODE_UUID:
-		return pgtype.UUIDArrayOID
-	case runtimev1.Type_CODE_DECIMAL, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
-		return pgtype.NumericArrayOID
-	default:
-		return pgtype.TextArrayOID
-	}
-}
-
-func resultFormat(formats []int16, index, fieldCount int) (int16, error) {
-	var format int16
-	switch len(formats) {
-	case 0:
-		format = 0
-	case 1:
-		format = formats[0]
-	default:
-		if len(formats) != fieldCount {
-			return 0, &base.Error{Code: "08P01", Message: fmt.Sprintf("received %d result formats for %d columns", len(formats), fieldCount)}
+	if typ.Code == runtimev1.Type_CODE_ARRAY {
+		if typ.ArrayElementType != nil {
+			if info, ok := postgresTypes[typ.ArrayElementType.Code]; ok {
+				return info.arrayOID, -1
+			}
 		}
-		format = formats[index]
+		return pgtype.TextArrayOID, -1
 	}
-	if format != 0 && format != 1 {
-		return 0, &base.Error{Code: "08P01", Message: fmt.Sprintf("unsupported result format %d", format)}
+	if info, ok := postgresTypes[typ.Code]; ok {
+		return info.oid, info.size
 	}
-	return format, nil
+	return pgtype.TextOID, -1
 }
 
 func encodeValue(types *pgtype.Map, oid uint32, format int16, value any) ([]byte, error) {
@@ -309,7 +261,31 @@ func normalizeValue(value any, oid uint32) (any, error) {
 	return value, nil
 }
 
-var parameterPattern = regexp.MustCompile(`\$([1-9][0-9]*)(?:::([a-zA-Z0-9_]+(?:\s+precision|\s+with\s+time\s+zone)?))?`)
+var (
+	parameterPattern = regexp.MustCompile(`\$([1-9][0-9]*)(?:::([a-zA-Z0-9_]+(?:\s+precision|\s+with\s+time\s+zone)?))?`)
+	parameterOIDs    = map[string]uint32{
+		"bool":                     pgtype.BoolOID,
+		"boolean":                  pgtype.BoolOID,
+		"int2":                     pgtype.Int2OID,
+		"smallint":                 pgtype.Int2OID,
+		"int4":                     pgtype.Int4OID,
+		"int":                      pgtype.Int4OID,
+		"integer":                  pgtype.Int4OID,
+		"int8":                     pgtype.Int8OID,
+		"bigint":                   pgtype.Int8OID,
+		"float4":                   pgtype.Float4OID,
+		"real":                     pgtype.Float4OID,
+		"float8":                   pgtype.Float8OID,
+		"double precision":         pgtype.Float8OID,
+		"numeric":                  pgtype.NumericOID,
+		"decimal":                  pgtype.NumericOID,
+		"date":                     pgtype.DateOID,
+		"timestamp":                pgtype.TimestampOID,
+		"timestamptz":              pgtype.TimestamptzOID,
+		"timestamp with time zone": pgtype.TimestamptzOID,
+		"uuid":                     pgtype.UUIDOID,
+	}
+)
 
 func inferParameterOIDs(query string, provided []uint32) []uint32 {
 	result := append([]uint32(nil), provided...)
@@ -321,42 +297,12 @@ func inferParameterOIDs(query string, provided []uint32) []uint32 {
 		if result[index-1] != 0 {
 			continue
 		}
-		switch strings.ToLower(strings.TrimSpace(match[2])) {
-		case "bool", "boolean":
-			result[index-1] = pgtype.BoolOID
-		case "int2", "smallint":
-			result[index-1] = pgtype.Int2OID
-		case "int4", "int", "integer":
-			result[index-1] = pgtype.Int4OID
-		case "int8", "bigint":
-			result[index-1] = pgtype.Int8OID
-		case "float4", "real":
-			result[index-1] = pgtype.Float4OID
-		case "float8", "double precision":
-			result[index-1] = pgtype.Float8OID
-		case "numeric", "decimal":
-			result[index-1] = pgtype.NumericOID
-		case "date":
-			result[index-1] = pgtype.DateOID
-		case "timestamp":
-			result[index-1] = pgtype.TimestampOID
-		case "timestamptz", "timestamp with time zone":
-			result[index-1] = pgtype.TimestamptzOID
-		case "uuid":
-			result[index-1] = pgtype.UUIDOID
-		default:
+		result[index-1] = parameterOIDs[strings.ToLower(strings.TrimSpace(match[2]))]
+		if result[index-1] == 0 {
 			result[index-1] = pgtype.TextOID
 		}
 	}
 	return result
-}
-
-func nilParameters(oids []uint32) []base.Parameter {
-	parameters := make([]base.Parameter, len(oids))
-	for i, oid := range oids {
-		parameters[i] = base.Parameter{OID: oid}
-	}
-	return parameters
 }
 
 func interpolateParameters(query string, parameters []base.Parameter, types *pgtype.Map) (string, error) {

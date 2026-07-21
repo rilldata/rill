@@ -24,9 +24,8 @@ type connection struct {
 }
 
 type preparedStatement struct {
-	query         string
-	parameterOIDs []uint32
-	description   *Description
+	query       string
+	description *Description
 }
 
 type portal struct {
@@ -36,7 +35,6 @@ type portal struct {
 	rows          Rows
 	cancel        context.CancelFunc
 	rowCount      int64
-	described     bool
 }
 
 func (c *connection) run() error {
@@ -115,7 +113,7 @@ func (c *connection) handleSimpleQuery(query string) error {
 		return c.backend.Flush()
 	}
 
-	if tag, ok := c.sessionCommand(query); ok {
+	if tag, ok := c.handleSessionCommand(query); ok {
 		c.backend.Send(&pgproto3.CommandComplete{CommandTag: []byte(tag)})
 		c.backend.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus})
 		return c.backend.Flush()
@@ -150,16 +148,15 @@ func (c *connection) handleParse(message *pgproto3.Parse) error {
 	if message.Name == "" {
 		c.closePortal("")
 	}
-	statement := &preparedStatement{
-		query:         message.Query,
-		parameterOIDs: append([]uint32(nil), message.ParameterOIDs...),
+	description := &Description{ParameterOIDs: append([]uint32(nil), message.ParameterOIDs...)}
+	if sessionCommand(message.Query) == "" {
+		var err error
+		description, err = c.describe(message.Query, message.ParameterOIDs)
+		if err != nil {
+			return err
+		}
 	}
-	if isSessionCommand(message.Query) {
-		statement.description = &Description{ParameterOIDs: statement.parameterOIDs}
-	} else if _, err := c.describe(statement); err != nil {
-		return err
-	}
-	c.statements[message.Name] = statement
+	c.statements[message.Name] = &preparedStatement{query: message.Query, description: description}
 	c.backend.Send(&pgproto3.ParseComplete{})
 	return nil
 }
@@ -169,8 +166,8 @@ func (c *connection) handleBind(message *pgproto3.Bind) error {
 	if !ok {
 		return protocolError("prepared statement %q does not exist", message.PreparedStatement)
 	}
-	if len(message.Parameters) != len(statement.parameterOIDs) {
-		return protocolError("bind message supplies %d parameters, but prepared statement requires %d", len(message.Parameters), len(statement.parameterOIDs))
+	if len(message.Parameters) != len(statement.description.ParameterOIDs) {
+		return protocolError("bind message supplies %d parameters, but prepared statement requires %d", len(message.Parameters), len(statement.description.ParameterOIDs))
 	}
 	if len(message.ParameterFormatCodes) != 0 && len(message.ParameterFormatCodes) != 1 && len(message.ParameterFormatCodes) != len(message.Parameters) {
 		return protocolError("bind message has %d parameter formats but %d parameters", len(message.ParameterFormatCodes), len(message.Parameters))
@@ -184,7 +181,7 @@ func (c *connection) handleBind(message *pgproto3.Bind) error {
 		} else if len(message.ParameterFormatCodes) > 1 {
 			format = message.ParameterFormatCodes[i]
 		}
-		parameters[i] = Parameter{OID: statement.parameterOIDs[i], Format: format}
+		parameters[i] = Parameter{OID: statement.description.ParameterOIDs[i], Format: format}
 		if value != nil {
 			parameters[i].Value = append([]byte(nil), value...)
 		}
@@ -207,26 +204,17 @@ func (c *connection) handleDescribe(message *pgproto3.Describe) error {
 		if !ok {
 			return protocolError("prepared statement %q does not exist", message.Name)
 		}
-		description, err := c.describe(statement)
-		if err != nil {
-			return err
-		}
-		c.backend.Send(&pgproto3.ParameterDescription{ParameterOIDs: description.ParameterOIDs})
-		c.sendDescription(description.Fields)
+		c.backend.Send(&pgproto3.ParameterDescription{ParameterOIDs: statement.description.ParameterOIDs})
+		c.sendDescription(statement.description.Fields)
 	case 'P':
 		portal, ok := c.portals[message.Name]
 		if !ok {
 			return protocolError("portal %q does not exist", message.Name)
 		}
-		description, err := c.describe(portal.statement)
+		fields, err := ApplyResultFormats(portal.statement.description.Fields, portal.resultFormats)
 		if err != nil {
 			return err
 		}
-		fields, err := fieldsWithFormats(description.Fields, portal.resultFormats)
-		if err != nil {
-			return err
-		}
-		portal.described = true
 		c.sendDescription(fields)
 	default:
 		return protocolError("invalid Describe object type %q", message.ObjectType)
@@ -234,28 +222,23 @@ func (c *connection) handleDescribe(message *pgproto3.Describe) error {
 	return nil
 }
 
-func (c *connection) describe(statement *preparedStatement) (*Description, error) {
-	if statement.description != nil {
-		return statement.description, nil
-	}
+func (c *connection) describe(query string, parameterOIDs []uint32) (*Description, error) {
 	queryCtx, cancel := context.WithCancel(c.ctx)
 	c.cancel.set(cancel)
 	defer func() {
 		cancel()
 		c.cancel.clear()
 	}()
-	description, err := c.session.Describe(queryCtx, statement.query, statement.parameterOIDs)
+	description, err := c.session.Describe(queryCtx, query, parameterOIDs)
 	if err != nil {
 		return nil, err
 	}
 	if description == nil {
-		description = &Description{ParameterOIDs: statement.parameterOIDs}
+		description = &Description{}
 	}
-	if len(description.ParameterOIDs) == 0 && len(statement.parameterOIDs) != 0 {
-		description.ParameterOIDs = append([]uint32(nil), statement.parameterOIDs...)
+	if len(description.ParameterOIDs) == 0 {
+		description.ParameterOIDs = append([]uint32(nil), parameterOIDs...)
 	}
-	statement.parameterOIDs = append([]uint32(nil), description.ParameterOIDs...)
-	statement.description = description
 	return description, nil
 }
 
@@ -274,7 +257,7 @@ func (c *connection) handleExecute(message *pgproto3.Execute) error {
 	}
 
 	if portal.rows == nil {
-		if tag, ok := c.sessionCommand(portal.statement.query); ok {
+		if tag, ok := c.handleSessionCommand(portal.statement.query); ok {
 			c.backend.Send(&pgproto3.CommandComplete{CommandTag: []byte(tag)})
 			delete(c.portals, message.Portal)
 			return nil
@@ -363,13 +346,8 @@ func (c *connection) handleClose(message *pgproto3.Close) error {
 	return nil
 }
 
-func (c *connection) sessionCommand(query string) (string, bool) {
-	trimmed := strings.TrimSpace(strings.TrimSuffix(query, ";"))
-	fields := strings.Fields(trimmed)
-	if len(fields) == 0 {
-		return "", false
-	}
-	command := strings.ToUpper(fields[0])
+func (c *connection) handleSessionCommand(query string) (string, bool) {
+	command := sessionCommand(query)
 	switch command {
 	case "BEGIN", "START":
 		c.txStatus = 'T'
@@ -387,16 +365,17 @@ func (c *connection) sessionCommand(query string) (string, bool) {
 	}
 }
 
-func isSessionCommand(query string) bool {
+func sessionCommand(query string) string {
 	fields := strings.Fields(strings.TrimSpace(strings.TrimSuffix(query, ";")))
 	if len(fields) == 0 {
-		return false
+		return ""
 	}
-	switch strings.ToUpper(fields[0]) {
+	command := strings.ToUpper(fields[0])
+	switch command {
 	case "BEGIN", "START", "COMMIT", "END", "ROLLBACK", "SET", "RESET", "DISCARD":
-		return true
+		return command
 	default:
-		return false
+		return ""
 	}
 }
 
@@ -425,7 +404,8 @@ func (c *connection) closePortals() {
 	}
 }
 
-func fieldsWithFormats(fields []pgproto3.FieldDescription, formats []int16) ([]pgproto3.FieldDescription, error) {
+// ApplyResultFormats copies fields and applies the result formats from a Bind message.
+func ApplyResultFormats(fields []pgproto3.FieldDescription, formats []int16) ([]pgproto3.FieldDescription, error) {
 	result := append([]pgproto3.FieldDescription(nil), fields...)
 	switch len(formats) {
 	case 0:

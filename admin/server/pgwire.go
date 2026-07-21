@@ -23,21 +23,8 @@ import (
 // session is proxied to the selected production runtime over one dedicated pgx
 // connection.
 func (s *Server) ServePGWire(ctx context.Context) error {
-	var tlsConfig *tls.Config
-	if s.opts.TLSCertPath != "" && s.opts.TLSKeyPath != "" {
-		tlsConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
-			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-				certificate, err := tls.LoadX509KeyPair(s.opts.TLSCertPath, s.opts.TLSKeyPath)
-				if err != nil {
-					return nil, err
-				}
-				return &certificate, nil
-			},
-		}
-	}
 	server, err := base.NewServer(base.Options{
-		TLSConfig:       tlsConfig,
+		TLSConfig:       base.NewTLSConfig(s.opts.TLSCertPath, s.opts.TLSKeyPath),
 		RequirePassword: true,
 		Logger:          s.logger,
 		NewSession:      s.newPGWireProxySession,

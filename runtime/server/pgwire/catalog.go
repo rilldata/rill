@@ -3,7 +3,6 @@ package pgwire
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -212,16 +211,16 @@ func showResult(variable string, resultFormats []int16, types *pgtype.Map) (base
 	default:
 		value = ""
 	}
-	format, err := resultFormat(resultFormats, 0, 1)
+	fields, err := base.ApplyResultFormats([]pgproto3.FieldDescription{{Name: []byte(column), DataTypeOID: pgtype.TextOID, DataTypeSize: -1, TypeModifier: -1}}, resultFormats)
 	if err != nil {
 		return nil, err
 	}
-	encoded, err := types.Encode(pgtype.TextOID, format, value, nil)
+	encoded, err := types.Encode(pgtype.TextOID, fields[0].Format, value, nil)
 	if err != nil {
 		return nil, err
 	}
 	return &memoryRows{
-		fields: []pgproto3.FieldDescription{{Name: []byte(column), DataTypeOID: pgtype.TextOID, DataTypeSize: -1, TypeModifier: -1, Format: format}},
+		fields: fields,
 		rows:   [][][]byte{{encoded}},
 		tag:    "SHOW",
 	}, nil
@@ -235,13 +234,9 @@ func fieldsForSQLRows(rows *sql.Rows, resultFormats []int16) ([]pgproto3.FieldDe
 	fields := make([]pgproto3.FieldDescription, len(columnTypes))
 	for i, column := range columnTypes {
 		oid, size := postgresTypeForDatabaseName(column.DatabaseTypeName())
-		format, err := resultFormat(resultFormats, i, len(columnTypes))
-		if err != nil {
-			return nil, err
-		}
-		fields[i] = pgproto3.FieldDescription{Name: []byte(column.Name()), DataTypeOID: oid, DataTypeSize: size, TypeModifier: -1, Format: format}
+		fields[i] = pgproto3.FieldDescription{Name: []byte(column.Name()), DataTypeOID: oid, DataTypeSize: size, TypeModifier: -1}
 	}
-	return fields, nil
+	return base.ApplyResultFormats(fields, resultFormats)
 }
 
 func postgresTypeForDatabaseName(name string) (uint32, int16) {
@@ -279,7 +274,6 @@ type sqlRows struct {
 	types  *pgtype.Map
 	values [][]byte
 	err    error
-	count  int64
 }
 
 func (r *sqlRows) Fields() []pgproto3.FieldDescription { return r.fields }
@@ -311,14 +305,11 @@ func (r *sqlRows) Next() bool {
 			return false
 		}
 	}
-	r.count++
 	return true
 }
-func (r *sqlRows) Values() [][]byte { return r.values }
-func (r *sqlRows) Err() error       { return r.err }
-func (r *sqlRows) CommandTag() string {
-	return fmt.Sprintf("SELECT %d", r.count)
-}
+func (r *sqlRows) Values() [][]byte   { return r.values }
+func (r *sqlRows) Err() error         { return r.err }
+func (r *sqlRows) CommandTag() string { return "" }
 
 func (r *sqlRows) Close() error {
 	rowsErr := r.rows.Close()

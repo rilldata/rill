@@ -99,6 +99,23 @@ func (e *cancelEntry) cancel() {
 	}
 }
 
+// NewTLSConfig creates a TLS configuration that reloads the certificate for each handshake.
+func NewTLSConfig(certPath, keyPath string) *tls.Config {
+	if certPath == "" || keyPath == "" {
+		return nil
+	}
+	return &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+			certificate, err := tls.LoadX509KeyPair(certPath, keyPath)
+			if err != nil {
+				return nil, err
+			}
+			return &certificate, nil
+		},
+	}
+}
+
 // NewServer creates a PostgreSQL wire-compatible server.
 func NewServer(opts Options) (*Server, error) {
 	if opts.NewSession == nil {
@@ -188,7 +205,7 @@ func (s *Server) serveConn(ctx context.Context, conn net.Conn) {
 		return
 	}
 
-	session, err := s.opts.NewSession(ctx, cloneMap(startup.Parameters), password)
+	session, err := s.opts.NewSession(ctx, startup.Parameters, password)
 	if err != nil {
 		sendError(backend, err, "28P01")
 		_ = backend.Flush()
@@ -309,12 +326,4 @@ func (s *Server) startup(ctx context.Context, backend *pgproto3.Backend, conn ne
 			return nil, "", backend, false, fmt.Errorf("unsupported startup message %T", message)
 		}
 	}
-}
-
-func cloneMap(src map[string]string) map[string]string {
-	dst := make(map[string]string, len(src))
-	for key, value := range src {
-		dst[key] = value
-	}
-	return dst
 }
