@@ -85,7 +85,7 @@ tests:
       name,Nullable(String)
       age,Nullable(Int32)
       is_married,Nullable(UInt8)
-      date_of_birth,Nullable(Date)
+      date_of_birth,Nullable(Date32)
       time_of_day,Nullable(String)
       created_at,Nullable(DateTime64(6))
       personal_info,Nullable(String)
