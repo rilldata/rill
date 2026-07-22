@@ -150,6 +150,7 @@ export function getDimensionFilterItems(
   return (
     dimensionIdMap: Map<string, MetricsViewSpecDimension>,
     pinnedFilters: Set<string> = new Set(),
+    requiredFilters: Set<string> = new Set(),
   ) => {
     return getDimensionFilters(
       dimensionIdMap,
@@ -157,6 +158,7 @@ export function getDimensionFilterItems(
       dashData.dashboard.dimensionsWithInlistFilter,
       dashData.validExplore?.metricsView,
       pinnedFilters,
+      requiredFilters,
     );
   };
 }
@@ -167,6 +169,7 @@ export function getDimensionFiltersMap(
   dimensionsWithInlistFilter: string[],
   metricsViewName: string | undefined,
   pinnedFilters: Set<string>,
+  requiredFilters: Set<string>,
 ): Map<string, DimensionFilterItem> {
   if (!filter || !metricsViewName) return new Map();
   const filteredDimensions: Map<string, DimensionFilterItem> = new Map();
@@ -191,7 +194,8 @@ export function getDimensionFiltersMap(
         selectedValues: getValuesInExpression(e),
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
         inputText: undefined,
-        pinned: pinnedFilters?.has(ident),
+        pinned: pinnedFilters?.has(ident) || requiredFilters.has(ident),
+        required: requiredFilters?.has(ident),
 
         dimensions: new Map<string, MetricsViewSpecDimension>([
           [metricsViewName, dim],
@@ -225,6 +229,7 @@ export function getDimensionFilters(
   dimensionsWithInlistFilter: string[],
   metricsViewName: string | undefined,
   pinnedFilters: Set<string>,
+  requiredFilters: Set<string>,
 ) {
   const dimensionFilters = Array.from(
     getDimensionFiltersMap(
@@ -233,6 +238,7 @@ export function getDimensionFilters(
       dimensionsWithInlistFilter,
       metricsViewName,
       pinnedFilters,
+      requiredFilters,
     ).values(),
   );
   if (!metricsViewName) return dimensionFilters;
@@ -258,6 +264,30 @@ export function getDimensionFilters(
     });
   });
 
+  // Add required filters that dont have values selected
+  requiredFilters.forEach((requiredFilter) => {
+    const existing = dimensionFilters.some(
+      (dfi) => dfi.name === requiredFilter,
+    );
+    if (existing) return;
+
+    const dim = dimensionIdMap.get(requiredFilter);
+    if (!dim) return;
+
+    dimensionFilters.push({
+      name: requiredFilter,
+      label: getDimensionDisplayName(dim),
+      mode: DimensionFilterMode.Select,
+      selectedValues: [],
+      isInclude: true,
+      dimensions: new Map<string, MetricsViewSpecDimension>([
+        [metricsViewName, dim],
+      ]),
+      pinned: true,
+      required: true,
+    });
+  });
+
   return dimensionFilters;
 }
 
@@ -268,6 +298,7 @@ export const getAllDimensionFilterItems = (
     dimensionFilterItem: DimensionFilterItem[],
     dimensionIdMap: Map<string, MetricsViewSpecDimension>,
     pinnedFilters: Set<string> = new Set(),
+    requiredFilters: Set<string> = new Set(),
   ) => {
     const allDimensionFilterItem = [...dimensionFilterItem];
 
@@ -280,6 +311,9 @@ export const getAllDimensionFilterItems = (
         (dfi) => dfi.name !== dashData.dashboard.temporaryFilterName,
       )
     ) {
+      const required = requiredFilters.has(
+        dashData.dashboard.temporaryFilterName,
+      );
       allDimensionFilterItem.push({
         name: dashData.dashboard.temporaryFilterName,
         label: getDimensionDisplayName(
@@ -294,7 +328,9 @@ export const getAllDimensionFilterItems = (
             dimensionIdMap.get(dashData.dashboard.temporaryFilterName)!,
           ],
         ]),
-        pinned: pinnedFilters.has(dashData.dashboard.temporaryFilterName),
+        pinned:
+          required || pinnedFilters.has(dashData.dashboard.temporaryFilterName),
+        required,
       });
     }
 

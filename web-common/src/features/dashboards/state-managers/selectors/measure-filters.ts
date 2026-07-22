@@ -36,11 +36,13 @@ export const getMeasureFilterItems = (
   return (
     measureIdMap: Map<string, MetricsViewSpecMeasure>,
     pinnedFilters: Set<string> = new Set(),
+    requiredFilters: Set<string> = new Set(),
   ) => {
     return getMeasureFilters(
       measureIdMap,
       dashData.dashboard.dimensionThresholdFilters,
       pinnedFilters,
+      requiredFilters,
     );
   };
 };
@@ -49,18 +51,24 @@ export function getMeasureFilters(
   measureIdMap: Map<string, MetricsViewSpecMeasure>,
   dimensionThresholdFilters: DimensionThresholdFilter[],
   pinnedFilters: Set<string>,
+  requiredFilters: Set<string>,
 ) {
   const filteredMeasures = new Array<MeasureFilterItem>();
   const addedMeasure = new Set<string>();
 
   for (const dtf of dimensionThresholdFilters) {
+    const required = dtf.filters[0]
+      ? requiredFilters.has(dtf.filters[0].measure)
+      : false;
     filteredMeasures.push(
       ...getMeasureFilterForDimension(
         measureIdMap,
         dtf.filters,
         dtf.name,
         addedMeasure,
-        dtf.filters[0] ? pinnedFilters.has(dtf.filters[0].measure) : false,
+        required ||
+          (dtf.filters[0] ? pinnedFilters.has(dtf.filters[0].measure) : false),
+        required,
       ),
     );
   }
@@ -77,6 +85,21 @@ export function getMeasureFilters(
     });
   });
 
+  requiredFilters.forEach((requiredFilter) => {
+    const existing = filteredMeasures.some(
+      (mfi) => mfi.name === requiredFilter,
+    );
+    if (existing || !measureIdMap.has(requiredFilter)) return;
+
+    filteredMeasures.push({
+      dimensionName: "",
+      name: requiredFilter,
+      label: getMeasureDisplayName(measureIdMap.get(requiredFilter)),
+      pinned: true,
+      required: true,
+    });
+  });
+
   return filteredMeasures;
 }
 
@@ -86,6 +109,7 @@ export function getMeasureFilterForDimension(
   name = "",
   addedMeasure = new Set<string>(),
   pinned = false,
+  required = false,
 ) {
   if (!filters.length) return [];
 
@@ -107,6 +131,7 @@ export function getMeasureFilterForDimension(
       label: measure.displayName || measure.expression || filter.measure,
       filter,
       pinned,
+      required,
     });
   });
 
@@ -120,6 +145,7 @@ export const getAllMeasureFilterItems = (
     measureFilterItems: Array<MeasureFilterItem>,
     measureIdMap: Map<string, MetricsViewSpecMeasure>,
     pinnedFilters: Set<string> = new Set(),
+    requiredFilters: Set<string> = new Set(),
   ) => {
     const allMeasureFilterItems = [...measureFilterItems];
 
@@ -131,13 +157,18 @@ export const getAllMeasureFilterItems = (
         (mfi) => mfi.name !== dashData.dashboard.temporaryFilterName,
       )
     ) {
+      const required = requiredFilters.has(
+        dashData.dashboard.temporaryFilterName,
+      );
       allMeasureFilterItems.push({
         dimensionName: "",
         name: dashData.dashboard.temporaryFilterName,
         label: getMeasureDisplayName(
           measureIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
-        pinned: pinnedFilters.has(dashData.dashboard.temporaryFilterName),
+        pinned:
+          required || pinnedFilters.has(dashData.dashboard.temporaryFilterName),
+        required,
       });
     }
 

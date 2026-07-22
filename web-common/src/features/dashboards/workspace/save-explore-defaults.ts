@@ -17,11 +17,11 @@ export type ExploreDefaults = {
   required_filters?: string[];
   measures?: string[];
   dimensions?: string[];
+  time_range?: string;
+  time_grain?: string;
+  comparison_time_range?: string;
   comparison_mode?: ComparisonModeValue;
   comparison_dimension?: string;
-  time_range?: string;
-  // TODO: comparison time range
-  time_grain?: string;
 };
 
 export async function saveExploreDefaults(
@@ -49,6 +49,8 @@ export async function saveExploreDefaults(
   // Comparison
   if (exploreState.showTimeComparison) {
     defaults.comparison_mode = "time";
+    defaults.comparison_time_range =
+      exploreState.selectedComparisonTimeRange?.name || "rill-PP";
   } else if (exploreState.selectedComparisonDimension) {
     defaults.comparison_mode = "dimension";
     defaults.comparison_dimension = exploreState.selectedComparisonDimension;

@@ -33,6 +33,7 @@ type ExploreYAML struct {
 		Measures            *FieldSelectorYAML `yaml:"measures"`
 		TimeRange           string             `yaml:"time_range"`
 		TimeGrain           string             `yaml:"time_grain"`
+		ComparisonTimeRange string             `yaml:"comparison_time_range"`
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
 		Filter              string             `yaml:"filter"`
@@ -253,6 +254,15 @@ func (p *Parser) parseExplore(node *Node) error {
 			tg = &tmp.Defaults.TimeGrain
 		}
 
+		var ctr *string
+		if tmp.Defaults.ComparisonTimeRange != "" {
+			ctr = &tmp.Defaults.ComparisonTimeRange
+			// Only set comparison mode to time if not directly set
+			if tmp.Defaults.ComparisonMode == "" {
+				mode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME
+			}
+		}
+
 		var compareDim *string
 		if tmp.Defaults.ComparisonDimension != "" {
 			compareDim = &tmp.Defaults.ComparisonDimension
@@ -275,6 +285,7 @@ func (p *Parser) parseExplore(node *Node) error {
 			MeasuresSelector:    presetMeasuresSelector,
 			TimeRange:           tr,
 			TimeGrain:           tg,
+			CompareTimeRange:    ctr,
 			ComparisonMode:      mode,
 			ComparisonDimension: compareDim,
 			Where:               filter,

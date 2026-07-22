@@ -544,6 +544,7 @@ export class FilterManager {
     merged.hasFilters =
       merged.hasClearableFilters ||
       pinnedFilters.size > 0 ||
+      requiredFilters.size > 0 ||
       temporaryFilterKeys.size > 0;
 
     // Sorting to ensure that pills don't jump around unnecessarily in the UI

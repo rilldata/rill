@@ -152,6 +152,7 @@
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);
 
+  // Create a readonly yaml explore state if not passed an instance.
   $: resolvedYamlOnlyState = yamlOnlyState ?? new YAMLOnlyExploreState(false);
   $: if (exploreSpec) {
     resolvedYamlOnlyState.sync(exploreSpec);
@@ -166,29 +167,31 @@
   $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
-  $: pinnedFilters = new Set([
-    ...resolvedYamlOnlyState.pinnedFilters.value,
-    ...resolvedYamlOnlyState.requiredFilters.value,
-  ]);
+  $: pinnedFilters = new Set(resolvedYamlOnlyState.pinnedFilters.value);
+  $: requiredFilters = new Set(resolvedYamlOnlyState.requiredFilters.value);
 
   $: currentDimensionFilters = $getDimensionFilterItems(
     dimensionIdMap,
     pinnedFilters,
+    requiredFilters,
   );
   $: allDimensionFilters = $getAllDimensionFilterItems(
     currentDimensionFilters,
     dimensionIdMap,
     pinnedFilters,
+    requiredFilters,
   );
 
   $: currentMeasureFilters = $getMeasureFilterItems(
     measureIdMap,
     pinnedFilters,
+    requiredFilters,
   );
   $: allMeasureFilters = $getAllMeasureFilterItems(
     currentMeasureFilters,
     measureIdMap,
     pinnedFilters,
+    requiredFilters,
   );
 
   $: missingRequiredFilters = getMissingRequiredFilters(
