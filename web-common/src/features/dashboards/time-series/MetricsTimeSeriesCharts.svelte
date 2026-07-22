@@ -64,6 +64,7 @@
   const {
     metricsViewName,
     dashboardStore,
+    rollupCoverage,
     selectors: {
       measures: { allMeasures, visibleMeasures, getMeasureByName },
       dimensionFilters: { includedDimensionValues },
@@ -406,6 +407,7 @@
           {comparisonTimeStart}
           {comparisonTimeEnd}
           ready={chartReady}
+          {rollupCoverage}
         />
 
         {#if activeTimeGrain}
@@ -423,6 +425,7 @@
               timeGranularity={activeTimeGrain}
               timeZone={selectedTimezone}
               ready={chartReady}
+              {rollupCoverage}
               {chartScrubInterval}
               {comparisonDimension}
               dimensionValues={chartDimensionValues}

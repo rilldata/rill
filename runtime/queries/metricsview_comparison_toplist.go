@@ -172,7 +172,8 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	q.Result = &runtimev1.MetricsViewComparisonResponse{
-		Rows: rows,
+		Rows:         rows,
+		ServingTable: rollupServingTable(e, mv.ValidSpec),
 	}
 
 	return nil

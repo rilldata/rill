@@ -54,6 +54,7 @@
     },
     exploreName,
     dashboardStore,
+    rollupCoverage,
   } = StateManagers;
 
   const client = useRuntimeClient();
@@ -116,6 +117,7 @@
               {dimension}
               {parentElement}
               {timeControlsReady}
+              {rollupCoverage}
               selectedValues={selectedDimensionValues(
                 client,
                 [metricsViewName],

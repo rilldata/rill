@@ -13,9 +13,11 @@
   import {
     createQueryServiceMetricsViewAggregation,
     V1Operation,
+    V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
+  import { readable } from "svelte/store";
   import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import {
     getComparisonRequestMeasures,
@@ -23,6 +25,15 @@
   } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
+  import {
+    computeCoverageWarning,
+    requestedStartMs,
+  } from "../rollup-coverage/rollup-coverage";
+  import {
+    registerWidgetServingTable,
+    servingTableOf,
+    type RollupCoverageStore,
+  } from "../rollup-coverage/rollup-coverage-store";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
@@ -66,6 +77,9 @@
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement | undefined = undefined;
+  // When set, the leaderboard reports which table served its query and warns when it
+  // shows less history than the rest of the dashboard (see rollup-coverage.ts).
+  export let rollupCoverage: RollupCoverageStore | undefined = undefined;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
   export let visible = false;
@@ -93,6 +107,15 @@
   // When set, the dimension column becomes resizable and the new width is
   // reported through this callback.
   export let onDimensionColumnResize: ((width: number) => void) | null = null;
+
+  const updateServingTable = rollupCoverage
+    ? registerWidgetServingTable(rollupCoverage)
+    : undefined;
+  const coverageStore = rollupCoverage?.coverage ?? readable(undefined);
+  const tablesInUseStore =
+    rollupCoverage?.tablesInUse ?? readable(new Set<string>());
+  const rollupGrainsStore =
+    rollupCoverage?.rollupGrains ?? readable(new Map<string, V1TimeGrain>());
 
   onMount(() => {
     if (!parentElement) return;
@@ -215,6 +238,19 @@
 
   $: ({ data: sortedData, isFetching, isLoading, isPending } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
+
+  $: servingTable = servingTableOf(sortedData);
+  $: updateServingTable?.(`leaderboard:${dimensionName}`, servingTable);
+  $: coverageWarning =
+    servingTable !== undefined
+      ? computeCoverageWarning(
+          servingTable,
+          $coverageStore,
+          $tablesInUseStore,
+          $rollupGrainsStore,
+          requestedStartMs(timeRange.start, comparisonTimeRange?.start),
+        )
+      : undefined;
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
@@ -381,6 +417,7 @@
       {dimensionColumnWidth}
       {onDimensionColumnResize}
       {tableHeight}
+      {coverageWarning}
     />
 
     <tbody>

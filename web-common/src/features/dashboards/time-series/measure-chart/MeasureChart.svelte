@@ -15,6 +15,17 @@
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { DateTime, Interval } from "luxon";
   import { onDestroy, onMount } from "svelte";
+  import { readable } from "svelte/store";
+  import {
+    computeCoverageWarning,
+    requestedStartMs,
+  } from "../../rollup-coverage/rollup-coverage";
+  import {
+    registerWidgetServingTable,
+    servingTableOf,
+    type RollupCoverageStore,
+  } from "../../rollup-coverage/rollup-coverage-store";
+  import RollupCoverageWarning from "../../rollup-coverage/RollupCoverageWarning.svelte";
   import { createAnnotationsQuery } from "../annotations-selectors";
   import { adjustTimeInterval, localToTimeZoneOffset } from "../utils";
   import { resolveEffectiveChartType, usesVegaRenderer } from "./chart-series";
@@ -67,8 +78,23 @@
   // Chart height when expanded in the Time Dimension Detail view. Driven by the
   // resizable divider between the timeseries and the detail table.
   export let tddChartHeight: number = 245;
+  // When set, the chart reports which table served its queries and warns when it
+  // shows less history than the rest of the dashboard (see rollup-coverage.ts).
+  export let rollupCoverage: RollupCoverageStore | undefined = undefined;
 
   const client = useRuntimeClient();
+
+  const updatePrimaryServingTable = rollupCoverage
+    ? registerWidgetServingTable(rollupCoverage)
+    : undefined;
+  const updateComparisonServingTable = rollupCoverage
+    ? registerWidgetServingTable(rollupCoverage)
+    : undefined;
+  const coverageStore = rollupCoverage?.coverage ?? readable(undefined);
+  const tablesInUseStore =
+    rollupCoverage?.tablesInUse ?? readable(new Set<string>());
+  const rollupGrainsStore =
+    rollupCoverage?.rollupGrains ?? readable(new Map<string, V1TimeGrain>());
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
 
   let container: HTMLDivElement;
@@ -161,6 +187,38 @@
       },
     },
   );
+
+  $: chartServingTable = servingTableOf($timeSeriesQuery.data);
+  $: comparisonChartServingTable =
+    showComparison && comparisonTimeStart
+      ? servingTableOf($comparisonTimeSeriesQuery.data)
+      : undefined;
+  $: updatePrimaryServingTable?.(`chart:${measureName}`, chartServingTable);
+  $: updateComparisonServingTable?.(
+    `chart-comparison:${measureName}`,
+    comparisonChartServingTable,
+  );
+  // The primary and comparison ranges are queried separately here, so each query's
+  // serving table is checked against its own range; the first warning wins.
+  $: coverageWarning =
+    (chartServingTable !== undefined
+      ? computeCoverageWarning(
+          chartServingTable,
+          $coverageStore,
+          $tablesInUseStore,
+          $rollupGrainsStore,
+          requestedStartMs(timeStart),
+        )
+      : undefined) ??
+    (comparisonChartServingTable !== undefined
+      ? computeCoverageWarning(
+          comparisonChartServingTable,
+          $coverageStore,
+          $tablesInUseStore,
+          $rollupGrainsStore,
+          requestedStartMs(comparisonTimeStart),
+        )
+      : undefined);
 
   // Transform query results
   $: comparisonData =
@@ -318,6 +376,11 @@
 </script>
 
 <div bind:this={container} class="size-full relative">
+  {#if coverageWarning}
+    <div class="absolute top-1 right-1 z-10">
+      <RollupCoverageWarning warning={coverageWarning} />
+    </div>
+  {/if}
   {#if !$visible || (isFetching && data.length === 0)}
     <div class="flex items-center justify-center" style:height="{height}px">
       <Spinner status={EntityStatus.Running} size="24px" />

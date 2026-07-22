@@ -485,6 +485,9 @@ message MetricsViewAggregationResponse {
   StructType schema = 1;
   // Not optional, not null
   repeated google.protobuf.Struct data = 2;
+  // Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+  // Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
+  string serving_table = 4;
   // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   Trace trace = 3;
 }
@@ -638,6 +641,9 @@ message MetricsViewComparisonRequest {
 message MetricsViewComparisonResponse {
   // Not optional, not null
   repeated MetricsViewComparisonRow rows = 1;
+  // Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+  // Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
+  string serving_table = 3;
   // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   Trace trace = 2;
 }
@@ -747,6 +753,9 @@ message MetricsViewTimeSeriesResponse {
   repeated MetricsViewColumn meta = 1;
   // Not optional, not null
   repeated TimeSeriesValue data = 2;
+  // Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+  // Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
+  string serving_table = 4;
   // Traces of spans captured during request execution. Only populated if trace was set to true in the request.
   Trace trace = 3;
 }
@@ -861,6 +870,9 @@ message MetricsViewTimeRangeRequest {
 message MetricsViewTimeRangeResponse {
   // Not optional, not null
   TimeRangeSummary time_range_summary = 1;
+  // Time range summaries for the metrics view's rollups, keyed by rollup table name.
+  // Only populated when the metrics view has rollups.
+  map<string, TimeRangeSummary> rollup_time_ranges = 4;
   // The metrics view's max_query_time_range property resolved into milliseconds against the current time.
   // Zero if the metrics view does not configure max_query_time_range.
   int64 max_query_time_range_millis = 3;
@@ -931,6 +943,9 @@ message MetricsViewTimeRangesRequest {
 message MetricsViewTimeRangesResponse {
   // The full time range summary for the requested time dimension.
   TimeRangeSummary full_time_range = 1;
+  // Time range summaries for the metrics view's rollups, keyed by rollup table name.
+  // Only populated when the metrics view has rollups.
+  map<string, TimeRangeSummary> rollup_time_ranges = 6;
   // The resolved time ranges for the requested rilltime expressions.
   repeated ResolvedTimeRange resolved_time_ranges = 3;
   // The same values as resolved_time_ranges for backwards compatibility.

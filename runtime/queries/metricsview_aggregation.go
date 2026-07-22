@@ -127,8 +127,9 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	q.Result = &runtimev1.MetricsViewAggregationResponse{
-		Schema: res.Schema,
-		Data:   data,
+		Schema:       res.Schema,
+		Data:         data,
+		ServingTable: rollupServingTable(e, mv.ValidSpec),
 	}
 	return nil
 }
@@ -285,6 +286,15 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 
 	return tsRes, nil
+}
+
+// rollupServingTable returns the rollup table the executor's last query was routed to.
+// Returns an empty string when the query was served from the metrics view's base table.
+func rollupServingTable(e *executor.Executor, mv *runtimev1.MetricsViewSpec) string {
+	if t := e.LatestQueryTable(); t != "" && t != mv.Table {
+		return t
+	}
+	return ""
 }
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
