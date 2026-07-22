@@ -3,7 +3,6 @@ package ai
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -56,9 +55,11 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	if args.Path == "" || args.Prompt == "" {
 		return nil, fmt.Errorf("invalid input: path and prompt are required")
 	}
-	if !strings.HasPrefix(args.Path, "/") {
-		args.Path = "/" + args.Path
+	path, err := normalizeFilePath(args.Path)
+	if err != nil {
+		return nil, err
 	}
+	args.Path = path
 
 	// Prepare the system prompts
 	generalInstructions, err := instructions.Load("development.md", instructions.Options{})
