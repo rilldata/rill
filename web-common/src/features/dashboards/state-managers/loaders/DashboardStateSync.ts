@@ -20,6 +20,7 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -185,6 +186,7 @@ export class DashboardStateSync {
       );
     }
 
+    // log("INIT", redirectUrl);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -294,6 +296,7 @@ export class DashboardStateSync {
       this.updating = false;
     }
 
+    // log("URL", redirectUrl);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -349,6 +352,7 @@ export class DashboardStateSync {
         );
       }
 
+      // log("GOTO", newUrl);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -361,4 +365,13 @@ export class DashboardStateSync {
       this.updating = false;
     }
   }
+}
+
+function log(label: string, toUrl: URL) {
+  const fromUrlSearch = get(page).url.search;
+  const toUrlSearch = toUrl.search;
+  const equal = fromUrlSearch === toUrlSearch;
+  console.log(
+    `[${label}] ${fromUrlSearch} =${equal ? "X" : "="}> ${toUrlSearch}`,
+  );
 }

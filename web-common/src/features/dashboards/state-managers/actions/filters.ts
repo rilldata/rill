@@ -1,5 +1,6 @@
 import type { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function clearAllFilters({ dashboard }: DashboardMutables) {
   const hasFilters =
@@ -23,6 +24,13 @@ export function setTemporaryFilterName(
   dashboard.temporaryFilterName = name;
 }
 
+export function setFilter(
+  { dashboard }: DashboardMutables,
+  expr: V1Expression,
+) {
+  dashboard.whereFilter = expr;
+}
+
 export const filterActions = {
   /**
    * Clears all filters and resets related fields
@@ -30,4 +38,6 @@ export const filterActions = {
   clearAllFilters,
 
   setTemporaryFilterName,
+
+  setFilter,
 };
