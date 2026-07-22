@@ -17,6 +17,7 @@
     filterableTypes,
     filterResources,
     getStatusPriority,
+    refreshableTypes,
     statusFilters,
   } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import ActionsCell from "@rilldata/web-common/features/projects/status/ActionsCell.svelte";
@@ -194,7 +195,7 @@
           resourceName: row.original.meta?.name?.name ?? "",
           canRefresh:
             !isRowReconciling &&
-            filterableTypes.includes(
+            refreshableTypes.includes(
               row.original.meta?.name?.kind as ResourceKind,
             ),
           resource: row.original,

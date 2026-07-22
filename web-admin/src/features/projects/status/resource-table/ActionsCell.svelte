@@ -5,6 +5,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { refreshableTypes } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import {
     RefreshCcwIcon,
@@ -39,6 +40,7 @@
   export let onDropdownOpenChange: (isOpen: boolean) => void;
 
   $: isModel = resourceKind === ResourceKind.Model;
+  $: canRefresh = refreshableTypes.includes(resourceKind as ResourceKind);
 
   $: actions = isModel ? getAvailableModelActions(resource) : [];
   $: isPartitioned = actions.includes("viewPartitions");
@@ -91,9 +93,9 @@
       </DropdownMenu.Item>
     {/if}
 
-    <DropdownMenu.Separator />
-
     {#if isModel}
+      <DropdownMenu.Separator />
+
       <!-- Refresh Errored Partitions (models with errors) -->
       {#if hasErroredPartitions}
         <Tooltip distance={8} suppress={!refreshDisabled}>
@@ -150,7 +152,9 @@
           >
         </Tooltip>
       {/if}
-    {:else}
+    {:else if canRefresh}
+      <DropdownMenu.Separator />
+
       <!-- Other resources only support a standard refresh. -->
       <Tooltip distance={8} suppress={!refreshDisabled}>
         <DropdownMenu.Item
