@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -14,6 +15,61 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
+
+func TestListResourcesPagination(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	files := make(map[string]string)
+	for i := range 101 {
+		files[fmt.Sprintf("theme-%03d.yaml", i)] = "type: theme\n"
+	}
+	testruntime.PutFiles(t, rt, instanceID, files)
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	want, err := ctrl.List(context.Background(), "", "", false)
+	require.NoError(t, err)
+
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	unpaginated, err := srv.ListResources(testCtx(), &runtimev1.ListResourcesRequest{
+		InstanceId:         instanceID,
+		SkipSecurityChecks: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, unpaginated.Resources, len(want))
+	require.Empty(t, unpaginated.NextPageToken)
+
+	var got []*runtimev1.Resource
+	var pageToken string
+	for {
+		res, err := srv.ListResources(testCtx(), &runtimev1.ListResourcesRequest{
+			InstanceId:         instanceID,
+			SkipSecurityChecks: true,
+			PageSize:           100,
+			PageToken:          pageToken,
+		})
+		require.NoError(t, err)
+		require.LessOrEqual(t, len(res.Resources), 100)
+		if pageToken == "" {
+			require.Len(t, res.Resources, 100)
+			require.NotEmpty(t, res.NextPageToken)
+		}
+		got = append(got, res.Resources...)
+		if res.NextPageToken == "" {
+			break
+		}
+		pageToken = res.NextPageToken
+	}
+
+	require.Len(t, got, len(want))
+	for i := 1; i < len(got); i++ {
+		previous := got[i-1].Meta.Name
+		current := got[i].Meta.Name
+		require.True(t, previous.Kind < current.Kind || (previous.Kind == current.Kind && previous.Name < current.Name))
+	}
+}
 
 func TestCreateTriggerAll(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)

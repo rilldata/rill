@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/proto"
 )
 
 // Retry policy for requests to the runtime.
@@ -68,6 +69,27 @@ func New(runtimeHost, bearerToken string) (*Client, error) {
 		RuntimeServiceClient: runtimev1.NewRuntimeServiceClient(conn),
 		conn:                 conn,
 	}, nil
+}
+
+// ListResources retrieves all pages of resources.
+func (c *Client) ListResources(ctx context.Context, req *runtimev1.ListResourcesRequest, opts ...grpc.CallOption) (*runtimev1.ListResourcesResponse, error) {
+	pageReq := proto.Clone(req).(*runtimev1.ListResourcesRequest)
+	if pageReq.PageSize == 0 {
+		pageReq.PageSize = 100
+	}
+
+	res := &runtimev1.ListResourcesResponse{}
+	for {
+		page, err := c.RuntimeServiceClient.ListResources(ctx, pageReq, opts...)
+		if err != nil {
+			return nil, err
+		}
+		res.Resources = append(res.Resources, page.Resources...)
+		if page.NextPageToken == "" {
+			return res, nil
+		}
+		pageReq.PageToken = page.NextPageToken
+	}
 }
 
 // Close closes the client connection.
