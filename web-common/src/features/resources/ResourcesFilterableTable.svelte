@@ -194,8 +194,9 @@
           resourceName: row.original.meta?.name?.name ?? "",
           canRefresh:
             !isRowReconciling &&
-            (row.original.meta?.name?.kind === ResourceKind.Model ||
-              row.original.meta?.name?.kind === ResourceKind.Source),
+            filterableTypes.includes(
+              row.original.meta?.name?.kind as ResourceKind,
+            ),
           resource: row.original,
           onRefresh: onRefetch,
           onDescribe: handleDescribe,

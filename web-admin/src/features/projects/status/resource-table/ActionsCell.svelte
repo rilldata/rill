@@ -23,7 +23,7 @@
   export let onClickRefreshDialog: (
     resourceName: string,
     resourceKind: string,
-    refreshType: "full" | "incremental",
+    refreshType: "refresh" | "full" | "incremental",
   ) => void;
   export let onClickRefreshErroredPartitions: (resourceName: string) => void;
   export let onClickViewSpec: (
@@ -39,8 +39,6 @@
   export let onDropdownOpenChange: (isOpen: boolean) => void;
 
   $: isModel = resourceKind === ResourceKind.Model;
-  $: isSource = resourceKind === ResourceKind.Source;
-  $: canRefresh = isModel || isSource;
 
   $: actions = isModel ? getAvailableModelActions(resource) : [];
   $: isPartitioned = actions.includes("viewPartitions");
@@ -93,10 +91,9 @@
       </DropdownMenu.Item>
     {/if}
 
-    <!-- Refresh actions (models + sources) -->
-    {#if canRefresh}
-      <DropdownMenu.Separator />
+    <DropdownMenu.Separator />
 
+    {#if isModel}
       <!-- Refresh Errored Partitions (models with errors) -->
       {#if hasErroredPartitions}
         <Tooltip distance={8} suppress={!refreshDisabled}>
@@ -153,6 +150,22 @@
           >
         </Tooltip>
       {/if}
+    {:else}
+      <!-- Other resources only support a standard refresh. -->
+      <Tooltip distance={8} suppress={!refreshDisabled}>
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          disabled={refreshDisabled}
+          onclick={() =>
+            onClickRefreshDialog(resourceName, resourceKind, "refresh")}
+        >
+          <div class="flex items-center">
+            <RefreshCcwIcon size="12px" />
+            <span class="ml-2">{m.status_action_refresh()}</span>
+          </div>
+        </DropdownMenu.Item>
+        <TooltipContent slot="tooltip-content">{refreshTooltip}</TooltipContent>
+      </Tooltip>
     {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -35,14 +35,11 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     ).toBeVisible();
   });
 
-  test("should show Full Refresh option for sources", async ({ adminPage }) => {
-    // Wait for the source row to be visible before interacting
-    // Look for bids_data_raw source which should be in the openrtb test project
+  test("should show only Refresh for sources", async ({ adminPage }) => {
     await expect(adminPage.getByText("bids_data_raw")).toBeVisible({
       timeout: 60_000,
     });
 
-    // Find a source row and click its actions menu
     const sourceRow = adminPage.locator(".row").filter({
       hasText: "bids_data_raw",
     });
@@ -50,12 +47,52 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
       .getByRole("button", { name: "Open resource actions" })
       .click();
 
-    // Verify "Full Refresh" is visible
+    await expect(
+      adminPage.getByRole("menuitem", { name: "Refresh", exact: true }),
+    ).toBeVisible();
     await expect(
       adminPage.getByRole("menuitem", { name: "Full Refresh" }),
-    ).toBeVisible();
+    ).not.toBeVisible();
+    await expect(
+      adminPage.getByRole("menuitem", { name: "Incremental Refresh" }),
+    ).not.toBeVisible();
 
-    // Incremental Refresh should NOT be visible for sources
+    await adminPage
+      .getByRole("menuitem", { name: "Refresh", exact: true })
+      .click();
+    await expect(adminPage.getByRole("alertdialog")).toBeVisible();
+    await expect(
+      adminPage.getByRole("heading", { name: /Refresh bids_data_raw/ }),
+    ).toBeVisible();
+    await expect(
+      adminPage.getByText(
+        "Refreshing this resource will update all dependent resources.",
+      ),
+    ).toBeVisible();
+    await expect(
+      adminPage.getByText(/Warning.*re-ingest ALL data/),
+    ).toHaveCount(0);
+    await adminPage.getByRole("button", { name: "Cancel" }).click();
+  });
+
+  test("should show only Refresh for metrics views", async ({ adminPage }) => {
+    await expect(adminPage.getByText("auction_metrics")).toBeVisible({
+      timeout: 60_000,
+    });
+
+    const metricsViewRow = adminPage.locator(".row").filter({
+      hasText: "auction_metrics",
+    });
+    await metricsViewRow
+      .getByRole("button", { name: "Open resource actions" })
+      .click();
+
+    await expect(
+      adminPage.getByRole("menuitem", { name: "Refresh", exact: true }),
+    ).toBeVisible();
+    await expect(
+      adminPage.getByRole("menuitem", { name: "Full Refresh" }),
+    ).not.toBeVisible();
     await expect(
       adminPage.getByRole("menuitem", { name: "Incremental Refresh" }),
     ).not.toBeVisible();
