@@ -2,6 +2,7 @@
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { detectOverflow } from "@rilldata/web-common/lib/actions/detect-overflow";
   import { Star } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     name,
@@ -71,8 +72,8 @@
       role="button"
       tabindex="0"
       aria-label={isFavourite
-        ? `Remove ${name} from favourites`
-        : `Add ${name} to favourites`}
+        ? m.dashboard_tag_remove_favourite({ name })
+        : m.dashboard_tag_add_favourite({ name })}
       aria-pressed={isFavourite}
       class="flex cursor-pointer"
       onclick={handleFavouriteToggle}

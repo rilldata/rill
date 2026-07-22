@@ -1,5 +1,6 @@
 import { SvelteLocalStorage } from "@rilldata/web-common/lib/store-utils/svelte-local-storage.svelte.ts";
 import type { SortOption } from "@rilldata/web-common/components/table-toolbar";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export function getDashboardFavouritesStore(org: string, project: string) {
   const key = `rill:app:${org}:${project}:dashboard:favourites`;
@@ -33,7 +34,9 @@ export function sortByFavourites<T>(
 export const DashboardTableSortOptions: SortOption[] = [
   {
     value: "last_used_desc",
-    label: "Last Used",
+    get label() {
+      return m.dashboard_sort_last_used();
+    },
     sort: {
       id: "lastUsed",
       desc: true,
@@ -41,7 +44,9 @@ export const DashboardTableSortOptions: SortOption[] = [
   },
   {
     value: "name_asc",
-    label: "Name",
+    get label() {
+      return m.dashboard_sort_name();
+    },
     sort: {
       id: "name",
       desc: false,

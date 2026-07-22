@@ -3,6 +3,7 @@
   import type { SortOption } from "./types";
   import { type RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   type SortSize = "sm" | "lg";
 
@@ -21,8 +22,11 @@
   let open = $state(false);
 
   let sortLabel = $derived(
-    "Sort by " +
-      (sortOptions.find((o) => o.value === sortStore.value)?.label ?? "None"),
+    m.common_sort_by({
+      label:
+        sortOptions.find((o) => o.value === sortStore.value)?.label ??
+        m.common_none(),
+    }),
   );
 
   const ClassForSize: Record<SortSize, string> = {

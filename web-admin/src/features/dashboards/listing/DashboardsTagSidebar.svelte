@@ -9,6 +9,7 @@
   } from "./dashboard-favourites.ts";
   import { page } from "$app/state";
   import { flip } from "svelte/animate";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     resources,
@@ -43,10 +44,12 @@
 </script>
 
 <div class="tags-scroll">
-  <h3 class="column-header">Tags</h3>
+  <h3 class="column-header">{m.dashboard_tags()}</h3>
 
   {#if sortedTags.length === 0}
-    <p class="text-fg-secondary my-1 px-2 text-xs">No matching tags</p>
+    <p class="text-fg-secondary my-1 px-2 text-xs">
+      {m.dashboard_no_matching_tags()}
+    </p>
   {:else}
     {#each sortedTags as tag (tag.name)}
       <div animate:flip={{ duration: 200 }}>
