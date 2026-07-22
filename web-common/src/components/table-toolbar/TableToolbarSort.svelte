@@ -2,6 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { SortOption } from "./types";
   import { type RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   type SortSize = "sm" | "lg";
 
@@ -40,9 +41,12 @@
     class="flex flex-row items-center gap-x-1.5 text-sm font-medium text-fg-primary hover:bg-surface-hover cursor-pointer {sizeClass} {outlineClass}"
     aria-label={sortLabel}
   >
-    <span>{sortLabel}</span>
+    {sortLabel}
+    <div class="caret transition-transform">
+      <CaretDownIcon size="12px" className="fill-fg-secondary" />
+    </div>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start">
+  <DropdownMenu.Content align="start" sameWidth>
     {#each sortOptions as option (option.value)}
       <DropdownMenu.CheckboxItem
         closeOnSelect
@@ -54,3 +58,13 @@
     {/each}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<style lang="postcss">
+  .caret {
+    @apply transition-transform text-fg-muted;
+  }
+
+  .caret:global([data-state="open"]) {
+    @apply transform -rotate-180 transition-transform;
+  }
+</style>
