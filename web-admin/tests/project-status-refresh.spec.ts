@@ -35,11 +35,16 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     ).toBeVisible();
   });
 
-  test("should show only Refresh for sources", async ({ adminPage }) => {
+  test("should show Full Refresh option for sources", async ({ adminPage }) => {
+    // Wait for the source row to be visible before interacting
+    // Look for bids_data_raw source which should be in the openrtb test project.
+    // NOTE: `type: source` files are parsed into models (defined_as_source), so
+    // this row is a model and shows the full/incremental refresh actions.
     await expect(adminPage.getByText("bids_data_raw")).toBeVisible({
       timeout: 60_000,
     });
 
+    // Find a source row and click its actions menu
     const sourceRow = adminPage.locator(".row").filter({
       hasText: "bids_data_raw",
     });
@@ -47,32 +52,15 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
       .getByRole("button", { name: "Open resource actions" })
       .click();
 
-    await expect(
-      adminPage.getByRole("menuitem", { name: "Refresh", exact: true }),
-    ).toBeVisible();
+    // Verify "Full Refresh" is visible
     await expect(
       adminPage.getByRole("menuitem", { name: "Full Refresh" }),
-    ).not.toBeVisible();
+    ).toBeVisible();
+
+    // Incremental Refresh should NOT be visible for sources
     await expect(
       adminPage.getByRole("menuitem", { name: "Incremental Refresh" }),
     ).not.toBeVisible();
-
-    await adminPage
-      .getByRole("menuitem", { name: "Refresh", exact: true })
-      .click();
-    await expect(adminPage.getByRole("alertdialog")).toBeVisible();
-    await expect(
-      adminPage.getByRole("heading", { name: /Refresh bids_data_raw/ }),
-    ).toBeVisible();
-    await expect(
-      adminPage.getByText(
-        "Refreshing this resource will update all dependent resources.",
-      ),
-    ).toBeVisible();
-    await expect(
-      adminPage.getByText(/Warning.*re-ingest ALL data/),
-    ).toHaveCount(0);
-    await adminPage.getByRole("button", { name: "Cancel" }).click();
   });
 
   test("should show only Refresh for metrics views", async ({ adminPage }) => {
@@ -96,6 +84,23 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     await expect(
       adminPage.getByRole("menuitem", { name: "Incremental Refresh" }),
     ).not.toBeVisible();
+
+    await adminPage
+      .getByRole("menuitem", { name: "Refresh", exact: true })
+      .click();
+    await expect(adminPage.getByRole("alertdialog")).toBeVisible();
+    await expect(
+      adminPage.getByRole("heading", { name: /Refresh auction_metrics/ }),
+    ).toBeVisible();
+    await expect(
+      adminPage.getByText(
+        "Refreshing this resource will update all dependent resources.",
+      ),
+    ).toBeVisible();
+    await expect(
+      adminPage.getByText(/Warning.*re-ingest ALL data/),
+    ).toHaveCount(0);
+    await adminPage.getByRole("button", { name: "Cancel" }).click();
   });
 
   test("should not show Incremental Refresh for non-incremental models", async ({
