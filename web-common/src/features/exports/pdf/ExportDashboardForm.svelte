@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -13,8 +14,13 @@
   // in the future.
   export let runExport: (opts: PdfExportRunOptions) => Promise<void>;
   export let onComplete: () => void = () => {};
+  // Shown only when the dashboard has tab groups: whether to export every tab
+  // or only each group's active tab.
+  export let showTabOptions = false;
 
   let includeFilters = true;
+  // Radio binds a plain string; "all" or "active".
+  let tabMode: string = "all";
 
   let exporting = false;
   let progressLabel = m.export_pdf_button();
@@ -34,6 +40,7 @@
     try {
       await runExport({
         includeFilters,
+        allTabs: tabMode === "all",
         onProgress: ({ phase }) => {
           progressLabel = PROGRESS_COPY[phase];
         },
@@ -65,6 +72,17 @@
     bind:checked={includeFilters}
     label={m.export_pdf_include_filters()}
   />
+
+  {#if showTabOptions}
+    <Radio
+      name="pdf-tab-export"
+      bind:value={tabMode}
+      options={[
+        { value: "all", label: m.export_pdf_tabs_all() },
+        { value: "active", label: m.export_pdf_tabs_active() },
+      ]}
+    />
+  {/if}
 
   <Button
     type="primary"
