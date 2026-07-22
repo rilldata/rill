@@ -2,9 +2,16 @@ package queries
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/array"
+	"github.com/apache/arrow-go/v18/arrow/memory"
+	"github.com/apache/arrow-go/v18/parquet"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
@@ -453,4 +460,65 @@ func Test_writeXLSX_quotes(t *testing.T) {
 	v, err := file.GetCellValue("Sheet1", "A2")
 	require.NoError(t, err)
 	require.Equal(t, "a\"", v)
+}
+
+func Test_writeParquet_timestamp(t *testing.T) {
+	// Mirrors the meta produced by MetricsViewTimeSeries.Export:
+	// a timestamp column with an RFC3339 string value, followed by a measure.
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "ts",
+			Type: runtimev1.Type_CODE_TIMESTAMP.String(),
+		},
+		{
+			Name: "measure",
+			Type: runtimev1.Type_CODE_FLOAT64.String(),
+		},
+	}
+	ts := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+	data := []*structpb.Struct{
+		{
+			Fields: map[string]*structpb.Value{
+				"ts":      structpb.NewStringValue(ts.Format(time.RFC3339Nano)),
+				"measure": structpb.NewNumberValue(2.5),
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := WriteParquet(meta, data, &buf)
+	require.NoError(t, err)
+
+	tbl, err := pqarrow.ReadTable(context.Background(), bytes.NewReader(buf.Bytes()), parquet.NewReaderProperties(memory.DefaultAllocator), pqarrow.ArrowReadProperties{}, memory.DefaultAllocator)
+	require.NoError(t, err)
+	defer tbl.Release()
+
+	require.EqualValues(t, 1, tbl.NumRows())
+	tsCol, ok := tbl.Column(0).Data().Chunk(0).(*array.Timestamp)
+	require.True(t, ok)
+	require.Equal(t, ts, tsCol.Value(0).ToTime(arrow.Microsecond))
+	measureCol, ok := tbl.Column(1).Data().Chunk(0).(*array.Float64)
+	require.True(t, ok)
+	require.Equal(t, 2.5, measureCol.Value(0))
+}
+
+func Test_writeParquet_untypedColumn(t *testing.T) {
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "col",
+		},
+	}
+	data := []*structpb.Struct{
+		{
+			Fields: map[string]*structpb.Value{
+				"col": structpb.NewStringValue("a"),
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := WriteParquet(meta, data, &buf)
+	require.ErrorContains(t, err, "unsupported type")
 }
