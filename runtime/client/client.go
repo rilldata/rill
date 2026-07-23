@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -74,22 +75,25 @@ func New(runtimeHost, bearerToken string) (*Client, error) {
 // ListResources retrieves all pages of resources.
 func (c *Client) ListResources(ctx context.Context, req *runtimev1.ListResourcesRequest, opts ...grpc.CallOption) (*runtimev1.ListResourcesResponse, error) {
 	pageReq := proto.Clone(req).(*runtimev1.ListResourcesRequest)
-	if pageReq.PageSize == 0 {
-		pageReq.PageSize = 100
+	pageSize := pageReq.PageSize
+	if pageSize == 0 {
+		pageSize = 100
 	}
 
-	res := &runtimev1.ListResourcesResponse{}
-	for {
+	resources, err := pagination.CollectAll(ctx, func(ctx context.Context, pageSize uint32, token string) ([]*runtimev1.Resource, string, error) {
+		pageReq.PageSize = pageSize
+		pageReq.PageToken = token
 		page, err := c.RuntimeServiceClient.ListResources(ctx, pageReq, opts...)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		res.Resources = append(res.Resources, page.Resources...)
-		if page.NextPageToken == "" {
-			return res, nil
-		}
-		pageReq.PageToken = page.NextPageToken
+		return page.Resources, page.NextPageToken, nil
+	}, pageSize)
+	if err != nil {
+		return nil, err
 	}
+
+	return &runtimev1.ListResourcesResponse{Resources: resources}, nil
 }
 
 // Close closes the client connection.

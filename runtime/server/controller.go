@@ -97,8 +97,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		n := rs[i].Meta.Name
 		return n.Kind > afterKind || (n.Kind == afterKind && n.Name > afterName)
 	})
-	pageSize := min(int(req.PageSize), 10000)
-	end := min(start+pageSize, len(rs))
+	end := min(start+int(req.PageSize), len(rs))
 
 	var nextPageToken string
 	if end < len(rs) {
