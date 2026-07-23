@@ -17,6 +17,11 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+const (
+	maxArchiveBytes       = int64(100 * 1024 * 1024)
+	maxExtractedFileBytes = int64(datasize.GB)
+)
+
 var ignoreFileList = []string{
 	"/.env",
 	"/.git",
@@ -36,6 +41,9 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to download file: status code %d", resp.StatusCode)
 	}
+	if resp.ContentLength > maxArchiveBytes {
+		return fmt.Errorf("failed to download file: archive exceeds %d byte limit", maxArchiveBytes)
+	}
 
 	out, err := os.Create(downloadDst)
 	if err != nil {
@@ -43,25 +51,73 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	}
 	defer os.Remove(downloadDst)
 
-	// Writer the body to file
-	_, err = io.Copy(out, resp.Body)
+	// Read one byte beyond the limit so chunked responses cannot bypass the
+	// Content-Length check.
+	written, err := io.Copy(out, io.LimitReader(resp.Body, maxArchiveBytes+1))
 	if err != nil {
 		out.Close()
 		return err
 	}
-	out.Close()
-
-	// clean the projPath first to remove any files from previous download
-	if clean {
-		_ = os.RemoveAll(projPath)
+	if err := out.Close(); err != nil {
+		return err
+	}
+	if written > maxArchiveBytes {
+		return fmt.Errorf("failed to download file: archive exceeds %d byte limit", maxArchiveBytes)
 	}
 
-	// untar to the project path
-	err = untar(downloadDst, filepath.Clean(projPath), ignorePaths)
+	if !clean {
+		return untar(downloadDst, filepath.Clean(projPath), ignorePaths)
+	}
+
+	// Validate and extract beside the destination before touching the live
+	// project. Keeping staging on the same filesystem also makes the final rename
+	// atomic for readers that observe the project path.
+	projPath = filepath.Clean(projPath)
+	parent := filepath.Dir(projPath)
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		return err
+	}
+	staging, err := os.MkdirTemp(parent, ".rill-project-staging-*")
 	if err != nil {
 		return err
 	}
-	return nil
+	defer os.RemoveAll(staging)
+	if err := untar(downloadDst, staging, ignorePaths); err != nil {
+		return err
+	}
+	return replaceDirectory(staging, projPath)
+}
+
+func replaceDirectory(staging, dest string) error {
+	_, err := os.Lstat(dest)
+	if errors.Is(err, os.ErrNotExist) {
+		return os.Rename(staging, dest)
+	}
+	if err != nil {
+		return err
+	}
+
+	// Reserve a unique sibling name, then remove the placeholder so Rename can
+	// move the existing project there without overwriting another path.
+	backupFile, err := os.CreateTemp(filepath.Dir(dest), ".rill-project-backup-*")
+	if err != nil {
+		return err
+	}
+	backup := backupFile.Name()
+	if err := backupFile.Close(); err != nil {
+		return err
+	}
+	if err := os.Remove(backup); err != nil {
+		return err
+	}
+	if err := os.Rename(dest, backup); err != nil {
+		return err
+	}
+	if err := os.Rename(staging, dest); err != nil {
+		rollbackErr := os.Rename(backup, dest)
+		return errors.Join(err, rollbackErr)
+	}
+	return os.RemoveAll(backup)
 }
 
 func CreateAndUpload(ctx context.Context, files []drivers.DirEntry, root, url string, headers map[string]string) error {
@@ -161,6 +217,10 @@ func untar(src, dest string, ignorePaths bool) error {
 	}
 	defer gz.Close()
 	tarReader := tar.NewReader(gz)
+	var directoryModes []struct {
+		path string
+		mode os.FileMode
+	}
 	for {
 		header, err := tarReader.Next()
 		if err != nil {
@@ -183,37 +243,65 @@ func untar(src, dest string, ignorePaths bool) error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			// Handle directory
-			if err := os.MkdirAll(target, header.FileInfo().Mode()); err != nil {
+			// Keep directories writable during extraction, then restore their
+			// archived modes after all children have been created.
+			if err := os.MkdirAll(target, 0o755); err != nil {
 				return err
 			}
+			directoryModes = append(directoryModes, struct {
+				path string
+				mode os.FileMode
+			}{path: target, mode: header.FileInfo().Mode()})
 		case tar.TypeReg:
-			// Handle regular file
-			if err := os.MkdirAll(filepath.Dir(target), header.FileInfo().Mode()); err != nil {
+			if header.Size > maxExtractedFileBytes {
+				return fmt.Errorf("archive entry %q exceeds %d byte extraction limit", header.Name, maxExtractedFileBytes)
+			}
+			// Implicit parent directories need execute bits independent of the
+			// file's archived mode, otherwise a 0644 file creates an unusable 0644 directory.
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return err
 			}
-			outFile, err := os.Create(target)
+			outFile, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, header.FileInfo().Mode())
 			if err != nil {
 				return err
 			}
-			// Setting a limit of 1GB to avoid G110: Potential DoS vulnerability via decompression bomb
-			// The max file size allowed via upload path is 100MB. Assume that 100MB tar file can't be decompressed to more than 1GB.
-			_, err = io.CopyN(outFile, tarReader, int64(datasize.GB))
-			if err != nil && !errors.Is(err, io.EOF) {
-				outFile.Close()
+			_, copyErr := io.Copy(outFile, tarReader)
+			closeErr := outFile.Close()
+			if copyErr != nil || closeErr != nil {
+				return errors.Join(copyErr, closeErr)
+			}
+			// Chmod after creation so the process umask does not silently strip
+			// executable or group permission bits stored in the archive.
+			if err := os.Chmod(target, header.FileInfo().Mode()); err != nil {
 				return err
 			}
-			outFile.Close()
 		default:
 			return fmt.Errorf("unsupported header type: %c", header.Typeflag)
+		}
+	}
+	for i := len(directoryModes) - 1; i >= 0; i-- {
+		if err := os.Chmod(directoryModes[i].path, directoryModes[i].mode); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
 func sanitizeArchivePath(dest, tarPath string) (v string, err error) {
-	v = filepath.Join(dest, tarPath)
-	if strings.HasPrefix(v, dest) {
+	if tarPath == "" || filepath.IsAbs(tarPath) || filepath.VolumeName(tarPath) != "" {
+		return "", fmt.Errorf("%s: %s", "content filepath is tainted", tarPath)
+	}
+
+	dest, err = filepath.Abs(filepath.Clean(dest))
+	if err != nil {
+		return "", err
+	}
+	v = filepath.Join(dest, filepath.Clean(tarPath))
+	rel, err := filepath.Rel(dest, v)
+	if err != nil {
+		return "", err
+	}
+	if rel != ".." && !filepath.IsAbs(rel) && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return v, nil
 	}
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
@@ -27,6 +28,12 @@ func New(dataDir string, bucketCfg map[string]any) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	cleanupTempDir := true
+	defer func() {
+		if cleanupTempDir {
+			_ = os.RemoveAll(tempDirPath)
+		}
+	}()
 	c := &Client{
 		dataDirPath: dataDir,
 		tempDirPath: tempDirPath,
@@ -40,6 +47,7 @@ func New(dataDir string, bucketCfg map[string]any) (*Client, error) {
 		}
 		c.bucketConfig = gcsBucketConfig
 	}
+	cleanupTempDir = false
 	return c, nil
 }
 
@@ -66,12 +74,20 @@ func (c *Client) RemovePrefix(ctx context.Context, prefix ...string) error {
 	if c.prefixes != nil {
 		return fmt.Errorf("storage: RemovePrefix is not supported for prefixed client")
 	}
+	dataPath, err := containedPath(c.dataDirPath, prefix...)
+	if err != nil {
+		return fmt.Errorf("storage: invalid removal prefix: %w", err)
+	}
+	tempPath, err := containedPath(c.tempDirPath, prefix...)
+	if err != nil {
+		return fmt.Errorf("storage: invalid removal prefix: %w", err)
+	}
 
 	// clean data dir
-	removeErr := os.RemoveAll(c.path(c.dataDirPath, prefix...))
+	removeErr := os.RemoveAll(dataPath)
 
 	// clean temp dir
-	removeErr = errors.Join(removeErr, os.RemoveAll(c.path(c.tempDirPath, prefix...)))
+	removeErr = errors.Join(removeErr, os.RemoveAll(tempPath))
 
 	// clean bucket
 	bkt, ok, err := c.OpenBucket(ctx, prefix...)
@@ -164,6 +180,19 @@ func (c *Client) path(base string, elem ...string) string {
 	}
 	paths = append(paths, elem...)
 	return filepath.Join(paths...)
+}
+
+func containedPath(base string, elem ...string) (string, error) {
+	base = filepath.Clean(base)
+	target := filepath.Join(append([]string{base}, elem...)...)
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return "", err
+	}
+	if rel == ".." || filepath.IsAbs(rel) || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("path %q escapes root %q", target, base)
+	}
+	return target, nil
 }
 
 func (c *Client) newGCPClient(ctx context.Context) (*gcp.HTTPClient, error) {
