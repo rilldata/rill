@@ -1,0 +1,46 @@
+coverage:
+  status:
+    default_rules:
+      flag_coverage_not_uploaded_behavior: exclude
+    project:
+      go:
+        flags: [go]
+        target: auto
+        threshold: 1%
+      web-admin:
+        flags: [web-admin]
+        target: auto
+        threshold: 1%
+      web-common:
+        flags: [web-common]
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+flags:
+  go:
+    paths:
+      - admin/
+      - cli/
+      - runtime/
+      - scripts/
+    carryforward: false
+  web-admin:
+    paths:
+      - web-admin/src/
+    carryforward: false
+  web-common:
+    paths:
+      - web-common/src/
+    carryforward: false
+
+ignore:
+  - "**/proto/gen/**"
+  - "admin/testadmin/**"
+  - "runtime/testruntime/**"
+  - "web-admin/src/client/gen/**"
+  - "web-admin/src/runtime-client/**/gen/**"
+  - "web-common/src/lib/i18n/gen/**"

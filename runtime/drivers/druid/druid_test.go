@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -37,6 +38,8 @@ func TestScan(t *testing.T) {
 }
 
 func acquireTestDruid(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
+	// Druid has no local fixture in this package; keep the real-cluster contract out of hermetic short runs.
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "druid")
 	conn, err := drivers.Open("druid", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)

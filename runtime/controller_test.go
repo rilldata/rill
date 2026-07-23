@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -1424,6 +1425,8 @@ func newExplore(metricsVew string, measures, dims []string) (*runtimev1.Explore,
 }
 
 func TestDedicatedConnector(t *testing.T) {
+	// This contract requires live S3 and GCS credentials, so hermetic short-mode coverage skips it.
+	testmode.Expensive(t)
 	// Acquire the connectors for the runtime instance.
 	vars := make(map[string]string)
 

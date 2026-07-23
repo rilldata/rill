@@ -67,6 +67,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// - BigQuery Read Session User
 	// The test dataset is pre-populated with tables defined in testdata/init_data/bigquery_init_data.sql.
 	"bigquery": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		gac := os.Getenv("RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, gac, "Bigquery RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
@@ -75,6 +76,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// Snowflake connector connects to a real snowflake cloud using dsn in RILL_RUNTIME_SNOWFLAKE_TEST_DSN
 	// The test dataset is pre-populated with tables defined in testdata/init_data/snowflake_init_data.sql:
 	"snowflake": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		dsn := os.Getenv("RILL_RUNTIME_SNOWFLAKE_TEST_DSN")
 		require.NotEmpty(t, dsn, "RILL_RUNTIME_SNOWFLAKE_TEST_DSN not configured")
@@ -83,6 +85,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// Databricks connector connects to a real Databricks SQL warehouse using dsn in RILL_RUNTIME_DATABRICKS_TEST_DSN.
 	// The test dataset is pre-populated with tables defined in testdata/init_data/databricks_init_data.sql.
 	"databricks": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		dsn := os.Getenv("RILL_RUNTIME_DATABRICKS_TEST_DSN")
 		require.NotEmpty(t, dsn, "RILL_RUNTIME_DATABRICKS_TEST_DSN not configured")
@@ -100,6 +103,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	},
 	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		gac := os.Getenv("RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, gac, "GCS RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
@@ -108,6 +112,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 	},
 	"gcs_s3_compat": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
 		hmacSecret := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_SECRET")
@@ -121,6 +126,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	},
 	// S3 connector uses an actual S3 bucket with data populated from testdata/init_data/azure.
 	"s3": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		accessKeyID := os.Getenv("RILL_RUNTIME_S3_TEST_AWS_ACCESS_KEY_ID")
 		secretAccessKey := os.Getenv("RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY")
@@ -135,6 +141,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// The test dataset is pre-populated with table definitions in testdata/init_data/athena_init_data.sql,
 	// and the actual data is stored on S3, which matches the data in testdata/init_data/azure/parquet_test.
 	"athena": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		accessKeyID := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_ACCESS_KEY_ID")
 		secretAccessKey := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY")
@@ -148,6 +155,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// Redshift connector connects to an actual Redshift Serverless Service.
 	// The test dataset is pre-populated with table definitions in testdata/init_data/redshift_init_data.sql,
 	"redshift": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		accessKeyID := os.Getenv("RILL_RUNTIME_REDSHIFT_TEST_AWS_ACCESS_KEY_ID")
 		secretAccessKey := os.Getenv("RILL_RUNTIME_REDSHIFT_TEST_AWS_SECRET_ACCESS_KEY")
@@ -161,6 +169,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// druid connects to a real Druid cluster using the connection string in RILL_RUNTIME_DRUID_TEST_DSN.
 	// This usually uses the master.in cluster.
 	"druid": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 		require.NotEmpty(t, dsn, "Druid test DSN not configured")
@@ -271,6 +280,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 	},
 	"azure_cloud": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_AZURE_TEST_CONNECTION_STRING")
 		require.NotEmpty(t, apiKey)
@@ -327,18 +337,21 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 	},
 	"openai": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_OPENAI_TEST_API_KEY")
 		require.NotEmpty(t, apiKey)
 		return map[string]string{"api_key": apiKey}
 	},
 	"claude": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_CLAUDE_TEST_API_KEY")
 		require.NotEmpty(t, apiKey)
 		return map[string]string{"api_key": apiKey}
 	},
 	"gemini": func(t TestingT) map[string]string {
+		testmode.Expensive(t)
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_GEMINI_TEST_API_KEY")
 		require.NotEmpty(t, apiKey)
