@@ -3562,6 +3562,17 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pageSize
+          description: Maximum number of resources to return. If zero, returns all resources.
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          description: Page token returned by a previous ListResources call.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/-/watch:
@@ -6057,6 +6068,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Resource'
+      nextPageToken:
+        type: string
   v1ListTablesResponse:
     type: object
     properties:
