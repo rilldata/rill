@@ -40,6 +40,7 @@
   }
 </script>
 
+<!-- TODO: Support non-hover actions like using keyboard for showing favourite icon -->
 <button
   class="tag-row"
   class:selected

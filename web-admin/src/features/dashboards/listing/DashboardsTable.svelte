@@ -52,7 +52,7 @@
   let sortingOption = $derived(
     DashboardTableSortOptions.find(
       (option) => option.value === sortStore.value,
-    ),
+    ) ?? DashboardTableSortOptions[0],
   );
 
   const runtimeClient = useRuntimeClient();
