@@ -9,6 +9,7 @@
   import { errorStore } from "../../components/errors/error-store";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "./viewAsUserStore";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n/index.ts";
 
   let active: boolean = $state(false);
   let disabled = $derived(isEditPage(page));
@@ -35,7 +36,7 @@
           >
             <div slot="body">
               {@html m.dashboard_viewing_as({
-                email: $viewAsUserStore?.email ?? "",
+                email: escapeHtml($viewAsUserStore?.email ?? ""),
               })}
             </div>
           </Chip>

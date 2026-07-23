@@ -14,6 +14,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   let viewAsMenuOpen = false;
   let open = false;
@@ -49,7 +50,7 @@
           >
             <div slot="body">
               {@html m.dashboard_viewing_as({
-                email: $selectedMockUserStore.email ?? "",
+                email: escapeHtml($selectedMockUserStore.email ?? ""),
               })}
             </div>
           </Chip>
