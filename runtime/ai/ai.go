@@ -32,10 +32,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// maxMessageSizeBytes is the maximum allowed size of a message's contents.
-// Exceeding it will result in an error.
-const maxMessageSizeBytes = 100 * 1024 // 100 KB
-
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
 
@@ -948,12 +944,19 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 		return nil, ctx.Err()
 	}
 
+	// Resolve the configured maximum message size.
+	cfg, err := s.runner.Runtime.InstanceConfig(ctx, s.instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
+	maxMessageSizeBytes := cfg.AIMaxMessageSizeBytes
+
 	var argsJSON json.RawMessage
-	argsJSON, err := json.Marshal(opts.Args)
+	argsJSON, err = json.Marshal(opts.Args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal args: %w", err)
 	}
-	if len(argsJSON) > maxMessageSizeBytes {
+	if len(argsJSON) > int(maxMessageSizeBytes) {
 		return nil, fmt.Errorf("call args size %d exceeds maximum of %d bytes", len(argsJSON), maxMessageSizeBytes)
 	}
 
@@ -1014,7 +1017,7 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 		outJSON, err = json.Marshal(handlerOut)
 		if err != nil {
 			handlerErr = fmt.Errorf("failed to marshal result: %w (out: %v)", err, handlerOut)
-		} else if len(outJSON) > maxMessageSizeBytes {
+		} else if len(outJSON) > int(maxMessageSizeBytes) {
 			handlerErr = fmt.Errorf("marshaled result size %d exceeds maximum of %d bytes", len(outJSON), maxMessageSizeBytes)
 			outJSON = nil
 		}
