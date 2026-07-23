@@ -49,7 +49,7 @@ refresh:
 
 ### `connector`
 
-_[string]_ - Refers to the resource type and is needed if setting an explicit OLAP engine. IE `clickhouse`
+_[string]_ - Refers to the resource type and is needed when setting an explicit OLAP engine, e.g. `clickhouse`
 
 ### `sql`
 
@@ -129,7 +129,7 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
+    - **`connector`** - _[string]_ - Specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -143,7 +143,7 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
       - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
@@ -157,7 +157,7 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
         - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
 
-        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+        - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that prevents full re-listings each time.
 
         - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
 
@@ -221,13 +221,13 @@ state:
 
 ### `partitions`
 
-_[oneOf]_ - Refers to the how your data is partitioned, cannot be used with state. (optional)
+_[oneOf]_ - Refers to how your data is partitioned; cannot be used with state. (optional)
 
   - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
     - **`sql`** - _[string]_ - Raw SQL query to run against existing models in the project. _(required)_
 
-    - **`connector`** - _[string]_ - specifies the connector to use when running SQL or glob queries.
+    - **`connector`** - _[string]_ - Specifies the connector to use when running SQL or glob queries.
 
   - **option 2** - _[object]_ - Executes a SQL query that targets a defined metrics view.
 
@@ -241,7 +241,7 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
   - **option 4** - _[object]_ - Uses a file-matching pattern (glob) to query data from a connector.
 
-    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob patternwith advanced options . _(required)_
+    - **`glob`** - _[oneOf]_ - Simple path/glob pattern or path/glob pattern with advanced options. _(required)_
 
       - **option 1** - _[string]_ - Glob pattern used to match files or directories in the object store.
 
@@ -255,7 +255,7 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
         - **`end`** - _[string]_ - Defines the upper bound (exclusive) for partition filtering. Only partitions with paths less than this value are considered.
 
-        - **`last`** - _[integer]_ - Sets a lower bound based on the Nth partition from the end of the lexicographically sorted, successfully processed partitions. Only partitions after this point are included.
+        - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that prevents full re-listings each time.
 
         - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns.
 
@@ -377,13 +377,13 @@ stage:
 
 ### `output`
 
-_[object]_ - to define the properties of output
+_[object]_ - Defines the output properties.
 
   - **`table`** - _[string]_ - Name of the output table. If not specified, the model name is used.
 
-  - **`materialize`** - _[boolean]_ - Whether to materialize the model as a table or view
+  - **`materialize`** - _[boolean]_ - Whether to materialize the model as a table or view.
 
-  - **`connector`** - _[string]_ - Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connector
+  - **`connector`** - _[string]_ - Refers to the connector type for the output table. Can be `clickhouse` or `duckdb` and their named connectors.
 
   - **`incremental_strategy`** - _[string]_ - Strategy to use for incremental updates. Can be 'append', 'merge' or 'partition_overwrite'
 
@@ -456,6 +456,10 @@ _[string]_ - Name is usually inferred from the filename, but can be specified ma
 ### `refs`
 
 _[array of string]_ - List of resource references
+
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
 ### `dev`
 
@@ -536,6 +540,10 @@ _[string]_ - Name is usually inferred from the filename, but can be specified ma
 ### `refs`
 
 _[array of string]_ - List of resource references
+
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
 ### `dev`
 

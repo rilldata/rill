@@ -5,6 +5,7 @@
     ProjectRenameFormId,
   } from "@rilldata/web-admin/features/projects/settings/ProjectRenameForm.svelte";
   import { goto } from "$app/navigation";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let { organization, project }: { organization: string; project: string } =
     $props();
@@ -20,7 +21,7 @@
   }
 </script>
 
-<SettingsContainer title="Project">
+<SettingsContainer title={m.settings_project_title()}>
   <ProjectRenameForm {organization} {project} bind:loading bind:changed />
   {#snippet action()}
     <Button
@@ -31,7 +32,7 @@
       disabled={!changed}
       {onRename}
     >
-      Save
+      {m.settings_save_button()}
     </Button>
   {/snippet}
 </SettingsContainer>

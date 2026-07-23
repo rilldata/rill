@@ -3,12 +3,14 @@
   import List from "@rilldata/web-common/components/icons/List.svelte";
   import { LayoutGrid } from "lucide-svelte";
   import type { ViewMode } from "./types";
+  import type { RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 
   let {
-    viewMode = $bindable("list"),
+    viewModeStore,
   }: {
-    viewMode: ViewMode;
+    viewModeStore: RuneStore<ViewMode>;
   } = $props();
+  let viewMode = $derived(viewModeStore.value);
 </script>
 
 <div class="flex flex-row border rounded-sm overflow-hidden">
@@ -17,7 +19,7 @@
     class="flex items-center justify-center w-8 h-8 {viewMode === 'grid'
       ? 'bg-surface-hover'
       : 'bg-input hover:bg-surface-hover'}"
-    onclick={() => (viewMode = "grid")}
+    onclick={() => viewModeStore.setter("grid")}
     aria-label="Grid view"
     aria-pressed={viewMode === "grid"}
   >
@@ -29,7 +31,7 @@
     'list'
       ? 'bg-surface-hover'
       : 'bg-input hover:bg-surface-hover'}"
-    onclick={() => (viewMode = "list")}
+    onclick={() => viewModeStore.setter("list")}
     aria-label="List view"
     aria-pressed={viewMode === "list"}
   >

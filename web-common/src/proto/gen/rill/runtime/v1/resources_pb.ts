@@ -388,6 +388,13 @@ export class ResourceMeta extends Message<ResourceMeta> {
   filePaths: string[] = [];
 
   /**
+   * Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
+   *
+   * @generated from field: repeated string tags = 19;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: bool hidden = 7;
    */
   hidden = false;
@@ -464,6 +471,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 19, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -3240,6 +3248,14 @@ export class ExplorePreset extends Message<ExplorePreset> {
   pivotShowTotalsRow?: boolean;
 
   /**
+   * Per-measure pivot conditional formatting, serialized in the URL param
+   * format (frontend-only; persisted in URL state).
+   *
+   * @generated from field: optional string pivot_formatting = 39;
+   */
+  pivotFormatting?: string;
+
+  /**
    * Chart display settings (frontend-only; persisted in URL state)
    *
    * @generated from field: optional bool chart_dynamic_y_axis = 35;
@@ -3287,6 +3303,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 37, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 38, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 39, name: "pivot_formatting", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 

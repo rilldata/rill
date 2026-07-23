@@ -98,7 +98,7 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx, req.RemoteBranch, false)
+	gs, err := repo.Status(ctx, req.RemoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git status: %w", err)
 	}
@@ -128,16 +128,16 @@ func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*r
 	}
 	defer release()
 
-	gs, err := repo.Status(ctx, req.RemoteBranch, true)
+	gd, err := repo.Diff(ctx, req.RemoteBranch, req.IncludeDiff, req.Fetch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git diff: %w", err)
 	}
-	if !gs.IsGitRepo {
+	if !gd.IsGitRepo {
 		return nil, status.Error(codes.FailedPrecondition, "not a git repository")
 	}
 
-	changedFiles := make([]*runtimev1.GitDiffResponse_GitFileChange, len(gs.ChangedFiles))
-	for i, f := range gs.ChangedFiles {
+	changedFiles := make([]*runtimev1.GitDiffResponse_GitFileChange, len(gd.ChangedFiles))
+	for i, f := range gd.ChangedFiles {
 		changedFiles[i] = &runtimev1.GitDiffResponse_GitFileChange{
 			Path:    f.Path,
 			OldPath: f.OldPath,
@@ -147,6 +147,28 @@ func (s *Server) GitDiff(ctx context.Context, req *runtimev1.GitDiffRequest) (*r
 
 	return &runtimev1.GitDiffResponse{
 		ChangedFiles: changedFiles,
+		Diff:         gd.Diff,
+	}, nil
+}
+
+// GitRevert implements RuntimeService.
+func (s *Server) GitRevert(ctx context.Context, req *runtimev1.GitRevertRequest) (*runtimev1.GitRevertResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	reverted, err := repo.Revert(ctx, req.RemoteBranch, req.Paths)
+	if err != nil {
+		return nil, fmt.Errorf("failed to revert git changes: %w", err)
+	}
+
+	return &runtimev1.GitRevertResponse{
+		RevertedPaths: reverted,
 	}, nil
 }
 

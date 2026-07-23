@@ -99,6 +99,7 @@ type Usage struct {
 	SumValue          float64   `json:"sum_value"`
 	BillingService    string    `json:"billing_service"`
 	InstanceID        string    `json:"instance_id"`
+	ManagedClickHouse bool      `json:"managed_clickhouse"`
 }
 
 func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterInstanceID, afterBillingService, afterEventName, grain string, limit int) ([]*Usage, error) {

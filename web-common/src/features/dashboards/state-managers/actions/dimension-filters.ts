@@ -1,4 +1,5 @@
 import { page } from "$app/stores";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   createInExpression,
@@ -40,12 +41,17 @@ export function toggleMultipleDimensionValueSelections(
   dimensionValues: (string | null)[],
   keepPillVisible?: boolean,
   isExclusiveFilter?: boolean,
+  exclude?: boolean,
 ) {
   if (dashboard.temporaryFilterName !== null) {
     dashboard.temporaryFilterName = null;
   }
 
-  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  if (exclude !== undefined) {
+    dashboard.dimensionFilterExcludeMode.set(dimensionName, exclude);
+  }
+  const isExclude =
+    exclude ?? !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond?.exprs?.push(
@@ -69,7 +75,7 @@ export function toggleMultipleDimensionValueSelections(
     eventBus.emit("notification", {
       message: "Converted filter type to Select",
       link: {
-        text: "Undo",
+        text: m.common_undo(),
         href: get(page).url.href,
       },
     });
@@ -81,7 +87,7 @@ export function toggleMultipleDimensionValueSelections(
     eventBus.emit("notification", {
       message: "Converted filter type to Select",
       link: {
-        text: "Undo",
+        text: m.common_undo(),
         href: get(page).url.href,
       },
     });

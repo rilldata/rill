@@ -76,7 +76,7 @@ func (y *ExploreTimeRangeYAML) UnmarshalYAML(v *yaml.Node) error {
 		y.Range = tmp.Range
 		y.ComparisonTimeRanges = tmp.ComparisonOffsets
 	default:
-		return fmt.Errorf("invalid time_range: should be a string or mapping, got kind %q", v.Kind)
+		return fmt.Errorf("invalid time_range: should be a string or mapping, got %s", v.Tag)
 	}
 	return nil
 }
@@ -106,7 +106,7 @@ func (y *ExploreComparisonTimeRangeYAML) UnmarshalYAML(v *yaml.Node) error {
 		y.Offset = tmp.Offset
 		y.Range = tmp.Range
 	default:
-		return fmt.Errorf("invalid comparison_offsets entry: should be a string or mapping, got kind %q", v.Kind)
+		return fmt.Errorf("invalid comparison_offsets entry: should be a string or mapping, got %s", v.Tag)
 	}
 	return nil
 }
@@ -269,7 +269,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -329,6 +329,6 @@ func (p *Parser) parseThemeRef(n *yaml.Node) (string, *runtimev1.ThemeSpec, erro
 
 		return "", spec, nil
 	default:
-		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got kind %q", n.Kind)
+		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got %s", n.Tag)
 	}
 }

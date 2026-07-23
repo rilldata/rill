@@ -11,6 +11,7 @@ import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-for
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "tanstack-table-8-svelte-5";
 import { timeFormat } from "d3-time-format";
@@ -34,6 +35,7 @@ import {
   type MeasureType,
   type PivotDataRow,
   type PivotDataStoreConfig,
+  type PivotMeasureFormatting,
   type PivotTimeConfig,
 } from "./types";
 
@@ -141,6 +143,13 @@ function createColumnDefinitionForDimensions(
     config.rowDimensionNames.length &&
     config.colDimensionNames.length
   ) {
+    // The row-totals column reuses the leaf measure defs but holds aggregate
+    // values, so mark them to exclude from conditional formatting (their
+    // magnitudes would dominate the per-measure color domain).
+    const totalsLeafData: ColumnDef<PivotDataRow>[] = leafData.map((leaf) => ({
+      ...leaf,
+      meta: { ...leaf.meta, isRowTotal: true },
+    }));
     rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension) => {
       const { name } = dimension;
 
@@ -151,7 +160,7 @@ function createColumnDefinitionForDimensions(
       };
 
       return [headColumn];
-    }, leafData);
+    }, totalsLeafData);
   }
 
   // Start the recursion
@@ -206,6 +215,10 @@ export type MeasureColumnProps = Array<{
   type: MeasureType;
   lowerIsBetter: boolean;
   description?: string;
+  // Base measure name (without comparison suffix), used to key the color domain.
+  measureName: string;
+  // Conditional formatting for the main measure column (heatmap/data bar).
+  conditionalFormat?: PivotMeasureFormatting;
 }>;
 export function getMeasureColumnProps(
   config: PivotDataStoreConfig,
@@ -258,6 +271,13 @@ export function getMeasureColumnProps(
       icon,
       lowerIsBetter: measure?.lowerIsBetter ?? false,
       description: measure?.description,
+      measureName,
+      // Conditional formatting only applies to the main measure column, not its
+      // comparison delta/percent sub-columns.
+      conditionalFormat:
+        type === "measure"
+          ? config.pivot.measureFormatting?.[measureName]
+          : undefined,
     };
   });
 }
@@ -281,7 +301,8 @@ export function getDimensionColumnProps(
     if (isTimeDimension(d, config.time.timeDimension)) {
       const timeGrain = getTimeGrainFromDimension(d);
       const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
-      label = `Time ${grainLabel}`;
+      // Display-only column header; the stable backend key stays `name` (below).
+      label = m.pivot_time_dimension_header({ grain: grainLabel });
       description = undefined;
     }
     return {
@@ -368,6 +389,8 @@ function getFlatColumnDef(
         icon: m.icon,
         tooltipFormatter: m.tooltipFormatter,
         description: m.description,
+        conditionalFormat: m.conditionalFormat,
+        measureName: m.measureName,
       },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
@@ -564,6 +587,8 @@ function getNestedColumnDef(
           icon: m.icon,
           tooltipFormatter: m.tooltipFormatter,
           description: m.description,
+          conditionalFormat: m.conditionalFormat,
+          measureName: m.measureName,
         },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;

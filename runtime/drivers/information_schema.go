@@ -11,20 +11,18 @@ type InformationSchema interface {
 	// All returns metadata about all tables and views.
 	// The like argument can optionally be passed to filter the tables by name.
 	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*OlapTable, string, error)
+	// ListDatabaseSchemas returns all schemas across databases
+	ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*DatabaseSchemaInfo, string, error)
+	// ListTables returns all tables in a schema.
+	ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*TableInfo, string, error)
 	// Lookup returns metadata about a specific tables and views.
-	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
+	Lookup(ctx context.Context, database, databaseSchema, name string) (*OlapTable, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 	// It should be called aft`er All or Lookup and not on manually created tables.
 	LoadPhysicalSize(ctx context.Context, tables []*OlapTable) error
 	// LoadDDL populates the DDL field of a single table's metadata.
 	// Drivers that don't support DDL retrieval should return nil (leaving DDL empty).
 	LoadDDL(ctx context.Context, table *OlapTable) error
-	// ListDatabaseSchemas returns all schemas across databases
-	ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*DatabaseSchemaInfo, string, error)
-	// ListTables returns all tables in a schema.
-	ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*TableInfo, string, error)
-	// GetTable returns metadata about a specific table.
-	GetTable(ctx context.Context, database, databaseSchema, table string) (*TableMetadata, error)
 }
 
 // OlapTable represents a table in an information schema.

@@ -366,7 +366,7 @@ on publisher in ("Facebook", "Google", "Microsoft")
 using count(*)
 group by domain
 `,
-			"SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) PIVOT (count_star() FOR (publisher) IN ('Facebook', 'Google', 'Microsoft') GROUP BY domain)",
+			`SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) PIVOT (count_star() FOR (publisher) IN ('Facebook', 'Google', 'Microsoft') GROUP BY "domain")`,
 		},
 		{
 			"replace with unpivot statement",

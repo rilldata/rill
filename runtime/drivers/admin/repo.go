@@ -441,7 +441,7 @@ func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([
 }
 
 // Status implements drivers.RepoStore.
-func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles bool) (*drivers.RepoStatus, error) {
+func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoStatus, error) {
 	err := r.rlockEnsureReady(ctx, true)
 	if err != nil {
 		return nil, err
@@ -474,14 +474,6 @@ func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles boo
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
-	// Listing changed files is extra git work most callers do not need, so it is opt-in and computed
-	// separately. Best-effort: a failure here must not break the status the merge flow depends on.
-	var fileChanges []drivers.RepoFileChange
-	if changedFiles {
-		if files, err := gitutil.ChangedFiles(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch); err == nil {
-			fileChanges = repoFileChanges(files)
-		}
-	}
 
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
@@ -492,8 +484,74 @@ func (r *repo) Status(ctx context.Context, remoteBranch string, changedFiles boo
 		LocalChanges:  st.LocalChanges,
 		LocalCommits:  st.LocalCommits,
 		RemoteCommits: st.RemoteCommits,
-		ChangedFiles:  fileChanges,
 	}, nil
+}
+
+// Diff implements drivers.RepoStore.
+func (r *repo) Diff(ctx context.Context, remoteBranch string, includeDiff, fetch bool) (*drivers.RepoDiff, error) {
+	err := r.rlockEnsureReady(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git == nil {
+		return &drivers.RepoDiff{}, nil
+	}
+
+	if fetch {
+		currentBranch, err := currentBranch(r.git.repoDir)
+		if err != nil {
+			return nil, err
+		}
+		branches := []string{currentBranch}
+		// fetch the requested remote branch too so the comparison ref is up to date.
+		if remoteBranch != "" && remoteBranch != branches[0] {
+			branches = append(branches, remoteBranch)
+		}
+		if err := gitutil.FetchBranches(ctx, r.git.repoDir, branches...); err != nil {
+			return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
+		}
+	}
+
+	files, err := gitutil.ChangedFiles(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list changed files: %w", err)
+	}
+
+	var diff string
+	if includeDiff {
+		diff, err = gitutil.Diff(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute git diff: %w", err)
+		}
+	}
+
+	return &drivers.RepoDiff{
+		IsGitRepo:    true,
+		ChangedFiles: repoFileChanges(files),
+		Diff:         diff,
+	}, nil
+}
+
+func (r *repo) Revert(ctx context.Context, remoteBranch string, paths []string) ([]string, error) {
+	// Reverting mutates the worktree, so take the write lock (excludes concurrent reads/writes).
+	err := r.lockForWrite(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.Unlock()
+
+	if r.git == nil {
+		return nil, nil
+	}
+	if !r.git.editable() {
+		return nil, fmt.Errorf("repo is not editable")
+	}
+
+	// Revert against the already-fetched ref: the caller has just listed the changes (which fetches),
+	// so what the user reverts matches what they saw.
+	return gitutil.Revert(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch, paths)
 }
 
 func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {

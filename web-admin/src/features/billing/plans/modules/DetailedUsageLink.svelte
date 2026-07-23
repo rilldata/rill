@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
   let {
     billingPortalUrl,
   }: {
@@ -13,7 +15,7 @@
     target="_blank"
     rel="noreferrer noopener"
   >
-    View detailed usage
+    {m.billing_view_detailed_usage()}
     <svg
       class="w-3 h-3"
       viewBox="0 0 12 12"

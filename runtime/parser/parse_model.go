@@ -74,7 +74,7 @@ func (y *ModelOutputYAML) UnmarshalYAML(v *yaml.Node) error {
 		y.Connector = tmp.Connector
 		y.Properties = tmp.Properties
 	default:
-		return fmt.Errorf("expected connector name or mapping of output properties, got type %q", v.Kind)
+		return fmt.Errorf("expected connector name or mapping of output properties, got %s", v.Tag)
 	}
 	return nil
 }
@@ -235,7 +235,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 
 	// Insert the model
-	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Tags, node.Refs...)
 	if err != nil {
 		return err
 	}

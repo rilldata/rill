@@ -8,7 +8,6 @@ test.describe("canvas global time filters", () => {
 
   // TODO: Fix test with latest time related changes
   test.skip("global time filters run through", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.getByRole("button", { name: "Preview" }).click();

@@ -256,7 +256,14 @@ func (r *rows) runtimeSchema() *runtimev1.StructType {
 
 func athenaTypeToRuntimeType(colType string) *runtimev1.Type {
 	t := &runtimev1.Type{RawType: colType}
-	switch strings.ToLower(colType) {
+
+	typeLower := strings.ToLower(colType)
+	baseType := typeLower
+	if idx := strings.Index(typeLower, "("); idx != -1 {
+		baseType = typeLower[:idx]
+	}
+
+	switch baseType {
 	case "tinyint":
 		t.Code = runtimev1.Type_CODE_INT8
 	case "smallint":

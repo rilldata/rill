@@ -66,6 +66,16 @@ export function transformFileList(files: V1DirEntry[]): Directory {
   return rootDirectory;
 }
 
+// Collects the paths of every directory in the tree, excluding the root.
+export function collectDirectoryPaths(dir: Directory): string[] {
+  const paths: string[] = [];
+  for (const subDir of dir.directories) {
+    paths.push(subDir.path);
+    paths.push(...collectDirectoryPaths(subDir));
+  }
+  return paths;
+}
+
 export function findDirectory(root: Directory, filePath: string) {
   const folderTree = removeLeadingSlash(filePath).split("/");
   let dir: Directory | undefined = root;

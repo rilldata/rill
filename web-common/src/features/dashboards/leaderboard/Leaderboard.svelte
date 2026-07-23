@@ -1,6 +1,7 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimension,
@@ -89,6 +90,9 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void = () => {};
+  // When set, the dimension column becomes resizable and the new width is
+  // reported through this callback.
+  export let onDimensionColumnResize: ((width: number) => void) | null = null;
 
   onMount(() => {
     if (!parentElement) return;
@@ -112,6 +116,8 @@
   let container: HTMLElement;
 
   let hovered: boolean;
+
+  let tableHeight = 0;
 
   $: queryLimit = slice + 1;
   $: maxValuesToShow = slice * 2;
@@ -324,7 +330,10 @@
   onmouseenter={() => (hovered = true)}
   onmouseleave={() => (hovered = false)}
 >
-  <table style:width="{tableWidth + gutterWidth}px">
+  <table
+    style:width="{tableWidth + gutterWidth}px"
+    bind:clientHeight={tableHeight}
+  >
     <colgroup>
       <col data-gutter-column style:width="{gutterWidth}px" />
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
@@ -369,6 +378,9 @@
       {toggleComparisonDimension}
       {leaderboardSortByMeasureName}
       {measureLabel}
+      {dimensionColumnWidth}
+      {onDimensionColumnResize}
+      {tableHeight}
     />
 
     <tbody>
@@ -432,15 +444,15 @@
         class="transition-color text-fg-muted table-message"
         onclick={() => setPrimaryDimension(dimensionName)}
       >
-        <div class="pl-8 text-fg-muted">(Expand Table)</div>
+        <div class="pl-8 text-fg-muted">{m.leaderboard_expand_table()}</div>
       </button>
       <TooltipContent slot="tooltip-content">
-        Expand dimension to see more values
+        {m.leaderboard_expand_tooltip()}
       </TooltipContent>
     </Tooltip>
   {:else if noAvailableValues}
     <div class="table-message text-fg-muted">
-      <div class="pl-8">(No available values)</div>
+      <div class="pl-8">{m.leaderboard_no_available_values()}</div>
     </div>
   {/if}
 </div>

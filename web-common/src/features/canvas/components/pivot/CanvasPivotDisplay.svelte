@@ -1,10 +1,13 @@
 <script lang="ts">
-  import type { PivotCanvasComponent } from "@rilldata/web-common/features/canvas/components/pivot";
+  import {
+    conditionalFormatSpecToMeasureFormatting,
+    type PivotCanvasComponent,
+  } from "@rilldata/web-common/features/canvas/components/pivot";
   import type { SortingState } from "tanstack-table-8-svelte-5";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
-  import { tableFieldMapper } from "./util";
+  import { normalizeRowLimit, tableFieldMapper } from "./util";
 
   export let component: PivotCanvasComponent;
 
@@ -38,11 +41,7 @@
   $: _metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
   $: metricsViewSpec = $_metricViewSpec.metricsView;
 
-  $: schema = validateTableSchema(
-    metricsViewSpec,
-    tableSpec,
-    $_metricViewSpec.isLoading,
-  );
+  $: schema = validateTableSchema($_metricViewSpec, tableSpec);
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
   let defaultSorting: SortingState;
@@ -50,7 +49,12 @@
     ? [{ id: tableSpec.default_sort.id, desc: tableSpec.default_sort.desc }]
     : [];
 
-  $: if ("columns" in tableSpec && schema.isValid) {
+  // Seed the shared pivot state with per-measure formatting from the YAML spec.
+  $: measureFormatting = conditionalFormatSpecToMeasureFormatting(
+    tableSpec.conditional_format,
+  );
+
+  $: if ("columns" in tableSpec && schema.isValid && !schema.isLoading) {
     const columns = tableSpec?.columns || [];
     pivotState.update((state) => ({
       ...state,
@@ -62,8 +66,9 @@
       columns: tableFieldMapper(columns, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      measureFormatting,
     }));
-  } else if (!("columns" in tableSpec) && schema.isValid) {
+  } else if (!("columns" in tableSpec) && schema.isValid && !schema.isLoading) {
     const measures = tableSpec.measures || [];
     const colDimensions = tableSpec.col_dimensions || [];
     const rowDimensions = tableSpec.row_dimensions || [];
@@ -81,6 +86,9 @@
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      measureFormatting,
+      rowLimit: normalizeRowLimit(tableSpec.row_limit),
+      outermostRowLimit: undefined,
     }));
   }
 </script>

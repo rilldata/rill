@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import BarChart from "@rilldata/web-common/components/time-series-chart/BarChart.svelte";
   import { snapToNearestNonNull } from "@rilldata/web-common/components/time-series-chart/sparse-data-utils";
   import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
@@ -95,6 +96,7 @@
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
+  const explainEnabled = measureSelection.getEnabledStore();
   const selMeasure = measureSelection.measure;
   const selStart = measureSelection.start;
   const selEnd = measureSelection.end;
@@ -437,7 +439,7 @@
 >
   <svg
     role="presentation"
-    aria-label="Measure Chart for {measureName}"
+    aria-label={m.dashboard_measure_chart_aria({ name: measureName })}
     class="size w-full overflow-visible"
     height="{height}px"
     onmousemove={(e) => {
@@ -627,7 +629,7 @@
   {/if}
 
   <!-- Explain CTA -->
-  {#if !isScrubbing && explainX !== null}
+  {#if $explainEnabled && !isScrubbing && explainX !== null}
     <ExplainButton
       x={explainX}
       plotBounds={pb}

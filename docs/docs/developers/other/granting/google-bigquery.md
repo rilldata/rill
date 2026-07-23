@@ -6,13 +6,13 @@ sidebar_position: 30
 ---
 
 :::warning
-Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your providers documentation on the correct permissions required to connect to your service.
+Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your provider's documentation on the correct permissions required to connect to your service.
 :::
 
 ## Setup instructions
 Follow the instructions below to grant Rill access to your Google BigQuery datasets.
 
-1. Find your Google Cloud Service Account by logging into Rill and clicking on Integrations. Your Google Cloud Service Account will be displayed. It will be of the form ```organization```-```workspace name```>@rilldata.iam.gserviceaccount.com. 
+1. Find your Google Cloud Service Account by logging into Rill and clicking on Integrations. Your Google Cloud Service Account will be displayed. It will be of the form `organization-workspace-name@rilldata.iam.gserviceaccount.com`.
 
 2. Go to your Google Cloud Console and select the project to which you want to grant access.
 ![](https://images.contentful.com/ve6smfzbifwz/4KskMcw6t4az7qdW5i9YDa/7c8fe66bdd9b02864ffd878a29031ac8/2c3627e-Project_selector.png)

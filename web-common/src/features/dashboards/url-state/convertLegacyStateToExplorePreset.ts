@@ -1,8 +1,10 @@
+import { toPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import { FromProtoTimeGrainMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import {
   correctComparisonTimeRange,
   fromExpressionProto,
+  fromPivotConditionalFormattingProto,
 } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
@@ -408,6 +410,14 @@ function fromLegacyPivotFields(
         ? ToURLParamTimeDimensionMap[sortBy.id]
         : sortBy.id;
     preset.pivotSortAsc = !sortBy.desc;
+  }
+
+  if (legacyState.pivotConditionalFormatting?.length) {
+    preset.pivotFormatting = toPivotFormattingParam(
+      fromPivotConditionalFormattingProto(
+        legacyState.pivotConditionalFormatting,
+      ),
+    );
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

@@ -158,58 +158,51 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+func (c *Connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = release() }()
 
-	q := `
-    SELECT
-        CASE WHEN match(engine, 'View') THEN true ELSE false END AS view,
-        c.name AS column_name,
-        c.type AS data_type
-    FROM system.tables t
-    LEFT JOIN system.columns c
-		ON t.database = c.database AND t.name = c.table
-    WHERE t.database = ? AND t.name = ?
-    ORDER BY c.position
-    `
-	rows, err := conn.QueryxContext(ctx, q, databaseSchema, table)
+	var q string
+	var args []any
+	q = `
+		SELECT 
+			T.database AS SCHEMA,
+			T.database = currentDatabase() AS is_default_schema,
+			T.name AS NAME,
+			if(lower(T.engine) like '%view%', 'VIEW', 'TABLE') AS TABLE_TYPE,
+			C.name AS COLUMNS,
+			C.type AS COLUMN_TYPE,
+			C.position AS ORDINAL_POSITION
+		FROM system.tables T
+		JOIN system.columns C ON T.database = C.database AND T.name = C.table
+		WHERE T.database = coalesce(?, currentDatabase()) AND T.name = ?
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+	`
+	if databaseSchema == "" {
+		args = append(args, nil, name)
+	} else {
+		args = append(args, databaseSchema, name)
+	}
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	schemaMap := make(map[string]string)
-	var view bool
-	var colName, dataType string
-	for rows.Next() {
-		if err := rows.Scan(&view, &colName, &dataType); err != nil {
-			return nil, err
-		}
-		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
-			if errors.Is(err, errUnsupportedType) {
-				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-			} else {
-				return nil, err
-			}
-		} else if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
-			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
-		} else {
-			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
-		}
-	}
-
-	if err := rows.Err(); err != nil {
+	tables, err := scanTables(rows)
+	if err != nil {
 		return nil, err
 	}
 
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-		View:   view,
-	}, nil
+	if len(tables) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+
+	return tables[0], nil
 }
 
 func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
@@ -308,53 +301,6 @@ func (c *Connection) All(ctx context.Context, like string, pageSize uint32, page
 	}
 
 	return tables, next, nil
-}
-
-func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	conn, release, err := c.acquireMetaConn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = release() }()
-
-	var q string
-	var args []any
-	q = `
-		SELECT 
-			T.database AS SCHEMA,
-			T.database = currentDatabase() AS is_default_schema,
-			T.name AS NAME,
-			if(lower(T.engine) like '%view%', 'VIEW', 'TABLE') AS TABLE_TYPE,
-			C.name AS COLUMNS,
-			C.type AS COLUMN_TYPE,
-			C.position AS ORDINAL_POSITION
-		FROM system.tables T
-		JOIN system.columns C ON T.database = C.database AND T.name = C.table
-		WHERE T.database = coalesce(?, currentDatabase()) AND T.name = ?
-		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`
-	if schema == "" {
-		args = append(args, nil, name)
-	} else {
-		args = append(args, schema, name)
-	}
-
-	rows, err := conn.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	tables, err := scanTables(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(tables) == 0 {
-		return nil, drivers.ErrNotFound
-	}
-
-	return tables[0], nil
 }
 
 func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
@@ -528,43 +474,30 @@ func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
 	return res, nil
 }
 
-func (c *Connection) entityType(ctx context.Context, db, name string) (typ string, onCluster bool, err error) {
+func (c *Connection) entityType(ctx context.Context, db, name string) (typ string, err error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 	defer func() { _ = release() }()
 
-	var q string
-	if c.config.Cluster == "" {
-		q = `SELECT
-    			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
-    			0 AS is_on_cluster
-			FROM system.tables AS t
-			JOIN system.databases AS db ON t.database = db.name
-			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?`
-	} else {
-		q = `SELECT
-    			multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type,
-    			countDistinct(_shard_num) > 1 AS is_on_cluster
-			FROM clusterAllReplicas(` + safeSQLName(c.config.Cluster) + `, system.tables) AS t
-			JOIN system.databases AS db ON t.database = db.name
-			WHERE t.database = coalesce(?, currentDatabase()) AND t.name = ?
-			GROUP BY engine, t.name`
-	}
+	// A local system.tables lookup suffices even when a cluster is configured:
+	// all DDL in cluster mode runs ON CLUSTER, so the entity always exists on the connected node.
+	q := `SELECT multiIf(engine IN ('MaterializedView', 'View'), 'VIEW', engine = 'Dictionary', 'DICTIONARY', 'TABLE') AS type
+	FROM system.tables
+	WHERE database = coalesce(?, currentDatabase()) AND name = ?`
 	var args []any
 	if db == "" {
 		args = []any{nil, name}
 	} else {
 		args = []any{db, name}
 	}
-	row := conn.QueryRowxContext(ctx, q, args...)
-	err = row.Scan(&typ, &onCluster)
+	err = conn.QueryRowxContext(ctx, q, args...).Scan(&typ)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", false, drivers.ErrNotFound
+			return "", drivers.ErrNotFound
 		}
-		return "", false, err
+		return "", err
 	}
-	return typ, onCluster, nil
+	return typ, nil
 }

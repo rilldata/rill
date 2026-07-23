@@ -3,23 +3,28 @@ import {
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-import type { PivotSpec, TableSpec } from "./";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import type { PivotSpec, TableSpec } from "./";
 
 export function validateTableSchema(
-  metricsView: V1MetricsViewSpec | undefined,
+  metricsViewQuery: {
+    metricsView: V1MetricsViewSpec | undefined;
+    isLoading: boolean;
+  },
   tableSpec: PivotSpec | TableSpec,
-  isLoading = false,
 ): {
   isValid: boolean;
   error?: string;
+  isLoading?: boolean;
 } {
-  // While the metrics view resource is still loading its spec is undefined;
-  // treat this as valid so we don't flash a "not found" error on page load.
-  if (isLoading) {
-    return { isValid: true, error: undefined };
+  if (metricsViewQuery.isLoading) {
+    return {
+      isValid: true,
+      error: undefined,
+      isLoading: true,
+    };
   }
-
+  const metricsView = metricsViewQuery.metricsView;
   if (!metricsView) {
     return {
       isValid: false,

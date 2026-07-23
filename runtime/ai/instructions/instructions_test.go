@@ -18,6 +18,22 @@ func TestLoad(t *testing.T) {
 	require.Contains(t, inst.Body, "# Instructions for developing a Rill project")
 }
 
+func TestLoadAnalysis(t *testing.T) {
+	// The analyst agent loads this file as its system prompt, so it must parse and render for both modes.
+	// The citation requirements are gated on internal use, since the open_url field is only available then.
+	internal, err := Load("analysis.md", Options{External: false})
+	require.NoError(t, err)
+	require.Equal(t, "analysis", internal.Name)
+	require.Equal(t, "Overview of how to analyze data in a Rill project", internal.Description)
+	require.NotEmpty(t, internal.Body)
+	require.Contains(t, internal.Body, "Citation requirements")
+
+	external, err := Load("analysis.md", Options{External: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, external.Body)
+	require.NotContains(t, external.Body, "Citation requirements")
+}
+
 func TestLoadNested(t *testing.T) {
 	// Test loading a nested instruction file
 	inst, err := Load("resources/model.md", Options{External: false})

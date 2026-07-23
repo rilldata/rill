@@ -1,11 +1,14 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
-  commonOptions,
+  getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import type {
   PivotDataStoreConfig,
+  PivotFormatRule,
+  PivotMeasureFormatting,
   PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -23,7 +26,74 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
-import { createPivotConfig, usePivotForCanvas } from "./util";
+import {
+  createPivotConfig,
+  ROW_LIMIT_ALL_VALUE,
+  usePivotForCanvas,
+} from "./util";
+
+// Per-measure conditional formatting persisted in the canvas YAML. A list (not
+// a map) keeps the YAML readable and mirrors the proto representation.
+export interface PivotConditionalFormatSpec {
+  measure: string;
+  mode: "heatmap" | "data_bar" | "rules";
+  // Color scheme; only for "heatmap" and "data_bar" modes.
+  scheme?: string;
+  // Ordered threshold rules (first match wins); only for "rules" mode.
+  rules?: {
+    operator: PivotFormatRule["operator"];
+    value: number;
+    value2?: number;
+    color: string;
+  }[];
+}
+
+const DEFAULT_FORMAT_SCHEME = "theme-sequential";
+
+/**
+ * Map the YAML conditional_format list to the per-measure formatting config
+ * consumed by the pivot renderer. The YAML is hand-editable and reaches here
+ * unvalidated, so malformed values and entries are skipped rather than trusted
+ * to match the declared type.
+ */
+export function conditionalFormatSpecToMeasureFormatting(
+  specs: PivotConditionalFormatSpec[] | undefined,
+): Record<string, PivotMeasureFormatting> {
+  const measureFormatting: Record<string, PivotMeasureFormatting> = {};
+  if (!Array.isArray(specs)) return measureFormatting;
+  for (const spec of specs) {
+    if (!spec || typeof spec !== "object" || typeof spec.measure !== "string") {
+      continue;
+    }
+    if (spec.mode === "heatmap" || spec.mode === "data_bar") {
+      measureFormatting[spec.measure] = {
+        mode: spec.mode,
+        scheme:
+          typeof spec.scheme === "string" ? spec.scheme : DEFAULT_FORMAT_SCHEME,
+      };
+    } else if (spec.mode === "rules" && Array.isArray(spec.rules)) {
+      const rules = spec.rules.filter((r) => r && typeof r === "object");
+      if (rules.length) {
+        measureFormatting[spec.measure] = { mode: "rules", rules };
+      }
+    }
+  }
+  return measureFormatting;
+}
+
+/**
+ * Inverse of conditionalFormatSpecToMeasureFormatting, used when writing the
+ * inspector state back to the YAML.
+ */
+export function measureFormattingToConditionalFormatSpec(
+  measureFormatting: Record<string, PivotMeasureFormatting>,
+): PivotConditionalFormatSpec[] {
+  return Object.entries(measureFormatting).map(([measure, fmt]) =>
+    fmt.mode === "rules"
+      ? { measure, mode: fmt.mode, rules: fmt.rules }
+      : { measure, mode: fmt.mode, scheme: fmt.scheme },
+  );
+}
 
 /**
  * Default sort applied when the table first loads. Mirrors how explore
@@ -47,6 +117,8 @@ export interface PivotSpec
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
   default_sort?: DefaultSort;
+  conditional_format?: PivotConditionalFormatSpec[];
+  row_limit?: string;
 }
 
 export interface TableSpec
@@ -57,16 +129,24 @@ export interface TableSpec
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
   default_sort?: DefaultSort;
+  conditional_format?: PivotConditionalFormatSpec[];
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
+
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
 export class PivotCanvasComponent extends BaseCanvasComponent<
   PivotSpec | TableSpec
 > {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 10 };
-  resetParams = ["measures", "row_dimensions", "col_dimensions"];
+  resetParams = [
+    "measures",
+    "row_dimensions",
+    "col_dimensions",
+    "conditional_format",
+  ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
   config: Readable<PivotDataStoreConfig>;
@@ -124,7 +204,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       this.parent,
       derived(this.specStore, ($specStore) => $specStore.metrics_view),
       this.config,
-      this.visible,
+      this.dataEnabled,
     );
   }
 
@@ -149,11 +229,29 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   }
 
   getExploreTransformerProperties(): Partial<ExploreState> {
-    const pivotState = get(this.pivotState);
     return {
-      pivot: pivotState,
+      pivot: get(this.pivotState),
       activePage: DashboardState_ActivePage.PIVOT,
     };
+  }
+
+  /** Update a single measure's conditional formatting in the YAML; pass null to clear it. */
+  setMeasureFormatting(
+    measureName: string,
+    fmt: PivotMeasureFormatting | null,
+  ) {
+    const measureFormatting = conditionalFormatSpecToMeasureFormatting(
+      get(this.specStore).conditional_format,
+    );
+    if (fmt) {
+      measureFormatting[measureName] = fmt;
+    } else {
+      delete measureFormatting[measureName];
+    }
+    this.updateProperty(
+      "conditional_format",
+      measureFormattingToConditionalFormatSpec(measureFormatting),
+    );
   }
   inputParams(type: "pivot" | "table"): InputParams<PivotSpec | TableSpec> {
     const spec = get(this.specStore);
@@ -172,36 +270,53 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
       return {
         options: {
-          metrics_view: { type: "metrics", label: "Metrics view" },
+          metrics_view: {
+            type: "metrics",
+            label: m.canvas_metrics_view_label(),
+          },
           measures: {
-            type: "multi_fields",
+            type: "multi_fields_format",
             meta: { allowedTypes: ["measure"] },
-            label: "Measures",
+            label: m.canvas_measures_label(),
           },
           col_dimensions: {
             type: "multi_fields",
             meta: { allowedTypes: ["time", "dimension"] },
-            label: "Column dimensions",
+            label: m.canvas_column_dimensions_label(),
           },
           row_dimensions: {
             type: "multi_fields",
             meta: { allowedTypes: ["time", "dimension"] },
-            label: "Row dimensions",
+            label: m.canvas_row_dimensions_label(),
           },
           hide_totals_col: {
             type: "boolean",
-            label: "Hide total column",
+            label: m.canvas_hide_total_column_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalColumn,
           },
           hide_totals_row: {
             type: "boolean",
-            label: "Hide total row",
+            label: m.canvas_hide_total_row_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
           default_sort: { type: "default_sort", label: "Default sort" },
-          ...commonOptions,
+          row_limit: {
+            type: "select",
+            label: "Row limit",
+            meta: {
+              default: ROW_LIMIT_ALL_VALUE,
+              options: [
+                ...PIVOT_ROW_LIMIT_OPTIONS.map((limit) => ({
+                  value: limit.toString(),
+                  label: limit.toString(),
+                })),
+                { value: ROW_LIMIT_ALL_VALUE, label: "All" },
+              ],
+            },
+          },
+          ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
       };
@@ -219,20 +334,23 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
       return {
         options: {
-          metrics_view: { type: "metrics", label: "Metrics view" },
+          metrics_view: {
+            type: "metrics",
+            label: m.canvas_metrics_view_label(),
+          },
           columns: {
-            type: "multi_fields",
-            label: "Columns",
+            type: "multi_fields_format",
+            label: m.canvas_columns_label(),
             meta: { allowedTypes: ["time", "dimension", "measure"] },
           },
           hide_totals_row: {
             type: "boolean",
-            label: "Hide total row",
+            label: m.canvas_hide_total_row_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
           default_sort: { type: "default_sort", label: "Default sort" },
-          ...commonOptions,
+          ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
       };
@@ -301,16 +419,22 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     const commonProperties: ComponentCommonProperties &
       ComponentFilterProperties &
-      Pick<PivotSpec, "hide_totals_row" | "hide_totals_col" | "default_sort"> =
-      {
-        title: currentSpec.title,
-        description: currentSpec.description,
-        dimension_filters: currentSpec.dimension_filters,
-        time_filters: currentSpec.time_filters,
-        hide_totals_row: currentSpec.hide_totals_row,
-        hide_totals_col: currentSpec.hide_totals_col,
-        default_sort: defaultSort,
-      };
+      Pick<
+        PivotSpec,
+        | "hide_totals_row"
+        | "hide_totals_col"
+        | "conditional_format"
+        | "default_sort"
+      > = {
+      title: currentSpec.title,
+      description: currentSpec.description,
+      dimension_filters: currentSpec.dimension_filters,
+      time_filters: currentSpec.time_filters,
+      hide_totals_row: currentSpec.hide_totals_row,
+      hide_totals_col: currentSpec.hide_totals_col,
+      default_sort: defaultSort,
+      conditional_format: currentSpec.conditional_format,
+    };
 
     if ("columns" in currentSpec) {
       const row_dimensions =

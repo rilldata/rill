@@ -23,7 +23,6 @@ test.describe("leaderboard and dimension table sorting", () => {
   test.use({ project: "AdBids" });
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
     await clickPreviewButton(page);
     await page.waitForURL(new RegExp("/explore/AdBids_metrics_explore"));

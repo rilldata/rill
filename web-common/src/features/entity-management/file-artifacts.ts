@@ -187,6 +187,10 @@ export class FileArtifacts {
     const fileParseErrors = fileArtifact.fetchParserErrors(queryClient);
     return fileParseErrors[0]?.message ?? null;
   }
+
+  recheckReadonlyStatus() {
+    this.artifacts.forEach((artifact) => artifact.recheckReadonlyStatus());
+  }
 }
 
 export const fileArtifacts = new FileArtifacts();

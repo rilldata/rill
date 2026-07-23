@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { usePivotForExplore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -161,7 +162,7 @@
   />
   <div class="bar">
     <button
-      aria-label="Toggle rows viewer"
+      aria-label={m.dashboard_toggle_rows_viewer_aria()}
       class="text-xs text-fg-secondary rounded-sm hover:bg-surface-subtle h-6 px-1.5 py-px flex items-center gap-1"
       onclick={toggle}
     >
@@ -173,7 +174,10 @@
     </button>
     {#if $exports}
       <div class="ml-auto">
-        <ExportMenu label="Export model data" getQuery={getExportQuery} />
+        <ExportMenu
+          label={m.dashboard_export_model_data()}
+          getQuery={getExportQuery}
+        />
       </div>
     {/if}
   </div>

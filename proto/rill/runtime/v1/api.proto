@@ -330,6 +330,15 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/diff"};
   }
 
+  // GitRevert discards local changes for the given files, resetting them to the comparison branch's state.
+  // If no paths are provided, all local changes are reverted.
+  rpc GitRevert(GitRevertRequest) returns (GitRevertResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/revert",
+      body: "*"
+    };
+  }
+
   rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
   }
@@ -835,10 +844,15 @@ message ListResourcesRequest {
   string path = 3;
   // Skip security checks
   bool skip_security_checks = 4;
+  // Maximum number of resources to return. If zero, returns all resources.
+  uint32 page_size = 5 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
+  // Page token returned by a previous ListResources call.
+  string page_token = 6;
 }
 
 message ListResourcesResponse {
   repeated Resource resources = 1;
+  string next_page_token = 2;
 }
 
 message WatchResourcesRequest {
@@ -1335,6 +1349,13 @@ message GitDiffRequest {
   // remote_branch is the branch to compare against. Same semantics as GitStatusRequest:
   // if empty, the upstream of the current local branch is used.
   string remote_branch = 2;
+  // include_diff also computes and returns the combined unified patch in addition to the
+  // changed_files list. It is opt-in because computing the diff is more expensive.
+  bool include_diff = 3;
+  // fetch first updates the remote-tracking ref from the remote before computing the changes.
+  // When false, changes are computed against the already-fetched ref; use that when a recent
+  // GitStatus/GitDiff already fetched, to avoid a redundant fetch.
+  bool fetch = 4;
 }
 
 message GitDiffResponse {
@@ -1357,6 +1378,24 @@ message GitDiffResponse {
   // The comparison ref is the requested remote_branch, or the upstream of the current branch when
   // remote_branch is empty.
   repeated GitFileChange changed_files = 1;
+  // diff is the combined unified patch across all changed_files; only set when include_diff is true.
+  // Individual files whose diff is very large are elided to a "Binary files differ" placeholder.
+  string diff = 2;
+}
+
+message GitRevertRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // remote_branch is the branch to compare against. Same semantics as GitDiffRequest:
+  // if empty, the upstream of the current local branch is used.
+  string remote_branch = 2;
+  // paths are the files to revert, relative to the project subpath, matching the paths returned by
+  // GitDiff. Paths that are not actually changed are ignored. If empty, all changed files are reverted.
+  repeated string paths = 3;
+}
+
+message GitRevertResponse {
+  // reverted_paths lists the files that were reverted, relative to the project subpath.
+  repeated string reverted_paths = 1;
 }
 
 message ListGitBranchesRequest {

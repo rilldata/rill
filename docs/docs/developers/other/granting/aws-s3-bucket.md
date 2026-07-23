@@ -1,18 +1,18 @@
 ---
 title: "Managed AWS S3 Bucket"
-description: Setting up s3 access
+description: Setting up S3 access
 sidebar_label: "AWS S3 Bucket"
 sidebar_position: 10
 ---
 
 
 :::warning
-Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your providers documentation on the correct permissions required to connect to your service.
+Please note that these instructions were made specifically for Rill Managed Pipelines and used by our data engineering team to set up orchestration from object stores/data warehouses into Rill Managed Database Services. While some of the concepts may apply, please refer to your provider's documentation on the correct permissions required to connect to your service.
 :::
 
 ## Setup instructions
 
-### Setup S3 bucket
+### Set up S3 bucket
 
 * Create a new bucket, in the US Standard S3 region, named `rill-ORG_NAME-share`, where **"ORG_NAME"** is your organizational name. Make sure the bucket name is a DNS-compliant address. For example, the name should not include any underscores; use hyphens instead, as shown in the example above.
 * Be sure to disable the "Requester Pays" feature. For more information on S3 bucket name guidelines, see [the AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/RequesterPaysBuckets.html).

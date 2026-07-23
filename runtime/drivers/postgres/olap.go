@@ -141,7 +141,7 @@ func databaseTypeToPB(dbt string) *runtimev1.Type {
 		return t
 	}
 
-	switch dbt {
+	switch strings.ToUpper(dbt) {
 	case "NUMERIC", "DECIMAL":
 		t.Code = runtimev1.Type_CODE_DECIMAL
 	case "INT2", "SMALLINT", "SMALLSERIAL":

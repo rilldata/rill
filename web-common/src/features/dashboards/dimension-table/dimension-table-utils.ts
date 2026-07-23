@@ -1,5 +1,6 @@
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -117,21 +118,21 @@ export function getComparisonProperties(
       component: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
-      description: "Percentage change over comparison period",
+      description: m.dashboard_percentage_change(),
     };
   } else if (measureName.includes("_delta")) {
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
       format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
-      description: "Change over comparison period",
+      description: m.dashboard_change_over_comparison(),
     };
   } else if (measureName.includes("_percent_of_total")) {
     return {
       component: PercentOfTotal,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
-      description: "Percent of total",
+      description: m.dashboard_percent_of_total(),
     };
   }
   throw new Error(

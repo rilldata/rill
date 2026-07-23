@@ -369,27 +369,36 @@
     // Find values that were added or removed
     const currentValues = new Set(selectedValues);
     const proxyValues = new Set(selectedValuesProxy);
+    const changedValues = [...currentValues, ...proxyValues].filter((value) => {
+      const wasSelected = currentValues.has(value);
+      const isSelected = proxyValues.has(value);
+
+      return wasSelected !== isSelected;
+    });
+    const shouldToggleExcludeMode = curExcludeMode !== excludeMode;
+    const shouldCommitSelectMode =
+      mode !== DimensionFilterMode.Select && currentValues.size > 0;
 
     if (!currentValues.size && !proxyValues.size) {
       // No changes
       return;
     }
 
-    // Apply all changes
-    await toggleDimensionValueSelections(
-      name,
-      [...currentValues, ...proxyValues].filter((value) => {
-        const wasSelected = currentValues.has(value);
-        const isSelected = proxyValues.has(value);
-
-        return wasSelected !== isSelected;
-      }),
-      metricsViewNames,
-    );
-
-    // Handle exclude mode toggle
-    if (curExcludeMode !== excludeMode) {
+    // Existing filters still need to be negated. New filters get the operator
+    // from curExcludeMode when values are committed below.
+    if (shouldToggleExcludeMode && currentValues.size > 0) {
       await toggleDimensionFilterMode(name, metricsViewNames);
+    }
+
+    if (changedValues.length || shouldCommitSelectMode) {
+      await toggleDimensionValueSelections(
+        name,
+        changedValues,
+        metricsViewNames,
+        undefined,
+        undefined,
+        curExcludeMode,
+      );
     }
   }
 

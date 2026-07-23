@@ -1885,6 +1885,43 @@ rows:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestComponentInputDateValue(t *testing.T) {
+	// Regression test: yaml.v3 decodes a bare date like 2024-01-01 into a time.Time,
+	// which structpb.NewValue rejects and previously caused a panic that aborted the entire parse.
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+markdown:
+  content: "Hello"
+input:
+  - name: start
+    type: string
+    value: 2024-01-01
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
+			Paths: []string{"/components/c1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "C1",
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello"})),
+				Input: []*runtimev1.ComponentVariable{
+					{Name: "start", Type: "string", DefaultValue: structpb.NewStringValue("2024-01-01T00:00:00Z")},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func TestCanvasTabGroups(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{

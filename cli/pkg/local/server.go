@@ -452,8 +452,8 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 	if len(dotenv) > 0 {
 		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Org:       r.Msg.Org,
-			Project:   r.Msg.ProjectName,
+			Org:       projResp.Project.OrgName,
+			Project:   projResp.Project.Name,
 			Variables: dotenv,
 		})
 		if err != nil {
@@ -517,7 +517,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	} else if r.Msg.Reupload {
 		if projResp.Project.ManagedGitId != "" {
 			// If rill-managed project then push to the repo based on org/project passed in.
-			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx)
+			err = s.app.ch.GitHelper(projResp.Project.OrgName, projResp.Project.Name, s.app.ProjectPath).PushToManagedRepo(ctx, false)
 			if err != nil {
 				return nil, err
 			}
