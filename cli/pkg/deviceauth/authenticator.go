@@ -25,10 +25,20 @@ var (
 	ErrCodeRejected           = fmt.Errorf("confirmation code rejected")
 )
 
+const slowDownBackoff = 5 * time.Second
+
+type pollAction int
+
+const (
+	pollComplete pollAction = iota
+	pollPending
+	pollSlowDown
+)
+
 // Authenticator is the interface for authentication via device oauth
 type Authenticator interface {
-	VerifyDevice(ctx context.Context) (*DeviceVerification, error)
-	GetAccessTokenForDevice(ctx context.Context, v DeviceVerification) (string, error)
+	VerifyDevice(ctx context.Context, redirectURL string) (*DeviceVerification, error)
+	GetAccessTokenForDevice(ctx context.Context, v *DeviceVerification) (*oauth.TokenResponse, error)
 }
 
 // DeviceCodeResponse encapsulates the response for obtaining a device code.
@@ -53,10 +63,11 @@ type DeviceVerification struct {
 
 // DeviceAuthenticator performs the authentication flow for logging in.
 type DeviceAuthenticator struct {
-	client   *http.Client
-	BaseURL  *url.URL
-	Clock    clock.Clock
-	ClientID string
+	client          *http.Client
+	waitForNextPoll func(context.Context, time.Duration) error
+	BaseURL         *url.URL
+	Clock           clock.Clock
+	ClientID        string
 }
 
 // New returns an instance of the DeviceAuthenticator
@@ -81,7 +92,7 @@ func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context, redirectURL stri
 	req, err := d.newFormRequest(ctx, "auth/oauth/device_authorization", url.Values{
 		"client_id": []string{d.ClientID},
 		"scope":     []string{"full_account"},
-		"redirect":  []string{url.QueryEscape(redirectURL)},
+		"redirect":  []string{redirectURL},
 	})
 	if err != nil {
 		return nil, err
@@ -93,8 +104,12 @@ func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context, redirectURL stri
 	}
 	defer res.Body.Close()
 
-	if _, err = checkErrorResponse(res); err != nil {
+	action, err := checkErrorResponse(res)
+	if err != nil {
 		return nil, err
+	}
+	if action != pollComplete {
+		return nil, errors.New("unexpected retry response while requesting a device code")
 	}
 
 	deviceCodeRes := &DeviceCodeResponse{}
@@ -122,35 +137,72 @@ func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context, redirectURL stri
 
 // GetAccessTokenForDevice uses the device verification response to fetch an access token.
 func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v *DeviceVerification) (*oauth.TokenResponse, error) {
-	for {
-		// This loop begins right after we open the user's browser to send an
-		// authentication code. We don't request a token immediately because the
-		// has to complete that authentication flow before we can provide a
-		// token anyway.
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(v.CheckInterval):
-			// Ready to check again.
-		}
+	pollInterval := v.CheckInterval
+	if pollInterval <= 0 {
+		pollInterval = 5 * time.Second
+	}
 
-		token, err := d.requestToken(ctx, v.DeviceCode, d.ClientID)
-		if err != nil {
-			// Fatal error.
+	for {
+		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if token != nil {
-			// Successful authentication.
-			return token, nil
+
+		// Poll only after the server-provided interval. The wait is capped at the
+		// device-code expiry so a long interval cannot keep login alive past it.
+		now := d.Clock.Now()
+		if !now.Before(v.ExpiresAt) {
+			return nil, ErrAuthenticationTimedout
+		}
+		waitFor := pollInterval
+		if remaining := v.ExpiresAt.Sub(now); remaining < waitFor {
+			waitFor = remaining
+		}
+		wait := d.waitForNextPoll
+		if wait == nil {
+			wait = d.wait
+		}
+		if err := wait(ctx, waitFor); err != nil {
+			return nil, err
+		}
+		if !d.Clock.Now().Before(v.ExpiresAt) {
+			return nil, ErrAuthenticationTimedout
 		}
 
-		if d.Clock.Now().After(v.ExpiresAt) {
-			return nil, ErrAuthenticationTimedout
+		token, action, err := d.requestToken(ctx, v.DeviceCode, d.ClientID)
+		if err != nil {
+			return nil, err
+		}
+		switch action {
+		case pollComplete:
+			// A token is exposed only after the complete success response has been
+			// decoded and validated. Callers can persist it after this return without
+			// risking a credential change for a pending or partial response.
+			return token, nil
+		case pollSlowDown:
+			// RFC 8628 requires every poll after slow_down to use an interval that
+			// is at least five seconds longer than the previous one.
+			pollInterval += slowDownBackoff
+		case pollPending:
+			// The user has not completed authorization yet; keep the current interval.
 		}
 	}
 }
 
-func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clientID string) (*oauth.TokenResponse, error) {
+// wait keeps cancellation responsive while the poller is between HTTP requests.
+// It is a field-backed method so tests can substitute a deterministic sleeper.
+func (d *DeviceAuthenticator) wait(ctx context.Context, interval time.Duration) error {
+	timer := d.Clock.Timer(interval)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clientID string) (*oauth.TokenResponse, pollAction, error) {
 	req, err := d.newFormRequest(ctx, "auth/oauth/token", url.Values{
 		"grant_type":             []string{"urn:ietf:params:oauth:grant-type:device_code"},
 		"device_code":            []string{deviceCode},
@@ -158,32 +210,34 @@ func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clie
 		"token_response_version": []string{"standard"}, // For backward compatibility with older Rill CLI, see utils.go in oauth pkg
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+		return nil, pollComplete, fmt.Errorf("error creating request: %w", err)
 	}
 
 	res, err := d.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("error performing http request: %w", err)
+		return nil, pollComplete, fmt.Errorf("error performing http request: %w", err)
 	}
 	defer res.Body.Close()
 
-	isRetryable, err := checkErrorResponse(res)
+	action, err := checkErrorResponse(res)
 	if err != nil {
-		return nil, err
+		return nil, pollComplete, err
 	}
 
-	// Bail early so the token fetching is retried.
-	if isRetryable {
-		return nil, nil
+	if action != pollComplete {
+		return nil, action, nil
 	}
 
 	tokenRes := &oauth.TokenResponse{}
 	err = json.NewDecoder(res.Body).Decode(tokenRes)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding token response: %w", err)
+		return nil, pollComplete, fmt.Errorf("error decoding token response: %w", err)
+	}
+	if tokenRes.AccessToken == "" {
+		return nil, pollComplete, errors.New("token response is missing access_token")
 	}
 
-	return tokenRes, nil
+	return tokenRes, pollComplete, nil
 }
 
 // newFormRequest creates a new form URL encoded request
@@ -210,29 +264,29 @@ func (d *DeviceAuthenticator) newFormRequest(ctx context.Context, path string, p
 	return req, nil
 }
 
-// checkErrorResponse returns whether the error is retryable or not and the error itself.
-func checkErrorResponse(res *http.Response) (bool, error) {
+// checkErrorResponse classifies the two retry instructions used by device polling.
+func checkErrorResponse(res *http.Response) (pollAction, error) {
 	if res.StatusCode < http.StatusBadRequest {
-		// 200 OK, etc.
-		return false, nil
+		return pollComplete, nil
 	}
 
-	// Client or server error.
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return false, err
+		return pollComplete, err
 	}
 	bodyStr := string(bytes.TrimSpace(body))
-	// If we're polling and haven't authorized yet or we need to slow down, we don't want to terminate the polling
-	if bodyStr == "authorization_pending" || bodyStr == "slow_down" {
-		return true, nil
-	}
-	if bodyStr == "expired_token" {
-		return false, errors.New(bodyStr)
-	}
-	if bodyStr == "rejected" {
-		return false, ErrCodeRejected
+	if res.StatusCode < http.StatusInternalServerError {
+		switch bodyStr {
+		case "authorization_pending":
+			return pollPending, nil
+		case "slow_down":
+			return pollSlowDown, nil
+		case "expired_token":
+			return pollComplete, ErrAuthenticationTimedout
+		case "rejected":
+			return pollComplete, ErrCodeRejected
+		}
 	}
 
-	return false, errors.New(strconv.Itoa(res.StatusCode) + ": " + bodyStr)
+	return pollComplete, errors.New(strconv.Itoa(res.StatusCode) + ": " + bodyStr)
 }

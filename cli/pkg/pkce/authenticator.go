@@ -1,10 +1,12 @@
 package pkce
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -78,8 +80,14 @@ func (a *Authenticator) GetAuthURL(state string) string {
 }
 
 func (a *Authenticator) ExchangeCodeForToken(code string) (string, error) {
+	return a.ExchangeCodeForTokenContext(context.Background(), code)
+}
+
+// ExchangeCodeForTokenContext lets a caller tie the token request to its callback
+// lifecycle, so cancelling the callback also cancels an in-flight exchange.
+func (a *Authenticator) ExchangeCodeForTokenContext(ctx context.Context, code string) (string, error) {
 	// Create the token request
-	req, err := tokenRequest(a.baseAuthURL, code, a.clientID, a.redirectURL, a.codeVerifier)
+	req, err := tokenRequestWithContext(ctx, a.baseAuthURL, code, a.clientID, a.redirectURL, a.codeVerifier)
 	if err != nil {
 		return "", err
 	}
@@ -103,12 +111,20 @@ func (a *Authenticator) ExchangeCodeForToken(code string) (string, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
 		return "", err
 	}
+	if tokenResponse.AccessToken == "" {
+		return "", errors.New("token response is missing access_token")
+	}
 
-	// Return the access token
+	// Return a token only after the whole exchange succeeds. Callers that persist
+	// this value can leave existing credentials untouched on every error path.
 	return tokenResponse.AccessToken, nil
 }
 
 func tokenRequest(baseAuthURL, code, clientID, redirectURI, codeVerifier string) (*http.Request, error) {
+	return tokenRequestWithContext(context.Background(), baseAuthURL, code, clientID, redirectURI, codeVerifier)
+}
+
+func tokenRequestWithContext(ctx context.Context, baseAuthURL, code, clientID, redirectURI, codeVerifier string) (*http.Request, error) {
 	tokenURL := fmt.Sprintf("%s/auth/oauth/token", baseAuthURL)
 	payload := url.Values{
 		"grant_type":             []string{"authorization_code"},
@@ -118,7 +134,8 @@ func tokenRequest(baseAuthURL, code, clientID, redirectURI, codeVerifier string)
 		"code_verifier":          []string{codeVerifier},
 		"token_response_version": []string{"standard"}, // For backward compatibility with older Rill CLI, see utils.go in oauth pkg
 	}
-	req, err := http.NewRequest(
+	req, err := http.NewRequestWithContext(
+		ctx,
 		http.MethodPost,
 		tokenURL,
 		strings.NewReader(payload.Encode()),

@@ -2,8 +2,10 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -11,6 +13,8 @@ import (
 	"github.com/rilldata/rill/admin/pkg/oauth"
 	"go.uber.org/zap"
 )
+
+const maxOAuthRegistrationBodyBytes = 1 << 20
 
 // handleOAuthProtectedResourceMetadata serves the OAuth 2.0 Protected Resource Metadata as per RFC 9728 and MCP OAuth specification.
 // This endpoint helps MCP clients discover the authorization server for this protected resource. https://www.rfc-editor.org/rfc/rfc9728.html
@@ -80,9 +84,15 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Parse request body
-	body, err := io.ReadAll(r.Body)
+	// Bound this public endpoint before decoding so a registration request cannot
+	// consume an arbitrary amount of server memory.
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxOAuthRegistrationBodyBytes))
 	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
 		return
 	}
@@ -115,8 +125,19 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	scope := sanitizeScope(req.Scope)
-	grantTypes := sanitizeGrantTypes(req.GrantTypes)
+	// Dynamic registration is untrusted. In particular, it must never mint a
+	// client eligible for non-expiring access tokens; privileged clients are
+	// provisioned through trusted internal paths instead.
+	scope, err := validateDynamicRegistrationScope(req.Scope)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	grantTypes, err := validateDynamicRegistrationGrantTypes(req.GrantTypes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	if len(grantTypes) == 0 {
 		// Default to authorization_code if none provided
 		grantTypes = []string{authorizationCodeGrantType}
@@ -142,10 +163,17 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		ClientURI:               req.ClientURI,
 	}
 
+	// Marshal before committing the status. Once a response or redirect starts,
+	// an error must not append a second HTTP error body to it.
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to encode response: %w", err))
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		internalServerError(w, fmt.Errorf("failed to encode response: %w", err))
+	if _, err := w.Write(respBytes); err != nil {
+		a.logger.Error("Failed to write OAuth registration response", zap.Error(err))
 		return
 	}
 
@@ -169,6 +197,45 @@ func sanitizeGrantTypes(grants []string) []string {
 	return sanitized
 }
 
+func validateDynamicRegistrationScope(scope string) (string, error) {
+	seen := make(map[string]struct{})
+	var sanitized []string
+	for _, token := range strings.Fields(scope) {
+		switch token {
+		case "offline_access":
+			// Safe for public clients when paired with an approved refresh grant.
+		case longLivedAccessTokenScope:
+			return "", fmt.Errorf("scope %q requires trusted registration", token)
+		default:
+			return "", fmt.Errorf("unsupported scope %q", token)
+		}
+		if _, ok := seen[token]; ok {
+			continue
+		}
+		seen[token] = struct{}{}
+		sanitized = append(sanitized, token)
+	}
+	return strings.Join(sanitized, " "), nil
+}
+
+func validateDynamicRegistrationGrantTypes(grants []string) ([]string, error) {
+	seen := make(map[string]struct{})
+	var sanitized []string
+	for _, grant := range sanitizeGrantTypes(grants) {
+		switch grant {
+		case authorizationCodeGrantType, refreshTokenGrantType, deviceCodeGrantType:
+		default:
+			return nil, fmt.Errorf("unsupported grant_type %q", grant)
+		}
+		if _, ok := seen[grant]; ok {
+			continue
+		}
+		seen[grant] = struct{}{}
+		sanitized = append(sanitized, grant)
+	}
+	return sanitized, nil
+}
+
 // sanitizeRedirectURIs validates redirect URIs and normalizes them.
 // Requires absolute HTTP(S) URLs without fragments.
 func sanitizeRedirectURIs(uris []string) ([]string, error) {
@@ -184,11 +251,17 @@ func sanitizeRedirectURIs(uris []string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid redirect_uri %q: %w", raw, err)
 		}
+		parsed.Scheme = strings.ToLower(parsed.Scheme)
 		if parsed.Scheme != "https" && parsed.Scheme != "http" {
 			return nil, fmt.Errorf("redirect_uri %q must use http or https", raw)
 		}
 		if parsed.Host == "" {
 			return nil, fmt.Errorf("redirect_uri %q must include a host", raw)
+		}
+		// Authorization codes sent over plain HTTP are exposed in transit. Native
+		// clients may use HTTP only on the local machine; remote callbacks use TLS.
+		if parsed.Scheme == "http" && !isLoopbackHostname(parsed.Hostname()) {
+			return nil, fmt.Errorf("redirect_uri %q must use https unless it is loopback", raw)
 		}
 		if parsed.Fragment != "" {
 			return nil, fmt.Errorf("redirect_uri %q must not include a fragment", raw)
@@ -202,4 +275,12 @@ func sanitizeRedirectURIs(uris []string) ([]string, error) {
 		sanitized = append(sanitized, normalized)
 	}
 	return sanitized, nil
+}
+
+func isLoopbackHostname(hostname string) bool {
+	if strings.EqualFold(hostname, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(hostname)
+	return ip != nil && ip.IsLoopback()
 }

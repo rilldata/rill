@@ -659,6 +659,9 @@ func (a *Authenticator) handleAuthorizeRequest(w http.ResponseWriter, r *http.Re
 		// after login redirect back to same path so encode the current URL as a redirect parameter
 		encodedURL := url.QueryEscape(r.URL.String())
 		http.Redirect(w, r, "/auth/login?redirect="+encodedURL, http.StatusTemporaryRedirect)
+		// A redirect is the complete response; falling through would append a 400
+		// body to the already-committed redirect.
+		return
 	}
 	if claims.OwnerType() != OwnerTypeUser {
 		http.Error(w, "only users can be authorized", http.StatusBadRequest)

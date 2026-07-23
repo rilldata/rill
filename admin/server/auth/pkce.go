@@ -36,6 +36,10 @@ func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clien
 		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
 		return
 	}
+	if !hasGrantType(authClient.GrantTypes, authorizationCodeGrantType) {
+		http.Error(w, "client is not permitted to use authorization codes", http.StatusBadRequest)
+		return
+	}
 
 	if clientID != database.AuthClientIDRillWebLocal && len(authClient.RedirectURIs) == 0 {
 		http.Error(w, "client has no registered redirect URIs", http.StatusBadRequest)
@@ -46,6 +50,10 @@ func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clien
 		http.Error(w, "invalid redirect URI", http.StatusBadRequest)
 		return
 	}
+
+	// A signed-in user's browser request to an allowed callback is the consent
+	// boundary for ordinary clients. Public registration cannot create privileged
+	// clients, so those must have arrived through trusted provisioning.
 
 	// Generate a unique authorization code
 	code, err := generateRandomString(16) // 16 bytes, resulting in a 32-character hex string
@@ -111,8 +119,16 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 
 	responseVersion := values.Get("token_response_version")
 
-	// get the authorization code from the database
-	authCode, err := a.admin.DB.FindAuthorizationCode(r.Context(), code)
+	// A successful exchange consumes its code and persists every token in one
+	// transaction. A failed validation or persistence step rolls everything back.
+	txCtx, tx, err := a.admin.DB.NewTx(r.Context(), false)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to start authorization code transaction, %w", err))
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	authCode, err := a.admin.DB.FindAuthorizationCode(txCtx, code)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, "no such authorization code found", http.StatusBadRequest)
@@ -128,26 +144,20 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
-	// remove the authorization code from the database to prevent reuse
-	err = a.admin.DB.DeleteAuthorizationCode(r.Context(), code)
-	if err != nil {
-		internalServerError(w, fmt.Errorf("failed to delete authorization code, %w", err))
-		return
-	}
-
-	// Check if the client ID matches the stored client ID
+	// These checks bind the code to the client, callback, lifetime, and PKCE
+	// secret chosen at authorization time. Invalid attempts mint nothing and do
+	// not consume the code, preventing an attacker from burning a valid code.
 	if authCode.ClientID != clientID {
 		http.Error(w, "invalid client ID", http.StatusBadRequest)
 		return
 	}
 
-	// Check if the redirect URI matches the stored redirect URI
 	if authCode.RedirectURI != redirectURI {
 		http.Error(w, "invalid redirect URI", http.StatusBadRequest)
 		return
 	}
 
-	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
+	authClient, err := a.admin.DB.FindAuthClient(txCtx, clientID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("invalid client_id %q", clientID), http.StatusBadRequest)
@@ -156,17 +166,27 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
 		return
 	}
-	a.admin.Used.Client(clientID)
 
-	// Check if the authorization code has expired
-	if time.Now().After(authCode.Expiration) {
+	if !authCode.Expiration.After(time.Now()) {
 		http.Error(w, "authorization code has expired", http.StatusBadRequest)
 		return
 	}
 
-	// Verify the code verifier against the stored code challenge
 	if !verifyCodeChallenge(codeVerifier, authCode.CodeChallenge, authCode.CodeChallengeMethod) {
 		http.Error(w, "invalid code verifier", http.StatusBadRequest)
+		return
+	}
+
+	// Deleting inside the transaction is the single-use claim. Concurrent valid
+	// exchanges can both read the code, but PostgreSQL lets only one delete it;
+	// the loser observes not-found and cannot persist a token.
+	err = a.admin.DB.DeleteAuthorizationCode(txCtx, code)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.Error(w, "no such authorization code found", http.StatusBadRequest)
+		} else {
+			internalServerError(w, fmt.Errorf("failed to consume authorization code, %w", err))
+		}
 		return
 	}
 
@@ -176,7 +196,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	var respBytes []byte
 	// Issue long-lived access token for clients explicitly whitelisted
 	if longLivedAccess {
-		authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, nil, false)
+		authToken, err := a.admin.IssueUserAuthToken(txCtx, userID, authCode.ClientID, "", nil, nil, false)
 		if err != nil {
 			if errors.Is(err, r.Context().Err()) {
 				http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
@@ -215,7 +235,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	} else {
 		// Issue access token (60 minutes TTL)
 		accessTTL := 60 * time.Minute
-		accessToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Access Token", nil, &accessTTL, false)
+		accessToken, err := a.admin.IssueUserAuthToken(txCtx, userID, authCode.ClientID, "Access Token", nil, &accessTTL, false)
 		if err != nil {
 			if errors.Is(err, r.Context().Err()) {
 				http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
@@ -235,7 +255,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		if refreshAllowed {
 			// Issue refresh token (365 days TTL)
 			refreshTTL := 365 * 24 * time.Hour
-			refreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Refresh Token", nil, &refreshTTL, true)
+			refreshToken, err := a.admin.IssueUserAuthToken(txCtx, userID, authCode.ClientID, "Refresh Token", nil, &refreshTTL, true)
 			if err != nil {
 				if errors.Is(err, r.Context().Err()) {
 					http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
@@ -253,6 +273,16 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 			return
 		}
 	}
+
+	// Commit is the all-or-nothing boundary: the consumed code and every access
+	// or refresh token become durable together, so no failed exchange can leave
+	// an orphan token behind.
+	if err := tx.Commit(); err != nil {
+		internalServerError(w, fmt.Errorf("failed to commit authorization code exchange, %w", err))
+		return
+	}
+	a.admin.Used.Client(clientID)
+
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(respBytes)
 	if err != nil {
@@ -278,8 +308,17 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		return
 	}
 
-	// Validate the refresh token
-	refreshToken, err := a.admin.ValidateAuthToken(r.Context(), refreshTokenStr)
+	// Rotation is one transaction: consuming the old refresh token is the
+	// single-use claim, and both replacement tokens commit with that claim.
+	txCtx, tx, err := a.admin.DB.NewTx(r.Context(), false)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to start refresh token transaction, %w", err))
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Validate the refresh token.
+	refreshToken, err := a.admin.ValidateAuthToken(txCtx, refreshTokenStr)
 	if err != nil {
 		http.Error(w, "invalid refresh token", http.StatusUnauthorized)
 		return
@@ -296,6 +335,12 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		http.Error(w, "token is not a refresh token", http.StatusBadRequest)
 		return
 	}
+	// ValidateAuthToken has a short cache, so enforce expiry again at the
+	// rotation boundary in case the token expired after it was cached.
+	if userToken.ExpiresOn != nil && !userToken.ExpiresOn.After(time.Now()) {
+		http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+		return
+	}
 
 	userID := refreshToken.OwnerID()
 	tknClientID := ""
@@ -307,7 +352,7 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		return
 	}
 
-	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
+	authClient, err := a.admin.DB.FindAuthClient(txCtx, clientID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("invalid client_id %q", clientID), http.StatusBadRequest)
@@ -316,16 +361,26 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
 		return
 	}
-	a.admin.Used.Client(clientID)
-
 	if !hasGrantType(authClient.GrantTypes, refreshTokenGrantType) {
 		http.Error(w, "client is not permitted to use refresh tokens", http.StatusBadRequest)
 		return
 	}
 
+	// Deleting inside the transaction atomically claims this token. Concurrent
+	// rotations can both validate it, but only one can delete and commit it.
+	err = a.admin.DB.DeleteUserAuthToken(txCtx, userToken.ID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+		} else {
+			internalServerError(w, fmt.Errorf("failed to consume refresh token, %w", err))
+		}
+		return
+	}
+
 	// Issue new access token (60 minutes TTL)
 	accessTTL := 60 * time.Minute
-	accessToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Access Token", nil, &accessTTL, false)
+	accessToken, err := a.admin.IssueUserAuthToken(txCtx, userID, clientID, "Access Token", nil, &accessTTL, false)
 	if err != nil {
 		if errors.Is(err, r.Context().Err()) {
 			http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
@@ -337,7 +392,7 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 
 	// Issue new refresh token (365 days TTL)
 	newRefreshTTL := 365 * 24 * time.Hour
-	newRefreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Refresh Token", nil, &newRefreshTTL, true)
+	newRefreshToken, err := a.admin.IssueUserAuthToken(txCtx, userID, clientID, "Refresh Token", nil, &newRefreshTTL, true)
 	if err != nil {
 		if errors.Is(err, r.Context().Err()) {
 			http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
@@ -360,20 +415,23 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
 		return
 	}
+
+	// Commit before writing the response. If the client disconnects while the
+	// response is written, the old token stays consumed and cannot be replayed
+	// to create a second durable branch.
+	if err := tx.Commit(); err != nil {
+		internalServerError(w, fmt.Errorf("failed to commit refresh token rotation, %w", err))
+		return
+	}
+	a.admin.PurgeAuthTokenCache()
+	a.admin.Used.Client(clientID)
+
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(respBytes)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
 		return
 	}
-
-	// Delete the old refresh token
-	err = a.admin.RevokeAuthToken(r.Context(), refreshTokenStr)
-	if err != nil {
-		a.logger.Warn("failed to revoke old refresh token", zap.Error(err))
-		// Continue anyway
-	}
-
 	a.logger.Debug("Refreshed access and refresh tokens", zap.String("userID", userID), zap.String("clientID", clientID))
 }
 

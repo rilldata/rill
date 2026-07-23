@@ -15,6 +15,11 @@ import (
 	"github.com/rilldata/rill/admin/pkg/oauth"
 )
 
+const (
+	deviceCodePollingInterval = 5 * time.Second
+	deviceCodeIssueAttempts   = 3
+)
+
 // DeviceCodeResponse encapsulates the response for obtaining a device code.
 type DeviceCodeResponse struct {
 	DeviceCode              string `json:"device_code"`
@@ -58,16 +63,26 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		http.Error(w, "client_id is required", http.StatusBadRequest)
 		return
 	}
-	scopes := strings.Split(values.Get("scope"), " ")
-	if len(scopes) == 0 {
+	scope := strings.TrimSpace(values.Get("scope"))
+	if scope == "" {
 		http.Error(w, "scope is required", http.StatusBadRequest)
 		return
 	}
+	scopes := strings.Fields(scope)
 	if len(scopes) > 1 || scopes[0] != "full_account" {
 		http.Error(w, "invalid scope", http.StatusBadRequest)
 		return
 	}
-	authCode, err := a.admin.IssueDeviceAuthCode(r.Context(), clientID)
+
+	// A user code must identify one pending request. The database enforces that
+	// invariant, and retrying here turns a rare random-code collision into a new code.
+	var authCode *database.DeviceAuthCode
+	for range deviceCodeIssueAttempts {
+		authCode, err = a.admin.IssueDeviceAuthCode(r.Context(), clientID)
+		if err == nil || !errors.Is(err, database.ErrNotUnique) {
+			break
+		}
+	}
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to issue auth code: %w", err))
 		return
@@ -89,7 +104,9 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		VerificationURI:         a.admin.URLs.AuthVerifyDeviceUI(nil),
 		VerificationCompleteURI: a.admin.URLs.AuthVerifyDeviceUI(qry),
 		ExpiresIn:               int(admin.DeviceAuthCodeTTL.Seconds()),
-		PollingInterval:         5,
+		// This is the client's minimum polling cadence. Server-side slow_down is
+		// not enforced until poll history is persisted with the device code.
+		PollingInterval: int(deviceCodePollingInterval.Seconds()),
 	}
 
 	respBytes, err := json.Marshal(resp)
@@ -174,7 +191,17 @@ func (a *Authenticator) getAccessTokenForDeviceCode(w http.ResponseWriter, r *ht
 	}
 	responseVersion := values.Get("token_response_version")
 
-	authCode, err := a.admin.DB.FindDeviceAuthCodeByDeviceCode(r.Context(), deviceCode)
+	// Token creation and one-time code consumption must commit together. Besides
+	// keeping failures retryable, the transaction ensures concurrent polls cannot
+	// persist more than one token for the same approved code.
+	txCtx, tx, err := a.admin.DB.NewTx(r.Context(), false)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to start device code transaction: %w", err))
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	authCode, err := a.admin.DB.FindDeviceAuthCodeByDeviceCode(txCtx, deviceCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such device code: %s found", deviceCode), http.StatusBadRequest)
@@ -189,14 +216,20 @@ func (a *Authenticator) getAccessTokenForDeviceCode(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if authCode.Expiry.Before(time.Now()) {
+	// Expiry is checked before approval state so an expired code can never issue a
+	// token, even if it was approved just before its deadline.
+	if !authCode.Expiry.After(time.Now()) {
 		http.Error(w, "expired_token", http.StatusUnauthorized)
 		return
 	}
 	if authCode.ApprovalState == database.DeviceAuthCodeStateRejected {
-		err = a.admin.DB.DeleteDeviceAuthCode(r.Context(), deviceCode)
+		err = a.admin.DB.DeleteDeviceAuthCode(txCtx, deviceCode)
 		if err != nil {
 			internalServerError(w, fmt.Errorf("failed to clean up rejected code: %s, %w", deviceCode, err))
+			return
+		}
+		if err := tx.Commit(); err != nil {
+			internalServerError(w, fmt.Errorf("failed to commit rejected code cleanup: %w", err))
 			return
 		}
 		http.Error(w, "rejected", http.StatusUnauthorized)
@@ -210,17 +243,20 @@ func (a *Authenticator) getAccessTokenForDeviceCode(w http.ResponseWriter, r *ht
 		internalServerError(w, fmt.Errorf("inconsistent state, %w", errors.New("server error")))
 		return
 	}
-	// TODO handle too many requests
 
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), *authCode.UserID, authCode.ClientID, "", nil, nil, false)
+	authToken, err := a.admin.IssueUserAuthToken(txCtx, *authCode.UserID, authCode.ClientID, "", nil, nil, false)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
 		return
 	}
 
-	err = a.admin.DB.DeleteDeviceAuthCode(r.Context(), deviceCode)
+	err = a.admin.DB.DeleteDeviceAuthCode(txCtx, deviceCode)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to clean up approved code: %s, %w", deviceCode, err))
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		internalServerError(w, fmt.Errorf("failed to commit approved code exchange: %w", err))
 		return
 	}
 
