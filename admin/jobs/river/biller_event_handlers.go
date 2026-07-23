@@ -64,8 +64,8 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 	if be != nil {
 		metadata := be.Metadata.(*database.BillingIssueMetadataPaymentFailed)
 		for id, failedInvoice := range metadata.Invoices {
-			copy := *failedInvoice
-			invoices[id] = &copy
+			invoiceCopy := *failedInvoice
+			invoices[id] = &invoiceCopy
 		}
 		if existing := invoices[job.Args.InvoiceID]; existing != nil && !job.Args.FailedAt.After(existing.FailedOn) {
 			// The invoice entry itself is the durable marker for the at-most-once
@@ -174,8 +174,8 @@ func (w *PaymentSuccessWorker) Work(ctx context.Context, job *river.Job[PaymentS
 		if id == job.Args.InvoiceID {
 			continue
 		}
-		copy := *failedInvoice
-		remainingInvoices[id] = &copy
+		invoiceCopy := *failedInvoice
+		remainingInvoices[id] = &invoiceCopy
 	}
 	w.logger.Info("invoice payment success for a failed invoice", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID))
 
