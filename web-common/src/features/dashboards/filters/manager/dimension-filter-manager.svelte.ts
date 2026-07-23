@@ -1,23 +1,24 @@
 import { page } from "$app/state";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
-import type {
-  MetricsViewSpecDimension,
-  V1Expression,
+import {
+  type MetricsViewSpecDimension,
+  type V1Expression,
+  V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import {
+  copyFilterExpression,
   createInExpression,
   createLikeExpression,
+  getValuesInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
 export type DimensionFilterManagerInit = {
   mode: DimensionFilterMode;
-  selectedValues?: string[];
-  inputText?: string;
-  exclude?: boolean;
-  pinned?: boolean;
-  required?: boolean;
+  selectedValues: string[];
+  inputText: string;
+  exclude: boolean;
 };
 
 export class DimensionFilterManager {
@@ -30,96 +31,100 @@ export class DimensionFilterManager {
   public pinned: boolean;
   public required: boolean;
 
+  private oldMode: DimensionFilterMode;
+
   public constructor(
     public readonly name: string,
     public readonly label: string,
     public readonly dimensions: Map<string, MetricsViewSpecDimension>,
     public readonly editing: boolean, // TODO: maybe separate editing, pinned & required?
-    init: DimensionFilterManagerInit,
+    initExpr: V1Expression = createInExpression(name, []),
+    isInList: boolean = false,
   ) {
-    this.mode = $state(init.mode);
-    this.selectedValues = $state(init.selectedValues ?? []);
-    this.inputText = $state(init.inputText ?? "");
-    this.exclude = $state(init.exclude ?? false);
-    this.pinned = $state(init.pinned ?? false);
-    this.required = $state(init.required ?? false);
-    this.buildExpression();
+    let initMode: DimensionFilterMode = DimensionFilterMode.Select;
+    let initSelectedValues: string[] = [];
+    let initInputText: string = "";
+    let initExclude: boolean = false;
+
+    const op = initExpr.cond?.op;
+    if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
+      initMode = isInList
+        ? DimensionFilterMode.InList
+        : DimensionFilterMode.Select;
+      initSelectedValues = getValuesInExpression(initExpr);
+      initExclude = op === V1Operation.OPERATION_NIN;
+    } else if (
+      op === V1Operation.OPERATION_LIKE ||
+      op === V1Operation.OPERATION_NLIKE
+    ) {
+      initMode = DimensionFilterMode.Contains;
+      initInputText = initExpr.cond?.exprs?.[1]?.val?.toString?.() ?? "";
+      initExclude = op === V1Operation.OPERATION_NLIKE;
+    }
+
+    this.mode = $state(initMode);
+    this.oldMode = initMode;
+    this.selectedValues = $state(initSelectedValues);
+    this.inputText = $state(initInputText);
+    this.exclude = $state(initExclude);
+    this.pinned = $state(false);
+    this.required = $state(false);
+    this.commit();
   }
 
-  public toggleMultipleValues(
-    dimensionValues: string[],
-    isExclusiveFilter?: boolean,
-    exclude?: boolean,
-  ) {
-    if (exclude !== undefined) this.exclude = exclude;
+  public clone() {
+    return new DimensionFilterManager(
+      this.name,
+      this.label,
+      this.dimensions,
+      this.editing,
+      this.expr,
+      this.mode === DimensionFilterMode.InList,
+    );
+  }
 
-    if (this.mode !== DimensionFilterMode.Select) {
-      this.inputText = "";
-      eventBus.emit("notification", {
-        message: "Converted filter type to Select",
-        link: {
-          text: m.common_undo(),
-          href: page.url.href,
-        },
-      });
-      this.mode = DimensionFilterMode.Select;
-      this.selectedValues = dimensionValues;
-      return this.buildExpression();
-    }
-
-    if (isExclusiveFilter) {
-      this.selectedValues = dimensionValues;
-      return this.buildExpression();
-    }
-
-    dimensionValues.forEach((v) => {
-      const removedIndex = this.toggleValue(v, false);
-      if (removedIndex === -1) return;
-
-      // TODO: decrement pinIndex if the removed value was before the pinned value
-    });
-
-    this.buildExpression();
+  public setSelectedValues(dimensionValues: string[], exclude: boolean) {
+    this.mode = DimensionFilterMode.Select;
+    this.selectedValues = dimensionValues;
+    this.inputText = "";
+    this.exclude = exclude;
+    this.commit();
   }
 
   public toggleValue(dimensionValue: string, isExclusiveFilter: boolean) {
     const inIdx = this.selectedValues.findIndex((v) => v === dimensionValue);
-    let retIdx = inIdx;
 
     if (inIdx === -1) {
       if (isExclusiveFilter) {
         this.selectedValues = [dimensionValue];
-        retIdx = -1;
       } else {
         this.selectedValues = [...this.selectedValues, dimensionValue];
       }
     } else {
       this.selectedValues = this.selectedValues.splice(inIdx, 1);
     }
-
-    return retIdx;
+    this.commit();
   }
 
-  public setInList(values: string[], exclude?: boolean) {
-    if (exclude !== undefined) this.exclude = exclude;
-
+  public setInList(values: string[], exclude: boolean) {
     this.mode = DimensionFilterMode.InList;
     this.selectedValues = values;
     this.inputText = "";
-    this.buildExpression();
+    this.exclude = exclude;
+    this.commit();
   }
 
-  public setContainsText(searchText: string, exclude?: boolean) {
-    if (exclude !== undefined) this.exclude = exclude;
-
+  public setContainsText(searchText: string, exclude: boolean) {
     this.mode = DimensionFilterMode.Contains;
     this.selectedValues = [];
     this.inputText = searchText;
-    this.buildExpression();
+    this.exclude = exclude;
+    this.commit();
   }
 
   public toggleExclude() {
     this.exclude = !this.exclude;
+    this.commit();
   }
 
   public togglePinned() {
@@ -134,12 +139,22 @@ export class DimensionFilterManager {
     this.selectedValues = [];
     this.inputText = "";
     this.expr = undefined;
-    this.buildExpression();
+    this.commit();
   }
 
-  private buildExpression() {
+  public commit() {
     switch (this.mode) {
       case DimensionFilterMode.Select:
+        if (this.oldMode !== DimensionFilterMode.Select) {
+          eventBus.emit("notification", {
+            message: "Converted filter type to Select",
+            link: {
+              text: m.common_undo(),
+              href: page.url.href,
+            },
+          });
+        }
+      // eslint-disable-next-line no-fallthrough
       case DimensionFilterMode.InList:
         this.expr = this.selectedValues.length
           ? createInExpression(this.name, this.selectedValues, this.exclude)
@@ -152,5 +167,6 @@ export class DimensionFilterManager {
           : undefined;
         break;
     }
+    this.oldMode = this.mode;
   }
 }

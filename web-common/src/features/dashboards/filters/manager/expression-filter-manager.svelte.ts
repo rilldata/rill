@@ -3,12 +3,10 @@ import {
   type DimensionFilterManagerInit,
 } from "@rilldata/web-common/features/dashboards/filters/manager/dimension-filter-manager.svelte.ts";
 import type { V1Expression } from "@rilldata/web-admin/client";
-import {
-  convertExpressionToFilterParam,
-  convertFilterParamToExpression,
-} from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import {
   createAndExpression,
+  createInExpression,
   forEachIdentifier,
   getValuesInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
@@ -19,7 +17,7 @@ import {
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
-export class FilterManagerManager {
+export class ExpressionFilterManager {
   public dimensionFilterManagers: DimensionFilterManager[] = $state([]);
   public expr: V1Expression;
   public exprParam: string = "";
@@ -59,39 +57,15 @@ export class FilterManagerManager {
       if (!dim) return;
       addedDimension.add(ident);
 
-      const op = e.cond?.op;
-      let init: DimensionFilterManagerInit | undefined = undefined;
-      if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
-        const isInListMode = dimensionsWithInlistFilter.includes(ident);
-        init = {
-          mode: isInListMode
-            ? DimensionFilterMode.InList
-            : DimensionFilterMode.Select,
-          selectedValues: getValuesInExpression(e),
-          exclude: op === V1Operation.OPERATION_NIN,
-          inputText: undefined,
-        };
-      } else if (
-        op === V1Operation.OPERATION_LIKE ||
-        op === V1Operation.OPERATION_NLIKE
-      ) {
-        init = {
-          mode: DimensionFilterMode.Contains,
-          selectedValues: [],
-          inputText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
-          exclude: op === V1Operation.OPERATION_NLIKE,
-        };
-      }
-
-      if (!init) return;
-
+      const isInListMode = dimensionsWithInlistFilter.includes(ident);
       newDimensionFilterManagers.push(
         new DimensionFilterManager(
           ident,
           getDimensionDisplayName(dim),
           new Map<string, MetricsViewSpecDimension>([[metricsViewName, dim]]),
           false,
-          init,
+          e,
+          isInListMode,
         ),
       );
     });
@@ -120,7 +94,6 @@ export class FilterManagerManager {
       getDimensionDisplayName(dim),
       new Map<string, MetricsViewSpecDimension>([[metricsViewName, dim]]),
       false,
-      { mode: DimensionFilterMode.Select },
     );
     this.dimensionFilterManagers = [
       ...this.dimensionFilterManagers,
@@ -131,6 +104,12 @@ export class FilterManagerManager {
   public clear() {
     this.dimensionFilterManagers = [];
     this.temporaryFilter = undefined;
-    console.log("clear", [...this.dimensionFilterManagers]);
+  }
+
+  public getOtherDimensionsFilter(name: string) {
+    const exprs = this.dimensionFilterManagers
+      .filter((dfm) => !!dfm.expr && dfm.name !== name)
+      .map((d) => d.expr as V1Expression);
+    return exprs.length === 0 ? undefined : createAndExpression(exprs);
   }
 }

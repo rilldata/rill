@@ -9,7 +9,7 @@
   export let excludeMode: boolean;
   export let allSelected: boolean;
   export let disableApplyButton: boolean;
-  export let onToggleExcludeMode: (checked: boolean) => void;
+  export let onToggleExcludeMode: () => void;
   export let onToggleSelectAll: () => void;
   export let onApply: () => void;
 </script>
