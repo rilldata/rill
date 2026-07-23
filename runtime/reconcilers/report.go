@@ -466,16 +466,7 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 	// We're only going to retry on non-dirty cancellations.
 	retry := false
 	if reportErr != nil {
-		if errors.Is(reportErr, context.Canceled) || errors.Is(reportErr, context.DeadlineExceeded) {
-			if dirtyErr {
-				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted after some notifications were sent. The report will not automatically retry."
-			} else {
-				retry = true
-				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted. It will automatically retry."
-			}
-		} else {
-			rep.State.CurrentExecution.ErrorMessage = fmt.Sprintf("Report run failed: %v", reportErr.Error())
-		}
+		retry, rep.State.CurrentExecution.ErrorMessage = classifyReportError(dirtyErr, reportErr)
 		reportErr = fmt.Errorf("last report run failed with error: %v", reportErr.Error())
 	}
 
@@ -493,6 +484,16 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 	}
 
 	return retry, reportErr
+}
+
+func classifyReportError(dirty bool, err error) (bool, string) {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		if dirty {
+			return false, "Report run was interrupted after some notifications were sent. The report will not automatically retry."
+		}
+		return true, "Report run was interrupted. It will automatically retry."
+	}
+	return false, fmt.Sprintf("Report run failed: %v", err)
 }
 
 // sendReport composes and sends the actual report to the configured recipients.
@@ -591,33 +592,48 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	sent := false
+	sent, deliveryWarnings, err := r.sendReportNotifications(ctx, self, rep, t, notificationsContent)
+	allWarnings = append(allWarnings, deliveryWarnings...)
+	if err != nil {
+		return sent, allWarnings, err
+	}
+
+	return sent, allWarnings, nil
+}
+
+func (r *ReportReconciler) sendReportNotifications(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, notificationsContent map[string]*notificationData) (bool, []string, error) {
+	sentAny := false
+	var warnings []string
 	for _, notifier := range rep.Spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			sent, err = r.sendEmailNotification(ctx, self, rep, t, recipients, notificationsContent)
+			sent, notifierWarnings, err := r.sendEmailNotification(ctx, self, rep, t, recipients, notificationsContent)
+			sentAny = sentAny || sent
+			warnings = append(warnings, notifierWarnings...)
 			if err != nil {
-				return sent, nil, err
+				return sentAny, warnings, err
 			}
 		default:
-			var err error
-			sent, err = r.sendNonEmailNotification(ctx, rep, t, notifier, notificationsContent)
+			sent, err := r.sendNonEmailNotification(ctx, rep, t, notifier, notificationsContent)
+			sentAny = sentAny || sent
 			if err != nil {
-				return sent, nil, err
+				return sentAny, warnings, err
 			}
 		}
 	}
 
-	return false, allWarnings, nil
+	return sentAny, warnings, nil
 }
 
-func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, recipients []string, notificationsContent map[string]*notificationData) (bool, error) {
+func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, recipients []string, notificationsContent map[string]*notificationData) (bool, []string, error) {
 	sent := false
+	var warnings []string
 	for _, recipient := range recipients {
 		content, ok := notificationsContent[recipient]
 		if !ok {
 			r.C.Logger.Warn("Skipping recipient - failed to get notification content", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			warnings = append(warnings, fmt.Sprintf("Skipped recipient %q because notification content was unavailable", recipient))
 			continue
 		}
 
@@ -634,12 +650,12 @@ func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runt
 			DownloadFormat:  content.downloadFormat,
 		}
 		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
-			return true, fmt.Errorf("failed to send AI report email to %q: %w", recipient, err)
+			return sent, warnings, fmt.Errorf("failed to send AI report email to %q: %w", recipient, err)
 		}
 		sent = true
 	}
 
-	return sent, nil
+	return sent, warnings, nil
 }
 
 // sendNonEmailNotification sends report via non-email notifiers (e.g., Slack).
@@ -909,7 +925,7 @@ func calculateReportExecutionTimes(r *runtimev1.Report, watermark, previousWater
 
 	// Calculate the execution times
 	ts := []time.Time{end}
-	for i := 0; i < limit; i++ {
+	for len(ts) < limit {
 		t := ts[len(ts)-1]
 		t = d.Sub(t)
 		if !t.After(previousWatermark) {
@@ -926,7 +942,8 @@ func calculateReportExecutionTimes(r *runtimev1.Report, watermark, previousWater
 
 func latestReportWarnings(r *runtimev1.Report) []string {
 	if r.State != nil && len(r.State.ExecutionHistory) > 0 {
-		return r.State.ExecutionHistory[len(r.State.ExecutionHistory)-1].Warnings
+		// Execution history is newest-first; popCurrentExecution inserts at index 0.
+		return r.State.ExecutionHistory[0].Warnings
 	}
 	return nil
 }
