@@ -760,8 +760,6 @@
   "dashboard_pivot_learn_more": "Aprende más sobre tablas en nuestra",
   "dashboard_pivot_need_help_discord": "¿Necesitas ayuda? Contáctanos en",
   "dashboard_pivot_no_data": "No hay datos para mostrar con los filtros seleccionados.",
-  "dashboard_pivot_show_all_fields": "Mostrar todo ({count})",
-  "dashboard_pivot_show_less": "Mostrar menos",
   "dashboard_pivot_table_lonely": "Tu tabla se ve sola",
   "dashboard_readonly_filter_chips_aria": "Chips de filtro de solo lectura",
   "dashboard_recent": "Recientes",

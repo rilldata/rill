@@ -57,7 +57,6 @@
 </script>
 
 <script lang="ts">
-  import { afterUpdate, onMount } from "svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let items: PivotChipData[] = [];
@@ -77,13 +76,6 @@
 
   const isDropLocation = zone === "columns" || zone === "rows";
   const DRAG_START_THRESHOLD_PX = 4;
-
-  // Drop zones are capped in height so a large number of chips cannot push
-  // the pivot table itself out of view. When the chips overflow the cap,
-  // the zone scrolls internally and a toggle allows expanding it
-  // (still bounded, so the table always stays reachable).
-  let expanded = false;
-  let overflowing = false;
 
   const _ghostIndex = writable<number | null>(null);
 
@@ -323,25 +315,6 @@
     swap = false;
   }
 
-  function measureOverflow() {
-    if (!container || !isDropLocation) return;
-    overflowing = container.scrollHeight > container.clientHeight + 1;
-  }
-
-  afterUpdate(measureOverflow);
-
-  onMount(() => {
-    if (!isDropLocation) return;
-    const observer = new ResizeObserver(measureOverflow);
-    observer.observe(container);
-    return () => observer.disconnect();
-  });
-
-  function toggleExpanded() {
-    expanded = !expanded;
-    if (!expanded && container) container.scrollTop = 0;
-  }
-
   function handleRowClick(item: PivotChipData) {
     let itemToAdd = item;
     if (item.type === PivotChipType.Time) {
@@ -370,8 +343,6 @@
   class="dnd-zone group"
   class:valid={isValidDropZone}
   class:horizontal={isDropLocation}
-  class:collapsed={isDropLocation && !expanded}
-  class:expanded={isDropLocation && expanded}
   style:--ghost-width="{ghostWidth ?? 0}px"
   onmouseup={handleDrop}
   onmouseenter={handleDragEnter}
@@ -513,16 +484,6 @@
   {/if}
 </div>
 
-{#if isDropLocation && (overflowing || expanded)}
-  <div class="self-start flex-none whitespace-nowrap">
-    <Button type="text" onClick={toggleExpanded}>
-      {expanded
-        ? m.dashboard_pivot_show_less()
-        : m.dashboard_pivot_show_all_fields({ count: items.length })}
-    </Button>
-  </div>
-{/if}
-
 {#if dragChip && zoneStartedDrag}
   <PivotPortalItem
     {offset}
@@ -547,21 +508,13 @@
   }
 
   .horizontal {
-    @apply flex flex-row flex-wrap bg-input w-full p-1 px-2 gap-x-2 gap-y-1 h-fit;
+    @apply flex flex-row flex-wrap bg-input w-full p-1 px-2 gap-x-2 h-fit;
     @apply items-center;
     @apply border;
+    /* Cap the drop zone at ~3 chip rows so a large number of chips scrolls
+       within the zone instead of pushing the pivot table out of view. */
     @apply overflow-y-auto;
-  }
-
-  /* Cap the drop zone height so many chips scroll within the zone instead
-     of pushing the pivot table out of view; a cut-off chip row at the
-     bottom edge doubles as the scroll affordance. */
-  .collapsed {
-    max-height: 104px;
-  }
-
-  .expanded {
-    max-height: 40vh;
+    max-height: 88px;
   }
 
   .valid {
