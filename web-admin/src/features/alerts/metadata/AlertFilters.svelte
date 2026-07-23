@@ -54,8 +54,16 @@
     whereFilter,
     dimensionsWithInlistFilter,
     metricsViewName,
+    // Not supported in alerts/reports as of now
+    new Set(),
+    new Set(),
   );
-  $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
+  $: currentMeasureFilters = getMeasureFilters(
+    measureIdMap,
+    havingFilter, // Not supported in alerts/reports  as of now
+    new Set(),
+    new Set(),
+  );
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label="Alert filters">

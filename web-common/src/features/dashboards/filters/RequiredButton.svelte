@@ -19,7 +19,7 @@
     </BitsTooltip.Trigger>
     <BitsTooltip.Content
       side="right"
-      class="z-[100000] max-w-56 bg-gray-700 dark:bg-gray-900 shadow-md text-surface rounded p-2 pt-1 pb-1"
+      class="z-[100000] max-w-56"
       sideOffset={8}
     >
       {m.filter_required_tooltip()}
