@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
@@ -92,6 +94,15 @@ func (c *Client) ListResources(ctx context.Context, req *runtimev1.ListResources
 	if err != nil {
 		return nil, err
 	}
+
+	slices.SortFunc(resources, func(a, b *runtimev1.Resource) int {
+		an := a.Meta.Name
+		bn := b.Meta.Name
+		if an.Kind != bn.Kind {
+			return strings.Compare(an.Kind, bn.Kind)
+		}
+		return strings.Compare(an.Name, bn.Name)
+	})
 
 	return &runtimev1.ListResourcesResponse{Resources: resources}, nil
 }
