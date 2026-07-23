@@ -48,7 +48,9 @@
             }}
           >
             <div slot="body">
-              {m.dashboard_viewing_as()} <b>{$selectedMockUserStore.email}</b>
+              {@html m.dashboard_viewing_as({
+                email: $selectedMockUserStore.email ?? "",
+              })}
             </div>
           </Chip>
         </button>
