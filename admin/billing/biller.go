@@ -58,11 +58,11 @@ type Biller interface {
 	// CreateCustomerCreditAlerts registers credit-balance alerts for the customer in the given currency.
 	CreateCustomerCreditAlerts(ctx context.Context, customerID, currency string, lowThreshold float64) error
 
-	// GrantCustomerCredits increments credit ledger entry to the customer's balance in the given currency. Description is recorded on the ledger entry; expiryDate may be nil for credits that never expire.
-	GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error
+	// GrantCustomerCredits increments credit ledger entry to the customer's balance in the given currency. Description is recorded on the ledger entry; expiryDate may be nil for credits that never expire. When idempotencyKey is non-empty, retries must apply the logical grant at most once.
+	GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time, idempotencyKey string) error
 
-	// DebitCustomerCredits posts a `decrement` ledger entry against the customer's balance in the given currency.
-	DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error
+	// DebitCustomerCredits posts a `decrement` ledger entry against the customer's balance in the given currency. When idempotencyKey is non-empty, retries must apply the logical debit at most once.
+	DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description, idempotencyKey string) error
 
 	// GetCustomerCreditBalance returns the customer's current credit balance in the given currency.
 	GetCustomerCreditBalance(ctx context.Context, customerID, currency string) (float64, error)
@@ -74,8 +74,8 @@ type Biller interface {
 	// CancelSubscriptionsForCustomer cancels all the subscriptions for the given organization and returns the end date of the subscription
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error)
 
-	// ChangeSubscriptionPlan changes the plan of the given subscription immediately and returns the updated subscription
-	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error)
+	// ChangeSubscriptionPlan changes the plan of the given subscription immediately and returns the updated subscription. When idempotencyKey is non-empty, retries must apply the logical change at most once.
+	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, idempotencyKey string) (*Subscription, error)
 	// UnscheduleCancellation cancels the scheduled cancellation for the given subscription and returns the updated subscription
 	UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error)
 

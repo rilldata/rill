@@ -285,7 +285,7 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 	if balance <= 0 {
 		// Only seed the initial credits if the customer does not already have a trial balance.
 		// This keeps retries idempotent when an earlier attempt granted credits before failing.
-		if err := s.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, CreditTrialAllocation, billing.CreditsCurrency, "Initial trial credits", nil); err != nil {
+		if err := s.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, CreditTrialAllocation, billing.CreditsCurrency, "Initial trial credits", nil, ""); err != nil {
 			return nil, nil, fmt.Errorf("failed to grant trial credits: %w", err)
 		}
 	}

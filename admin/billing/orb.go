@@ -269,7 +269,7 @@ func (o *Orb) CreateCustomerCreditAlerts(ctx context.Context, customerID, curren
 }
 
 // GrantCustomerCredits adds an `increment` ledger entry to the customer's credit balance in Orb in the given currency. per_unit_cost_basis is set to "0.00" so the grant itself does not produce an invoice line item.
-func (o *Orb) GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error {
+func (o *Orb) GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time, idempotencyKey string) error {
 	params := orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddIncrementCreditLedgerEntryRequestParams{
 		Amount:           orb.F(amount),
 		Currency:         orb.String(currency),
@@ -280,7 +280,7 @@ func (o *Orb) GrantCustomerCredits(ctx context.Context, customerID string, amoun
 	if expiryDate != nil {
 		params.ExpiryDate = orb.F(*expiryDate)
 	}
-	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, params)
+	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, params, orbIdempotencyOption(idempotencyKey)...)
 	if err != nil {
 		return fmt.Errorf("creating credit ledger increment entry: %w", err)
 	}
@@ -288,13 +288,13 @@ func (o *Orb) GrantCustomerCredits(ctx context.Context, customerID string, amoun
 }
 
 // DebitCustomerCredits posts a `decrement` ledger entry against the customer's credit balance in Orb in the given currency. Used to expire/zero out a credit pool, e.g., to roll trial credits over to a different currency on upgrade.
-func (o *Orb) DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error {
+func (o *Orb) DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description, idempotencyKey string) error {
 	_, err := o.client.Customers.Credits.Ledger.NewEntryByExternalID(ctx, customerID, orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddDecrementCreditLedgerEntryRequestParams{
 		Amount:      orb.F(amount),
 		Currency:    orb.String(currency),
 		EntryType:   orb.F(orb.CustomerCreditLedgerNewEntryByExternalIDParamsAddDecrementCreditLedgerEntryRequestParamsEntryTypeDecrement),
 		Description: orb.String(description),
-	})
+	}, orbIdempotencyOption(idempotencyKey)...)
 	if err != nil {
 		return fmt.Errorf("creating credit ledger decrement entry: %w", err)
 	}
@@ -337,11 +337,11 @@ func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Su
 	return subs[0], nil
 }
 
-func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
+func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, idempotencyKey string) (*Subscription, error) {
 	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, orb.SubscriptionSchedulePlanChangeParams{
 		PlanID:       orb.String(plan.ID),
 		ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate),
-	})
+	}, orbIdempotencyOption(idempotencyKey)...)
 	if err != nil {
 		return nil, err
 	}
@@ -357,6 +357,13 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 		TrialEndDate:                 s.TrialInfo.EndDate,
 		Metadata:                     s.Metadata,
 	}, nil
+}
+
+func orbIdempotencyOption(key string) []option.RequestOption {
+	if key == "" {
+		return nil
+	}
+	return []option.RequestOption{option.WithHeader("Idempotency-Key", key)}
 }
 
 func (o *Orb) UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error) {

@@ -3160,7 +3160,9 @@ func (c *connection) UpsertBillingIssue(ctx context.Context, opts *database.Upse
 }
 
 func (c *connection) UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_issues SET overdue_processed = true WHERE id = $1`, id)
+	// Treat this update as an atomic claim. A concurrent lifecycle worker that
+	// already observed the stale row must not also proceed to an external side effect.
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_issues SET overdue_processed = true WHERE id = $1 AND overdue_processed = false`, id)
 	return checkUpdateRow("billing issue", res, err)
 }
 

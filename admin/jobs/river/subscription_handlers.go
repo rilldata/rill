@@ -22,6 +22,7 @@ type SubscriptionCancellationCheckWorker struct {
 	river.WorkerDefaults[SubscriptionCancellationCheckArgs]
 	admin  *admin.Service
 	logger *zap.Logger
+	now    func() time.Time
 }
 
 // Work This worker runs at end of the current subscription term after subscription cancellation
@@ -35,107 +36,71 @@ func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *riv
 		return fmt.Errorf("failed to find orgs with subscription cancellation billing issue: %w", err)
 	}
 
+	now := billingLifecycleNow(w.now)
+	var workErr error
 	for _, issue := range cancelled {
 		m := issue.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled)
-		if time.Now().UTC().Before(m.EndDate.AddDate(0, 0, 1)) {
+		if now.Before(m.EndDate.AddDate(0, 0, 1)) {
 			// subscription end date is not finished yet, continue to next org
 			continue
 		}
 
-		org, err := w.admin.DB.FindOrganization(ctx, issue.OrgID)
-		if err != nil {
-			return fmt.Errorf("failed to find organization: %w", err)
-		}
-
-		// check if the org has any active subscription
-		sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
-		if err != nil {
-			if !errors.Is(err, billing.ErrNotFound) {
-				return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
-			}
-		}
-
-		if sub != nil {
-			w.logger.Warn("active subscription found for the org even after sub cancellation, skipping hibernation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-			return fmt.Errorf("active subscription found for the org %q", org.Name)
-		}
-
-		// update quotas to 0 and hibernate all projects
-		_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-			Name:                                org.Name,
-			DisplayName:                         org.DisplayName,
-			Description:                         org.Description,
-			LogoAssetID:                         org.LogoAssetID,
-			LogoDarkAssetID:                     org.LogoDarkAssetID,
-			FaviconAssetID:                      org.FaviconAssetID,
-			ThumbnailAssetID:                    org.ThumbnailAssetID,
-			CustomDomain:                        org.CustomDomain,
-			DefaultProjectRoleID:                org.DefaultProjectRoleID,
-			QuotaProjects:                       0,
-			QuotaDeployments:                    0,
-			QuotaSlotsTotal:                     0,
-			QuotaSlotsPerDeployment:             0,
-			QuotaOutstandingInvites:             0,
-			QuotaStorageLimitBytesPerDeployment: 0,
-			QuotaSeats:                          0,
-			BillingCustomerID:                   org.BillingCustomerID,
-			PaymentCustomerID:                   org.PaymentCustomerID,
-			BillingEmail:                        org.BillingEmail,
-			BillingPlanName:                     org.BillingPlanName,
-			BillingPlanDisplayName:              org.BillingPlanDisplayName,
-			CreatedByUserID:                     org.CreatedByUserID,
-		})
-		if err != nil {
-			return err
-		}
-
-		// hibernate projects
-		limit := 10
-		afterProjectName := ""
-		projectCount := 0
-		for {
-			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
-			if err != nil {
-				return err
-			}
-			projectCount += len(projs)
-
-			for _, proj := range projs {
-				_, err = w.admin.HibernateProject(ctx, proj)
-				if err != nil {
-					return fmt.Errorf("failed to hibernate project %q: %w", proj.Name, err)
-				}
-				afterProjectName = proj.Name
-			}
-
-			if len(projs) < limit {
-				break
-			}
-		}
-
-		err = w.admin.Email.SendSubscriptionEnded(&email.SubscriptionEnded{
-			ToEmail:    org.BillingEmail,
-			ToName:     org.Name,
-			OrgName:    org.Name,
-			BillingURL: w.admin.URLs.Billing(org.Name, false),
-		})
-		if err != nil {
-			w.logger.Error("failed to send subscription ended email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_email", org.BillingEmail), zap.Error(err))
-		}
-
-		w.logger.Warn("projects hibernated due to subscription cancellation",
-			zap.String("org_id", org.ID),
-			zap.String("org_name", org.Name),
-			zap.Int("count_of_projects", projectCount),
-			zap.String("user_email", org.BillingEmail),
-		)
-
-		// mark the billing issue as processed
-		err = w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, issue.ID)
-		if err != nil {
-			return fmt.Errorf("failed to update billing issue as processed: %w", err)
+		if err := w.processIssue(ctx, issue); err != nil {
+			workErr = errors.Join(workErr, fmt.Errorf("process subscription cancellation for org %q: %w", issue.OrgID, err))
 		}
 	}
 
+	return workErr
+}
+
+func (w *SubscriptionCancellationCheckWorker) processIssue(ctx context.Context, issue *database.BillingIssue) error {
+	org, err := w.admin.DB.FindOrganization(ctx, issue.OrgID)
+	if err != nil {
+		return fmt.Errorf("failed to find organization: %w", err)
+	}
+
+	sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil && !errors.Is(err, billing.ErrNotFound) {
+		return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
+	}
+	if sub != nil {
+		// A replacement subscription makes this cancellation issue stale. Retire it
+		// and continue so it cannot block cancellation checks for later organizations.
+		w.logger.Warn("active replacement subscription found after cancellation; skipping hibernation", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
+		if err := w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, issue.ID); err != nil {
+			return fmt.Errorf("failed to retire stale subscription cancellation issue: %w", err)
+		}
+		return nil
+	}
+
+	if err := zeroOrganizationQuotas(ctx, w.admin, org); err != nil {
+		return err
+	}
+	projectCount, err := hibernateProjectsForOrganization(ctx, w.admin, org.ID)
+	if err != nil {
+		return err
+	}
+
+	w.logger.Warn("projects hibernated due to subscription cancellation",
+		zap.String("org_id", org.ID),
+		zap.String("org_name", org.Name),
+		zap.Int("count_of_projects", projectCount),
+		zap.String("user_email", org.BillingEmail),
+	)
+
+	// Persist completion before SMTP to prevent a failed processed-marker update
+	// from causing a duplicate email on retry.
+	if err := w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, issue.ID); err != nil {
+		return fmt.Errorf("failed to update billing issue as processed: %w", err)
+	}
+	err = w.admin.Email.SendSubscriptionEnded(&email.SubscriptionEnded{
+		ToEmail:    org.BillingEmail,
+		ToName:     org.Name,
+		OrgName:    org.Name,
+		BillingURL: w.admin.URLs.Billing(org.Name, false),
+	})
+	if err != nil {
+		w.logger.Error("failed to send subscription ended email after marking it attempted", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+	}
 	return nil
 }

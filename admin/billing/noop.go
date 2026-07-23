@@ -77,11 +77,11 @@ func (n noop) CreateCustomerCreditAlerts(ctx context.Context, customerID, curren
 	return nil
 }
 
-func (n noop) GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time) error {
+func (n noop) GrantCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string, expiryDate *time.Time, idempotencyKey string) error {
 	return nil
 }
 
-func (n noop) DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description string) error {
+func (n noop) DebitCustomerCredits(ctx context.Context, customerID string, amount float64, currency, description, idempotencyKey string) error {
 	return nil
 }
 
@@ -97,7 +97,7 @@ func (n noop) GetActiveSubscription(ctx context.Context, customerID string) (*Su
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
-func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
+func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, idempotencyKey string) (*Subscription, error) {
 	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 

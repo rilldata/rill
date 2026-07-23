@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"math"
@@ -125,6 +126,10 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 		return nil, err
 	}
+	if !plan.Public && !forceAccess {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)
+	}
+
 	// for both free and legacy trial plan, start the credit trial
 	if plan.PlanType == billing.FreePlanType || plan.PlanType == billing.TrailPlanType {
 		bi, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
@@ -167,10 +172,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
-	if !plan.Public && !forceAccess {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot assign a private plan %q", plan.Name)
-	}
-
 	// check for validation errors if not forced
 	if !forceAccess {
 		err = s.planChangeValidationChecks(ctx, org)
@@ -208,7 +209,29 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		// schedule plan change
 		oldPlan := sub.Plan
 		if oldPlan.ID != plan.ID {
-			sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan)
+			// Roll any leftover trial `credits` over to USD on a trial → paid upgrade. The trial plan is priced in `credits`; the paid plan is priced in USD, so an unused `credits` balance would otherwise sit dormant on the customer ledger. Transfer 1:1 (e.g., 80 credits → $80) by debiting the credits ledger and granting the same amount on USD.
+			// Complete the transfer before changing plans so a retry can still identify an unfinished trial upgrade. Stable provider keys make ambiguous responses safe to replay.
+			if oldPlan.PlanType == billing.FreePlanType && plan.PlanType != billing.FreePlanType && plan.PlanType != billing.TrailPlanType {
+				balance, err := s.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
+				if err != nil {
+					return nil, fmt.Errorf("failed to fetch trial credit balance for rollover: %w", err)
+				}
+				if balance > 0 {
+					if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, balance, billing.USDCurrency, "Trial credit rollover on upgrade", nil, planChangeIdempotencyKey("grant", org.ID, sub.ID, plan.ID)); err != nil {
+						return nil, fmt.Errorf("failed to grant USD rollover credits: %w", err)
+					}
+					if err := s.admin.Biller.DebitCustomerCredits(ctx, org.BillingCustomerID, balance, billing.CreditsCurrency, "Trial credit rollover on upgrade", planChangeIdempotencyKey("debit", org.ID, sub.ID, plan.ID)); err != nil {
+						return nil, fmt.Errorf("failed to debit trial credits during rollover: %w", err)
+					}
+					s.logger.Named("billing").Info("rolled over trial credits to USD",
+						zap.String("org_id", org.ID),
+						zap.String("org_name", org.Name),
+						zap.Float64("amount", balance),
+					)
+				}
+			}
+
+			sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan, planChangeIdempotencyKey("plan", org.ID, sub.ID, plan.ID))
 			if err != nil {
 				return nil, err
 			}
@@ -221,27 +244,6 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				zap.String("new_plan_id", sub.Plan.ID),
 				zap.String("new_plan_name", sub.Plan.Name),
 			)
-
-			// Roll any leftover trial `credits` over to USD on a trial → paid upgrade. The trial plan is priced in `credits`; the paid plan is priced in USD, so an unused `credits` balance would otherwise sit dormant on the customer ledger. Transfer 1:1 (e.g., 80 credits → $80) by debiting the credits ledger and granting the same amount on USD.
-			if oldPlan.PlanType == billing.FreePlanType {
-				balance, err := s.admin.Biller.GetCustomerCreditBalance(ctx, org.BillingCustomerID, billing.CreditsCurrency)
-				if err != nil {
-					return nil, fmt.Errorf("failed to fetch trial credit balance for rollover: %w", err)
-				}
-				if balance > 0 {
-					if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, balance, billing.USDCurrency, "Trial credit rollover on upgrade", nil); err != nil {
-						return nil, fmt.Errorf("failed to grant USD rollover credits: %w", err)
-					}
-					if err := s.admin.Biller.DebitCustomerCredits(ctx, org.BillingCustomerID, balance, billing.CreditsCurrency, "Trial credit rollover on upgrade"); err != nil {
-						return nil, fmt.Errorf("failed to debit trial credits during rollover: %w", err)
-					}
-					s.logger.Named("billing").Info("rolled over trial credits to USD",
-						zap.String("org_id", org.ID),
-						zap.String("org_name", org.Name),
-						zap.Float64("amount", balance),
-					)
-				}
-			}
 		}
 	}
 
@@ -290,6 +292,11 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		Organization: s.organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
+}
+
+func planChangeIdempotencyKey(operation, orgID, subscriptionID, planID string) string {
+	sum := sha256.Sum256([]byte(operation + "\x00" + orgID + "\x00" + subscriptionID + "\x00" + planID))
+	return fmt.Sprintf("rill-plan-change-%s-%x", operation, sum[:16])
 }
 
 // CancelBillingSubscription cancels the billing subscription for the organization
@@ -429,7 +436,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 
 	if sub.Plan.ID != plan.ID {
 		// change the plan, won't happen for new subscriptions
-		sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan)
+		sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan, "")
 		if err != nil {
 			return nil, err
 		}
@@ -782,7 +789,7 @@ func (s *Server) SudoGrantTrialCredits(ctx context.Context, req *adminv1.SudoGra
 		description = fmt.Sprintf("Trial credits granted by superuser %s", claims.OwnerID())
 	}
 
-	if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, req.AmountUsd, billing.CreditsCurrency, description, nil); err != nil {
+	if err := s.admin.Biller.GrantCustomerCredits(ctx, org.BillingCustomerID, req.AmountUsd, billing.CreditsCurrency, description, nil, ""); err != nil {
 		return nil, fmt.Errorf("failed to grant credits: %w", err)
 	}
 
