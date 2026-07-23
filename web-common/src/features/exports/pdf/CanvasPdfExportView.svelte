@@ -66,4 +66,12 @@
     container-type: inline-size;
     container-name: canvas-container;
   }
+
+  /* Scrollbars on overflowing components (tables, legends) would be rasterized
+     into the capture. Applied per element via `*` because html-to-image inlines
+     each element's computed styles into its clone: computed scrollbar-width
+     survives the cloning, whereas ::-webkit-scrollbar stylesheet rules do not. */
+  #canvas-pdf-export-view :global(*) {
+    scrollbar-width: none;
+  }
 </style>

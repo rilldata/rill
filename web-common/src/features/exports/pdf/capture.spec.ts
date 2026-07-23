@@ -72,18 +72,39 @@ describe("captureTargetsIn", () => {
     ]);
   });
 
-  it("stacks each tab's label and rows between the surrounding free rows", () => {
+  it("groups each tab's label with the tab's first row, between the free rows", () => {
     const container = renderExportDom();
     const indexOf = (selector: string) =>
       rowIndexFor(container.querySelector<HTMLElement>(selector)!, container);
 
     expect(indexOf("#free-a")).toBe(0);
     expect(indexOf("#free-b")).toBe(0);
-    expect(indexOf("#pdf-tab-label-overview-first")).toBe(1);
+    // A label shares its rowIndex with the row that follows it, so the two
+    // paginate as one unit and the label can't be orphaned by a page break.
+    expect(indexOf("#pdf-tab-label-overview-first")).toBe(2);
     expect(indexOf("#tab-a")).toBe(2);
     expect(indexOf("#tab-b")).toBe(2);
-    expect(indexOf("#pdf-tab-label-overview-second")).toBe(3);
+    expect(indexOf("#pdf-tab-label-overview-second")).toBe(4);
     expect(indexOf("#tab-c")).toBe(4);
     expect(indexOf("#free-c")).toBe(5);
+  });
+
+  it("keeps an empty tab's label on its own row", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <section id="pdf-tab-label-overview-empty" class="pdf-tab-label-row"></section>
+      <section id="pdf-tab-label-overview-second" class="pdf-tab-label-row"></section>
+      <section id="canvas-row-overview-second-0">
+        <article id="tab-a" class="component-card"></article>
+      </section>
+    `;
+    const indexOf = (selector: string) =>
+      rowIndexFor(container.querySelector<HTMLElement>(selector)!, container);
+
+    // No row follows the empty tab's label (the next section is another label),
+    // so it keeps its own index instead of merging into an unrelated row.
+    expect(indexOf("#pdf-tab-label-overview-empty")).toBe(0);
+    expect(indexOf("#pdf-tab-label-overview-second")).toBe(2);
+    expect(indexOf("#tab-a")).toBe(2);
   });
 });

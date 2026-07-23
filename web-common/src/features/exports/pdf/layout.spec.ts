@@ -200,6 +200,47 @@ describe("paginate", () => {
     expect(result.placements.some((p) => p.page === 0)).toBe(true);
   });
 
+  it("moves a tab label band and the tab's first row to the next page together", () => {
+    // A label band shares its rowIndex with the tab's first row (see
+    // rowIndexFor in capture.ts) and sits above it, so the row's height is the
+    // combined vertical extent. When that unit doesn't fit under the previous
+    // row, the label must move with the cards, never stay behind alone.
+    const result = paginate(
+      [
+        block({ id: "prev", rowIndex: 0, yPx: 0, heightPx: 900 }),
+        block({ id: "label", rowIndex: 1, yPx: 900, heightPx: 40 }),
+        block({ id: "card", rowIndex: 1, yPx: 940, heightPx: 900 }),
+      ],
+      { ...A4, contentWidthPx: 1000 },
+    );
+    const label = result.placements.find((p) => p.block.id === "label")!;
+    const card = result.placements.find((p) => p.block.id === "card")!;
+    expect(label.page).toBe(1);
+    expect(card.page).toBe(label.page);
+    // The label renders directly above the card, preserving on-screen offsets.
+    expect(label.yPt).toBeLessThan(card.yPt);
+    expect(card.yPt).toBeCloseTo(label.yPt + label.hPt, 1);
+  });
+
+  it("keeps the label atop the first slice when the tab's first row must be sliced", () => {
+    const result = paginate(
+      [
+        block({ id: "label", rowIndex: 0, yPx: 0, heightPx: 40 }),
+        block({ id: "tall-card", rowIndex: 0, yPx: 40, heightPx: 5000 }),
+      ],
+      { ...A4, contentWidthPx: 1000 },
+    );
+    const labels = result.placements.filter((p) => p.block.id === "label");
+    const slices = result.placements
+      .filter((p) => p.block.id === "tall-card")
+      .sort((a, b) => a.page - b.page);
+    // The label is placed once, on the same page as the first slice, above it.
+    expect(labels).toHaveLength(1);
+    expect(slices.length).toBeGreaterThan(1);
+    expect(labels[0].page).toBe(slices[0].page);
+    expect(labels[0].yPt).toBeLessThan(slices[0].yPt);
+  });
+
   it("places the filter bar (rowIndex -1) before content rows", () => {
     const result = paginate(
       [

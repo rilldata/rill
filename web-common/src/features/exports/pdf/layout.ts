@@ -93,8 +93,12 @@ export function paginate(
   let cursorYPt = pageTopPt(0);
 
   for (const row of rows) {
+    // Size the row by the vertical extent of its blocks, not the tallest block:
+    // a row can stack blocks with different tops (a tab label band grouped with
+    // the tab's first row of cards; see rowIndexFor in capture.ts).
     const rowTopPx = Math.min(...row.map((b) => b.yPx));
-    const rowHeightPt = Math.max(...row.map((b) => b.heightPx)) * scale;
+    const rowBottomPx = Math.max(...row.map((b) => b.yPx + b.heightPx));
+    const rowHeightPt = (rowBottomPx - rowTopPx) * scale;
 
     // True when nothing has been placed on the current page yet, so we must not
     // advance to a fresh page (that would strand the page, e.g. page 0 holding

@@ -186,14 +186,29 @@ export function captureTargetsIn(rowContainer: HTMLElement): HTMLElement[] {
 
 // Canvas rows (and tab label bands) are <section> elements; use the nearest
 // section's DOM order as the row index so blocks in the same row are grouped
-// and laid out together.
+// and laid out together. A tab label band reports the index of the row section
+// that follows it, so the label and the tab's first row paginate as one unit
+// and the label can never be stranded alone at the bottom of a page (paginate
+// sizes a row by the vertical extent of its blocks). A label with no following
+// row (an empty tab) keeps its own index.
 export function rowIndexFor(
   target: HTMLElement,
   rowContainer: HTMLElement,
 ): number {
-  const section = target.closest("section");
+  let section: Element | null = target.closest("section");
   if (!section) return 0;
-  const sections = Array.from(rowContainer.querySelectorAll("section"));
+  if (section.classList.contains("pdf-tab-label-row")) {
+    const next = section.nextElementSibling;
+    if (
+      next?.tagName === "SECTION" &&
+      !next.classList.contains("pdf-tab-label-row")
+    ) {
+      section = next;
+    }
+  }
+  const sections: Element[] = Array.from(
+    rowContainer.querySelectorAll("section"),
+  );
   const index = sections.indexOf(section);
   return index === -1 ? 0 : index;
 }

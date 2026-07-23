@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-  import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -19,8 +18,7 @@
   export let showTabOptions = false;
 
   let includeFilters = true;
-  // Radio binds a plain string; "all" or "active".
-  let tabMode: string = "all";
+  let allTabs = true;
 
   let exporting = false;
   let progressLabel = m.export_pdf_button();
@@ -40,7 +38,7 @@
     try {
       await runExport({
         includeFilters,
-        allTabs: tabMode === "all",
+        allTabs,
         onProgress: ({ phase }) => {
           progressLabel = PROGRESS_COPY[phase];
         },
@@ -74,13 +72,10 @@
   />
 
   {#if showTabOptions}
-    <Radio
-      name="pdf-tab-export"
-      bind:value={tabMode}
-      options={[
-        { value: "all", label: m.export_pdf_tabs_all() },
-        { value: "active", label: m.export_pdf_tabs_active() },
-      ]}
+    <Checkbox
+      id="pdf-all-tabs"
+      bind:checked={allTabs}
+      label={m.export_pdf_tabs_all()}
     />
   {/if}
 
