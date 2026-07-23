@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import {
-  copyFilterExpression,
   createInExpression,
   createLikeExpression,
   getValuesInExpression,
@@ -58,7 +57,9 @@ export class DimensionFilterManager {
       op === V1Operation.OPERATION_NLIKE
     ) {
       initMode = DimensionFilterMode.Contains;
-      initInputText = initExpr.cond?.exprs?.[1]?.val?.toString?.() ?? "";
+      initInputText = sanitizeSearchText(
+        initExpr.cond?.exprs?.[1]?.val?.toString?.() ?? "",
+      );
       initExclude = op === V1Operation.OPERATION_NLIKE;
     }
 
@@ -169,4 +170,8 @@ export class DimensionFilterManager {
     }
     this.oldMode = this.mode;
   }
+}
+
+export function sanitizeSearchText(searchText: string) {
+  return searchText.replace(/^%/, "").replace(/%$/, "");
 }

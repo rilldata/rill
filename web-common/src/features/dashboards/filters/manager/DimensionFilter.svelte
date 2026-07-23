@@ -31,54 +31,65 @@
   } from "@rilldata/web-common/features/dashboards/filters/manager/queries.svelte.ts";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
 
-  export let manager: ExpressionFilterManager;
-  export let dimensionManager: DimensionFilterManager;
-  export let openOnMount: boolean = true;
-  export let readOnly: boolean = false;
-  export let timeStart: string | undefined;
-  export let timeEnd: string | undefined;
-  export let timeDimension: string | undefined = undefined;
-  export let timeControlsReady: boolean | undefined;
-  export let smallChip = false;
-  export let side: "top" | "right" | "bottom" | "left" = "bottom";
-  export let isUrlTooLongAfterInListFilter: (
-    values: string[],
-  ) => boolean = () => false;
+  let {
+    manager,
+    dimensionManager,
+    openOnMount = true,
+    readOnly = false,
+    timeStart,
+    timeEnd,
+    timeDimension = undefined,
+    timeControlsReady,
+    smallChip = false,
+    side = "bottom",
+    isUrlTooLongAfterInListFilter = () => false,
+  }: {
+    manager: ExpressionFilterManager;
+    dimensionManager: DimensionFilterManager;
+    openOnMount?: boolean;
+    readOnly?: boolean;
+    timeStart: string | undefined;
+    timeEnd: string | undefined;
+    timeDimension: string | undefined;
+    timeControlsReady: boolean | undefined;
+    smallChip?: boolean;
+    side?: "top" | "right" | "bottom" | "left";
+    isUrlTooLongAfterInListFilter?: (values: string[]) => boolean;
+  } = $props();
 
   let proxyDimensionManager = $derived(dimensionManager.clone());
 
-  let open =
+  let open = $state(
+    // eslint-disable-next-line svelte/valid-compile
     openOnMount &&
-    !dimensionManager.selectedValues?.length &&
-    !dimensionManager.inputText;
-  let curSearchText = dimensionManager.inputText ?? "";
-  let inListTooLong = false;
+      // eslint-disable-next-line svelte/valid-compile
+      !dimensionManager.selectedValues?.length &&
+      // eslint-disable-next-line svelte/valid-compile
+      !dimensionManager.inputText,
+  );
+  // eslint-disable-next-line svelte/valid-compile
+  let curSearchText = $state(dimensionManager.inputText ?? "");
+  let inListTooLong = $state(false);
 
   const client = useRuntimeClient();
 
-  $: missingRequired = Boolean(
-    dimensionManager.pinned && !dimensionManager.expr,
+  let missingRequired = $derived(
+    Boolean(dimensionManager.pinned && !dimensionManager.expr),
   );
 
-  $: sanitisedSearchText = dimensionManager.inputText
-    ?.replace(/^%/, "")
-    .replace(/%$/, "");
+  $effect(() => checkSearchText(curSearchText));
 
-  $: checkSearchText(curSearchText);
-
-  $: enableSearchQuery =
+  let enableSearchQuery = $derived(
     Boolean(timeControlsReady && open) &&
-    (proxyDimensionManager.mode === DimensionFilterMode.Select ||
-      (proxyDimensionManager.mode === DimensionFilterMode.Contains &&
-        curSearchText.length > 0) ||
-      (proxyDimensionManager.mode === DimensionFilterMode.InList &&
-        proxyDimensionManager.selectedValues.length > 0));
+      (proxyDimensionManager.mode === DimensionFilterMode.Select ||
+        (proxyDimensionManager.mode === DimensionFilterMode.Contains &&
+          curSearchText.length > 0) ||
+        (proxyDimensionManager.mode === DimensionFilterMode.InList &&
+          proxyDimensionManager.selectedValues.length > 0)),
+  );
 
-  $: searchResultsQuery = getDimensionSearchQuery(
-    client,
-    manager,
-    dimensionManager,
-    {
+  let searchResultsQuery = $derived(
+    getDimensionSearchQuery(client, manager, dimensionManager, {
       mode: proxyDimensionManager.mode,
       values: proxyDimensionManager.selectedValues,
       searchText: curSearchText,
@@ -86,27 +97,25 @@
       timeEnd,
       timeDimension,
       enabled: enableSearchQuery,
-    },
+    }),
   );
-  $: ({
+  let {
     data: searchResults,
     error: errorFromSearchResults,
     isFetching: isFetchingFromSearchResults,
-  } = $searchResultsQuery);
-  $: correctedSearchResults = enableSearchQuery ? searchResults : [];
+  } = $derived($searchResultsQuery);
+  let correctedSearchResults = $derived(enableSearchQuery ? searchResults : []);
 
-  $: enableSearchCountQuery =
+  let enableSearchCountQuery = $derived(
     Boolean(timeControlsReady) &&
-    ((proxyDimensionManager.mode === DimensionFilterMode.Contains &&
-      curSearchText.length > 0) ||
-      (proxyDimensionManager.mode === DimensionFilterMode.InList &&
-        proxyDimensionManager.selectedValues.length > 0));
+      ((proxyDimensionManager.mode === DimensionFilterMode.Contains &&
+        curSearchText.length > 0) ||
+        (proxyDimensionManager.mode === DimensionFilterMode.InList &&
+          proxyDimensionManager.selectedValues.length > 0)),
+  );
 
-  $: allSearchResultsCountQuery = getAllSearchResultsCount(
-    client,
-    manager,
-    dimensionManager,
-    {
+  let allSearchResultsCountQuery = $derived(
+    getAllSearchResultsCount(client, manager, dimensionManager, {
       mode: proxyDimensionManager.mode,
       values: proxyDimensionManager.selectedValues,
       searchText: curSearchText,
@@ -114,52 +123,69 @@
       timeEnd,
       timeDimension,
       enabled: enableSearchCountQuery,
-    },
+    }),
   );
-  $: ({
+  let {
     data: allSearchResultsCount,
     error: errorFromAllSearchResultsCount,
     isFetching: isFetchingFromAllSearchResultsCount,
-  } = $allSearchResultsCountQuery);
-  $: searchResultCountText = enableSearchCountQuery
-    ? proxyDimensionManager.mode === DimensionFilterMode.Contains
-      ? `${allSearchResultsCount} results`
-      : `${allSearchResultsCount} of ${proxyDimensionManager.selectedValues.length} matched`
-    : "0 results";
-
-  $: searchPlaceholder = getSearchPlaceholder(proxyDimensionManager.mode);
-
-  $: error = errorFromSearchResults ?? errorFromAllSearchResultsCount;
-  $: isFetching =
-    isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount;
-
-  $: showExtraInfo = proxyDimensionManager.mode !== DimensionFilterMode.Select; // || curSearchText.length > 0; (Add once we have docs)
-
-  $: allSelected = Boolean(
-    effectiveSelectedValues.length &&
-      correctedSearchResults?.length === effectiveSelectedValues.length,
-  );
-  $: effectiveSelectedValues = getEffectiveSelectedValues(
-    proxyDimensionManager.mode,
-    proxyDimensionManager.selectedValues,
-    correctedSearchResults ?? [],
-    dimensionManager.selectedValues,
+  } = $derived($allSearchResultsCountQuery);
+  let searchResultCountText = $derived(
+    enableSearchCountQuery
+      ? proxyDimensionManager.mode === DimensionFilterMode.Contains
+        ? `${allSearchResultsCount} results`
+        : `${allSearchResultsCount} of ${proxyDimensionManager.selectedValues.length} matched`
+      : "0 results",
   );
 
-  $: disableApplyButton = shouldDisableApplyButton(
-    proxyDimensionManager.mode,
-    enableSearchCountQuery,
-    inListTooLong,
+  let searchPlaceholder = $derived(
+    getSearchPlaceholder(proxyDimensionManager.mode),
+  );
+
+  let error = $derived(
+    errorFromSearchResults ?? errorFromAllSearchResultsCount,
+  );
+  let isFetching = $derived(
+    isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount,
+  );
+
+  let showExtraInfo = $derived(
+    proxyDimensionManager.mode !== DimensionFilterMode.Select,
+  ); // || curSearchText.length > 0; (Add once we have docs)
+
+  let effectiveSelectedValues = $derived(
+    getEffectiveSelectedValues(
+      proxyDimensionManager.mode,
+      proxyDimensionManager.selectedValues,
+      correctedSearchResults ?? [],
+      dimensionManager.selectedValues,
+    ),
+  );
+  let allSelected = $derived(
+    Boolean(
+      effectiveSelectedValues.length &&
+        correctedSearchResults?.length === effectiveSelectedValues.length,
+    ),
+  );
+
+  let disableApplyButton = $derived(
+    shouldDisableApplyButton(
+      proxyDimensionManager.mode,
+      enableSearchCountQuery,
+      inListTooLong,
+    ),
   );
 
   // Split results into checked and unchecked for better UX (like SelectionDropdown)
   // Use actual selectedValues (not proxy) so items only sort after dropdown closes
-  $: ({ checkedItems, uncheckedItems } = getItemLists(
-    proxyDimensionManager.mode,
-    correctedSearchResults ?? [],
-    dimensionManager.selectedValues,
-    curSearchText,
-  ));
+  let { checkedItems, uncheckedItems } = $derived(
+    getItemLists(
+      proxyDimensionManager.mode,
+      correctedSearchResults ?? [],
+      dimensionManager.selectedValues,
+      curSearchText,
+    ),
+  );
 
   function checkSearchText(inputText: string) {
     inListTooLong = false;
@@ -217,7 +243,7 @@
       curSearchText =
         dimensionManager.mode === DimensionFilterMode.InList
           ? mergeDimensionSearchValues(dimensionManager.selectedValues)
-          : (sanitisedSearchText ?? "");
+          : dimensionManager.inputText;
     } else {
       // Apply proxy changes for Select mode when dropdown closes
       if (proxyDimensionManager.mode === DimensionFilterMode.Select) {
@@ -417,8 +443,7 @@
               {@const selected = effectiveSelectedValues.includes(name)}
               {@const label = name ?? "null"}
 
-              <svelte:component
-                this={DropdownMenu.CheckboxItem}
+              <DropdownMenu.CheckboxItem
                 closeOnSelect={false}
                 class="text-xs cursor-pointer"
                 checked={selected}
@@ -432,7 +457,7 @@
                     {label}
                   {/if}
                 </span>
-              </svelte:component>
+              </DropdownMenu.CheckboxItem>
             {/each}
           {/if}
 
@@ -445,11 +470,12 @@
           {#each uncheckedItems as name (name)}
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
-
-            <svelte:component
-              this={proxyDimensionManager.mode === DimensionFilterMode.Select
+            {@const ItemComponent =
+              proxyDimensionManager.mode === DimensionFilterMode.Select
                 ? DropdownMenu.CheckboxItem
                 : DropdownMenu.Item}
+
+            <ItemComponent
               closeOnSelect={false}
               class="text-xs cursor-pointer {proxyDimensionManager.mode !==
               DimensionFilterMode.Select
@@ -469,7 +495,7 @@
                   {label}
                 {/if}
               </span>
-            </svelte:component>
+            </ItemComponent>
           {/each}
 
           <!-- Show "no results" only if both checked and unchecked are empty -->

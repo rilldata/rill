@@ -9,6 +9,7 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/manager/MeasureFilter.svelte";
 
   const StateManagers = getStateManagers();
   const {
@@ -18,7 +19,7 @@
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: { dimensionHasFilter },
-      measures: { filteredSimpleMeasures },
+      measures: { allMeasures, filteredSimpleMeasures },
       measureFilters: { measureHasFilter },
     },
     validSpecStore,
@@ -27,6 +28,10 @@
 
   let validExplore = $derived($validSpecStore.data?.explore ?? {});
   let metricsViewName = $derived(validExplore.metricsView ?? "");
+
+  let measureIdMap = $derived(
+    getMapFromArray($allMeasures, (measure) => measure.name as string),
+  );
 
   let dimensionIdMap = $derived(
     getMapFromArray(
@@ -43,6 +48,7 @@
   $effect(() =>
     manager.setExprParam(
       filterUrlStore.value ?? "",
+      measureIdMap,
       dimensionIdMap,
       metricsViewName,
     ),
@@ -70,6 +76,15 @@
         {timeEnd}
         {timeControlsReady}
         timeDimension={selectedTimeDimension}
+        openOnMount={manager.temporaryFilter === dimensionManager}
+      />
+    {/each}
+
+    {#each manager.measureFilterManagers as measureManager (measureManager.name)}
+      <MeasureFilter
+        {measureManager}
+        allDimensions={$allDimensions}
+        openOnMount={manager.temporaryFilter === measureManager}
       />
     {/each}
 

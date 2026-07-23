@@ -76,6 +76,8 @@ function flushParams() {
   if (newParams.length === 0) return;
 
   const newUrl = new SvelteURL(page.url);
+  const curUrlSearch = page.url.search;
+
   newParams.forEach(([key, value]) => {
     if (value === null) {
       newUrl.searchParams.delete(key);
@@ -83,7 +85,8 @@ function flushParams() {
       newUrl.searchParams.set(key, value);
     }
   });
-
   newParams = [];
+
+  if (curUrlSearch === newUrl.search) return;
   void goto(newUrl, { noScroll: true, keepFocus: true });
 }
