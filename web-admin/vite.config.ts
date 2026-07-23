@@ -8,6 +8,22 @@ import { readPublicEmailDomains } from "./src/features/projects/user-management/
 dns.setDefaultResultOrder("verbatim");
 
 export default defineConfig({
+  test: {
+    include: ["src/**/*.{test,spec}.{js,ts}"],
+    coverage: {
+      provider: "v8",
+      reportsDirectory: "coverage",
+      reporter: ["text", "lcov"],
+      include: ["src/**/*.{js,ts,svelte}"],
+      exclude: [
+        "src/**/*.d.ts",
+        "src/proto/gen/**",
+        "src/client/gen/**",
+        "src/runtime-client/**/gen/**",
+        "src/lib/i18n/gen/**",
+      ],
+    },
+  },
   resolve: {
     alias: {
       "@rilldata/web-admin": "/src",

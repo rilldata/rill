@@ -34,6 +34,19 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [sveltekit()],
     test: {
+      coverage: {
+        provider: "v8",
+        reportsDirectory: "coverage",
+        reporter: ["text", "lcov"],
+        include: ["src/**/*.{js,ts,svelte}"],
+        exclude: [
+          "src/**/*.d.ts",
+          "src/proto/gen/**",
+          "src/client/gen/**",
+          "src/runtime-client/**/gen/**",
+          "src/lib/i18n/gen/**",
+        ],
+      },
       projects: [
         {
           extends: "./vite.config.ts",
@@ -44,10 +57,6 @@ export default defineConfig(({ mode }) => {
             clearMocks: true,
             setupFiles: ["./vitest-setup.ts"],
             globals: true,
-            coverage: {
-              provider: "v8",
-              include: ["src/**"],
-            },
           },
         },
       ],

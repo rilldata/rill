@@ -1,37 +1,68 @@
-name: Unit tests for web code
+name: Unit tests and coverage for web code
+
 on:
   pull_request:
     paths:
-      - ".github/workflows/web-test.yml"
+      - ".github/workflows/web-test-unit-tests.yml"
+      - "codecov.yml"
+      - "package.json"
+      - "package-lock.json"
       - "web-admin/**"
       - "web-common/**"
       - "web-local/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/web-test-unit-tests.yml"
+      - "codecov.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "web-admin/**"
+      - "web-common/**"
+      - "web-local/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: web-unit-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Filter modified codepaths
+      - name: Filter modified code paths
         uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
             admin:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-unit-tests.yml"
+              - "codecov.yml"
+              - "package.json"
+              - "package-lock.json"
               - "web-admin/**"
+              - "web-common/**"
             common:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-unit-tests.yml"
+              - "codecov.yml"
+              - "package.json"
+              - "package-lock.json"
               - "web-common/**"
 
-      - name: Set up NodeJS
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
+          node-version-file: ".nvmrc"
+          cache: npm
 
-      - name: NPM Install
+      - name: Install dependencies
         run: npm ci
 
       - name: Generate i18n files
@@ -40,3 +71,35 @@ jobs:
       - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
+
+      - name: Collect web-common coverage
+        if: steps.filter.outputs.common == 'true'
+        run: npm run coverage -w web-common
+
+      - name: Run web-admin unit tests
+        if: steps.filter.outputs.admin == 'true'
+        run: npm run test:unit -w web-admin
+
+      - name: Collect web-admin coverage
+        if: steps.filter.outputs.admin == 'true'
+        run: npm run coverage -w web-admin
+
+      - name: Upload web-common coverage
+        if: success() && steps.filter.outputs.common == 'true'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: web-common/coverage/lcov.info
+          disable_search: true
+          flags: web-common
+          fail_ci_if_error: true
+
+      - name: Upload web-admin coverage
+        if: success() && steps.filter.outputs.admin == 'true'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: web-admin/coverage/lcov.info
+          disable_search: true
+          flags: web-admin
+          fail_ci_if_error: true

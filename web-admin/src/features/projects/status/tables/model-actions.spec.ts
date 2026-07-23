@@ -70,9 +70,12 @@ describe("getAvailableModelActions", () => {
     expect(actions).not.toContain("refreshErrored");
   });
 
-  it("includes refreshErrored for partitioned model with errored partitions", () => {
+  it("includes refreshErrored for an incremental partitioned model with errors", () => {
+    // The backend only refreshes failed partitions for incremental models, so
+    // the fixture must represent that complete capability contract.
     const resource = makeModel({
       partitionsResolver: "sql",
+      incremental: true,
       partitionsModelId: "abc-123",
       partitionsHaveErrors: true,
     });

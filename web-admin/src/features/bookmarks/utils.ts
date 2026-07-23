@@ -211,12 +211,34 @@ function isBookmarkActive(
   filtersOnly: boolean,
 ) {
   if (!filtersOnly)
-    return bookmarkUrlParams.toString() === curUrlParams.toString();
+    return areUrlSearchParamsEqual(bookmarkUrlParams, curUrlParams);
 
   return [...bookmarkUrlParams.entries()].every(([key, value]) => {
     const curValue = curUrlParams.get(key);
     return curValue === value;
   });
+}
+
+function areUrlSearchParamsEqual(
+  left: URLSearchParams,
+  right: URLSearchParams,
+): boolean {
+  const normalize = (params: URLSearchParams) =>
+    [...params.entries()].sort(
+      ([leftKey, leftValue], [rightKey, rightValue]) =>
+        leftKey === rightKey
+          ? leftValue.localeCompare(rightValue)
+          : leftKey.localeCompare(rightKey),
+    );
+  const leftEntries = normalize(left);
+  const rightEntries = normalize(right);
+  return (
+    leftEntries.length === rightEntries.length &&
+    leftEntries.every(
+      ([key, value], index) =>
+        rightEntries[index][0] === key && rightEntries[index][1] === value,
+    )
+  );
 }
 
 function isAbsoluteTimeRangeBookmark(bookmarkUrlParams: URLSearchParams) {

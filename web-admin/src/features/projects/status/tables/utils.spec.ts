@@ -235,9 +235,12 @@ describe("tables utils", () => {
       expect(hasModelErroredPartitions(resource)).toBe(false);
     });
 
-    it("returns true when both conditions are met", () => {
+    it("returns true when every incremental partition condition is met", () => {
+      // Errored-partition refresh is meaningful only for an incremental model;
+      // all three backend signals are required for a true result.
       const resource: V1Resource = {
         model: {
+          spec: { incremental: true },
           state: { partitionsModelId: "123", partitionsHaveErrors: true },
         },
       };

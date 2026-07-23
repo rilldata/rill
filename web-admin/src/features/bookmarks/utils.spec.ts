@@ -84,7 +84,7 @@ describe("getBookmarkData and parseBookmarks", () => {
           subTitle: "Empty url",
           curUrlSearch: "",
           expectedFullUrlSearch:
-            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price",
+            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price&chart_type=adaptive&dyn_y=false&lb_ctx=false",
           isActive: false,
         },
         {
@@ -92,15 +92,15 @@ describe("getBookmarkData and parseBookmarks", () => {
           curUrlSearch:
             "view=tdd&tr=P7D&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
           expectedFullUrlSearch:
-            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price",
+            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price&chart_type=adaptive&dyn_y=false&lb_ctx=false",
           isActive: false,
         },
         {
           subTitle: "Same url",
           curUrlSearch:
-            "tr=P7D&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
+            "tr=P7D&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
           expectedFullUrlSearch:
-            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price",
+            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price&chart_type=adaptive&dyn_y=false&lb_ctx=false",
           isActive: true,
         },
       ],
@@ -139,7 +139,7 @@ describe("getBookmarkData and parseBookmarks", () => {
         {
           subTitle: "Filter only equal",
           curUrlSearch:
-            "view=tdd&tr=P7D&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
+            "view=tdd&tr=P7D&grain=hour&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
           expectedFullUrlSearch:
             "view=tdd&tr=P7D&grain=hour&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
           isActive: true,
@@ -147,7 +147,7 @@ describe("getBookmarkData and parseBookmarks", () => {
         {
           subTitle: "Same url",
           curUrlSearch:
-            "tr=P7D&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
+            "tr=P7D&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
           expectedFullUrlSearch:
             "tr=P7D&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
           isActive: true,
@@ -200,6 +200,8 @@ describe("getBookmarkData and parseBookmarks", () => {
         isActive,
       } of urls) {
         it(subTitle, () => {
+          // The current URL and the generated bookmark are compared semantically;
+          // defaults and filter-only parameters must remain explicit in fullUrl.
           // Parse both new and old formats together
           const [parsedBookmark, parsedProtoBookmark] = parseBookmarks(
             [
@@ -223,6 +225,9 @@ describe("getBookmarkData and parseBookmarks", () => {
             parsedBookmark.fullUrl.slice(1),
             expectedFullUrlSearch,
           );
+          if (isActive && !filtersOnly) {
+            assertUnorderedUrlSearch(parsedBookmark.url, curUrlSearch);
+          }
           expect(parsedBookmark.isActive).toEqual(isActive);
 
           assertUnorderedUrlSearch(parsedProtoBookmark.url, parsedBookmark.url);
