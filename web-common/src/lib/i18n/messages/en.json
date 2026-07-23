@@ -760,6 +760,8 @@
   "dashboard_pivot_learn_more": "Learn more about tables in our",
   "dashboard_pivot_need_help_discord": "Need help? Reach out to us on",
   "dashboard_pivot_no_data": "No data to show for the selected filters.",
+  "dashboard_pivot_show_all_fields": "Show all ({count})",
+  "dashboard_pivot_show_less": "Show less",
   "dashboard_pivot_table_lonely": "Your table looks lonely",
   "dashboard_readonly_filter_chips_aria": "Readonly Filter Chips",
   "dashboard_recent": "Recent",
