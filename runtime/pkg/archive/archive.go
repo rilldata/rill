@@ -265,7 +265,9 @@ func untar(src, dest string, ignorePaths bool) error {
 			if err != nil {
 				return err
 			}
-			_, copyErr := io.Copy(outFile, tarReader)
+			// Copy exactly the validated header size so both the implementation and
+			// static analysis retain the decompression bound.
+			_, copyErr := io.CopyN(outFile, tarReader, header.Size)
 			closeErr := outFile.Close()
 			if copyErr != nil || closeErr != nil {
 				return errors.Join(copyErr, closeErr)
