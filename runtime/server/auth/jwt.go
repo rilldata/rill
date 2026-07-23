@@ -220,13 +220,11 @@ func OpenAudience(ctx context.Context, logger *zap.Logger, issuerURL, audienceUR
 		if err == nil {
 			break
 		}
-		if err != nil {
-			logger.Info("JWKS fetch failed, retrying in 5s", zap.Error(err))
-			select {
-			case <-time.After(time.Second * 5):
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			}
+		logger.Info("JWKS fetch failed, retrying in 5s", zap.Error(err))
+		select {
+		case <-time.After(time.Second * 5):
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		}
 	}
 	if err != nil {
