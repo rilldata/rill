@@ -83,7 +83,7 @@ jobs:
             coverage-summary.txt
           if-no-files-found: ignore
 
-      - name: Upload complete coverage to Codecov
+      - name: Upload hermetic coverage to Codecov
         if: success()
         uses: codecov/codecov-action@v4
         with:
