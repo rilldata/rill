@@ -844,10 +844,15 @@ message ListResourcesRequest {
   string path = 3;
   // Skip security checks
   bool skip_security_checks = 4;
+  // Maximum number of resources to return. If zero, returns all resources.
+  uint32 page_size = 5 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
+  // Page token returned by a previous ListResources call.
+  string page_token = 6;
 }
 
 message ListResourcesResponse {
   repeated Resource resources = 1;
+  string next_page_token = 2;
 }
 
 message WatchResourcesRequest {

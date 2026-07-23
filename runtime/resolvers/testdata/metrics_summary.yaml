@@ -66,6 +66,21 @@ project_files:
         - if: "'{{ .user.role }}' != 'admin'"
           names:
             - country
+  clickhouse_metrics_restricted.yaml:
+    type: metrics_view
+    model: clickhouse_test_data
+    timeseries: event_time
+    dimensions:
+      - name: category
+        column: category
+      - name: country
+        column: country
+    measures:
+      - name: total_revenue
+        expression: sum(revenue)
+    security:
+      access: true
+      row_filter: "country = '{{ .user.country }}'"
   duckdb_metrics_view.yaml:
     type: metrics_view
     model: duckdb_test_data
@@ -209,6 +224,8 @@ tests:
           max_value: "2024-01-08T00:00:00Z"
           min_value: "2024-01-01T00:00:00Z"
           name: event_time
+  # The time range is intentionally unfiltered (see the Timestamps docstring), and since this user's accessible
+  # rows are all older than the sample interval, the dimension summary values are null (instead of leaking values).
   - name: duckdb_summary_with_security
     resolver: metrics_summary
     properties:
@@ -223,10 +240,100 @@ tests:
             min_value: "2024-01-01T00:00:00Z"
             name: event_time
           - data_type: CODE_STRING
+            name: category
+        time_range:
+          data_type: CODE_TIMESTAMP
+          max_value: "2024-01-08T00:00:00Z"
+          min_value: "2024-01-01T00:00:00Z"
+          name: event_time
+  - name: duckdb_summary_with_security_admin
+    resolver: metrics_summary
+    properties:
+      metrics_view: duckdb_metrics_restricted
+    user_attributes:
+      country: "CA"
+      role: "admin"
+    result:
+      - dimensions:
+          - data_type: CODE_TIMESTAMP
+            max_value: "2024-01-08T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
+            name: event_time
+          - data_type: CODE_STRING
             example_value: Electronics
             max_value: Electronics
-            min_value: Clothing
+            min_value: Electronics
             name: category
+          - data_type: CODE_STRING
+            example_value: CA
+            max_value: CA
+            min_value: CA
+            name: country
+        time_range:
+          data_type: CODE_TIMESTAMP
+          max_value: "2024-01-08T00:00:00Z"
+          min_value: "2024-01-01T00:00:00Z"
+          name: event_time
+  - name: duckdb_summary_with_additional_row_filter
+    resolver: metrics_summary
+    properties:
+      metrics_view: duckdb_metrics_view
+    additional_rules:
+      - row_filter: "country = 'CA'"
+    result:
+      - dimensions:
+          - data_type: CODE_TIMESTAMP
+            max_value: "2024-01-08T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
+            name: event_time
+          - data_type: CODE_STRING
+            example_value: CA
+            max_value: CA
+            min_value: CA
+            name: country
+          - data_type: CODE_STRING
+            example_value: Electronics
+            max_value: Electronics
+            min_value: Electronics
+            name: category
+          - data_type: CODE_STRING
+            has_nulls: true
+            name: product
+          - data_type: CODE_STRING
+            has_nulls: true
+            name: channel
+          - data_type: CODE_BOOL
+            example_value: true
+            max_value: true
+            min_value: true
+            name: is_active
+        time_range:
+          data_type: CODE_TIMESTAMP
+          max_value: "2024-01-08T00:00:00Z"
+          min_value: "2024-01-01T00:00:00Z"
+          name: event_time
+  - name: clickhouse_summary_with_security
+    resolver: metrics_summary
+    properties:
+      metrics_view: clickhouse_metrics_restricted
+    user_attributes:
+      country: "CA"
+    result:
+      - dimensions:
+          - data_type: CODE_TIMESTAMP
+            max_value: "2024-01-08T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
+            name: event_time
+          - data_type: CODE_STRING
+            example_value: Electronics
+            max_value: Electronics
+            min_value: Electronics
+            name: category
+          - data_type: CODE_STRING
+            example_value: CA
+            max_value: CA
+            min_value: CA
+            name: country
         time_range:
           data_type: CODE_TIMESTAMP
           max_value: "2024-01-08T00:00:00Z"

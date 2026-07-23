@@ -7,7 +7,6 @@ describe("classifyMethod", () => {
       ["export", "mutation"],
       ["exportReport", "mutation"],
       ["query", "mutation"],
-      ["queryBatch", "skip"],
     ] as const)("classifies %s as %s", (method, expected) => {
       expect(classifyMethod("QueryService", method)).toBe(expected);
     });

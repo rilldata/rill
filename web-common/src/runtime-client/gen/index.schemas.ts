@@ -2165,12 +2165,6 @@ export interface V1Query {
   tableRowsRequest?: V1TableRowsRequest;
 }
 
-export interface V1QueryBatchResponse {
-  index?: number;
-  result?: V1QueryResult;
-  error?: string;
-}
-
 export type V1QueryResolverResponseMeta = { [key: string]: unknown };
 
 export type V1QueryResolverResponseDataItem = { [key: string]: unknown };
@@ -2186,28 +2180,6 @@ export type V1QueryResponseDataItem = { [key: string]: unknown };
 export interface V1QueryResponse {
   meta?: V1StructType;
   data?: V1QueryResponseDataItem[];
-}
-
-export interface V1QueryResult {
-  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
-  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
-  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
-  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
-  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
-  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
-  columnTopKResponse?: V1ColumnTopKResponse;
-  columnNullCountResponse?: V1ColumnNullCountResponse;
-  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
-  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
-  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
-  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
-  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
-  columnCardinalityResponse?: V1ColumnCardinalityResponse;
-  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
-  tableCardinalityResponse?: V1TableCardinalityResponse;
-  tableColumnsResponse?: V1TableColumnsResponse;
-  tableRowsResponse?: V1TableRowsResponse;
 }
 
 export type V1ReconcileStatus =
@@ -3397,15 +3369,6 @@ export type QueryServiceQueryBody = {
   priority?: number;
   dryRun?: boolean;
   limit?: number;
-};
-
-export type QueryServiceQueryBatchBody = {
-  queries?: V1Query[];
-};
-
-export type QueryServiceQueryBatch200 = {
-  result?: V1QueryBatchResponse;
-  error?: RpcStatus;
 };
 
 export type RuntimeServiceQueryResolverBodyResolverProperties = {

@@ -73,6 +73,11 @@ func (c *Compiler) Parse(ctx context.Context, sql string) (*metricsview.Query, e
 		return nil, errors.New("metrics sql: expected a SELECT statement")
 	}
 
+	// check the statement doesn't use SELECT features that metrics SQL doesn't support
+	if err := validateSelectStmt(stmt); err != nil {
+		return nil, err
+	}
+
 	q := &query{
 		q:    &metricsview.Query{},
 		opts: c.opts,
@@ -86,6 +91,13 @@ func (c *Compiler) Parse(ctx context.Context, sql string) (*metricsview.Query, e
 	// parse select fields
 	if err := q.parseSelect(stmt.Fields); err != nil {
 		return nil, err
+	}
+
+	// check the GROUP BY clause matches the selected dimensions if provided
+	if stmt.GroupBy != nil {
+		if err := q.validateGroupBy(stmt.GroupBy); err != nil {
+			return nil, err
+		}
 	}
 
 	// parse where clause
@@ -120,6 +132,41 @@ func (c *Compiler) Parse(ctx context.Context, sql string) (*metricsview.Query, e
 	return q.q, nil
 }
 
+// validateSelectStmt checks that the SELECT statement doesn't use SQL features that metrics SQL doesn't support.
+// It contains the checks that apply to both top-level queries and subqueries;
+// clauses that are only supported in one of the two contexts (such as ORDER BY, LIMIT and GROUP BY) are validated by the callers.
+// Note that DISTINCT is deliberately allowed as a no-op:
+// metrics SQL queries always group by the selected dimensions, so the results are already distinct.
+func validateSelectStmt(sel *ast.SelectStmt) error {
+	switch {
+	case sel.Kind != ast.SelectStmtKindSelect:
+		return fmt.Errorf("metrics sql: SELECT of kind %s is not supported", sel.Kind.String())
+	case len(sel.WindowSpecs) > 0:
+		return errors.New("metrics sql: window specifications are not supported")
+	case sel.LockInfo != nil:
+		return errors.New("metrics sql: lock info is not supported")
+	case len(sel.TableHints) > 0:
+		return errors.New("metrics sql: table hints are not supported")
+	case sel.IsInBraces:
+		return errors.New("metrics sql: SELECT in braces is not supported")
+	case sel.WithBeforeBraces:
+		return errors.New("metrics sql: WITH before braces is not supported")
+	case sel.QueryBlockOffset != 0:
+		return errors.New("metrics sql: query block offset is not supported")
+	case sel.SelectIntoOpt != nil:
+		return errors.New("metrics sql: SELECT INTO is not supported")
+	case sel.AfterSetOperator != nil:
+		return errors.New("metrics sql: set operations are not supported")
+	case len(sel.Lists) > 0:
+		return errors.New("metrics sql: row expressions are not supported")
+	case sel.With != nil:
+		return errors.New("metrics sql: WITH clause is not supported")
+	case sel.AsViewSchema:
+		return errors.New("metrics sql: view schema is not supported")
+	}
+	return nil
+}
+
 type query struct {
 	q    *metricsview.Query
 	opts *CompilerOptions
@@ -129,12 +176,24 @@ type query struct {
 	metricsViewSpec *runtimev1.MetricsViewSpec
 	dims            map[string]any
 	measures        map[string]any
+
+	// selectFields tracks the select list in order; used to resolve positional references in the GROUP BY clause
+	selectFields []selectField
+}
+
+// selectField describes one output column of the query's select list.
+type selectField struct {
+	name  string
+	isDim bool
 }
 
 func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error {
 	n := node.TableRefs
 	if n == nil || n.Left == nil {
 		return fmt.Errorf("metrics sql: need `FROM metrics_view` clause")
+	}
+	if n.Right != nil {
+		return fmt.Errorf("metrics sql: join is not supported")
 	}
 
 	tblSrc, ok := n.Left.(*ast.TableSource)
@@ -183,16 +242,20 @@ func (q *query) parseSelect(node *ast.FieldList) error {
 	for _, field := range node.Fields {
 		switch v := field.Expr.(type) {
 		case *ast.ColumnNameExpr:
-			// TODO no alias handling for column names
 			col, typ, err := q.parseColumnNameExpr(v)
 			if err != nil {
 				return err
+			}
+			// The result columns must keep the metrics view's dimension/measure names, so an alias that renames the column cannot be honored.
+			if alias := field.AsName.String(); alias != "" && alias != col {
+				return fmt.Errorf("metrics sql: aliasing a dimension or measure is not supported (found `%s AS %s`)", col, alias)
 			}
 			if typ == "DIMENSION" {
 				q.q.Dimensions = append(q.q.Dimensions, metricsview.Dimension{Name: col})
 			} else {
 				q.q.Measures = append(q.q.Measures, metricsview.Measure{Name: col})
 			}
+			q.selectFields = append(q.selectFields, selectField{name: col, isDim: typ == "DIMENSION"})
 		case *ast.FuncCallExpr:
 			alias := field.AsName.String()
 			res, err := q.parseFuncCallExpr(v)
@@ -206,8 +269,59 @@ func (q *query) parseSelect(node *ast.FieldList) error {
 				Name:    alias,
 				Compute: res,
 			})
+			q.selectFields = append(q.selectFields, selectField{name: alias, isDim: true})
 		default:
 			return fmt.Errorf("metrics sql: unsupported expression in select field")
+		}
+	}
+	return nil
+}
+
+// validateGroupBy checks that an explicit GROUP BY clause matches the selected dimensions.
+// Metrics SQL implicitly groups results by all selected dimensions,
+// so an explicit GROUP BY is redundant but allowed when it matches the selected dimensions;
+// a mismatch is rejected because the results would silently differ from what the SQL asks for.
+func (q *query) validateGroupBy(node *ast.GroupByClause) error {
+	if node.Rollup {
+		return errors.New("metrics sql: ROLLUP in GROUP BY is not supported")
+	}
+
+	seen := make(map[string]bool, len(node.Items))
+	for _, item := range node.Items {
+		var name string
+		switch expr := item.Expr.(type) {
+		case *ast.ColumnNameExpr:
+			col, err := parseColumnNameExpr(expr)
+			if err != nil {
+				return err
+			}
+			name = col
+		case *ast.PositionExpr:
+			// positional reference like GROUP BY 1
+			if expr.N < 1 || expr.N > len(q.selectFields) {
+				return fmt.Errorf("metrics sql: GROUP BY position %d is not in the select list", expr.N)
+			}
+			name = q.selectFields[expr.N-1].name
+		default:
+			return fmt.Errorf("metrics sql: unsupported expression %q in GROUP BY", restore(item.Expr))
+		}
+
+		found := false
+		for _, f := range q.selectFields {
+			if f.isDim && f.name == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("metrics sql: GROUP BY column %q must be a selected dimension", name)
+		}
+		seen[name] = true
+	}
+
+	for _, f := range q.selectFields {
+		if f.isDim && !seen[f.name] {
+			return fmt.Errorf("metrics sql: GROUP BY must include all selected dimensions (missing %q)", f.name)
 		}
 	}
 	return nil

@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	QueryService_Query_FullMethodName                         = "/rill.runtime.v1.QueryService/Query"
-	QueryService_QueryBatch_FullMethodName                    = "/rill.runtime.v1.QueryService/QueryBatch"
 	QueryService_Export_FullMethodName                        = "/rill.runtime.v1.QueryService/Export"
 	QueryService_ExportReport_FullMethodName                  = "/rill.runtime.v1.QueryService/ExportReport"
 	QueryService_ProjectStorage_FullMethodName                = "/rill.runtime.v1.QueryService/ProjectStorage"
@@ -60,8 +59,6 @@ const (
 type QueryServiceClient interface {
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
-	// Batch request with different queries
-	QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[QueryBatchResponse], error)
 	// Export builds a URL to download the results of a query as a file.
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	// ExportReport builds a URL to download the results of a query as a file.
@@ -178,25 +175,6 @@ func (c *queryServiceClient) Query(ctx context.Context, in *QueryRequest, opts .
 	}
 	return out, nil
 }
-
-func (c *queryServiceClient) QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[QueryBatchResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &QueryService_ServiceDesc.Streams[0], QueryService_QueryBatch_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[QueryBatchRequest, QueryBatchResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type QueryService_QueryBatchClient = grpc.ServerStreamingClient[QueryBatchResponse]
 
 func (c *queryServiceClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -514,8 +492,6 @@ func (c *queryServiceClient) TableRows(ctx context.Context, in *TableRowsRequest
 type QueryServiceServer interface {
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
-	// Batch request with different queries
-	QueryBatch(*QueryBatchRequest, grpc.ServerStreamingServer[QueryBatchResponse]) error
 	// Export builds a URL to download the results of a query as a file.
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	// ExportReport builds a URL to download the results of a query as a file.
@@ -625,9 +601,6 @@ type UnimplementedQueryServiceServer struct{}
 
 func (UnimplementedQueryServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
-}
-func (UnimplementedQueryServiceServer) QueryBatch(*QueryBatchRequest, grpc.ServerStreamingServer[QueryBatchResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method QueryBatch not implemented")
 }
 func (UnimplementedQueryServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
@@ -760,17 +733,6 @@ func _QueryService_Query_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	return interceptor(ctx, in, info, handler)
 }
-
-func _QueryService_QueryBatch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(QueryBatchRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(QueryServiceServer).QueryBatch(m, &grpc.GenericServerStream[QueryBatchRequest, QueryBatchResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type QueryService_QueryBatchServer = grpc.ServerStreamingServer[QueryBatchResponse]
 
 func _QueryService_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ExportRequest)
@@ -1466,12 +1428,6 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _QueryService_TableRows_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "QueryBatch",
-			Handler:       _QueryService_QueryBatch_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "rill/runtime/v1/queries.proto",
 }

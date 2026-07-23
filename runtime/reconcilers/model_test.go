@@ -114,6 +114,42 @@ sql: SELECT * FROM up
 	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
 }
 
+// TestRenameDoesNotRebuild verifies that renaming a model file renames the underlying table
+// without re-executing the model or discarding its incremental state.
+func TestRenameDoesNotRebuild(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/foo.yaml": `
+type: model
+incremental: true
+sql: SELECT 1 AS num
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo", 1)
+
+	// Run an incremental refresh so the model accumulates output that a full rebuild would lose.
+	testruntime.RefreshAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo", 2)
+
+	refreshedOn := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo").GetModel().State.RefreshedOn
+
+	// Rename the model file without changing its contents.
+	testruntime.RenameFile(t, rt, instanceID, "models/foo.yaml", "models/foo2.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// The output table should have been renamed, not rebuilt: the appended row survives and RefreshedOn is unchanged.
+	testruntime.RequireNoOLAPTable(t, rt, instanceID, "foo")
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo2", 2)
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo2").GetModel()
+	require.Equal(t, "foo2", model.State.ResultTable)
+	require.Equal(t, refreshedOn.AsTime(), model.State.RefreshedOn.AsTime())
+}
+
 func TestPartitionedIncrementalPostExecSeesIncrementalFlag(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 
@@ -452,6 +488,54 @@ sql: SELECT {{.partition.v}} AS n
 		require.False(t, p.Skipped)
 		require.NotNil(t, p.ExecutedOn, "partition %s should have been re-executed", p.Key)
 	}
+}
+
+// TestPartitionsClearedOnDelete verifies that deleting a partitioned model that produced output
+// also removes its partition rows from the catalog (they would otherwise be orphaned forever,
+// since each model gets a fresh partitions model ID).
+func TestPartitionsClearedOnDelete(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+materialize: true
+partitions:
+  sql: SELECT range AS num FROM range(0, 3)
+sql: SELECT {{ .partition.num }} AS num
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Capture the partitions model ID and verify the partition rows exist in the catalog.
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.NotNil(t, model)
+	require.NotEmpty(t, model.State.PartitionsModelId)
+
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	defer release()
+
+	partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID: model.State.PartitionsModelId,
+	})
+	require.NoError(t, err)
+	require.Len(t, partitions, 3)
+
+	// Delete the model file and reconcile. The output table is dropped and the partition rows must be cleared.
+	testruntime.DeleteFiles(t, rt, instanceID, "models/partitioned.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 1, 0, 0)
+
+	partitions, err = catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID: model.State.PartitionsModelId,
+	})
+	require.NoError(t, err)
+	require.Empty(t, partitions)
 }
 
 func TestExplicitPartitionRefreshDoesNotProcessNewPartitions(t *testing.T) {

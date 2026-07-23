@@ -3353,43 +3353,6 @@ paths:
                 format: int32
       tags:
         - QueryService
-  /v1/instances/{instanceId}/query/batch:
-    post:
-      summary: Batch request with different queries
-      operationId: QueryService_QueryBatch
-      responses:
-        "200":
-          description: A successful response.(streaming responses)
-          schema:
-            type: object
-            properties:
-              result:
-                $ref: '#/definitions/v1QueryBatchResponse'
-              error:
-                $ref: '#/definitions/rpcStatus'
-            title: Stream result of v1QueryBatchResponse
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              queries:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1Query'
-      tags:
-        - QueryService
   /v1/instances/{instanceId}/query/resolver:
     post:
       summary: QueryResolver queries a resolver with the given properties and arguments
@@ -3562,6 +3525,17 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pageSize
+          description: Maximum number of resources to return. If zero, returns all resources.
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          description: Page token returned by a previous ListResources call.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/-/watch:
@@ -6074,6 +6048,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Resource'
+      nextPageToken:
+        type: string
   v1ListTablesResponse:
     type: object
     properties:
@@ -7593,16 +7569,6 @@ definitions:
         $ref: '#/definitions/v1TableColumnsRequest'
       tableRowsRequest:
         $ref: '#/definitions/v1TableRowsRequest'
-  v1QueryBatchResponse:
-    type: object
-    properties:
-      index:
-        type: integer
-        format: int64
-      result:
-        $ref: '#/definitions/v1QueryResult'
-      error:
-        type: string
   v1QueryResolverResponse:
     type: object
     properties:
@@ -7623,49 +7589,6 @@ definitions:
         type: array
         items:
           type: object
-  v1QueryResult:
-    type: object
-    properties:
-      projectStorageResponse:
-        $ref: '#/definitions/v1ProjectStorageResponse'
-      metricsViewAggregationResponse:
-        $ref: '#/definitions/v1MetricsViewAggregationResponse'
-      metricsViewToplistResponse:
-        $ref: '#/definitions/v1MetricsViewToplistResponse'
-      metricsViewComparisonResponse:
-        $ref: '#/definitions/v1MetricsViewComparisonResponse'
-      metricsViewTimeSeriesResponse:
-        $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
-      metricsViewTotalsResponse:
-        $ref: '#/definitions/v1MetricsViewTotalsResponse'
-      metricsViewRowsResponse:
-        $ref: '#/definitions/v1MetricsViewRowsResponse'
-      columnRollupIntervalResponse:
-        $ref: '#/definitions/v1ColumnRollupIntervalResponse'
-      columnTopKResponse:
-        $ref: '#/definitions/v1ColumnTopKResponse'
-      columnNullCountResponse:
-        $ref: '#/definitions/v1ColumnNullCountResponse'
-      columnDescriptiveStatisticsResponse:
-        $ref: '#/definitions/v1ColumnDescriptiveStatisticsResponse'
-      columnTimeGrainResponse:
-        $ref: '#/definitions/v1ColumnTimeGrainResponse'
-      columnNumericHistogramResponse:
-        $ref: '#/definitions/v1ColumnNumericHistogramResponse'
-      columnRugHistogramResponse:
-        $ref: '#/definitions/v1ColumnRugHistogramResponse'
-      columnTimeRangeResponse:
-        $ref: '#/definitions/v1ColumnTimeRangeResponse'
-      columnCardinalityResponse:
-        $ref: '#/definitions/v1ColumnCardinalityResponse'
-      columnTimeSeriesResponse:
-        $ref: '#/definitions/v1ColumnTimeSeriesResponse'
-      tableCardinalityResponse:
-        $ref: '#/definitions/v1TableCardinalityResponse'
-      tableColumnsResponse:
-        $ref: '#/definitions/v1TableColumnsResponse'
-      tableRowsResponse:
-        $ref: '#/definitions/v1TableRowsResponse'
   v1ReconcileStatus:
     type: string
     enum:
