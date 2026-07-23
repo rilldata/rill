@@ -450,7 +450,7 @@
 
         {#if timeDimensions.length > 1 && onTimeDimensionSelect}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-gray-200 my-1"></div>
+            <div class="h-px w-full bg-border my-1"></div>
 
             <Popover.Root bind:open={timeAxisPickerOpen}>
               <Popover.Trigger
@@ -497,10 +497,7 @@
                         >
                           {label}
                           {#if value === (selectedTimeDimension || primaryTimeDimension)}
-                            <Check
-                              class="size-4"
-                              color="var(--color-gray-800)"
-                            />
+                            <Check class="size-4" color="var(--fg-primary)" />
                           {/if}
                         </button>
                       {/snippet}

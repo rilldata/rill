@@ -2,6 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { PivotMeasureFormatting } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
@@ -16,6 +17,14 @@
   export let selectedItems: string[] = [];
   export let types: FieldType[];
   export let onMultiSelect: (items: string[]) => void = () => {};
+  // When provided, measure chips expose per-measure conditional formatting
+  // controls in a dropdown on the chip.
+  export let measureFormatting:
+    | Record<string, PivotMeasureFormatting>
+    | undefined = undefined;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -24,6 +33,15 @@
 
   $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: fieldData = useMetricFieldData(ctx, metricName, types);
+
+  $: metricsViewStore =
+    ctx.canvasEntity.metricsView.getMetricsViewFromName(metricName);
+  $: lowerIsBetterMap = Object.fromEntries(
+    ($metricsViewStore.metricsView?.measures ?? []).map((m) => [
+      m.name as string,
+      m.lowerIsBetter ?? false,
+    ]),
+  );
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">
@@ -57,5 +75,8 @@
     items={selectedItems}
     displayMap={$fieldData.displayMap}
     onUpdate={onMultiSelect}
+    {measureFormatting}
+    {setMeasureFormatting}
+    {lowerIsBetterMap}
   />
 </div>

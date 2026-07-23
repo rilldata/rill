@@ -1,5 +1,8 @@
 <script lang="ts">
-  import type { PivotCanvasComponent } from "@rilldata/web-common/features/canvas/components/pivot";
+  import {
+    conditionalFormatSpecToMeasureFormatting,
+    type PivotCanvasComponent,
+  } from "@rilldata/web-common/features/canvas/components/pivot";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
@@ -40,6 +43,11 @@
   $: schema = validateTableSchema($_metricViewSpec, tableSpec);
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
+  // Seed the shared pivot state with per-measure formatting from the YAML spec.
+  $: measureFormatting = conditionalFormatSpecToMeasureFormatting(
+    tableSpec.conditional_format,
+  );
+
   $: if ("columns" in tableSpec && schema.isValid && !schema.isLoading) {
     const columns = tableSpec?.columns || [];
     pivotState.update((state) => ({
@@ -52,6 +60,7 @@
       columns: tableFieldMapper(columns, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      measureFormatting,
     }));
   } else if (!("columns" in tableSpec) && schema.isValid && !schema.isLoading) {
     const measures = tableSpec.measures || [];
@@ -71,6 +80,7 @@
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      measureFormatting,
       rowLimit: normalizeRowLimit(tableSpec.row_limit),
       outermostRowLimit: undefined,
     }));

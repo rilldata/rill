@@ -67,6 +67,11 @@ type RepoStore interface {
 	// also computed. If fetch is set, the remote-tracking ref is updated first; otherwise the changes
 	// are computed against the already-fetched ref.
 	Diff(ctx context.Context, remoteBranch string, includeDiff, fetch bool) (*RepoDiff, error)
+	// Revert discards local changes for the given files, resetting them to the comparison branch's
+	// state (the same ref used by Diff). paths are relative to the project subpath, matching the paths
+	// returned by Diff; paths that are not actually changed are skipped. If paths is empty, all changed
+	// files are reverted. It returns the subpath-relative paths that were reverted.
+	Revert(ctx context.Context, remoteBranch string, paths []string) ([]string, error)
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.

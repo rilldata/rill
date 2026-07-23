@@ -2912,6 +2912,20 @@ export class ListResourcesRequest extends Message$1<ListResourcesRequest> {
    */
   skipSecurityChecks = false;
 
+  /**
+   * Maximum number of resources to return. If zero, returns all resources.
+   *
+   * @generated from field: uint32 page_size = 5;
+   */
+  pageSize = 0;
+
+  /**
+   * Page token returned by a previous ListResources call.
+   *
+   * @generated from field: string page_token = 6;
+   */
+  pageToken = "";
+
   constructor(data?: PartialMessage<ListResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2924,6 +2938,8 @@ export class ListResourcesRequest extends Message$1<ListResourcesRequest> {
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesRequest {
@@ -2952,6 +2968,11 @@ export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
    */
   resources: Resource[] = [];
 
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
   constructor(data?: PartialMessage<ListResourcesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2961,6 +2982,7 @@ export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
   static readonly typeName = "rill.runtime.v1.ListResourcesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resources", kind: "message", T: Resource, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesResponse {
@@ -6180,6 +6202,100 @@ export class GitDiffResponse_GitFileChange extends Message$1<GitDiffResponse_Git
 
   static equals(a: GitDiffResponse_GitFileChange | PlainMessage<GitDiffResponse_GitFileChange> | undefined, b: GitDiffResponse_GitFileChange | PlainMessage<GitDiffResponse_GitFileChange> | undefined): boolean {
     return proto3.util.equals(GitDiffResponse_GitFileChange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GitRevertRequest
+ */
+export class GitRevertRequest extends Message$1<GitRevertRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * remote_branch is the branch to compare against. Same semantics as GitDiffRequest:
+   * if empty, the upstream of the current local branch is used.
+   *
+   * @generated from field: string remote_branch = 2;
+   */
+  remoteBranch = "";
+
+  /**
+   * paths are the files to revert, relative to the project subpath, matching the paths returned by
+   * GitDiff. Paths that are not actually changed are ignored. If empty, all changed files are reverted.
+   *
+   * @generated from field: repeated string paths = 3;
+   */
+  paths: string[] = [];
+
+  constructor(data?: PartialMessage<GitRevertRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitRevertRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "remote_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitRevertRequest {
+    return new GitRevertRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitRevertRequest {
+    return new GitRevertRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitRevertRequest {
+    return new GitRevertRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitRevertRequest | PlainMessage<GitRevertRequest> | undefined, b: GitRevertRequest | PlainMessage<GitRevertRequest> | undefined): boolean {
+    return proto3.util.equals(GitRevertRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GitRevertResponse
+ */
+export class GitRevertResponse extends Message$1<GitRevertResponse> {
+  /**
+   * reverted_paths lists the files that were reverted, relative to the project subpath.
+   *
+   * @generated from field: repeated string reverted_paths = 1;
+   */
+  revertedPaths: string[] = [];
+
+  constructor(data?: PartialMessage<GitRevertResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitRevertResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "reverted_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitRevertResponse {
+    return new GitRevertResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitRevertResponse {
+    return new GitRevertResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitRevertResponse {
+    return new GitRevertResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitRevertResponse | PlainMessage<GitRevertResponse> | undefined, b: GitRevertResponse | PlainMessage<GitRevertResponse> | undefined): boolean {
+    return proto3.util.equals(GitRevertResponse, a, b);
   }
 }
 

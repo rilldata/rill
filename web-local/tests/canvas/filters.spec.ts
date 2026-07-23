@@ -7,7 +7,6 @@ test.describe("canvas time filters", () => {
   test.use({ project: "AdBids" });
 
   test("can update time filters", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.getByLabel("total_records KPI data").first().click();
@@ -61,7 +60,6 @@ test.describe("canvas time filters", () => {
   });
 
   test("can update domain filters", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.getByLabel("total_records KPI data").first().click();

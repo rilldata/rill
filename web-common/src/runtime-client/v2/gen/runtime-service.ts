@@ -41,6 +41,8 @@ import {
   GitMergeToBranchRequest,
   GitPullRequest,
   GitPushRequest,
+  GitRevertRequest,
+  GitRevertResponse,
   GitStatusRequest,
   GitSwitchBranchRequest,
   HealthRequest,
@@ -2293,6 +2295,96 @@ export function createRuntimeServiceListInstancesInfinite<
   return createInfiniteQuery(queryOptions, queryClient);
 }
 
+export function getRuntimeServiceListResourcesInfiniteQueryOptions<
+  TData = InfiniteData<V1ListResourcesResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<
+    PartialMessage<ListResourcesRequest>,
+    "instanceId" | "pageToken"
+  >,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        V1ListResourcesResponse,
+        ConnectError,
+        TData,
+        V1ListResourcesResponse,
+        QueryKey,
+        string | undefined
+      >
+    >;
+  },
+): CreateInfiniteQueryOptions<
+  V1ListResourcesResponse,
+  ConnectError,
+  TData,
+  V1ListResourcesResponse,
+  QueryKey,
+  string | undefined
+> & { queryKey: QueryKey } {
+  const queryKey = [
+    ...getRuntimeServiceListResourcesQueryKey(client.instanceId, request),
+    "infinite",
+  ] as QueryKey;
+  return {
+    queryKey,
+    queryFn: ({ pageParam, signal }) =>
+      runtimeServiceListResources(
+        client,
+        { ...request, pageToken: pageParam } as Omit<
+          PartialMessage<ListResourcesRequest>,
+          "instanceId"
+        >,
+        { signal },
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      ((lastPage as Record<string, unknown>)?.nextPageToken as
+        | string
+        | undefined) || undefined,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateInfiniteQueryOptions<
+    V1ListResourcesResponse,
+    ConnectError,
+    TData,
+    V1ListResourcesResponse,
+    QueryKey,
+    string | undefined
+  > & { queryKey: QueryKey };
+}
+
+export function createRuntimeServiceListResourcesInfinite<
+  TData = InfiniteData<V1ListResourcesResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<
+    PartialMessage<ListResourcesRequest>,
+    "instanceId" | "pageToken"
+  >,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        V1ListResourcesResponse,
+        ConnectError,
+        TData,
+        V1ListResourcesResponse,
+        QueryKey,
+        string | undefined
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceListResourcesInfiniteQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createInfiniteQuery(queryOptions, queryClient);
+}
+
 export function getRuntimeServiceGetModelPartitionsInfiniteQueryOptions<
   TData = InfiniteData<V1GetModelPartitionsResponse>,
 >(
@@ -3358,6 +3450,70 @@ export function createRuntimeServiceCompleteMutation(
   Omit<PartialMessage<CompleteRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCompleteMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.GitRevert
+ */
+export async function runtimeServiceGitRevert(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GitRevertRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<GitRevertResponse>> {
+  const r = await client.runtimeService.gitRevert(
+    GitRevertRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GitRevertResponse>;
+}
+
+export function getRuntimeServiceGitRevertMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<GitRevertResponse>,
+      unknown,
+      Omit<PartialMessage<GitRevertRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<GitRevertResponse>,
+  unknown,
+  Omit<PartialMessage<GitRevertRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceGitRevert(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceGitRevertMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<GitRevertResponse>,
+      unknown,
+      Omit<PartialMessage<GitRevertRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<GitRevertResponse>,
+  unknown,
+  Omit<PartialMessage<GitRevertRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceGitRevertMutationOptions(
     client,
     options,
   );

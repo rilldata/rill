@@ -231,6 +231,8 @@
   "billing_plan_tagline_growth": "Para equipos en crecimiento y analítica embebida.",
   "billing_plan_tagline_starter": "Para equipos pequeños que están comenzando.",
   "billing_plan_was_cancelled": "Su plan {planName} ha sido cancelado",
+  "billing_pricing_details": "Se le facturará mensualmente según el uso a $20/puesto, $0.15/unidad de cómputo/h y $1/GB de almacenamiento/mes.",
+  "billing_pricing_details_compact": "$20/puesto · $0.15/unidad de cómputo/h · $1/GB de almacenamiento/mes.",
   "billing_prod_compute_units": "{count} unidades de cómputo de producción",
   "billing_projects": "Proyectos",
   "billing_projects_hibernating": " y los proyectos de esta organización están en hibernación",
@@ -263,8 +265,7 @@
   "billing_unlimited": "Ilimitado",
   "billing_update_payment": "Actualizar pago",
   "billing_update_payment_methods": "Actualizar métodos de pago",
-  "billing_upgrade_to_pro": "Actualizar a Pro",
-  "billing_upgrade_to_team": "Actualizar al plan Equipo",
+  "billing_upgrade_to_paid_plan": "Actualizar a plan de pago",
   "billing_upgrade_to_wake": "Actualice para reactivar los proyectos y recuperar el acceso completo.",
   "billing_upgrade_within_to_maintain": "Actualice dentro de {duration} para mantener el acceso.",
   "billing_upgrading_plan": "Actualizando al plan {plan}...",
@@ -519,6 +520,8 @@
   "chat_cancel_streaming": "Cancelar transmisión",
   "chat_close": "Cerrar chat",
   "chat_connect_client": "Conecta tu propio cliente",
+  "chat_connect_client_description": "Consulta tus métricas de Rill desde tu cliente de IA favorito.",
+  "chat_connect_client_other": "Otro cliente",
   "chat_conversation_history": "Historial de conversaciones",
   "chat_diff_new_badge": "nuevo",
   "chat_downvote_aria": "Valorar negativamente",
@@ -596,6 +599,7 @@
   "common_no_changes_detected": "No se detectaron cambios",
   "common_no_results": "No se encontraron resultados",
   "common_no_results_found": "No se encontraron resultados.",
+  "common_none": "Ninguno",
   "common_other_values_selected": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -612,6 +616,7 @@
   "common_search_ellipsis": "Buscar...",
   "common_search_list": "Buscar en la lista",
   "common_select_all": "Seleccionar todo",
+  "common_sort_by": "Ordenar por {label}",
   "common_status": "Estado",
   "common_type": "Tipo",
   "common_type_to_confirm": "Escriba {text} en el campo de abajo para confirmar:",
@@ -623,6 +628,7 @@
   "dashboard_add_column": "Agregar columna",
   "dashboard_add_filter": "Agregar filtro",
   "dashboard_add_filter_button": "Botón de agregar filtro",
+  "dashboard_add_favourite": "Agregar a favoritos",
   "dashboard_add_filter_button_aria": "Botón para agregar filtro",
   "dashboard_add_mock_user": "Agregar usuario de prueba",
   "dashboard_add_row": "Agregar fila",
@@ -707,6 +713,7 @@
   "dashboard_include_exclude_toggle": "Alternar incluir/excluir",
   "dashboard_invalid_time_range": "Rango de tiempo inválido",
   "dashboard_last_refreshed_ago": "Última actualización {time}",
+  "dashboard_last_used_ago": "Último uso {time}",
   "dashboard_latest_data": "datos más recientes",
   "dashboard_latest_data_description": "Marca temporal del punto de datos más reciente",
   "dashboard_leaderboards_aria": "Rankings",
@@ -758,6 +765,7 @@
   "dashboard_readonly_filter_chips_aria": "Chips de filtro de solo lectura",
   "dashboard_recent": "Recientes",
   "dashboard_reference": "Referencia",
+  "dashboard_remove_favourite": "Quitar de favoritos",
   "dashboard_remove_label": "Eliminar {label}",
   "dashboard_removed_items_filter": "Se eliminaron {count} elementos del filtro",
   "dashboard_replace": "Reemplazar",
@@ -804,11 +812,15 @@
   "dashboard_sort_by_percent_change_aria": "Alternar orden por cambio porcentual",
   "dashboard_sort_by_percent_total_aria": "Alternar orden por porcentaje del total",
   "dashboard_sort_by_value_aria": "Alternar orden por valor",
+  "dashboard_sort_last_used": "Último uso",
+  "dashboard_sort_name": "Nombre",
   "dashboard_start": "inicio",
   "dashboard_start_pivot": "Iniciar pivote",
   "dashboard_switch_flat": "Cambiar a vista plana",
   "dashboard_switch_pivot": "Cambiar a vista de pivote",
   "dashboard_table_mode": "Modo de tabla",
+  "dashboard_tag_add_favourite": "Agregar {name} a favoritos",
+  "dashboard_tag_remove_favourite": "Quitar {name} de favoritos",
   "dashboard_tags": "Etiquetas",
   "dashboard_tdd_contact_discord": "Si el problema persiste, contáctanos en",
   "dashboard_tdd_error": "Encontramos un error al cargar los datos. Por favor, intenta actualizar la página.",
@@ -828,7 +840,8 @@
   "dashboard_total_column": "Columna de totales",
   "dashboard_total_row": "Fila de totales",
   "dashboard_view_as": "Ver como",
-  "dashboard_viewing_as": "Viendo como",
+  "dashboard_view_as_disabled": "No disponible durante la edición del proyecto",
+  "dashboard_viewing_as": "Viendo como <b>{email}</b>",
   "dialog_close_without_saving_alert_desc": "Aún no has guardado los cambios de esta alerta, por lo que cerrar esta ventana perderá tu trabajo.",
   "dialog_close_without_saving_cancel": "Seguir editando",
   "dialog_close_without_saving_confirm": "Cerrar",
@@ -837,6 +850,7 @@
   "edit_branch_name": "Nombre de rama",
   "edit_changes_checking": "Buscando cambios…",
   "edit_changes_committed_pushed": "Cambios confirmados y enviados",
+  "edit_changes_discard_all": "Descartar todo",
   "edit_changes_file_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -860,7 +874,42 @@
   "edit_changes_loading_diff": "Cargando diff…",
   "edit_changes_no_diff": "No hay diff para mostrar",
   "edit_changes_none_to_show": "No hay cambios para mostrar",
+  "edit_changes_revert": "Revertir",
+  "edit_changes_revert_confirm_body": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Esto descarta permanentemente los cambios locales de {count} archivo y no se puede deshacer.",
+        "countPlural=other": "Esto descarta permanentemente los cambios locales de {count} archivos y no se puede deshacer."
+      }
+    }
+  ],
+  "edit_changes_revert_confirm_title": "¿Revertir cambios?",
+  "edit_changes_revert_failed": "No se pudieron revertir los cambios",
+  "edit_changes_revert_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Revertir {count} archivo",
+        "countPlural=other": "Revertir {count} archivos"
+      }
+    }
+  ],
+  "edit_changes_reverted": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Se revirtió {count} archivo",
+        "countPlural=other": "Se revirtieron {count} archivos"
+      }
+    }
+  ],
+  "edit_changes_reverting": "Revirtiendo…",
   "edit_changes_review_title": "Revisar cambios",
+  "edit_changes_select_all": "Seleccionar todo",
   "edit_changes_status_added": "Agregado",
   "edit_changes_status_deleted": "Eliminado",
   "edit_changes_status_modified": "Modificado",

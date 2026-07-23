@@ -6,7 +6,6 @@ test.describe("canvas charts", () => {
   test.use({ project: "AdBids" });
 
   test("switch between charts", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.locator("#AdBids_metrics_canvas--component-1-0 canvas").click();

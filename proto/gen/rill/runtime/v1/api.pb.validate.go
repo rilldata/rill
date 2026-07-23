@@ -7072,6 +7072,23 @@ func (m *ListResourcesRequest) validate(all bool) error {
 
 	// no validation rules for SkipSecurityChecks
 
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 10000 {
+			err := ListResourcesRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 10000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
 	if len(errors) > 0 {
 		return ListResourcesRequestMultiError(errors)
 	}
@@ -7207,6 +7224,8 @@ func (m *ListResourcesResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return ListResourcesResponseMultiError(errors)
@@ -14671,6 +14690,223 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GitDiffResponseValidationError{}
+
+// Validate checks the field values on GitRevertRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitRevertRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitRevertRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitRevertRequestMultiError, or nil if none found.
+func (m *GitRevertRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitRevertRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GitRevertRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GitRevertRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for RemoteBranch
+
+	if len(errors) > 0 {
+		return GitRevertRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitRevertRequestMultiError is an error wrapping multiple validation errors
+// returned by GitRevertRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GitRevertRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitRevertRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitRevertRequestMultiError) AllErrors() []error { return m }
+
+// GitRevertRequestValidationError is the validation error returned by
+// GitRevertRequest.Validate if the designated constraints aren't met.
+type GitRevertRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitRevertRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitRevertRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitRevertRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitRevertRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitRevertRequestValidationError) ErrorName() string { return "GitRevertRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitRevertRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitRevertRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitRevertRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitRevertRequestValidationError{}
+
+var _GitRevertRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GitRevertResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitRevertResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitRevertResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitRevertResponseMultiError, or nil if none found.
+func (m *GitRevertResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitRevertResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return GitRevertResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitRevertResponseMultiError is an error wrapping multiple validation errors
+// returned by GitRevertResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GitRevertResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitRevertResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitRevertResponseMultiError) AllErrors() []error { return m }
+
+// GitRevertResponseValidationError is the validation error returned by
+// GitRevertResponse.Validate if the designated constraints aren't met.
+type GitRevertResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitRevertResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitRevertResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitRevertResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitRevertResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitRevertResponseValidationError) ErrorName() string {
+	return "GitRevertResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GitRevertResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitRevertResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitRevertResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitRevertResponseValidationError{}
 
 // Validate checks the field values on ListGitBranchesRequest with the rules
 // defined in the proto definition for this message. If any rules are

@@ -148,8 +148,21 @@
               const newParam = toggleDimensionFilterMode(id);
               if (newParam) updateLocalFilterString(newParam);
             }}
-            toggleDimensionValueSelections={async (_, values) => {
-              const newParam = toggleDimensionValueSelections(id, values);
+            toggleDimensionValueSelections={async (
+              _,
+              values,
+              _metricsViewNames,
+              keepPillVisible,
+              isExclusiveFilter,
+              exclude,
+            ) => {
+              const newParam = toggleDimensionValueSelections(
+                id,
+                values,
+                keepPillVisible,
+                isExclusiveFilter,
+                exclude,
+              );
 
               if (newParam) updateLocalFilterString(newParam);
             }}

@@ -220,7 +220,7 @@
   "billing_plan_badge_free_trial": "Free Trial",
   "billing_plan_badge_managed": "Managed",
   "billing_plan_badge_pro": "Pro",
-  "billing_plan_badge_pro_trial": "Pro Trial",
+  "billing_plan_badge_pro_trial": "Trial",
   "billing_plan_badge_team": "Team",
   "billing_plan_cancelled": "Your plan is cancelled {accessTimeout}.",
   "billing_plan_header": "Plan",
@@ -231,6 +231,8 @@
   "billing_plan_tagline_growth": "For growing teams and embedded analytics.",
   "billing_plan_tagline_starter": "For small teams getting started.",
   "billing_plan_was_cancelled": "Your {planName} plan was cancelled",
+  "billing_pricing_details": "You'll be billed monthly based on usage at $20/seat, $0.15/compute unit/hr and $1/GB storage/mo.",
+  "billing_pricing_details_compact": "$20/seat · $0.15/compute unit/hr · $1/GB storage/mo.",
   "billing_prod_compute_units": "{count} Prod Compute Units",
   "billing_projects": "Projects",
   "billing_projects_hibernating": " and this org’s projects are now hibernating",
@@ -263,8 +265,7 @@
   "billing_unlimited": "Unlimited",
   "billing_update_payment": "Update payment",
   "billing_update_payment_methods": "Update payment methods",
-  "billing_upgrade_to_pro": "Upgrade to Pro",
-  "billing_upgrade_to_team": "Upgrade to Team plan",
+  "billing_upgrade_to_paid_plan": "Upgrade to paid plan",
   "billing_upgrade_to_wake": "Upgrade to wake projects and regain full access.",
   "billing_upgrade_within_to_maintain": "Upgrade within {duration} to maintain access.",
   "billing_upgrading_plan": "Upgrading to {plan} plan...",
@@ -519,6 +520,8 @@
   "chat_cancel_streaming": "Cancel streaming",
   "chat_close": "Close chat",
   "chat_connect_client": "Connect your own client",
+  "chat_connect_client_description": "Query your Rill metrics from your favorite AI client.",
+  "chat_connect_client_other": "Other client",
   "chat_conversation_history": "Conversation history",
   "chat_diff_new_badge": "new",
   "chat_downvote_aria": "Downvote response",
@@ -596,6 +599,7 @@
   "common_no_changes_detected": "No changes detected",
   "common_no_results": "No results found",
   "common_no_results_found": "No results found.",
+  "common_none": "None",
   "common_other_values_selected": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -612,6 +616,7 @@
   "common_search_ellipsis": "Search...",
   "common_search_list": "Search list",
   "common_select_all": "Select all",
+  "common_sort_by": "Sort by {label}",
   "common_status": "Status",
   "common_type": "Type",
   "common_type_to_confirm": "Type {text} in the box below to confirm:",
@@ -623,6 +628,7 @@
   "dashboard_add_column": "Add Column",
   "dashboard_add_filter": "Add filter",
   "dashboard_add_filter_button": "Add filter button",
+  "dashboard_add_favourite": "Add to favourites",
   "dashboard_add_filter_button_aria": "Add filter button",
   "dashboard_add_mock_user": "Add mock user",
   "dashboard_add_row": "Add Row",
@@ -707,6 +713,7 @@
   "dashboard_include_exclude_toggle": "Include exclude toggle",
   "dashboard_invalid_time_range": "Invalid time range",
   "dashboard_last_refreshed_ago": "Last refreshed {time}",
+  "dashboard_last_used_ago": "Last used {time}",
   "dashboard_latest_data": "latest data",
   "dashboard_latest_data_description": "Timestamp of latest data point",
   "dashboard_leaderboards_aria": "Leaderboards",
@@ -758,6 +765,7 @@
   "dashboard_readonly_filter_chips_aria": "Readonly Filter Chips",
   "dashboard_recent": "Recent",
   "dashboard_reference": "Reference",
+  "dashboard_remove_favourite": "Remove from favourites",
   "dashboard_remove_label": "Remove {label}",
   "dashboard_removed_items_filter": "Removed {count} items from filter",
   "dashboard_replace": "Replace",
@@ -795,11 +803,15 @@
   "dashboard_sort_by_percent_change_aria": "Toggle sort leaderboards by percent change",
   "dashboard_sort_by_percent_total_aria": "Toggle sort leaderboards by percent of total",
   "dashboard_sort_by_value_aria": "Toggle sort leaderboards by value",
+  "dashboard_sort_last_used": "Last Used",
+  "dashboard_sort_name": "Name",
   "dashboard_start": "start",
   "dashboard_start_pivot": "Start Pivot",
   "dashboard_switch_flat": "Switch to flat view",
   "dashboard_switch_pivot": "Switch to pivot view",
   "dashboard_table_mode": "Table mode",
+  "dashboard_tag_add_favourite": "Add {name} to favourites",
+  "dashboard_tag_remove_favourite": "Remove {name} from favourites",
   "dashboard_tags": "Tags",
   "dashboard_tdd_contact_discord": "If the issue persists, please contact us on",
   "dashboard_tdd_error": "We encountered an error while loading the data. Please try refreshing the page.",
@@ -819,7 +831,8 @@
   "dashboard_total_column": "Total column",
   "dashboard_total_row": "Total row",
   "dashboard_view_as": "View as",
-  "dashboard_viewing_as": "Viewing as",
+  "dashboard_view_as_disabled": "Not available during editing project",
+  "dashboard_viewing_as": "Viewing as <b>{email}</b>",
   "dialog_close_without_saving_alert_desc": "You haven’t saved changes to this alert yet, so closing this window will lose your work.",
   "dialog_close_without_saving_cancel": "Keep editing",
   "dialog_close_without_saving_confirm": "Close",
@@ -828,6 +841,7 @@
   "edit_branch_name": "Branch name",
   "edit_changes_checking": "Checking for changes…",
   "edit_changes_committed_pushed": "Changes committed and pushed",
+  "edit_changes_discard_all": "Discard all",
   "edit_changes_file_count": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -851,7 +865,42 @@
   "edit_changes_loading_diff": "Loading diff…",
   "edit_changes_no_diff": "No diff to display",
   "edit_changes_none_to_show": "No changes to show",
+  "edit_changes_revert": "Revert",
+  "edit_changes_revert_confirm_body": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This permanently discards local changes to {count} file and cannot be undone.",
+        "countPlural=other": "This permanently discards local changes to {count} files and cannot be undone."
+      }
+    }
+  ],
+  "edit_changes_revert_confirm_title": "Revert changes?",
+  "edit_changes_revert_failed": "Failed to revert changes",
+  "edit_changes_revert_selected": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Revert {count} file",
+        "countPlural=other": "Revert {count} files"
+      }
+    }
+  ],
+  "edit_changes_reverted": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Reverted {count} file",
+        "countPlural=other": "Reverted {count} files"
+      }
+    }
+  ],
+  "edit_changes_reverting": "Reverting…",
   "edit_changes_review_title": "Review changes",
+  "edit_changes_select_all": "Select all",
   "edit_changes_status_added": "Added",
   "edit_changes_status_deleted": "Deleted",
   "edit_changes_status_modified": "Modified",

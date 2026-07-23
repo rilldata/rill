@@ -37,7 +37,8 @@
     createRuntimeServiceCreateDirectoryMutation(runtimeClient);
 
   $: id = `${dir.path}-nav-entry`;
-  $: expanded = $directoryState[dir.path];
+  // Directories are expanded by default; only explicitly collapsed ones are false.
+  $: expanded = $directoryState[dir.path] ?? true;
   $: padding = getPaddingFromPath(dir.path);
   $: ({ instanceId } = runtimeClient);
   $: topLevelFolder = getTopLevelFolder(dir.path);

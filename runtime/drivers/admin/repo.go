@@ -534,6 +534,26 @@ func (r *repo) Diff(ctx context.Context, remoteBranch string, includeDiff, fetch
 	}, nil
 }
 
+func (r *repo) Revert(ctx context.Context, remoteBranch string, paths []string) ([]string, error) {
+	// Reverting mutates the worktree, so take the write lock (excludes concurrent reads/writes).
+	err := r.lockForWrite(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.Unlock()
+
+	if r.git == nil {
+		return nil, nil
+	}
+	if !r.git.editable() {
+		return nil, fmt.Errorf("repo is not editable")
+	}
+
+	// Revert against the already-fetched ref: the caller has just listed the changes (which fetches),
+	// so what the user reverts matches what they saw.
+	return gitutil.Revert(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch, paths)
+}
+
 func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
 	if len(files) == 0 {
 		return nil

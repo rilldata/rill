@@ -166,7 +166,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			defer r.execSem.Release(1)
 
 			err = prevManager.Delete(ctx, prevResult)
-			return runtime.ReconcileResult{Err: err}
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
 		}
 
 		err := r.clearPartitions(ctx, model)
@@ -190,6 +192,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 				renameRes, err := prevManager.Rename(ctx, prevResult, self.Meta.Name.Name, modelEnv)
 				if err == nil {
+					// Update prevResult to point to the renamed output, so the existence check later in this function targets the renamed table instead of the old one.
+					prevResult = renameRes
 					err = r.updateStateWithResult(ctx, self, renameRes)
 				}
 				if err != nil {
@@ -212,7 +216,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
-		// If not staging changes, we need to drop the previous output (if any) before returning
+		// If not staging changes, we need to drop the previous output (if any) before returning.
+		// Note: ChangeMode is intentionally not checked here.
+		// When StageChanges is off, the manual/patch data-preservation guarantee does not apply,
+		// so dropping the previous output on invalid refs is acceptable.
 		if !modelEnv.StageChanges && prevManager != nil {
 			err := r.execSem.Acquire(ctx, 1)
 			if err != nil {
@@ -337,7 +344,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the output connector has changed, drop data in the old output connector (if any).
 	// If only the output properties have changed, the executor will handle dropping existing data (to comply with StageChanges).
-	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector {
+	// This drop is not gated by StageChanges, so in manual/patch mode we never do it automatically:
+	// the old connector's data is left in place for the user to remove manually.
+	// Only reset mode drops the old output when the connector changes.
+	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector &&
+		model.Spec.ChangeMode != runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL &&
+		model.Spec.ChangeMode != runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH {
 		err = prevManager.Delete(ctx, prevResult)
 		if err != nil {
 			r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
@@ -419,7 +431,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// If the build failed, clear the state only if we're not staging changes
+	// If the build failed, clear the state only if we're not staging changes.
+	// Note: ChangeMode is intentionally not checked here.
+	// When StageChanges is off, the manual/patch data-preservation guarantee does not apply,
+	// so clearing the state after a failed build is acceptable.
 	if execErr != nil {
 		if !modelEnv.StageChanges {
 			err := r.clearPartitions(ctx, model)

@@ -120,6 +120,6 @@
 
 <style lang="postcss">
   :global(.selecting button) {
-    @apply ring-1 ring-primary-400;
+    @apply ring-1 ring-theme-400;
   }
 </style>
