@@ -85,6 +85,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	var subject string
 	var attr map[string]any
 	var rules []*runtimev1.SecurityRule
+	var enforceResourceAllowlist bool
 	switch {
 	case opts.forOwner:
 		if opts.externalUserID != "" {
@@ -116,7 +117,11 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 			if !ok {
 				return "", status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
 			}
+			// Preserve the attributes captured when the token was created for data
+			// policies, but make its project resource list authoritative. Captured
+			// admin/owner/recipient attributes must never add unlisted resources.
 			attr = mdl.Attributes
+			enforceResourceAllowlist = true
 			magicRules, err := securityRulesFromMagicAuthToken(mdl)
 			if err != nil {
 				return "", err
@@ -244,6 +249,9 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		},
 		Attributes:    attr,
 		SecurityRules: rules,
+		// This marker is deliberately set only for magic-token owners. Other JWT
+		// flows retain their existing built-in report and alert behavior.
+		EnforceResourceAllowlist: enforceResourceAllowlist,
 	})
 	if err != nil {
 		return "", status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())

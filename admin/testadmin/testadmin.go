@@ -26,6 +26,7 @@ import (
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/version"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -40,6 +41,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	// Register drivers
 	_ "github.com/rilldata/rill/admin/database/postgres"
@@ -65,6 +67,9 @@ type Fixture struct {
 	Server     *server.Server
 	ServerOpts *server.Options
 	Audience   *runtimeauth.Audience
+	// DatabaseURL is exposed for narrow integration-test assertions that cannot
+	// be expressed through the production database interface.
+	DatabaseURL string
 
 	Runtime           *runtime.Runtime
 	RuntimeServer     *runtimeserver.Server
@@ -204,10 +209,11 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 
 	if !startRt {
 		return &Fixture{
-			Admin:      adm,
-			Server:     srv,
-			ServerOpts: srvOpts,
-			Audience:   aud,
+			Admin:       adm,
+			Server:      srv,
+			ServerOpts:  srvOpts,
+			Audience:    aud,
+			DatabaseURL: pg.DatabaseURL,
 		}
 	}
 
@@ -219,6 +225,7 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 		Server:            srv,
 		ServerOpts:        srvOpts,
 		Audience:          aud,
+		DatabaseURL:       pg.DatabaseURL,
 		Runtime:           rtFixture.Runtime,
 		RuntimeServer:     rtFixture.RuntimeServer,
 		RuntimeServerOpts: rtFixture.RuntimeServerOpts,
@@ -278,6 +285,54 @@ func (f *Fixture) RuntimeURL() string {
 		return ""
 	}
 	return fmt.Sprintf("http://localhost:%d", f.RuntimeServerOpts.GRPCPort)
+}
+
+// NewRuntimeInstance creates a minimal instance in the fixture's embedded
+// runtime. It lets admin/runtime authorization tests use a real JWT handoff
+// without provisioning a deployment or contacting an external service.
+func (f *Fixture) NewRuntimeInstance(t *testing.T) string {
+	t.Helper()
+	require.NotNil(t, f.Runtime, "fixture was not started with an embedded runtime")
+
+	repoDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "rill.yaml"), []byte("olap_connector: duckdb\n"), 0o644))
+
+	instance := &drivers.Instance{
+		Environment:      "prod",
+		OLAPConnector:    "duckdb",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
+		AdminConnector:   "noop_admin",
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: must(structpb.NewStruct(map[string]any{"dsn": repoDir})),
+			},
+			{
+				Type:   "duckdb",
+				Name:   "duckdb",
+				Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:", "mode": "readwrite"})),
+			},
+			{
+				Type: "sqlite",
+				Name: "catalog",
+				Config: must(structpb.NewStruct(map[string]any{
+					"dsn": fmt.Sprintf("file:testadmin-%x?mode=memory&cache=shared", randomBytes()),
+				})),
+			},
+		},
+		Variables: map[string]string{"rill.watch_repo": "false"},
+	}
+	require.NoError(t, f.Runtime.CreateInstance(t.Context(), instance))
+	require.NotEmpty(t, instance.ID)
+
+	ctrl, err := f.Runtime.Controller(t.Context(), instance.ID)
+	require.NoError(t, err)
+	_, err = ctrl.Get(t.Context(), runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+	require.NoError(t, ctrl.WaitUntilIdle(t.Context(), false))
+	return instance.ID
 }
 
 func (f *Fixture) TriggerDeployment(t *testing.T, org, project string) *database.Deployment {

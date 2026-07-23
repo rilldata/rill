@@ -47,10 +47,16 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		return nil, status.Error(codes.PermissionDenied, "not allowed to create a magic auth token")
 	}
 
+	// Reject invalid user input before constructing the persistent token options. In
+	// particular, a negative TTL must not create an already-expired database row.
+	if req.TtlMinutes < 0 {
+		return nil, status.Error(codes.InvalidArgument, "ttl_minutes cannot be negative")
+	}
+
 	if req.ResourceName != "" && req.ResourceType != "" { // nolint:staticcheck // for backwards compatibility
 		addResource := true
 		for _, r := range req.Resources {
-			if r.Type == req.ResourceType && r.Name == req.ResourceName { // nolint:staticcheck // for backwards compatibility
+			if r != nil && r.Type == req.ResourceType && r.Name == req.ResourceName { // nolint:staticcheck // for backwards compatibility
 				addResource = false
 				break
 			}
@@ -65,6 +71,9 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 
 	resources := make([]database.ResourceName, len(req.Resources))
 	for i, r := range req.Resources {
+		if r == nil || r.Type == "" || r.Name == "" {
+			return nil, status.Errorf(codes.InvalidArgument, "resource at index %d must have a type and name", i)
+		}
 		resources[i] = database.ResourceName{
 			Type: r.Type,
 			Name: r.Name,
@@ -111,7 +120,9 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 
 		filterSize += len(val)
 		if filterSize > magicAuthTokenFilterMaxSize {
-			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
+			// The limit is cumulative across all filters; rejecting here guarantees an
+			// oversized request never reaches the database write below.
+			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", filterSize, magicAuthTokenFilterMaxSize)
 		}
 
 		filterJSON := string(val)
@@ -253,6 +264,9 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 	if err != nil {
 		return nil, err
 	}
+	// Validation caches successful token lookups briefly. Purge them so revocation
+	// takes effect on the very next request instead of after the cache TTL.
+	s.admin.PurgeAuthTokenCache()
 
 	return &adminv1.RevokeMagicAuthTokenResponse{}, nil
 }

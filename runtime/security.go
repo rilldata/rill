@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 // ErrForbidden is returned when an action is not allowed.
@@ -77,6 +78,9 @@ type SecurityClaims struct {
 	// AdditionalRules are optional security rules to apply *in addition* to the built-in rules and the rules defined on the requested resource.
 	// These are currently leveraged by the admin service to enforce restrictions for magic auth tokens.
 	AdditionalRules []*runtimev1.SecurityRule
+	// EnforceResourceAllowlist prevents built-in identity rules from extending an
+	// explicit resource allowlist. The admin service sets this only for magic tokens.
+	EnforceResourceAllowlist bool
 	// SkipChecks enables completely skipping all security checks. Used in local development.
 	SkipChecks bool
 }
@@ -102,11 +106,12 @@ func (c *SecurityClaims) Can(p Permission) bool {
 // It serializes the AdditionalRules using protojson.
 func (c *SecurityClaims) MarshalJSON() ([]byte, error) {
 	tmp := securityClaimsJSON{
-		UserID:          c.UserID,
-		UserAttributes:  c.UserAttributes,
-		Permissions:     c.Permissions,
-		AdditionalRules: make([]json.RawMessage, len(c.AdditionalRules)),
-		SkipChecks:      c.SkipChecks,
+		UserID:                   c.UserID,
+		UserAttributes:           c.UserAttributes,
+		Permissions:              c.Permissions,
+		AdditionalRules:          make([]json.RawMessage, len(c.AdditionalRules)),
+		EnforceResourceAllowlist: c.EnforceResourceAllowlist,
+		SkipChecks:               c.SkipChecks,
 	}
 
 	for i, rule := range c.AdditionalRules {
@@ -131,6 +136,7 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 	c.UserID = tmp.UserID
 	c.UserAttributes = tmp.UserAttributes
 	c.Permissions = tmp.Permissions
+	c.EnforceResourceAllowlist = tmp.EnforceResourceAllowlist
 	c.AdditionalRules = make([]*runtimev1.SecurityRule, len(tmp.AdditionalRules))
 	for i, data := range tmp.AdditionalRules {
 		rule := &runtimev1.SecurityRule{}
@@ -147,11 +153,12 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 // securityClaimsJSON is a JSON-serializable representation of SecurityClaims.
 // SecurityClaims can't be directly serialized to JSON because the SecurityRule proto is not directly JSON serializable.
 type securityClaimsJSON struct {
-	UserID          string            `json:"uid"`
-	UserAttributes  map[string]any    `json:"attrs"`
-	Permissions     []Permission      `json:"perms"`
-	AdditionalRules []json.RawMessage `json:"rules"`
-	SkipChecks      bool              `json:"skip"`
+	UserID                   string            `json:"uid"`
+	UserAttributes           map[string]any    `json:"attrs"`
+	Permissions              []Permission      `json:"perms"`
+	AdditionalRules          []json.RawMessage `json:"rules"`
+	EnforceResourceAllowlist bool              `json:"enforce_resource_allowlist,omitempty"`
+	SkipChecks               bool              `json:"skip"`
 }
 
 // ResolvedSecurity represents the resolved security rules for a given claims against a specific resource.
@@ -256,6 +263,9 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 	if err != nil {
 		return nil, fmt.Errorf("failed to expand security rules: %w", err)
 	}
+	// Built-in report and alert policies may extend exclusive access rules. Clone
+	// them first so resolving one request never mutates claims shared by another.
+	expandedRules = cloneSecurityRules(expandedRules)
 
 	// Combine rules with any contained in the resource itself
 	rules := p.resolveRules(claims, expandedRules, r)
@@ -272,7 +282,7 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 		return ResolvedSecurityClosed, nil
 	}
 
-	cacheKey, err := computeCacheKey(instanceID, environment, claims, r)
+	cacheKey, err := computeCacheKey(instanceID, environment, vars, claims, r, rules)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute cache key: %w", err)
 	}
@@ -348,7 +358,11 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 	switch r.Meta.Name.Kind {
 	// Admins and creators/recipients can access an alert.
 	case ResourceKindAlert:
-		spec := r.GetAlert().Spec
+		alert := r.GetAlert()
+		if alert == nil || alert.Spec == nil {
+			return rules
+		}
+		spec := alert.Spec
 		rule := p.builtInAlertSecurityRule(r.Meta.Name, spec, claims, rules)
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
@@ -356,7 +370,11 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 		}
 	// Everyone can access an API.
 	case ResourceKindAPI:
-		spec := r.GetApi().Spec
+		api := r.GetApi()
+		if api == nil || api.Spec == nil {
+			return rules
+		}
+		spec := api.Spec
 		if len(spec.SecurityRules) == 0 {
 			rules = append(rules, allowAccessRule)
 		} else {
@@ -368,9 +386,19 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 	// Determine access using the canvas' security rules. If there are none, then everyone can access it,
 	// unless the canvas is admin-managed (e.g. a personal canvas) in which case only the owner and admins can access it.
 	case ResourceKindCanvas:
-		spec := r.GetCanvas().State.ValidSpec
+		canvas := r.GetCanvas()
+		if canvas == nil {
+			return rules
+		}
+		var spec *runtimev1.CanvasSpec
+		if canvas.State != nil {
+			spec = canvas.State.ValidSpec
+		}
 		if spec == nil {
-			spec = r.GetCanvas().Spec // Not ideal, but better than giving access to the full resource
+			spec = canvas.Spec // Not ideal, but better than giving access to the full resource
+		}
+		if spec == nil {
+			return rules
 		}
 		if isAdminManagedAnnotations(spec.Annotations) {
 			// Personal / admin-managed canvas: only owner and admins can access. No default-allow fallthrough.
@@ -385,9 +413,19 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 		}
 	// Determine access using the metrics view's security rules. If there are none, then everyone can access it.
 	case ResourceKindMetricsView:
-		spec := r.GetMetricsView().State.ValidSpec
+		mv := r.GetMetricsView()
+		if mv == nil {
+			return rules
+		}
+		var spec *runtimev1.MetricsViewSpec
+		if mv.State != nil {
+			spec = mv.State.ValidSpec
+		}
 		if spec == nil {
-			spec = r.GetMetricsView().Spec // Not ideal, but better than giving access to the full resource
+			spec = mv.Spec // Not ideal, but better than giving access to the full resource
+		}
+		if spec == nil {
+			return rules
 		}
 		if len(spec.SecurityRules) == 0 {
 			rules = append(rules, allowAccessRule)
@@ -396,7 +434,14 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 		}
 	// Determine access using the explore's security rules. If there are none, then everyone can access it.
 	case ResourceKindExplore:
-		spec := r.GetExplore().State.ValidSpec
+		explore := r.GetExplore()
+		if explore == nil {
+			return rules
+		}
+		var spec *runtimev1.ExploreSpec
+		if explore.State != nil {
+			spec = explore.State.ValidSpec
+		}
 		if spec == nil {
 			// Tricky, since security rules on an explore are usually derived from its metrics view and added to ValidSpec during reconciliation.
 			// So we don't want to just fallback to r.GetExplore().Spec here.
@@ -411,7 +456,11 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 		}
 	// Admins and creators/recipients can access a report.
 	case ResourceKindReport:
-		spec := r.GetReport().Spec
+		report := r.GetReport()
+		if report == nil || report.Spec == nil {
+			return rules
+		}
+		spec := report.Spec
 		rule := p.builtInReportSecurityRule(r.Meta.Name, spec, claims, rules)
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
@@ -434,6 +483,14 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 // TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
 // Should we refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead?
 func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceName, spec *runtimev1.AlertSpec, claims *SecurityClaims, rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
+	if spec == nil {
+		return nil
+	}
+	// A magic token's resource list is a hard boundary. Its captured admin,
+	// owner, or recipient attributes may filter data but cannot add this alert.
+	if claims.EnforceResourceAllowlist {
+		return nil
+	}
 	var explicitAllow bool
 	// Allow if the user is an admin
 	if claims.Admin() {
@@ -510,6 +567,14 @@ func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceNa
 // TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
 // Should we refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead?
 func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.ResourceName, spec *runtimev1.ReportSpec, claims *SecurityClaims, rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
+	if spec == nil {
+		return nil
+	}
+	// A magic token's resource list is a hard boundary. Its captured admin,
+	// owner, or recipient attributes may filter data but cannot add this report.
+	if claims.EnforceResourceAllowlist {
+		return nil
+	}
 	var explicitAllow bool
 	// Allow if the user is an admin
 	if claims.Admin() {
@@ -590,6 +655,9 @@ func isAdminManagedAnnotations(annotations map[string]string) bool {
 // builtInCanvasSecurityRule returns a built-in security rule to apply to an admin-managed canvas.
 // Returns nil if the caller is not an admin and not the owner, so the caller of resolveRules treats it as a deny.
 func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.ResourceName, spec *runtimev1.CanvasSpec, claims *SecurityClaims) *runtimev1.SecurityRule {
+	if spec == nil {
+		return nil
+	}
 	// Allow if the user is an admin
 	if claims.Admin() {
 		return &runtimev1.SecurityRule{
@@ -871,33 +939,69 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 }
 
 // computeCacheKey computes a cache key for a resolved security policy.
-func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (string, error) {
-	hash := md5.New()
-	_, err := hash.Write([]byte(instanceID))
-	if err != nil {
-		return "", err
+func computeCacheKey(instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource, rules []*runtimev1.SecurityRule) (string, error) {
+	// Serialize a structured value instead of concatenating strings, which could
+	// otherwise collide at field boundaries (for example "a"+"bc" and "ab"+"c").
+	type cacheKeyResource struct {
+		Kind         string `json:"kind"`
+		Name         string `json:"name"`
+		UpdatedSecs  int64  `json:"updated_secs"`
+		UpdatedNanos int32  `json:"updated_nanos"`
 	}
-	_, err = hash.Write([]byte(environment))
-	if err != nil {
-		return "", err
+	type cacheKeyInput struct {
+		InstanceID  string            `json:"instance_id"`
+		Environment string            `json:"environment"`
+		Variables   map[string]string `json:"variables"`
+		Claims      json.RawMessage   `json:"claims"`
+		Resource    cacheKeyResource  `json:"resource"`
+		Rules       [][]byte          `json:"rules"`
 	}
-	_, err = hash.Write([]byte(r.Meta.Name.Name))
-	if err != nil {
-		return "", err
-	}
-	_, err = hash.Write([]byte(r.Meta.StateUpdatedOn.AsTime().String()))
-	if err != nil {
-		return "", err
-	}
+
 	claimsJSON, err := json.Marshal(claims)
 	if err != nil {
 		return "", err
 	}
-	_, err = hash.Write(claimsJSON)
+	ruleBytes := make([][]byte, len(rules))
+	for i, rule := range rules {
+		if rule == nil {
+			continue
+		}
+		ruleBytes[i], err = proto.MarshalOptions{Deterministic: true}.Marshal(rule)
+		if err != nil {
+			return "", err
+		}
+	}
+	input := cacheKeyInput{
+		InstanceID:  instanceID,
+		Environment: environment,
+		Variables:   vars,
+		Claims:      claimsJSON,
+		Resource: cacheKeyResource{
+			Kind: r.Meta.Name.Kind,
+			Name: r.Meta.Name.Name,
+		},
+		Rules: ruleBytes,
+	}
+	if r.Meta.StateUpdatedOn != nil {
+		input.Resource.UpdatedSecs = r.Meta.StateUpdatedOn.Seconds
+		input.Resource.UpdatedNanos = r.Meta.StateUpdatedOn.Nanos
+	}
+	data, err := json.Marshal(input)
 	if err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(hash.Sum(nil)), nil
+	sum := md5.Sum(data)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func cloneSecurityRules(rules []*runtimev1.SecurityRule) []*runtimev1.SecurityRule {
+	cloned := make([]*runtimev1.SecurityRule, len(rules))
+	for i, rule := range rules {
+		if rule != nil {
+			cloned[i] = proto.Clone(rule).(*runtimev1.SecurityRule)
+		}
+	}
+	return cloned
 }
 
 func evaluateConditions(r *runtimev1.Resource, expression string, kinds []string, resources []*runtimev1.ResourceName, td parser.TemplateData) (*bool, error) {

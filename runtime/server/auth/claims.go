@@ -18,10 +18,11 @@ type ClaimsProvider interface {
 // jwtClaims implements a ClaimsProvider that resolves claims from a JWT payload.
 type jwtClaims struct {
 	jwt.RegisteredClaims
-	System    []runtime.Permission            `json:"sys,omitempty"`
-	Instances map[string][]runtime.Permission `json:"ins,omitempty"`
-	Attrs     map[string]any                  `json:"attr,omitempty"`
-	Security  []json.RawMessage               `json:"sec,omitempty"` // []*runtimev1.SecurityRule serialized with protojson
+	System                   []runtime.Permission            `json:"sys,omitempty"`
+	Instances                map[string][]runtime.Permission `json:"ins,omitempty"`
+	Attrs                    map[string]any                  `json:"attr,omitempty"`
+	Security                 []json.RawMessage               `json:"sec,omitempty"` // []*runtimev1.SecurityRule serialized with protojson
+	EnforceResourceAllowlist bool                            `json:"enforce_resource_allowlist,omitempty"`
 }
 
 var _ ClaimsProvider = (*jwtClaims)(nil)
@@ -64,10 +65,11 @@ func (c *jwtClaims) Claims(instanceID string) *runtime.SecurityClaims {
 	}
 
 	return &runtime.SecurityClaims{
-		UserID:          c.RegisteredClaims.Subject,
-		UserAttributes:  attrs,
-		Permissions:     permissions,
-		AdditionalRules: rules,
+		UserID:                   c.RegisteredClaims.Subject,
+		UserAttributes:           attrs,
+		Permissions:              permissions,
+		AdditionalRules:          rules,
+		EnforceResourceAllowlist: c.EnforceResourceAllowlist,
 	}
 }
 

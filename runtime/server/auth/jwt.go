@@ -116,6 +116,9 @@ type TokenOptions struct {
 	InstancePermissions map[string][]runtime.Permission
 	Attributes          map[string]any
 	SecurityRules       []*runtimev1.SecurityRule
+	// EnforceResourceAllowlist makes resource restrictions authoritative even
+	// when captured user attributes would otherwise grant built-in access.
+	EnforceResourceAllowlist bool
 }
 
 // NewToken issues a new JWT based on the provided options.
@@ -144,10 +147,11 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 			Subject:   opts.Subject,
 			Audience:  []string{opts.AudienceURL},
 		},
-		System:    opts.SystemPermissions,
-		Instances: opts.InstancePermissions,
-		Attrs:     opts.Attributes,
-		Security:  sec,
+		System:                   opts.SystemPermissions,
+		Instances:                opts.InstancePermissions,
+		Attrs:                    opts.Attributes,
+		Security:                 sec,
+		EnforceResourceAllowlist: opts.EnforceResourceAllowlist,
 	}
 
 	// Create token
@@ -213,6 +217,9 @@ func OpenAudience(ctx context.Context, logger *zap.Logger, issuerURL, audienceUR
 			RefreshTimeout:    time.Second * 10,
 			RefreshUnknownKID: true,
 		})
+		if err == nil {
+			break
+		}
 		if err != nil {
 			logger.Info("JWKS fetch failed, retrying in 5s", zap.Error(err))
 			select {

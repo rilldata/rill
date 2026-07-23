@@ -42,15 +42,15 @@ func TestTokens(t *testing.T) {
 	})
 
 	t.Run("Expired", func(t *testing.T) {
+		// A negative TTL creates an already-expired token without making the test depend on wall-clock sleeps.
 		token, err := iss.NewToken(TokenOptions{
 			AudienceURL:         aud.audienceURL,
 			Subject:             "alice",
-			TTL:                 time.Duration(time.Millisecond),
+			TTL:                 -time.Minute,
 			SystemPermissions:   []runtime.Permission{runtime.ReadInstance},
 			InstancePermissions: map[string][]runtime.Permission{"example": {runtime.ReadOLAP}},
 		})
-
-		time.Sleep(50 * time.Millisecond)
+		require.NoError(t, err)
 
 		_, err = aud.ParseAndValidate(token)
 		require.Error(t, err)
