@@ -2912,6 +2912,20 @@ export class ListResourcesRequest extends Message$1<ListResourcesRequest> {
    */
   skipSecurityChecks = false;
 
+  /**
+   * Maximum number of resources to return. If zero, returns all resources.
+   *
+   * @generated from field: uint32 page_size = 5;
+   */
+  pageSize = 0;
+
+  /**
+   * Page token returned by a previous ListResources call.
+   *
+   * @generated from field: string page_token = 6;
+   */
+  pageToken = "";
+
   constructor(data?: PartialMessage<ListResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2924,6 +2938,8 @@ export class ListResourcesRequest extends Message$1<ListResourcesRequest> {
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesRequest {
@@ -2952,6 +2968,11 @@ export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
    */
   resources: Resource[] = [];
 
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
   constructor(data?: PartialMessage<ListResourcesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2961,6 +2982,7 @@ export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
   static readonly typeName = "rill.runtime.v1.ListResourcesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resources", kind: "message", T: Resource, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesResponse {
