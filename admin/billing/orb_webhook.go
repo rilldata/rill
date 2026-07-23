@@ -46,6 +46,10 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			return httputil.Errorf(http.StatusRequestEntityTooLarge, "webhook request body exceeds %d bytes", maxBodyBytes)
+		}
 		return httputil.Errorf(http.StatusServiceUnavailable, "error reading request body: %w", err)
 	}
 
@@ -61,12 +65,17 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		return nil
 	}
 
+	// The generic type above is only used to discard events we do not consume.
+	// Before a recognized event can cause a side effect, verify the signature
+	// against the exact bytes Orb sent; re-marshaling would change those bytes.
 	now := time.Now().UTC()
 	err = o.verifySignature(payload, r.Header, now)
 	if err != nil {
 		return httputil.Errorf(http.StatusBadRequest, "error verifying webhook signature: %w", err)
 	}
 
+	// Do not acknowledge work-bearing events until their durable job is queued.
+	// A queue error becomes a 5xx so Orb retries instead of silently losing work.
 	switch e.Type {
 	case "invoice.payment_succeeded":
 		var ie invoiceEvent
@@ -154,6 +163,9 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 	return nil
 }
 
+// Orb delivers webhooks at least once. These handlers deliberately leave replay
+// detection to the durable jobs layer; Duplicate means the work is already
+// recorded, so it is safe to acknowledge the delivery.
 func (o *orbWebhook) handleInvoicePaymentSucceeded(ctx context.Context, ie invoiceEvent) error {
 	res, err := o.jobs.PaymentSuccess(ctx, ie.OrbInvoice.Customer.ExternalCustomerID, ie.OrbInvoice.ID)
 	if err != nil {
@@ -269,20 +281,22 @@ func (o *orbWebhook) verifySignature(payload []byte, headers http.Header, now ti
 	mac.Write(payload)
 	expected := mac.Sum(nil)
 
-	for _, part := range msgSignature {
-		parts := strings.Split(part, "=")
-		if len(parts) != 2 {
-			continue
-		}
-		if parts[0] != "v1" {
-			continue
-		}
-		signature, err := hex.DecodeString(parts[1])
-		if err != nil {
-			continue
-		}
-		if hmac.Equal(signature, expected) {
-			return nil
+	// Orb can include more than one signature during secret rotation. HTTP
+	// intermediaries may preserve them as repeated fields or combine them with
+	// commas, so accept either representation when any v1 signature matches.
+	for _, value := range msgSignature {
+		for _, part := range strings.Split(value, ",") {
+			version, encoded, ok := strings.Cut(strings.TrimSpace(part), "=")
+			if !ok || version != "v1" {
+				continue
+			}
+			signature, err := hex.DecodeString(encoded)
+			if err != nil {
+				continue
+			}
+			if hmac.Equal(signature, expected) {
+				return nil
+			}
 		}
 	}
 

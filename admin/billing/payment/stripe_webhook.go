@@ -58,8 +58,8 @@ func (s *stripeWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) er
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing payment method data: %w", err)
 		}
-		if cust, ok := event.Data.PreviousAttributes["customer"]; ok && cust != nil {
-			err = s.handlePaymentMethodRemoved(r.Context(), event.ID, cust.(string), &paymentMethod)
+		if customerID, ok := event.Data.PreviousAttributes["customer"].(string); ok {
+			err = s.handlePaymentMethodRemoved(r.Context(), event.ID, customerID, &paymentMethod)
 			if err != nil {
 				return httputil.Errorf(http.StatusInternalServerError, "error handling payment_method.detached event: %w", err)
 			}

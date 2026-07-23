@@ -35,10 +35,11 @@ var ErrCustomerIDRequired = errors.New("customer id is required")
 var _ Biller = &Orb{}
 
 type Orb struct {
-	client        *orb.Client
-	logger        *zap.Logger
-	webhookSecret string
-	taxProvider   string
+	client            *orb.Client
+	logger            *zap.Logger
+	webhookSecret     string
+	taxProvider       string
+	usageRetryBackoff []time.Duration
 }
 
 func NewOrb(logger *zap.Logger, orbKey, webhookSecret, taxProvider string) Biller {
@@ -672,7 +673,11 @@ func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
 }
 
 func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent) error {
-	re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
+	backoff := o.usageRetryBackoff
+	if backoff == nil {
+		backoff = retrier.ExponentialBackoff(5, 500*time.Millisecond)
+	}
+	re := retrier.New(backoff, retryErrClassifier{})
 	err := re.RunCtx(ctx, func(ctx context.Context) error {
 		resp, err := o.client.Events.Ingest(ctx, orb.EventIngestParams{
 			Events: orb.F(*usage),
