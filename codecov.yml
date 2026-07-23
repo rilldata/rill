@@ -8,8 +8,10 @@ coverage:
       default: false
       go-hermetic:
         flags: [go-hermetic]
-        target: auto
-        threshold: 1%
+        # Bootstrap the first hermetic baseline explicitly because main only
+        # has the incomparable legacy `go` report. Switch to auto after merge.
+        target: 34.5%
+        threshold: 0.1%
       web-admin:
         flags: [web-admin]
         target: auto
