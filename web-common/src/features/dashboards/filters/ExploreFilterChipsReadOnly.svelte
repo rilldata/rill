@@ -20,6 +20,7 @@
   export let queryTimeStart: string | undefined = undefined;
   export let queryTimeEnd: string | undefined = undefined;
   export let pinnedFilters: Set<string> = new Set();
+  export let requiredFilters: Set<string> = new Set();
 
   const runtimeClient = useRuntimeClient();
 
@@ -46,4 +47,5 @@
   {queryTimeStart}
   {queryTimeEnd}
   {pinnedFilters}
+  {requiredFilters}
 />

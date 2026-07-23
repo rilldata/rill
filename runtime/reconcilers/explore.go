@@ -245,6 +245,22 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		}
 		p.Measures = measures
 		p.MeasuresSelector = nil
+
+		// Validate that required filters reference a dimension or measure on the explore.
+		if len(p.RequiredFilters) > 0 {
+			known := make(map[string]bool, len(spec.Dimensions)+len(spec.Measures))
+			for _, d := range spec.Dimensions {
+				known[d] = true
+			}
+			for _, m := range spec.Measures {
+				known[m] = true
+			}
+			for _, name := range p.RequiredFilters {
+				if !known[name] {
+					return nil, nil, fmt.Errorf("required filter %q is not a dimension or measure on this explore", name)
+				}
+			}
+		}
 	}
 
 	// Done with rewriting

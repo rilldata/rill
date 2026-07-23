@@ -41,12 +41,8 @@
     exploreSpec ? getExploreFilterStateFromYAMLConfig(exploreSpec) : {},
   );
 
-  let pinnedFilters = $derived(
-    new Set([
-      ...(defaultPreset?.pinnedFilters ?? []),
-      ...(defaultPreset?.requiredFilters ?? []),
-    ]),
-  );
+  let pinnedFilters = $derived(new Set(defaultPreset?.pinnedFilters ?? []));
+  let requiredFilters = $derived(new Set(defaultPreset?.requiredFilters ?? []));
 
   let comparisonTimeRange = $derived(
     getComparisonTimeRange(
@@ -90,6 +86,7 @@
         displayTimeRange={{ expression: defaultPreset?.timeRange }}
         displayComparisonTimeRange={comparisonTimeRange}
         {pinnedFilters}
+        {requiredFilters}
       />
     </div>
 

@@ -33,6 +33,7 @@ The main feature-set component for dashboard filters
   export let hasBoldTimeRange: boolean = true;
   export let chipLayout: "wrap" | "scroll" = "wrap";
   export let pinnedFilters: Set<string> = new Set();
+  export let requiredFilters: Set<string> = new Set();
 
   let scrollContainer: HTMLDivElement;
 
@@ -46,6 +47,7 @@ The main feature-set component for dashboard filters
     dimensionsWithInlistFilter,
     metricsViewNames[0],
     pinnedFilters,
+    requiredFilters,
   );
 
   $: measureIdMap = getMapFromArray(
@@ -56,6 +58,7 @@ The main feature-set component for dashboard filters
     measureIdMap,
     dimensionThresholdFilters,
     pinnedFilters,
+    requiredFilters,
   );
 
   function handleWheel(event: WheelEvent) {
