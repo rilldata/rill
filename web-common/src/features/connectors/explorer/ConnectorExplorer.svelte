@@ -8,6 +8,8 @@
 
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
+  /** When set, only display the connector with this name. */
+  export let onlyConnector: string = "";
   /** Auto-expand this connector when the list first renders */
   export let defaultExpanded: string = "";
 
@@ -15,12 +17,15 @@
 
   $: connectors = getAnalyzedConnectors(client, olapOnly);
   $: ({ data, error, isLoading } = $connectors);
+  $: displayedConnectors = onlyConnector
+    ? data?.connectors?.filter((connector) => connector.name === onlyConnector)
+    : data?.connectors;
 
   // When defaultExpanded is set, pre-seed the store so only that connector
   // starts expanded and others start collapsed.
   let hasAutoExpanded = false;
-  $: if (defaultExpanded && data?.connectors && !hasAutoExpanded) {
-    for (const c of data.connectors) {
+  $: if (defaultExpanded && displayedConnectors && !hasAutoExpanded) {
+    for (const c of displayedConnectors) {
       if (!c.name) continue;
       // Pre-seed each connector before ConnectorEntry renders.
       // This prevents getDefaultState from expanding all connectors.
@@ -44,19 +49,19 @@
     <span class="message">
       {error.message}
     </span>
-  {:else if data?.connectors}
-    {#if data.connectors.length === 0}
+  {:else if displayedConnectors}
+    {#if displayedConnectors.length === 0}
       <span class="message"> No data found. Add data to get started! </span>
     {:else}
       <ol transition:slide={{ duration }}>
-        {#each data.connectors as connector (connector.name)}
+        {#each displayedConnectors as connector (connector.name)}
           <ConnectorEntry {connector} {store} />
         {/each}
       </ol>
     {/if}
   {:else if isLoading}
     <div class="flex flex-col gap-y-1.5 w-full px-2 py-2">
-      {#each [0.6, 0.75, 0.5] as width}
+      {#each [0.6, 0.75, 0.5] as width (width)}
         <div
           class="h-5 bg-gray-200 animate-pulse rounded"
           style:width="{width * 100}%"

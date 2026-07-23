@@ -68,6 +68,7 @@ class FeatureFlags {
   customCharts = new FeatureFlag("user", false);
   disablePersistentDashboardState = new FeatureFlag("user", false);
   personalCanvases = new FeatureFlag("user", false);
+  sqlConsole = new FeatureFlag("user", false);
 
   private flagsUnsub?: () => void;
 
