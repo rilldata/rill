@@ -4,6 +4,7 @@
   import {
     createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
+    type V1BillingIssue,
   } from "@rilldata/web-admin/client";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
@@ -29,6 +30,9 @@
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { getConfiguredRedirectOrigins } from "@rilldata/web-admin/lib/safe-redirect";
+  import { createUpgradeCallbackAction } from "./upgrade-callback-action";
 
   export let data: PageData;
   $: ({ cancelled, paymentIssues } = data);
@@ -47,71 +51,78 @@
 
   const planUpdater = createAdminServiceUpdateBillingSubscription();
   const planRenewer = createAdminServiceRenewBillingSubscription();
+  let inFlight = false;
+  let errorMsg = "";
 
-  async function upgrade() {
-    // if there are still payment issues then do not upgrade
-    if (paymentIssues.length) {
+  const runUpgradeCallback = createUpgradeCallbackAction<V1BillingIssue>({
+    getPaymentPortalUrl: (input) =>
+      fetchPaymentsPortalURL(
+        input.organization,
+        getBillingUpgradeUrl($page, input.organization),
+        needsPaymentSetup(input.paymentIssues),
+      ),
+    notifyPaymentIssue: (input, portalUrl) => {
       eventBus.emit("notification", {
         type: "error",
         message: m.billing_fix_payment_issues({
-          details: getPaymentIssueErrorText(paymentIssues),
+          details: getPaymentIssueErrorText(input.paymentIssues),
         }),
         link: {
           text: m.billing_update_payment(),
-          href: await fetchPaymentsPortalURL(
-            organization,
-            getBillingUpgradeUrl($page, organization),
-            needsPaymentSetup(paymentIssues),
-          ),
+          href: portalUrl,
         },
         options: {
           persisted: true,
         },
       });
-      return goto(`/${organization}/-/settings/billing`);
-    }
-    const paidPlan = await maybeFetchPublicPlanByName(planName);
-    if (!paidPlan) return goto(`/${organization}/-/settings/billing`);
-    try {
-      if (cancelled) {
-        await $planRenewer.mutateAsync({
-          org: organization,
-          data: { planName },
-        });
-        eventBus.emit("notification", {
-          type: "success",
-          message: m.billing_plan_renewed({ planName: paidPlan.displayName }),
-        });
-      } else {
-        await $planUpdater.mutateAsync({
-          org: organization,
-          data: { planName },
-        });
-        // if redirect is set then this page won't be active.
-        // so this will lead to pop-in of the modal before navigating away
-        if (!redirect) {
-          triggerWelcomeToRillDialog(planName);
-        }
-      }
-      void invalidateBillingInfo(organization);
-    } catch {
-      // TODO
-    }
-    if (redirect) {
-      // redirect param could be on a different domain like the rill developer instance
-      // so using goto won't work
-      window.open(redirect, "_self");
-    } else {
-      return goto(`/${organization}`);
-    }
-  }
+    },
+    fetchPlan: maybeFetchPublicPlanByName,
+    renew: (org, selectedPlan) =>
+      $planRenewer.mutateAsync({
+        org,
+        data: { planName: selectedPlan },
+      }),
+    update: (org, selectedPlan) =>
+      $planUpdater.mutateAsync({
+        org,
+        data: { planName: selectedPlan },
+      }),
+    notifyRenewed: (displayName) =>
+      eventBus.emit("notification", {
+        type: "success",
+        message: m.billing_plan_renewed({ planName: displayName }),
+      }),
+    showWelcome: triggerWelcomeToRillDialog,
+    invalidate: invalidateBillingInfo,
+    navigate: (url) => {
+      void goto(url);
+    },
+    open: (url) => {
+      window.open(url, "_self");
+    },
+    formatError: extractErrorMessage,
+    onState: (state) => {
+      inFlight = state.inFlight;
+      errorMsg = state.errorMessage;
+    },
+  });
 
-  onMount(() => upgrade());
+  onMount(() => {
+    void runUpgradeCallback({
+      organization,
+      planName,
+      cancelled,
+      paymentIssues,
+      redirect,
+      currentUrl: $page.url.toString(),
+      allowedRedirectOrigins: getConfiguredRedirectOrigins(),
+    });
+  });
 </script>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <LoadingSpinner />
+    {#if inFlight}<LoadingSpinner />{/if}
     <CtaHeader variant="bold">
       {#if cancelled}
         {m.billing_renewing_plan({ plan: planDisplayName })}
@@ -119,6 +130,11 @@
         {m.billing_upgrading_plan({ plan: planDisplayName })}
       {/if}
     </CtaHeader>
+    {#if errorMsg}
+      <p class="text-md text-red-400 font-bold mb-6" role="alert">
+        {errorMsg}
+      </p>
+    {/if}
     <CtaNeedHelp />
   </CtaContentContainer>
 </CtaLayoutContainer>

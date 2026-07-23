@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import { createDeviceAuthorizationAction } from "./device-authorization-action";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -9,65 +11,42 @@
 
   export let data: PageData;
 
-  $: ({ user } = data);
+  type DevicePageData = { user?: { email?: string | null } };
+  $: userEmail = (data as DevicePageData).user?.email ?? "";
 
-  let actionTaken = false;
+  let inFlight = false;
+  let completed = false;
   let successMsg = "";
   let errorMsg = "";
-  const urlParams = new URLSearchParams(window.location.search);
-  const redirectURL = urlParams.get("redirect");
-  const userCode = urlParams.get("user_code");
+  $: redirectURL = page.url.searchParams.get("redirect");
+  $: userCode = page.url.searchParams.get("user_code");
 
-  function confirmUserCode() {
-    fetch(
-      ADMIN_URL +
-        `/auth/oauth/device?user_code=${userCode}&code_confirmed=true`,
-      {
-        method: "POST",
-        credentials: "include",
-      },
-    ).then((response) => {
-      if (response.ok) {
-        if (redirectURL && redirectURL !== "") {
-          window.location.href = decodeURIComponent(redirectURL);
-        } else {
-          successMsg = m.auth_device_code_confirmed();
-        }
-      } else {
-        errorMsg = m.auth_device_code_confirmation_failed();
-        response.body
-          .getReader()
-          .read()
-          .then(({ value }) => {
-            const decoder = new TextDecoder("utf-8");
-            errorMsg = errorMsg + ": " + decoder.decode(value);
-          });
-      }
-    });
-    actionTaken = true;
-  }
+  const authorizeDevice = createDeviceAuthorizationAction({
+    adminUrl: ADMIN_URL as string,
+    fetch: (input, init) => fetch(input, init),
+    navigate: (url) => window.location.assign(url),
+    messages: {
+      confirmed: m.auth_device_code_confirmed(),
+      rejected: m.auth_device_code_rejected(),
+      confirmationFailed: m.auth_device_code_confirmation_failed(),
+      rejectionFailed: m.auth_device_code_rejection_failed(),
+      invalidCode: `${m.auth_device_code_confirmation_failed()}: Invalid user code`,
+      unsafeRedirect: "The requested redirect destination is not allowed.",
+    },
+    onState: (state) => {
+      inFlight = state.inFlight;
+      completed = state.completed;
+      successMsg = state.successMessage;
+      errorMsg = state.errorMessage;
+    },
+  });
 
-  function rejectUserCode() {
-    fetch(
-      ADMIN_URL +
-        `/auth/oauth/device?user_code=${userCode}&code_confirmed=false`,
-      {
-        method: "POST",
-        credentials: "include",
-      },
-    ).then((response) => {
-      if (response.ok) {
-        errorMsg = m.auth_device_code_rejected();
-      } else {
-        errorMsg = m.auth_device_code_rejection_failed();
-        response.body
-          .getReader()
-          .read()
-          .then(({ value }) => {
-            const decoder = new TextDecoder("utf-8");
-            errorMsg = errorMsg + ": " + decoder.decode(value);
-          });
-      }
+  function submit(confirmed: boolean) {
+    void authorizeDevice({
+      userCode,
+      confirmed,
+      redirect: redirectURL,
+      currentUrl: page.url.toString(),
     });
   }
 </script>
@@ -83,7 +62,7 @@
       {m.auth_authorize_rill_cli()}
     </h1>
     <p class="text-base text-fg-secondary text-center">
-      {m.auth_authenticating_as({ email: user.email })}<br
+      {m.auth_authenticating_as({ email: userEmail })}<br
       />{m.auth_confirm_code_displayed()}
     </p>
     <div
@@ -95,19 +74,13 @@
     <div class="flex flex-col gap-y-4 w-[400px]">
       <CtaButton
         variant="primary"
-        onClick={() => {
-          actionTaken = true;
-          confirmUserCode();
-        }}
-        disabled={actionTaken}>{m.auth_confirm_code()}</CtaButton
+        onClick={() => submit(true)}
+        disabled={inFlight || completed}>{m.auth_confirm_code()}</CtaButton
       >
       <CtaButton
         variant="secondary"
-        onClick={() => {
-          actionTaken = true;
-          rejectUserCode();
-        }}
-        disabled={actionTaken}>{m.common_cancel()}</CtaButton
+        onClick={() => submit(false)}
+        disabled={inFlight || completed}>{m.common_cancel()}</CtaButton
       >
     </div>
 
@@ -115,7 +88,9 @@
       <p class="text-md text-green-700 font-bold mb-6">{successMsg}</p>
     {/if}
     {#if errorMsg}
-      <p class="text-md text-red-400 font-bold mb-6">{errorMsg}</p>
+      <p class="text-md text-red-400 font-bold mb-6" role="alert">
+        {errorMsg}
+      </p>
     {/if}
   </CtaContentContainer>
 </CtaLayoutContainer>
