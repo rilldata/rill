@@ -1455,6 +1455,7 @@ message UpdateOrganizationRequest {
   optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
+  optional string billing_portal_admin = 19 [(validate.rules).string.email = true];
 }
 
 message UpdateOrganizationResponse {
@@ -3443,6 +3444,7 @@ message Organization {
   string billing_customer_id = 7;
   string payment_customer_id = 8;
   string billing_email = 9;
+  string billing_portal_admin = 19;
   optional string billing_plan_name = 14;
   optional string billing_plan_display_name = 15;
   google.protobuf.Timestamp created_on = 5;
@@ -3553,6 +3555,7 @@ message OrganizationPermissions {
   bool read_org_members = 6;
   bool manage_org_members = 7;
   bool manage_org_admins = 10;
+  bool manage_org_billing = 11;
 }
 
 message ProjectPermissions {

@@ -508,6 +508,8 @@ paths:
                 type: string
               billingEmail:
                 type: string
+              billingPortalAdmin:
+                type: string
       x-visibility: public
   /v1/orgs/{org}/billing/credits:
     get:
@@ -6220,6 +6222,8 @@ definitions:
         type: string
       billingEmail:
         type: string
+      billingPortalAdmin:
+        type: string
       billingPlanName:
         type: string
       billingPlanDisplayName:
@@ -6312,6 +6316,8 @@ definitions:
       manageOrgMembers:
         type: boolean
       manageOrgAdmins:
+        type: boolean
+      manageOrgBilling:
         type: boolean
   v1OrganizationQuotas:
     type: object

@@ -11,7 +11,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, displayName, description, defaultProjectRole, billingEmail string
+	var orgName, displayName, description, defaultProjectRole, billingEmail, billingPortalAdmin string
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -71,6 +71,11 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				req.BillingEmail = &billingEmail
 			}
 
+			if cmd.Flags().Changed("billing-portal-admin") {
+				flagSet = true
+				req.BillingPortalAdmin = &billingPortalAdmin
+			}
+
 			if !flagSet {
 				return fmt.Errorf("at least one flag must be set")
 			}
@@ -92,6 +97,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&defaultProjectRole, "default-project-role", "", "Default role for members on new projects (options: admin, editor, viewer, none)")
 	editCmd.Flags().StringVar(&billingEmail, "billing-email", "", "Billing email")
+	editCmd.Flags().StringVar(&billingPortalAdmin, "billing-portal-admin", "", "Email of the user allowed to manage billing in Rill")
 
 	return editCmd
 }

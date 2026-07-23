@@ -1549,6 +1549,22 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	}
 
+	if m.BillingPortalAdmin != nil {
+
+		if err := m._validateEmail(m.GetBillingPortalAdmin()); err != nil {
+			err = UpdateOrganizationRequestValidationError{
+				field:  "BillingPortalAdmin",
+				reason: "value must be a valid email address",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return UpdateOrganizationRequestMultiError(errors)
 	}
@@ -44778,6 +44794,8 @@ func (m *Organization) validate(all bool) error {
 
 	// no validation rules for BillingEmail
 
+	// no validation rules for BillingPortalAdmin
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -46032,6 +46050,8 @@ func (m *OrganizationPermissions) validate(all bool) error {
 	// no validation rules for ManageOrgMembers
 
 	// no validation rules for ManageOrgAdmins
+
+	// no validation rules for ManageOrgBilling
 
 	if len(errors) > 0 {
 		return OrganizationPermissionsMultiError(errors)

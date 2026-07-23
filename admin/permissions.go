@@ -33,6 +33,18 @@ func (s *Service) OrganizationPermissionsForUser(ctx context.Context, orgID, use
 		}
 	}
 
+	// If the user's email matches the org's billing portal admin, they get access to the org's billing (and nothing else).
+	if !composite.ManageOrgBilling {
+		ok, err := s.DB.CheckUserIsBillingPortalAdmin(ctx, orgID, userID)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			composite.ManageOrgBilling = true
+			composite.ReadOrg = true
+		}
+	}
+
 	return composite, nil
 }
 
@@ -60,6 +72,7 @@ func (s *Service) OrganizationPermissionsForService(ctx context.Context, orgID, 
 			ReadOrgMembers:   role.ReadOrgMembers,
 			ManageOrgMembers: role.ManageOrgMembers,
 			ManageOrgAdmins:  role.ManageOrgAdmins,
+			ManageOrgBilling: role.ManageOrg,
 		}, nil
 	}
 
@@ -92,6 +105,7 @@ func (s *Service) OrganizationPermissionsForMagicAuthToken(ctx context.Context, 
 			ReadOrgMembers:   false,
 			ManageOrgMembers: false,
 			ManageOrgAdmins:  false,
+			ManageOrgBilling: false,
 		}, nil
 	}
 
@@ -282,6 +296,8 @@ func UnionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationR
 		ReadOrgMembers:   a.ReadOrgMembers || b.ReadOrgMembers,
 		ManageOrgMembers: a.ManageOrgMembers || b.ManageOrgMembers,
 		ManageOrgAdmins:  a.ManageOrgAdmins || b.ManageOrgAdmins,
+		// Org roles do not have a separate billing permission; manage_org implies it.
+		ManageOrgBilling: a.ManageOrgBilling || b.ManageOrg,
 	}
 }
 

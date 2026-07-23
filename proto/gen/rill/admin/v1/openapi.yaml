@@ -1385,6 +1385,8 @@ components:
                     type: string
                 billingPlanName:
                     type: string
+                billingPortalAdmin:
+                    type: string
                 createdOn:
                     format: date-time
                     type: string
@@ -1488,6 +1490,8 @@ components:
                 manageOrg:
                     type: boolean
                 manageOrgAdmins:
+                    type: boolean
+                manageOrgBilling:
                     type: boolean
                 manageOrgMembers:
                     type: boolean
@@ -3094,6 +3098,8 @@ paths:
                         schema:
                             properties:
                                 billingEmail:
+                                    type: string
+                                billingPortalAdmin:
                                     type: string
                                 defaultProjectRole:
                                     type: string

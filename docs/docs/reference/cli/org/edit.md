@@ -18,6 +18,7 @@ rill org edit [<org-name>] [flags]
       --description string            Description
       --default-project-role string   Default role for members on new projects (options: admin, editor, viewer, none)
       --billing-email string          Billing email
+      --billing-portal-admin string   Email of the user allowed to manage billing in Rill
 ```
 
 ### Global flags

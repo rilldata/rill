@@ -13,7 +13,10 @@ import type { PageLoad } from "./$types";
 export const load: PageLoad = async ({ parent, params }) => {
   const { issues, organizationPermissions } = await parent();
 
-  if (!organizationPermissions?.manageOrg) {
+  if (
+    !organizationPermissions?.manageOrg &&
+    !organizationPermissions?.manageOrgBilling
+  ) {
     throw redirect(307, `/${params.organization}`);
   }
 

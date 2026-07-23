@@ -280,6 +280,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
+			BillingPortalAdmin:                  org.BillingPortalAdmin,
 			BillingPlanName:                     org.BillingPlanName,
 			BillingPlanDisplayName:              org.BillingPlanDisplayName,
 			CreatedByUserID:                     org.CreatedByUserID,

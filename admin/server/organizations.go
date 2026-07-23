@@ -87,7 +87,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}
 
 	return &adminv1.GetOrganizationResponse{
-		Organization: s.organizationToDTO(org, perms.ManageOrg || forceAccess),
+		Organization: s.organizationToDTO(org, perms.ManageOrg || perms.ManageOrgBilling || forceAccess),
 		Permissions:  perms,
 	}, nil
 }
@@ -177,6 +177,9 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	if req.BillingEmail != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.billing_email", *req.BillingEmail))
 	}
+	if req.BillingPortalAdmin != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.billing_portal_admin", *req.BillingPortalAdmin))
+	}
 	if req.DisplayName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.display_name", *req.DisplayName))
 	}
@@ -262,6 +265,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
+		BillingPortalAdmin:                  valOrDefault(req.BillingPortalAdmin, org.BillingPortalAdmin),
 		BillingPlanName:                     org.BillingPlanName,
 		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
@@ -987,6 +991,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPortalAdmin:                  org.BillingPortalAdmin,
 		BillingPlanName:                     org.BillingPlanName,
 		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
@@ -1038,6 +1043,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPortalAdmin:                  org.BillingPortalAdmin,
 		BillingPlanName:                     org.BillingPlanName,
 		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
@@ -1112,6 +1118,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		res.BillingCustomerId = o.BillingCustomerID
 		res.PaymentCustomerId = o.PaymentCustomerID
 		res.BillingEmail = o.BillingEmail
+		res.BillingPortalAdmin = o.BillingPortalAdmin
 		res.BillingPlanName = o.BillingPlanName
 		res.BillingPlanDisplayName = o.BillingPlanDisplayName
 	}

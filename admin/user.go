@@ -348,6 +348,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		QuotaStorageLimitBytesPerDeployment: deref(defaultQuotas.StorageLimitBytesPerDeployment, -1),
 		QuotaSeats:                          deref(defaultQuotas.NumSeats, -1),
 		BillingEmail:                        email,
+		BillingPortalAdmin:                  email,
 		BillingCustomerID:                   "", // Populated later
 		PaymentCustomerID:                   "", // Populated later
 		CreatedByUserID:                     &userID,
