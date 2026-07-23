@@ -4,9 +4,12 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type testTarEntry struct {
@@ -53,23 +56,79 @@ func TestUntarRejectsPathTraversal(t *testing.T) {
 		assertPathDoesNotExist(t, filepath.Join(root, "project-copy", "escaped.txt"))
 	})
 
-	t.Run("absolute path", func(t *testing.T) {
-		// Absolute names must be rejected; a temp target and executable mode make a vulnerable rebase safe to observe.
+	t.Run("root-relative parent traversal", func(t *testing.T) {
+		// Removing Rill's leading project-root marker must not normalize a parent
+		// traversal into an accepted path.
+		root := t.TempDir()
+		dest := filepath.Join(root, "project")
+		archivePath := writeTestArchive(t, []testTarEntry{{
+			name:     "/../escaped.txt",
+			typeflag: tar.TypeReg,
+			mode:     0o644,
+			body:     []byte("escaped"),
+		}})
+
+		if err := untar(archivePath, dest, false); err == nil {
+			t.Error("untar accepted a root-relative parent traversal")
+		}
+		assertPathDoesNotExist(t, filepath.Join(root, "escaped.txt"))
+	})
+
+	t.Run("root-relative path", func(t *testing.T) {
+		// Rill archives use a leading slash as a project-root marker. Extraction
+		// must remove that marker without writing to the matching filesystem path.
 		root := t.TempDir()
 		dest := filepath.Join(root, "project")
 		absoluteTarget := filepath.Join(root, "absolute.txt")
 		archivePath := writeTestArchive(t, []testTarEntry{{
-			name:     filepath.ToSlash(absoluteTarget),
+			name:     "/absolute.txt",
 			typeflag: tar.TypeReg,
 			mode:     0o755,
 			body:     []byte("absolute"),
 		}})
 
-		if err := untar(archivePath, dest, false); err == nil {
-			t.Error("untar accepted an absolute archive member")
+		if err := untar(archivePath, dest, false); err != nil {
+			t.Fatalf("untar root-relative archive member: %v", err)
 		}
 		assertPathDoesNotExist(t, absoluteTarget)
+		assertFileContent(t, filepath.Join(dest, "absolute.txt"), "absolute")
 	})
+}
+
+func TestCreateAndUntarRoundTripWithProjectRootPaths(t *testing.T) {
+	// This exercises the producer and consumer together because repository
+	// listings use slash-prefixed paths, including a root directory entry.
+	source := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(source, "models"), 0o755); err != nil {
+		t.Fatalf("create source directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "rill.yaml"), []byte("title: Example\n"), 0o644); err != nil {
+		t.Fatalf("write source project file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "models", "orders.sql"), []byte("select 1\n"), 0o644); err != nil {
+		t.Fatalf("write source model: %v", err)
+	}
+
+	contents, err := Create(context.Background(), []drivers.DirEntry{
+		{Path: "/", IsDir: true},
+		{Path: "/rill.yaml"},
+		{Path: "/models", IsDir: true},
+		{Path: "/models/orders.sql"},
+	}, source)
+	if err != nil {
+		t.Fatalf("create project archive: %v", err)
+	}
+	archivePath := filepath.Join(t.TempDir(), "project.tar.gz")
+	if err := os.WriteFile(archivePath, contents.Bytes(), 0o600); err != nil {
+		t.Fatalf("write project archive: %v", err)
+	}
+
+	dest := filepath.Join(t.TempDir(), "project")
+	if err := untar(archivePath, dest, false); err != nil {
+		t.Fatalf("untar project archive: %v", err)
+	}
+	assertFileContent(t, filepath.Join(dest, "rill.yaml"), "title: Example\n")
+	assertFileContent(t, filepath.Join(dest, "models", "orders.sql"), "select 1\n")
 }
 
 func TestUntarRejectsLinkAndUnsupportedEntries(t *testing.T) {

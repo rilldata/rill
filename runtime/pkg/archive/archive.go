@@ -290,7 +290,18 @@ func untar(src, dest string, ignorePaths bool) error {
 }
 
 func sanitizeArchivePath(dest, tarPath string) (v string, err error) {
-	if tarPath == "" || filepath.IsAbs(tarPath) || filepath.VolumeName(tarPath) != "" {
+	if tarPath == "" {
+		return "", fmt.Errorf("%s: %s", "content filepath is tainted", tarPath)
+	}
+	// Project archives historically use a leading slash for paths relative to
+	// the project root. Strip that archive marker before applying the containment
+	// check; traversal such as "/../outside" remains outside and is rejected.
+	tarPath = strings.TrimLeft(tarPath, "/")
+	if tarPath == "" {
+		tarPath = "."
+	}
+	tarPath = filepath.FromSlash(tarPath)
+	if filepath.IsAbs(tarPath) || filepath.VolumeName(tarPath) != "" {
 		return "", fmt.Errorf("%s: %s", "content filepath is tainted", tarPath)
 	}
 
