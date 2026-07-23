@@ -3,8 +3,11 @@ coverage:
     default_rules:
       flag_coverage_not_uploaded_behavior: exclude
     project:
-      go:
-        flags: [go]
+      # Each suite has a comparable baseline; do not aggregate unrelated or
+      # historically different reports into Codecov's implicit project status.
+      default: false
+      go-hermetic:
+        flags: [go-hermetic]
         target: auto
         threshold: 1%
       web-admin:
@@ -21,7 +24,9 @@ coverage:
         threshold: 5%
 
 flags:
-  go:
+  # Keep this separate from the legacy `go` flag, whose history includes live
+  # provider contracts and is not comparable to the hermetic PR suite.
+  go-hermetic:
     paths:
       - admin/
       - cli/

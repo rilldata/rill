@@ -90,5 +90,5 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.out
           disable_search: true
-          flags: go
+          flags: go-hermetic
           fail_ci_if_error: true
