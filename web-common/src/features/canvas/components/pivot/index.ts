@@ -409,14 +409,6 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     let newSpec: PivotSpec | TableSpec;
 
-    // A nested leaf accessor (e.g. "c0v2m0") is meaningless in the other table
-    // mode, so drop the default sort unless it targets a stable field.
-    const defaultSort =
-      currentSpec.default_sort &&
-      /^(c\d+v\d+_?)+m\d+$/.test(currentSpec.default_sort.id)
-        ? undefined
-        : currentSpec.default_sort;
-
     const commonProperties: ComponentCommonProperties &
       ComponentFilterProperties &
       Pick<
@@ -432,7 +424,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       time_filters: currentSpec.time_filters,
       hide_totals_row: currentSpec.hide_totals_row,
       hide_totals_col: currentSpec.hide_totals_col,
-      default_sort: defaultSort,
+      default_sort: undefined,
       conditional_format: currentSpec.conditional_format,
     };
 
