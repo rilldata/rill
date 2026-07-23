@@ -52,7 +52,7 @@ jobs:
         run: |-
           set -euo pipefail
           PACKAGES="$(go list ./admin/... ./cli/... ./runtime/... ./scripts/... \
-            | rg -v '/proto/gen/|/node_modules/' \
+            | grep -Ev '/proto/gen/|/node_modules/' \
             | paste -sd, -)"
           go test -short -race -shuffle=on -timeout=30m \
             -covermode=atomic \
