@@ -120,10 +120,6 @@ func (a *Authenticator) ExchangeCodeForTokenContext(ctx context.Context, code st
 	return tokenResponse.AccessToken, nil
 }
 
-func tokenRequest(baseAuthURL, code, clientID, redirectURI, codeVerifier string) (*http.Request, error) {
-	return tokenRequestWithContext(context.Background(), baseAuthURL, code, clientID, redirectURI, codeVerifier)
-}
-
 func tokenRequestWithContext(ctx context.Context, baseAuthURL, code, clientID, redirectURI, codeVerifier string) (*http.Request, error) {
 	tokenURL := fmt.Sprintf("%s/auth/oauth/token", baseAuthURL)
 	payload := url.Values{

@@ -180,11 +180,6 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 	a.logger.Info("Registered new OAuth client", zap.String("client_id", client.ID), zap.String("client_name", displayName))
 }
 
-// remove extra spaces from space separated scope string
-func sanitizeScope(scope string) string {
-	return strings.Join(strings.Fields(scope), " ")
-}
-
 // trims white spaces
 func sanitizeGrantTypes(grants []string) []string {
 	var sanitized []string
