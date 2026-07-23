@@ -177,9 +177,12 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
 	meta := append([]*runtimev1.MetricsViewColumn{{
 		Name: spec.TimeDimension,
+		Type: runtimev1.Type_CODE_TIMESTAMP.String(),
 	}}, q.Result.Meta...)
 	for _, dt := range q.Result.Data {
-		dt.Records.Fields[spec.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
+		// Truncate to microseconds since the Parquet writer stores timestamps with microsecond precision
+		// and rejects strings with sub-microsecond components.
+		dt.Records.Fields[spec.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Truncate(time.Microsecond).Format(time.RFC3339Nano))
 		tmp = append(tmp, dt.Records)
 	}
 
