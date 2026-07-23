@@ -17,7 +17,13 @@ func (ValidateDeploymentsArgs) Kind() string { return "validate_deployments" }
 
 type ValidateDeploymentsWorker struct {
 	river.WorkerDefaults[ValidateDeploymentsArgs]
-	admin *admin.Service
+	admin                     *admin.Service
+	findProjects              func(context.Context, string, int) ([]*database.Project, error)
+	findDeploymentsForProject func(context.Context, string, string, string) ([]*database.Deployment, error)
+	findOrganization          func(context.Context, string) (*database.Organization, error)
+	teardownDeployment        func(context.Context, *database.Deployment) error
+	reconcileDeployment       func(context.Context, string) error
+	now                       func() time.Time
 }
 
 const validateDeploymentsForProjectTimeout = 5 * time.Minute
@@ -28,7 +34,7 @@ func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[Val
 	limit := 100
 	afterID := ""
 	for {
-		projs, err := w.admin.DB.FindProjects(ctx, afterID, limit)
+		projs, err := w.loadProjects(ctx, afterID, limit)
 		if err != nil {
 			return err
 		}
@@ -56,7 +62,7 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 	defer cancel()
 
 	// Get all project deployments for prod environment
-	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "prod", "")
+	depls, err := w.loadDeploymentsForProject(ctx, proj.ID, "prod", "")
 	if err != nil {
 		return err
 	}
@@ -65,7 +71,7 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 	}
 
 	// Get project organization, we need this to create the deployment annotations
-	org, err := w.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	org, err := w.loadOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return err
 	}
@@ -81,9 +87,9 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 		// This might for example happen if a redeploy failed after switching to the new deployment.
 		// We consider a deployment orphaned if it is not the prod deployment, is not stopped and has not been updated in 3 hours.
 		// The 3 hour delay is to ensure we don't tear down a deployment that is in the process of being created and is to become the new prod deployment.
-		if depl.Environment == "prod" && depl.ID != prodDeplID && depl.Status != database.DeploymentStatusStopped && depl.UpdatedOn.Add(3*time.Hour).Before(time.Now()) {
+		if shouldTeardownOrphanDeployment(depl, prodDeplID, w.currentTime()) {
 			w.admin.Logger.Info("validate deployments: removing deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx))
-			err = w.admin.TeardownDeployment(ctx, depl)
+			err = w.removeDeployment(ctx, depl)
 			if err != nil {
 				w.admin.Logger.Error("validate deployments: failed to remove deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx), zap.Error(err))
 				continue
@@ -98,7 +104,7 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 		// Reconcile only ever drives a deployment toward its own DesiredStatus, is a no-op for already-consistent
 		// deployments (e.g. stopped/stopped, deleted/deleted), and is de-duplicated per deployment, so scheduling
 		// for every deployment is safe and self-healing.
-		_, err := w.admin.Jobs.ReconcileDeployment(ctx, depl.ID)
+		err := w.scheduleReconcileDeployment(ctx, depl.ID)
 		if err != nil {
 			w.admin.Logger.Error("validate deployments: failed to schedule reconcile", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
@@ -107,4 +113,54 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 	}
 
 	return nil
+}
+
+func shouldTeardownOrphanDeployment(depl *database.Deployment, primaryDeploymentID string, now time.Time) bool {
+	return depl.Environment == "prod" &&
+		depl.ID != primaryDeploymentID &&
+		depl.Status != database.DeploymentStatusStopped &&
+		depl.UpdatedOn.Add(3*time.Hour).Before(now)
+}
+
+func (w *ValidateDeploymentsWorker) loadProjects(ctx context.Context, afterID string, limit int) ([]*database.Project, error) {
+	if w.findProjects != nil {
+		return w.findProjects(ctx, afterID, limit)
+	}
+	return w.admin.DB.FindProjects(ctx, afterID, limit)
+}
+
+func (w *ValidateDeploymentsWorker) loadDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*database.Deployment, error) {
+	if w.findDeploymentsForProject != nil {
+		return w.findDeploymentsForProject(ctx, projectID, environment, branch)
+	}
+	return w.admin.DB.FindDeploymentsForProject(ctx, projectID, environment, branch)
+}
+
+func (w *ValidateDeploymentsWorker) loadOrganization(ctx context.Context, organizationID string) (*database.Organization, error) {
+	if w.findOrganization != nil {
+		return w.findOrganization(ctx, organizationID)
+	}
+	return w.admin.DB.FindOrganization(ctx, organizationID)
+}
+
+func (w *ValidateDeploymentsWorker) removeDeployment(ctx context.Context, depl *database.Deployment) error {
+	if w.teardownDeployment != nil {
+		return w.teardownDeployment(ctx, depl)
+	}
+	return w.admin.TeardownDeployment(ctx, depl)
+}
+
+func (w *ValidateDeploymentsWorker) scheduleReconcileDeployment(ctx context.Context, deploymentID string) error {
+	if w.reconcileDeployment != nil {
+		return w.reconcileDeployment(ctx, deploymentID)
+	}
+	_, err := w.admin.Jobs.ReconcileDeployment(ctx, deploymentID)
+	return err
+}
+
+func (w *ValidateDeploymentsWorker) currentTime() time.Time {
+	if w.now != nil {
+		return w.now()
+	}
+	return time.Now()
 }

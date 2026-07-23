@@ -21,7 +21,14 @@ func (ReconcileDeploymentArgs) Kind() string { return "reconcile_deployment" }
 
 type ReconcileDeploymentWorker struct {
 	river.WorkerDefaults[ReconcileDeploymentArgs]
-	admin *admin.Service
+	admin                  *admin.Service
+	findDeployment         func(context.Context, string) (*database.Deployment, error)
+	updateDeploymentStatus func(context.Context, string, database.DeploymentStatus, string) (*database.Deployment, error)
+	startDeployment        func(context.Context, *database.Deployment) error
+	updateDeployment       func(context.Context, *database.Deployment) error
+	stopDeployment         func(context.Context, *database.Deployment) error
+	deleteDeployment       func(context.Context, *database.Deployment) error
+	enqueueReconcile       func(context.Context, string) (int64, error)
 }
 
 // NewReconcileDeploymentWorker creates a new ReconcileDeploymentWorker. Only to be used in tests to trigger the worker directly.
@@ -37,11 +44,11 @@ func NewReconcileDeploymentWorker(admin *admin.Service) *ReconcileDeploymentWork
 // We handle all deployment state transitions in this job to ensure consistency and to avoid concurrent conflicting operations on the same deployment.
 func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[ReconcileDeploymentArgs]) error {
 	observability.AddRequestAttributes(ctx, attribute.String("args.deployment_id", job.Args.DeploymentID))
-	depl, err := w.admin.DB.FindDeployment(ctx, job.Args.DeploymentID)
+	depl, err := w.loadDeployment(ctx, job.Args.DeploymentID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// If the deployment doesn't exist, we can just finish the job and do nothing more.
-			w.admin.Logger.Info("reconcile deployment: deployment not found, job succeeded", observability.ZapCtx(ctx))
+			w.logger().Info("reconcile deployment: deployment not found, job succeeded", observability.ZapCtx(ctx))
 			return nil
 		}
 		return err
@@ -60,19 +67,19 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 			// changed, and otherwise performs a lightweight drift-aware resource check. We therefore keep the
 			// deployment in the Running status here rather than flipping it to Updating, which would otherwise flap
 			// on every periodic reconciliation.
-			err := w.admin.UpdateDeploymentInner(ctx, depl)
+			err := w.reconcileRunningDeployment(ctx, depl)
 			if err != nil {
 				return err
 			}
 		} else {
 			// Update the deployment status to pending
-			depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning...")
+			depl, err = w.persistDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning...")
 			if err != nil {
 				return err
 			}
 
 			// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-			err := w.admin.StartDeploymentInner(ctx, depl)
+			err := w.initializeDeployment(ctx, depl)
 			if err != nil {
 				return err
 			}
@@ -86,13 +93,13 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 			return nil
 		}
 		// Update the deployment status to stopping
-		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopping, "Stopping...")
+		depl, err = w.persistDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopping, "Stopping...")
 		if err != nil {
 			return err
 		}
 
 		// Stop the deployment by tearing down its runtime instance and resources.
-		err = w.admin.StopDeploymentInner(ctx, depl)
+		err = w.hibernateDeployment(ctx, depl)
 		if err != nil {
 			return err
 		}
@@ -105,13 +112,13 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 			return nil
 		}
 		// Update the deployment status to deleting
-		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusDeleting, "Deleting...")
+		depl, err = w.persistDeploymentStatus(ctx, depl.ID, database.DeploymentStatusDeleting, "Deleting...")
 		if err != nil {
 			return err
 		}
 
 		// Delete the deployment and all its resources.
-		err := w.admin.DeleteDeploymentInner(ctx, depl)
+		err := w.removeDeployment(ctx, depl)
 		if err != nil {
 			return err
 		}
@@ -125,7 +132,7 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 	}
 
 	// Update the deployment status
-	depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, newStatus, "")
+	depl, err = w.persistDeploymentStatus(ctx, depl.ID, newStatus, "")
 	if err != nil {
 		return err
 	}
@@ -133,15 +140,73 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 	// If current depl.DesiredStatusUpdatedOn != desiredStatusUpdatedOn when job started, then the deployment changed while we were working and we should reschedule another job.
 	if !depl.DesiredStatusUpdatedOn.Equal(desiredStatusUpdatedOn) {
 		// Deployment changed while we were working, reschedule another job to reconcile again.
-		c := river.ClientFromContext[pgx.Tx](ctx)
-		res, err := c.Insert(ctx, ReconcileDeploymentArgs{
-			DeploymentID: job.Args.DeploymentID,
-		}, nil)
+		newJobID, err := w.scheduleReconcile(ctx, job.Args.DeploymentID)
 		if err != nil {
 			return err
 		}
-		w.admin.Logger.Info("reconcile deployment: changes to deployment detected since job started, rescheduling job", observability.ZapCtx(ctx), zap.Int64("new_job_id", res.Job.ID))
+		w.logger().Info("reconcile deployment: changes to deployment detected since job started, rescheduling job", observability.ZapCtx(ctx), zap.Int64("new_job_id", newJobID))
 	}
 
 	return nil
+}
+
+func (w *ReconcileDeploymentWorker) loadDeployment(ctx context.Context, deploymentID string) (*database.Deployment, error) {
+	if w.findDeployment != nil {
+		return w.findDeployment(ctx, deploymentID)
+	}
+	return w.admin.DB.FindDeployment(ctx, deploymentID)
+}
+
+func (w *ReconcileDeploymentWorker) persistDeploymentStatus(ctx context.Context, deploymentID string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
+	if w.updateDeploymentStatus != nil {
+		return w.updateDeploymentStatus(ctx, deploymentID, status, message)
+	}
+	return w.admin.DB.UpdateDeploymentStatus(ctx, deploymentID, status, message)
+}
+
+func (w *ReconcileDeploymentWorker) initializeDeployment(ctx context.Context, deployment *database.Deployment) error {
+	if w.startDeployment != nil {
+		return w.startDeployment(ctx, deployment)
+	}
+	return w.admin.StartDeploymentInner(ctx, deployment)
+}
+
+func (w *ReconcileDeploymentWorker) reconcileRunningDeployment(ctx context.Context, deployment *database.Deployment) error {
+	if w.updateDeployment != nil {
+		return w.updateDeployment(ctx, deployment)
+	}
+	return w.admin.UpdateDeploymentInner(ctx, deployment)
+}
+
+func (w *ReconcileDeploymentWorker) hibernateDeployment(ctx context.Context, deployment *database.Deployment) error {
+	if w.stopDeployment != nil {
+		return w.stopDeployment(ctx, deployment)
+	}
+	return w.admin.StopDeploymentInner(ctx, deployment)
+}
+
+func (w *ReconcileDeploymentWorker) removeDeployment(ctx context.Context, deployment *database.Deployment) error {
+	if w.deleteDeployment != nil {
+		return w.deleteDeployment(ctx, deployment)
+	}
+	return w.admin.DeleteDeploymentInner(ctx, deployment)
+}
+
+func (w *ReconcileDeploymentWorker) scheduleReconcile(ctx context.Context, deploymentID string) (int64, error) {
+	if w.enqueueReconcile != nil {
+		return w.enqueueReconcile(ctx, deploymentID)
+	}
+	c := river.ClientFromContext[pgx.Tx](ctx)
+	res, err := c.Insert(ctx, ReconcileDeploymentArgs{DeploymentID: deploymentID}, nil)
+	if err != nil {
+		return 0, err
+	}
+	return res.Job.ID, nil
+}
+
+func (w *ReconcileDeploymentWorker) logger() *zap.Logger {
+	if w.admin != nil && w.admin.Logger != nil {
+		return w.admin.Logger
+	}
+	return zap.NewNop()
 }

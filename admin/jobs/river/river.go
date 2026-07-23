@@ -345,6 +345,7 @@ func (c *Client) ReconcileDeployment(ctx context.Context, deploymentID string) (
 				rivertype.JobStateAvailable,
 				rivertype.JobStatePending,
 				rivertype.JobStateRunning,
+				rivertype.JobStateRetryable,
 				rivertype.JobStateScheduled,
 			},
 		},

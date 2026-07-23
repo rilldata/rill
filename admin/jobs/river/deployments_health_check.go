@@ -27,8 +27,13 @@ func (DeploymentsHealthCheckArgs) Kind() string { return "deployments_health_che
 
 type DeploymentsHealthCheckWorker struct {
 	river.WorkerDefaults[DeploymentsHealthCheckArgs]
-	admin  *admin.Service
-	logger *zap.Logger
+	admin                      *admin.Service
+	logger                     *zap.Logger
+	findDeployments            func(context.Context, string, int) ([]*database.Deployment, error)
+	findDeploymentByInstanceID func(context.Context, string) (*database.Deployment, error)
+	healthCheck                func(context.Context, *database.Deployment) ([]string, bool)
+	deploymentAnnotations      func(context.Context, *database.Deployment) (*admin.DeploymentAnnotations, error)
+	now                        func() time.Time
 }
 
 func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[DeploymentsHealthCheckArgs]) error {
@@ -39,7 +44,7 @@ func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[
 	actualInstances := map[string][]string{}
 	var mu sync.Mutex
 	for {
-		deployments, err := w.admin.DB.FindDeployments(ctx, afterID, limit)
+		deployments, err := w.loadDeployments(ctx, afterID, limit)
 		if err != nil {
 			return fmt.Errorf("deployment health check: failed to get deployments: %w", err)
 		}
@@ -52,7 +57,7 @@ func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[
 		for _, d := range deployments {
 			d := d
 			if d.Status != database.DeploymentStatusRunning {
-				if time.Since(d.UpdatedOn) > time.Hour {
+				if w.currentTime().Sub(d.UpdatedOn) > time.Hour {
 					w.logger.Error("deployment health check: deployment not ok", zap.String("project_id", d.ProjectID), zap.String("deployment_id", d.ID), zap.String("status", d.Status.String()), zap.Time("since", d.UpdatedOn), observability.ZapCtx(ctx))
 				}
 				continue
@@ -63,7 +68,7 @@ func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[
 			}
 			seenHosts[d.RuntimeHost] = true
 			group.Go(func() error {
-				instances, ok := deploymentHealthCheck(cctx, w, d)
+				instances, ok := w.checkDeploymentHealth(cctx, d)
 				if ok {
 					mu.Lock()
 					actualInstances[d.RuntimeHost] = instances
@@ -95,7 +100,7 @@ func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[
 			}
 			// an expected instance is missing
 			// re verify that the deployment is not deleted
-			d, err := w.admin.DB.FindDeploymentByInstanceID(ctx, instance)
+			d, err := w.loadDeploymentByInstanceID(ctx, instance)
 			if err != nil {
 				if errors.Is(err, database.ErrNotFound) {
 					// Deployment was deleted
@@ -104,7 +109,7 @@ func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[
 				w.logger.Error("deployment health check: failed to find deployment", zap.String("instance_id", instance), zap.Error(err), observability.ZapCtx(ctx))
 				continue
 			}
-			annotations, err := w.annotationsForDeployment(ctx, d)
+			annotations, err := w.loadDeploymentAnnotations(ctx, d)
 			if err != nil {
 				w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project_id", d.ProjectID), zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
 				continue
@@ -117,6 +122,41 @@ func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[
 		}
 	}
 	return nil
+}
+
+func (w *DeploymentsHealthCheckWorker) loadDeployments(ctx context.Context, afterID string, limit int) ([]*database.Deployment, error) {
+	if w.findDeployments != nil {
+		return w.findDeployments(ctx, afterID, limit)
+	}
+	return w.admin.DB.FindDeployments(ctx, afterID, limit)
+}
+
+func (w *DeploymentsHealthCheckWorker) loadDeploymentByInstanceID(ctx context.Context, instanceID string) (*database.Deployment, error) {
+	if w.findDeploymentByInstanceID != nil {
+		return w.findDeploymentByInstanceID(ctx, instanceID)
+	}
+	return w.admin.DB.FindDeploymentByInstanceID(ctx, instanceID)
+}
+
+func (w *DeploymentsHealthCheckWorker) checkDeploymentHealth(ctx context.Context, d *database.Deployment) ([]string, bool) {
+	if w.healthCheck != nil {
+		return w.healthCheck(ctx, d)
+	}
+	return deploymentHealthCheck(ctx, w, d)
+}
+
+func (w *DeploymentsHealthCheckWorker) loadDeploymentAnnotations(ctx context.Context, d *database.Deployment) (*admin.DeploymentAnnotations, error) {
+	if w.deploymentAnnotations != nil {
+		return w.deploymentAnnotations(ctx, d)
+	}
+	return w.annotationsForDeployment(ctx, d)
+}
+
+func (w *DeploymentsHealthCheckWorker) currentTime() time.Time {
+	if w.now != nil {
+		return w.now()
+	}
+	return time.Now()
 }
 
 func deploymentHealthCheck(ctx context.Context, w *DeploymentsHealthCheckWorker, d *database.Deployment) (instances []string, runtimeOK bool) {
