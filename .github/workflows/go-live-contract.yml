@@ -54,15 +54,3 @@ jobs:
           RILL_ADMIN_TEST_GITHUB_MANAGED_ACCOUNT: ${{ secrets.RILL_ADMIN_TEST_GITHUB_MANAGED_ACCOUNT }}
           RILL_RUNTIME_OPENAI_TEST_API_KEY: ${{ secrets.RILL_RUNTIME_OPENAI_TEST_API_KEY }}
           RILL_RUNTIME_GEMINI_TEST_API_KEY: ${{ secrets.RILL_RUNTIME_GEMINI_TEST_API_KEY }}
-
-      - name: Notify Slack
-        uses: ravsamhq/notify-slack-action@v2
-        if: always()
-        with:
-          status: ${{ job.status }}
-          notification_title: "{workflow} has {status_message}"
-          message_format: "{emoji} *{workflow}*"
-          footer: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
-          notify_when: failure
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEAM_PLATFORM }}
