@@ -1,14 +1,20 @@
+import { goto } from "$app/navigation";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { YAMLMap, parseDocument } from "yaml";
 import {
+  getFileHref,
   navigateToExplore,
-  navigateToFile,
+  withEditorPrefix,
 } from "../../layout/navigation/editor-routing";
 import { previewModeStore } from "../../layout/preview-mode-store";
-import { workspaces } from "../../layout/workspace/workspace-stores";
+import type { WorkspaceView } from "../../layout/workspace/workspace-stores";
 import { waitUntil } from "../../lib/waitUtils";
 import { fileArtifacts } from "../entity-management/file-artifacts";
+
+// Views supported by the metrics view workspace: the base views plus the inline
+// explore dashboard editor.
+export type MetricsWorkspaceView = WorkspaceView | "explore";
 
 export type InlineExploreState = {
   // True when the file opts out of the legacy behavior where an explore is
@@ -45,7 +51,9 @@ export function parseInlineExploreState(
 
 // previewInlineExplore opens the explore emitted by a metrics view file's inline
 // explore block: the explore page in preview mode, or the metrics view file's
-// explore view in the editor.
+// explore view in the editor. It routes based on the file's actual YAML rather
+// than assuming an inline explore exists (e.g. AI generation is not guaranteed to
+// emit one): without an inline explore it falls back to the metrics view itself.
 export async function previewInlineExplore(
   queryClient: QueryClient,
   filePath: string,
@@ -59,16 +67,22 @@ export async function previewInlineExplore(
     throw new Error(`Failed to resolve the metrics view for ${filePath}`);
   }
 
-  const { exploreName } = parseInlineExploreState(
-    get(artifact.editorContent) ?? get(artifact.remoteContent),
-  );
+  const { isLatestVersion, exploreEnabled, exploreName } =
+    parseInlineExploreState(
+      get(artifact.editorContent) ?? get(artifact.remoteContent),
+    );
 
   if (get(previewModeStore)) {
-    await navigateToExplore(exploreName ?? metricsViewName);
-  } else {
-    workspaces.get(filePath).view.set("explore");
-    await navigateToFile(filePath);
+    // Legacy metrics views auto-emit an explore named after the metrics view.
+    if (exploreEnabled || !isLatestVersion) {
+      await navigateToExplore(exploreName ?? metricsViewName);
+    } else {
+      await goto(withEditorPrefix("/dashboards"));
+    }
+    return;
   }
+
+  await goto(getFileHref(filePath, exploreEnabled ? "explore" : undefined));
 }
 
 // enableInlineExploreAndPreview ensures the metrics view file defines an inline

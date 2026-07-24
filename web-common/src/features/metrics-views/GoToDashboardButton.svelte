@@ -8,7 +8,6 @@
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -28,19 +27,17 @@
   // True when the metrics view file already defines an inline explore. The explore
   // is then reachable via the workspace's explore view and Preview button, so this
   // CTA only deals in canvases: it lists canvas dashboards instead of explores and
-  // hides "Generate Explore Dashboard".
+  // hides "Create Explore Dashboard".
   export let hasInlineExplore = false;
 
   // When a dashboard is defined inline in a metrics view file, its file path is the
-  // metrics view file itself; switch the workspace to the explore view on navigation.
-  function onNavigateToDashboard(dashboard: V1Resource) {
-    const filePath = dashboard?.meta?.filePaths?.[0];
-    if (
-      filePath &&
-      dashboard?.explore?.state?.validSpec?.definedInMetricsView
-    ) {
-      workspaces.get(filePath).view.set("explore");
-    }
+  // metrics view file itself; the ?view=explore param opens the workspace on the
+  // explore view.
+  function dashboardHref(dashboard: V1Resource): string {
+    const filePath = `/${removeLeadingSlash(dashboard?.meta?.filePaths?.[0] ?? "")}`;
+    const definedInMetricsView =
+      dashboard?.explore?.state?.validSpec?.definedInMetricsView;
+    return getFileHref(filePath, definedInMetricsView ? "explore" : undefined);
   }
 
   const runtimeClient = useRuntimeClient();
@@ -96,7 +93,7 @@
             );
         }}
       >
-        Generate Explore Dashboard{$ai ? " with AI" : ""}
+        Create Explore Dashboard
       </Button>
     {/if}
   </div>
@@ -107,7 +104,7 @@
         <NavigateOrDropdown
           {...props}
           resources={dashboards}
-          onNavigate={onNavigateToDashboard}
+          hrefForResource={dashboardHref}
         />
       {/snippet}
     </DropdownMenu.Trigger>
@@ -122,10 +119,7 @@
             resource?.meta?.name?.name}
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
-            <DropdownMenu.Item
-              href={getFileHref(`/${removeLeadingSlash(filePath)}`)}
-              onclick={() => onNavigateToDashboard(resource)}
-            >
+            <DropdownMenu.Item href={dashboardHref(resource)}>
               {#if isCanvas}
                 <CanvasIcon />
               {:else}
@@ -168,7 +162,7 @@
             }}
           >
             <Add />
-            Generate Explore Dashboard{$ai ? " with AI" : ""}
+            Create Explore Dashboard
           </DropdownMenu.Item>
         {/if}
       </DropdownMenu.Group>

@@ -65,7 +65,7 @@ test.describe("inline explore editing", () => {
       page.getByRole("button", { name: "Generate Canvas Dashboard" }),
     ).toBeVisible({ timeout: 10_000 });
     await expect(
-      page.getByRole("button", { name: "Generate Explore Dashboard" }),
+      page.getByRole("button", { name: "Create Explore Dashboard" }),
     ).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Go to/ })).toHaveCount(0);
   });
@@ -96,7 +96,7 @@ test.describe("inline explore go-to-dashboard CTA", () => {
       page.getByRole("menuitem", { name: "Generate Canvas Dashboard" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("menuitem", { name: "Generate Explore Dashboard" }),
+      page.getByRole("menuitem", { name: "Create Explore Dashboard" }),
     ).toHaveCount(0);
 
     // The project's standalone explore is not listed; the CTA only deals in canvases

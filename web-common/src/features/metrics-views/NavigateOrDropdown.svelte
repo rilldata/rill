@@ -11,11 +11,11 @@
   // svelte-ignore custom_element_props_identifier
   let {
     resources,
-    onNavigate = undefined,
+    hrefForResource = undefined,
     ...triggerProps
   }: {
     resources: V1Resource[];
-    onNavigate?: (resource: V1Resource) => void;
+    hrefForResource?: (resource: V1Resource) => string;
     [key: string]: unknown;
   } = $props();
 
@@ -36,10 +36,10 @@
     class="border-accent-primary-action flex items-center border h-7 rounded-[2px] bg-transparent text-accent-primary-action"
   >
     <a
-      href={getFileHref(
-        `/${removeLeadingSlash(firstResource.meta?.filePaths?.[0])}`,
-      )}
-      onclick={() => onNavigate?.(firstResource)}
+      href={hrefForResource?.(firstResource) ??
+        getFileHref(
+          `/${removeLeadingSlash(firstResource.meta?.filePaths?.[0])}`,
+        )}
       class="text-inherit font-medium flex items-center border-r px-3 size-full hover:bg-surface-hover border-accent-primary-action hover:text-fg-accent"
     >
       Go to {firstResourceType}

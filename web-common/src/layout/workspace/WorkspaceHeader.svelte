@@ -55,7 +55,8 @@
   let editing = $state(false);
 
   let value = $derived(titleInput);
-  let workspaceLayout = $derived(workspaces.get(filePath));
+  // Typed as string since some workspaces extend the base view union (e.g. "explore").
+  let workspaceLayout = $derived(workspaces.get<string>(filePath));
   let inspectorVisible = $derived(workspaceLayout.inspector.visible);
   let tableVisible = $derived(workspaceLayout.table.visible);
   let view = $derived(workspaceLayout.view);
@@ -83,7 +84,11 @@
   <div class="second-level-wrapper">
     <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>
       {#if codeToggle && resourceKind}
-        <CodeToggle bind:selectedView={$view} {resourceKind} views={codeToggleViews} />
+        <CodeToggle
+          bind:selectedView={$view}
+          {resourceKind}
+          views={codeToggleViews}
+        />
       {:else}
         <span class="flex-none">
           <IconComponent size="19px" />

@@ -159,7 +159,8 @@ export function useCreateMetricsViewFromTableUIAction(
         return;
       }
 
-      // The generated metrics view defines its explore inline; open it
+      // Open the generated dashboard; previewInlineExplore inspects the generated
+      // YAML and falls back to the metrics view if no inline explore was emitted.
       await previewInlineExplore(queryClient, newMetricsViewFilePath);
     } catch (err) {
       eventBus.emit("notification", {

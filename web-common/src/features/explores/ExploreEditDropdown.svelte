@@ -6,7 +6,6 @@
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   let { exploreName }: { exploreName: string } = $props();
@@ -21,7 +20,7 @@
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "",
   );
   // When the explore is defined inline in the metrics view file, both items point
-  // at the same file; the workspace view distinguishes what gets edited.
+  // at the same file; the ?view= param selects what gets edited.
   let definedInMetricsView = $derived(
     $exploreQuery.data?.explore?.explore?.state?.validSpec
       ?.definedInMetricsView ?? false,
@@ -39,23 +38,19 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end">
     <DropdownMenu.Item
-      href={getFileHref(exploreFilePath)}
-      onclick={() => {
-        if (definedInMetricsView) {
-          workspaces.get(exploreFilePath).view.set("explore");
-        }
-      }}
+      href={getFileHref(
+        exploreFilePath,
+        definedInMetricsView ? "explore" : undefined,
+      )}
     >
       <ExploreIcon size="16px" />
       Explore dashboard
     </DropdownMenu.Item>
     <DropdownMenu.Item
-      href={getFileHref(metricsViewFilePath)}
-      onclick={() => {
-        if (definedInMetricsView) {
-          workspaces.get(metricsViewFilePath).view.set("viz");
-        }
-      }}
+      href={getFileHref(
+        metricsViewFilePath,
+        definedInMetricsView ? "viz" : undefined,
+      )}
     >
       <MetricsViewIcon size="16px" />
       Metrics View

@@ -22,8 +22,10 @@ export function navigateToFile(
   return goto(withEditorPrefix(`/files${filePath}`), options);
 }
 
-export function getFileHref(filePath: string): string {
-  return withEditorPrefix(`/files${filePath}`);
+// The optional view selects the workspace view to open the file on;
+// it is consumed by the files route (see consumeViewSearchParam).
+export function getFileHref(filePath: string, view?: string): string {
+  return withEditorPrefix(`/files${filePath}${view ? `?view=${view}` : ""}`);
 }
 
 export function navigateToHome(options?: Parameters<typeof goto>[1]) {

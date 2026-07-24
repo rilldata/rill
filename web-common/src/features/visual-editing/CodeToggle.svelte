@@ -1,9 +1,10 @@
 <script lang="ts" context="module">
   import type { ComponentType } from "svelte";
-  import type { WorkspaceView } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
+  // The view is a plain string since workspaces can extend the base WorkspaceView
+  // union with their own views (e.g. "explore" in the metrics view workspace).
   export type ViewOption = {
-    view: WorkspaceView;
+    view: string;
     icon: ComponentType;
     label: string;
   };
@@ -16,13 +17,17 @@
   import { Code2Icon } from "lucide-svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
-  export let selectedView: WorkspaceView = "viz";
+  export let selectedView: string = "viz";
   export let resourceKind: ResourceKind;
   export let views: ViewOption[] | undefined = undefined;
 
   $: viewOptions = views ?? [
     { view: "code", icon: Code2Icon, label: "Code view" },
-    { view: "viz", icon: resourceIconMapping[resourceKind], label: "No-code view" },
+    {
+      view: "viz",
+      icon: resourceIconMapping[resourceKind],
+      label: "No-code view",
+    },
   ];
 
   $: selectedIndex = Math.max(
@@ -30,7 +35,7 @@
     viewOptions.findIndex(({ view }) => view === selectedView),
   );
 
-  const ariaLabels: Partial<Record<WorkspaceView, string>> = {
+  const ariaLabels: Record<string, string> = {
     code: "Switch to code editor",
     viz: "Switch to visual editor",
     explore: "Switch to explore editor",

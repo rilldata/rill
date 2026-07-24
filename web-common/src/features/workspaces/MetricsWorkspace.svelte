@@ -13,7 +13,10 @@
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
-  import { parseInlineExploreState } from "@rilldata/web-common/features/metrics-views/inline-explore";
+  import {
+    parseInlineExploreState,
+    type MetricsWorkspaceView,
+  } from "@rilldata/web-common/features/metrics-views/inline-explore";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -68,7 +71,7 @@
     fileName,
   } = fileArtifact);
 
-  $: workspace = workspaces.get(filePath);
+  $: workspace = workspaces.get<MetricsWorkspaceView>(filePath);
 
   $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
