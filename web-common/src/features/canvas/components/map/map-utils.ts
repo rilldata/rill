@@ -39,19 +39,20 @@ export function transformToGeoJSON(
         continue;
       }
     } else if (Array.isArray(geoValue)) {
-      // DuckDB spatial types return [lat, lon] — swap to [lon, lat]
+      // DuckDB spatial types are serialized as [x, y] = [lon, lat],
+      // which is already the order GeoJSON/Mapbox expect — pass through.
       if (
         geoValue.length === 2 &&
         typeof geoValue[0] === "number" &&
         typeof geoValue[1] === "number"
       ) {
-        const [lat, lon] = geoValue as [number, number];
+        const [lon, lat] = geoValue as [number, number];
         geometry = { type: "Point", coordinates: [lon, lat] };
       } else if (Array.isArray(geoValue[0]) && Array.isArray(geoValue[0][0])) {
-        const coordinates = (geoValue as number[][][]).map((ring) =>
-          ring.map(([lat, lon]) => [lon, lat]),
-        );
-        geometry = { type: "Polygon", coordinates };
+        geometry = {
+          type: "Polygon",
+          coordinates: geoValue as number[][][],
+        };
       }
     }
 
