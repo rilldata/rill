@@ -30,6 +30,7 @@
     getDimensionSearchQuery,
   } from "@rilldata/web-common/features/dashboards/filters/manager/queries.svelte.ts";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+  import { onMount } from "svelte";
 
   let {
     manager,
@@ -59,16 +60,8 @@
 
   let proxyDimensionManager = $derived(dimensionManager.clone());
 
-  let open = $state(
-    // eslint-disable-next-line svelte/valid-compile
-    openOnMount &&
-      // eslint-disable-next-line svelte/valid-compile
-      !dimensionManager.selectedValues?.length &&
-      // eslint-disable-next-line svelte/valid-compile
-      !dimensionManager.inputText,
-  );
-  // eslint-disable-next-line svelte/valid-compile
-  let curSearchText = $state(dimensionManager.inputText ?? "");
+  let open = $state(false);
+  let curSearchText = $state("");
   let inListTooLong = $state(false);
 
   const client = useRuntimeClient();
@@ -277,10 +270,18 @@
   function handleItemClick(value: string) {
     proxyDimensionManager.toggleValue(value, false);
   }
+
+  onMount(() => {
+    open =
+      openOnMount &&
+      !dimensionManager.selectedValues?.length &&
+      !dimensionManager.inputText;
+    curSearchText = dimensionManager.inputText;
+  });
 </script>
 
 <svelte:window
-  onkeydown={async (e) => {
+  onkeydown={(e) => {
     if (e.key === "Enter") onApply();
   }}
 />

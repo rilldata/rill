@@ -26,6 +26,10 @@ export class ExpressionFilterManager {
   public expr: V1Expression;
   public exprParam: string = "";
 
+  private metricsViewName: string = "";
+  private measureIdMap: Map<string, MetricsViewSpecMeasure> = new Map();
+  private dimensionIdMap: Map<string, MetricsViewSpecDimension> = new Map();
+
   public constructor() {
     this.expr = $derived.by(() => {
       const dimExprs = this.dimensionFilterManagers
@@ -38,12 +42,17 @@ export class ExpressionFilterManager {
     });
   }
 
-  public setExprParam(
-    exprParam: string,
+  public syncSpec(
+    metricsViewName: string,
     measureIdMap: Map<string, MetricsViewSpecMeasure>,
     dimensionIdMap: Map<string, MetricsViewSpecDimension>,
-    metricsViewName: string,
   ) {
+    this.metricsViewName = metricsViewName;
+    this.measureIdMap = measureIdMap;
+    this.dimensionIdMap = dimensionIdMap;
+  }
+
+  public setExprParam(exprParam: string) {
     if (exprParam === this.exprParam) return;
     this.exprParam = exprParam;
 
@@ -63,7 +72,7 @@ export class ExpressionFilterManager {
     const newDimensionFilterManagers: DimensionFilterManager[] = [];
 
     forEachIdentifier(expr, (e, ident) => {
-      const dim = dimensionIdMap.get(ident);
+      const dim = this.dimensionIdMap.get(ident);
       if (!dim) return;
 
       const firstValueExpr = e?.cond?.exprs?.[1];
@@ -72,7 +81,7 @@ export class ExpressionFilterManager {
         const measureName = firstValueExpr.subquery.measures?.[0];
         if (!measureName) return;
 
-        const measure = measureIdMap.get(measureName);
+        const measure = this.measureIdMap.get(measureName);
         if (!measure) return;
 
         addedMeasure.add(measureName);
@@ -82,7 +91,7 @@ export class ExpressionFilterManager {
             measureName,
             getMeasureDisplayName(measure),
             new Map<string, MetricsViewSpecMeasure>([
-              [metricsViewName, measure],
+              [this.metricsViewName, measure],
             ]),
             false,
             ident,
@@ -97,7 +106,9 @@ export class ExpressionFilterManager {
           new DimensionFilterManager(
             ident,
             getDimensionDisplayName(dim),
-            new Map<string, MetricsViewSpecDimension>([[metricsViewName, dim]]),
+            new Map<string, MetricsViewSpecDimension>([
+              [this.metricsViewName, dim],
+            ]),
             false,
             e,
             isInListMode,
@@ -124,18 +135,16 @@ export class ExpressionFilterManager {
     this.dimensionFilterManagers = newDimensionFilterManagers;
   }
 
-  public addTemporaryMeasureFilter(
-    name: string,
-    measureIdMap: Map<string, MetricsViewSpecMeasure>,
-    metricsViewName: string,
-  ) {
-    const measure = measureIdMap.get(name);
+  public addTemporaryMeasureFilter(name: string) {
+    const measure = this.measureIdMap.get(name);
     if (!measure) return;
 
     this.temporaryFilter = new MeasureFilterManager(
       name,
       getMeasureDisplayName(measure),
-      new Map<string, MetricsViewSpecMeasure>([[metricsViewName, measure]]),
+      new Map<string, MetricsViewSpecMeasure>([
+        [this.metricsViewName, measure],
+      ]),
       false,
     );
     this.measureFilterManagers = [
@@ -144,24 +153,48 @@ export class ExpressionFilterManager {
     ];
   }
 
-  public addTemporaryDimensionFilter(
-    name: string,
-    dimensionIdMap: Map<string, MetricsViewSpecDimension>,
-    metricsViewName: string,
-  ) {
-    const dim = dimensionIdMap.get(name);
+  public addTemporaryDimensionFilter(name: string) {
+    const dim = this.dimensionIdMap.get(name);
     if (!dim) return;
 
     this.temporaryFilter = new DimensionFilterManager(
       name,
       getDimensionDisplayName(dim),
-      new Map<string, MetricsViewSpecDimension>([[metricsViewName, dim]]),
+      new Map<string, MetricsViewSpecDimension>([[this.metricsViewName, dim]]),
       false,
     );
     this.dimensionFilterManagers = [
       ...this.dimensionFilterManagers,
       this.temporaryFilter,
     ];
+  }
+
+  public dimensionFilterAction(
+    name: string,
+    callback: (dimensionFilterManager: DimensionFilterManager) => any,
+  ) {
+    const dim = this.dimensionIdMap.get(name);
+    if (!dim) return;
+
+    const existingManager = this.dimensionFilterManagers.find(
+      (dfm) => dfm.name === name,
+    );
+    const dimensionFilterManager =
+      existingManager ??
+      new DimensionFilterManager(
+        name,
+        getDimensionDisplayName(dim),
+        new Map<string, MetricsViewSpecDimension>([
+          [this.metricsViewName, dim],
+        ]),
+        false,
+      );
+
+    const ret = callback(dimensionFilterManager);
+    if (!existingManager && dimensionFilterManager.expr) {
+      this.dimensionFilterManagers.push(dimensionFilterManager);
+    }
+    return ret;
   }
 
   public clear() {

@@ -1,11 +1,9 @@
 import { page } from "$app/stores";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   createInExpression,
   createLikeExpression,
   getValuesInExpression,
-  negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
@@ -171,28 +169,6 @@ export function applyDimensionContainsMode(
   }
 }
 
-export function toggleDimensionFilterMode(
-  { dashboard }: DashboardMutables,
-  dimensionName: string,
-) {
-  const exclude = dashboard.dimensionFilterExcludeMode.get(dimensionName);
-  dashboard.dimensionFilterExcludeMode.set(dimensionName, !exclude);
-
-  if (!dashboard.whereFilter?.cond?.exprs) {
-    return;
-  }
-
-  const exprIdx = dashboard.whereFilter.cond.exprs.findIndex(
-    (e) => e.cond?.exprs?.[0].ident === dimensionName,
-  );
-  if (exprIdx === -1) {
-    return;
-  }
-  dashboard.whereFilter.cond.exprs[exprIdx] = negateExpression(
-    dashboard.whereFilter.cond.exprs[exprIdx],
-  );
-}
-
 export function removeDimensionFilter(
   { dashboard }: DashboardMutables,
   dimensionName: string,
@@ -205,74 +181,6 @@ export function removeDimensionFilter(
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) return;
   dashboard.whereFilter?.cond?.exprs?.splice(exprIdx, 1);
-}
-
-export function selectItemsInFilter(
-  { dashboard }: DashboardMutables,
-  dimensionName: string,
-  values: (string | null)[],
-) {
-  const isExclude = !!dashboard.dimensionFilterExcludeMode.get(dimensionName);
-  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
-  if (exprIdx === undefined || exprIdx === -1) {
-    dashboard.whereFilter.cond?.exprs?.push(
-      createInExpression(dimensionName, values, isExclude),
-    );
-    return;
-  }
-
-  const expr = dashboard.whereFilter.cond?.exprs?.[exprIdx];
-  if (!expr?.cond?.exprs) {
-    // should never happen since getWhereFilterExpressionIndex runs a find
-    return;
-  }
-
-  // preserve old selections and add only new ones
-  const oldValues = getValuesInExpression(expr);
-  const newValues = values.filter((v) => !oldValues.includes(v));
-  // newValuesSelected = newValues.length; // TODO
-  expr.cond.exprs.push(...newValues.map((v): V1Expression => ({ val: v })));
-}
-
-export function deselectItemsInFilter(
-  { dashboard }: DashboardMutables,
-  dimensionName: string,
-  values: (string | null)[],
-) {
-  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
-  if (exprIdx === undefined || exprIdx === -1) {
-    return;
-  }
-
-  const expr = dashboard.whereFilter.cond?.exprs?.[exprIdx];
-  if (!expr?.cond?.exprs) {
-    // should never happen since getWhereFilterExpressionIndex runs a find
-    return;
-  }
-
-  // remove only deselected values
-  const oldValues = getValuesInExpression(expr);
-  const newValues = oldValues.filter((v) => !values.includes(v));
-
-  if (newValues.length) {
-    expr.cond.exprs.splice(
-      1,
-      expr.cond.exprs.length - 1,
-      ...newValues.map((v): V1Expression => ({ val: v })),
-    );
-  } else {
-    dashboard.whereFilter.cond?.exprs?.splice(exprIdx, 1);
-  }
-}
-
-export function setFilters(
-  { dashboard }: DashboardMutables,
-  filter: V1Expression,
-) {
-  const { dimensionFilters, dimensionThresholdFilters } =
-    splitWhereFilter(filter);
-  dashboard.whereFilter = dimensionFilters;
-  dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
 }
 
 export function toggleDimensionFilterValue(
@@ -303,22 +211,4 @@ export function toggleDimensionFilterValue(
   return inIdx;
 }
 
-export const dimensionFilterActions = {
-  /**
-   * Toggles whether the given dimension value is selected in the
-   * dimension filter for the given dimension.
-   *
-   * Note that this is different than the include/exclude mode for
-   * dimension filters. This is a toggle for a specific value, whereas
-   * the include/exclude mode is a toggle for the entire dimension.
-   */
-  toggleDimensionValueSelection,
-  toggleMultipleDimensionValueSelections,
-  applyDimensionInListMode,
-  applyDimensionContainsMode,
-  toggleDimensionFilterMode,
-  removeDimensionFilter,
-  selectItemsInFilter,
-  deselectItemsInFilter,
-  setFilters,
-};
+export const dimensionFilterActions = {};

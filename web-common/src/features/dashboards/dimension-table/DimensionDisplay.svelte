@@ -47,7 +47,6 @@
 
   const {
     selectors: {
-      dimensionFilters: { unselectedDimensionValues },
       dimensionTable: { virtualizedTableColumns, prepareDimTableRows },
       sorting: { sortedAscending, sortType },
       leaderboard: {
@@ -55,15 +54,9 @@
         leaderboardSortByMeasureName,
       },
     },
-    actions: {
-      dimensionsFilter: {
-        toggleDimensionValueSelection,
-        selectItemsInFilter,
-        deselectItemsInFilter,
-      },
-    },
     dashboardStore,
     validSpecStore,
+    expressionFilterManager,
   } = getStateManagers();
 
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
@@ -200,25 +193,30 @@
 
   function onSelectItem(data: { index: number; meta: boolean }) {
     const label = tableRows[data.index][dimensionName] as string;
-    toggleDimensionValueSelection(dimensionName, label, false, data.meta);
+    expressionFilterManager.dimensionFilterAction(
+      dimensionName,
+      (dimensionManager) => dimensionManager.toggleValue(label, false),
+    );
   }
 
   function toggleAllSearchItems() {
     const labels = tableRows.map((row) => row[dimensionName] as string);
 
     if (areAllTableRowsSelected) {
-      deselectItemsInFilter(dimensionName, labels);
+      expressionFilterManager.dimensionFilterAction(
+        dimensionName,
+        (dimensionManager) => dimensionManager.removeSelectedValues(labels),
+      );
 
       eventBus.emit("notification", {
         message: `Removed ${labels.length} items from filter`,
       });
       return;
     } else {
-      const newValuesSelected = $unselectedDimensionValues(
+      const newValuesSelected = expressionFilterManager.dimensionFilterAction(
         dimensionName,
-        labels,
+        (dimensionManager) => dimensionManager.appendSelectedValues(labels),
       );
-      selectItemsInFilter(dimensionName, labels);
       eventBus.emit("notification", {
         message: `Added ${newValuesSelected.length} items to filter`,
       });

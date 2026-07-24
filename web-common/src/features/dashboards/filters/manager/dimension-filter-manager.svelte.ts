@@ -13,13 +13,6 @@ import {
   getValuesInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
-export type DimensionFilterManagerInit = {
-  mode: DimensionFilterMode;
-  selectedValues: string[];
-  inputText: string;
-  exclude: boolean;
-};
-
 export class DimensionFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
 
@@ -102,8 +95,24 @@ export class DimensionFilterManager {
         this.selectedValues = [...this.selectedValues, dimensionValue];
       }
     } else {
-      this.selectedValues = this.selectedValues.splice(inIdx, 1);
+      this.selectedValues = this.selectedValues.toSpliced(inIdx, 1);
     }
+    this.commit();
+  }
+
+  public appendSelectedValues(dimensionValues: string[]) {
+    const newValues = dimensionValues.filter(
+      (v) => !this.selectedValues.includes(v),
+    );
+    this.selectedValues = [...this.selectedValues, ...newValues];
+    this.commit();
+    return newValues;
+  }
+
+  public removeSelectedValues(dimensionValues: string[]) {
+    this.selectedValues = this.selectedValues.filter(
+      (v) => !dimensionValues.includes(v),
+    );
     this.commit();
   }
 

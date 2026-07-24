@@ -30,15 +30,29 @@
   import type { TDDComparison } from "./types";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
-  export let exploreName: string;
-  export let dimensionName: string;
-  export let isFetching = false;
-  export let comparing: TDDComparison | undefined;
-  export let areAllTableRowsSelected = false;
-  export let isRowsEmpty = false;
-  export let expandedMeasureName: string;
-  export let onToggleSearchItems: () => void;
-  export let hideStartPivotButton = false;
+  interface Props {
+    exploreName: string;
+    dimensionName: string;
+    isFetching?: boolean;
+    comparing: TDDComparison | undefined;
+    areAllTableRowsSelected?: boolean;
+    isRowsEmpty?: boolean;
+    expandedMeasureName: string;
+    onToggleSearchItems: () => void;
+    hideStartPivotButton?: boolean;
+  }
+
+  let {
+    exploreName,
+    dimensionName,
+    isFetching = false,
+    comparing,
+    areAllTableRowsSelected = false,
+    isRowsEmpty = false,
+    expandedMeasureName,
+    onToggleSearchItems,
+    hideStartPivotButton = false,
+  }: Props = $props();
 
   const { adminServer, exports } = featureFlags;
   const stateManagers = getStateManagers();
@@ -48,30 +62,34 @@
       measures: { measureLabel, allMeasures },
       dimensions: { getDimensionDisplayName },
     },
-    actions: {
-      dimensionsFilter: { toggleDimensionFilterMode },
-    },
     dashboardStore,
     validSpecStore,
+    expressionFilterManager,
   } = stateManagers;
 
-  $: selectableMeasures = $allMeasures
-    .filter((m) => m.name !== undefined || m.displayName !== undefined)
-    .map((m) =>
-      // Note: undefined values are filtered out above, so the
-      // empty string fallback is unreachable.
-      ({
-        name: m.name || "",
-        label: m.displayName || "",
-      }),
-    );
+  const selectableMeasures = $derived(
+    $allMeasures
+      .filter((m) => m.name !== undefined || m.displayName !== undefined)
+      .map((m) =>
+        // Note: undefined values are filtered out above, so the
+        // empty string fallback is unreachable.
+        ({
+          name: m.name || "",
+          label: m.displayName || "",
+        }),
+      ),
+  );
 
-  $: selectedMeasureLabel =
+  const selectedMeasureLabel = $derived(
     $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ||
-    expandedMeasureName;
+      expandedMeasureName,
+  );
 
-  $: excludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+  const excludeMode = $derived(
+    expressionFilterManager.dimensionFilterManagers.find(
+      (dfm) => dfm.name === dimensionName,
+    )?.exclude ?? false,
+  );
 
   function closeSearchBar() {
     dimensionSearchText.set("");
@@ -85,14 +103,17 @@
   }
 
   function toggleFilterMode() {
-    toggleDimensionFilterMode(dimensionName);
+    expressionFilterManager.dimensionFilterAction(
+      dimensionName,
+      (dimensionManager) => dimensionManager.toggleExclude(),
+    );
   }
 
   function switchMeasure(measureName: string) {
     metricsExplorerStore.setExpandedMeasureName(exploreName, measureName);
   }
 
-  let showReplacePivotModal = false;
+  let showReplacePivotModal = $state(false);
   function startPivotForTDD() {
     const pivot = $dashboardStore?.pivot;
 
@@ -139,17 +160,21 @@
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
-  $: ({ minTimeGrain, timeStart, timeEnd, selectedTimeRange } =
-    $timeControlsStore);
+  const minTimeGrain = $derived($timeControlsStore.minTimeGrain);
+  const timeStart = $derived($timeControlsStore.timeStart);
+  const timeEnd = $derived($timeControlsStore.timeEnd);
+  const selectedTimeRange = $derived($timeControlsStore.selectedTimeRange);
 
-  $: activeTimeGrain = selectedTimeRange?.interval;
+  const activeTimeGrain = $derived(selectedTimeRange?.interval);
 
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
+  const baseTimeRange = $derived(
+    selectedTimeRange?.start &&
+      selectedTimeRange?.end && {
+        name: selectedTimeRange?.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+      },
+  );
 
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (baseTimeRange) {

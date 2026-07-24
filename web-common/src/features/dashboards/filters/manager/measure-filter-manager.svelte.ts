@@ -54,10 +54,10 @@ export class MeasureFilterManager {
 
   public apply(dimension: string, newFilter: MeasureFilterEntry) {
     this.dimension = dimension;
-    this.operation = $state(newFilter.operation);
-    this.type = $state(newFilter.type);
-    this.value1 = $state(newFilter.value1);
-    this.value2 = $state(newFilter.value2);
+    this.operation = newFilter.operation;
+    this.type = newFilter.type;
+    this.value1 = newFilter.value1;
+    this.value2 = newFilter.value2;
     this.commit();
   }
 

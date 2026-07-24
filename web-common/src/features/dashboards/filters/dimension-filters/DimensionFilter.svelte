@@ -303,8 +303,8 @@
     }
   }
 
-  function handleToggleExcludeMode(checked: boolean) {
-    curExcludeMode = checked;
+  function handleToggleExcludeMode() {
+    curExcludeMode = !curExcludeMode;
     excludeModeDirty = true;
   }
 
