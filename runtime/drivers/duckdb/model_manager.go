@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -137,7 +138,13 @@ func (c *connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 	}
 
 	_, err := olap.InformationSchema().Lookup(ctx, "", "", res.Table)
-	return err == nil, nil
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error {
