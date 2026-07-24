@@ -83,6 +83,7 @@ function flushParams() {
       newUrl.searchParams.set(key, value);
     }
   });
+
   newParams = [];
   void goto(newUrl, { noScroll: true, keepFocus: true });
 }

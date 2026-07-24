@@ -27,8 +27,10 @@ export function setTemporaryFilterName(
 export function setFilter(
   { dashboard }: DashboardMutables,
   expr: V1Expression,
+  inList: string[],
 ) {
   dashboard.whereFilter = expr;
+  dashboard.dimensionThresholdFilters = inList;
 }
 
 export const filterActions = {

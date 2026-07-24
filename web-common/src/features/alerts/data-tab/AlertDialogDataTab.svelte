@@ -2,7 +2,6 @@
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
@@ -11,9 +10,10 @@
   import Select from "../../../components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
-  export let filters: Filters;
+  export let filters: ExpressionFilterManager;
   export let timeControls: TimeControls;
 
   const runtimeClient = useRuntimeClient();

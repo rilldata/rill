@@ -25,6 +25,7 @@ import {
   type StructTypeField,
   TypeCode,
   type V1ExploreSpec,
+  type V1Expression,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
@@ -46,21 +47,20 @@ export function getAlertPreviewData(
   client: RuntimeClient,
   queryClient: QueryClient,
   formValues: AlertFormValues,
-  filters: Filters,
+  expr: V1Expression,
   timeControls: TimeControls,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
     [
       useExploreValidSpec(client, formValues.exploreName),
-      filters.getStore(),
       timeControls.getStore(),
     ],
-    ([validExploreSpec, filtersState, timeControlsState], set) =>
+    ([validExploreSpec, timeControlsState], set) =>
       createQueryServiceMetricsViewAggregation(
         client,
         getAlertPreviewQueryRequest(
           formValues,
-          filtersState,
+          expr,
           timeControlsState,
           validExploreSpec.data?.explore ?? {},
         ),
@@ -77,13 +77,13 @@ export function getAlertPreviewData(
 
 function getAlertPreviewQueryRequest(
   formValues: AlertFormValues,
-  filtersArgs: FiltersState,
+  expr: V1Expression,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
   const req = getAlertQueryArgsFromFormValues(
     formValues,
-    filtersArgs,
+    expr,
     timeControlArgs,
     exploreSpec,
   );

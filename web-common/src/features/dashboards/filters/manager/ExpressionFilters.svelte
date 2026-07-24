@@ -1,59 +1,54 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/manager/DimensionFilter.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers.ts";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/manager/MeasureFilter.svelte";
   import { fly } from "svelte/transition";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+  import { getFilteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   let {
+    expressionFilterManager,
+
+    timeEnd,
+    timeStart,
+    timeControlsReady,
+    timeDimension,
+
     isUrlTooLongAfterInListFilter,
   }: {
+    expressionFilterManager: ExpressionFilterManager;
+
+    timeStart: string | undefined;
+    timeEnd: string | undefined;
+    timeControlsReady: boolean | undefined;
+    timeDimension: string | undefined;
+
     isUrlTooLongAfterInListFilter?: (name: string, values: string[]) => boolean;
   } = $props();
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
 
-  const StateManagers = getStateManagers();
-  const {
-    actions: {
-      filters: { setFilter },
-    },
-    selectors: {
-      dimensions: { allDimensions },
-      dimensionFilters: { dimensionHasFilter },
-      measures: { allMeasures, filteredSimpleMeasures },
-      measureFilters: { measureHasFilter },
-    },
-    validSpecStore,
-    dashboardStore,
-    expressionFilterManager,
-  } = StateManagers;
+  const runtimeClient = useRuntimeClient();
 
-  let validExplore = $derived($validSpecStore.data?.explore ?? {});
-  let metricsViewName = $derived(validExplore.metricsView ?? "");
-
-  let measureIdMap = $derived(
-    getMapFromArray($allMeasures, (measure) => measure.name as string),
+  let validSpecQuery = $derived(
+    useExploreValidSpec(runtimeClient, expressionFilterManager.exploreName),
   );
+  let exploreSpec = $derived($validSpecQuery.data?.explore ?? {});
 
-  let dimensionIdMap = $derived(
-    getMapFromArray(
-      $allDimensions,
-      (dimension) => (dimension.name || dimension.column) as string,
-    ),
-  );
+  let allMeasures = $derived([
+    ...expressionFilterManager.measureIdMap.values(),
+  ]);
+  let allDimensions = $derived([
+    ...expressionFilterManager.dimensionIdMap.values(),
+  ]);
 
-  $effect(() =>
-    expressionFilterManager.syncSpec(
-      metricsViewName,
-      measureIdMap,
-      dimensionIdMap,
-    ),
+  let filteredSimpleMeasures = $derived(
+    getFilteredSimpleMeasures(allMeasures, exploreSpec.measures),
   );
 
   let hasFilters = $derived(
@@ -61,18 +56,19 @@
       expressionFilterManager.measureFilterManagers.length > 0,
   );
 
-  $effect(() => setFilter(expressionFilterManager.expr));
-
-  let { selectedTimeDimension } = $derived($dashboardStore);
-  const timeControlsStore = useTimeControlStore(StateManagers);
-  let {
-    timeStart,
-    timeEnd,
-    ready: timeControlsReady,
-  } = $derived($timeControlsStore);
+  let measureHasFilter = $derived((name: string) =>
+    expressionFilterManager.measureFilterManagers.some(
+      (mfm) => mfm.name === name,
+    ),
+  );
+  let dimensionHasFilter = $derived((name: string) =>
+    expressionFilterManager.dimensionFilterManagers.some(
+      (dfm) => dfm.name === name,
+    ),
+  );
 
   function handleAddNew(name: string) {
-    if (measureIdMap.has(name)) {
+    if (expressionFilterManager.measureIdMap.has(name)) {
       expressionFilterManager.addTemporaryMeasureFilter(name);
     } else {
       expressionFilterManager.addTemporaryDimensionFilter(name);
@@ -98,7 +94,7 @@
           {timeStart}
           {timeEnd}
           {timeControlsReady}
-          timeDimension={selectedTimeDimension}
+          {timeDimension}
           openOnMount={expressionFilterManager.temporaryFilter ===
             dimensionManager}
           isUrlTooLongAfterInListFilter={isUrlTooLongAfterInListFilter
@@ -111,7 +107,7 @@
       {#each expressionFilterManager.measureFilterManagers as measureManager (measureManager.name)}
         <MeasureFilter
           {measureManager}
-          allDimensions={$allDimensions}
+          {allDimensions}
           openOnMount={expressionFilterManager.temporaryFilter ===
             measureManager}
         />
@@ -119,10 +115,10 @@
     {/if}
 
     <FilterButton
-      allDimensions={$allDimensions}
-      filteredSimpleMeasures={$filteredSimpleMeasures()}
-      dimensionHasFilter={$dimensionHasFilter}
-      measureHasFilter={$measureHasFilter}
+      {allDimensions}
+      {filteredSimpleMeasures}
+      {dimensionHasFilter}
+      {measureHasFilter}
       setTemporaryFilterName={handleAddNew}
     />
     <!-- if filters are present, place a chip at the end of the flex container

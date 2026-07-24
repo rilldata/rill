@@ -4,6 +4,7 @@ import { convertFilterParamToExpression } from "@rilldata/web-common/features/da
 import {
   createAndExpression,
   forEachIdentifier,
+  isExpressionUnsupported,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
   type MetricsViewSpecDimension,
@@ -25,10 +26,12 @@ export class ExpressionFilterManager {
 
   public expr: V1Expression;
   public exprParam: string = "";
+  public isComplexFilter: boolean = $state(false);
 
-  private metricsViewName: string = "";
-  private measureIdMap: Map<string, MetricsViewSpecMeasure> = new Map();
-  private dimensionIdMap: Map<string, MetricsViewSpecDimension> = new Map();
+  public exploreName: string = "";
+  public metricsViewName: string = "";
+  public measureIdMap: Map<string, MetricsViewSpecMeasure> = new Map();
+  public dimensionIdMap: Map<string, MetricsViewSpecDimension> = new Map();
 
   public constructor() {
     this.expr = $derived.by(() => {
@@ -44,10 +47,12 @@ export class ExpressionFilterManager {
 
   public syncSpec(
     metricsViewName: string,
+    exploreName: string,
     measureIdMap: Map<string, MetricsViewSpecMeasure>,
     dimensionIdMap: Map<string, MetricsViewSpecDimension>,
   ) {
     this.metricsViewName = metricsViewName;
+    this.exploreName = exploreName;
     this.measureIdMap = measureIdMap;
     this.dimensionIdMap = dimensionIdMap;
   }
@@ -58,8 +63,8 @@ export class ExpressionFilterManager {
 
     const { expr, dimensionsWithInlistFilter } =
       convertFilterParamToExpression(exprParam);
-    // TODO: check complex filter
-    if (!expr) {
+    this.isComplexFilter = expr ? isExpressionUnsupported(expr) : false;
+    if (!expr || this.isComplexFilter) {
       this.dimensionFilterManagers = [];
       this.measureFilterManagers = [];
       return;

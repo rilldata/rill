@@ -17,6 +17,7 @@ import type { TimeControlState } from "@rilldata/web-common/features/dashboards/
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
   V1ExploreSpec,
+  V1Expression,
   V1MetricsViewAggregationRequest,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -46,7 +47,7 @@ export type AlertFormValues = {
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
-  filtersArgs: FiltersState,
+  expr: V1Expression,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
@@ -93,13 +94,7 @@ export function getAlertQueryArgsFromFormValues(
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        filtersArgs.whereFilter,
-        filtersArgs.dimensionThresholdFilters,
-      ),
-      undefined,
-    ),
+    where: sanitiseExpression(expr, undefined),
     having: sanitiseExpression(undefined, {
       cond: {
         op: formValues.criteriaOperation,

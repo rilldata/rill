@@ -6,34 +6,45 @@
   import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import PreviewEmpty from "../PreviewEmpty.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { DimensionTableRow } from "../../dashboards/dimension-table/dimension-table-types";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
 
-  export let formValues: AlertFormValues;
-  export let filters: Filters;
-  export let timeControls: TimeControls;
-
-  const runtimeClient = useRuntimeClient();
-
-  $: alertPreviewQuery = getAlertPreviewData(
-    runtimeClient,
-    queryClient,
+  let {
     formValues,
     filters,
     timeControls,
+  }: {
+    formValues: AlertFormValues;
+    filters: ExpressionFilterManager;
+    timeControls: TimeControls;
+  } = $props();
+
+  const runtimeClient = useRuntimeClient();
+
+  let alertPreviewQuery = $derived(
+    getAlertPreviewData(
+      runtimeClient,
+      queryClient,
+      formValues,
+      filters.expr,
+      timeControls,
+    ),
   );
 
-  $: isCriteriaEmpty =
-    formValues.criteria.map(mapMeasureFilterToExpr).length === 0;
+  let isCriteriaEmpty = $derived(
+    formValues.criteria.map(mapMeasureFilterToExpr).length === 0,
+  );
 
-  $: queryResult = $alertPreviewQuery;
+  let queryResult = $derived($alertPreviewQuery);
 
-  $: rows = (queryResult.data?.rows as DimensionTableRow[] | undefined) ?? [];
-  $: columns = queryResult.data?.schema ?? [];
+  let rows = $derived(
+    (queryResult.data?.rows as DimensionTableRow[] | undefined) ?? [],
+  );
+  let columns = $derived(queryResult.data?.schema ?? []);
 </script>
 
 {#if $alertPreviewQuery.isFetching}

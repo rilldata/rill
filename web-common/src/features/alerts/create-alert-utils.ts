@@ -10,6 +10,9 @@ import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/Ti
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
@@ -64,13 +67,15 @@ export function getNewAlertInitialFiltersFormValues(
     metricsViewName,
     exploreName,
   );
-  const filters = new Filters(metricsViewMetadata, {
-    whereFilter: exploreState.whereFilter ?? createAndExpression([]),
-    dimensionsWithInlistFilter: exploreState.dimensionsWithInlistFilter ?? [],
-    dimensionThresholdFilters: exploreState.dimensionThresholdFilters ?? [],
-    dimensionFilterExcludeMode:
-      exploreState.dimensionFilterExcludeMode ?? new Map<string, boolean>(),
-  });
+
+  const filters = new ExpressionFilterManager();
+  const fullExpr = mergeDimensionAndMeasureFilters(
+    exploreState.whereFilter,
+    exploreState.dimensionThresholdFilters ?? [],
+  );
+  const exprParam = convertExpressionToFilterParam(fullExpr);
+  filters.setExprParam(exprParam);
+
   const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange: exploreState.selectedTimeRange,
     selectedComparisonTimeRange: exploreState.selectedComparisonTimeRange,

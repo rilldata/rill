@@ -40,23 +40,36 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilters.svelte";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
   const { rillTime } = featureFlags;
 
-  export let timeRanges: V1ExploreTimeRange[];
-  export let metricsViewName: string;
-  export let hasTimeSeries: boolean;
+  let {
+    timeRanges,
+    metricsViewName,
+    hasTimeSeries,
+  }: {
+    timeRanges: V1ExploreTimeRange[];
+    metricsViewName: string;
+    hasTimeSeries: boolean;
+  } = $props();
 
   const StateManagers = getStateManagers();
   const {
     exploreName,
     validSpecStore,
+    actions: {
+      filters: { setFilter },
+    },
     selectors: {
-      dimensions: { timeDimensions },
+      measures: { allMeasures },
+      dimensions: { allDimensions, timeDimensions },
       pivot: { showPivot },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     dashboardStore,
+    expressionFilterManager,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -67,21 +80,24 @@
 
   const client = useRuntimeClient();
 
-  $: timeRangeQuery = useMetricsViewTimeRange(client, metricsViewName);
-
-  $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
-
-  $: watermark = timeRangeSummary?.watermark;
-
-  $: maxQueryTimeRangeMillis = Number(
-    $timeRangeQuery.data?.maxQueryTimeRangeMillis ?? 0,
+  let timeRangeQuery = $derived(
+    useMetricsViewTimeRange(client, metricsViewName),
   );
-  $: maxQueryTimeRange =
+
+  let timeRangeSummary = $derived($timeRangeQuery.data?.timeRangeSummary);
+
+  let watermark = $derived(timeRangeSummary?.watermark);
+
+  let maxQueryTimeRangeMillis = $derived(
+    Number($timeRangeQuery.data?.maxQueryTimeRangeMillis ?? 0),
+  );
+  let maxQueryTimeRange = $derived(
     maxQueryTimeRangeMillis > 0
       ? Duration.fromMillis(maxQueryTimeRangeMillis)
-      : undefined;
+      : undefined,
+  );
 
-  $: ({
+  let {
     selectedTimeRange,
     allTimeRange,
     showTimeComparison,
@@ -89,67 +105,105 @@
     minTimeGrain,
     timeStart,
     timeEnd,
-  } = $timeControlsStore);
+    ready: timeControlsReady,
+  } = $derived($timeControlsStore);
 
-  $: exploreSpec = $validSpecStore.data?.explore ?? {};
-  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+  let exploreSpec = $derived($validSpecStore.data?.explore ?? {});
+  let metricsViewSpec = $derived($validSpecStore.data?.metricsView ?? {});
 
-  $: exploreState = useExploreState($exploreName);
-  $: activeTimeZone = $exploreState?.selectedTimezone;
+  let exploreState = $derived(useExploreState($exploreName));
+  let activeTimeZone = $derived($exploreState?.selectedTimezone);
 
-  $: selectedRangeAlias =
+  let measureIdMap = $derived(
+    getMapFromArray($allMeasures, (measure) => measure.name as string),
+  );
+
+  let dimensionIdMap = $derived(
+    getMapFromArray(
+      $allDimensions,
+      (dimension) => (dimension.name || dimension.column) as string,
+    ),
+  );
+
+  $effect(() =>
+    expressionFilterManager.syncSpec(
+      metricsViewName,
+      $exploreName,
+      measureIdMap,
+      dimensionIdMap,
+    ),
+  );
+  $effect(() =>
+    setFilter(
+      expressionFilterManager.expr,
+      expressionFilterManager.dimensionFilterManagers
+        .filter((dfm) => dfm.expr && dfm.mode === DimensionFilterMode.InList)
+        .map((dfm) => dfm.name),
+    ),
+  );
+
+  let selectedRangeAlias = $derived(
     selectedTimeRange?.name === TimeRangePreset.CUSTOM
       ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
-      : selectedTimeRange?.name;
+      : selectedTimeRange?.name,
+  );
 
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
+  let activeTimeGrain = $derived(selectedTimeRange?.interval);
+  let defaultTimeRange = $derived(exploreSpec.defaultPreset?.timeRange);
 
-  $: ({ selectedTimeDimension } = $dashboardStore);
+  let { selectedTimeDimension } = $derived($dashboardStore);
 
-  $: availableTimeZones = getPinnedTimeZones(exploreSpec);
+  let availableTimeZones = $derived(getPinnedTimeZones(exploreSpec));
 
-  $: allTimeRangeInterval = allTimeRange
-    ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-    : Interval.invalid("Invalid interval");
-
-  $: maybeInterval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : allTimeRange
+  let allTimeRangeInterval = $derived(
+    allTimeRange
       ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : undefined;
+      : Interval.invalid("Invalid interval"),
+  );
 
-  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
+  let maybeInterval = $derived(
+    selectedTimeRange
+      ? Interval.fromDateTimes(
+          DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+          DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
+        )
+      : allTimeRange
+        ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
+        : undefined,
+  );
 
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
+  let interval = $derived(maybeInterval?.isValid ? maybeInterval : undefined);
 
-  $: primaryTimeDimension = metricsViewSpec.timeDimension;
+  let baseTimeRange = $derived(
+    selectedTimeRange?.start &&
+      selectedTimeRange?.end && {
+        name: selectedTimeRange?.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+      },
+  );
 
-  $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
-    return {
-      value: timeDim.name!,
-      label: timeDim.displayName || timeDim.name!,
-      description: timeDim.description,
-    };
-  });
+  let primaryTimeDimension = $derived(metricsViewSpec.timeDimension);
 
-  $: maybeMinDate = allTimeRange?.start
-    ? DateTime.fromJSDate(allTimeRange.start)
-    : undefined;
-  $: maybeMaxDate = allTimeRange?.end
-    ? DateTime.fromJSDate(allTimeRange.end)
-    : undefined;
+  let timeDimensionOptions = $derived(
+    $timeDimensions.map((timeDim) => {
+      return {
+        value: timeDim.name!,
+        label: timeDim.displayName || timeDim.name!,
+        description: timeDim.description,
+      };
+    }),
+  );
 
-  $: minDate = maybeMinDate?.isValid ? maybeMinDate : undefined;
-  $: maxDate = maybeMaxDate?.isValid ? maybeMaxDate : undefined;
+  let maybeMinDate = $derived(
+    allTimeRange?.start ? DateTime.fromJSDate(allTimeRange.start) : undefined,
+  );
+  let maybeMaxDate = $derived(
+    allTimeRange?.end ? DateTime.fromJSDate(allTimeRange.end) : undefined,
+  );
+
+  let minDate = $derived(maybeMinDate?.isValid ? maybeMinDate : undefined);
+  let maxDate = $derived(maybeMaxDate?.isValid ? maybeMaxDate : undefined);
 
   async function onTimeDimensionSelect(column: string) {
     // Capture time range name before any state changes
@@ -321,9 +375,10 @@
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
   }
 
-  $: usingRillTime =
+  let usingRillTime = $derived(
     !selectedRangeAlias?.startsWith("P") &&
-    !selectedRangeAlias?.startsWith("rill-");
+      !selectedRangeAlias?.startsWith("rill-"),
+  );
 
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (usingRillTime && selectedRangeAlias) {
@@ -439,5 +494,12 @@
     </div>
   {/if}
 
-  <ExpressionFilters {isUrlTooLongAfterInListFilter} />
+  <ExpressionFilters
+    {expressionFilterManager}
+    {timeStart}
+    {timeEnd}
+    timeDimension={$dashboardStore.selectedTimeDimension}
+    {timeControlsReady}
+    {isUrlTooLongAfterInListFilter}
+  />
 </div>

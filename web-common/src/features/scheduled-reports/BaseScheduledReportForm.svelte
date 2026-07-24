@@ -5,7 +5,6 @@
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
-  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
@@ -24,6 +23,7 @@
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
 
   export let formId: string;
   export let data: Readable<ReportValues>;
@@ -31,7 +31,7 @@
   export let submit: () => void;
   export let enhance;
   export let exploreName: string;
-  export let filters: Filters;
+  export let filters: ExpressionFilterManager;
   export let timeControls: TimeControls;
 
   const RUN_AS_OPTIONS = [

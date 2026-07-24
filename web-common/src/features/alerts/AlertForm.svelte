@@ -185,7 +185,7 @@
           queryArgsJson: JSON.stringify(
             getAlertQueryArgsFromFormValues(
               values,
-              filters.toState(),
+              filters.expr,
               timeControls.toState(),
               exploreSpec,
             ),
@@ -324,18 +324,18 @@
   <div class="px-6 py-3 flex items-center gap-x-2">
     <div class="grow"></div>
     {#if currentTabIndex === 0}
-      <Button onClick={handleCancel} type="secondary"
-        >{m.alert_form_cancel()}</Button
-      >
+      <Button onClick={handleCancel} type="secondary">
+        {m.alert_form_cancel()}
+      </Button>
     {:else}
-      <Button onClick={handleBack} type="secondary"
-        >{m.alert_form_back()}</Button
-      >
+      <Button onClick={handleBack} type="secondary">
+        {m.alert_form_back()}
+      </Button>
     {/if}
     {#if currentTabIndex !== 2}
-      <Button type="primary" onClick={handleNextTab}
-        >{m.alert_form_next()}</Button
-      >
+      <Button type="primary" onClick={handleNextTab}>
+        {m.alert_form_next()}
+      </Button>
     {:else}
       <Button type="primary" disabled={$submitting} form={formId} submitForm>
         {isCreateForm ? m.alert_form_create() : m.alert_form_update()}
