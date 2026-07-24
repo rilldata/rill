@@ -750,10 +750,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			continue
 		}
 
-		if tmp.Table != "" && tmp.Model != "" {
+		if annotation.Table != "" && annotation.Model != "" {
 			return fmt.Errorf(`cannot set both the "model" field and the "table" field for annotation`)
 		}
-		if tmp.Table == "" && tmp.Model == "" {
+		if annotation.Table == "" && annotation.Model == "" {
 			return fmt.Errorf(`must set a value for either the "model" field or the "table" field for annotation`)
 		}
 		if annotation.Name == "" {

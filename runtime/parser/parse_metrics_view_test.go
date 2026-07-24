@@ -928,6 +928,108 @@ rollups:
 	}
 }
 
+func TestMetricsViewAnnotationsValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		wantErr string
+	}{
+		{
+			name: "annotation with neither model nor table",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+annotations:
+- name: releases
+`,
+			wantErr: `must set a value for either the "model" field or the "table" field for annotation`,
+		},
+		{
+			name: "annotation with both model and table",
+			yaml: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+annotations:
+- name: releases
+  model: a1
+  table: a1
+`,
+			wantErr: `cannot set both the "model" field and the "table" field for annotation`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			files := map[string]string{
+				`rill.yaml`:              ``,
+				`models/m1.sql`:          `SELECT 1 AS id, 'a' AS publisher`,
+				`metrics_views/mv1.yaml`: tt.yaml,
+			}
+			ctx := context.Background()
+			repo := makeRepo(t, files)
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.NotEmpty(t, p.Errors)
+			require.Contains(t, p.Errors[0].Message, tt.wantErr)
+		})
+	}
+}
+
+func TestMetricsViewAnnotationsOnDerivedMetricsView(t *testing.T) {
+	// Annotations declare their own model/table, so they must be accepted on a
+	// parent-based derived metrics view even though it has no model/table itself.
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id, 'a' AS publisher`,
+		`models/a1.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: publisher
+  column: publisher
+measures:
+- name: count
+  expression: "COUNT(*)"
+`,
+		`metrics_views/mv2.yaml`: `
+type: metrics_view
+version: 1
+parent: mv1
+annotations:
+- name: releases
+  model: a1
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Empty(t, p.Errors)
+
+	mv2 := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"}]
+	require.NotNil(t, mv2)
+	require.Len(t, mv2.MetricsViewSpec.Annotations, 1)
+	require.Equal(t, "releases", mv2.MetricsViewSpec.Annotations[0].Name)
+	require.Equal(t, "a1", mv2.MetricsViewSpec.Annotations[0].Model)
+}
+
 func TestMetricsViewDataTimeRangeBounded(t *testing.T) {
 	// Bounded ranges (relative and absolute) must pass validation; only an unbounded start is rejected.
 	for _, expr := range []string{"-90d to now", "-1Y to now", "2020-01-01 to now", "-3M to -1M"} {
