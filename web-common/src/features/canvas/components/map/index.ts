@@ -84,11 +84,13 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
           optional: true,
           label: "Size measure",
           showInUI: !this._isPolygonMode,
+          meta: { isRemovable: true },
         },
         tooltip_dimension: {
           type: "dimension",
           optional: true,
           label: "Tooltip dimension",
+          meta: { isRemovable: true },
         },
         ...getCommonOptions(),
       },

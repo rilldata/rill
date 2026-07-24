@@ -115,8 +115,12 @@
             type={config.type}
             selectedItem={localParamValues[key]}
             geoOnly={config.meta?.geoOnly ?? false}
+            isRemovable={config.meta?.isRemovable ?? false}
             onSelect={(field) => {
               component.updateProperty(key, field);
+            }}
+            onRemove={() => {
+              component.updateProperty(key, undefined);
             }}
           />
 
