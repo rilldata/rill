@@ -1067,6 +1067,91 @@ custom_chart:
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
 }
 
+func TestValidateParameterizedRenderer(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: all fields templated; membership checks are deferred to param binding.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+  measure: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: templated properties do not exempt the component from structural checks;
+	// the required 'measure' property is missing.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'measure' property")
+
+	// Valid: static metrics view with a templated field; the static x.field is still validated.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: measure
+    type: measure
+    required: true
+    metrics_view: metrics_view
+  - name: metrics_view
+    type: metrics_view
+    default: mv1
+line_chart:
+  metrics_view: mv1
+  x:
+    field: foo
+  y:
+    field: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: static x.field is a measure, caught even though other fields are templated.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: measure
+    type: measure
+    required: true
+    metrics_view: metrics_view
+  - name: metrics_view
+    type: metrics_view
+    default: mv1
+line_chart:
+  metrics_view: mv1
+  x:
+    field: y
+  y:
+    field: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
+}
+
 func TestValidateUnknownRendererWithParams(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: metricsViewFiles(),

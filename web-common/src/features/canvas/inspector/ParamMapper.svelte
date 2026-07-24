@@ -114,6 +114,7 @@
             id={key}
             type={config.type}
             includeTime={config.meta?.includeTime ?? false}
+            timeFieldsOnly={config.meta?.timeFieldsOnly ?? false}
             searchableItems={config.meta?.searchableItems}
             selectedItem={localParamValues[key]}
             onSelect={(field) => {

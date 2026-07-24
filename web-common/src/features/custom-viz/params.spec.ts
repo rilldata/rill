@@ -66,7 +66,7 @@ describe("paramToInputParam", () => {
     const input = paramToInputParam(params[3]);
     expect(input.type).toBe("dimension");
     expect(input.meta?.includeTime).toBe(true);
-    expect(input.meta?.searchableItems).toEqual([]);
+    expect(input.meta?.timeFieldsOnly).toBe(true);
   });
 
   it("maps scalar params with options to a select", () => {

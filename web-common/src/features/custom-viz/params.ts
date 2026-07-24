@@ -120,11 +120,12 @@ export function paramToInputParam(
     case "dimension":
       return { type: "dimension", ...common };
     case "time_dimension":
-      // A dimension picker restricted to the metrics view's time dimension.
+      // A dimension picker restricted to the metrics view's time fields:
+      // the primary time dimension plus any time-typed dimensions.
       return {
         type: "dimension",
         ...common,
-        meta: { includeTime: true, searchableItems: [] },
+        meta: { includeTime: true, timeFieldsOnly: true },
       };
     case "boolean":
       return {
