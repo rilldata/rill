@@ -4,6 +4,7 @@
   import { onMount, onDestroy } from "svelte";
   import mapboxgl from "mapbox-gl";
   import "mapbox-gl/dist/mapbox-gl.css";
+  import type * as GeoJSON from "geojson";
   import {
     getQueryServiceMetricsViewAggregationQueryOptions,
     type V1MetricsViewAggregationDimension,
@@ -43,6 +44,7 @@
 
   let mapReady = false;
   let currentMapStyle: string;
+  let layerHandlersRegistered = false;
 
   const runtimeClient = useRuntimeClient();
   $: ({ instanceId } = runtimeClient);
@@ -223,31 +225,41 @@
         paint: {},
       });
 
-      for (const layerId of ["points", "polygons-fill"]) {
-        map.on("mousemove", layerId, (e) => {
-          if (map) map.getCanvas().style.cursor = "pointer";
-          showTooltip(e, tooltipCtx);
-        });
-        map.on("mouseleave", layerId, () => {
-          if (map) map.getCanvas().style.cursor = "";
-          removeTooltip();
-        });
+      // Layer event handlers persist across style reloads (they bind by layer
+      // id), so register them only once to avoid stacking duplicates.
+      if (!layerHandlersRegistered) {
+        layerHandlersRegistered = true;
+        for (const layerId of ["points", "polygons-fill"]) {
+          map.on("mousemove", layerId, (e) => {
+            if (map) map.getCanvas().style.cursor = "pointer";
+            showTooltip(e, tooltipCtx);
+          });
+          map.on("mouseleave", layerId, () => {
+            if (map) map.getCanvas().style.cursor = "";
+            removeTooltip();
+          });
+        }
       }
     }
 
     const colorPaint = getColorPaint(geoJson);
     const radiusPaint = getRadiusPaint(geoJson);
 
+    // Contrast ring around points: white on the light base map, dark on the
+    // dark base map, so the stroke stays visible in either theme mode.
+    const strokeColor = isThemeModeDark ? "#1a1a1a" : "#fff";
+    const outlineColor = resolvedTheme.primary.hex();
+
     map.setPaintProperty("points", "circle-color", colorPaint);
     map.setPaintProperty("points", "circle-radius", radiusPaint);
     map.setPaintProperty("points", "circle-opacity", 0.8);
     map.setPaintProperty("points", "circle-stroke-width", 1);
-    map.setPaintProperty("points", "circle-stroke-color", "#fff");
+    map.setPaintProperty("points", "circle-stroke-color", strokeColor);
 
     map.setPaintProperty("polygons-fill", "fill-color", colorPaint);
     map.setPaintProperty("polygons-fill", "fill-opacity", 0.4);
 
-    map.setPaintProperty("polygons-outline", "line-color", "#2563eb");
+    map.setPaintProperty("polygons-outline", "line-color", outlineColor);
     map.setPaintProperty("polygons-outline", "line-width", 2);
 
     if (geoJson.features.length > 0) {
@@ -283,7 +295,9 @@
     });
   });
 
-  // setStyle() strips all sources/layers, so re-add data after the new style loads
+  // setStyle() strips all sources/layers, so re-add data only after the new
+  // style has finished loading. Re-adding synchronously would race the async
+  // style load and get wiped, causing the points to disappear.
   $: {
     const targetStyle = isThemeModeDark
       ? MAPBOX_STYLE_DARK
@@ -291,9 +305,11 @@
     if (map && mapReady && targetStyle !== currentMapStyle) {
       currentMapStyle = targetStyle;
       map.setStyle(targetStyle);
-      if (rows.length > 0) {
-        updateMap(transformToGeoJSON(rows, geoJsonOpts));
-      }
+      map.once("style.load", () => {
+        if (rows.length > 0) {
+          updateMap(transformToGeoJSON(rows, geoJsonOpts));
+        }
+      });
     }
   }
 
