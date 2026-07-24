@@ -1122,6 +1122,7 @@
   "export_pdf_include_filters": "Incluir filtros",
   "export_pdf_rendering_charts": "Renderizando gráficos…",
   "export_pdf_success": "Dashboard exportado como PDF",
+  "export_pdf_tabs_all": "Exportar todas las pestañas",
   "field_list_add_fields": "Agregar campos de {label}",
   "field_list_aria": "Lista de campos de {label}",
   "field_list_dimensions": "DIMENSIONES",

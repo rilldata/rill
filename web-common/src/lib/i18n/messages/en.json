@@ -1113,6 +1113,7 @@
   "export_pdf_include_filters": "Include filters",
   "export_pdf_rendering_charts": "Rendering charts…",
   "export_pdf_success": "Dashboard exported as PDF",
+  "export_pdf_tabs_all": "Export all tabs",
   "field_list_add_fields": "Add {label} fields",
   "field_list_aria": "{label} field list",
   "field_list_dimensions": "DIMENSIONS",

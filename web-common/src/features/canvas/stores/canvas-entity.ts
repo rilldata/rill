@@ -126,6 +126,10 @@ export class CanvasEntity {
   // data query (see BaseCanvasComponent.dataEnabled) so all components fetch and
   // render regardless of the lazy-load latch, without mutating that latch.
   exportMode = writable<boolean>(false);
+  // Whether the PDF export renders every tab of each tab group (stacked in strip
+  // order) or only each group's active tab. Set by exportCanvasPdf alongside
+  // exportMode; read by CanvasPdfExportView.
+  exportAllTabs = writable<boolean>(true);
 
   // This is to skip processing the spec the first time the store updates with a value
   // We've already called it as part of the constructor
