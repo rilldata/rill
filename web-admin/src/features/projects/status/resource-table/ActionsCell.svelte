@@ -5,6 +5,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { refreshableTypes } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import {
     RefreshCcwIcon,
@@ -23,7 +24,7 @@
   export let onClickRefreshDialog: (
     resourceName: string,
     resourceKind: string,
-    refreshType: "full" | "incremental",
+    refreshType: "refresh" | "full" | "incremental",
   ) => void;
   export let onClickRefreshErroredPartitions: (resourceName: string) => void;
   export let onClickViewSpec: (
@@ -39,8 +40,7 @@
   export let onDropdownOpenChange: (isOpen: boolean) => void;
 
   $: isModel = resourceKind === ResourceKind.Model;
-  $: isSource = resourceKind === ResourceKind.Source;
-  $: canRefresh = isModel || isSource;
+  $: canRefresh = refreshableTypes.includes(resourceKind as ResourceKind);
 
   $: actions = isModel ? getAvailableModelActions(resource) : [];
   $: isPartitioned = actions.includes("viewPartitions");
@@ -93,8 +93,7 @@
       </DropdownMenu.Item>
     {/if}
 
-    <!-- Refresh actions (models + sources) -->
-    {#if canRefresh}
+    {#if isModel}
       <DropdownMenu.Separator />
 
       <!-- Refresh Errored Partitions (models with errors) -->
@@ -153,6 +152,24 @@
           >
         </Tooltip>
       {/if}
+    {:else if canRefresh}
+      <DropdownMenu.Separator />
+
+      <!-- Other resources only support a standard refresh. -->
+      <Tooltip distance={8} suppress={!refreshDisabled}>
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          disabled={refreshDisabled}
+          onclick={() =>
+            onClickRefreshDialog(resourceName, resourceKind, "refresh")}
+        >
+          <div class="flex items-center">
+            <RefreshCcwIcon size="12px" />
+            <span class="ml-2">{m.status_action_refresh()}</span>
+          </div>
+        </DropdownMenu.Item>
+        <TooltipContent slot="tooltip-content">{refreshTooltip}</TooltipContent>
+      </Tooltip>
     {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
