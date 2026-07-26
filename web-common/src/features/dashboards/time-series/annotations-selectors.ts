@@ -10,6 +10,8 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { DateTime, Interval } from "luxon";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import { keepPreviousData } from "@tanstack/svelte-query";
+import { ToProtoTimeGrainMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps.ts";
+import { timeStringToTimestamp } from "@rilldata/web-common/lib/proto-utils.ts";
 
 /**
  * Creates a query that fetches annotations for a measure and transforms
@@ -34,11 +36,13 @@ export function createAnnotationsQuery(
     {
       metricsViewName,
       timeRange: {
-        start: timeStart as any,
-        end: timeEnd as any,
+        start: timeStringToTimestamp(timeStart),
+        end: timeStringToTimestamp(timeEnd),
         timeDimension,
       },
-      timeGrain: timeGranularity as any,
+      timeGrain: timeGranularity
+        ? ToProtoTimeGrainMap[timeGranularity]
+        : undefined,
       measures: [measureName],
     },
     {
