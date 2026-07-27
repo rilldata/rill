@@ -170,12 +170,16 @@ func (e *Executor) ValidateQuery(qry *metricsview.Query) error {
 
 // Timestamps queries min, max and watermark for the metrics view.
 // For the primary time dimension it also resolves rollup table timestamps if rollups are present.
+// It intentionally does not apply security policy row filters:
+// unfiltered timestamps can be computed from database metadata and cached across users,
+// and they keep time expressions evaluating consistently for all users.
+// The trade-off is that users whose accessible rows don't span the full range may see "no data" for some time ranges.
 func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.TimestampsResult, error) {
 	if timeDim == "" {
 		timeDim = e.metricsView.TimeDimension
 	}
 
-	if res, ok := e.timestamps[timeDim]; ok && !res.Min.IsZero() {
+	if res, ok := e.timestamps[timeDim]; ok {
 		return res, nil
 	}
 

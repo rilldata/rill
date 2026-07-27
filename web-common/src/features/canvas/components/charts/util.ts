@@ -28,36 +28,38 @@ export function getLinkStateForTimeDimensionDetail(
   dimensionName?: string;
 } {
   if (!allowedTimeDimensionDetailTypes.includes(type))
-    return {
-      canLink: false,
-    };
+    return { canLink: false };
 
   const hasXAxis = "x" in spec;
   const hasYAxis = "y" in spec;
-  if (!hasXAxis || !hasYAxis)
-    return {
-      canLink: false,
-    };
+  if (!hasXAxis || !hasYAxis) return { canLink: false };
 
   const xAxis = spec.x;
   const yAxis = spec.y;
 
-  if (isFieldConfig(xAxis) && isFieldConfig(yAxis)) {
-    const colorDimension = spec.color;
-    if (isFieldConfig(colorDimension)) {
-      return {
-        canLink: xAxis.type === "temporal",
-        measureName: yAxis.field,
-        dimensionName: colorDimension.field,
-      };
-    }
+  if (!isFieldConfig(xAxis) || !isFieldConfig(yAxis)) return { canLink: false };
 
+  if (yAxis.fields && yAxis.fields.length > 1) return { canLink: false };
+
+  const colorDimension = spec.color;
+  const hasDimensionBreakout =
+    isFieldConfig(colorDimension) &&
+    colorDimension.type !== "quantitative" &&
+    colorDimension.type !== "value";
+
+  if (hasDimensionBreakout && xAxis.type === "nominal")
+    return { canLink: false };
+
+  if (hasDimensionBreakout) {
     return {
       canLink: xAxis.type === "temporal",
       measureName: yAxis.field,
+      dimensionName: colorDimension.field,
     };
   }
+
   return {
-    canLink: false,
+    canLink: xAxis.type === "temporal",
+    measureName: yAxis.field,
   };
 }

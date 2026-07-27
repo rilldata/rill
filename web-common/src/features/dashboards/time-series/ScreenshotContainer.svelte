@@ -8,7 +8,7 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { toPng } from "html-to-image";
-  import { DateTime, Interval } from "luxon";
+  import { Interval } from "luxon";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
@@ -16,11 +16,13 @@
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let open = false;
   export let measure: MetricsViewSpecMeasure;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
+  export let tddChartType: TDDChart = TDDChart.DEFAULT;
   export let timeDimension: string | undefined = undefined;
   export let timeStart: string | undefined = undefined;
   export let timeEnd: string | undefined = undefined;
@@ -30,7 +32,13 @@
   export let comparisonInterval: Interval<true> | undefined = undefined;
   export let timeGranularity: V1TimeGrain | undefined = undefined;
   export let timeZone: string = "UTC";
+  export let comparisonDimension: string | undefined = undefined;
+  export let dimensionWhere: V1Expression | undefined = undefined;
+  export let dimensionValues: (string | null)[] = [];
   export let showComparison = false;
+  export let showTimeDimensionDetail: boolean = false;
+  export let connectNulls: boolean = true;
+  export let dynamicYAxis: boolean = false;
   export let ready = true;
 
   let captureNode: HTMLDivElement;
@@ -39,10 +47,10 @@
   $: formattedTimeRange = interval
     ? prettyFormatTimeRange(interval, timeGranularity)
     : "";
-  $: generatedTime = prettyFormatTimeRange(
-    Interval.fromDateTimes(DateTime.now(), DateTime.now()),
-    timeGranularity,
-  );
+  $: formattedComparisonRange = comparisonInterval
+    ? prettyFormatTimeRange(comparisonInterval, timeGranularity)
+    : "";
+  $: generatedTime = new Date().toISOString();
 
   const SVG_PROPS = [
     "fill",
@@ -89,7 +97,7 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="max-w-3xl flex flex-col gap-y-4">
     <Dialog.Header>
-      <Dialog.Title>Export chart</Dialog.Title>
+      <Dialog.Title>{m.dashboard_export_chart()}</Dialog.Title>
     </Dialog.Header>
 
     <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
@@ -107,7 +115,12 @@
             {/if}
           </div>
           <div class="grow"></div>
-          <div>{formattedTimeRange}</div>
+          <div>
+            {formattedTimeRange}
+            {#if formattedComparisonRange}{m.kpi_vs_comparison({
+                comparison: formattedComparisonRange,
+              })}{/if}
+          </div>
         </header>
 
         <ExploreFilterChipsReadOnly
@@ -139,39 +152,44 @@
             skipLink
           />
 
-          {#if timeGranularity}
-            <MeasureChart
-              {measure}
-              tddChartType={TDDChart.DEFAULT}
-              {metricsViewName}
-              {where}
-              {timeDimension}
-              {interval}
-              {comparisonInterval}
-              {timeGranularity}
-              {timeZone}
-              {ready}
-              {showComparison}
-              connectNulls={true}
-            />
-          {/if}
+          <MeasureChart
+            {measure}
+            {connectNulls}
+            tddChartType={tddChartType ?? TDDChart.DEFAULT}
+            {metricsViewName}
+            {where}
+            {timeDimension}
+            {interval}
+            {comparisonInterval}
+            {timeGranularity}
+            {timeZone}
+            {ready}
+            {comparisonDimension}
+            {dimensionValues}
+            {dimensionWhere}
+            {showComparison}
+            {showTimeDimensionDetail}
+            {dynamicYAxis}
+          />
         </div>
 
         <footer class="flex items-center justify-between text-xs text-fg-muted">
           <span>Rill</span>
-          <span>Generated {generatedTime}</span>
+          <span>{m.dashboard_generated({ time: generatedTime })}</span>
         </footer>
       </div>
     </ThemeProvider>
 
     <Dialog.Footer>
-      <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="secondary" onClick={() => (open = false)}
+        >{m.dashboard_cancel()}</Button
+      >
       <Button
         type="primary"
         disabled={downloading}
         onClick={downloadScreenshot}
       >
-        {downloading ? "Generating…" : "Download PNG"}
+        {downloading ? m.dashboard_generating() : m.dashboard_download_png()}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

@@ -17,6 +17,8 @@ type MergeFailedError struct {
 	Output string
 	// MergedBranch is the name of the branch that was being merged when the error occurred.
 	MergedBranch string
+	// Conflict is true if the merge failed due to conflicts.
+	Conflict bool
 }
 
 func (e *MergeFailedError) Error() string {
@@ -59,6 +61,17 @@ type RepoStore interface {
 	// If remoteBranch is non-empty and the repo is git-backed, ahead/behind counts compare
 	// against `<remote>/<remoteBranch>` instead of the upstream of the current local branch.
 	Status(ctx context.Context, remoteBranch string) (*RepoStatus, error)
+	// Diff lists the files that differ from the comparison branch and, optionally, the combined patch.
+	// If remoteBranch is non-empty, the comparison is against `<remote>/<remoteBranch>` instead of
+	// the upstream of the current local branch. If includeDiff is set, the combined unified patch is
+	// also computed. If fetch is set, the remote-tracking ref is updated first; otherwise the changes
+	// are computed against the already-fetched ref.
+	Diff(ctx context.Context, remoteBranch string, includeDiff, fetch bool) (*RepoDiff, error)
+	// Revert discards local changes for the given files, resetting them to the comparison branch's
+	// state (the same ref used by Diff). paths are relative to the project subpath, matching the paths
+	// returned by Diff; paths that are not actually changed are skipped. If paths is empty, all changed
+	// files are reverted. It returns the subpath-relative paths that were reverted.
+	Revert(ctx context.Context, remoteBranch string, paths []string) ([]string, error)
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
@@ -143,6 +156,37 @@ type RepoStatus struct {
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
 	LocalCommits  int32
 	RemoteCommits int32
+	// ChangedFiles lists the files that would land on the comparison branch.
+	// Only populated when Status is called with changedFiles set to true.
+	ChangedFiles []RepoFileChange
+}
+
+type RepoFileStatus int
+
+const (
+	RepoFileStatusUnspecified RepoFileStatus = iota
+	RepoFileStatusAdded
+	RepoFileStatusModified
+	RepoFileStatusDeleted
+	RepoFileStatusRenamed
+)
+
+// RepoFileChange is a single file that differs from a comparison branch.
+type RepoFileChange struct {
+	Path string
+	// OldPath is the previous path; only set when Status is RepoFileStatusRenamed.
+	OldPath string
+	Status  RepoFileStatus
+}
+
+// RepoDiff is the set of changes between the local repo and a comparison branch.
+type RepoDiff struct {
+	// IsGitRepo indicates if the repo is backed by a Git repository.
+	IsGitRepo bool
+	// ChangedFiles lists the files that would land on the comparison branch.
+	ChangedFiles []RepoFileChange
+	// Diff is the combined unified patch across ChangedFiles; only set when IncludeDiff is true.
+	Diff string
 }
 
 type PullOptions struct {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
@@ -10,52 +10,118 @@
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards, useIsInitialBuild } from "./selectors";
+  import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
+  import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
+  import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
+  import {
+    DashboardTableSortOptions,
+    getDashboardFavouritesStore,
+    RecentlyUsedDashboards,
+  } from "./dashboard-favourites.ts";
+  import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
 
-  export let isEmbedded = false;
-  export let isPreview = false;
-  export let previewLimit = 5;
+  type DashboardRow = V1Resource & { lastUsed: number };
+
+  let {
+    isEmbedded = false,
+    isPreview = false,
+    previewLimit = undefined,
+  }: {
+    isEmbedded?: boolean;
+    isPreview?: boolean;
+    previewLimit?: number;
+  } = $props();
+
+  const selectedTagsState = UrlParamsState.createStringArrayParam("tags");
+
+  const searchTextStore = new DebouncedRuneStore(
+    UrlParamsState.createStringParam("q"),
+    500,
+  );
+
+  const sortStore = UrlParamsState.createStringParam(
+    "sort",
+    DashboardTableSortOptions[0].value,
+  );
+  let sortingOption = $derived(
+    DashboardTableSortOptions.find(
+      (option) => option.value === sortStore.value,
+    ) ?? DashboardTableSortOptions[0],
+  );
 
   const runtimeClient = useRuntimeClient();
-  $: ({
-    params: { organization, project },
-  } = $page);
+  let { organization, project } = $derived(page.params);
 
-  $: dashboards = useDashboards(runtimeClient);
-  $: ({
+  const dashboards = useDashboards(runtimeClient);
+  let {
     data: dashboardsData,
     isLoading,
     isError,
     isSuccess,
     error,
-  } = $dashboards);
+  } = $derived($dashboards);
 
-  $: initialBuild = useIsInitialBuild(runtimeClient);
-  $: isBuilding = $initialBuild.data === true;
+  let initialBuild = useIsInitialBuild(runtimeClient);
+  let isBuilding = $derived($initialBuild.data === true);
 
-  $: displayData = isPreview
-    ? (dashboardsData?.slice(0, previewLimit) ?? [])
-    : (dashboardsData ?? []);
-  $: hasMoreDashboards =
-    isPreview && dashboardsData && dashboardsData.length > previewLimit;
+  let allDashboards = $derived(dashboardsData ?? []);
+  let availableTags = $derived(getAllTagsForResources(allDashboards));
+  let hasSomeTag = $derived(availableTags.length > 0);
 
-  /**
-   * Table column definitions.
-   * - "composite": Renders all dashboard data in a single cell.
-   * - Others: Used for sorting and filtering but not displayed.
-   *
-   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
-   * Relevant issues:
-   * - https://github.com/TanStack/table/issues/4241
-   * - https://github.com/TanStack/table/issues/4302
-   */
+  let filteredDashboards = $derived(
+    filterResources(
+      allDashboards,
+      [],
+      searchTextStore.value,
+      [],
+      selectedTagsState.value,
+    ),
+  );
+
+  let dashboardFavourites = $derived(
+    getDashboardFavouritesStore(organization, project),
+  );
+  let recentlyUsedDashboards = $derived(
+    new RecentlyUsedDashboards(organization, project),
+  );
+
+  let validDashboardFavourites = $derived(
+    dedupe(
+      dashboardFavourites.value.filter((f) =>
+        filteredDashboards.find((r) => r.meta?.name?.name?.toLowerCase() === f),
+      ),
+      (e) => e,
+    ),
+  );
+
+  let hasMoreDashboards = $derived(
+    isPreview && filteredDashboards.length > previewLimit,
+  );
+
+  let displayData = $derived(
+    filteredDashboards.map(
+      (r): DashboardRow => ({
+        ...r,
+        lastUsed:
+          recentlyUsedDashboards.recentlyUsed.value[
+            r.meta?.name?.name?.toLowerCase() ?? ""
+          ] ?? 0,
+      }),
+    ),
+  );
+
   const columns = [
     {
       id: "composite",
       cell: ({ row }) => {
         const resource = row.original as V1Resource;
         const name = resource.meta.name.name;
-
-        // If not a Metrics Explorer, it's a Custom Dashboard.
         const isMetricsExplorer = !!resource?.explore;
         const title = isMetricsExplorer
           ? resource.explore.spec.displayName
@@ -66,6 +132,7 @@
         const refreshedOn = isMetricsExplorer
           ? resource.explore?.state?.dataRefreshedOn
           : resource.canvas?.state?.dataRefreshedOn;
+        const tags = resource.meta?.tags ?? [];
 
         return renderComponent(DashboardsTableCompositeCell, {
           name,
@@ -77,6 +144,9 @@
           isEmbedded,
           organization,
           project,
+          tags,
+          dashboardFavourites,
+          recentlyUsedDashboards,
         });
       },
     },
@@ -109,6 +179,10 @@
         return isMetricsExplorer ? row.explore.spec.description : "";
       },
     },
+    {
+      id: "lastUsed",
+      accessorFn: (row: DashboardRow) => row.lastUsed,
+    },
   ];
 
   const columnVisibility = {
@@ -116,9 +190,8 @@
     name: false,
     lastRefreshed: false,
     description: false,
+    lastUsed: false,
   };
-
-  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
 {#if isLoading || isBuilding}
@@ -129,39 +202,66 @@
   <ResourceError kind="dashboard" {error} />
 {:else if isSuccess}
   <div class="flex flex-col w-full gap-y-3">
-    <ResourceList
-      kind="dashboard"
-      data={displayData}
-      {columns}
-      {columnVisibility}
-      {initialSorting}
-      toolbar={!isPreview}
-    >
-      <ResourceListEmptyState
-        slot="empty"
-        icon={ExploreIcon}
-        message="You don't have any dashboards yet"
-      >
-        <span slot="action">
-          <a
-            href="https://docs.rilldata.com/developers/build/dashboards"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Create a dashboard</a
-          > to get started
-        </span>
-      </ResourceListEmptyState>
-    </ResourceList>
-    {#if hasMoreDashboards}
-      <div class="pl-4 py-1">
-        <a
-          href={`/${organization}/${project}/-/dashboards`}
-          class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
-        >
-          See all dashboards →
-        </a>
-      </div>
+    {#if !isPreview}
+      <TableToolbar
+        {searchTextStore}
+        {sortStore}
+        sortOptions={DashboardTableSortOptions}
+      />
     {/if}
+
+    <div class="flex flex-row flex-1 w-full gap-x-2 overflow-hidden">
+      {#if hasSomeTag && !isPreview}
+        <ResizableSidebar
+          id="dashboards-tag-sidebar"
+          minWidth={200}
+          maxWidth={500}
+          defaultWidth={200}
+          additionalClass="overflow-hidden border rounded-lg"
+          side="right"
+        >
+          <DashboardsTagSidebar
+            resources={allDashboards}
+            searchText={searchTextStore.value}
+          />
+        </ResizableSidebar>
+      {/if}
+
+      <div class="flex flex-col flex-grow">
+        <ResourceList
+          kind="dashboard"
+          data={displayData}
+          {columns}
+          {columnVisibility}
+          sorting={[sortingOption.sort]}
+          toolbar={false}
+          pinnedRows={validDashboardFavourites}
+          maxRows={previewLimit}
+        >
+          <ResourceListEmptyState
+            slot="empty"
+            icon={ExploreIcon}
+            message={m.dashboard_list_empty()}
+          >
+            <span slot="action">
+              {@html m.dashboard_list_create_to_start({
+                link: `<a href="https://docs.rilldata.com/developers/build/dashboards" target="_blank" rel="noopener noreferrer">${escapeHtml(m.dashboard_list_create())}</a>`,
+              })}
+            </span>
+          </ResourceListEmptyState>
+        </ResourceList>
+
+        {#if hasMoreDashboards}
+          <div class="pl-4 py-1">
+            <a
+              href={`/${organization}/${project}/-/dashboards`}
+              class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+            >
+              {m.dashboard_list_see_all()} →
+            </a>
+          </div>
+        {/if}
+      </div>
+    </div>
   </div>
 {/if}

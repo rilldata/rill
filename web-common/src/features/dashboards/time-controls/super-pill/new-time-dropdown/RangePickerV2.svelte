@@ -44,6 +44,7 @@
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
   import { Clock, Check } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let timeString: string | undefined;
   export let interval: Interval<true> | undefined;
@@ -62,7 +63,11 @@
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
   export let showFullRange = true;
-  export let timeDimensions: { value: string; label: string }[];
+  export let timeDimensions: {
+    value: string;
+    label: string;
+    description?: string;
+  }[];
   export let primaryTimeDimension: string | undefined;
   export let selectedTimeDimension: string | undefined;
   export let onTimeDimensionSelect: ((dimension: string) => void) | undefined =
@@ -108,6 +113,13 @@
   $: dateTimeAnchor = returnAnchor(ref, zone);
 
   $: selectedLabel = getRangeLabel(timeString);
+
+  // Resolve the active time axis to a defined time dimension, if any. When the
+  // timeseries points at a raw column this is undefined and the tooltip omits
+  // the dimension name and description.
+  $: activeTimeDimension = timeDimensions.find(
+    ({ value }) => value === (selectedTimeDimension || primaryTimeDimension),
+  );
 
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate ?? DateTime.now(), zone);
 
@@ -232,13 +244,13 @@
               {...tooltipProps}
               {...popoverProps}
               class="flex gap-x-1.5"
-              aria-label="Select time range"
+              aria-label={m.dashboard_select_time_range()}
               type="button"
             >
               {#if timeString}
                 <b class="line-clamp-1 flex-none">
                   {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
-                    Custom
+                    {m.dashboard_custom()}
                   {:else}
                     {selectedLabel}
                   {/if}
@@ -269,7 +281,12 @@
 
     <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
       {#if interval}
-        <PrimaryRangeTooltip {timeString} {interval} />
+        <PrimaryRangeTooltip
+          {timeString}
+          {interval}
+          timeDimensionLabel={activeTimeDimension?.label}
+          timeDimensionDescription={activeTimeDimension?.description}
+        />
       {/if}
     </Tooltip.Content>
   </Tooltip.Root>
@@ -371,7 +388,7 @@
               class="truncate text-fg-primary w-full text-left gap-x-1 pr-1 hover:bg-popover-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
-              <div class="mr-auto">Custom</div>
+              <div class="mr-auto">{m.dashboard_custom()}</div>
 
               <CaretDownIcon
                 className="-rotate-90 text-fg-secondary"
@@ -395,7 +412,9 @@
                 <div class="flex-none">
                   <Globe size="14px" className="text-fg-primary" />
                 </div>
-                <div class="mr-auto text-fg-primary">Time zone</div>
+                <div class="mr-auto text-fg-primary">
+                  {m.dashboard_time_zone()}
+                </div>
                 <div class="sr-only group-hover:not-sr-only">
                   <SyntaxElement range={zoneAbbreviation} />
                 </div>
@@ -429,9 +448,9 @@
           </div>
         {/if}
 
-        {#if timeDimensions.length && onTimeDimensionSelect}
+        {#if timeDimensions.length > 1 && onTimeDimensionSelect}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-gray-200 my-1"></div>
+            <div class="h-px w-full bg-border my-1"></div>
 
             <Popover.Root bind:open={timeAxisPickerOpen}>
               <Popover.Trigger
@@ -439,18 +458,18 @@
                 onclick={() => {
                   showCalendarPicker = false;
                 }}
-                aria-label="Select time axis"
+                aria-label={m.dashboard_select_time_axis()}
                 class="group h-7 overflow-hidden hover:bg-surface-hover flex-none rounded-sm w-full select-none flex items-center truncate text-left gap-x-1 pr-1 pl-2"
               >
                 <div class="flex-none">
                   <Clock size="14px" />
                 </div>
-                <div class="mr-auto">Time axis</div>
-                <div class="sr-only group-hover:not-sr-only">
-                  <SyntaxElement
-                    range={selectedTimeDimension || primaryTimeDimension}
-                  />
-                </div>
+                <div class="mr-auto">{m.dashboard_time_axis()}</div>
+                {#if activeTimeDimension}
+                  <div class="sr-only group-hover:not-sr-only">
+                    <SyntaxElement range={activeTimeDimension.label} />
+                  </div>
+                {/if}
                 <CaretDownIcon className="-rotate-90" size="14px" />
               </Popover.Trigger>
 
@@ -460,21 +479,40 @@
                 sideOffset={12}
                 class="p-1 z-50"
               >
-                {#each timeDimensions as { value, label } (value)}
-                  <button
-                    class="item"
-                    aria-label="Select {label} time dimension"
-                    onclick={() => {
-                      onTimeDimensionSelect(value);
-                      closeMenu();
-                      timeAxisPickerOpen = false;
-                    }}
-                  >
-                    {label}
-                    {#if value === (selectedTimeDimension || primaryTimeDimension)}
-                      <Check class="size-4" color="var(--color-gray-800)" />
+                {#each timeDimensions as { value, label, description } (value)}
+                  <Tooltip.Root>
+                    <Tooltip.Trigger>
+                      {#snippet child({ props })}
+                        <button
+                          {...props}
+                          class="item"
+                          aria-label={m.dashboard_select_time_dimension({
+                            label,
+                          })}
+                          onclick={() => {
+                            onTimeDimensionSelect(value);
+                            closeMenu();
+                            timeAxisPickerOpen = false;
+                          }}
+                        >
+                          {label}
+                          {#if value === (selectedTimeDimension || primaryTimeDimension)}
+                            <Check class="size-4" color="var(--fg-primary)" />
+                          {/if}
+                        </button>
+                      {/snippet}
+                    </Tooltip.Trigger>
+                    {#if description}
+                      <Tooltip.Content
+                        side="right"
+                        sideOffset={8}
+                        class="max-w-64"
+                      >
+                        <div class="font-bold text-fg-inverse">{label}</div>
+                        <div class="text-fg-inverse/70">{description}</div>
+                      </Tooltip.Content>
                     {/if}
-                  </button>
+                  </Tooltip.Root>
                 {/each}
               </Popover.Content>
             </Popover.Root>

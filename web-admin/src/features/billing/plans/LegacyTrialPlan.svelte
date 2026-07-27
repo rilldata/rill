@@ -5,6 +5,8 @@
   } from "@rilldata/web-admin/client";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import PlanContainer from "@rilldata/web-admin/features/billing/plans/PlanContainer.svelte";
+  import PricingLink from "@rilldata/web-admin/features/billing/plans/modules/PricingLink.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     organization,
@@ -44,32 +46,33 @@
 </script>
 
 <PlanContainer
-  badge="Free Trial"
+  badge={m.billing_plan_badge_free_trial()}
   description={isTrialExpired
-    ? "Trial expired · Projects hibernated"
-    : "30 day free trial"}
+    ? m.billing_trial_expired_hibernated()
+    : m.billing_30_day_free_trial()}
 >
   {#snippet info()}
     {#if !isTrialExpired}
-      Legacy free trial · 30 days, no credit card required. Projects hibernate
-      when trial ends.
+      {m.billing_free_trial_info()}
     {/if}
   {/snippet}
 
   {#snippet action()}
-    <button class="subscribe-btn" onclick={upgrade}>Upgrade to Pro</button>
+    <button class="subscribe-btn" onclick={upgrade}>
+      {m.billing_upgrade_to_paid_plan()}
+    </button>
   {/snippet}
 
   <div class="trial-section">
     <div class="flex justify-between mb-1">
       <div>
-        <span class="trial-label">Days used</span>
+        <span class="trial-label">{m.billing_days_used()}</span>
         <p class="trial-number-used">
           {trialDaysUsed}
         </p>
       </div>
       <div class="text-right">
-        <span class="trial-label">Days remaining</span>
+        <span class="trial-label">{m.billing_days_remaining()}</span>
         <p
           class="trial-number"
           class:text-green-600={trialDaysRemaining > 7}
@@ -84,27 +87,12 @@
     </div>
     <div class="flex justify-between mt-1">
       <span class="text-xs text-fg-tertiary">
-        {trialPercent}% of trial used, projects will hibernate when trial ends
+        {m.billing_trial_percent_used({ percent: String(trialPercent) })}
       </span>
-      <span class="text-xs text-fg-tertiary">30 days</span>
+      <span class="text-xs text-fg-tertiary">{m.billing_30_days()}</span>
     </div>
-    <a
-      class="pricing-link"
-      href="https://www.rilldata.com/pricing"
-      target="_blank"
-      rel="noreferrer noopener"
-    >
-      See pricing details
-      <svg
-        class="w-3 h-3"
-        viewBox="0 0 12 12"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-      >
-        <path d="M1 6h9M7.5 3l3 3-3 3" />
-      </svg>
-    </a>
+
+    <PricingLink />
   </div>
 </PlanContainer>
 
@@ -132,15 +120,6 @@
 
   .trial-bar-fill {
     @apply h-full bg-primary-500 rounded-full transition-all;
-  }
-
-  .pricing-link {
-    @apply mt-3 inline-flex items-center gap-1 self-end;
-    @apply text-xs font-medium text-primary-600 no-underline;
-  }
-
-  .pricing-link:hover {
-    @apply underline;
   }
 
   .subscribe-btn {

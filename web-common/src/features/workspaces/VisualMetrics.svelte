@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -23,7 +24,7 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { PlusIcon } from "lucide-svelte";
+  import { Clock, PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
   import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
   import ConnectorExplorer from "../connectors/explorer/ConnectorExplorer.svelte";
@@ -216,9 +217,7 @@
 
   $: columns = columnsResponse?.profileColumns ?? [];
 
-  $: timeOptions = columns
-    .filter(({ type }) => type && TIMESTAMPS.has(type))
-    .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
+  $: timeColumns = columns.filter(({ type }) => type && TIMESTAMPS.has(type));
 
   $: typeOfSelectedTimeDimension = columns.find(
     ({ name }) => name === timeDimension,
@@ -248,6 +247,39 @@
         ? createDimensions(raw.dimensions, dimensions)
         : [],
   };
+
+  // Time dimensions defined in the metrics view can be selected as the primary
+  // time dimension in addition to raw timestamp columns.
+  $: timeDimensionOptions = itemGroups.dimensions
+    .filter((d) => d.type === "time")
+    .map((d) => {
+      const value = d.name || d.resourceName;
+      return {
+        value,
+        label: d.display_name || value,
+        tooltip: d.description || undefined,
+        icon: Clock,
+        group: "Time dimensions",
+      };
+    })
+    .filter(({ value }) => value);
+
+  $: timeDimensionValues = new Set(
+    timeDimensionOptions.map(({ value }) => value),
+  );
+
+  $: timeOptions = [
+    ...timeDimensionOptions,
+    ...timeColumns
+      .filter(({ name }) => !timeDimensionValues.has(name ?? ""))
+      .map(({ name, type }) => ({
+        value: name ?? "",
+        label: name ?? "",
+        type,
+        // Only label the columns section when time dimensions are also listed.
+        group: timeDimensionOptions.length ? "Columns" : undefined,
+      })),
+  ];
 
   $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
     (acc, { name, display_name, resourceName }) => {
@@ -685,7 +717,7 @@
         disabledMessage={!hasValidModelOrSourceSelection
           ? "No model selected"
           : "No timestamp columns in model"}
-        hint="Column from model that will be used as primary time dimension in dashboards"
+        hint="Time dimension or timestamp column used as the primary time dimension in dashboards"
         onChange={async (value) => {
           await updateProperties({ timeseries: value });
         }}
@@ -711,7 +743,7 @@
         <Input
           full
           textClass="text-sm"
-          placeholder="Search"
+          placeholder={m.common_search()}
           bind:value={searchValue}
           onInput={(value) => {
             searchValue = value;

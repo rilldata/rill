@@ -1,9 +1,12 @@
 <script lang="ts">
-  import type { PivotCanvasComponent } from "@rilldata/web-common/features/canvas/components/pivot";
+  import {
+    conditionalFormatSpecToMeasureFormatting,
+    type PivotCanvasComponent,
+  } from "@rilldata/web-common/features/canvas/components/pivot";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
-  import { tableFieldMapper } from "./util";
+  import { normalizeRowLimit, tableFieldMapper } from "./util";
 
   export let component: PivotCanvasComponent;
 
@@ -37,18 +40,29 @@
   $: _metricViewSpec = getMetricsViewFromName(tableSpec.metrics_view);
   $: metricsViewSpec = $_metricViewSpec.metricsView;
 
-  $: schema = validateTableSchema(metricsViewSpec, tableSpec);
+  $: schema = validateTableSchema($_metricViewSpec, tableSpec);
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
-  $: if ("columns" in tableSpec && schema.isValid) {
+  // Seed the shared pivot state with per-measure formatting from the YAML spec.
+  $: measureFormatting = conditionalFormatSpecToMeasureFormatting(
+    tableSpec.conditional_format,
+  );
+
+  $: if ("columns" in tableSpec && schema.isValid && !schema.isLoading) {
     const columns = tableSpec?.columns || [];
     pivotState.update((state) => ({
       ...state,
       sorting: [],
       expanded: {},
+      activeCell: null,
+      columnPage: 1,
+      rowPage: 1,
       columns: tableFieldMapper(columns, metricsViewSpec),
+      showTotalsColumn: tableSpec.hide_totals_col !== true,
+      showTotalsRow: tableSpec.hide_totals_row !== true,
+      measureFormatting,
     }));
-  } else if ("col_dimensions" in tableSpec && schema.isValid) {
+  } else if (!("columns" in tableSpec) && schema.isValid && !schema.isLoading) {
     const measures = tableSpec.measures || [];
     const colDimensions = tableSpec.col_dimensions || [];
     const rowDimensions = tableSpec.row_dimensions || [];
@@ -56,11 +70,19 @@
       ...state,
       sorting: [],
       expanded: {},
+      activeCell: null,
+      columnPage: 1,
+      rowPage: 1,
       columns: [
         ...tableFieldMapper(colDimensions, metricsViewSpec),
         ...tableFieldMapper(measures, metricsViewSpec),
       ],
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
+      showTotalsColumn: tableSpec.hide_totals_col !== true,
+      showTotalsRow: tableSpec.hide_totals_row !== true,
+      measureFormatting,
+      rowLimit: normalizeRowLimit(tableSpec.row_limit),
+      outermostRowLimit: undefined,
     }));
   }
 </script>

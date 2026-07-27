@@ -11,6 +11,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { SortType } from "../proto-state/derived-types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { URI_DIMENSION_SUFFIX } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 
 export type LeaderboardItemData = {
   /**
@@ -61,8 +62,6 @@ export type LeaderboardItemData = {
    */
   selectedIndex: number;
 };
-
-export const URI_DIMENSION_SUFFIX = "__rill_uri";
 
 const finiteOrNull = (v: unknown): number | null => {
   if (v === null || v === undefined) return null;
@@ -331,35 +330,6 @@ export function compareLeaderboardValues(selected: string, value: any) {
 
     default:
       return selected === value;
-  }
-}
-
-// uri template or "true" string literal or undefined
-export function makeHref(
-  uriTemplateOrBoolean: string | boolean | null,
-  dimensionValue: string,
-) {
-  if (!uriTemplateOrBoolean) {
-    return undefined;
-  }
-
-  // temporary fix where uriTemplateOrBoolean is coming in as 0/1 instead of false/true
-  if (typeof uriTemplateOrBoolean === "number") {
-    uriTemplateOrBoolean = Boolean(uriTemplateOrBoolean);
-  }
-
-  // TODO: what should the value be if uriTemplateOrBoolean=false?
-  let uri = dimensionValue;
-  if (typeof uriTemplateOrBoolean === "string") {
-    uri = uriTemplateOrBoolean.replace(/\s/g, "");
-  }
-
-  const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
-
-  if (!hasProtocol) {
-    return "https://" + uri;
-  } else {
-    return uri;
   }
 }
 

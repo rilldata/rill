@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import TagInput from "@rilldata/web-common/components/forms/TagInput.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -12,6 +14,11 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import MultiSelectInput from "@rilldata/web-common/features/visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
+  import {
+    getResourceTagSuggestions,
+    normalizeTags,
+    readRootYamlTags,
+  } from "@rilldata/web-common/features/visual-editing/tag-utils";
   import ThemeInput from "@rilldata/web-common/features/visual-editing/ThemeInput.svelte";
   import {
     DEFAULT_RANGES,
@@ -25,7 +32,10 @@
   } from "@rilldata/web-common/lib/time/config";
   import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceGetInstance,
+    createRuntimeServiceListResources,
+  } from "@rilldata/web-common/runtime-client";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 
@@ -55,6 +65,22 @@
   $: rawTimeRanges = $parsedDocument.get("time_ranges");
   $: rawTimeZones = $parsedDocument.get("time_zones");
   $: rawMaxWidth = $parsedDocument.get("max_width");
+
+  $: resourcesQuery = createRuntimeServiceListResources(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => data.resources ?? [],
+      },
+    },
+  );
+
+  $: resourceTags = readRootYamlTags($parsedDocument);
+  $: tagSuggestions = getResourceTagSuggestions(
+    $resourcesQuery?.data,
+    resourceTags,
+  );
 
   $: timeZones = new Set(
     rawTimeZones instanceof YAMLSeq
@@ -127,13 +153,23 @@
     }
   }
 
+  async function updateResourceTags(tags: string[]) {
+    const normalizedTags = normalizeTags(tags);
+
+    if (normalizedTags.length) {
+      await updateProperties({ tags: normalizedTags });
+    } else {
+      await updateProperties({}, ["tags"]);
+    }
+  }
+
   let currentTab: string = "options";
 </script>
 
 <SidebarWrapper
   type="secondary"
   disableHorizontalPadding
-  title="Canvas configurations"
+  title={m.canvas_configurations()}
 >
   <CanvasTabs bind:currentTab slot="header" />
   {#if currentTab === "options"}
@@ -143,7 +179,7 @@
         capitalizeLabel={false}
         size="sm"
         labelGap={2}
-        label="Display name"
+        label={m.canvas_display_name()}
         bind:value={title}
         onBlur={async () => {
           await updateProperties({ display_name: title }, ["title"]);
@@ -154,11 +190,19 @@
       />
     </div>
     <div class="page-param">
+      <TagInput
+        size="sm"
+        tags={resourceTags}
+        suggestions={tagSuggestions}
+        onChange={updateResourceTags}
+      />
+    </div>
+    <div class="page-param">
       <Input
         capitalizeLabel={false}
         size="sm"
         labelGap={2}
-        label="Max width"
+        label={m.canvas_max_width()}
         inputType="number"
         bind:value={maxWidth}
         onBlur={async () => {
@@ -178,7 +222,7 @@
           id="canvas-filter"
           faint={!showFilterBar}
           small
-          label="Filter bar"
+          label={m.canvas_filter_bar()}
         />
         <Switch checked={showFilterBar} onclick={toggleFilterBar} small />
       </div>
@@ -187,7 +231,7 @@
         <div class="flex flex-col gap-y-2">
           <MultiSelectInput
             small
-            label="Time ranges"
+            label={m.canvas_time_ranges()}
             id="canvas-time-range"
             defaultLabel="Default time ranges"
             showLabel={false}
@@ -209,7 +253,7 @@
 
           <MultiSelectInput
             small
-            label="Time zones"
+            label={m.canvas_time_zones()}
             id="visual-explore-zone"
             showLabel={false}
             defaultLabel="Default time zones"

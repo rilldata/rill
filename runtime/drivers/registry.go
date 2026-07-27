@@ -110,6 +110,11 @@ type InstanceConfig struct {
 	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
 	// Can be "", "none", "new", "pushdown".
 	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
+	// MetricsPivotExportColumnLimit caps the number of columns a pivot export may produce.
+	// Pivots are executed in DuckDB and produces one column per combination of the pivoted dimension values, times the number of measures.
+	// so a pivot producing too many columns fails with an opaque error. This is a conservative safety cap
+	// that lets us return a clear error first. If set to 0, there is no limit.
+	MetricsPivotExportColumnLimit int64 `mapstructure:"rill.metrics.pivot_export_column_limit"`
 	// AlertsDefaultStreamingRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
@@ -120,6 +125,7 @@ type InstanceConfig struct {
 	// AICompletionTimeoutSeconds is the maximum duration of a full AI completion request, which may include multiple LLM requests and tool calls.
 	AICompletionTimeoutSeconds uint32 `mapstructure:"rill.ai.completion_timeout_seconds"`
 	// AILLMTimeoutSeconds is the maximum duration of a single LLM completion request.
+	// Note: when using Rill's hosted AI service (i.e. not a self-configured LLM), the admin server enforces a hard upper bound of 10 minutes, so values above that have no effect.
 	AILLMTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_timeout_seconds"`
 	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
@@ -129,6 +135,8 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
+	// AIMaxMessageSizeBytes is the maximum allowed size of an AI message's contents (tool call args or results). Exceeding it results in an error.
+	AIMaxMessageSizeBytes int64 `mapstructure:"rill.ai.max_message_size_bytes"`
 	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
 	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
 	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
@@ -137,6 +145,8 @@ type InstanceConfig struct {
 	ModelPartitionsWarnOnFailure bool `mapstructure:"rill.model.partitions_warn_on_failure"`
 	// ModelTestsWarnOnFailure: when true, model test failures are surfaced as non-blocking warnings instead of errors.
 	ModelTestsWarnOnFailure bool `mapstructure:"rill.model.tests_warn_on_failure"`
+	// DisableModels: when true, model execution is disabled. Useful for stopping any ingestion in Rill temporarily.
+	DisableModels bool `mapstructure:"rill.models.disable"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -204,6 +214,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
 		MetricsNullFillingImplementation:     "pushdown",
+		MetricsPivotExportColumnLimit:        15000,
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 		AICompletionTimeoutSeconds:           60 * 10,        // 10 minutes
@@ -211,6 +222,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
+		AIMaxMessageSizeBytes:                200 * 1024, // 200 KB
 		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
 		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}

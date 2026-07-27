@@ -9,6 +9,9 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { translateGrainName } from "@rilldata/web-common/lib/time/new-grains";
+
   export let item: PivotChipData;
   export let removable = false;
   export let grab = false;
@@ -24,20 +27,22 @@
       ? TIME_GRAIN[item.id as AvailableTimeGrain]?.label
       : undefined;
 
-  $: capitalizedLabel = activeTimeGrainLabel
-    ?.split(" ")
-    .map((word) => {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(" ");
+  $: capitalizedLabel =
+    activeTimeGrainLabel &&
+    translateGrainName(activeTimeGrainLabel)
+      .split(" ")
+      .map((word) => {
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(" ");
+
+  // Measure/dimension chips always show a tooltip (display name, plus the
+  // description when present). Time chips only have something worth showing
+  // when a description is set.
+  $: showTooltip = item.type === PivotChipType.Time ? !!item.description : true;
 </script>
 
-<Tooltip
-  distance={8}
-  location="top"
-  suppress={!item.description}
-  activeDelay={200}
->
+<Tooltip distance={8} location="top" suppress={!showTooltip} activeDelay={200}>
   <Chip
     theme
     type={item.type}
@@ -58,7 +63,7 @@
       class="flex gap-x-1 items-center justify-start text-left truncate"
     >
       {#if item.type === PivotChipType.Time}
-        <b>Time</b>
+        <b>{m.pivot_time_prefix()}</b>
         {#if capitalizedLabel}
           <p class="grain-label truncate">{capitalizedLabel}</p>
         {/if}
@@ -69,6 +74,13 @@
     </div>
   </Chip>
   <TooltipContent slot="tooltip-content">
-    {item.description}
+    {#if item.type === PivotChipType.Time}
+      {item.description}
+    {:else}
+      <div class="font-bold">{item.title}</div>
+      {#if item.description}
+        <div class="text-fg-inverse/70 mt-0.5">{item.description}</div>
+      {/if}
+    {/if}
   </TooltipContent>
 </Tooltip>

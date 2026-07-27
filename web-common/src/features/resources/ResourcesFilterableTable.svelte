@@ -12,10 +12,12 @@
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import TagFilterDropdown from "@rilldata/web-common/features/resources/TagFilterDropdown.svelte";
   import {
     filterableTypes,
     filterResources,
     getStatusPriority,
+    refreshableTypes,
     statusFilters,
   } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import ActionsCell from "@rilldata/web-common/features/projects/status/ActionsCell.svelte";
@@ -29,6 +31,8 @@
   } from "@rilldata/web-common/runtime-client";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
   import { renderComponent } from "tanstack-table-8-svelte-5";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   /** All resources (unfiltered). Filtering is handled internally. */
   export let resources: V1Resource[];
@@ -45,6 +49,8 @@
   export let selectedStatuses: string[] = [];
   /** Pre-set type filters (e.g. from overview resources section) */
   export let selectedTypes: string[] = [];
+  /** Pre-set tag filters */
+  export let selectedTags: string[] = [];
   /** Two-way bindable search text */
   export let searchText = "";
   /** Fixed table container height (web-admin uses 550) */
@@ -78,11 +84,14 @@
     return openDropdownResourceKey === resourceKey;
   };
 
+  $: availableTags = getAllTagsForResources(resources).map((t) => t.name);
+
   $: filteredResources = filterResources(
     resources,
     selectedTypes,
     searchText,
     selectedStatuses,
+    selectedTags,
   );
 
   $: tableData = filteredResources.filter(
@@ -92,7 +101,10 @@
   );
 
   $: hasActiveFilters =
-    selectedTypes.length > 0 || searchText || selectedStatuses.length > 0;
+    selectedTypes.length > 0 ||
+    searchText ||
+    selectedStatuses.length > 0 ||
+    selectedTags.length > 0;
 
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {
@@ -113,6 +125,7 @@
   function clearFilters() {
     selectedTypes = [];
     selectedStatuses = [];
+    selectedTags = [];
     searchText = "";
   }
 
@@ -182,8 +195,9 @@
           resourceName: row.original.meta?.name?.name ?? "",
           canRefresh:
             !isRowReconciling &&
-            (row.original.meta?.name?.kind === ResourceKind.Model ||
-              row.original.meta?.name?.kind === ResourceKind.Source),
+            refreshableTypes.includes(
+              row.original.meta?.name?.kind as ResourceKind,
+            ),
           resource: row.original,
           onRefresh: onRefetch,
           onDescribe: handleDescribe,
@@ -210,7 +224,6 @@
     <div class="flex-1 min-w-0 min-h-9">
       <Search
         bind:value={searchText}
-        placeholder="Search"
         large
         autofocus={false}
         showBorderOnFocus={false}
@@ -226,14 +239,14 @@
       >
         <span class="text-fg-secondary font-medium">
           {#if selectedTypes.length === 0}
-            All types
+            {m.status_all_types()}
           {:else if selectedTypes.length === 1}
             {prettyResourceKind(selectedTypes[0])}
           {:else}
-            {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length - 1} other{selectedTypes.length >
-            2
-              ? "s"
-              : ""}
+            {m.status_levels_selected({
+              first: prettyResourceKind(selectedTypes[0]),
+              count: selectedTypes.length - 1,
+            })}
           {/if}
         </span>
         {#if filterDropdownOpen}
@@ -267,10 +280,12 @@
             {statusFilters.find((s) => s.value === selectedStatuses[0])
               ?.label ?? selectedStatuses[0]}
           {:else}
-            {statusFilters.find((s) => s.value === selectedStatuses[0])?.label},
-            +{selectedStatuses.length - 1} other{selectedStatuses.length > 2
-              ? "s"
-              : ""}
+            {m.status_levels_selected({
+              first:
+                statusFilters.find((s) => s.value === selectedStatuses[0])
+                  ?.label ?? selectedStatuses[0],
+              count: selectedStatuses.length - 1,
+            })}
           {/if}
         </span>
         {#if statusDropdownOpen}
@@ -290,6 +305,8 @@
         {/each}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
+
+    <TagFilterDropdown tags={availableTags} bind:selectedTags />
 
     {#if hasActiveFilters}
       <button

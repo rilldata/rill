@@ -1,4 +1,5 @@
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
   type PivotChipData,
   PivotChipType,
@@ -453,6 +454,11 @@ function fromPivotUrlParams(
   }
 
   const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+  const showTotalsColumn = preset.pivotShowTotalsColumn ?? true;
+  const showTotalsRow = preset.pivotShowTotalsRow ?? true;
+  const measureFormatting = preset.pivotFormatting
+    ? fromPivotFormattingParam(preset.pivotFormatting).measureFormatting
+    : undefined;
 
   if (!hasSomePivotFields && !showPivot) {
     return {
@@ -466,7 +472,10 @@ function fromPivotUrlParams(
           rowPage: 1,
           enableComparison: true,
           activeCell: null,
+          showTotalsColumn,
+          showTotalsRow,
           tableMode: "nest",
+          measureFormatting,
         },
       },
       errors,
@@ -522,8 +531,11 @@ function fromPivotUrlParams(
         rowPage: 1,
         enableComparison: true,
         activeCell: null,
+        showTotalsColumn,
+        showTotalsRow,
         tableMode,
         rowLimit,
+        measureFormatting,
       },
     },
     errors,

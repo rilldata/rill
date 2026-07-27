@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
@@ -199,6 +200,7 @@
             {activeTimeZone}
             {minTimeGrain}
             {showTimeComparison}
+            {allowCustomTimeRange}
             onDisplayTimeComparison={set.comparison}
             onSetSelectedComparisonRange={(range) => {
               if (range.name === "CUSTOM_COMPARISON_RANGE") {
@@ -225,7 +227,7 @@
           class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
-          No filters selected
+          {m.canvas_no_filters_selected()}
         </div>
       {/if}
 
@@ -286,7 +288,9 @@
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasClearableFilters}
-          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
+          <Button type="text" onClick={clearAllFilters}
+            >{m.canvas_clear_filters()}</Button
+          >
         {/if}
       {/if}
     </div>

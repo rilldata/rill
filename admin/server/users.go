@@ -47,6 +47,7 @@ func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusers
 
 func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequest) (*adminv1.SetSuperuserResponse, error) {
 	observability.AddRequestAttributes(ctx,
+		attribute.String("args.email", req.Email),
 		attribute.Bool("args.superuser", req.Superuser),
 	)
 

@@ -9,9 +9,11 @@
   import { isActiveDeployment } from "@rilldata/web-admin/features/branches/deployment-utils";
   import { useParserCommitSha } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
+  import ChangedFilesList from "@rilldata/web-common/features/project/changes/ChangedFilesList.svelte";
+  import ChangedFilesDialog from "@rilldata/web-common/features/project/changes/ChangedFilesDialog.svelte";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -19,6 +21,7 @@
   import {
     createRuntimeServiceGitMergeToBranchMutation,
     createRuntimeServiceGitPushMutation,
+    type V1GitMergeToBranchResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
@@ -30,6 +33,7 @@
     getDeploymentGithubStatus,
     invalidateGitStatusQueries,
   } from "@rilldata/web-admin/features/edit-session/selectors.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
   export let project: string;
@@ -43,8 +47,12 @@
     preCommitSha: string | undefined;
   };
 
+  let open = false;
   let isPublishing = false;
   let publishMergeConflictDialog = false;
+  // The diff dialog is hosted here (not inside the popover) so it survives the popover closing.
+  let diffDialogOpen = false;
+  let diffInitialPath: string | undefined = undefined;
   // Captured at click time so the publish flow can resume after a force
   // merge without re-reading state that may have changed. `preCommitSha` is
   // refreshed before completing the flow because prod's parser may have
@@ -99,6 +107,7 @@
     // the bus. After a successful pull the user re-clicks Publish.
     if (hasRemoteChanges) {
       eventBus.emit("remote-changes-detected");
+      open = false;
       return;
     }
 
@@ -129,13 +138,13 @@
     if (!hasLocalChanges && !hasChangesOnCurrent) {
       eventBus.emit("notification", {
         type: "default",
-        message: "No changes detected",
+        message: m.common_no_changes_detected(),
       });
       isPublishing = false;
       return;
     }
 
-    let mergeResp;
+    let mergeResp: V1GitMergeToBranchResponse | undefined = undefined;
     try {
       if (hasLocalChanges) {
         await $gitPushMutation.mutateAsync({
@@ -150,7 +159,7 @@
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
-        message: extractErrorMessage(err) || "Failed to publish",
+        message: extractErrorMessage(err) || m.edit_failed_to_publish(),
       });
       isPublishing = false;
       return;
@@ -162,10 +171,11 @@
     // unhandled, the user would see a silent failure (the merge didn't land
     // but the publish appears to have succeeded). Branch on it explicitly.
     if (mergeResp?.output) {
-      if (isMergeConflictError(mergeResp.output)) {
+      if (mergeResp?.conflict) {
         pendingPublishSnapshots = snapshots;
         errorFromGitCommand = null;
         publishMergeConflictDialog = true;
+        open = false; // only close when opening merge conflict dialog
       } else {
         eventBus.emit("notification", {
           type: "error",
@@ -178,6 +188,7 @@
 
     await completePublishFlow(snapshots);
     isPublishing = false;
+    open = false;
   }
 
   async function completePublishFlow(snapshots: PublishSnapshots) {
@@ -211,7 +222,7 @@
         const detail = extractErrorMessage(err);
         eventBus.emit("notification", {
           type: "error",
-          message: `Changes merged to production, but starting the production deployment failed${
+          message: `${m.edit_publish_merge_deploy_failed()}${
             detail ? `: ${detail}` : ""
           }.`,
         });
@@ -232,7 +243,7 @@
       void goto(targetUrl);
       eventBus.emit("notification", {
         type: "error",
-        message: "Pop-up was blocked.",
+        message: m.edit_popup_blocked(),
       });
     }
   }
@@ -273,37 +284,61 @@
   }
 </script>
 
-<Tooltip distance={8}>
-  <Button
-    type="primary"
-    {disabled}
-    loading={isPublishing}
-    loadingCopy="Publishing..."
-    onClick={handlePublish}
-  >
-    <Rocket size="14" />
-    Publish
-  </Button>
+<Tooltip distance={8} suppress={open}>
+  <Popover.Root bind:open>
+    <Popover.Trigger>
+      {#snippet child({ props })}
+        <Button {...props} type="primary" {disabled}>
+          <Rocket size="14" />
+          {m.edit_publish()}
+        </Button>
+      {/snippet}
+    </Popover.Trigger>
+    <Popover.Content align="end" class="!w-[320px]">
+      <div class="flex flex-col gap-y-3">
+        <p class="text-xs text-fg-secondary">
+          {#if !prodDeployment}
+            {m.edit_publish_first_deploy()}
+          {:else if !prodDeploymentActive}
+            {m.edit_publish_hibernated()}
+          {:else}
+            {m.edit_publish_push()}
+          {/if}
+        </p>
+        <ChangedFilesList
+          remoteBranch={primaryBranch}
+          {open}
+          onViewDiff={(path) => {
+            diffInitialPath = path;
+            open = false;
+            diffDialogOpen = true;
+          }}
+        />
+        <Button
+          type="primary"
+          small
+          disabled={isPublishing}
+          loading={isPublishing}
+          loadingCopy={m.edit_publishing()}
+          onClick={handlePublish}
+        >
+          {m.edit_publish()}
+        </Button>
+      </div>
+    </Popover.Content>
+  </Popover.Root>
   <TooltipContent slot="tooltip-content" maxWidth="240px">
     <span class="text-xs">
       {#if alreadyOnPrimary}
-        Already on production
+        {m.edit_publish_tooltip_on_primary()}
       {:else if isPending || !projectLoaded}
-        Loading project...
+        {m.edit_publish_tooltip_loading()}
       {:else if !hasLocalChanges}
-        No changes to publish
+        {m.edit_publish_tooltip_no_changes()}
       {:else if hasRemoteChanges}
-        Remote has updates not in your session. Click to review.
-      {:else if !prodDeployment}
-        Publish your project to production. We'll open a new tab where you can
-        invite teammates while the deployment reconciles.
-      {:else if !prodDeploymentActive}
-        Production is hibernated. Publishing will resume it and apply your
-        changes. We'll open the deployment in a new tab so you can watch updates
-        reconcile.
+        {m.edit_publish_tooltip_remote_updates()}
       {:else}
-        Publish your changes to production. We'll open a new tab so you can
-        watch updates reconcile.
+        {m.edit_publish_tooltip_confirm()}
       {/if}
     </span>
   </TooltipContent>
@@ -314,4 +349,10 @@
   loading={isPublishing}
   error={errorFromGitCommand}
   onUseLatestVersion={handleForcePublishMerge}
+/>
+
+<ChangedFilesDialog
+  bind:open={diffDialogOpen}
+  remoteBranch={primaryBranch}
+  initialPath={diffInitialPath}
 />

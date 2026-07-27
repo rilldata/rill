@@ -332,6 +332,28 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotEnableComparison: pivotState.enableComparison,
     pivotTableMode: ToProtoPivotTableModeMap[pivotState.tableMode],
     pivotRowLimit: pivotState.rowLimit,
+    pivotShowTotalsColumn: pivotState.showTotalsColumn,
+    pivotShowTotalsRow: pivotState.showTotalsRow,
+    pivotConditionalFormatting: Object.entries(
+      pivotState.measureFormatting ?? {},
+    ).map(([measure, fmt]) =>
+      fmt.mode === "rules"
+        ? {
+            measure,
+            mode: fmt.mode,
+            rules: fmt.rules.map((r) => ({
+              operator: r.operator,
+              value: r.value,
+              value2: r.value2,
+              color: r.color,
+            })),
+          }
+        : {
+            measure,
+            mode: fmt.mode,
+            scheme: fmt.scheme,
+          },
+    ),
   };
 }
 

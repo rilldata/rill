@@ -10,27 +10,27 @@ The `rill.yaml` file contains metadata about your project.
 
 ### `compiler`
 
-_[string]_ - Specifies the parser version to use for compiling resources 
+_[string]_ - Specifies the parser version to use for compiling resources
 
 ### `display_name`
 
-_[string]_ - The display name of the project, shown in the upper-left corner of the UI 
+_[string]_ - The display name of the project, shown in the upper-left corner of the UI
 
 ### `description`
 
-_[string]_ - A brief description of the project 
+_[string]_ - A brief description of the project
 
 ### `features`
 
-_[object]_ - Optional feature flags. Can be specified as a map of feature names to booleans. 
+_[object]_ - Optional feature flags. Can be specified as a map of feature names to booleans.
 
 ### `ai_connector`
 
-_[string]_ - Specifies the default AI connector for the project. Defaults to Rill's internal AI connector if not set. 
+_[string]_ - Specifies the default AI connector for the project. Defaults to Rill's internal AI connector if not set.
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing.
 
 ## Configuring the default OLAP Engine
 
@@ -42,7 +42,7 @@ Please see our reference documentation on [OLAP Engines](/developers/build/conne
 
 ### `olap_connector`
 
-_[string]_ - Specifies the default OLAP engine for the project. Defaults to duckdb if not set. 
+_[string]_ - Specifies the default OLAP engine for the project. Defaults to duckdb if not set.
 
 ```yaml
 olap_connector: clickhouse
@@ -53,35 +53,35 @@ olap_connector: clickhouse
 In `rill.yaml`, project-wide defaults can be specified for a resource type within a project. Unless otherwise specified, _individual resources will inherit any defaults_ that have been specified in `rill.yaml`. For available properties that can be configured, please refer to the YAML specification for each individual resource type - [model](models.md), [metrics_view](metrics-views.md), and [explore](explore-dashboards.md)
 
 :::note Use plurals when specifying project-wide defaults
-In your `rill.yaml`, the top level property for the resource type needs to be **plural**, such as `models`, `metrics_views` and `explores`.
+In your `rill.yaml`, the top-level property for the resource type needs to be **plural**, such as `models`, `metrics_views`, and `explores`.
 :::
 
 :::info Hierarchy of inheritance and property overrides
-As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [models](models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object level properties (e.g. `models.yaml` or `explore-dashboards.yaml`)
-2. [Environment](/developers/build/models/templating) level properties (e.g. a specific property that have been set for `dev`)
+As a general rule of thumb, properties that have been specified at a more _granular_ level will supersede or override higher-level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
+1. Individual [models](models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object-level properties (e.g. `models.yaml` or `explore-dashboards.yaml`)
+2. [Environment](/developers/build/models/templating) level properties (e.g. a specific property that has been set for `dev`)
 3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
 :::
 
 
 ### `models`
 
-_[object]_ - Defines project-wide default settings for models. Unless overridden, individual models will inherit these defaults. 
+_[object]_ - Defines project-wide default settings for models. Unless overridden, individual models will inherit these defaults.
 
 ### `metrics_views`
 
-_[object]_ - Defines project-wide default settings for metrics_views. Unless overridden, individual metrics_views will inherit these defaults. 
+_[object]_ - Defines project-wide default settings for metrics_views. Unless overridden, individual metrics_views will inherit these defaults.
 
 ### `explores`
 
-_[object]_ - Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults. 
+_[object]_ - Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults.
 
 ### `canvases`
 
-_[object]_ - Defines project-wide default settings for canvases. Unless overridden, individual canvases will inherit these defaults. 
+_[object]_ - Defines project-wide default settings for canvases. Unless overridden, individual canvases will inherit these defaults.
 
 ```yaml
-# For complete examples, see: 
+# For complete examples, see:
 # https://docs.rilldata.com/developers/build/rill-project-file#dashboard-defaults
 models:
     refresh:
@@ -109,7 +109,7 @@ canvases:
 
 ## Setting variables
 
-Primarily useful for [templating](/developers/build/connectors/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/developers/build/connectors/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer.
 :::info Overriding variables locally
 Variables also follow an order of precedence and can be overridden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 ```bash
@@ -128,55 +128,57 @@ Similar to how [connector credentials can be pushed / pulled](/developers/build/
 ### `env`
 
 _[object]_ - A map of key-value pairs for setting variables on your project. It accepts both user-defined variables (for use with templating) and reserved `rill.*` keys that configure project-wide settings. The full set of reserved keys is listed below.
- 
 
-  - **`rill.download_limit_bytes`** - _[integer]_ - Limit on the size of an exported file, in bytes. Default: 134217728 (128 MB). 
 
-  - **`rill.interactive_sql_row_limit`** - _[integer]_ - Row limit for interactive SQL queries; does not apply to SQL exports. Default: 10000. 
+  - **`rill.download_limit_bytes`** - _[integer]_ - Limit on the size of an exported file, in bytes. Default: 134217728 (128 MB).
 
-  - **`rill.models.default_materialize`** - _[boolean]_ - Materialize models as tables by default instead of views. Default: false. 
+  - **`rill.interactive_sql_row_limit`** - _[integer]_ - Row limit for interactive SQL queries; does not apply to SQL exports. Default: 10000.
 
-  - **`rill.models.materialize_delay_seconds`** - _[integer]_ - Delay before materializing models, in seconds. Default: 0. 
+  - **`rill.models.default_materialize`** - _[boolean]_ - Materialize models as tables by default instead of views. Default: false.
 
-  - **`rill.models.concurrent_execution_limit`** - _[integer]_ - Maximum number of concurrent model executions. Default: 5. 
+  - **`rill.models.materialize_delay_seconds`** - _[integer]_ - Delay before materializing models, in seconds. Default: 0.
 
-  - **`rill.model.timeout_override`** - _[integer]_ - Timeout for model reconciliation in seconds, used in validation mode. Default: 0 (no override). 
+  - **`rill.models.concurrent_execution_limit`** - _[integer]_ - Maximum number of concurrent model executions. Default: 5.
 
-  - **`rill.model.partitions_warn_on_failure`** - _[boolean]_ - When true, partition execution failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise. 
+  - **`rill.model.timeout_override`** - _[integer]_ - Timeout for model reconciliation in seconds, used in validation mode. Default: 0 (no override).
 
-  - **`rill.model.tests_warn_on_failure`** - _[boolean]_ - When true, model test failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise. 
+  - **`rill.model.partitions_warn_on_failure`** - _[boolean]_ - When true, partition execution failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise.
 
-  - **`rill.metrics.approximate_comparisons`** - _[boolean]_ - Rewrite metrics comparison queries to use an approximate, faster form. Approximate comparisons may not return data points for all values. Default: true. 
+  - **`rill.model.tests_warn_on_failure`** - _[boolean]_ - When true, model test failures are surfaced as non-blocking warnings instead of errors. Default: true in `prod`, false otherwise.
 
-  - **`rill.metrics.approximate_comparisons_cte`** - _[boolean]_ - Rewrite metrics comparison queries to use a CTE for the base query. Default: false. 
+  - **`rill.models.disable`** - _[boolean]_ - When true, model execution is disabled. Useful for stopping any ingestion in Rill temporarily. Default: false.
 
-  - **`rill.metrics.approximate_comparisons_two_phase_limit`** - _[integer]_ - Row-limit threshold under which metrics comparison queries use a two-phase strategy (base values first, comparison values second). Default: 250. 
+  - **`rill.metrics.approximate_comparisons`** - _[boolean]_ - Rewrite metrics comparison queries to use an approximate, faster form. Approximate comparisons may not return data points for all values. Default: true.
 
-  - **`rill.metrics.exactify_druid_topn`** - _[boolean]_ - Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false. 
+  - **`rill.metrics.approximate_comparisons_cte`** - _[boolean]_ - Rewrite metrics comparison queries to use a CTE for the base query. Default: false.
 
-  - **`rill.metrics.timeseries_null_filling_implementation`** - _[string]_ - Null-filling implementation for timeseries queries. One of `none`, `new`, or `pushdown`. Default: `pushdown`. 
+  - **`rill.metrics.approximate_comparisons_two_phase_limit`** - _[integer]_ - Row-limit threshold under which metrics comparison queries use a two-phase strategy (base values first, comparison values second). Default: 250.
 
-  - **`rill.alerts.default_streaming_refresh_cron`** - _[string]_ - Default cron expression for refreshing alerts that depend on streaming refs (for example, external tables in Druid where new data may arrive at any time). Default: `0 0 * * *` (every 24 hours). 
+  - **`rill.metrics.exactify_druid_topn`** - _[boolean]_ - Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false.
 
-  - **`rill.alerts.fast_streaming_refresh_cron`** - _[string]_ - Cron expression for refreshing streaming alerts on always-on OLAP connectors. Default: `*/10 * * * *` (every 10 minutes). 
+  - **`rill.metrics.timeseries_null_filling_implementation`** - _[string]_ - Null-filling implementation for timeseries queries. One of `none`, `new`, or `pushdown`. Default: `pushdown`.
 
-  - **`rill.parser.skip_updates_if_parse_errors`** - _[boolean]_ - Short-circuit project parser reconciliation when parse errors exist. Default: false. 
+  - **`rill.alerts.default_streaming_refresh_cron`** - _[string]_ - Default cron expression for refreshing alerts that depend on streaming refs (for example, external tables in Druid where new data may arrive at any time). Default: `0 0 * * *` (every 24 hours).
 
-  - **`rill.ai.completion_timeout_seconds`** - _[integer]_ - Maximum duration of a full AI completion request (which may include multiple LLM calls and tool uses), in seconds. Default: 300. 
+  - **`rill.alerts.fast_streaming_refresh_cron`** - _[string]_ - Cron expression for refreshing streaming alerts on always-on OLAP connectors. Default: `*/10 * * * *` (every 10 minutes).
 
-  - **`rill.ai.llm_timeout_seconds`** - _[integer]_ - Maximum duration of a single LLM completion request, in seconds. Default: 180. 
+  - **`rill.parser.skip_updates_if_parse_errors`** - _[boolean]_ - Short-circuit project parser reconciliation when parse errors exist. Default: false.
 
-  - **`rill.ai.default_query_limit`** - _[integer]_ - Default row limit applied to AI tool queries when no limit is specified. Default: 25. 
+  - **`rill.ai.completion_timeout_seconds`** - _[integer]_ - Maximum duration of a full AI completion request (which may include multiple LLM calls and tool uses), in seconds. Default: 300.
 
-  - **`rill.ai.max_query_limit`** - _[integer]_ - Maximum row limit allowed for AI tool queries. Default: 250. 
+  - **`rill.ai.llm_timeout_seconds`** - _[integer]_ - Maximum duration of a single LLM completion request, in seconds. Default: 180. Note: when using Rill's hosted AI service (i.e. not a self-configured LLM), the admin server enforces a hard upper bound of 10 minutes, so values above that have no effect.
 
-  - **`rill.ai.require_time_range`** - _[boolean]_ - Require AI tool queries to include a time range filter; reject queries without one. Default: true. 
+  - **`rill.ai.default_query_limit`** - _[integer]_ - Default row limit applied to AI tool queries when no limit is specified. Default: 25.
 
-  - **`rill.ai.max_time_range_days`** - _[integer]_ - Maximum time range allowed for AI tool queries, in days. Set to 0 for no limit. Default: 0. 
+  - **`rill.ai.max_query_limit`** - _[integer]_ - Maximum row limit allowed for AI tool queries. Default: 250.
 
-  - **`rill.strict_resolver_properties`** - _[boolean]_ - Return an error when a resolver contains properties not recognized by its implementation. Default: false. 
+  - **`rill.ai.require_time_range`** - _[boolean]_ - Require AI tool queries to include a time range filter; reject queries without one. Default: true.
 
-  - **`rill.strict_model_properties`** - _[boolean]_ - Return an error when a model contains unmapped properties. Default: false. 
+  - **`rill.ai.max_time_range_days`** - _[integer]_ - Maximum time range allowed for AI tool queries, in days. Set to 0 for no limit. Default: 0.
+
+  - **`rill.strict_resolver_properties`** - _[boolean]_ - Return an error when a resolver contains properties not recognized by its implementation. Default: false.
+
+  - **`rill.strict_model_properties`** - _[boolean]_ - Return an error when a model contains unmapped properties. Default: false.
 
 ```yaml
 env:
@@ -188,17 +190,17 @@ env:
 
 The public_paths and ignore_paths properties in the rill.yaml file provide control over which files and directories are processed or exposed by Rill. The public_paths property defines a list of file or directory paths to expose over HTTP. By default, it includes ['./public']. The ignore_paths property specifies a list of files or directories that Rill excludes during ingestion and parsing. This prevents unnecessary or incompatible content from affecting the project.
 :::tip
-Don't forget the leading `/` when specifying the path for `ignore_paths` and this path is also assuming the relative path from your project root.
+Don't forget the leading `/` when specifying the path for `ignore_paths`. This path is relative to your project root.
 :::
 
 
 ### `public_paths`
 
-_[array of string]_ - List of file or directory paths to expose over HTTP. Defaults to ['./public'] 
+_[array of string]_ - List of file or directory paths to expose over HTTP. Defaults to ['./public']
 
 ### `ignore_paths`
 
-_[array of string]_ - A list of file or directory paths to exclude from parsing. Useful for ignoring extraneous or non-Rill files in the project 
+_[array of string]_ - A list of file or directory paths to exclude from parsing. Useful for ignoring extraneous or non-Rill files in the project
 
 ```yaml
 ignore_paths:
@@ -208,23 +210,23 @@ ignore_paths:
 
 ## Testing access policies
 
-During development, it is always a good idea to check if your [access policies](/developers/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/developers/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users, which enables a drop-down in the dashboard preview to view as a specific user.
 :::info The View as selector is not visible in my dashboard, why?
-This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by every user.
+This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and its contents are viewable by every user.
 :::
 
 
 ### `mock_users`
 
-_[array of object]_ - A list of mock users used to test dashboard security policies within the project 
+_[array of object]_ - A list of mock users used to test dashboard security policies within the project
 
   - **`email`** - _[string]_ - The email address of the mock user. This field is required _(required)_
 
-  - **`name`** - _[string]_ - The name of the mock user. 
+  - **`name`** - _[string]_ - The name of the mock user.
 
-  - **`admin`** - _[boolean]_ - Indicates whether the mock user has administrative privileges 
+  - **`admin`** - _[boolean]_ - Indicates whether the mock user has administrative privileges
 
-  - **`groups`** - _[array of string]_ - An array of group names that the mock user is a member of 
+  - **`groups`** - _[array of string]_ - An array of group names that the mock user is a member of
 
 ```yaml
 mock_users:
@@ -245,8 +247,8 @@ mock_users:
 
 ### `dev`
 
-_[object]_ - Overrides any properties in development environment. 
+_[object]_ - Overrides any properties in development environment.
 
 ### `prod`
 
-_[object]_ - Overrides any properties in production environment. 
+_[object]_ - Overrides any properties in production environment.

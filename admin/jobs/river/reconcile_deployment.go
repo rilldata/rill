@@ -55,13 +55,11 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 	case database.DeploymentStatusRunning:
 		// Check current status to either start or update the deployment
 		if depl.Status == database.DeploymentStatusRunning {
-			// Update the deployment status to updating
-			depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusUpdating, "Updating...")
-			if err != nil {
-				return err
-			}
-
-			// Update the deployment by updating its runtime instance and resources.
+			// Reconcile the running deployment towards its desired configuration.
+			// UpdateDeploymentInner is change-aware: it only reprovisions when the provisioning args have
+			// changed, and otherwise performs a lightweight drift-aware resource check. We therefore keep the
+			// deployment in the Running status here rather than flipping it to Updating, which would otherwise flap
+			// on every periodic reconciliation.
 			err := w.admin.UpdateDeploymentInner(ctx, depl)
 			if err != nil {
 				return err

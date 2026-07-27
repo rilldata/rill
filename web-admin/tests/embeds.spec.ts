@@ -2,84 +2,105 @@ import { expect, type Page } from "@playwright/test";
 import { test } from "./setup/base";
 
 /**
- * Asserts that at least one message in the array contains the expected substring.
- * On failure, provides detailed output showing expected vs received messages.
+ * Captures the embed's `console.log` messages (the postMessage protocol echoes
+ * its traffic to the console) and exposes web-first assertions over them. The
+ * captured messages are encapsulated here rather than passed around as a shared
+ * array, so it is clear that the listener owns and mutates them.
  */
-function expectMessageContaining(
-  messages: string[],
-  expectedSubstring: string,
-) {
-  const found = messages.some((msg) => msg.includes(expectedSubstring));
-  if (!found) {
-    const formattedMessages =
-      messages.length > 0
-        ? messages.map((m, i) => `  [${i}]: ${m}`).join("\n")
-        : "  (no messages captured)";
-    expect
-      .soft(
-        found,
-        `No message containing expected substring.
+class EmbedMessageRecorder {
+  private readonly messages: string[] = [];
+  private readonly ready: Promise<void>;
+
+  constructor(embedPage: Page) {
+    this.ready = new Promise<void>((resolve) => {
+      embedPage.on("console", async (msg) => {
+        if (msg.type() !== "log") return;
+
+        try {
+          const args = await Promise.all(
+            msg.args().map((arg) => arg.jsonValue()),
+          );
+          const logMessage = JSON.stringify(args);
+          this.messages.push(logMessage);
+          if (logMessage.includes(`{"method":"ready"}`)) {
+            resolve();
+          }
+        } catch {
+          // Ignore errors in parsing. Any rogue log shouldn't break the test.
+          // There is also a race condition when browser/page is closed while we
+          // are extracting the values in the await.
+        }
+      });
+    });
+  }
+
+  /** Resolves once the embed has posted its `ready` message. */
+  waitForReady() {
+    return this.ready;
+  }
+
+  /** Asserts that at least one captured message contains the substring. */
+  async expectContaining(expectedSubstring: string) {
+    const found = await this.poll((msg) => msg.includes(expectedSubstring));
+    if (!found) {
+      expect
+        .soft(
+          found,
+          `No message containing expected substring.
 
 Expected substring:
   ${expectedSubstring}
 
 Received messages:
-${formattedMessages}`,
-      )
-      .toBeTruthy();
+${this.formatMessages()}`,
+        )
+        .toBeTruthy();
+    }
   }
-}
 
-/**
- * Asserts that at least one message in the array matches the predicate.
- * On failure, provides detailed output showing the expectation description and received messages.
- */
-function expectMessageMatching(
-  messages: string[],
-  predicate: (msg: string) => boolean,
-  description: string,
-) {
-  const found = messages.some(predicate);
-  if (!found) {
-    const formattedMessages =
-      messages.length > 0
-        ? messages.map((m, i) => `  [${i}]: ${m}`).join("\n")
-        : "  (no messages captured)";
-    expect
-      .soft(
-        found,
-        `No message matching expected condition.
+  /** Asserts that at least one captured message matches the predicate. */
+  async expectMatching(
+    predicate: (msg: string) => boolean,
+    description: string,
+  ) {
+    const found = await this.poll(predicate);
+    if (!found) {
+      expect
+        .soft(
+          found,
+          `No message matching expected condition.
 
 Expected:
   ${description}
 
 Received messages:
-${formattedMessages}`,
-      )
-      .toBeTruthy();
+${this.formatMessages()}`,
+        )
+        .toBeTruthy();
+    }
   }
-}
 
-async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
-  return new Promise<void>((resolve) => {
-    embedPage.on("console", async (msg) => {
-      if (msg.type() !== "log") return;
+  /**
+   * Polls the captured messages until one satisfies the predicate, or the
+   * timeout elapses. Returns whether a matching message was found, so callers
+   * can emit a detailed, debuggable failure rather than a bare timeout.
+   */
+  private async poll(predicate: (msg: string) => boolean, timeout = 5_000) {
+    try {
+      await expect
+        .poll(() => this.messages.some(predicate), { timeout })
+        .toBe(true);
+    } catch {
+      // Timed out: fall through so the caller can report the captured messages.
+    }
+    return this.messages.some(predicate);
+  }
 
-      try {
-        const args = await Promise.all(
-          msg.args().map((arg) => arg.jsonValue()),
-        );
-        const logMessage = JSON.stringify(args);
-        logMessages.push(logMessage);
-        if (logMessage.includes(`{"method":"ready"}`)) {
-          resolve();
-        }
-      } catch {
-        // Ignore errors in parsing. Any rogue log shouldn't break the test.
-        // There is also a race condition when browser/page is closed while we are extracting the values in the await.
-      }
-    });
-  });
+  private formatMessages() {
+    return this.messages.length > 0
+      ? this.messages.map((m, i) => `  [${i}]: ${m}`).join("\n")
+      : "  (no messages captured)";
+  }
 }
 
 test.describe("Embeds", () => {
@@ -95,15 +116,13 @@ test.describe("Embeds", () => {
     });
 
     test("state is emitted for embeds", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
       await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
-      await embedPage.waitForTimeout(500);
 
-      expectMessageContaining(
-        logMessages,
+      await recorder.expectContaining(
         "tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
       );
     });
@@ -132,12 +151,15 @@ test.describe("Embeds", () => {
     });
 
     test("getState returns from embed", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
       await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
-      await embedPage.waitForTimeout(500);
+      // Wait for the click's state change to propagate before requesting it.
+      await recorder.expectContaining(
+        "f=advertiser_name+IN+%28%27Instacart%27%29",
+      );
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
@@ -147,17 +169,14 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
-      expectMessageContaining(
-        logMessages,
+      await recorder.expectContaining(
         `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29"}}`,
       );
     });
 
     test("setState changes embedded explore", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
       await embedPage.evaluate(() => {
@@ -175,7 +194,7 @@ test.describe("Embeds", () => {
       await expect(
         frame.getByRole("row", { name: "Instacart $2.1k" }),
       ).toBeVisible();
-      expectMessageContaining(logMessages, `{"id":1337,"result":true}`);
+      await recorder.expectContaining(`{"id":1337,"result":true}`);
 
       // Set new rill syntax that includes `+` in the syntax.
       await embedPage.evaluate(() => {
@@ -193,12 +212,84 @@ test.describe("Embeds", () => {
       await expect(
         frame.getByRole("row", { name: "Instacart $1.1k" }),
       ).toBeVisible();
-      expectMessageContaining(logMessages, `{"id":1338,"result":true}`);
+      await recorder.expectContaining(`{"id":1338,"result":true}`);
+    });
+
+    test("setValidState changes embedded explore", async ({ embedPage }) => {
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
+      const frame = embedPage.frameLocator("iframe");
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1337,
+            method: "setValidState",
+            params: {
+              state:
+                "tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
+            },
+          },
+          "*",
+        );
+      });
+      await expect(
+        frame.getByRole("row", { name: "Instacart $2.1k" }),
+      ).toBeVisible();
+      await recorder.expectContaining(
+        `{"id":1337,"result":{"success":true,"appliedState":"tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29","errors":[]}}`,
+      );
+
+      // Set new rill syntax that includes `+` in the syntax.
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1338,
+            method: "setValidState",
+            params: {
+              state:
+                "tr=2D+as+of+latest%2FD%2B1D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
+            },
+          },
+          "*",
+        );
+      });
+      await expect(
+        frame.getByRole("row", { name: "Instacart $1.1k" }),
+      ).toBeVisible();
+      await recorder.expectContaining(
+        `{"id":1338,"result":{"success":true,"appliedState":"tr=2D+as+of+latest%2FD%2B1D&grain=hour&f=advertiser_name+IN+%28%27Instacart%27%29","errors":[]}}`,
+      );
+
+      // Set with invalid filter.
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1338,
+            method: "setValidState",
+            params: {
+              state:
+                "tr=P7D&grain=day&f=advertiser_name_invalid+IN+%28%27Instacart%27%29",
+            },
+          },
+          "*",
+        );
+      });
+      // Filter was removed
+      await expect(
+        frame.getByRole("row", { name: "Instacart $2.1k" }),
+      ).toBeVisible();
+      await recorder.expectContaining(
+        `[{"id":1338,"result":{"success":true,"appliedState":"tr=P7D&grain=day","errors":["Selected filter dimension: \\"advertiser_name_invalid\\" is not valid."]}}]`,
+      );
     });
 
     test("getThemeMode returns current theme mode", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
@@ -208,10 +299,7 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
-      expectMessageMatching(
-        logMessages,
+      await recorder.expectMatching(
         (msg) =>
           msg.includes(`"method":"getThemeMode"`) ||
           (msg.includes(`"id":2001`) &&
@@ -223,8 +311,8 @@ test.describe("Embeds", () => {
     });
 
     test("setThemeMode changes theme to dark", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
       await embedPage.evaluate(() => {
@@ -239,20 +327,14 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
       // Check that dark class is applied to the document
-      const hasDarkClass = await frame
-        .locator("html.dark")
-        .count()
-        .then((count) => count > 0);
-      expect(hasDarkClass).toBeTruthy();
-      expectMessageContaining(logMessages, `{"id":2002,"result":true}`);
+      await expect(frame.locator("html.dark")).toBeAttached();
+      await recorder.expectContaining(`{"id":2002,"result":true}`);
     });
 
     test("setThemeMode changes theme to light", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
       // First set to dark
@@ -268,7 +350,7 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
+      await expect(frame.locator("html.dark")).toBeAttached();
 
       // Then set to light
       await embedPage.evaluate(() => {
@@ -283,20 +365,14 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
       // Check that dark class is not present
-      const hasDarkClass = await frame
-        .locator("html.dark")
-        .count()
-        .then((count) => count > 0);
-      expect(hasDarkClass).toBeFalsy();
-      expectMessageContaining(logMessages, `{"id":2004,"result":true}`);
+      await expect(frame.locator("html.dark")).not.toBeAttached();
+      await recorder.expectContaining(`{"id":2004,"result":true}`);
     });
 
     test("setThemeMode changes theme to system", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
@@ -310,14 +386,12 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
-      expectMessageContaining(logMessages, `{"id":2005,"result":true}`);
+      await recorder.expectContaining(`{"id":2005,"result":true}`);
     });
 
     test("setThemeMode rejects invalid theme mode", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
@@ -331,10 +405,7 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
-      expectMessageMatching(
-        logMessages,
+      await recorder.expectMatching(
         (msg) =>
           msg.includes(`"id":2006`) &&
           msg.includes(`"error"`) &&
@@ -350,8 +421,8 @@ test.describe("Embeds", () => {
       });
 
       test("init state is applied to dashboard", async ({ embedPage }) => {
-        const logMessages: string[] = [];
-        await waitForReadyMessage(embedPage, logMessages);
+        const recorder = new EmbedMessageRecorder(embedPage);
+        await recorder.waitForReady();
         const frame = embedPage.frameLocator("iframe");
 
         await expect(
@@ -361,10 +432,8 @@ test.describe("Embeds", () => {
         ).toContainText(
           /Advertising Spend Overall\s+\$252.33\s+-\$52.08\s+-17%/m,
         );
-        await embedPage.waitForTimeout(500);
 
-        expectMessageContaining(
-          logMessages,
+        await recorder.expectContaining(
           "tr=PT6H&compare_tr=rill-PP&grain=hour&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
@@ -386,32 +455,33 @@ test.describe("Embeds", () => {
     });
 
     test("state is emitted for embeds", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
       await frame
         .getByRole("row", { name: "Instacart $1.1k" })
         .scrollIntoViewIfNeeded();
       await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
-      await embedPage.waitForTimeout(500);
 
-      expectMessageContaining(
-        logMessages,
+      await recorder.expectContaining(
         "tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
       );
     });
 
     test("getState returns from embed", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
       await frame
         .getByRole("row", { name: "Instacart $1.1k" })
         .scrollIntoViewIfNeeded();
       await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
-      await embedPage.waitForTimeout(500);
+      // Wait for the click's state change to propagate before requesting it.
+      await recorder.expectContaining(
+        "f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
+      );
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
@@ -421,20 +491,15 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
-      expectMessageContaining(
-        logMessages,
+      await recorder.expectContaining(
         `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29"}}`,
       );
     });
 
     test("setState changes embedded canvas", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
-
-      await embedPage.waitForTimeout(500);
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
@@ -451,7 +516,7 @@ test.describe("Embeds", () => {
       await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
         /Advertising Spend Overall\s*\$2,066\s*\+\$1,926 \+1k%\s*vs previous week/,
       );
-      expectMessageContaining(logMessages, `{"id":1337,"result":true}`);
+      await recorder.expectContaining(`{"id":1337,"result":true}`);
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
@@ -468,14 +533,14 @@ test.describe("Embeds", () => {
       await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
         /Advertising Spend Overall\s*\$1,128\s*\+\$1,075 \+2k%\s*vs previous period/,
       );
-      expectMessageContaining(logMessages, `{"id":1338,"result":true}`);
+      await recorder.expectContaining(`{"id":1338,"result":true}`);
     });
 
     test("getThemeMode returns current theme mode for canvas", async ({
       embedPage,
     }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
@@ -485,10 +550,7 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
-      expectMessageMatching(
-        logMessages,
+      await recorder.expectMatching(
         (msg) =>
           msg.includes(`"id":3001`) &&
           (msg.includes(`"themeMode":"light"`) ||
@@ -499,8 +561,8 @@ test.describe("Embeds", () => {
     });
 
     test("setThemeMode works for canvas", async ({ embedPage }) => {
-      const logMessages: string[] = [];
-      await waitForReadyMessage(embedPage, logMessages);
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
       await embedPage.evaluate(() => {
@@ -515,14 +577,8 @@ test.describe("Embeds", () => {
         );
       });
 
-      await embedPage.waitForTimeout(500);
-
-      const hasDarkClass = await frame
-        .locator("html.dark")
-        .count()
-        .then((count) => count > 0);
-      expect(hasDarkClass).toBeTruthy();
-      expectMessageContaining(logMessages, `{"id":3002,"result":true}`);
+      await expect(frame.locator("html.dark")).toBeAttached();
+      await recorder.expectContaining(`{"id":3002,"result":true}`);
     });
 
     test.describe("embedded canvas with initial state", () => {
@@ -532,17 +588,15 @@ test.describe("Embeds", () => {
       });
 
       test("init state is applied to canvas", async ({ embedPage }) => {
-        const logMessages: string[] = [];
-        await waitForReadyMessage(embedPage, logMessages);
+        const recorder = new EmbedMessageRecorder(embedPage);
+        await recorder.waitForReady();
         const frame = embedPage.frameLocator("iframe");
 
         await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
           /Advertising Spend Overall\s+\$252.33\s+-\$52.08 -17%\s+vs previous period/m,
         );
-        await embedPage.waitForTimeout(500);
 
-        expectMessageContaining(
-          logMessages,
+        await recorder.expectContaining(
           "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
@@ -550,8 +604,8 @@ test.describe("Embeds", () => {
   });
 
   test("navigation works as expected", async ({ embedPage }) => {
-    const logMessages: string[] = [];
-    await waitForReadyMessage(embedPage, logMessages);
+    const recorder = new EmbedMessageRecorder(embedPage);
+    await recorder.waitForReady();
     const frame = embedPage.frameLocator("iframe");
 
     // Time range is the default
@@ -576,10 +630,7 @@ test.describe("Embeds", () => {
       })
       .click();
 
-    await embedPage.waitForTimeout(500);
-
-    expectMessageContaining(
-      logMessages,
+    await recorder.expectContaining(
       `{"method":"navigation","params":{"from":"bids_explore","to":"auction_explore"}}`,
     );
     // Time range is still the default
@@ -592,10 +643,7 @@ test.describe("Embeds", () => {
       .first()
       .click();
 
-    await embedPage.waitForTimeout(500);
-
-    expectMessageContaining(
-      logMessages,
+    await recorder.expectContaining(
       `{"method":"navigation","params":{"from":"auction_explore","to":"bids_canvas"}}`,
     );
     // Time range is still the default
@@ -617,10 +665,7 @@ test.describe("Embeds", () => {
       .getByRole("menuitemcheckbox", { name: "Programmatic Ads Bids" })
       .click();
 
-    await embedPage.waitForTimeout(500);
-
-    expectMessageContaining(
-      logMessages,
+    await recorder.expectContaining(
       `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
     );
     // Old selection has persisted
@@ -633,10 +678,7 @@ test.describe("Embeds", () => {
       .first()
       .click();
 
-    await embedPage.waitForTimeout(500);
-
-    expectMessageContaining(
-      logMessages,
+    await recorder.expectContaining(
       `{"method":"navigation","params":{"from":"bids_explore","to":"bids_canvas"}}`,
     );
 
@@ -645,10 +687,8 @@ test.describe("Embeds", () => {
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
-    await embedPage.waitForTimeout(500);
 
-    expectMessageContaining(
-      logMessages,
+    await recorder.expectContaining(
       `{"method":"navigation","params":{"from":"bids_canvas","to":"dashboardListing"}}`,
     );
     // Check that the dashboards are listed
@@ -661,10 +701,8 @@ test.describe("Embeds", () => {
 
     // Go to `Programmatic Ads Auction` using the links on home
     await frame.getByRole("link", { name: "Programmatic Ads Bids" }).click();
-    await embedPage.waitForTimeout(500);
 
-    expectMessageContaining(
-      logMessages,
+    await recorder.expectContaining(
       `{"method":"navigation","params":{"from":"dashboardListing","to":"bids_explore"}}`,
     );
     // Old selection has persisted
@@ -672,10 +710,8 @@ test.describe("Embeds", () => {
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
-    await embedPage.waitForTimeout(500);
 
-    expectMessageContaining(
-      logMessages,
+    await recorder.expectContaining(
       `{"method":"navigation","params":{"from":"bids_explore","to":"dashboardListing"}}`,
     );
     // Go to `Bids Canvas Dashboard` using the links on home
@@ -684,10 +720,7 @@ test.describe("Embeds", () => {
       .first()
       .click();
 
-    await embedPage.waitForTimeout(500);
-
-    expectMessageContaining(
-      logMessages,
+    await recorder.expectContaining(
       `{"method":"navigation","params":{"from":"dashboardListing","to":"bids_canvas"}}`,
     );
     // Old selection has persisted

@@ -52,6 +52,138 @@ sql: SELECT '{{.partition.now}}::TIMESTAMP' AS now
 	})
 }
 
+// TestPatchModeOutputConnectorChangePreservesData verifies that in change_mode=patch,
+// changing the model's output connector never drops the existing data in the old connector.
+// The reconciler leaves the old output in place (for the user to remove manually),
+// on both automatic runs and explicit triggers.
+func TestPatchModeOutputConnectorChangePreservesData(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	// Declare a second output connector to migrate to.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"connectors/alt.yaml": `
+type: connector
+driver: duckdb
+`,
+		// An upstream model whose refreshes drive an automatic (ref_update) reconcile of the downstream model.
+		"models/up.yaml": `
+type: model
+sql: SELECT 1 AS id
+`,
+		// The downstream incremental patch-mode model, initially writing to the default connector.
+		"models/down.yaml": `
+type: model
+incremental: true
+change_mode: patch
+refresh:
+  ref_update: true
+sql: SELECT * FROM up
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	// Explicitly build the downstream model so it has prior state on the default connector.
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "down", Full: true})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
+
+	// Change the output connector.
+	// In patch mode this is absorbed (spec hash patched) without triggering execution, so nothing is dropped yet.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"models/down.yaml": `
+type: model
+incremental: true
+change_mode: patch
+refresh:
+  ref_update: true
+output:
+  connector: alt
+sql: SELECT * FROM up
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
+
+	// Drive an automatic reconcile of the downstream model by refreshing the upstream model (ref_update).
+	// This is not an explicit trigger of "down", so the old connector's data must not be dropped.
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "up", Full: true})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
+
+	// An explicit full trigger of the downstream model must also leave the old connector's data in place.
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "down", Full: true})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "down", 1)
+}
+
+// TestRenameDoesNotRebuild verifies that renaming a model file renames the underlying table
+// without re-executing the model or discarding its incremental state.
+func TestRenameDoesNotRebuild(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/foo.yaml": `
+type: model
+incremental: true
+sql: SELECT 1 AS num
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo", 1)
+
+	// Run an incremental refresh so the model accumulates output that a full rebuild would lose.
+	testruntime.RefreshAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"})
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo", 2)
+
+	refreshedOn := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo").GetModel().State.RefreshedOn
+
+	// Rename the model file without changing its contents.
+	testruntime.RenameFile(t, rt, instanceID, "models/foo.yaml", "models/foo2.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// The output table should have been renamed, not rebuilt: the appended row survives and RefreshedOn is unchanged.
+	testruntime.RequireNoOLAPTable(t, rt, instanceID, "foo")
+	testruntime.RequireOLAPTableCount(t, rt, instanceID, "foo2", 2)
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo2").GetModel()
+	require.Equal(t, "foo2", model.State.ResultTable)
+	require.Equal(t, refreshedOn.AsTime(), model.State.RefreshedOn.AsTime())
+}
+
+func TestPartitionedIncrementalPostExecSeesIncrementalFlag(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/multiply.yaml": `
+type: model
+incremental: true
+materialize: true
+partitions:
+  sql: SELECT range AS num FROM range(1, 4)
+sql: SELECT {{ .partition.num }} AS num
+post_exec: |
+  {{ if incremental }} UPDATE multiply SET num = num * 10 WHERE num = {{ .partition.num }} {{ end }}
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Exactly two of the three partitions ran incrementally and were multiplied by 10 (>= 10).
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM multiply WHERE num >= 10`},
+		Result:     []map[string]any{{"count": 2}},
+	})
+
+	// The first partition ran non-incrementally and was left untouched (< 10).
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM multiply WHERE num < 10`},
+		Result:     []map[string]any{{"count": 1}},
+	})
+}
+
 func TestModelTests(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 
@@ -262,6 +394,150 @@ tests:
 	}
 }
 
+func TestModelPartitionsSkippedClearsErrorState(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	// Incremental, partitioned model where the partition with value 'x' fails to execute (invalid CAST),
+	// while '1' and '2' succeed. The first partition to run is the one with the highest index (partitions are
+	// loaded idx DESC), so we order the values descending to ensure a successful, numeric partition runs first.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+partitions:
+  sql: SELECT v FROM (VALUES ('1'), ('2'), ('x')) t(v) ORDER BY v DESC
+sql: SELECT CAST('{{.partition.v}}' AS INTEGER) AS n
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	// Full refresh so every partition actually executes (the first incremental run only runs one partition).
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "partitioned", Full: true})
+
+	// The 'x' partition errored, so the model is in an error state.
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.True(t, model.State.PartitionsHaveErrors)
+
+	// Skip the errored partition, then reconcile the model (mirrors what the SkipModelPartitions RPC does).
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	err = catalog.UpdateModelPartitionsSkipped(ctx, model.State.PartitionsModelId, nil, false, true)
+	release()
+	require.NoError(t, err)
+
+	testruntime.ReconcileAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partitioned"})
+
+	// Reconciling recomputes the partition error state: with the errored partition skipped, the model is no longer errored.
+	model = testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.False(t, model.State.PartitionsHaveErrors)
+}
+
+func TestModelRefreshSkippedPartitions(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+partitions:
+  sql: SELECT v FROM (VALUES (1), (2), (3)) t(v)
+sql: SELECT {{.partition.v}} AS n
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "partitioned", Full: true})
+
+	modelID := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel().State.PartitionsModelId
+
+	findPartitions := func(opts *drivers.FindModelPartitionsOptions) []drivers.ModelPartition {
+		catalog, release, err := rt.Catalog(ctx, instanceID)
+		require.NoError(t, err)
+		defer release()
+		opts.ModelID = modelID
+		ps, err := catalog.FindModelPartitions(ctx, opts)
+		require.NoError(t, err)
+		return ps
+	}
+
+	// Skip all partitions by key (they've already executed, so they aren't pending).
+	var keys []string
+	for _, p := range findPartitions(&drivers.FindModelPartitionsOptions{}) {
+		keys = append(keys, p.Key)
+	}
+	require.Len(t, keys, 3)
+
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	err = catalog.UpdateModelPartitionsSkipped(ctx, modelID, keys, false, false)
+	release()
+	require.NoError(t, err)
+	require.Len(t, findPartitions(&drivers.FindModelPartitionsOptions{WhereSkipped: true}), 3)
+
+	// Refresh all skipped partitions: they should be un-skipped and re-executed.
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "partitioned", AllSkippedPartitions: true})
+
+	require.Empty(t, findPartitions(&drivers.FindModelPartitionsOptions{WhereSkipped: true}))
+
+	all := findPartitions(&drivers.FindModelPartitionsOptions{})
+	require.Len(t, all, 3)
+	for _, p := range all {
+		require.False(t, p.Skipped)
+		require.NotNil(t, p.ExecutedOn, "partition %s should have been re-executed", p.Key)
+	}
+}
+
+// TestPartitionsClearedOnDelete verifies that deleting a partitioned model that produced output
+// also removes its partition rows from the catalog (they would otherwise be orphaned forever,
+// since each model gets a fresh partitions model ID).
+func TestPartitionsClearedOnDelete(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/partitioned.yaml": `
+type: model
+incremental: true
+materialize: true
+partitions:
+  sql: SELECT range AS num FROM range(0, 3)
+sql: SELECT {{ .partition.num }} AS num
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Capture the partitions model ID and verify the partition rows exist in the catalog.
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+	require.NotNil(t, model)
+	require.NotEmpty(t, model.State.PartitionsModelId)
+
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	defer release()
+
+	partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID: model.State.PartitionsModelId,
+	})
+	require.NoError(t, err)
+	require.Len(t, partitions, 3)
+
+	// Delete the model file and reconcile. The output table is dropped and the partition rows must be cleared.
+	testruntime.DeleteFiles(t, rt, instanceID, "models/partitioned.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 1, 0, 0)
+
+	partitions, err = catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID: model.State.PartitionsModelId,
+	})
+	require.NoError(t, err)
+	require.Empty(t, partitions)
+}
+
 func TestExplicitPartitionRefreshDoesNotProcessNewPartitions(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 	ctx := t.Context()
@@ -302,7 +578,7 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 	require.NoError(t, err)
 
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: "test-partition-refresh"}
-	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
@@ -336,4 +612,93 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 	require.NotEmpty(t, partitions[0].ExecutedOn)
 	require.NotEmpty(t, partitionsAfterRefresh[0].ExecutedOn)
 	require.Greater(t, partitionsAfterRefresh[0].ExecutedOn.UnixNano(), partitions[0].ExecutedOn.UnixNano(), "The refreshed partition should have an updated timestamp")
+}
+
+func TestPartitionedIncrementalPostExecWithStaging(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"models/multiply_staged.yaml": `
+type: model
+incremental: true
+materialize: true
+partitions:
+  sql: SELECT range AS num FROM range(1, 4)
+sql: SELECT {{ .partition.num }} AS num
+post_exec: UPDATE multiply_staged SET num = num * 10 WHERE num = {{ .partition.num }}
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// All three partitions (including the first, which is staged) must be multiplied: {10, 20, 30}.
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM multiply_staged WHERE num >= 10`},
+		Result:     []map[string]any{{"count": 3}},
+	})
+}
+
+func TestIncrementalAppendPostExecWithStaging(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"models/appendmodel.yaml": `
+type: model
+incremental: true
+materialize: true
+incremental_strategy: append
+sql: SELECT 1 AS num UNION ALL SELECT 2 AS num
+post_exec: UPDATE appendmodel SET num = num + 100
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Exactly two rows, each incremented once: {101, 102}.
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT num FROM appendmodel ORDER BY num`},
+		Result:     []map[string]any{{"num": 101}, {"num": 102}},
+	})
+}
+
+func TestViewPostExecWithStaging(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"models/staged_view.yaml": `
+type: model
+materialize: false
+sql: SELECT 1 AS num
+post_exec: SELECT * FROM zzz_missing_table
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	res := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "staged_view")
+	require.Contains(t, res.Meta.ReconcileError, "zzz_missing_table", "post_exec must run for a staged view")
+}
+
+func TestStagedPostExecPairsWithPreExec(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"models/attach_model.yaml": `
+type: model
+materialize: true
+pre_exec: ATTACH ':memory:' AS extdb
+sql: SELECT 1 AS num
+post_exec: DETACH extdb
+`,
+		},
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 }

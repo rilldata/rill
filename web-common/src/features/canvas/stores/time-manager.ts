@@ -80,6 +80,7 @@ export class TimeManager {
     const ranges = this.checkAndSetTimeRangeOptions(spec);
     this.checkAndSetDefaultTimeRange(spec, ranges);
     this.checkAndSetAvailableTimeZones(spec);
+    this.checkAndSetAllowCustomRange(spec);
     this.checkIfHasTimeSeries(spec);
     this.checkAndSetFirstDayOfWeek(spec);
     this.checkAndSetMaxQueryTimeRange(spec);

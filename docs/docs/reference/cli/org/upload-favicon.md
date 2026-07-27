@@ -29,5 +29,5 @@ rill org upload-favicon [<org-name> [<path-to-image>]] [flags]
 
 ### SEE ALSO
 
-* [rill org](org.md)	 - Manage organisations
+* [rill org](org.md)	 - Manage organizations
 

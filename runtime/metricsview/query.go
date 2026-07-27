@@ -206,11 +206,11 @@ type Sort struct {
 type TimeRange struct {
 	Start         time.Time `json:"start" mapstructure:"start"`
 	End           time.Time `json:"end" mapstructure:"end"`
-	Expression    string    `json:"expression" mapstructure:"expression"`
-	IsoDuration   string    `json:"iso_duration" mapstructure:"iso_duration"`
-	IsoOffset     string    `json:"iso_offset" mapstructure:"iso_offset"`
-	RoundToGrain  TimeGrain `json:"round_to_grain" mapstructure:"round_to_grain"`
-	TimeDimension string    `json:"time_dimension" mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
+	Expression    string    `json:"expression,omitempty" mapstructure:"expression"`
+	IsoDuration   string    `json:"iso_duration,omitempty" mapstructure:"iso_duration"`
+	IsoOffset     string    `json:"iso_offset,omitempty" mapstructure:"iso_offset"`
+	RoundToGrain  TimeGrain `json:"round_to_grain,omitempty" mapstructure:"round_to_grain"`
+	TimeDimension string    `json:"time_dimension,omitempty" mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
 }
 
 func (tr *TimeRange) IsZero() bool {

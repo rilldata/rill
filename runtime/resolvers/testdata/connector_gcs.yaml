@@ -106,7 +106,7 @@ tests:
   - name: test_all_results_for_model_gcs_to_clickhouse_for_glob
     resolver: sql
     properties:
-      sql: "select * from model_gcs_to_clickhouse_for_glob order by id"
+      sql: "select id, boolean_col, int32_col, int64_col, float_col, double_col, byte_array_col, fixed_len_byte_array_col, string_col, decimal_col, date_col, time_millis_col, time_micros_col, timestamp_millis_col, timestamp_micros_col, uuid_col, list_int_col, list_string_col, map_col, struct_col from model_gcs_to_clickhouse_for_glob order by id"
       connector: clickhouse
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |

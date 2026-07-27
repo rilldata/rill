@@ -13,7 +13,7 @@
   import BranchDeploymentStopped from "@rilldata/web-admin/features/branches/BranchDeploymentStopped.svelte";
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
-  import ProjectHeader from "@rilldata/web-admin/features/projects/ProjectHeader.svelte";
+  import ProjectHeader from "../../../../../features/projects/header/ProjectHeader.svelte";
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
@@ -28,6 +28,9 @@
   import { isProjectWelcomePage } from "@rilldata/web-admin/features/navigation/nav-utils.ts";
   import WelcomeRedirector from "@rilldata/web-admin/features/welcome/project/WelcomeRedirector.svelte";
   import { InfoIcon } from "lucide-svelte";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -81,8 +84,12 @@
   // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
   let starting = false;
 
+  // Wait for `primaryProjectQuery` too: the cloud readonly notice is gated on
+  // `hasPrimaryDeployment`, and it must be registered before `<slot />` renders
+  // any file editor (getReadonlyNotice reads the notice non-reactively).
   $: isLoading =
     $projectQuery.isPending ||
+    $primaryProjectQuery.isPending ||
     starting ||
     deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
 
@@ -117,7 +124,18 @@
     });
   };
 
-  setCloudReadonlyNotice(envEditDisabled);
+  // Only surface the env notice once the project has a primary deployment.
+  // Fail closed: env becomes editable only once we've positively confirmed the
+  // project has no primary deployment. A failed or otherwise inconclusive lookup
+  // keeps the notice set, so a published project never exposes editable `.env`
+  // files while the deployment state is unknown.
+  // `isLoading` blocks `<slot />` until `primaryProjectQuery` resolves, so this
+  // has run before any file editor reads the notice.
+  $: if (!$primaryProjectQuery.isPending) {
+    const envEditable = $primaryProjectQuery.isSuccess && !hasPrimaryDeployment;
+    setCloudReadonlyNotice(envEditable ? undefined : envEditDisabled);
+    fileArtifacts.recheckReadonlyStatus();
+  }
 
   onDestroy(() => {
     $editorRoutePrefix = "";
@@ -156,10 +174,10 @@
       status={deploymentStatus}
       canManage={!!projectPermissions?.manageDev}
       {branch}
-      onStarted={() => (starting = true)}
+      bind:starting
     />
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
-    {#key `${runtimeHost}::${instanceId}`}
+    {#key `${runtimeHost}::${instanceId}::${hasPrimaryDeployment}`}
       <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
         {#if !inProjectWelcomePage}
           <ProjectHeader
@@ -207,21 +225,34 @@
   {/if}
 </div>
 
+{#if $overlay !== null}
+  <BlockingOverlayContainer
+    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+  >
+    <div slot="title" class="font-bold">
+      {$overlay?.title}
+    </div>
+    <svelte:fragment slot="detail">
+      {#if $overlay?.detail}
+        <svelte:component
+          this={$overlay.detail.component}
+          {...$overlay.detail.props}
+        />
+      {/if}
+    </svelte:fragment>
+  </BlockingOverlayContainer>
+{/if}
+
 {#snippet envEditDisabled()}
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
-    {#if hasPrimaryDeployment}
-      <InfoIcon size={14} /> Manage environment variables in
-      <a
-        href="/{organization}/{project}/-/settings/environment-variables"
-        target="_blank"
-        rel="noopener"
-      >
-        Settings →
-      </a>
-    {:else}
-      <InfoIcon size={14} /> You can manage environment variables from settings page
-      after the project has been published.
-    {/if}
+    <InfoIcon size={14} /> Manage environment variables in
+    <a
+      href="/{organization}/{project}/-/settings/environment-variables"
+      target="_blank"
+      rel="noopener"
+    >
+      Settings →
+    </a>
   </div>
 {/snippet}
 

@@ -62,9 +62,6 @@ test.describe("BigQuery connector", () => {
 
       // Upload the file using FileChooser
       await fileChooser.setFiles([tempFilePath]);
-
-      // Wait a moment for the file to be processed
-      await page.waitForTimeout(500);
     } finally {
       // Clean up temp file
       if (existsSync(tempFilePath)) {
@@ -153,12 +150,16 @@ test.describe("BigQuery connector", () => {
     try {
       writeFileSync(tempFilePath, credentialsJson);
       await fileChooser1.setFiles([tempFilePath]);
-      await page.waitForTimeout(500);
     } finally {
       if (existsSync(tempFilePath)) {
         unlinkSync(tempFilePath);
       }
     }
+
+    // Wait for the uploaded credentials to be processed into the form.
+    await expect(page.getByRole("textbox", { name: "Project ID" })).toHaveValue(
+      credentials.project_id,
+    );
 
     await page.getByLabel("Save connector").click();
     await page.waitForURL(`**/files/connectors/bigquery.yaml`);
@@ -176,12 +177,16 @@ test.describe("BigQuery connector", () => {
     try {
       writeFileSync(tempFilePath, credentialsJson);
       await fileChooser2.setFiles([tempFilePath]);
-      await page.waitForTimeout(500);
     } finally {
       if (existsSync(tempFilePath)) {
         unlinkSync(tempFilePath);
       }
     }
+
+    // Wait for the uploaded credentials to be processed into the form.
+    await expect(page.getByRole("textbox", { name: "Project ID" })).toHaveValue(
+      credentials.project_id,
+    );
 
     await page.getByLabel("Save connector").click();
     // Second connector should get _1 suffix in filename

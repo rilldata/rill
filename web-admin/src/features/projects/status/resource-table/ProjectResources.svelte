@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     createRuntimeServiceCreateTriggerMutation,
@@ -21,57 +20,30 @@
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils";
-  import {
-    createUrlFilterSync,
-    parseArrayParam,
-    parseStringParam,
-  } from "@rilldata/web-common/lib/url-filter-sync";
-  import { onMount } from "svelte";
+  import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
+  import { UrlParamsState } from "@rilldata/web-common/lib/store-utils/url-params-state.svelte.ts";
+  import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
   const createTrigger =
     createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
-  const filterSync = createUrlFilterSync([
-    { key: "kind", type: "array" },
-    { key: "status", type: "array" },
-    { key: "q", type: "string" },
-  ]);
-  filterSync.init($page.url);
-
-  let isConfirmDialogOpen = false;
-  let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-  let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
-  let mounted = false;
-
-  // Sync URL → local state on external navigation (back/forward)
-  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
-    filterSync.markSynced($page.url);
-    selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
-    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
-    searchText = parseStringParam($page.url.searchParams.get("q"));
-  }
-
-  // Sync filter state → URL
-  $: if (mounted) {
-    filterSync.syncToUrl({
-      kind: selectedTypes,
-      status: selectedStatuses,
-      q: searchText,
-    });
-  }
-
-  onMount(() => {
-    mounted = true;
-  });
+  let isConfirmDialogOpen = $state(false);
+  const searchTextStore = new DebouncedRuneStore(
+    UrlParamsState.createStringParam("q"),
+    500,
+  );
+  const selectedTypesStore = UrlParamsState.createStringArrayParam("type");
+  const selectedStatusesStore = UrlParamsState.createStringArrayParam("status");
+  const selectedTagsStore = UrlParamsState.createStringArrayParam("tags");
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
-    { label: "Error", value: "error" },
-    { label: "Warn", value: "warn" },
-    { label: "OK", value: "ok" },
+    { label: m.status_filter_error(), value: "error" },
+    { label: m.status_filter_warn(), value: "warn" },
+    { label: m.status_filter_ok(), value: "ok" },
   ];
 
   // Resource types available for filtering (excluding internal types)
@@ -88,70 +60,91 @@
     ResourceKind.Connector,
   ];
 
-  $: filterGroups = [
+  let resources = $derived(useResources(runtimeClient));
+
+  // Parse errors
+  let projectParserQuery = $derived(
+    createRuntimeServiceGetResource(
+      runtimeClient,
+      {
+        name: {
+          kind: ResourceKind.ProjectParser,
+          name: SingletonProjectParserName,
+        },
+      },
+      { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
+    ),
+  );
+  let parseErrors = $derived(
+    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [],
+  );
+
+  let hasReconcilingResources = $derived(
+    $resources.data?.resources?.some(isResourceReconciling),
+  );
+
+  let isRefreshButtonDisabled = $derived(hasReconcilingResources);
+
+  let availableTags = $derived(
+    getAllTagsForResources($resources.data?.resources ?? []),
+  );
+
+  let filterGroups = $derived<FilterGroup[]>([
     {
-      label: "Type",
+      label: m.status_column_type(),
       key: "kind",
       options: filterableTypes.map((t) => ({
         value: t,
         label: prettyResourceKind(t),
       })),
-      selected: selectedTypes,
+      selectedStore: selectedTypesStore,
       defaultValue: [],
       multiSelect: true,
     },
     {
-      label: "Status",
+      label: m.status_label_status(),
       key: "status",
       options: statusFilters.map((s) => ({
         value: s.value,
         label: s.label,
       })),
-      selected: selectedStatuses,
+      selectedStore: selectedStatusesStore,
       defaultValue: [],
       multiSelect: true,
     },
-  ] satisfies FilterGroup[];
+    ...(availableTags.length > 0
+      ? [
+          <FilterGroup>{
+            label: m.dashboard_tags(),
+            key: "tags",
+            options: availableTags.map((t) => ({
+              value: t.name,
+              label: t.name,
+            })),
+            selectedStore: selectedTagsStore,
+            defaultValue: [],
+            multiSelect: true,
+          },
+        ]
+      : []),
+  ]);
 
-  $: resources = useResources(runtimeClient);
-
-  // Parse errors
-  $: projectParserQuery = createRuntimeServiceGetResource(
-    runtimeClient,
-    {
-      name: {
-        kind: ResourceKind.ProjectParser,
-        name: SingletonProjectParserName,
-      },
-    },
-    { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
-  );
-  $: parseErrors =
-    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
-
-  $: hasReconcilingResources = $resources.data?.resources?.some(
-    isResourceReconciling,
-  );
-
-  $: isRefreshButtonDisabled = hasReconcilingResources;
-
-  // Filter resources by type, search text, and status
-  $: filteredResources = filterResources(
-    $resources.data?.resources,
-    selectedTypes,
-    searchText,
-    selectedStatuses,
+  // Filter resources by type, search text, status, and tags
+  let filteredResources = $derived(
+    filterResources(
+      $resources.data?.resources,
+      selectedTypesStore.value,
+      searchTextStore.value,
+      selectedStatusesStore.value,
+      selectedTagsStore.value,
+    ),
   );
 
-  function onFilterChange(key: string, selected: string[] | string) {
-    if (key === "kind") selectedTypes = selected as string[];
-    if (key === "status") selectedStatuses = selected as string[];
-  }
-
-  function clearFilters() {
-    selectedTypes = [];
-    selectedStatuses = [];
-    searchText = "";
+  function onClearAllFilters() {
+    selectedTypesStore.setter([]);
+    selectedStatusesStore.setter([]);
+    selectedTagsStore.setter([]);
+    searchTextStore.immediateSetter("");
   }
 
   function refreshAllSourcesAndModels() {
@@ -167,15 +160,9 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <h2 class="text-lg font-medium">Resources</h2>
+  <h2 class="text-lg font-medium">{m.status_nav_resources()}</h2>
 
-  <TableToolbar
-    bind:searchText
-    {filterGroups}
-    {onFilterChange}
-    onClearAllFilters={clearFilters}
-    showSort={false}
-  >
+  <TableToolbar {searchTextStore} {filterGroups} {onClearAllFilters}>
     <Button
       type="secondary"
       large
@@ -185,8 +172,10 @@
       }}
       disabled={isRefreshButtonDisabled}
     >
-      <span class="hidden lg:inline">Refresh all sources and models</span>
-      <span class="lg:hidden">Refresh all</span>
+      <span class="hidden lg:inline">
+        {m.status_refresh_all_sources_models()}
+      </span>
+      <span class="lg:hidden">{m.status_refresh_all()}</span>
     </Button>
   </TableToolbar>
 
@@ -194,7 +183,7 @@
     <DelayedSpinner isLoading={true} size="16px" />
   {:else if $resources.isError}
     <div class="text-red-500">
-      Error loading resources: {$resources.error?.message}
+      {m.status_error_loading_resources()}: {$resources.error?.message}
     </div>
   {:else if $resources.data}
     <ProjectResourcesTable data={filteredResources} />
@@ -202,13 +191,13 @@
 
   <div class="parse-errors">
     <h3 class="parse-errors-header">
-      Parse Errors
+      {m.status_parse_errors_title()}
       {#if parseErrors.length > 0}
         <span class="parse-errors-badge">{parseErrors.length}</span>
       {/if}
     </h3>
     {#if parseErrors.length === 0}
-      <p class="text-sm text-fg-secondary">No parse errors</p>
+      <p class="text-sm text-fg-secondary">{m.status_no_parse_errors()}</p>
     {:else}
       <div class="parse-errors-list">
         {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}

@@ -24,9 +24,9 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if ch.Interactive {
 				if project != "" {
-					ch.PrintfWarn("If you confirm, new and existing users with email addresses ending in %q will automatically be added to project %q of %q with role %q.\n\nTo whitelist another email domain than your own, reach out to support: https://rilldata.com/support\n", domain, project, ch.Org, role)
+					ch.PrintfWarn("If you confirm, new and existing users with email addresses ending in %q will automatically be added to project %q of %q with role %q.\n\nTo whitelist another email domain than your own, reach out to support: https://docs.rilldata.com/contact#contacting-support\n", domain, project, ch.Org, role)
 				} else {
-					ch.PrintfWarn("If you confirm, new and existing users with email addresses ending in %q will automatically be added to organization %q with role %q.\n\nTo whitelist another email domain than your own, reach out to support: https://rilldata.com/support\n", domain, ch.Org, role)
+					ch.PrintfWarn("If you confirm, new and existing users with email addresses ending in %q will automatically be added to organization %q with role %q.\n\nTo whitelist another email domain than your own, reach out to support: https://docs.rilldata.com/contact#contacting-support\n", domain, ch.Org, role)
 				}
 
 				if err := cmdutil.ConfirmPrompt("Do you confirm?", false); err != nil {

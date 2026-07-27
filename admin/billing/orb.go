@@ -55,10 +55,13 @@ func (o *Orb) DefaultQuotas() Quotas {
 	return Quotas{
 		StorageLimitBytesPerDeployment: toPtr(int64(10737418240)), // 10GB
 		NumProjects:                    toPtr(1),
-		NumDeployments:                 toPtr(20),
-		NumSlotsTotal:                  toPtr(40),
-		NumSlotsPerDeployment:          toPtr(8),
+		NumDeployments:                 toPtr(4),
+		NumSlotsTotal:                  toPtr(32),
+		NumSlotsPerDeployment:          toPtr(32),
 		NumOutstandingInvites:          toPtr(200),
+		NumSeats:                       toPtr(8),
+		NumAPICallsPerSeat:             toPtr(2500),
+		NumTokensPerSeat:               toPtr(1000000),
 	}
 }
 
@@ -715,6 +718,9 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 		NumSlotsTotal:                  metadata.NumSlotsTotal,
 		NumSlotsPerDeployment:          metadata.NumSlotsPerDeployment,
 		NumOutstandingInvites:          metadata.NumOutstandingInvites,
+		NumSeats:                       metadata.NumSeats,
+		NumAPICallsPerSeat:             metadata.NumAPICallsPerSeat,
+		NumTokensPerSeat:               metadata.NumTokensPerSeat,
 	}
 
 	trialPeriodDays := 0
@@ -794,6 +800,10 @@ func getPlanType(externalID string) PlanType {
 		return FreePlanType
 	case "pro_plan":
 		return ProPlanType
+	case "starter":
+		return StarterPlanType
+	case "growth":
+		return GrowthPlanType
 	default:
 		return EnterprisePlanType
 	}
@@ -811,6 +821,10 @@ func getPlanDisplayName(externalID string) string {
 		return "Free"
 	case "pro_plan":
 		return "Pro"
+	case "starter":
+		return "Starter"
+	case "growth":
+		return "Growth"
 	default:
 		return "Enterprise"
 	}

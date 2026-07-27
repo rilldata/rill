@@ -14,6 +14,7 @@ import {
   getCancelledIssue,
   getNeverSubscribedIssue,
 } from "@rilldata/web-admin/features/billing/issues/getMessageForCancelledIssue";
+import { getCustomMessageIssue } from "@rilldata/web-admin/features/billing/issues/getMessageForCustomMessage";
 import {
   getTrialIssue,
   trialHasPastGracePeriod,
@@ -31,6 +32,7 @@ export async function fetchOrganizationBillingIssues(organization: string) {
 }
 
 export type CategorisedOrganizationBillingIssues = {
+  message?: V1BillingIssue;
   neverSubscribed?: V1BillingIssue;
   trial?: V1BillingIssue;
   cancelled?: V1BillingIssue;
@@ -46,6 +48,7 @@ export function useCategorisedOrganizationBillingIssues(organization: string) {
         select: (data) => {
           const issues = data.issues ?? [];
           return <CategorisedOrganizationBillingIssues>{
+            message: getCustomMessageIssue(issues),
             neverSubscribed: getNeverSubscribedIssue(issues),
             trial: getTrialIssue(issues),
             cancelled: getCancelledIssue(issues),

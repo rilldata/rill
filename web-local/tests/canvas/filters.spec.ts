@@ -7,7 +7,6 @@ test.describe("canvas time filters", () => {
   test.use({ project: "AdBids" });
 
   test("can update time filters", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.getByLabel("total_records KPI data").first().click();
@@ -26,7 +25,13 @@ test.describe("canvas time filters", () => {
       .click();
     await page.getByRole("menuitem", { name: "Last 7 days" }).click();
 
-    await page.waitForTimeout(500);
+    // Wait for the local time range to apply before enabling comparison,
+    // otherwise the comparison toggle can race the range change.
+    await expect(
+      page
+        .getByRole("complementary", { name: "Inspector Panel" })
+        .getByLabel("Select time range"),
+    ).toContainText("Last 7");
 
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
@@ -55,7 +60,6 @@ test.describe("canvas time filters", () => {
   });
 
   test("can update domain filters", async ({ page }) => {
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
     await page.getByLabel("total_records KPI data").first().click();

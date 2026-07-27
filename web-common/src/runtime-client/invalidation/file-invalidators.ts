@@ -1,5 +1,7 @@
 import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { getParquetPreviewQueryKey } from "@rilldata/web-common/features/workspaces/parquet-preview";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { Throttler } from "@rilldata/web-common/lib/throttler";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -52,17 +54,27 @@ export async function handleFileEvent(
 
   if (!event.isDir) {
     switch (event.event) {
-      case V1FileEvent.FILE_EVENT_WRITE:
-        await fileArtifacts.getFileArtifact(event.path).fetchContent(true);
+      case V1FileEvent.FILE_EVENT_WRITE: {
+        const artifact = fileArtifacts.getFileArtifact(event.path);
+        if (artifact.isPreviewableDataFile) {
+          // Data files (e.g. .parquet) have no editable text content; refresh
+          // their data preview instead of fetching binary content.
+          invalidateDataFilePreview(queryClient, instanceId, event.path);
+        } else {
+          await artifact.fetchContent(true);
+        }
         if (event.path === "/rill.yaml") {
           void queryClient.invalidateQueries({
             queryKey: getRuntimeServiceIssueDevJWTQueryKey(instanceId),
           });
           await invalidate("app:init");
           eventBus.emit("rill-yaml-updated");
+        } else if (event.path === "/.env") {
+          eventBus.emit("env-file-updated", event.path);
         }
         state.seenFiles.add(event.path);
         break;
+      }
 
       case V1FileEvent.FILE_EVENT_DELETE:
         void queryClient.resetQueries({
@@ -75,6 +87,10 @@ export async function handleFileEvent(
         // project-bound and the next load of rill.yaml handles re-issuance.
         if (event.path === "/rill.yaml") {
           await invalidate("app:init");
+        } else if (event.path === "/.env") {
+          // Notify the env store on delete too, otherwise it keeps stale keys
+          // and a later commit would re-serialize the removed secrets.
+          eventBus.emit("env-file-updated", event.path);
         }
         state.seenFiles.delete(event.path);
         break;
@@ -92,6 +108,23 @@ export async function handleFileEvent(
         queryKey: getRuntimeServiceListFilesQueryKey(instanceId),
       }),
     );
+  }
+}
+
+// Refreshes the data-preview query for a rewritten data file. Keyed per
+// extension so each previewable file type (see
+// FileArtifact.isPreviewableDataFile) maps to its own preview query.
+function invalidateDataFilePreview(
+  queryClient: QueryClient,
+  instanceId: string,
+  path: string,
+) {
+  switch (extractFileExtension(path)) {
+    case ".parquet":
+      void queryClient.invalidateQueries({
+        queryKey: getParquetPreviewQueryKey(instanceId, path),
+      });
+      break;
   }
 }
 

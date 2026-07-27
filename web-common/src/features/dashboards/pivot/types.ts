@@ -58,12 +58,59 @@ export interface PivotState {
   enableComparison: boolean;
   tableMode: PivotTableMode;
   activeCell: PivotCell | null;
+  showTotalsColumn: boolean;
+  showTotalsRow: boolean;
   rowLimit?: number;
   outermostRowLimit?: number; // Local limit for outermost dimension only
   nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
+  // Per-measure conditional formatting, keyed by measure name. Measures not
+  // present here render without any cell formatting.
+  measureFormatting?: Record<string, PivotMeasureFormatting>;
 }
 
 export type PivotTableMode = "flat" | "nest";
+
+// Conditional formatting applied to a measure's cells in the pivot table,
+// discriminated on `mode`.
+export type PivotMeasureFormatting =
+  | PivotScaleFormatting
+  | PivotRulesFormatting;
+
+// Value-scaled formatting: a color gradient (heatmap) or proportional bar
+// (data_bar) over the measure's min-max domain in the current result.
+export type PivotScaleFormatting = {
+  mode: "heatmap" | "data_bar";
+  // For heatmap: the gradient color scheme. For data_bar: the source of the bar
+  // color. Keyed into PIVOT_FORMATTING_SCHEMES (e.g. "greens", "redYellowGreen",
+  // "theme-sequential").
+  scheme: string;
+};
+
+// Threshold-based formatting: an ordered rule list where the first matching
+// rule colors the cell (Excel convention). Cells matching no rule are left
+// unformatted.
+export type PivotRulesFormatting = {
+  mode: "rules";
+  rules: PivotFormatRule[];
+};
+
+export type PivotFormatRuleOperator =
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "eq"
+  | "between";
+
+export type PivotFormatRule = {
+  operator: PivotFormatRuleOperator;
+  value: number;
+  // Upper bound (inclusive), only for "between".
+  value2?: number;
+  // A semantic color key from PIVOT_RULE_COLORS (e.g. "positive") or a raw hex
+  // string (with or without the leading "#").
+  color: string;
+};
 
 export interface PivotDataRow {
   subRows?: PivotDataRow[];

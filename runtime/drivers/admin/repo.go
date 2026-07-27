@@ -16,12 +16,11 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/go-git/go-git/v5"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
+	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
@@ -453,32 +452,29 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 		return &drivers.RepoStatus{}, nil
 	}
 
-	repo, err := git.PlainOpen(r.git.repoDir)
+	currentBranch, err := currentBranch(r.git.repoDir)
 	if err != nil {
 		return nil, err
 	}
-	head, err := repo.Head()
-	if err != nil {
-		return nil, err
-	}
-	branches := []string{head.Name().Short()}
+	branches := []string{currentBranch}
 
 	// If a remote branch was explicitly requested and it differs from the current branch, fetch it too
-	// so that ahead/behind counts in RunGitStatus have an up-to-date remote tracking ref to compare against.
+	// so that ahead/behind counts in gitutil.Status have an up-to-date remote tracking ref to compare against.
 	if remoteBranch != "" && remoteBranch != branches[0] {
 		branches = append(branches, remoteBranch)
 	}
 
-	err = r.git.fetchBranch(ctx, repo, branches...)
+	err = gitutil.FetchBranches(ctx, r.git.repoDir, branches...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
 	}
 
 	// run git status
-	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+	st, err := gitutil.Status(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}
+
 	return &drivers.RepoStatus{
 		IsGitRepo:     true,
 		Branch:        st.Branch,
@@ -489,6 +485,103 @@ func (r *repo) Status(ctx context.Context, remoteBranch string) (*drivers.RepoSt
 		LocalCommits:  st.LocalCommits,
 		RemoteCommits: st.RemoteCommits,
 	}, nil
+}
+
+// Diff implements drivers.RepoStore.
+func (r *repo) Diff(ctx context.Context, remoteBranch string, includeDiff, fetch bool) (*drivers.RepoDiff, error) {
+	err := r.rlockEnsureReady(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.RUnlock()
+
+	if r.git == nil {
+		return &drivers.RepoDiff{}, nil
+	}
+
+	if fetch {
+		currentBranch, err := currentBranch(r.git.repoDir)
+		if err != nil {
+			return nil, err
+		}
+		branches := []string{currentBranch}
+		// fetch the requested remote branch too so the comparison ref is up to date.
+		if remoteBranch != "" && remoteBranch != branches[0] {
+			branches = append(branches, remoteBranch)
+		}
+		if err := gitutil.FetchBranches(ctx, r.git.repoDir, branches...); err != nil {
+			return nil, fmt.Errorf("failed to fetch branches %q: %w", branches, err)
+		}
+	}
+
+	files, err := gitutil.ChangedFiles(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list changed files: %w", err)
+	}
+
+	var diff string
+	if includeDiff {
+		diff, err = gitutil.Diff(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute git diff: %w", err)
+		}
+	}
+
+	return &drivers.RepoDiff{
+		IsGitRepo:    true,
+		ChangedFiles: repoFileChanges(files),
+		Diff:         diff,
+	}, nil
+}
+
+func (r *repo) Revert(ctx context.Context, remoteBranch string, paths []string) ([]string, error) {
+	// Reverting mutates the worktree, so take the write lock (excludes concurrent reads/writes).
+	err := r.lockForWrite(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.Unlock()
+
+	if r.git == nil {
+		return nil, nil
+	}
+	if !r.git.editable() {
+		return nil, fmt.Errorf("repo is not editable")
+	}
+
+	// Revert against the already-fetched ref: the caller has just listed the changes (which fetches),
+	// so what the user reverts matches what they saw.
+	return gitutil.Revert(ctx, r.git.repoDir, r.git.subpath, "origin", remoteBranch, paths)
+}
+
+func repoFileChanges(files []gitutil.ChangedFile) []drivers.RepoFileChange {
+	if len(files) == 0 {
+		return nil
+	}
+	out := make([]drivers.RepoFileChange, len(files))
+	for i, f := range files {
+		out[i] = drivers.RepoFileChange{
+			Path:    f.Path,
+			OldPath: f.OldPath,
+			Status:  repoFileStatus(f.Status),
+		}
+	}
+	return out
+}
+
+func repoFileStatus(s gitutil.ChangedFileStatus) drivers.RepoFileStatus {
+	switch s {
+	case gitutil.ChangedFileStatusAdded:
+		return drivers.RepoFileStatusAdded
+	case gitutil.ChangedFileStatusModified:
+		return drivers.RepoFileStatusModified
+	case gitutil.ChangedFileStatusDeleted:
+		return drivers.RepoFileStatusDeleted
+	case gitutil.ChangedFileStatusRenamed:
+		return drivers.RepoFileStatusRenamed
+	default:
+		return drivers.RepoFileStatusUnspecified
+	}
 }
 
 func (r *repo) Commit(ctx context.Context, message string) (string, error) {
@@ -505,11 +598,7 @@ func (r *repo) Commit(ctx context.Context, message string) (string, error) {
 	if !r.git.editable() {
 		return "", fmt.Errorf("repo is not editable")
 	}
-	repo, err := git.PlainOpen(r.git.repoDir)
-	if err != nil {
-		return "", err
-	}
-	return r.git.commitAll(repo, message)
+	return gitutil.CommitAll(ctx, r.git.repoDir, r.git.subpath, message, gitutil.Signature{Name: "Rill", Email: "noreply@rilldata.com"})
 }
 
 // Pull implements drivers.RepoStore.
@@ -564,7 +653,7 @@ func (r *repo) CommitHash(ctx context.Context) (string, error) {
 	if r.archive != nil {
 		return r.archive.archiveID, nil
 	}
-	return r.git.commitHash()
+	return r.git.commitHash(ctx)
 }
 
 // CommitTimestamp implements drivers.RepoStore.
@@ -578,7 +667,7 @@ func (r *repo) CommitTimestamp(ctx context.Context) (time.Time, error) {
 	if r.archive != nil {
 		return r.archive.archiveCreatedOn, nil
 	}
-	return r.git.commitTimestamp()
+	return r.git.commitTimestamp(ctx)
 }
 
 // close deletes the temporary directories used by the repo.
@@ -837,6 +926,11 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 			if err != nil {
 				return fmt.Errorf("failed to get git data dir: %w", err)
 			}
+			// Resolve to an absolute path so that `git -C <repoDir>` does not depend on the process working directory.
+			repoDir, err = filepath.Abs(repoDir)
+			if err != nil {
+				return fmt.Errorf("failed to resolve git data dir: %w", err)
+			}
 			r.git = &gitRepo{
 				h:       r.h,
 				repoDir: repoDir,
@@ -849,6 +943,16 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 		r.git.primaryBranch = meta.PrimaryBranch
 		r.git.subpath = meta.GitSubpath
 		r.git.managedRepo = meta.ManagedGitRepo
+
+		// The credential token is embedded in the remote URL and rotates on every refresh.
+		// If the repo is already cloned, write the refreshed URL to the on-disk `origin` remote so that
+		// subsequent git operations (e.g. the fetch in Status) authenticate with the current token rather
+		// than the stale one captured at clone time. A fresh clone uses r.git.remoteURL directly.
+		if isRepoRoot(r.git.repoDir) {
+			if err := setRemoteURL(r.git.repoDir, meta.GitUrl); err != nil {
+				return fmt.Errorf("failed to update git remote url: %w", err)
+			}
+		}
 	} else {
 		r.git = nil
 	}

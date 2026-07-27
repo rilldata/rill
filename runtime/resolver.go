@@ -9,9 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 
-	"github.com/mitchellh/hashstructure/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
@@ -131,6 +129,14 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	}
 
 	ctx, span := tracer.Start(ctx, "runtime.Resolve", trace.WithAttributes(attribute.String("resolver", opts.Resolver)))
+
+	// Emit a generic billable query metric for resolver-based queries (REST API, MCP, alerts, reports, agent tools),
+	// tagged with the request source and resolver name (org/project attached for attribution). It is intentionally
+	// generic: downstream billing filters by source, and can exclude internal resolvers (e.g. metrics_cache_key, an
+	// internal helper invoked from runtime.Query) via the resolver attribute.
+	queryAttrs := append(r.GetInstanceAttributes(ctx, opts.InstanceID), attribute.String("source", string(RequestSourceFromContext(ctx))), attribute.String("resolver", opts.Resolver))
+	r.activity.RecordMetric(ctx, "query", 1, queryAttrs...)
+
 	var cacheHit bool
 	defer func() {
 		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", cacheHit))
@@ -199,14 +205,19 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	if _, err := hash.Write(cacheKey); err != nil {
 		return nil, nil, err
 	}
-	if opts.Claims.UserAttributes != nil {
-		h, err := hashstructure.Hash(opts.Claims.UserAttributes, hashstructure.FormatV2, nil)
-		if err != nil {
-			return nil, nil, err
-		}
-		if _, err = hash.Write([]byte(strconv.FormatUint(h, 16))); err != nil {
-			return nil, nil, err
-		}
+	// Hash the security claims, not just the user attributes:
+	// permissions, additional rules (e.g. locked filters on magic auth tokens) and skipped checks
+	// all change the resolved security policy, and results must not be shared across them.
+	// The user ID is excluded since it does not affect the resolved policy,
+	// which enables sharing results between users that resolve to the same policy (common for embeds).
+	claimsForKey := *opts.Claims
+	claimsForKey.UserID = ""
+	claimsJSON, err := json.Marshal(&claimsForKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := hash.Write(claimsJSON); err != nil {
+		return nil, nil, err
 	}
 	for _, ref := range resolver.Refs() {
 		res, err := ctrl.Get(ctx, ref, false)

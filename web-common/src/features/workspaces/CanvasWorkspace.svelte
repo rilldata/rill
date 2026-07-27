@@ -143,7 +143,7 @@
                   {ready}
                   {isReconciling}
                   {isLoading}
-                  errorMessage={rootCauseReconcileError}
+                  errorMessage={rootCauseReconcileError ?? parseError?.message}
                   {filePath}
                 >
                   <CanvasBuilder

@@ -44,6 +44,7 @@ The other YAML and SQL files define individual resources in the project. They fo
 - Resources can reference other resources, which forms a dependency graph (DAG) that informs the sequence they are executed.
 - Resource names are unique within a resource type. For example, only one model can be named `events` (regardless of directory), but it is possible for both a model and a metrics view to be called `events`.
 - Clear resource names are important as they are widely used as unique identifiers throughout the platform (e.g. in CLI commands, URL slugs, API calls). They are usually lowercase and snake case, but that is not enforced.
+- Any resource can carry a top-level `tags:` list (free-form labels) for organizing and filtering resources across a project. Distinct from dimension/measure tags inside a metrics view.
 
 ## Project execution
 
@@ -83,11 +84,12 @@ They are usually lightweight as their reconcile logic usually only validates the
 They are normally found at the root of the DAG, powering other downstream resource types.
 
 There are a variety of built-in connector _drivers_, which each implements one or more capabilities:
-- **OLAP database:** can power dashboards (e.g. `duckdb`, `clickhouse`)
+- **OLAP database:** can power dashboards (e.g. `duckdb`, `clickhouse`, `druid`, `pinot`, `starrocks`, and `snowflake`, `bigquery`, `databricks` as live connectors)
 - **SQL database:** can run SQL queries and models (e.g. `postgres`, `bigquery`, `snowflake`)
 - **Information schema:** can list tables and their schemas (e.g. `duckdb`, `bigquery`, `postgres`)
 - **Object store:** can list, read and write flat files (e.g. `s3`)
 - **Notifier:** can send notifications (e.g. `slack`)
+- **AI:** can generate embeddings or responses (e.g. `openai`, `claude`, `gemini`)
 
 Here are some useful things to know when developing connectors:
 - Actual secrets like database passwords should go in `.env` and be referenced from the connector's YAML file
@@ -271,6 +273,7 @@ If you don't have access to a matching skill, try searching the reference docume
 ### Common pitfalls
 
 Avoid these mistakes when developing a project:
+- **Inspecting Rill's internal state with external tools**: Never attempt to inspect Rill's internal state in the project's `tmp` directory (or elsewhere) using external tools. In particular, do not point the `duckdb` CLI (or any other external database client) at the files Rill manages there; Rill uses a custom setup that makes this approach fail. Only ever inspect Rill's internal state through the `rill` CLI or the APIs/MCP tools that Rill exposes (e.g. `query_sql`, `show_table`, `project_status`).
 - **Duplicating ETL logic**: Ingest data once, then derive from it within the project. Do not create multiple models that pull the same data from an external source.
 - **Models as SQL files:** Always create new models as `.yaml` files, not `.sql` files (which are harder to extend later).
 - **Not creating connector files:** When Rill has native support for a connector (like S3 or BigQuery), always create a dedicated connector resource file for it.
@@ -281,6 +284,10 @@ Avoid these mistakes when developing a project:
 - **Being deceived by logs from `project_status`:** If you retrieve logs from the `project_status` tool, be aware that issues highlighted in the logs may have already been fixed. Only use the logs to debug errors indicated by the resource-level status.
 - **Using deprecated properties:** Never use a YAML property that is marked as deprecated for the resource type, even if it seems like a convenient way to solve your problem. The only exception is if the deprecated property is already present in the file you are editing. Find a non-deprecated alternative or give up.
 - **Adding undocumented properties:** Never add properties to a YAML file that are not documented for that resource type. For example, do not add a `description` property to a resource type that does not support it. Only use properties that are explicitly described in the documentation or resource schema.
+- **Removing supported properties:** Before removing or "converting" a property because you believe it is unsupported, verify against the resource schema. When in doubt, assume an existing property is intentional and leave it as is unless it's the source of error.
+- **Modifying user-provided values:** Never alter literal values the user has written, such as string constants, URLs names, or SQL expressions. Such values are often intentional and changing them silently can break behavior. If you genuinely believe a value is wrong, mention it in your final response instead of editing it.
+- **Inferring properties from names:** Do not add or change a property based on a naming heuristic. For example, do not set or change a dimension's `type: time` just because its column is named `time`; Rill infers dimension and column types from the underlying data. Only set such a property when the documentation calls for it or the user explicitly asks.
+- **Over-fixing when resolving errors:** When your task is to fix a specific error, make the minimal change needed to resolve exactly that error. Do not reformat, rewrite, or "improve" other parts of the file that are not causing the error.
 {% if not .external %}
 - **Doing too much introspection/profiling:** Reading files, introspecting connectors, profiling models/tables can be time consuming and easily load too much context. Stay disciplined and don't do too much open-ended exploration or unnecessarily look into other levels of the DAG, especially if your task is a small/surgical edit.
 - **Not using the `develop_file` tool:** You should plan the changes you want to make first, then delegate each change separately to the `develop_file` tool. When calling `develop_file`, pass in any relevant context from your investigation/planning/profiling phase.

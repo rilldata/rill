@@ -21,10 +21,7 @@ type tableWriteMetrics struct {
 }
 
 func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties, beforeCreate, afterCreate string) (*tableWriteMetrics, error) {
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 
 	// Execute beforeCreate query
 	if beforeCreate != "" {
@@ -116,14 +113,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
-		_, onCluster, err := c.entityType(ctx, c.config.Database, name)
-		if err != nil {
-			return nil, err
-		}
-		onClusterClause := ""
-		if onCluster {
-			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-		}
+		onClusterClause := c.onClusterClause()
 		// Get the engine info of the given table
 		engine, err := c.getTableEngine(ctx, name)
 		if err != nil {
@@ -179,12 +169,12 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, err
 		}
 
-		// run 'OPTIMIZE' before partition replacement if configured
-		if c.config.OptimizeTemporaryTablesBeforePartitionReplace {
-			err = c.optimizeTable(ctx, tempName)
+		// sync the replica before partition replacement so all inserted parts are visible
+		// SYSTEM SYNC REPLICA only works on replicated engines, so skip it for non-replicated ones
+		if isReplicatedEngine(outputProps.Engine) || isReplicatedEngine(outputProps.EngineFull) {
+			err = c.syncReplica(ctx, tempName)
 			if err != nil {
-				c.logger.Warn("clickhouse: failed to optimize temporary table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
-				// Don't fail the entire operation if optimize fails - just log and continue
+				return nil, err
 			}
 		}
 
@@ -210,13 +200,9 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		_, onCluster, err := c.entityType(ctx, c.config.Database, name)
-		if err != nil {
-			return nil, err
-		}
 		// get the engine info of the given table - local table for distributed tables
 		var n string
-		if onCluster {
+		if c.config.Cluster != "" {
 			n = localTableName(name)
 		} else {
 			n = name
@@ -249,45 +235,46 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 func (c *Connection) dropTable(ctx context.Context, name string) error {
-	typ, onCluster, err := c.entityType(ctx, c.config.Database, name)
+	typ, err := c.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
 	}
-	var onClusterClause string
-	if onCluster {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+
+	onClusterClause := c.onClusterClause()
+
 	switch typ {
 	case "VIEW":
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP VIEW %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
 	case "DICTIONARY":
 		// first drop the dictionary
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP DICTIONARY %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP DICTIONARY IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
 		// then drop the temp table
 		_ = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
 			Priority: 100,
 		})
 		return err
 	case "TABLE":
 		// drop the main table
+		// use IF EXISTS so drops succeed in cluster mode even for tables that don't exist on every node,
+		// e.g. tables created before the cluster was configured or without a `_local` counterpart
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(name), onClusterClause),
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
 		if err != nil {
 			return err
 		}
 		// then drop the local table in case of cluster
-		if onCluster && !strings.HasSuffix(name, "_local") {
+		if c.config.Cluster != "" && !strings.HasSuffix(name, "_local") {
 			return c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(localTableName(name)), onClusterClause),
+				Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(localTableName(name)), onClusterClause),
 				Priority: 100,
 			})
 		}
@@ -298,14 +285,11 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 }
 
 func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) error {
-	typ, onCluster, err := c.entityType(ctx, c.config.Database, oldName)
+	typ, err := c.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
 	}
-	var onClusterClause string
-	if onCluster {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 
 	switch typ {
 	case "VIEW":
@@ -313,7 +297,7 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 	case "DICTIONARY":
 		return c.renameTable(ctx, oldName, newName, onClusterClause)
 	case "TABLE":
-		if !onCluster {
+		if c.config.Cluster == "" {
 			return c.renameTable(ctx, oldName, newName, onClusterClause)
 		}
 		// capture the full engine of the old distributed table
@@ -447,10 +431,7 @@ func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluste
 }
 
 func (c *Connection) createTable(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) error {
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 	var create strings.Builder
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	if c.config.Cluster != "" {
@@ -512,7 +493,7 @@ func (c *Connection) createDistributedTable(ctx context.Context, name string, ou
 	if c.config.Cluster == "" {
 		return fmt.Errorf("clickhouse: cannot create distributed table without a cluster")
 	}
-	onClusterClause := "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	onClusterClause := c.onClusterClause()
 
 	var distributed strings.Builder
 	database := "currentDatabase()"
@@ -534,10 +515,7 @@ func (c *Connection) createDistributedTable(ctx context.Context, name string, ou
 }
 
 func (c *Connection) createDictionary(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) error {
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
+	onClusterClause := c.onClusterClause()
 	if sql == "" {
 		if outputProps.Columns == "" {
 			return fmt.Errorf("clickhouse: no columns specified for dictionary %q", name)
@@ -642,7 +620,7 @@ func (c *Connection) getTableEngine(ctx context.Context, name string) (string, e
 		return "", err
 	}
 	defer res.Close()
-	if res.Next() {
+	for res.Next() {
 		if err := res.Scan(&engine); err != nil {
 			return "", err
 		}
@@ -695,9 +673,8 @@ func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]str
 }
 
 func (c *Connection) replacePartition(ctx context.Context, src, dest, part string) error {
-	var onClusterClause string
+	onClusterClause := c.onClusterClause()
 	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 		dest = localTableName(dest)
 		src = localTableName(src)
 	}
@@ -708,22 +685,57 @@ func (c *Connection) replacePartition(ctx context.Context, src, dest, part strin
 	})
 }
 
-func (c *Connection) optimizeTable(ctx context.Context, tableName string) error {
-	var onClusterClause string
-	if c.config.Cluster != "" {
-		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-		// For clustered tables, optimize the local table
-		tableName = localTableName(tableName)
+// syncReplica syncs the local replicated table across the cluster
+func (c *Connection) syncReplica(ctx context.Context, tableName string) error {
+	if c.config.Cluster == "" || !c.config.SyncReplicas {
+		return nil
 	}
-
+	// get current database
+	database, err := c.currentDatabase(ctx)
+	if err != nil {
+		return err
+	}
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("OPTIMIZE TABLE %s %s", safeSQLName(tableName), onClusterClause),
+		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s.%s", c.onClusterClause(), safeSQLName(database), safeSQLName(localTableName(tableName))),
 		Priority: 1,
 	})
 }
 
-func localTableName(name string) string {
-	return name + "_local"
+func (c *Connection) currentDatabase(ctx context.Context) (string, error) {
+	if c.config.Database != "" {
+		return c.config.Database, nil
+	}
+	var database string
+	rows, err := c.Query(ctx, &drivers.Statement{
+		Query:    "SELECT currentDatabase()",
+		Priority: 1,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(&database); err != nil {
+			return "", err
+		}
+	}
+	err = rows.Err()
+	if err != nil {
+		return "", err
+	}
+	return database, nil
+}
+
+// onClusterClause returns the ON CLUSTER clause for DDL statements, or an empty string if no cluster is configured.
+func (c *Connection) onClusterClause() string {
+	if c.config.Cluster == "" {
+		return ""
+	}
+	return "ON CLUSTER " + safeSQLName(c.config.Cluster)
+}
+
+func isReplicatedEngine(engine string) bool {
+	return strings.Contains(strings.ToLower(engine), "replicated")
 }
 
 func tempTableForDictionary(name string) string {

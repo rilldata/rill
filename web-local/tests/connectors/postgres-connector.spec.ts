@@ -180,9 +180,6 @@ test.describe.skip("Postgres connector", () => {
       // Reload, there should be a blank project
       await page.reload();
 
-      // Open the connectors folder
-      await page.getByLabel("/connectors").click();
-
       // Assert that "connector" is not created
       await expect
         .poll(() => page.getByLabel("/connectors/postgres.yaml").count(), {
@@ -193,9 +190,6 @@ test.describe.skip("Postgres connector", () => {
       // Go to the `.env` file and verify the POSTGRES_PASSWORD is unset
       await page.getByRole("link", { name: ".env" }).click();
       await validateYamlContents(page, [], [`POSTGRES_PASSWORD`]);
-
-      // Open the models folder
-      await page.getByLabel("/models").click();
 
       // Assert that "connector" is not created
       await expect

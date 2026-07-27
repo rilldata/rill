@@ -26,11 +26,14 @@
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
   const runtimeClient = useRuntimeClient();
 
   export let data: PageData;
   $: ({ exploreName } = data);
+
+  const { disablePersistentDashboardState } = featureFlags;
 
   resetSelectedMockUserAfterNavigate(queryClient, runtimeClient);
 
@@ -131,7 +134,11 @@
     <div class="h-full overflow-hidden">
       {#key exploreName}
         <StateManagersProvider {metricsViewName} {exploreName}>
-          <DashboardStateManager {exploreName}>
+          <DashboardStateManager
+            {exploreName}
+            disableMostRecentDashboardState={$disablePersistentDashboardState}
+            disableInitSessionDashboardState={$disablePersistentDashboardState}
+          >
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardStateManager>
         </StateManagersProvider>

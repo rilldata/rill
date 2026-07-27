@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.kind", req.Kind),
 		attribute.Bool("args.skip_security_checks", req.SkipSecurityChecks),
+		attribute.Int64("args.page_size", int64(req.PageSize)),
 	)
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
@@ -49,44 +51,64 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, err
 	}
 
-	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
-		an := a.Meta.Name
-		bn := b.Meta.Name
-		if an.Kind < bn.Kind {
-			return -1
-		}
-		if an.Kind > bn.Kind {
-			return 1
-		}
-		return strings.Compare(an.Name, bn.Name)
-	})
-
 	if req.SkipSecurityChecks {
 		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
 		}
+	} else {
+		i := 0
+		for i < len(rs) {
+			r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, rs[i])
+			if err != nil {
+				return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+			}
+			if !access {
+				rs[i] = rs[len(rs)-1]
+				rs[len(rs)-1] = nil
+				rs = rs[:len(rs)-1]
+				continue
+			}
+			rs[i] = r
+			i++
+		}
+	}
+
+	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
+		an := a.Meta.Name
+		bn := b.Meta.Name
+		if an.Kind != bn.Kind {
+			return strings.Compare(an.Kind, bn.Kind)
+		}
+		return strings.Compare(an.Name, bn.Name)
+	})
+
+	if req.PageSize == 0 {
 		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
 	}
 
-	i := 0
-	for i < len(rs) {
-		r := rs[i]
-		r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
-		if err != nil {
-			return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+	var afterKind, afterName string
+	if req.PageToken != "" {
+		if err := pagination.UnmarshalPageToken(req.PageToken, &afterKind, &afterName); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
 		}
-		if !access {
-			// Remove from the slice
-			rs[i] = rs[len(rs)-1]
-			rs[len(rs)-1] = nil
-			rs = rs[:len(rs)-1]
-			continue
-		}
-		rs[i] = r
-		i++
 	}
 
-	return &runtimev1.ListResourcesResponse{Resources: rs}, nil
+	start := sort.Search(len(rs), func(i int) bool {
+		n := rs[i].Meta.Name
+		return n.Kind > afterKind || (n.Kind == afterKind && n.Name > afterName)
+	})
+	end := min(start+int(req.PageSize), len(rs))
+
+	var nextPageToken string
+	if end < len(rs) {
+		last := rs[end-1].Meta.Name
+		nextPageToken = pagination.MarshalPageToken(last.Kind, last.Name)
+	}
+
+	return &runtimev1.ListResourcesResponse{
+		Resources:     rs[start:end],
+		NextPageToken: nextPageToken,
+	}, nil
 }
 
 // WatchResources implements runtimev1.RuntimeServiceServer
@@ -318,6 +340,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		ModelID:          partitionsModelID,
 		WherePending:     req.Pending,
 		WhereErrored:     req.Errored,
+		WhereSkipped:     req.Skipped,
 		BeforeExecutedOn: beforeExecutedOn,
 		AfterKey:         afterKey,
 		Limit:            pagination.ValidPageSize(req.PageSize, defaultPageSize),
@@ -340,11 +363,81 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	}, nil
 }
 
-// CreateTrigger implements runtimev1.RuntimeServiceServer
-func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
+// SkipModelPartitions implements runtimev1.RuntimeServiceServer
+func (s *Server) SkipModelPartitions(ctx context.Context, req *runtimev1.SkipModelPartitionsRequest) (*runtimev1.SkipModelPartitionsResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.model", req.Model),
+		attribute.StringSlice("args.partitions", req.Partitions),
+		attribute.Bool("args.pending", req.Pending),
+		attribute.Bool("args.errored", req.Errored),
+	)
+
+	// Skipping mutates partition state, so it requires edit permissions.
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditTrigger) {
+		return nil, ErrForbidden
+	}
+
+	if len(req.Partitions) == 0 && !req.Pending && !req.Errored {
+		return nil, status.Error(codes.InvalidArgument, "must specify partitions, pending, or errored")
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: req.Model}
+	r, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		return nil, err
+	}
+
+	partitionsModelID := r.GetModel().State.PartitionsModelId
+	if partitionsModelID == "" {
+		return nil, status.Errorf(codes.FailedPrecondition, "model %q has no partitions", req.Model)
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	err = catalog.UpdateModelPartitionsSkipped(ctx, partitionsModelID, req.Partitions, req.Pending, req.Errored)
+	if err != nil {
+		return nil, err
+	}
+
+	// Re-reconcile the model so it recomputes its partition error state (and cancels any in-flight run, which will
+	// re-query pending partitions and observe the newly skipped ones).
+	err = ctrl.Reconcile(ctx, n)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.SkipModelPartitionsResponse{}, nil
+}
+
+// CreateTrigger implements runtimev1.RuntimeServiceServer
+func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	resourceNames := make([]string, len(req.Resources))
+	for i, r := range req.Resources {
+		resourceNames[i] = r.Kind + "/" + r.Name
+	}
+	modelNames := make([]string, len(req.Models))
+	for i, m := range req.Models {
+		modelNames[i] = m.Model
+	}
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.StringSlice("args.resources", resourceNames),
+		attribute.StringSlice("args.models", modelNames),
+		attribute.Bool("args.parser", req.Parser),
+		attribute.Bool("args.all", req.All),
+		attribute.Bool("args.all_full", req.AllFull),
 	)
 
 	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditTrigger) {
@@ -402,7 +495,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	name := fmt.Sprintf("trigger_%s", randomString(8))
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: name}
 	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
-	err = ctrl.Create(ctx, n, nil, nil, nil, false, r)
+	err = ctrl.Create(ctx, n, nil, nil, nil, nil, false, r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create trigger: %w", err)
 	}
@@ -441,6 +534,7 @@ func modelPartitionToPB(partition drivers.ModelPartition) *runtimev1.ModelPartit
 		ExecutedOn: executedOn,
 		Error:      partition.Error,
 		ElapsedMs:  uint32(partition.Elapsed.Milliseconds()),
+		Skipped:    partition.Skipped,
 	}
 }
 

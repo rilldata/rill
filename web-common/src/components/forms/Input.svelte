@@ -47,7 +47,15 @@
   export let leadingIcon: ComponentType<SvelteComponent> | undefined =
     undefined;
   export let options:
-    | { value: string; label: string; type?: string }[]
+    | {
+        value: string;
+        label: string;
+        type?: string;
+        description?: string;
+        tooltip?: string;
+        icon?: ComponentType<SvelteComponent>;
+        group?: string;
+      }[]
     | undefined = undefined;
   export let additionalClass = "";
   export let onInput: (

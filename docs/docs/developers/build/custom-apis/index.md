@@ -68,6 +68,13 @@ curl "https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime
   -H "Authorization: Bearer <token>"
 ```
 
+To test against the deployment for a specific branch (e.g. a dev/preview deployment), insert `/branch/<branch-name>` before `/runtime`:
+
+```bash
+curl "https://api.rilldata.com/v1/orgs/<org>/projects/<project>/branch/<branch-name>/runtime/api/top-publishers" \
+  -H "Authorization: Bearer <token>"
+```
+
 See [Calling APIs](/developers/build/custom-apis/calling) for full details on authentication and calling APIs.
 
 ## Make it dynamic

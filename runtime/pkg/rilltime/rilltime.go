@@ -982,7 +982,7 @@ func parseISODuration(duration string) (*GrainPointInTimePart, error) {
 
 	for i, match := range matches {
 		if len(match) != 6 {
-			return nil, fmt.Errorf("invalid ISO duration %q: malformed duration part: %q", duration, match)
+			return nil, fmt.Errorf("invalid ISO duration %q: malformed duration part: %v", duration, match)
 		}
 		// Match contains start and end indices.
 		// 1st set is for the whole match, 2nd set is for the number, 3rd set is for the grain.

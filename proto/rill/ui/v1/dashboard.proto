@@ -147,11 +147,18 @@ message DashboardState {
   optional bool pivot_enable_comparison = 34;
   // Row limit for pivot table (number of child rows to show under each dimension)
   optional int32 pivot_row_limit = 41;
+  // Show the totals column (per-row totals) for pivot tables.
+  optional bool pivot_show_totals_column = 42;
+  // Show the totals row (per-column totals) for pivot/flat tables.
+  optional bool pivot_show_totals_row = 43;
 
   // List of all dimensions selected for rows
   repeated PivotElement pivot_row_all_dimensions = 35;
   // List of all dimensions selected for columns
   repeated PivotElement pivot_column_all_dimensions = 36;
+
+  // Per-measure conditional formatting (heatmap / data bar) for pivot cells.
+  repeated PivotConditionalFormat pivot_conditional_formatting = 44;
 }
 
 message DashboardTimeRange {
@@ -175,4 +182,27 @@ message PivotElement {
     rill.runtime.v1.TimeGrain pivot_time_dimension = 1;
     string pivot_dimension = 2;
   }
+}
+
+// Conditional formatting applied to a measure's cells in a pivot table.
+message PivotConditionalFormat {
+  string measure = 1;
+  // Formatting style: "heatmap", "data_bar" or "rules".
+  string mode = 2;
+  // Color scheme key (e.g. "theme-sequential", "greens", "redYellowGreen").
+  // Only for "heatmap" and "data_bar" modes.
+  string scheme = 3;
+  // Ordered threshold rules; first match wins. Only for "rules" mode.
+  repeated PivotFormatRule rules = 5;
+}
+
+// A single threshold rule for "rules" mode conditional formatting.
+message PivotFormatRule {
+  // Comparison operator: "gt", "gte", "lt", "lte", "eq" or "between".
+  string operator = 1;
+  double value = 2;
+  // Upper bound (inclusive), only for "between".
+  optional double value2 = 3;
+  // Semantic color key (e.g. "positive") or hex string.
+  string color = 4;
 }

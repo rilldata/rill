@@ -388,6 +388,13 @@ export class ResourceMeta extends Message<ResourceMeta> {
   filePaths: string[] = [];
 
   /**
+   * Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
+   *
+   * @generated from field: repeated string tags = 19;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: bool hidden = 7;
    */
   hidden = false;
@@ -464,6 +471,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 19, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -1452,7 +1460,6 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Optional rilltime expression describing the time range covered by the base table.
    * When set, the base table's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
    *
    * @generated from field: string data_time_range = 37;
    */
@@ -2213,7 +2220,6 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
   /**
    * Optional rilltime expression describing the time range covered by the rollup.
    * When set, the rollup's coverage is resolved from this expression instead of probing the OLAP for min/max timestamps.
-   * Evaluated with `now` = current time, `earliest` = zero time, `latest`/`watermark` = current time.
    *
    * @generated from field: string data_time_range = 11;
    */
@@ -3232,6 +3238,24 @@ export class ExplorePreset extends Message<ExplorePreset> {
   pivotRowLimit?: number;
 
   /**
+   * @generated from field: optional bool pivot_show_totals_column = 37;
+   */
+  pivotShowTotalsColumn?: boolean;
+
+  /**
+   * @generated from field: optional bool pivot_show_totals_row = 38;
+   */
+  pivotShowTotalsRow?: boolean;
+
+  /**
+   * Per-measure pivot conditional formatting, serialized in the URL param
+   * format (frontend-only; persisted in URL state).
+   *
+   * @generated from field: optional string pivot_formatting = 39;
+   */
+  pivotFormatting?: string;
+
+  /**
    * Chart display settings (frontend-only; persisted in URL state)
    *
    * @generated from field: optional bool chart_dynamic_y_axis = 35;
@@ -3277,6 +3301,9 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 37, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 38, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 39, name: "pivot_formatting", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
@@ -4463,6 +4490,13 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
    */
   allErroredPartitions = false;
 
+  /**
+   * If true, it will refresh all partitions that are currently marked as skipped.
+   *
+   * @generated from field: bool all_skipped_partitions = 5;
+   */
+  allSkippedPartitions = false;
+
   constructor(data?: PartialMessage<RefreshModelTrigger>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4475,6 +4509,7 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
     { no: 2, name: "full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "all_errored_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "all_skipped_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshModelTrigger {
@@ -5068,6 +5103,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   requiredFilters: string[] = [];
 
+  /**
+   * Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
+   *
+   * @generated from field: map<string, string> annotations = 20;
+   */
+  annotations: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5093,6 +5135,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
@@ -5179,11 +5222,19 @@ export class CanvasRow extends Message<CanvasRow> {
   heightUnit = "";
 
   /**
-   * Items to render in the row.
+   * Items to render in the row. Empty when the row is a tab group.
    *
    * @generated from field: repeated rill.runtime.v1.CanvasItem items = 3;
    */
   items: CanvasItem[] = [];
+
+  /**
+   * If set, this row renders a tab group instead of items.
+   * A row has either items or a tab_group, never both.
+   *
+   * @generated from field: rill.runtime.v1.CanvasTabGroup tab_group = 4;
+   */
+  tabGroup?: CanvasTabGroup;
 
   constructor(data?: PartialMessage<CanvasRow>) {
     super();
@@ -5196,6 +5247,7 @@ export class CanvasRow extends Message<CanvasRow> {
     { no: 1, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 2, name: "height_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "items", kind: "message", T: CanvasItem, repeated: true },
+    { no: 4, name: "tab_group", kind: "message", T: CanvasTabGroup },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasRow {
@@ -5212,6 +5264,110 @@ export class CanvasRow extends Message<CanvasRow> {
 
   static equals(a: CanvasRow | PlainMessage<CanvasRow> | undefined, b: CanvasRow | PlainMessage<CanvasRow> | undefined): boolean {
     return proto3.util.equals(CanvasRow, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CanvasTabGroup
+ */
+export class CanvasTabGroup extends Message<CanvasTabGroup> {
+  /**
+   * Stable identifier for the tab group, used for URL state.
+   * Defaults to "group-<index>" if not provided in the canvas YAML.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Tabs in the group. A group always has at least one tab.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasTab tabs = 2;
+   */
+  tabs: CanvasTab[] = [];
+
+  constructor(data?: PartialMessage<CanvasTabGroup>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasTabGroup";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "tabs", kind: "message", T: CanvasTab, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasTabGroup {
+    return new CanvasTabGroup().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasTabGroup {
+    return new CanvasTabGroup().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasTabGroup {
+    return new CanvasTabGroup().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasTabGroup | PlainMessage<CanvasTabGroup> | undefined, b: CanvasTabGroup | PlainMessage<CanvasTabGroup> | undefined): boolean {
+    return proto3.util.equals(CanvasTabGroup, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CanvasTab
+ */
+export class CanvasTab extends Message<CanvasTab> {
+  /**
+   * Stable identifier for the tab, used for URL state. Derived from the label.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * User-facing label for the tab.
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
+   * Rows to render when the tab is active. These are always plain rows;
+   * a tab's rows never contain a nested tab_group.
+   *
+   * @generated from field: repeated rill.runtime.v1.CanvasRow rows = 3;
+   */
+  rows: CanvasRow[] = [];
+
+  constructor(data?: PartialMessage<CanvasTab>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasTab";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "rows", kind: "message", T: CanvasRow, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasTab {
+    return new CanvasTab().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasTab {
+    return new CanvasTab().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasTab {
+    return new CanvasTab().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasTab | PlainMessage<CanvasTab> | undefined, b: CanvasTab | PlainMessage<CanvasTab> | undefined): boolean {
+    return proto3.util.equals(CanvasTab, a, b);
   }
 }
 

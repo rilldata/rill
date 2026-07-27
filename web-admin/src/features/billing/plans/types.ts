@@ -3,6 +3,8 @@ export type PlanTier =
   | "free"
   | "pro"
   | "team"
+  | "starter"
+  | "growth"
   | "managed"
   | "enterprise";
 
@@ -20,4 +22,5 @@ export type TeamPlanDialogTypes =
   | "org"
   | "proj"
   | "renew"
-  | "trial-expired";
+  | "trial-expired"
+  | "change";

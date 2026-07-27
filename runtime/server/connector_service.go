@@ -5,11 +5,17 @@ import (
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) ListBuckets(ctx context.Context, req *runtimev1.ListBucketsRequest) (*runtimev1.ListBucketsResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
+		return nil, ErrForbidden
+	}
+
 	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
@@ -33,6 +39,10 @@ func (s *Server) ListBuckets(ctx context.Context, req *runtimev1.ListBucketsRequ
 }
 
 func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequest) (*runtimev1.ListObjectsResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
+		return nil, ErrForbidden
+	}
+
 	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
@@ -72,6 +82,10 @@ func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequ
 }
 
 func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTablesRequest) (*runtimev1.OLAPListTablesResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
+		return nil, ErrForbidden
+	}
+
 	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
@@ -104,6 +118,10 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 }
 
 func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRequest) (*runtimev1.OLAPGetTableResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
+		return nil, ErrForbidden
+	}
+
 	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
@@ -125,6 +143,10 @@ func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRe
 }
 
 func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDatabaseSchemasRequest) (*runtimev1.ListDatabaseSchemasResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
+		return nil, ErrForbidden
+	}
+
 	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
@@ -154,6 +176,10 @@ func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDat
 }
 
 func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesRequest) (*runtimev1.ListTablesResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
+		return nil, ErrForbidden
+	}
+
 	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
@@ -183,6 +209,10 @@ func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesReques
 }
 
 func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (*runtimev1.GetTableResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
+		return nil, ErrForbidden
+	}
+
 	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
@@ -194,12 +224,27 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
-	tableMetadata, err := is.GetTable(ctx, req.Database, req.DatabaseSchema, req.Table)
+	table, err := is.Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
 	if err != nil {
 		return nil, err
 	}
+	size := len(table.Schema.Fields)
+	if table.UnsupportedCols != nil {
+		size += len(table.UnsupportedCols)
+	}
+	schema := make(map[string]string, size)
+	for _, field := range table.Schema.Fields {
+		typ := field.Type.RawType
+		if field.Type.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			typ = fmt.Sprintf("UNKNOWN(%s)", typ)
+		}
+		schema[field.Name] = typ
+	}
+	for name, typ := range table.UnsupportedCols {
+		schema[name] = fmt.Sprintf("UNKNOWN(%s)", typ)
+	}
 
 	return &runtimev1.GetTableResponse{
-		Schema: tableMetadata.Schema,
+		Schema: schema,
 	}, nil
 }

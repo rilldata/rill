@@ -7,7 +7,6 @@ describe("classifyMethod", () => {
       ["export", "mutation"],
       ["exportReport", "mutation"],
       ["query", "mutation"],
-      ["queryBatch", "skip"],
     ] as const)("classifies %s as %s", (method, expected) => {
       expect(classifyMethod("QueryService", method)).toBe(expected);
     });
@@ -32,6 +31,7 @@ describe("classifyMethod", () => {
       ["watchLogs", "skip"],
       ["watchResources", "skip"],
       ["completeStreaming", "skip"],
+      ["gitDiff", "query"],
       ["issueDevJWT", "query"],
       ["analyzeConnectors", "query"],
       ["analyzeVariables", "query"],

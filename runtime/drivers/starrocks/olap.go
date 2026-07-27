@@ -143,8 +143,8 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 }
 
 // InformationSchema implements drivers.OLAPStore.
-func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
-	return &informationSchema{c: c}
+func (c *connection) InformationSchema() drivers.InformationSchema {
+	return c
 }
 
 // EstimateSize implements drivers.OLAPStore.

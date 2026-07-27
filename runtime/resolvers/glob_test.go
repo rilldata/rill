@@ -73,6 +73,72 @@ func TestGlobTrimsWhitespace(t *testing.T) {
 	require.Equal(t, "file1.csv", rows[2]["path"])
 }
 
+func TestGlobLast(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"file1.csv":     ``,
+		"dir/file2.csv": ``,
+		"dir/file3.csv": ``,
+	})
+
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector": "mock",
+			"path":      "mock://bucket/**/*.csv",
+			"last":      2,
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+
+	// With no existing partitions, `last` acts as a hard limit on the last N rows (the N highest paths).
+	require.Len(t, rows, 2)
+	require.Equal(t, "dir/file3.csv", rows[0]["path"])
+	require.Equal(t, "file1.csv", rows[1]["path"])
+}
+
+func TestGlobLastPartitioned(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"dir/file1.csv":        ``,
+		"dir/subdir/file2.csv": ``,
+		"dir/subdir/file3.csv": ``,
+	})
+
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector":    "mock",
+			"path":         "mock://bucket/**/*.csv",
+			"partition":    "directory",
+			"rollup_files": true,
+			"last":         1,
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+
+	for _, row := range rows {
+		delete(row, "updated_on")
+	}
+
+	// The limit applies to partition rows, not files: only the last partition is returned.
+	require.Equal(t, []map[string]interface{}{
+		{"uri": "mock://bucket/dir/subdir", "path": "dir/subdir", "files": []any{"dir/subdir/file2.csv", "dir/subdir/file3.csv"}},
+	}, rows)
+}
+
 func TestGlobDirectoryPartitioned(t *testing.T) {
 	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
 		"dir/file1.csv":        ``,
@@ -176,6 +242,64 @@ func TestGlobHivePartitionedTransformSQL(t *testing.T) {
 		{"path": "dir/year=2024/month=02", "prev_path": nil, "num_files": float64(1)},
 		{"path": "dir/year=2024/month=03", "prev_path": "dir/year=2024/month=02", "num_files": float64(2)},
 	}, rows)
+}
+
+func TestGlobWindowedTransformSQL(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"dir/year=2024/month=02/file1.csv": ``,
+		"dir/year=2024/month=03/file2.csv": ``,
+		"dir/year=2024/month=03/file3.csv": ``,
+	})
+
+	// `start` and `end` are static path bounds applied during listing, so they compose
+	// with `transform_sql`, which runs afterward on the resulting rows. Here the window
+	// keeps only the month=02 partition (end is exclusive), and the transform reshapes it.
+	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector":     "mock",
+			"path":          "mock://bucket/**/*.csv",
+			"partition":     "hive",
+			"rollup_files":  true,
+			"start":         "mock://bucket/dir/year=2024/month=02",
+			"end":           "mock://bucket/dir/year=2024/month=03",
+			"transform_sql": "SELECT path, len(files) AS num_files FROM {{ .table }}",
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	var rows []map[string]interface{}
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+
+	require.Equal(t, []map[string]interface{}{
+		{"path": "dir/year=2024/month=02", "num_files": float64(1)},
+	}, rows)
+}
+
+func TestGlobLastTransformSQLError(t *testing.T) {
+	rt, instanceID := prepareGlobTest(t, "mock", map[string]string{
+		"file1.csv": ``,
+		"file2.csv": ``,
+	})
+
+	// `last` is stateful and re-trims rows after listing, so it is not supported with `transform_sql`.
+	_, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "glob",
+		ResolverProperties: map[string]any{
+			"connector":     "mock",
+			"path":          "mock://bucket/**/*.csv",
+			"last":          1,
+			"transform_sql": "SELECT * FROM {{ .table }}",
+		},
+		Args:   nil,
+		Claims: &runtime.SecurityClaims{},
+	})
+	require.ErrorContains(t, err, "`last` is not supported with `transform_sql`")
 }
 
 func prepareGlobTest(t *testing.T, connector string, files map[string]string) (*runtime.Runtime, string) {

@@ -1,3 +1,7 @@
+import {
+  itemsInTag,
+  type TagIndex,
+} from "@rilldata/web-common/components/menu/tag-utils";
 import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
 import {
   createAndExpression,
@@ -12,6 +16,8 @@ import {
   type TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   V1Expression,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
@@ -21,6 +27,7 @@ import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Row } from "tanstack-table-8-svelte-5";
+import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { SHOW_MORE_BUTTON } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
@@ -38,6 +45,25 @@ import {
   type PivotTimeConfig,
   type TimeFilters,
 } from "./types";
+
+/**
+ * Returns URI request measures for the given row dimensions that declare a
+ * `uri` in their spec. These resolve a per-value URL so dimension values can
+ * be rendered as clickable links. Time dimensions are skipped since they
+ * cannot have a URI.
+ */
+export function getUriMeasuresForDimensions(
+  dimensionNames: string[],
+  config: PivotDataStoreConfig,
+): V1MetricsViewAggregationMeasure[] {
+  return dimensionNames
+    .filter(
+      (name) =>
+        !isTimeDimension(name, config.time.timeDimension) &&
+        !!config.allDimensions.find((d) => d.name === name)?.uri,
+    )
+    .map((name) => getURIRequestMeasure(name));
+}
 
 /**
  * Construct a key for a pivot config to store expanded table data
@@ -61,6 +87,8 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     rowLimit,
     outermostRowLimit,
   } = pivot;
+  const showTotalsColumn = pivot.showTotalsColumn !== false;
+  const showTotalsRow = pivot.showTotalsRow !== false;
   const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
@@ -69,7 +97,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
 }
 
 /**
@@ -629,6 +657,8 @@ export function getFiltersForCell(
   upToDimensionIndex?: number,
 ): PivotFilter {
   const { rowDimensionNames, measureNames, isFlat } = config;
+  const hasTotalsRow =
+    config.pivot?.showTotalsRow !== false && measureNames.length > 0;
 
   let values: string[];
   if (isFlat) {
@@ -636,7 +666,7 @@ export function getFiltersForCell(
       tableData,
       rowDimensionNames,
       rowId,
-      measureNames.length > 0,
+      hasTotalsRow,
     );
     if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
       values = values.slice(0, upToDimensionIndex + 1);
@@ -646,7 +676,7 @@ export function getFiltersForCell(
       tableData,
       rowDimensionNames,
       rowId,
-      measureNames.length > 0,
+      hasTotalsRow,
     );
   }
 
@@ -745,4 +775,90 @@ export function splitPivotChips(data: PivotChipData[]): {
 export function isShowMoreRow(row: Row<PivotDataRow>): boolean {
   const firstCell = row?.getVisibleCells()?.[0];
   return firstCell?.getValue() === SHOW_MORE_BUTTON;
+}
+
+/**
+ * Project a dimension or measure spec into the PivotChipData shape used by
+ * the sidebar and bulk-add paths. Mirrors the projection in
+ * state-managers/selectors/pivot.ts so chips look identical regardless of
+ * whether they came from drag-and-drop or a tag bulk-add.
+ */
+export function dimensionToChipData(
+  d: MetricsViewSpecDimension,
+): PivotChipData {
+  return {
+    id: d.name || d.column || "Unknown",
+    title: d.displayName || d.name || d.column || "Unknown",
+    type: PivotChipType.Dimension,
+    description: d.description,
+  };
+}
+
+export function measureToChipData(m: MetricsViewSpecMeasure): PivotChipData {
+  return {
+    id: m.name || "Unknown",
+    title: m.displayName || m.name || "Unknown",
+    type: PivotChipType.Measure,
+    description: m.description,
+  };
+}
+
+/**
+ * Split the items in a tag into dimension chips and measure chips, preserving
+ * spec order. Used by the pivot sidebar's bulk-add actions: "Add all to rows"
+ * consumes the dimensions output, "Add all to columns" concatenates both, and
+ * "Auto-arrange" routes each list to its natural zone.
+ */
+export function splitTagItems(
+  tagName: string,
+  dimensionTagIndex: TagIndex,
+  measureTagIndex: TagIndex,
+): { dimensions: PivotChipData[]; measures: PivotChipData[] } {
+  const dimensions = itemsInTag(dimensionTagIndex, tagName).map((d) =>
+    dimensionToChipData(d as MetricsViewSpecDimension),
+  );
+  const measures = itemsInTag(measureTagIndex, tagName).map((m) =>
+    measureToChipData(m as MetricsViewSpecMeasure),
+  );
+  return { dimensions, measures };
+}
+
+/**
+ * Append new chips to a zone, skipping any whose id already exists in the
+ * zone or in the opposite zone. Used for tag bulk-add when the caller has
+ * access to both zones (cross-zone dedup keeps a dimension from appearing
+ * in both rows and columns). Returns a new array; preserves the original
+ * order of the zone followed by the new items.
+ */
+export function appendChipsToZone(
+  zoneItems: PivotChipData[],
+  otherZoneItems: PivotChipData[],
+  newItems: PivotChipData[],
+): PivotChipData[] {
+  const existing = new Set([
+    ...zoneItems.map((c) => c.id),
+    ...otherZoneItems.map((c) => c.id),
+  ]);
+  const additions: PivotChipData[] = [];
+  for (const item of newItems) {
+    if (existing.has(item.id)) continue;
+    existing.add(item.id);
+    additions.push(item);
+  }
+  return [...zoneItems, ...additions];
+}
+
+/**
+ * Replace a zone's contents with new chips, removing those chips' ids from
+ * the opposite zone so a dimension never appears in both zones at once.
+ */
+export function replaceZoneCleaningOther(
+  newItems: PivotChipData[],
+  otherZoneItems: PivotChipData[],
+): { zone: PivotChipData[]; other: PivotChipData[] } {
+  const ids = new Set(newItems.map((v) => v.id));
+  return {
+    zone: newItems,
+    other: otherZoneItems.filter((c) => !ids.has(c.id)),
+  };
 }

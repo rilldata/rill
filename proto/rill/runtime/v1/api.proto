@@ -201,7 +201,16 @@ service RuntimeService {
   rpc GetModelPartitions(GetModelPartitionsRequest) returns (GetModelPartitionsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/partitions"};
   }
-  
+
+  // SkipModelPartitions marks model partitions as skipped, excluding them from execution and from the model's error state.
+  // Skipped partitions remain skipped until they are explicitly triggered (e.g. via CreateTrigger).
+  rpc SkipModelPartitions(SkipModelPartitionsRequest) returns (SkipModelPartitionsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/models/{model}/partitions/skip",
+      body: "*"
+    };
+  }
+
   // CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
   // Triggers are ephemeral resources that will be cleaned up by the controller.
   rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse) {
@@ -314,6 +323,20 @@ service RuntimeService {
   // GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
   rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
+  }
+
+  // GitDiff lists the files that differ between the local repo and the comparison branch, i.e. the changes that would land on the target branch.
+  rpc GitDiff(GitDiffRequest) returns (GitDiffResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/diff"};
+  }
+
+  // GitRevert discards local changes for the given files, resetting them to the comparison branch's state.
+  // If no paths are provided, all local changes are reverted.
+  rpc GitRevert(GitRevertRequest) returns (GitRevertResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/revert",
+      body: "*"
+    };
   }
 
   rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
@@ -787,6 +810,7 @@ message ModelPartition {
   google.protobuf.Timestamp executed_on = 4;
   string error = 5;
   uint32 elapsed_ms = 6;
+  bool skipped = 7;
 }
 
 message GetLogsRequest {
@@ -820,10 +844,15 @@ message ListResourcesRequest {
   string path = 3;
   // Skip security checks
   bool skip_security_checks = 4;
+  // Maximum number of resources to return. If zero, returns all resources.
+  uint32 page_size = 5 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
+  // Page token returned by a previous ListResources call.
+  string page_token = 6;
 }
 
 message ListResourcesResponse {
   repeated Resource resources = 1;
+  string next_page_token = 2;
 }
 
 message WatchResourcesRequest {
@@ -863,6 +892,7 @@ message GetModelPartitionsRequest {
   string model = 2;
   bool pending = 5;
   bool errored = 6;
+  bool skipped = 7;
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
   string page_token = 4;
 }
@@ -871,6 +901,19 @@ message GetModelPartitionsResponse {
   repeated ModelPartition partitions = 1;
   string next_page_token = 2;
 }
+
+message SkipModelPartitionsRequest {
+  string instance_id = 1;
+  string model = 2;
+  // Specific partition keys to skip.
+  repeated string partitions = 3;
+  // Skip all pending partitions.
+  bool pending = 4;
+  // Skip all errored partitions, clearing them from the model's error state.
+  bool errored = 5;
+}
+
+message SkipModelPartitionsResponse {}
 
 message CreateTriggerRequest {
   // Instance to target.
@@ -1216,6 +1259,7 @@ message GetAIMessageRequest {
 // Response message for RuntimeService.GetAIMessage
 message GetAIMessageResponse {
   Message message = 1;
+  Message result = 2;
 }
 
 // **********
@@ -1300,6 +1344,60 @@ message GitStatusResponse {
   int32 remote_commits = 6;
 }
 
+message GitDiffRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // remote_branch is the branch to compare against. Same semantics as GitStatusRequest:
+  // if empty, the upstream of the current local branch is used.
+  string remote_branch = 2;
+  // include_diff also computes and returns the combined unified patch in addition to the
+  // changed_files list. It is opt-in because computing the diff is more expensive.
+  bool include_diff = 3;
+  // fetch first updates the remote-tracking ref from the remote before computing the changes.
+  // When false, changes are computed against the already-fetched ref; use that when a recent
+  // GitStatus/GitDiff already fetched, to avoid a redundant fetch.
+  bool fetch = 4;
+}
+
+message GitDiffResponse {
+  enum GitFileStatus {
+    GIT_FILE_STATUS_UNSPECIFIED = 0;
+    GIT_FILE_STATUS_ADDED = 1;
+    GIT_FILE_STATUS_MODIFIED = 2;
+    GIT_FILE_STATUS_DELETED = 3;
+    GIT_FILE_STATUS_RENAMED = 4;
+  }
+
+  message GitFileChange {
+    string path = 1;
+    GitFileStatus status = 2;
+    // old_path is the previous path; only set when status is GIT_FILE_STATUS_RENAMED.
+    string old_path = 3;
+  }
+
+  // changed_files lists the files that would land on the target branch, relative to the project subpath.
+  // The comparison ref is the requested remote_branch, or the upstream of the current branch when
+  // remote_branch is empty.
+  repeated GitFileChange changed_files = 1;
+  // diff is the combined unified patch across all changed_files; only set when include_diff is true.
+  // Individual files whose diff is very large are elided to a "Binary files differ" placeholder.
+  string diff = 2;
+}
+
+message GitRevertRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // remote_branch is the branch to compare against. Same semantics as GitDiffRequest:
+  // if empty, the upstream of the current local branch is used.
+  string remote_branch = 2;
+  // paths are the files to revert, relative to the project subpath, matching the paths returned by
+  // GitDiff. Paths that are not actually changed are ignored. If empty, all changed files are reverted.
+  repeated string paths = 3;
+}
+
+message GitRevertResponse {
+  // reverted_paths lists the files that were reverted, relative to the project subpath.
+  repeated string reverted_paths = 1;
+}
+
 message ListGitBranchesRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
 }
@@ -1345,6 +1443,8 @@ message GitMergeToBranchRequest {
 message GitMergeToBranchResponse {
   // The output of the git merge command. Only set for unsuccessful merges.
   string output = 1;
+  // Conflict is true if the merge failed due to conflicts.
+  bool conflict = 2;
 }
 
 message GitSwitchBranchRequest {
@@ -1366,6 +1466,8 @@ message GitPullResponse {
   string output = 1;
   // The name of the branch that was being merged when a conflict occurred. Only set for unsuccessful pulls.
   string merged_branch = 2;
+  // Conflict is true if the pull failed due to merge conflicts.
+  bool conflict = 3;
 }
 
 message GitPushRequest {

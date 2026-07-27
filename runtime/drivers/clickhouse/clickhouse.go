@@ -169,12 +169,13 @@ type configProperties struct {
 	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
 	// This does not list queries to other databases.
 	DatabaseWhitelist string `mapstructure:"database_whitelist"`
-	// OptimizeTemporaryTablesBeforePartitionReplace determines whether to optimize temporary tables before partition replacement.
-	OptimizeTemporaryTablesBeforePartitionReplace bool `mapstructure:"optimize_temporary_tables_before_partition_replace"`
 	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
 	Cluster string `mapstructure:"cluster"`
+	// SyncReplicas controls whether to run `SYSTEM SYNC REPLICA` before replacing partitions on a replicated table in a cluster.
+	// This ensures all inserted parts are visible across replicas before the partition swap. Defaults to true.
+	SyncReplicas bool `mapstructure:"sync_replicas"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
@@ -228,6 +229,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	// Parse config properties
 	conf := &configProperties{
 		CanScaleToZero: true,
+		SyncReplicas:   true,
 		MaxOpenConns:   20,
 		MaxIdleConns:   5,
 	}
@@ -616,6 +618,7 @@ func (c *Connection) periodicallyEmitStats() {
 	defer cacheInvalidationTicker.Stop()
 
 	skipEstimatedSizeEmission := false
+	skipRCUEmission := false
 	for {
 		select {
 		case <-sensitiveTicker.C:
@@ -627,16 +630,14 @@ func (c *Connection) periodicallyEmitStats() {
 			// Emit the estimated size of the database.
 			size, err := c.estimateSize(c.ctx)
 			if err == nil {
-				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size))
+				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size), attribute.Bool("managed_clickhouse", c.config.Managed))
 			} else if !errors.Is(err, c.ctx.Err()) {
 				lvl := zap.WarnLevel
 				if c.config.Managed {
 					lvl = zap.ErrorLevel
 				}
-
-				var chErr *clickhouse.Exception
-				if errors.As(err, &chErr) && chErr.Code == 497 {
-					// Code 497 is "Not enough privileges" - downgrade to debug level and skip future emissions.
+				if isAccessDeniedErr(err) {
+					// Downgrade to debug level and skip future emissions.
 					lvl = zap.DebugLevel
 					skipEstimatedSizeEmission = true
 				}
@@ -657,11 +658,21 @@ func (c *Connection) periodicallyEmitStats() {
 				}
 			}
 
+			if skipRCUEmission {
+				continue
+			}
+
 			// Check if billing.events table exists (with caching).
 			billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
 			if err != nil {
 				if !errors.Is(err, c.ctx.Err()) {
-					c.logger.Warn("failed to check if billing table exists", zap.Error(err))
+					lvl := zap.WarnLevel
+					if isAccessDeniedErr(err) {
+						// Downgrade to debug level and skip future emissions.
+						lvl = zap.DebugLevel
+						skipRCUEmission = true
+					}
+					c.logger.Log(lvl, "failed to check if billing table exists", zap.Error(err))
 				}
 				continue
 			}
@@ -685,35 +696,106 @@ func (c *Connection) periodicallyEmitStats() {
 			// Invalidate the billing table existence cache and skip size emission flag.
 			c.billingTableExists = nil
 			skipEstimatedSizeEmission = false
+			skipRCUEmission = false
 		case <-c.ctx.Done():
 			return
 		}
 	}
 }
 
+// accessibleTables returns the list of tables that are accessible to the current user.
+func (c *Connection) accessibleTables(ctx context.Context) (map[tableKey]struct{}, error) {
+	rows, err := c.readDB.QueryxContext(ctx, `
+		SELECT
+			database,
+			name
+		FROM system.tables
+		WHERE is_temporary = 0
+		  AND lower(database) NOT IN ('information_schema', 'system')
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tables := make(map[tableKey]struct{})
+	for rows.Next() {
+		var db, table string
+		if err := rows.Scan(&db, &table); err != nil {
+			return nil, err
+		}
+
+		tables[tableKey{
+			database: db,
+			table:    table,
+		}] = struct{}{}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tables, nil
+}
+
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
 func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
-	var size int64
-	var query string
 	if c.config.Cluster == "" {
-		query = `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`
-	} else {
-		query = fmt.Sprintf(`SELECT sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`, c.config.Cluster)
+		var size int64
+		query := `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`
+		err := c.readDB.QueryRowxContext(ctx, query).Scan(&size)
+		if err != nil {
+			return 0, err
+		}
+		return size, nil
 	}
-	err := c.readDB.QueryRowxContext(ctx, query).Scan(&size)
+	// Workaround ClickHouse metadata leak through cluster(..., system.parts).
+	visibleTables, err := c.accessibleTables(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	return size, nil
+	query := fmt.Sprintf(`SELECT database,table,sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
+	rows, err := c.readDB.QueryxContext(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	var total int64
+	for rows.Next() {
+		var db, table string
+		var size int64
+		if err := rows.Scan(&db, &table, &size); err != nil {
+			return 0, err
+		}
+		if _, ok := visibleTables[tableKey{database: db, table: table}]; ok {
+			total += size
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }
 
 // estimatePerTableSize returns the estimated average disk size per table in bytes.
 func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, error) {
-	var query string
+	var (
+		query         string
+		visibleTables map[tableKey]struct{}
+		err           error
+	)
+
 	if c.config.Cluster == "" {
 		query = `SELECT database, table, sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`
 	} else {
+		visibleTables, err = c.accessibleTables(ctx)
+		if err != nil {
+			return nil, err
+		}
 		query = fmt.Sprintf(`SELECT database, table, sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
 	}
 	rows, err := c.readDB.QueryxContext(ctx, query)
@@ -727,6 +809,12 @@ func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, er
 		var ts tableSize
 		if err := rows.Scan(&ts.database, &ts.table, &ts.size); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		// Only needed for cluster() workaround.
+		if visibleTables != nil {
+			if _, ok := visibleTables[tableKey{database: ts.database, table: ts.table}]; !ok {
+				continue
+			}
 		}
 		tableSizes = append(tableSizes, &ts)
 	}
@@ -779,14 +867,14 @@ func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string
 			return false, fmt.Errorf("failed to check if billing table exists: %w", err)
 		}
 	} else {
+		// Query through view so ClickHouse applies normal SELECT access checks on system.tables.
+		// Targeting system.tables directly requires SHOW COLUMNS on system.tables starting in ClickHouse 26.3.
 		err := c.readDB.QueryRowxContext(ctx, fmt.Sprintf(`
 				SELECT countIf(found) = count() AS exists_everywhere, countIf(found) > 0 AS exists_somewhere
-				FROM
-				(
-					SELECT hostName() AS host, max((database = 'billing') AND (name = 'events')) AS found
-					FROM clusterAllReplicas('%s', system.tables)
-					GROUP BY host
-				)`, cluster)).Scan(&existsEverywhere, &existsSomewhere)
+				FROM clusterAllReplicas(%s, view(
+					SELECT max((database = 'billing') AND (name = 'events')) AS found
+					FROM system.tables
+				))`, safeSQLString(cluster))).Scan(&existsEverywhere, &existsSomewhere)
 		if err != nil {
 			return false, fmt.Errorf("failed to check if billing table exists in cluster %q: %w", cluster, err)
 		}
@@ -895,6 +983,25 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	return db, nil
 }
 
+// isAccessDeniedErr reports whether err looks like a ClickHouse "Not enough privileges" (code 497) error.
+// It matches on the error text to catch cases where the error is not a typed *clickhouse.Exception,
+// e.g. when it is returned as an "[HTTP 500]" response body over the HTTP protocol.
+func isAccessDeniedErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	var chErr *clickhouse.Exception
+	if errors.As(err, &chErr) && chErr.Code == 497 {
+		return true
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "Not enough privileges") || strings.Contains(msg, "ACCESS_DENIED")
+}
+
+type tableKey struct {
+	database string
+	table    string
+}
 type tableSize struct {
 	database string
 	table    string

@@ -10,7 +10,9 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -91,13 +93,25 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 }
 
 // CookieRefreshMiddleware is a middleware that refreshes the auth cookie.
-// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age.
-// Note that it does not update the auth token encrypted inside the cookie.
+// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age (browserSessionTTL).
+// Once per day we refresh the auth token TTL if it's still valid.
 func (a *Authenticator) CookieRefreshMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess := a.cookies.Get(r, cookieName)
 		if authToken, ok := sess.Values[cookieFieldAccessToken].(string); ok && authToken != "" {
-			// Re-save the cookie to refresh its expiration
+			validatedToken, err := a.admin.ValidateAuthToken(r.Context(), authToken)
+			if err != nil {
+				// Token validation failures can be due to expiry or transient context issues.
+				// Clear the cookie and continue down the chain rather than failing the request.
+				delete(sess.Values, cookieFieldAccessToken)
+				a.logger.Warn("failed to validate auth token", zap.Error(err), observability.ZapCtx(r.Context()))
+			} else {
+				if err := a.admin.ExtendBrowserSessionAuthToken(r.Context(), validatedToken, browserSessionTTL, browserSessionTTLRefreshThreshold); err != nil {
+					a.logger.Warn("failed to extend browser session auth token TTL", zap.Error(err), observability.ZapCtx(r.Context()))
+				}
+			}
+
+			// Re-save the cookie to refresh its expiration after successful validation.
 			if err := sess.Save(r, w); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -190,6 +204,10 @@ func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) 
 	// Set user ID in span and request log
 	if claims.OwnerType() == OwnerTypeUser {
 		observability.AddRequestAttributes(ctx, semconv.EnduserID(claims.OwnerID()))
+		// If a superuser is assuming this user, record the superuser's own ID.
+		if assumedByUserID, ok := claims.AssumedByUserID(); ok {
+			observability.AddRequestAttributes(ctx, attribute.String("auth.assumed_by_user_id", assumedByUserID))
+		}
 	}
 
 	return ctx, nil

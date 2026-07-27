@@ -9,6 +9,7 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
+  import MeasureFormatChip from "./MeasureFormatChip.svelte";
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
@@ -16,6 +17,7 @@
   import {
     type PivotChipData,
     PivotChipType,
+    type PivotMeasureFormatting,
     type PivotTableMode,
   } from "./types";
   import {
@@ -26,12 +28,28 @@
   } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
   import { timePillSelectors } from "./time-pill-store";
 
-  export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
+  export type Zone =
+    | "rows"
+    | "columns"
+    | "Time"
+    | "Measures"
+    | "Dimensions"
+    | "tags";
+
+  // When a tag chip is being dragged the drop receivers do a bulk-add instead
+  // of the per-chip splice path. The dimensions and measures arrays are
+  // precomputed at drag-start so each receiver does not have to re-split.
+  export type TagDragPayload = {
+    tagName: string;
+    dimensions: PivotChipData[];
+    measures: PivotChipData[];
+  };
 
   export type DragData = {
     source: Zone;
     width: number;
     chip: PivotChipData;
+    tagPayload?: TagDragPayload;
   };
 
   export const dragDataStore = writable<null | DragData>(null);
@@ -39,11 +57,22 @@
 </script>
 
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
   export let zone: Zone;
   export let tableMode: PivotTableMode = "nest";
   export let onUpdate: (items: PivotChipData[]) => void = () => {};
+  // When provided, measure chips in drop zones expose per-measure conditional
+  // formatting controls in a dropdown on the chip.
+  export let measureFormatting:
+    | Record<string, PivotMeasureFormatting>
+    | undefined = undefined;
+  export let setMeasureFormatting:
+    | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
+    | undefined = undefined;
+  export let lowerIsBetterMap: Record<string, boolean> = {};
 
   const isDropLocation = zone === "columns" || zone === "rows";
   const DRAG_START_THRESHOLD_PX = 4;
@@ -70,10 +99,14 @@
     (i) => i.type !== PivotChipType.Measure,
   );
 
+  $: isTagDrag = !!dragData?.tagPayload;
+
   $: isValidDropZone =
     isDropLocation &&
     dragData &&
-    (zone === "columns" || dragChip?.type !== PivotChipType.Measure);
+    (isTagDrag ||
+      zone === "columns" ||
+      dragChip?.type !== PivotChipType.Measure);
 
   // Get available grains from the store
   const availableGrainsStore = timePillSelectors.getAvailableGrains("time");
@@ -93,7 +126,11 @@
 
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     const target = e.target as HTMLElement;
-    if (target.closest(".grain-dropdown") || target.closest(".grain-label"))
+    if (
+      target.closest(".grain-dropdown") ||
+      target.closest(".grain-label") ||
+      target.closest(".format-dropdown")
+    )
       return;
 
     if (e.button !== 0) return;
@@ -134,12 +171,33 @@
     window.removeEventListener("mousemove", detectDragStart);
   }
 
-  function handleDrop() {
+  function handleDrop(e: MouseEvent) {
     if (zoneStartedDrag)
       $controllerStore?.abort("Drag cancelled - item dropped");
 
+    // Holding CMD (mac) or Ctrl flips the tag drop from append to replace,
+    // matching the click-side affordance on the tag row.
+    const replace = e.metaKey || e.ctrlKey;
+
     if (isValidDropZone) {
-      if (dragChip && ghostIndex !== null) {
+      if (dragData?.tagPayload) {
+        // Bulk-add path for tag drops. Skips ghost-index positioning since
+        // we are inserting multiple chips, not a single one. Cross-zone
+        // cleanup on replace happens in the auto-arrange zone or the click
+        // affordances on the tag row — DragList only manages its own zone.
+        const { dimensions, measures } = dragData.tagPayload;
+        const newItems =
+          zone === "rows" ? dimensions : [...dimensions, ...measures];
+        if (newItems.length === 0) {
+          // Pure-measure tag dropped on rows, for instance: nothing to do.
+        } else if (replace) {
+          onUpdate(newItems);
+        } else {
+          const existing = new Set(items.map((c) => c.id));
+          const additions = newItems.filter((c) => !existing.has(c.id));
+          if (additions.length > 0) onUpdate([...items, ...additions]);
+        }
+      } else if (dragChip && ghostIndex !== null) {
         const temp = [...items];
 
         let chipToAdd = dragChip;
@@ -297,7 +355,7 @@
     orientation: "horizontal",
   }}
   bind:this={container}
-  aria-label="Drag list {zone}"
+  aria-label={m.dashboard_drag_list_zone({ zone })}
 >
   {#each items as item, index (item.id)}
     <div
@@ -337,6 +395,21 @@
               onUpdate(items);
             }}
           />
+        {:else if isDropLocation && item.type === PivotChipType.Measure && setMeasureFormatting}
+          <MeasureFormatChip
+            {item}
+            grab
+            removable
+            fmt={measureFormatting?.[item.id]}
+            lowerIsBetter={lowerIsBetterMap[item.id] ?? false}
+            onFormatChange={(fmt: PivotMeasureFormatting | null) =>
+              setMeasureFormatting?.(item.id, fmt)}
+            onmousedown={(e: MouseEvent) => handleMouseDown(e, item)}
+            onRemove={() => {
+              items = items.filter((i) => i.id !== item.id);
+              onUpdate(items);
+            }}
+          />
         {:else}
           <PivotChip
             {item}
@@ -358,12 +431,13 @@
               <button
                 class="icon-wrapper"
                 onclick={() => handleRowClick(item)}
-                aria-label="Add Row"
+                aria-label={m.dashboard_add_row()}
                 type="button"
               >
                 <Row size="16px" />
               </button>
-              <TooltipContent slot="tooltip-content">Add to rows</TooltipContent
+              <TooltipContent slot="tooltip-content"
+                >{m.dashboard_add_to_rows()}</TooltipContent
               >
             </Tooltip>
           {/if}
@@ -372,13 +446,13 @@
             <button
               class="icon-wrapper"
               onclick={() => handleColumnClick(item)}
-              aria-label="Add Column"
+              aria-label={m.dashboard_add_column()}
               type="button"
             >
               <Column size="16px" />
             </button>
             <TooltipContent slot="tooltip-content">
-              Add to columns
+              {m.dashboard_add_to_columns()}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -404,7 +478,7 @@
           onUpdate([]);
         }}
       >
-        Clear
+        {m.dashboard_clear()}
       </Button>
     {/if}
   {/if}
@@ -437,6 +511,10 @@
     @apply flex flex-row flex-wrap bg-input w-full p-1 px-2 gap-x-2 h-fit;
     @apply items-center;
     @apply border;
+    /* Cap the drop zone at ~3 chip rows so a large number of chips scrolls
+       within the zone instead of pushing the pivot table out of view. */
+    @apply overflow-y-auto;
+    max-height: 88px;
   }
 
   .valid {

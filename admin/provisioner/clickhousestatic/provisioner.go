@@ -176,6 +176,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 			DROP VIEW,
 			TRUNCATE,
 			OPTIMIZE,
+			SYSTEM SYNC REPLICA,
 			SHOW DICTIONARIES,
 			dictGet
 		ON %s.* TO %s
@@ -332,14 +333,16 @@ func newPassword() string {
 }
 
 func generateDatabaseName(resourceID string, annotations map[string]string) string {
+	// Format: rill_<id>_<org>_<project> truncated to 63 characters.
+	// Note that we add the ID first to prevent it from being truncated (it adds 32 characters), which would be a security risk.
 	name := "rill"
+	name += "_" + nonAlphanumericRegexp.ReplaceAllString(resourceID, "")
 	if org, ok := annotations["organization_name"]; ok {
 		name += "_" + nonAlphanumericRegexp.ReplaceAllString(org, "")
 	}
 	if proj, ok := annotations["project_name"]; ok {
 		name += "_" + nonAlphanumericRegexp.ReplaceAllString(proj, "")
 	}
-	name += "_" + nonAlphanumericRegexp.ReplaceAllString(resourceID, "")
 	// Optionally, trim to 63 chars and remove trailing underscores if needed
 	if len(name) > 63 {
 		name = name[:63]

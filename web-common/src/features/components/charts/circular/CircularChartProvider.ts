@@ -35,6 +35,7 @@ import {
   OTHER_VALUE,
   OTHER_VALUE_DOMAIN_KEY,
   TOTAL_DOMAIN_KEY,
+  type LabelsConfig,
 } from "./constants";
 
 export type CircularChartSpec = {
@@ -43,6 +44,7 @@ export type CircularChartSpec = {
   color?: FieldConfig<"nominal">;
   innerRadius?: number;
   show_other?: boolean;
+  labels?: LabelsConfig;
 };
 
 export type CircularChartDefaultOptions = {

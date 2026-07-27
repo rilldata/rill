@@ -114,7 +114,6 @@ test.describe("timeseries charts (rendering)", () => {
     test(`chart data matches API response (dashboard: ${dashboardTZ})`, async ({
       page,
     }) => {
-      await page.getByLabel("/dashboards").click();
       await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
       await expect(
@@ -148,9 +147,6 @@ test.describe("timeseries charts (rendering)", () => {
           })
           .click();
 
-        // Wait for chart to update with new data
-        await page.waitForTimeout(500);
-
         const apiData = await timeseriesPromise;
         expect(apiData.data.length).toBe(testCase.expectedDataPoints);
 
@@ -179,7 +175,6 @@ test.describe("timeseries charts system TZ independence", () => {
   }) => {
     const dashboardTZ = "America/Los_Angeles";
 
-    await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     await expect(
@@ -212,8 +207,6 @@ test.describe("timeseries charts system TZ independence", () => {
           exact: true,
         })
         .click();
-
-      await page.waitForTimeout(500);
 
       const apiData = await timeseriesPromise;
       expect(apiData.data.length).toBe(testCase.expectedDataPoints);

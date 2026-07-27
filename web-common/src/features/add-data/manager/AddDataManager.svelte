@@ -23,9 +23,10 @@
     getConnectorDriverForSchema,
   } from "@rilldata/web-common/features/add-data/manager/steps/utils.ts";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import ConnectorFormWrapper from "@rilldata/web-common/features/add-data/form/ConnectorFormWrapper.svelte";
   import { getAddDataClass } from "@rilldata/web-common/features/add-data/class-utils.ts";
   import { inferSchemaForConnector } from "@rilldata/web-common/features/entity-management/add/selectors.ts";
+  import ConnectorForm from "@rilldata/web-common/features/add-data/form/ConnectorForm.svelte";
+  import EnvStoreReady from "@rilldata/web-common/features/env-management/EnvStoreReady.svelte";
 
   const {
     config,
@@ -116,6 +117,7 @@
 
   async function connectorSelected(
     connector: string,
+    schema: string,
     connectorFormValues: Record<string, any>,
   ) {
     const analyzedConnector = await getConnectorDriverForConnector(
@@ -137,11 +139,11 @@
         connectorFormValues,
       });
     } else if (connectorFormValues["auth_method"] === "public") {
-      const driver = getConnectorDriverForSchema(connector);
+      const driver = getConnectorDriverForSchema(schema);
       if (!driver) return;
       stateManager.transition({
         type: TransitionEventType.ConnectorSelected,
-        schema: connector,
+        schema,
         driver,
         connector,
         connectorFormValues,
@@ -169,61 +171,68 @@
       {config}
       schemaName={schema}
       connectorName={connector}
-      onConnectorChange={(newConnector) => connectorSelected(newConnector, {})}
+      onConnectorChange={(newConnector) =>
+        connectorSelected(newConnector, newConnector, {})}
       onNewConnector={() => schemaSelected(schema)}
     />
   {/if}
 
-  {#if stepState.step === AddDataStep.SelectConnector}
-    <SourceSelector {config} onSelect={schemaSelected} {onBack} />
-  {:else if stepState.step === AddDataStep.CreateConnector}
-    <ConnectorFormWrapper
-      {stateManager}
-      step={stepState}
-      onSubmit={(connectorName, connectorFormValues) =>
-        void connectorSelected(connectorName, connectorFormValues)}
-      {onBack}
-      onClose={onDone}
-    />
-  {:else if stepState.step === AddDataStep.CreateModel}
-    {#key stepState.connector}
-      <SourceForm
-        {config}
+  <EnvStoreReady>
+    {#if stepState.step === AddDataStep.SelectConnector}
+      <SourceSelector {config} onSelect={schemaSelected} {onBack} />
+    {:else if stepState.step === AddDataStep.CreateConnector}
+      <ConnectorForm
         {stateManager}
         step={stepState}
-        onSubmit={importConfigured}
+        onSubmit={(connectorName, connectorFormValues) =>
+          void connectorSelected(
+            connectorName,
+            stepState.schema,
+            connectorFormValues,
+          )}
         {onBack}
+        onClose={onDone}
       />
-    {/key}
-  {:else if stepState.step === AddDataStep.ExploreConnector}
-    {#key stepState.connector}
-      <ImportTableForm
-        {config}
-        step={stepState}
-        onSubmit={importConfigured}
-        {onBack}
-      />
-    {/key}
-  {:else if stepState.step === AddDataStep.Import}
-    {@const isImportOnlyStep =
-      stepState.config.importSteps.length === 1 &&
-      stepState.config.importSteps[0] === ImportDataStep.CreateModel}
-    {#if isImportOnlyStep}
-      <!-- Special case for import only, we show additional options to handle success and failures. -->
-      <ImportDataStatus
-        {config}
-        {stateManager}
-        importAddDataStep={stepState}
-        {onDone}
-      />
-    {:else}
-      <GenerateDashboardStatus
-        {config}
-        {stateManager}
-        importAddDataStep={stepState}
-        {onBack}
-        {onDone}
-      />
+    {:else if stepState.step === AddDataStep.CreateModel}
+      {#key stepState.connector}
+        <SourceForm
+          {config}
+          {stateManager}
+          step={stepState}
+          onSubmit={importConfigured}
+          {onBack}
+        />
+      {/key}
+    {:else if stepState.step === AddDataStep.ExploreConnector}
+      {#key stepState.connector}
+        <ImportTableForm
+          {config}
+          step={stepState}
+          onSubmit={importConfigured}
+          {onBack}
+        />
+      {/key}
+    {:else if stepState.step === AddDataStep.Import}
+      {@const isImportOnlyStep =
+        stepState.config.importSteps.length === 1 &&
+        stepState.config.importSteps[0] === ImportDataStep.CreateModel}
+      {#if isImportOnlyStep}
+        <!-- Special case for import only, we show additional options to handle success and failures. -->
+        <ImportDataStatus
+          {config}
+          {stateManager}
+          importAddDataStep={stepState}
+          {onDone}
+        />
+      {:else}
+        <GenerateDashboardStatus
+          {config}
+          {stateManager}
+          importAddDataStep={stepState}
+          {onBack}
+          {onDone}
+        />
+      {/if}
     {/if}
-  {/if}
+  </EnvStoreReady>
 </div>

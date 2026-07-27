@@ -4,7 +4,6 @@ import { gotoNavEntry } from "../utils/waitHelpers";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 
 async function setupDashboard(page: Page) {
-  await page.getByLabel("/dashboards").click();
   await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
   const bigNumber = page
@@ -18,7 +17,6 @@ async function setupDashboard(page: Page) {
   await interactWithTimeRangeMenu(page, async () => {
     await page.getByRole("menuitem", { name: "All Time" }).click();
   });
-  await page.waitForTimeout(1000);
 
   const valueLocator = bigNumber.locator('div[role="button"]');
   await expect(valueLocator).toBeVisible({ timeout: 5000 });
@@ -46,7 +44,6 @@ async function scrub(
   await page.mouse.down();
   await page.mouse.move(endX, centerY, { steps: 15 });
   await page.mouse.up();
-  await page.waitForTimeout(1500);
 }
 
 test.describe("chart scrub and zoom", () => {
@@ -56,18 +53,18 @@ test.describe("chart scrub and zoom", () => {
     page,
   }) => {
     const { valueLocator, box } = await setupDashboard(page);
-    const initialValue = await valueLocator.textContent();
+    const initialValue = (await valueLocator.textContent()) ?? "";
 
     await scrub(page, box, 0.2, 0.6);
 
-    const scrubValue = await valueLocator.textContent();
+    // The big number recomputes for the scrubbed range.
+    await expect(valueLocator).not.toHaveText(initialValue);
+    const scrubValue = (await valueLocator.textContent()) ?? "";
     expect(scrubValue).toBeTruthy();
-    expect(scrubValue).not.toBe(initialValue);
 
     await expect(page.getByLabel("Zoom")).toBeVisible({ timeout: 3000 });
 
     await page.keyboard.press("z");
-    await page.waitForTimeout(1500);
 
     await expect(page.getByLabel("Undo zoom")).toBeVisible({ timeout: 3000 });
     const timeRangeText = await page
@@ -75,15 +72,17 @@ test.describe("chart scrub and zoom", () => {
       .textContent();
     expect(timeRangeText).toContain("Custom");
 
-    const zoomedValue = await valueLocator.textContent();
-    expect(zoomedValue).toBe(scrubValue);
+    // Zooming to the scrubbed range keeps the same value.
+    await expect(valueLocator).toHaveText(scrubValue);
   });
 
   test("move scrub range updates big number", async ({ page }) => {
     const { valueLocator, box } = await setupDashboard(page);
+    const initialValue = (await valueLocator.textContent()) ?? "";
 
     await scrub(page, box, 0.2, 0.5);
-    const scrubValue = await valueLocator.textContent();
+    await expect(valueLocator).not.toHaveText(initialValue);
+    const scrubValue = (await valueLocator.textContent()) ?? "";
     expect(scrubValue).toBeTruthy();
 
     // Grab center of selection (35%) and drag right to 65%
@@ -95,19 +94,18 @@ test.describe("chart scrub and zoom", () => {
     await page.mouse.down();
     await page.mouse.move(dropX, centerY, { steps: 15 });
     await page.mouse.up();
-    await page.waitForTimeout(1500);
 
-    const movedValue = await valueLocator.textContent();
-    expect(movedValue).toBeTruthy();
-    expect(movedValue).not.toBe(scrubValue);
+    await expect(valueLocator).not.toHaveText(scrubValue);
     await expect(page.getByLabel("Zoom")).toBeVisible({ timeout: 3000 });
   });
 
   test("resize scrub start edge updates big number", async ({ page }) => {
     const { valueLocator, box } = await setupDashboard(page);
+    const initialValue = (await valueLocator.textContent()) ?? "";
 
     await scrub(page, box, 0.3, 0.7);
-    const scrubValue = await valueLocator.textContent();
+    await expect(valueLocator).not.toHaveText(initialValue);
+    const scrubValue = (await valueLocator.textContent()) ?? "";
     expect(scrubValue).toBeTruthy();
 
     // Drag left edge from 30% to 10%
@@ -119,19 +117,18 @@ test.describe("chart scrub and zoom", () => {
     await page.mouse.down();
     await page.mouse.move(newEdgeX, centerY, { steps: 15 });
     await page.mouse.up();
-    await page.waitForTimeout(1500);
 
-    const resizedValue = await valueLocator.textContent();
-    expect(resizedValue).toBeTruthy();
-    expect(resizedValue).not.toBe(scrubValue);
+    await expect(valueLocator).not.toHaveText(scrubValue);
     await expect(page.getByLabel("Zoom")).toBeVisible({ timeout: 3000 });
   });
 
   test("resize scrub end edge updates big number", async ({ page }) => {
     const { valueLocator, box } = await setupDashboard(page);
+    const initialValue = (await valueLocator.textContent()) ?? "";
 
     await scrub(page, box, 0.2, 0.5);
-    const scrubValue = await valueLocator.textContent();
+    await expect(valueLocator).not.toHaveText(initialValue);
+    const scrubValue = (await valueLocator.textContent()) ?? "";
     expect(scrubValue).toBeTruthy();
 
     // Drag right edge from 50% to 80%
@@ -143,11 +140,8 @@ test.describe("chart scrub and zoom", () => {
     await page.mouse.down();
     await page.mouse.move(newEdgeX, centerY, { steps: 15 });
     await page.mouse.up();
-    await page.waitForTimeout(1500);
 
-    const resizedValue = await valueLocator.textContent();
-    expect(resizedValue).toBeTruthy();
-    expect(resizedValue).not.toBe(scrubValue);
+    await expect(valueLocator).not.toHaveText(scrubValue);
     await expect(page.getByLabel("Zoom")).toBeVisible({ timeout: 3000 });
   });
 });

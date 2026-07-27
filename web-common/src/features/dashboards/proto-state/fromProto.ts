@@ -7,6 +7,8 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import {
   type PivotChipData,
   PivotChipType,
+  type PivotFormatRule,
+  type PivotMeasureFormatting,
   type PivotState,
   type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -430,12 +432,53 @@ function fromPivotProto(
     rowPage: 1,
     enableComparison: dashboard.pivotEnableComparison ?? true,
     activeCell: null,
+    showTotalsColumn: dashboard.pivotShowTotalsColumn ?? true,
+    showTotalsRow: dashboard.pivotShowTotalsRow ?? true,
     tableMode:
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
     rowLimit: dashboard.pivotRowLimit,
+    measureFormatting: fromPivotConditionalFormattingProto(
+      dashboard.pivotConditionalFormatting,
+    ),
   };
+}
+
+export function fromPivotConditionalFormattingProto(
+  formats: {
+    measure: string;
+    mode: string;
+    scheme: string;
+    rules: {
+      operator: string;
+      value: number;
+      value2?: number;
+      color: string;
+    }[];
+  }[],
+): Record<string, PivotMeasureFormatting> | undefined {
+  if (!formats?.length) return undefined;
+  const measureFormatting: Record<string, PivotMeasureFormatting> = {};
+  for (const f of formats) {
+    if (f.mode === "heatmap" || f.mode === "data_bar") {
+      measureFormatting[f.measure] = {
+        mode: f.mode,
+        scheme: f.scheme,
+      };
+    } else if (f.mode === "rules" && f.rules.length) {
+      measureFormatting[f.measure] = {
+        mode: "rules",
+        rules: f.rules.map((r) => ({
+          operator: r.operator as PivotFormatRule["operator"],
+          value: r.value,
+          value2: r.value2,
+          color: r.color,
+        })),
+      };
+    }
+  }
+  return Object.keys(measureFormatting).length ? measureFormatting : undefined;
 }
 
 function blankPivotState(): PivotState {
@@ -448,6 +491,8 @@ function blankPivotState(): PivotState {
     rowPage: 1,
     enableComparison: true,
     activeCell: null,
+    showTotalsColumn: true,
+    showTotalsRow: true,
     tableMode: "nest" as PivotTableMode,
   };
 }

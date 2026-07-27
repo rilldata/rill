@@ -1,3 +1,7 @@
+import {
+  getURIRequestMeasure,
+  URI_DIMENSION_SUFFIX,
+} from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
@@ -23,6 +27,7 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type V1Expression,
+  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
   V1TimeGrain,
   type V1TimeSeriesValue,
@@ -44,6 +49,7 @@ const MAX_TDD_VALUES_LENGTH = 250;
 const BATCH_SIZE = 50;
 export interface DimensionDataItem {
   value: string | null;
+  uri?: string | null;
   total?: number;
   color: string;
   data: TimeSeriesDatum[];
@@ -54,6 +60,7 @@ interface DimensionTopList {
   values: (string | null)[];
   filter: V1Expression;
   totals?: number[];
+  uris?: (string | null)[];
 }
 
 /***
@@ -80,8 +87,9 @@ export function getDimensionValuesForComparison(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
       dimensionSearchText,
+      ctx.validSpecStore,
     ],
-    ([name, dashboardStore, timeControls, searchText], set) => {
+    ([name, dashboardStore, timeControls, searchText, validSpec], set) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -122,12 +130,23 @@ export function getDimensionValuesForComparison(
           sortBy = dimensionName;
         }
 
+        // Request the URI measure so dimension values can be rendered as links.
+        const hasUri = !!validSpec?.data?.metricsView?.dimensions?.find(
+          (d) => d.name === dimensionName,
+        )?.uri;
+        const tddMeasures: V1MetricsViewAggregationMeasure[] = measures.map(
+          (measure) => ({ name: measure }),
+        );
+        if (hasUri) {
+          tddMeasures.push(getURIRequestMeasure(dimensionName));
+        }
+
         return derived(
           createQueryServiceMetricsViewAggregation(
             ctx.runtimeClient,
             {
               metricsView: name,
-              measures: measures.map((measure) => ({ name: measure })),
+              measures: tddMeasures,
               dimensions: [{ name: dimensionName }],
               where: sanitiseExpression(
                 mergeDimensionAndMeasureFilters(
@@ -178,10 +197,16 @@ export function getDimensionValuesForComparison(
             const topListValues = topListData?.data?.data?.map(
               (d) => d[columnName],
             ) as string[];
+            const uriValues = hasUri
+              ? (topListData?.data?.data?.map(
+                  (d) => d[dimensionName + URI_DIMENSION_SUFFIX],
+                ) as (string | null)[])
+              : undefined;
 
             return {
               totals: totalValues,
               values: topListValues?.slice(0, MAX_TDD_VALUES_LENGTH),
+              uris: uriValues?.slice(0, MAX_TDD_VALUES_LENGTH),
               filter: getFilterForComparedDimension(
                 dimensionName,
                 dashboardStore?.whereFilter,
@@ -405,6 +430,7 @@ export function getDimensionValueTimeSeries(
 
           results.push({
             value,
+            uri: dimensionValues?.uris?.[i] ?? null,
             total,
             color: COMPARISON_COLORS[i] ? COMPARISON_COLORS[i] : "",
             data: prepData,

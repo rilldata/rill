@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
+  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import {
     getDimensionColumnProps,
     getMeasureColumnProps,
@@ -10,21 +12,13 @@
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
-  import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import type { PivotRowSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-row-selection";
   import {
     isElement,
+    isShowMoreRow,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import {
-    type ExpandedState,
-    type SortingState,
-    type TableOptions,
-    createSvelteTable,
-    getCoreRowModel,
-    getExpandedRowModel,
-  } from "tanstack-table-8-svelte-5";
   import {
     createVirtualizer,
     defaultRangeExtractor,
@@ -32,7 +26,21 @@
   import { onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import { derived } from "svelte/store";
+  import {
+    type ExpandedState,
+    type Row,
+    type SortingState,
+    type TableOptions,
+    createSvelteTable,
+    getCoreRowModel,
+    getExpandedRowModel,
+  } from "tanstack-table-8-svelte-5";
   import NestedTable from "./NestedTable.svelte";
+  import {
+    type CellFormatter,
+    computeMeasureDomains,
+    makeCellFormatter,
+  } from "./pivot-conditional-formatting";
   import type {
     PivotDataRow,
     PivotDataStore,
@@ -53,6 +61,7 @@
   export let border = true;
   export let overscan = 20;
   export let rounded = true;
+  export let fillWidth = false;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -115,7 +124,8 @@
   $: table = createSvelteTable(options);
 
   let containerRefElement: HTMLDivElement;
-  let stickyRows = [0];
+  let containerWidth = 0;
+  let stickyRows: number[] = [];
   let rowScrollOffset = 0;
   let scrollLeft = 0;
   let timeout: ReturnType<typeof setTimeout>;
@@ -129,6 +139,7 @@
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
   $: totalsRow = $pivotDataStore.totalsRowData;
+  $: stickyRows = totalsRow ? [0] : [];
   $: isFlat = $config.isFlat;
   $: hasMeasureContextColumns = $config.enableComparison;
 
@@ -136,6 +147,18 @@
   $: rowDimensions = getDimensionColumnProps(
     $config.rowDimensionNames,
     $config,
+  );
+
+  // Per-measure conditional formatting. Domains prefer leaf data cells so
+  // aggregate magnitudes don't dominate the gradient, falling back to nested
+  // parent rows when no leaves are present (e.g. collapsed nested rows). The
+  // grand-totals row and the row-totals column are always excluded. Recomputes
+  // when the row model or the formatting config changes.
+  $: cellFormatters = buildCellFormatters(
+    $table.getRowModel().flatRows,
+    $config.pivot.measureFormatting,
+    !!totalsRow,
+    $config.allMeasures,
   );
 
   $: headerGroups = $table.getHeaderGroups();
@@ -169,11 +192,89 @@
       ]
     : [0, 0];
 
-  let customShortcuts: { description: string; shortcut: string }[] = [];
-  $: if (canShowDataViewer) {
-    customShortcuts = [
-      { description: "View raw data for aggregated cell", shortcut: "Click" },
-    ];
+  $: clickToFilterEnabled = enableClickToFilter && !!onCellClickToFilter;
+  function getCustomShortcuts(rowHeader: boolean) {
+    if (clickToFilterEnabled) {
+      return [
+        { description: m.dashboard_filter_by_value(), shortcut: "Click" },
+      ];
+    }
+    if (canShowDataViewer && !rowHeader) {
+      return [
+        { description: "View raw data for aggregated cell", shortcut: "Click" },
+      ];
+    }
+    return [];
+  }
+
+  function buildCellFormatters(
+    flatRows: Row<PivotDataRow>[],
+    measureFormatting: PivotState["measureFormatting"],
+    hasTotalsRow: boolean,
+    allMeasures: PivotDataStoreConfig["allMeasures"],
+  ): Map<string, CellFormatter> {
+    const formatters = new Map<string, CellFormatter>();
+    if (!measureFormatting || Object.keys(measureFormatting).length === 0) {
+      return formatters;
+    }
+
+    // Rules formatters don't depend on the value domain, so only scan the row
+    // model when a scale-mode (heatmap/data bar) measure needs one.
+    const needsDomains = Object.values(measureFormatting).some(
+      (fmt) => fmt.mode !== "rules",
+    );
+    // Collect values from leaf rows and, separately, from nested parent rows.
+    // Leaf values are preferred for the domain so aggregate magnitudes don't
+    // dominate the gradient. But nested parent rows also render formatted
+    // measure cells, and when they're collapsed the leaf rows aren't in the row
+    // model at all: without a parent fallback the domain would be empty and no
+    // heatmap/data-bar formatter would be built until the user expands a row.
+    const leafValues: { measureName: string; value: number }[] = [];
+    const parentValues: { measureName: string; value: number }[] = [];
+    if (needsDomains) {
+      for (const row of flatRows) {
+        // Always skip the prepended grand-totals row.
+        if (hasTotalsRow && row.id === "0") continue;
+        const target = row.subRows.length > 0 ? parentValues : leafValues;
+        for (const cell of row.getAllCells()) {
+          const meta = cell.column.columnDef.meta;
+          if (
+            !meta?.conditionalFormat ||
+            meta.isRowTotal ||
+            !meta.measureName
+          ) {
+            continue;
+          }
+          const value = cell.getValue();
+          if (typeof value === "number") {
+            target.push({ measureName: meta.measureName, value });
+          }
+        }
+      }
+    }
+
+    const leafDomains = computeMeasureDomains(leafValues);
+    const parentDomains = computeMeasureDomains(parentValues);
+    for (const [measureName, fmt] of Object.entries(measureFormatting)) {
+      if (fmt.mode === "rules") {
+        formatters.set(measureName, makeCellFormatter(fmt));
+        continue;
+      }
+      const domain =
+        leafDomains.get(measureName) ?? parentDomains.get(measureName);
+      if (domain) {
+        // Heatmap gradients flip for lower-is-better measures so low values
+        // get the "good" end of the scheme.
+        const lowerIsBetter =
+          allMeasures.find((m) => m.name === measureName)?.lowerIsBetter ??
+          false;
+        formatters.set(
+          measureName,
+          makeCellFormatter(fmt, domain, lowerIsBetter),
+        );
+      }
+    }
+    return formatters;
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -206,6 +307,7 @@
 
   type HoveringData = {
     value: string | number | null;
+    rowHeader: boolean;
   };
 
   function onCellClick(e: MouseEvent) {
@@ -218,15 +320,17 @@
     const rowId = td.dataset.rowid;
     const columnId = td.dataset.columnid;
     const rowHeader = td.dataset.rowheader === "true";
-    const value = td.dataset.value;
 
     if (rowId === undefined || columnId === undefined) return;
 
     const row = $table.getRow(rowId);
     if (!row) return;
 
-    // Handle "Show More" button clicks
-    if (value === SHOW_MORE_BUTTON && rowHeader) {
+    // "Show More" rows only respond to a row-header click, which increases the
+    // limit. All other cells in that row are inert (no filtering / active cell).
+    if (isShowMoreRow(row)) {
+      if (!rowHeader) return;
+
       const rowData = row.original;
       const currentLimit = rowData.__currentLimit as number;
       const nextLimit = getNextRowLimit(currentLimit);
@@ -287,8 +391,11 @@
   function handleClick(e: MouseEvent) {
     if (!isElement(e.target)) return;
 
-    const value = e.target.dataset.value;
-    if (value === undefined) return;
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
+    if (value === undefined || value === SHOW_MORE_BUTTON) return;
 
     copyToClipboard(value);
   }
@@ -314,13 +421,17 @@
     // Element is not a cell or we haven't left the cell for the current tooltip
     if (!leftCell || !(e.target instanceof HTMLElement)) return;
 
-    const value = e.target.dataset.value;
-    const rowHeader = e.target.dataset.rowheader === "true";
+    // Row dimension cells render an inner component (PivotExpandableCell), so the
+    // event target is a child element. Resolve the cell that carries the data attributes.
+    const td = e.target.closest("td");
+    const value = td?.dataset.value;
 
-    if (value === undefined || rowHeader) return;
+    if (!td || value === undefined) return;
+
+    if (value === SHOW_MORE_BUTTON) return;
 
     leftCell = false;
-    e.target.addEventListener("mouseleave", () => (leftCell = true), {
+    td.addEventListener("mouseleave", () => (leftCell = true), {
       once: true,
     });
 
@@ -328,8 +439,9 @@
 
     hovering = {
       value,
+      rowHeader: td.dataset.rowheader === "true",
     };
-    hoverPosition = e.target.getBoundingClientRect();
+    hoverPosition = td.getBoundingClientRect();
   }
 </script>
 
@@ -341,6 +453,9 @@
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
   bind:this={containerRefElement}
+  bind:clientWidth={containerWidth}
+  class:w-full={fillWidth}
+  class:w-fit={!fillWidth}
   onscroll={() => handleScroll(containerRefElement)}
 >
   {#if isFlat}
@@ -349,6 +464,7 @@
       {rows}
       {virtualRows}
       {measures}
+      {cellFormatters}
       {totalsRow}
       {dataRows}
       {before}
@@ -365,6 +481,8 @@
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
+      {fillWidth}
+      {containerWidth}
       onCellCopy={handleClick}
     />
   {:else}
@@ -382,6 +500,7 @@
       {hasColumnDimension}
       {dataRows}
       {measures}
+      {cellFormatters}
       {canShowDataViewer}
       {enableClickToFilter}
       {rowSelectionState}
@@ -394,6 +513,8 @@
       {onMouseMove}
       {onCellClick}
       {onTableLeave}
+      {fillWidth}
+      {containerWidth}
       onCellCopy={handleClick}
     />
   {/if}
@@ -405,13 +526,13 @@
     {hovering}
     {hoverPosition}
     pinned={false}
-    {customShortcuts}
+    customShortcuts={getCustomShortcuts(hovering.rowHeader)}
   />
 {/if}
 
 <style lang="postcss">
   .table-wrapper {
-    @apply overflow-auto h-fit max-h-full w-fit max-w-full;
+    @apply overflow-auto h-fit max-h-full max-w-full;
     @apply z-40 select-none;
   }
 </style>

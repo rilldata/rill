@@ -15,6 +15,7 @@ import { dimensionSelectors } from "./dimensions";
 import { measureSelectors } from "./measures";
 import { pivotSelectors } from "./pivot";
 import { sortingSelectors } from "./sorting";
+import { tagSelectors } from "./tags";
 import { timeRangeSelectors } from "./time-range";
 import type { ReadablesObj, SelectorFnsObj } from "./types";
 import { leaderboardSelectors } from "./leaderboard";
@@ -138,6 +139,13 @@ export const createStateManagerReadables = (
      * Readables related to pivot state
      */
     pivot: createReadablesFromSelectors(pivotSelectors, dashboardDataReadables),
+
+    /**
+     * Readables exposing shared tag indices over dimensions, measures, and
+     * their union. Consumed by tag-aware surfaces (dimension/measure dropdown,
+     * pivot sidebar) so the index is built once per spec change.
+     */
+    tags: createReadablesFromSelectors(tagSelectors, dashboardDataReadables),
 
     /**
      * Readables related to the chart interactions state

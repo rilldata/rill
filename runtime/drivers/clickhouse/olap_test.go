@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -29,6 +30,7 @@ func TestClickhouseSingle(t *testing.T) {
 	require.True(t, ok)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
+	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -38,7 +40,6 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
-	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 	t.Run("CreateTableAsSelect_WithPrePostExec", func(t *testing.T) { testCreateTableAsSelect_WithPrePostExec(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPrePostExec", func(t *testing.T) { testInsertTableAsSelect_WithPrePostExec(t, c, olap) })
@@ -60,6 +61,7 @@ func TestClickhouseCluster(t *testing.T) {
 	prepareClusterConn(t, olap, cluster)
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
+	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -67,9 +69,11 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
+	t.Run("SyncReplica_NonDefaultDatabase", func(t *testing.T) { testSyncReplicaNonDefaultDatabase(t, olap, dsn, cluster) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
-	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
+	t.Run("EntityTypeRestrictedUser", func(t *testing.T) { testEntityTypeRestrictedUser(t, olap, dsn, cluster) })
+
 }
 
 func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
@@ -97,6 +101,23 @@ func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
 		return nil
 	})
 	require.NoError(t, err)
+}
+
+func testDropTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	ctx := context.Background()
+
+	_, err := c.createTableAsSelect(ctx, "drop_table", "SELECT 1 AS id", &ModelOutputProperties{Engine: "MergeTree"}, "", "")
+	require.NoError(t, err)
+	require.NoError(t, c.dropTable(ctx, "drop_table"))
+	notExists(t, olap, "drop_table")
+	if c.config.Cluster != "" {
+		notExists(t, olap, localTableName("drop_table"))
+	}
+
+	_, err = c.createTableAsSelect(ctx, "drop_view", "SELECT 1 AS id", &ModelOutputProperties{Typ: "VIEW"}, "", "")
+	require.NoError(t, err)
+	require.NoError(t, c.dropTable(ctx, "drop_view"))
+	notExists(t, olap, "drop_view")
 }
 
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
@@ -232,10 +253,6 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyMerge}
 	_, err = c.insertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts, props)
-	require.NoError(t, err)
-
-	// Force merge/deduplication in ReplacingMergeTree
-	err = c.optimizeTable(context.Background(), "merge_tbl")
 	require.NoError(t, err)
 
 	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl FINAL ORDER BY id"})
@@ -394,6 +411,65 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 	}
 }
 
+func testSyncReplicaNonDefaultDatabase(t *testing.T, olap drivers.OLAPStore, dsn, cluster string) {
+	ctx := context.Background()
+
+	// create a non-default database on the cluster
+	err := olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE DATABASE IF NOT EXISTS sync_repl_db ON CLUSTER %s", cluster)})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP DATABASE IF EXISTS sync_repl_db ON CLUSTER %s", cluster)})
+	})
+
+	// open a connection scoped to the non-default database (the database is taken from the DSN path)
+	conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn + "/sync_repl_db", "cluster": cluster, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer conn.Close()
+	c := conn.(*Connection)
+	dbOLAP, ok := conn.AsOLAP("default")
+	require.True(t, ok)
+
+	props := &ModelOutputProperties{
+		Engine:                 "ReplicatedMergeTree",
+		Table:                  "repl_tbl",
+		DistributedShardingKey: "rand()",
+		IncrementalStrategy:    drivers.IncrementalStrategyPartitionOverwrite,
+		OrderBy:                "id",
+		PartitionBy:            "id",
+		PrimaryKey:             "id",
+	}
+	_, err = c.createTableAsSelect(ctx, "repl_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props, "", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = c.dropTable(context.Background(), "repl_tbl") })
+
+	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyPartitionOverwrite}
+	_, err = c.insertTableAsSelect(ctx, "repl_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts, props)
+	require.NoError(t, err)
+
+	res, err := dbOLAP.Query(ctx, &drivers.Statement{Query: "SELECT id, value FROM repl_tbl ORDER BY id"})
+	require.NoError(t, err)
+
+	resultSet := make(map[int]string)
+	for res.Next() {
+		var id int
+		var value string
+		require.NoError(t, res.Scan(&id, &value))
+		resultSet[id] = value
+	}
+	require.NoError(t, res.Err())
+	require.NoError(t, res.Close())
+
+	expected := map[int]string{
+		0: "insert",
+		1: "insert",
+		2: "replace",
+		3: "replace",
+		4: "replace",
+		5: "replace",
+	}
+	require.Equal(t, expected, resultSet)
+}
+
 func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	props := &ModelOutputProperties{
 		Typ:        "DICTIONARY",
@@ -448,78 +524,6 @@ func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 		require.Equal(t, c.ms, ms)
 		require.NoError(t, rows.Close())
 	}
-}
-
-func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	ctx := context.Background()
-	tempTableName := "optimize_basic_test"
-
-	// Determine table names based on cluster mode
-	var localTableName, distTableName string
-	if c.config.Cluster != "" {
-		localTableName = tempTableName + "_local"
-		distTableName = tempTableName
-	} else {
-		localTableName = tempTableName
-		distTableName = tempTableName
-	}
-
-	// Create table with MergeTree engine - handle cluster mode
-	var err error
-	if c.config.Cluster != "" {
-		localCreateQuery := fmt.Sprintf("CREATE TABLE %s ON CLUSTER %s (id INT, value VARCHAR) ENGINE=MergeTree ORDER BY id", localTableName, c.config.Cluster)
-		err = olap.Exec(ctx, &drivers.Statement{Query: localCreateQuery})
-		require.NoError(t, err)
-
-		// Create distributed table
-		distCreateQuery := fmt.Sprintf("CREATE TABLE %s ON CLUSTER %s AS %s ENGINE=Distributed(%s, currentDatabase(), %s, rand())", distTableName, c.config.Cluster, localTableName, c.config.Cluster, localTableName)
-		err = olap.Exec(ctx, &drivers.Statement{Query: distCreateQuery})
-		require.NoError(t, err)
-	} else {
-		createQuery := fmt.Sprintf("CREATE TABLE %s (id INT, value VARCHAR) ENGINE=MergeTree ORDER BY id", tempTableName)
-		err = olap.Exec(ctx, &drivers.Statement{Query: createQuery})
-		require.NoError(t, err)
-	}
-
-	// Insert test data via distributed table
-	err = olap.Exec(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("INSERT INTO %s VALUES (1, 'test1'), (2, 'test2'), (3, 'test3')", distTableName),
-	})
-	require.NoError(t, err)
-
-	// Run OPTIMIZE
-	err = c.optimizeTable(ctx, tempTableName)
-	require.NoError(t, err)
-
-	// Verify data integrity after optimization via distributed table
-	res, err := olap.Query(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("SELECT id, value FROM %s ORDER BY id", distTableName),
-	})
-	require.NoError(t, err)
-
-	var results []struct {
-		ID    int
-		Value string
-	}
-	for res.Next() {
-		var r struct {
-			ID    int
-			Value string
-		}
-		require.NoError(t, res.Scan(&r.ID, &r.Value))
-		results = append(results, r)
-	}
-	require.NoError(t, res.Close())
-
-	expected := []struct {
-		ID    int
-		Value string
-	}{
-		{1, "test1"},
-		{2, "test2"},
-		{3, "test3"},
-	}
-	require.Equal(t, expected, results)
 }
 
 func testCreateTableAsSelect_WithPrePostExec(t *testing.T, c *Connection, olap drivers.OLAPStore) {
@@ -1044,4 +1048,47 @@ func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "neither a builtin setting nor")
 	})
+}
+
+func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, cluster string) {
+	ctx := context.Background()
+	const (
+		username = "rill_restricted"
+		password = "test_password"
+	)
+
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("CREATE USER %s ON CLUSTER %s IDENTIFIED WITH sha256_password BY %s", safeSQLName(username), safeSQLName(cluster), safeSQLString(password)),
+	}))
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP USER IF EXISTS %s ON CLUSTER %s", safeSQLName(username), safeSQLName(cluster))})
+	})
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("GRANT ON CLUSTER %s SELECT ON default.* TO %s", safeSQLName(cluster), safeSQLName(username)),
+	}))
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("GRANT ON CLUSTER %s CLUSTER, REMOTE ON *.* TO %s", safeSQLName(cluster), safeSQLName(username)),
+	}))
+
+	// create a dedicated table: other subtests rename or drop the shared tables created by prepareClusterConn
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("CREATE OR REPLACE TABLE entity_type_restricted ON CLUSTER %s (x Int32) engine=MergeTree ORDER BY x", safeSQLName(cluster)),
+	}))
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS entity_type_restricted ON CLUSTER %s", safeSQLName(cluster))})
+	})
+
+	restrictedDSN := strings.Replace(dsn, "clickhouse://default@", fmt.Sprintf("clickhouse://%s:%s@", username, password), 1)
+	handle, err := drivers.Open("clickhouse", "", "restricted", map[string]any{"dsn": restrictedDSN, "cluster": cluster}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer handle.Close()
+
+	restrictedConnection := handle.(*Connection)
+	typ, err := restrictedConnection.entityType(ctx, "default", "entity_type_restricted")
+	require.NoError(t, err)
+	require.Equal(t, "TABLE", typ)
+
+	exists, err := restrictedConnection.checkBillingTableExists(ctx, cluster)
+	require.NoError(t, err)
+	require.False(t, exists)
 }

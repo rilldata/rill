@@ -20,6 +20,12 @@ export default defineConfig(({ mode }) => {
       find: "$app/environment",
       replacement: "/../web-common/tests/app-environment.mock.ts",
     });
+    // canvas-entity dynamically imports the admin client only in the cloud context; stub
+    // it so web-common unit tests that pull in canvas-entity can resolve the import graph.
+    alias.push({
+      find: "@rilldata/web-admin/client",
+      replacement: "/../web-common/tests/web-admin-client.mock.ts",
+    });
   }
 
   return {

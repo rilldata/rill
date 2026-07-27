@@ -7,12 +7,24 @@ import type { PivotSpec, TableSpec } from "./";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export function validateTableSchema(
-  metricsView: V1MetricsViewSpec | undefined,
+  metricsViewQuery: {
+    metricsView: V1MetricsViewSpec | undefined;
+    isLoading: boolean;
+  },
   tableSpec: PivotSpec | TableSpec,
 ): {
   isValid: boolean;
   error?: string;
+  isLoading?: boolean;
 } {
+  if (metricsViewQuery.isLoading) {
+    return {
+      isValid: true,
+      error: undefined,
+      isLoading: true,
+    };
+  }
+  const metricsView = metricsViewQuery.metricsView;
   if (!metricsView) {
     return {
       isValid: false,

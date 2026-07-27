@@ -17,8 +17,10 @@
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
+  import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
+  import LabelsInput from "./LabelsInput.svelte";
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
@@ -130,6 +132,18 @@
             }}
           />
 
+          <!-- MULTIPLE FIELDS WITH PER-MEASURE CONDITIONAL FORMATTING -->
+        {:else if metricsView && config.type === "multi_fields_format" && component instanceof PivotCanvasComponent}
+          <MultiFieldFormatInput
+            {component}
+            {canvasName}
+            label={config.label ?? key}
+            metricName={metricsView}
+            id={key}
+            types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
+            selectedItems={localParamValues[key]}
+          />
+
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
           <div class="flex items-center justify-between py-1">
@@ -138,13 +152,13 @@
               label={config.label ?? key}
               id={key}
               faint={config.meta?.invertBoolean
-                ? localParamValues[key]
-                : !localParamValues[key]}
+                ? ($specStore[key] ?? config.meta?.defaultValue ?? false)
+                : !($specStore[key] ?? config.meta?.defaultValue ?? false)}
             />
             <Switch
               checked={config.meta?.invertBoolean
-                ? !$specStore[key]
-                : $specStore[key]}
+                ? !($specStore[key] ?? config.meta?.defaultValue ?? false)
+                : ($specStore[key] ?? config.meta?.defaultValue ?? false)}
               onCheckedChange={(next) => {
                 component.updateProperty(
                   key,
@@ -255,6 +269,18 @@
             onChange={(updatedSparkline) => {
               localParamValues[key] = updatedSparkline;
               component.updateProperty(key, updatedSparkline);
+            }}
+          />
+
+          <!-- DATA LABELS INPUT -->
+        {:else if config.type === "labels"}
+          <LabelsInput
+            {key}
+            label={config.label ?? key}
+            value={localParamValues[key]}
+            onChange={(next) => {
+              localParamValues[key] = next;
+              component.updateProperty(key, next);
             }}
           />
 

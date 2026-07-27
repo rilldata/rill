@@ -14,7 +14,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, branch string
 	var local bool
 	var models, modelPartitions, sources, metricViews, alerts, reports, connectors []string
-	var all, full, erroredPartitions, parser bool
+	var all, full, erroredPartitions, skippedPartitions, parser bool
 
 	refreshCmd := &cobra.Command{
 		Use:               "refresh [<project-name>]",
@@ -80,10 +80,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			models = append(models, sources...)
 
 			// Build model triggers
-			if len(modelPartitions) > 0 || erroredPartitions {
+			if len(modelPartitions) > 0 || erroredPartitions || skippedPartitions {
 				// If partitions are specified, ensure exactly one model is specified.
 				if len(models) != 1 {
-					return fmt.Errorf("must specify exactly one --model when using --partition or --errored-partitions")
+					return fmt.Errorf("must specify exactly one --model when using --partition, --errored-partitions, or --skipped-partitions")
 				}
 
 				// Since it's a common error, do an early check to ensure the model is incremental.
@@ -107,6 +107,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 					Model:                m,
 					Full:                 full,
 					AllErroredPartitions: erroredPartitions,
+					AllSkippedPartitions: skippedPartitions,
 					Partitions:           modelPartitions,
 				})
 			}
@@ -150,6 +151,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringSliceVar(&models, "model", nil, "Refresh a model")
 	refreshCmd.Flags().StringSliceVar(&modelPartitions, "partition", nil, "Refresh a model partition (must set --model)")
 	refreshCmd.Flags().BoolVar(&erroredPartitions, "errored-partitions", false, "Refresh all model partitions with errors (must set --model)")
+	refreshCmd.Flags().BoolVar(&skippedPartitions, "skipped-partitions", false, "Refresh all skipped model partitions (must set --model)")
 	refreshCmd.Flags().StringSliceVar(&sources, "source", nil, "Refresh a source")
 	refreshCmd.Flags().StringSliceVar(&metricViews, "metrics-view", nil, "Refresh a metrics view")
 	refreshCmd.Flags().StringSliceVar(&alerts, "alert", nil, "Refresh an alert")

@@ -10,8 +10,15 @@
   export let bookmarkOrTokenExploreState:
     | CompoundQueryResult<Partial<ExploreState> | null>
     | undefined = undefined;
+  export let disableMostRecentDashboardState: boolean = false;
+  export let disableInitSessionDashboardState: boolean = false;
 </script>
 
-<DashboardStateManager {exploreName} {bookmarkOrTokenExploreState}>
+<DashboardStateManager
+  {exploreName}
+  {bookmarkOrTokenExploreState}
+  {disableMostRecentDashboardState}
+  {disableInitSessionDashboardState}
+>
   <div>Dashboard loaded!</div>
 </DashboardStateManager>

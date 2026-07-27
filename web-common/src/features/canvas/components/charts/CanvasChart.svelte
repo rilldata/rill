@@ -32,7 +32,7 @@
     parent: { name: canvasName, theme },
     timeAndFilterStore,
     chartType: type,
-    visible,
+    dataEnabled: visible,
   } = component);
 
   $: chartType = $type;

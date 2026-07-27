@@ -1,5 +1,9 @@
 import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  fromPivotFormattingParam,
+  toPivotFormattingParam,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
@@ -594,9 +598,10 @@ function fromPivotUrlParams(
   const errors: Error[] = [];
 
   if (searchParams.has(ExploreStateURLParams.PivotRows)) {
-    const rows = (
-      searchParams.get(ExploreStateURLParams.PivotRows) as string
-    ).split(",");
+    const rowsParam = searchParams.get(
+      ExploreStateURLParams.PivotRows,
+    ) as string;
+    const rows = rowsParam === "" ? [] : rowsParam.split(",");
     const validRows = rows.filter(
       (r) => dimensions.has(r) || r in FromURLParamTimeDimensionMap,
     );
@@ -608,9 +613,10 @@ function fromPivotUrlParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.PivotColumns)) {
-    const cols = (
-      searchParams.get(ExploreStateURLParams.PivotColumns) as string
-    ).split(",");
+    const colsParam = searchParams.get(
+      ExploreStateURLParams.PivotColumns,
+    ) as string;
+    const cols = colsParam === "" ? [] : colsParam.split(",");
     const validCols = cols.filter(
       (c) =>
         dimensions.has(c) ||
@@ -654,6 +660,38 @@ function fromPivotUrlParams(
       (PIVOT_ROW_LIMIT_OPTIONS as readonly number[]).includes(rowLimit)
     ) {
       preset.pivotRowLimit = rowLimit;
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotShowTotalsColumn)) {
+    preset.pivotShowTotalsColumn =
+      searchParams.get(ExploreStateURLParams.PivotShowTotalsColumn) !== "false";
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotShowTotalsRow)) {
+    preset.pivotShowTotalsRow =
+      searchParams.get(ExploreStateURLParams.PivotShowTotalsRow) !== "false";
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotFormatting)) {
+    const formattingParam = searchParams.get(
+      ExploreStateURLParams.PivotFormatting,
+    ) as string;
+    const { measureFormatting, invalidEntries } =
+      fromPivotFormattingParam(formattingParam);
+    // Drop entries for unknown measures; keep the rest.
+    const validFormatting = Object.fromEntries(
+      Object.entries(measureFormatting ?? {}).filter(([measureName]) => {
+        if (measures.has(measureName)) return true;
+        invalidEntries.push(measureName);
+        return false;
+      }),
+    );
+    preset.pivotFormatting = toPivotFormattingParam(
+      Object.keys(validFormatting).length ? validFormatting : undefined,
+    );
+    if (invalidEntries.length) {
+      errors.push(getMultiFieldError("pivot formatting", invalidEntries));
     }
   }
 

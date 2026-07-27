@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
@@ -23,7 +24,7 @@
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import { translateV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
   import {
     TimeComparisonOption,
     TimeRangePreset,
@@ -54,6 +55,9 @@
 
   export let exploreName: string;
   export let hideStartPivotButton = false;
+  // Height of the expanded chart in the Time Dimension Detail view, controlled
+  // by the resizable divider between the timeseries and the detail table.
+  export let tddChartHeight = 245;
 
   const StateManagers = getStateManagers();
 
@@ -64,6 +68,7 @@
       measures: { allMeasures, visibleMeasures, getMeasureByName },
       dimensionFilters: { includedDimensionValues },
       charts: { canPanLeft, canPanRight, getNewPanRange },
+      tags: { measureTagIndex },
     },
     actions: {
       measures: { setMeasureVisibility },
@@ -293,6 +298,7 @@
         onSelectedChange={(items) =>
           setMeasureVisibility(items, allMeasureNames)}
         allItems={$allMeasures}
+        tagIndex={$measureTagIndex}
         selectedItems={visibleMeasureNames}
       />
 
@@ -302,11 +308,12 @@
             {#snippet child({ props })}
               <button
                 {...props}
-                aria-label="Select aggregation grain"
+                aria-label={m.dashboard_select_aggregation_grain_aria()}
                 class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
               >
-                by <b>
-                  {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
+                {m.explore_by_grain_prefix()}
+                <b>
+                  {translateV1TimeGrain(activeTimeGrain)}
                 </b>
                 <span
                   class:-rotate-90={grainDropdownOpen}
@@ -328,7 +335,7 @@
                   metricsExplorerStore.setTimeGrain(exploreName, option);
                 }}
               >
-                {V1TimeGrainToDateTimeUnit[option]}
+                {translateV1TimeGrain(option)}
               </DropdownMenu.CheckboxItem>
             {/each}
           </DropdownMenu.Content>
@@ -356,7 +363,7 @@
           }}
         >
           <Pivot size="16px" />
-          Start Pivot
+          {m.dashboard_start_pivot()}
         </Button>
       {/if}
     {/if}
@@ -427,6 +434,7 @@
               onPanRight={() => handlePan("right")}
               {showComparison}
               {showTimeDimensionDetail}
+              {tddChartHeight}
               dynamicYAxis={dynamicYAxisScale}
               onScrub={handleScrub}
               onScrubClear={() => {
@@ -445,7 +453,7 @@
                 <DropdownMenu.Item
                   onclick={() => openScreenshotDialog(measure)}
                 >
-                  Download as PNG
+                  {m.dashboard_download_as_png()}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
@@ -473,6 +481,7 @@
     bind:open={screenshotDialogOpen}
     measure={screenshotDialogMeasure}
     metricsViewName={chartMetricsViewName}
+    tddChartType={tddChartType ?? TDDChart.DEFAULT}
     where={chartWhere}
     {timeDimension}
     {timeStart}
@@ -481,9 +490,15 @@
     {comparisonTimeEnd}
     interval={chartInterval}
     comparisonInterval={chartComparisonInterval}
+    {comparisonDimension}
     timeGranularity={activeTimeGrain}
     timeZone={selectedTimezone}
+    dimensionValues={chartDimensionValues}
+    dimensionWhere={whereFilter}
     {showComparison}
+    {showTimeDimensionDetail}
+    dynamicYAxis={dynamicYAxisScale}
+    {connectNulls}
     ready={chartReady}
   />
 {/if}

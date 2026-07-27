@@ -29,6 +29,7 @@ type Client interface {
 	// org related jobs
 	InitOrgBilling(ctx context.Context, orgID string) (*InsertResult, error)
 	RepairOrgBilling(ctx context.Context, orgID string) (*InsertResult, error) // biller is just used for deduplication
+	StartOrgTrial(ctx context.Context, orgID string) (*InsertResult, error)
 	StartOrgCreditTrial(ctx context.Context, orgID string) (*InsertResult, error)
 	DeleteOrg(ctx context.Context, orgID string) (*InsertResult, error)
 	HibernateInactiveOrgs(ctx context.Context) (*InsertResult, error)

@@ -19,8 +19,6 @@ export const methodOverrides: Record<
     export: "mutation",
     exportReport: "mutation",
     query: "mutation",
-    // Streaming
-    queryBatch: "skip",
   },
   RuntimeService: {
     // Instance-management: admin-plane only, not used by frontend
@@ -34,6 +32,7 @@ export const methodOverrides: Record<
     completeStreaming: "skip",
     // Explicitly classified as queries (despite not matching Get/List prefix)
     gitStatus: "query",
+    gitDiff: "query",
     issueDevJWT: "query",
     analyzeConnectors: "query",
     analyzeVariables: "query",

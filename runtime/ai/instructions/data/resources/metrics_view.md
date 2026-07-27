@@ -84,6 +84,23 @@ dimensions:
 
 **Naming**: Each dimension needs a `name` (stable identifier used in APIs and references), which defaults to `column:` if provided. The `display_name:` is optional, and defaults to a humanized version of `name` if not specified.
 
+**Type**: Rill can infer the dimension type (categorical, time, geo) from the underlying SQL data type. Do not set `type:` explicitly unless you have a specific reason to override the inferred type.
+
+**Clickable URLs**: The optional `uri:` property marks a dimension as a clickable link for single-click navigation. It accepts either a boolean (when the dimension's own value is already a URL) or a SQL expression that produces the URL. It is a distinct property from `column:` and `expression:` and can be combined with `column:`:
+
+```yaml
+dimensions:
+  # The column's values are already URLs
+  - name: page_url
+    column: page_url
+    uri: true
+
+  # Build the URL from another column while still grouping by that column
+  - name: user_uri
+    column: user_name
+    uri: concat('https://example.com/', user_name)
+```
+
 ### Measures
 
 Measures are aggregation expressions that compute numeric values when grouped by dimensions. They must use aggregate functions like `SUM()`, `COUNT()`, `AVG()`, `MIN()`, `MAX()`.
@@ -351,6 +368,34 @@ cache:
 ```
 
 You should not add a `cache:` config when the metrics view references a model inside the project since Rill does automatic cache management in that case.
+
+### Tags on dimensions and measures
+
+Add `tags:` (free-form labels) to a dimension or measure to group and filter the dropdowns and pivot tables:
+
+```yaml
+dimensions:
+  - name: campaign_name
+    column: campaign_name
+    tags: [marketing]
+measures:
+  - name: total_spend
+    expression: SUM(spend)
+    tags: [marketing, finance]
+```
+
+### Rollups
+
+Rollups back a metrics view with pre-aggregated tables. When a query's grain, dimensions, measures, time range, and filters match a rollup, Rill reads the smaller table instead of the base table for faster results. Requires a `timeseries:`.
+
+```yaml
+rollups:
+  - model: events_daily           # Pre-aggregated model
+    time_grain: day               # Required
+    dimensions: [country]         # Optional; defaults to all
+    measures: [total_events]      # Optional; defaults to all
+    data_time_range: -90D to now  # Optional; indicates rollup data time range if set otherwise min/max queries are done on the timeseries column to figure out rollup's data time range
+```
 
 ## Dialect-Specific Notes
 

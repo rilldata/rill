@@ -4,6 +4,7 @@ import {
   CircularChartProvider,
   type CircularChartSpec as CircularChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/circular/CircularChartProvider";
+import { DEFAULT_LABELS_THRESHOLD } from "@rilldata/web-common/features/components/charts/circular/constants";
 import {
   ChartSortType,
   type ChartFieldsMap,
@@ -22,6 +23,8 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
 const DEFAULT_COLOR_LIMIT = 20;
 const DEFAULT_SORT = ChartSortType.MEASURE_DESC;
 
@@ -31,51 +34,60 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
   private provider: CircularChartProvider;
   private isTruncated = false;
 
-  static chartInputParams: Record<string, ComponentInputParam> = {
-    measure: {
-      type: "positional",
-      label: "Measure",
-      meta: {
-        chartFieldInput: {
-          type: "measure",
-          totalSelector: true,
-        },
-      },
-    },
-    innerRadius: {
-      type: "number",
-      label: "Inner Radius (%)",
-    },
-    show_other: {
-      type: "boolean",
-      label: 'Show "Other" bucket',
-    },
-    color: {
-      type: "positional",
-      label: "Color",
-      meta: {
-        chartFieldInput: {
-          type: "dimension",
-          nullSelector: true,
-          limitSelector: { defaultLimit: DEFAULT_COLOR_LIMIT },
-          hideTimeDimension: true,
-          defaultLegendOrientation: "right",
-          sortSelector: {
-            enable: true,
-            defaultSort: DEFAULT_SORT,
-            options: [
-              ChartSortType.COLOR_ASC,
-              ChartSortType.COLOR_DESC,
-              ChartSortType.MEASURE_ASC,
-              ChartSortType.MEASURE_DESC,
-              ChartSortType.CUSTOM,
-            ],
+  // Static getter (not a static field) so the localized labels inside resolve
+  // in the active locale at access time (render) rather than freezing to the
+  // locale active when this class was defined at module load.
+  static get chartInputParams(): Record<string, ComponentInputParam> {
+    return {
+      measure: {
+        type: "positional",
+        label: m.canvas_measure_label(),
+        meta: {
+          chartFieldInput: {
+            type: "measure",
+            totalSelector: true,
           },
-          colorMappingSelector: { enable: true },
         },
       },
-    },
-  };
+      innerRadius: {
+        type: "number",
+        label: m.canvas_inner_radius_label(),
+      },
+      show_other: {
+        type: "boolean",
+        label: m.canvas_show_other_bucket_label(),
+      },
+      labels: {
+        type: "labels",
+        label: m.canvas_data_labels_label(),
+      },
+      color: {
+        type: "positional",
+        label: m.canvas_color_label(),
+        meta: {
+          chartFieldInput: {
+            type: "dimension",
+            nullSelector: true,
+            limitSelector: { defaultLimit: DEFAULT_COLOR_LIMIT },
+            hideTimeDimension: true,
+            defaultLegendOrientation: "right",
+            sortSelector: {
+              enable: true,
+              defaultSort: DEFAULT_SORT,
+              options: [
+                ChartSortType.COLOR_ASC,
+                ChartSortType.COLOR_DESC,
+                ChartSortType.MEASURE_ASC,
+                ChartSortType.MEASURE_DESC,
+                ChartSortType.CUSTOM,
+              ],
+            },
+            colorMappingSelector: { enable: true },
+          },
+        },
+      },
+    };
+  }
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
@@ -153,6 +165,11 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
       metrics_view: metricsViewName,
       innerRadius: 50,
       show_other: true,
+      labels: {
+        show: true,
+        format: "percent",
+        threshold: DEFAULT_LABELS_THRESHOLD,
+      },
       color: {
         type: "nominal",
         field: randomDimension,

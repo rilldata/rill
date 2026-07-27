@@ -55,7 +55,6 @@
               <div class="flex-1 min-w-0 min-h-9">
                 <Search
                   bind:value={searchText}
-                  placeholder="Search"
                   large
                   autofocus={false}
                   showBorderOnFocus={false}
@@ -69,6 +68,7 @@
                 {resource}
                 whereErrored={selectedFilter === "errors"}
                 wherePending={selectedFilter === "pending"}
+                whereSkipped={selectedFilter === "skipped"}
                 {searchText}
               />
             </div>
