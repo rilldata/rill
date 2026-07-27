@@ -11,10 +11,11 @@
 //    consistency: selectors, match keys, and placeholders must resolve to
 //    declared inputs or locals.
 //
-// 2. Hardcoded-string heuristic (warning by default). Scans `.svelte` markup
-//    (not <script>/<style>) in already-migrated areas for visible text nodes
-//    and a fixed set of human-facing attributes. Intentionally a lightweight,
-//    dependency-free heuristic, not a parser: it runs at WARNING level
+// 2. Hardcoded-string heuristic (warning by default). Scans explicitly
+//    migrated Svelte markup and source files that import the paraglide messages.
+//    It checks visible text nodes, human-facing attributes, and common copy-
+//    bearing object properties. Intentionally a lightweight, dependency-free
+//    heuristic, not a parser: it runs at WARNING level
 //    (exit 0) by default so occasional false positives are tolerable. Pass
 //    `--strict` to make findings fatal (exit 1) — the final i18n migration
 //    chunk flips the quality pipeline to strict once every listed area is
@@ -214,21 +215,46 @@ if (catalogErrors.length === 0) {
 // Hardcoded-string heuristic
 // ---------------------------------------------------------------------------
 
-// Directories whose strings have been migrated to paraglide. Each migration
-// chunk appends its directories here; the guard only polices these areas so
-// unmigrated code does not drown the signal.
+// Areas whose strings have been migrated even when individual leaf components
+// do not need to import the message namespace themselves.
 const MIGRATED_GLOBS = [
-  // web-admin organization overview page. Literal `[organization]` brackets are
-  // a glob character class, so match the segment with a wildcard.
+  // Literal `[organization]` brackets are a glob character class, so match the
+  // route segment with a wildcard.
   "web-admin/src/routes/*organization*/+page.svelte",
   "web-common/src/features/chat/core/messages/file-diff/*.svelte",
   "web-common/src/features/exports/pdf/*.svelte",
   "web-common/src/features/project/changes/*.svelte",
 ];
 
+// Also treat a source file as migrated as soon as it imports the paraglide
+// message namespace. This keeps coverage in sync with migration work and
+// catches partially migrated code without scanning wholly unmigrated areas.
+const SOURCE_GLOBS = [
+  "web-admin/src/**/*.svelte",
+  "web-admin/src/**/*.ts",
+  "web-admin/src/**/*.js",
+  "web-common/src/**/*.svelte",
+  "web-common/src/**/*.ts",
+  "web-common/src/**/*.js",
+  "web-local/src/**/*.svelte",
+  "web-local/src/**/*.ts",
+  "web-local/src/**/*.js",
+];
+const MESSAGES_IMPORT = "@rilldata/web-common/lib/i18n/gen/messages";
+
 // Human-facing attributes worth translating. Attributes like `class`, `id`,
 // `href`, `name`, etc. are deliberately excluded.
 const TEXT_ATTRS = ["placeholder", "title", "aria-label", "alt", "label"];
+const COPY_PROPERTIES = [
+  "label",
+  "title",
+  "description",
+  "message",
+  "tooltip",
+  "placeholder",
+  "ariaLabel",
+  "alt",
+];
 
 function stripBlocks(src) {
   // Replace <script> and <style> bodies with blank lines so line numbers and
@@ -237,6 +263,49 @@ function stripBlocks(src) {
     /<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,
     (m) => m.replace(/[^\n]/g, " "),
   );
+}
+
+function stripMustacheBlocks(src) {
+  const chars = [...src];
+
+  for (let start = 0; start < chars.length; start++) {
+    if (chars[start] !== "{") continue;
+
+    let depth = 0;
+    let quote = null;
+    let escaped = false;
+    let end = start;
+    for (; end < chars.length; end++) {
+      const ch = chars[end];
+      if (quote) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === quote) {
+          quote = null;
+        }
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === "`") {
+        quote = ch;
+      } else if (ch === "{") {
+        depth++;
+      } else if (ch === "}" && --depth === 0) {
+        break;
+      }
+    }
+
+    // An unmatched brace is more likely to be literal copy than a Svelte
+    // expression, so leave it for the heuristic to report.
+    if (depth !== 0) continue;
+    for (let i = start; i <= end; i++) {
+      if (chars[i] !== "\n") chars[i] = " ";
+    }
+    start = end;
+  }
+
+  return chars.join("");
 }
 
 function lineOf(src, index) {
@@ -257,35 +326,71 @@ function looksLikeCopy(raw) {
   const text = raw.replace(/\{[^}]*\}/g, "").trim();
   if (!text) return false;
   if (!/[A-Za-z]{2,}/.test(text)) return false; // needs at least one real word
-  if (/^[a-z0-9_\-./:]+$/.test(text)) return false; // identifier / url / path
+  if (/^(?:https?:\/\/|\/)/i.test(text)) return false; // URL / absolute path
+  if (/^[a-z0-9]+(?:[_./:-][a-z0-9]+)+$/.test(text)) return false; // identifier
   if (/^[A-Z0-9_]+$/.test(text)) return false; // CONSTANT_CASE
   return true;
 }
 
-const findings = [];
+function displayCopy(raw) {
+  return raw.replace(/\s+/g, " ").trim();
+}
 
-for (const pattern of MIGRATED_GLOBS) {
-  for (const file of globSync(pattern)) {
-    const original = readFileSync(file, "utf8");
+const findings = [];
+const importedFiles = SOURCE_GLOBS.flatMap((pattern) => globSync(pattern)).filter(
+  (file) => readFileSync(file, "utf8").includes(MESSAGES_IMPORT),
+);
+const migratedFiles = [
+  ...new Set([
+    ...MIGRATED_GLOBS.flatMap((pattern) => globSync(pattern)),
+    ...importedFiles,
+  ]),
+].sort();
+
+for (const file of migratedFiles) {
+  const original = readFileSync(file, "utf8");
+  const rel = relative(process.cwd(), file);
+
+  if (file.endsWith(".svelte")) {
     const src = stripBlocks(original);
-    const rel = relative(process.cwd(), file);
+    const markup = stripMustacheBlocks(src);
 
     // Visible text nodes: content between a closing `>` and the next `<`.
-    for (const match of src.matchAll(/>([^<>]+)</g)) {
+    for (const match of markup.matchAll(/>([^<>]+)</g)) {
       if (!looksLikeCopy(match[1])) continue;
-      const line = lineOf(src, match.index);
+      const line = lineOf(markup, match.index);
       if (isIgnored(original, line)) continue;
-      findings.push(`${rel}:${line}  text: ${match[1].trim()}`);
+      findings.push(`${rel}:${line}  text: ${displayCopy(match[1])}`);
     }
 
     // Human-facing attributes with a static string value.
-    const attrRe = new RegExp(`\\b(${TEXT_ATTRS.join("|")})="([^"]+)"`, "g");
-    for (const match of src.matchAll(attrRe)) {
-      if (!looksLikeCopy(match[2])) continue;
-      const line = lineOf(src, match.index);
+    const attrRe = new RegExp(
+      `\\b(${TEXT_ATTRS.join("|")})=(?:"([^"]+)"|'([^']+)')`,
+      "g",
+    );
+    for (const match of markup.matchAll(attrRe)) {
+      const value = match[2] ?? match[3];
+      if (!looksLikeCopy(value)) continue;
+      const line = lineOf(markup, match.index);
       if (isIgnored(original, line)) continue;
-      findings.push(`${rel}:${line}  ${match[1]}: ${match[2].trim()}`);
+      findings.push(`${rel}:${line}  ${match[1]}: ${displayCopy(value)}`);
     }
+  }
+
+  // Common object properties used for option labels, help copy, toast
+  // messages, and similar UI strings in Svelte script blocks and TS/JS files.
+  const propertyRe = new RegExp(
+    `\\b(${COPY_PROPERTIES.join("|")})\\s*:\\s*(?:"([^"\\n]+)"|'([^'\\n]+)'|\`([^\`\\n]+)\`)`,
+    "g",
+  );
+  for (const match of original.matchAll(propertyRe)) {
+    const value = match[2] ?? match[3] ?? match[4];
+    if (!looksLikeCopy(value)) continue;
+    const line = lineOf(original, match.index);
+    if (isIgnored(original, line)) continue;
+    findings.push(
+      `${rel}:${line}  ${match[1]} property: ${displayCopy(value)}`,
+    );
   }
 }
 

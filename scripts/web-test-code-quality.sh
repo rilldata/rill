@@ -87,12 +87,12 @@ fi
 
 echo ""
 echo "== i18n guard: catalog integrity + migrated areas =="
-# Scans the message catalogs and a fixed set of already-migrated areas on the
-# filesystem, so it runs unconditionally rather than under an app filter: the
-# migrated areas span multiple apps and are independent of which files a given
-# PR touched. Catalog integrity errors are exact and fatal; hardcoded-string
-# findings are heuristic and non-fatal for now: the final i18n migration chunk
-# adds --strict to make them fatal too.
+# Scans the message catalogs, explicitly migrated Svelte areas, and source files
+# that import the generated message namespace. It runs unconditionally rather
+# than under an app filter: migrated files span apps and are independent of
+# which files a given PR touched. Catalog integrity errors are exact and fatal;
+# hardcoded-string findings are heuristic and non-fatal for now: the final i18n
+# migration chunk adds --strict to make them fatal too.
 node ./scripts/i18n-guard.js || exit_code=$?
 
 if [[ "$LOCAL" == "true" ]]; then
