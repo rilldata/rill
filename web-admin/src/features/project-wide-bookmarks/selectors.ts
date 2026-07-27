@@ -1,46 +1,27 @@
-import {
-  getProjectIdQueryOptions,
-  type OrgAndProjectNameStore,
-} from "@rilldata/web-admin/features/projects/selectors.ts";
-import {
-  createAdminServiceGetCurrentUser,
-  getAdminServiceListBookmarksInfiniteQueryOptions,
-} from "@rilldata/web-admin/client";
-import { createQuery } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { type V1Bookmark } from "@rilldata/web-admin/client";
 
-const BookmarksPageSize = 1000;
+export type Bookmarks = {
+  home: V1Bookmark | undefined;
+  personal: V1Bookmark[];
+  shared: V1Bookmark[];
+};
 
-export function getBookmarksInfiniteQueryOptions(
-  orgAndProjectNameStore: OrgAndProjectNameStore,
-) {
-  const projectIdQuery = createQuery(
-    getProjectIdQueryOptions(orgAndProjectNameStore),
-  );
+export function categorizeBookmarks(bookmarkResources: V1Bookmark[]) {
+  const bookmarks: Bookmarks = {
+    home: undefined,
+    personal: [],
+    shared: [],
+  };
 
-  return derived(
-    [createAdminServiceGetCurrentUser(), projectIdQuery],
-    ([userResp, projectIdQueryResp]) => {
-      const hasUser = userResp.data?.user;
-      const projectId = projectIdQueryResp.data;
+  bookmarkResources.forEach((bookmark) => {
+    if (bookmark.default) {
+      bookmarks.home = bookmark;
+    } else if (bookmark.shared) {
+      bookmarks.shared.push(bookmark);
+    } else {
+      bookmarks.personal.push(bookmark);
+    }
+  });
 
-      return getAdminServiceListBookmarksInfiniteQueryOptions(
-        {
-          projectId,
-          pageSize: BookmarksPageSize,
-        },
-        {
-          query: {
-            enabled: Boolean(hasUser && !!projectId),
-            getNextPageParam: (lastPage) => {
-              if (lastPage.nextPageToken !== "") {
-                return lastPage.nextPageToken;
-              }
-              return undefined;
-            },
-          },
-        },
-      );
-    },
-  );
+  return bookmarks;
 }
