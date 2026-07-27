@@ -10,13 +10,12 @@ export const s3Schema: MultiStepFormSchema = {
       type: "string",
       title: "Authentication method",
       description: "Choose how to authenticate to S3",
-      enum: ["access_keys", "web_identity_file", "public"],
+      enum: ["access_keys", "public"],
       default: "access_keys",
       "x-display": "radio",
-      "x-enum-labels": ["Access keys", "OIDC token file", "Public"],
+      "x-enum-labels": ["Access keys", "Public"],
       "x-enum-descriptions": [
         "Use AWS access key ID and secret access key.",
-        "Exchange an OIDC token from a mounted file for AWS credentials.",
         "Access publicly readable buckets without credentials.",
       ],
       "x-ui-only": true,
@@ -30,15 +29,6 @@ export const s3Schema: MultiStepFormSchema = {
           "aws_role_arn",
           "aws_role_session_name",
           "aws_external_id",
-        ],
-        web_identity_file: [
-          "aws_web_identity_token_file",
-          "aws_web_identity_role_arn",
-          "aws_web_identity_role_session_name",
-          "aws_role_arn",
-          "aws_role_session_name",
-          "aws_external_id",
-          "region",
         ],
         public: [],
       },
@@ -83,9 +73,7 @@ export const s3Schema: MultiStepFormSchema = {
         "Rill uses your default AWS region unless you set it explicitly.",
       "x-placeholder": "us-east-1",
       "x-step": "connector",
-      "x-visible-if": {
-        auth_method: ["access_keys", "web_identity_file"],
-      },
+      "x-visible-if": { auth_method: "access_keys" },
     },
     endpoint: {
       type: "string",
@@ -100,15 +88,12 @@ export const s3Schema: MultiStepFormSchema = {
     aws_role_arn: {
       type: "string",
       title: "AWS Role ARN",
-      description:
-        "Optional target AWS role to assume. With WebIdentity, this is a second role assumed using the federated role credentials.",
+      description: "AWS Role ARN to assume",
       "x-placeholder": "arn:aws:iam::123456789012:role/MyRole",
       "x-secret": true,
       "x-env-var-name": "AWS_ROLE_ARN",
       "x-step": "connector",
-      "x-visible-if": {
-        auth_method: ["access_keys", "web_identity_file"],
-      },
+      "x-visible-if": { auth_method: "access_keys" },
       "x-advanced": true,
     },
     aws_role_session_name: {
@@ -117,9 +102,7 @@ export const s3Schema: MultiStepFormSchema = {
       description: "Session name for STS AssumeRole",
       "x-placeholder": "rill-session",
       "x-step": "connector",
-      "x-visible-if": {
-        auth_method: ["access_keys", "web_identity_file"],
-      },
+      "x-visible-if": { auth_method: "access_keys" },
       "x-advanced": true,
     },
     aws_external_id: {
@@ -128,35 +111,7 @@ export const s3Schema: MultiStepFormSchema = {
       description: "External ID for cross-account role assumption",
       "x-placeholder": "your-external-id",
       "x-step": "connector",
-      "x-visible-if": {
-        auth_method: ["access_keys", "web_identity_file"],
-      },
-      "x-advanced": true,
-    },
-    aws_web_identity_token_file: {
-      type: "string",
-      title: "OIDC token file",
-      description: "Path to a mounted file containing an OIDC identity token",
-      "x-placeholder": "/var/run/secrets/oidc/token",
-      "x-env-var-name": "AWS_WEB_IDENTITY_TOKEN_FILE",
-      "x-step": "connector",
-      "x-visible-if": { auth_method: "web_identity_file" },
-    },
-    aws_web_identity_role_arn: {
-      type: "string",
-      title: "WebIdentity role ARN",
-      description: "AWS role whose trust policy accepts the OIDC identity",
-      "x-placeholder": "arn:aws:iam::123456789012:role/WebIdentityRole",
-      "x-step": "connector",
-      "x-visible-if": { auth_method: "web_identity_file" },
-    },
-    aws_web_identity_role_session_name: {
-      type: "string",
-      title: "WebIdentity session name",
-      description: "Optional session name for AssumeRoleWithWebIdentity",
-      "x-placeholder": "rill-web-identity",
-      "x-step": "connector",
-      "x-visible-if": { auth_method: "web_identity_file" },
+      "x-visible-if": { auth_method: "access_keys" },
       "x-advanced": true,
     },
     path_prefixes: {
@@ -202,12 +157,6 @@ export const s3Schema: MultiStepFormSchema = {
       if: { properties: { auth_method: { const: "access_keys" } } },
       then: {
         required: ["aws_access_key_id", "aws_secret_access_key"],
-      },
-    },
-    {
-      if: { properties: { auth_method: { const: "web_identity_file" } } },
-      then: {
-        required: ["aws_web_identity_token_file", "aws_web_identity_role_arn"],
       },
     },
   ],

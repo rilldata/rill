@@ -89,21 +89,6 @@ var spec = drivers.Spec{
 			Secret:      true,
 			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
 		},
-		{
-			Key:         "aws_web_identity_token_file",
-			Type:        drivers.StringPropertyType,
-			Description: "Path to a file containing an OIDC token for AssumeRoleWithWebIdentity. Requires aws_web_identity_role_arn or, for backwards compatibility, aws_role_arn.",
-		},
-		{
-			Key:         "aws_web_identity_role_arn",
-			Type:        drivers.StringPropertyType,
-			Description: "AWS role trusted by the OIDC provider. When aws_role_arn is also set, this role is used as the source for assuming aws_role_arn.",
-		},
-		{
-			Key:         "aws_web_identity_role_session_name",
-			Type:        drivers.StringPropertyType,
-			Description: "Optional session name for AssumeRoleWithWebIdentity. Defaults to 'rill-session'.",
-		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
