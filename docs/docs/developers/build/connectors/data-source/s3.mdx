@@ -14,13 +14,12 @@ import { EnvPullTip, DeployToCloud } from '@site/src/components/connector';
 
 ## Authentication Methods
 
-To connect to Amazon S3, you can choose from five authentication options:
+To connect to Amazon S3, you can choose from four authentication options:
 
 1. **Access Key/Secret Key** (recommended for cloud deployment)
 2. **IAM Role Assumption** (enhanced security with temporary credentials)
-3. **WebIdentity Federation** (OIDC token file or GCP Workload Identity)
-4. **Public** (for publicly accessible buckets - no authentication required)
-5. **Local AWS credentials** (local development only - not recommended for production)
+3. **Public** (for publicly accessible buckets - no authentication required)
+4. **Local AWS credentials** (local development only - not recommended for production)
 
 
 
@@ -28,23 +27,19 @@ To connect to Amazon S3, you can choose from five authentication options:
 You can also connect to S3-compatible storage services by specifying a custom endpoint in your connector configuration.
 :::
 
-When you add data from S3 through the Rill UI, you'll see four authentication options:
+When you add data from S3 through the Rill UI, you'll see two authentication options:
 
 - **Access Key/Secret Key**: The process follows two steps:
   1. **Configure Authentication** - Set up your S3 connector with credentials
   2. **Configure Data Model** - Define which bucket and objects to ingest
   The UI will automatically create both the connector file and model file for you.
 
-- **GCP Workload Identity**: Configure the token audience and the AWS role that trusts the Google identity. An optional second AWS role can be assumed for cross-account access.
-
-- **OIDC token file**: Configure a mounted token path and the AWS role that trusts its issuer. It supports the same optional second-role flow.
-
 - **Public**: For publicly accessible buckets, you skip the connector creation step and go directly to:
   1. **Configure Data Model** - Define which bucket and objects to ingest
   The UI will only create the model file (no connector file is needed).
 
 :::note Manual Configuration Only
-Local AWS credentials are only available through manual configuration. See [Method 5: Local AWS Credentials](#method-5-local-aws-credentials-local-development-only) for setup instructions.
+IAM Role Assumption and Local AWS credentials are only available through manual configuration. See [Method 2: IAM Role Assumption](#method-2-iam-role-assumption) and [Method 4: Local AWS Credentials](#method-4-local-aws-credentials-local-development-only) for setup instructions.
 :::
 
 ## Method 1: Access Key/Secret Key (Recommended)
@@ -78,8 +73,6 @@ driver: s3
 
 aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
 aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
-# Include this when the access key is temporary:
-aws_access_token: "{{ .env.AWS_SESSION_TOKEN }}"
 ```
 
 **Step 2: Add credentials to `.env`**
@@ -87,7 +80,6 @@ aws_access_token: "{{ .env.AWS_SESSION_TOKEN }}"
 ```bash
 AWS_ACCESS_KEY_ID=your_access_key_id
 AWS_SECRET_ACCESS_KEY=your_secret_access_key
-AWS_SESSION_TOKEN=your_optional_session_token
 ```
 
 <EnvPullTip />
@@ -115,10 +107,6 @@ Create `connectors/s3_role.yaml`:
 type: connector
 driver: s3
 
-aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
-aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
-# Include this when the source credentials are temporary:
-aws_access_token: "{{ .env.AWS_SESSION_TOKEN }}"
 aws_role_arn: "{{ .env.AWS_ROLE_ARN }}"
 aws_external_id: "{{ .env.AWS_EXTERNAL_ID }}"
 ```
@@ -126,64 +114,13 @@ aws_external_id: "{{ .env.AWS_EXTERNAL_ID }}"
 **Step 2: Add credentials to `.env`**
 
 ```bash
-AWS_ACCESS_KEY_ID=your_source_access_key_id
-AWS_SECRET_ACCESS_KEY=your_source_secret_access_key
-AWS_SESSION_TOKEN=your_optional_source_session_token
 AWS_ROLE_ARN=arn:aws:iam::123456789012:role/RillDataAccess
 AWS_EXTERNAL_ID=your_external_id
 ```
 
-The configured access keys sign the `sts:AssumeRole` request. You can instead set `allow_host_access: true` to use credentials from the host AWS credential chain.
-
 Then, [create your first model](#create-your-first-model).
 
-## Method 3: WebIdentity Federation
-
-WebIdentity federation exchanges an OIDC token for temporary AWS credentials without requiring static AWS keys. Rill supports tokens from a mounted file and Google-signed workload identity tokens from the GCP metadata server.
-
-Set `region` explicitly for AWS China, AWS GovCloud, or any deployment where the standard AWS region is not available from the host environment or shared AWS configuration.
-
-### GCP Workload Identity
-
-```yaml
-type: connector
-driver: s3
-region: us-east-1
-
-gcp_workload_identity_audience: "{{ .env.GCP_WORKLOAD_IDENTITY_AUDIENCE }}"
-aws_web_identity_role_arn: "{{ .env.AWS_WEB_IDENTITY_ROLE_ARN }}"
-```
-
-The AWS role identified by `aws_web_identity_role_arn` must trust the Google identity. Google service-account tokens include an `azp` claim, so AWS maps the token's configured `aud` value to the `accounts.google.com:oaud` condition key. Restrict the trust policy with `accounts.google.com:aud`, `accounts.google.com:oaud`, and `accounts.google.com:sub`.
-
-### Mounted OIDC Token File
-
-```yaml
-type: connector
-driver: s3
-region: us-east-1
-
-aws_web_identity_token_file: /var/run/secrets/oidc/token
-aws_web_identity_role_arn: "{{ .env.AWS_WEB_IDENTITY_ROLE_ARN }}"
-```
-
-### Optional Second Role
-
-To use the federated role only as a bootstrap identity and assume a separate S3 access role, add:
-
-```yaml
-aws_role_arn: "{{ .env.AWS_TARGET_ROLE_ARN }}"
-aws_role_session_name: rill-s3-access
-aws_external_id: "{{ .env.AWS_EXTERNAL_ID }}"
-```
-
-The bootstrap role needs `sts:AssumeRole` permission for the target role, and the target role must trust the bootstrap role. For compatibility, configurations that specify a WebIdentity token source with only `aws_role_arn` continue to use that ARN as the direct federated role.
-
-:::note DuckDB credential lifetime
-Rill resolves the role chain before each DuckDB model or partition run and creates a temporary DuckDB secret. A single query running longer than the one-hour role-chain session cannot refresh those inlined credentials.
-:::
-
-## Method 4: Public Buckets
+## Method 3: Public Buckets
 
 For publicly accessible S3 buckets, you don't need to create a connector. Simply use the S3 URI directly in your model configuration.
 
@@ -207,7 +144,7 @@ No connector configuration is needed for public buckets. Proceed to [Create Your
 This method only works with publicly accessible buckets. Most production S3 buckets are private and require authentication.
 :::
 
-## Method 5: Local AWS Credentials (Local Development Only)
+## Method 4: Local AWS Credentials (Local Development Only)
 
 For local development, you can use credentials from the AWS CLI. This method is **not suitable for production** or Rill Cloud deployments. This method is only available through manual configuration, and you don't need to create a connector file.
 
