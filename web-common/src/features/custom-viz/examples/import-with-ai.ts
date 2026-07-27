@@ -1,7 +1,6 @@
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
 import { developerChatActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
-import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -13,8 +12,8 @@ import {
 import { runtimeServiceGetResource } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get, writable } from "svelte/store";
-import { CUSTOM_VIZ_FOLDER } from "@rilldata/web-common/features/custom-viz/params";
-import type { GalleryExample } from "./example-to-component";
+import { componentFilePathFor } from "./component-file";
+import type { GalleryExample } from "./example-spec";
 
 /**
  * AI-first gallery import: instead of writing the example into the file and asking
@@ -37,11 +36,10 @@ export async function importVegaExampleWithAgent(
   example: GalleryExample,
   existingComponentNames: string[],
 ): Promise<void> {
-  const componentName = getName(
-    sanitizeComponentName(example.name),
+  const { componentName, filePath } = componentFilePathFor(
+    example.name,
     existingComponentNames,
   );
-  const filePath = `/${CUSTOM_VIZ_FOLDER}/${componentName}.yaml`;
 
   // Placeholder so the file shows up in the nav and workspace while the agent works.
   generatingComponentFilePath.set(filePath);
@@ -377,12 +375,4 @@ async function fileParseError(
   } catch {
     return null;
   }
-}
-
-function sanitizeComponentName(name: string): string {
-  const sanitized = name
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, "_")
-    .replace(/^(\d)/, "_$1");
-  return sanitized || "custom_viz";
 }

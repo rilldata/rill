@@ -9,7 +9,10 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
-  import { importVegaExampleWithAgent } from "./import-with-ai";
+  import {
+    generatingComponentFilePath,
+    importVegaExampleWithAgent,
+  } from "./import-with-ai";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -17,8 +20,9 @@
   import ExampleCard from "./ExampleCard.svelte";
   import {
     importVegaExample,
+    loadExample,
     loadGallery,
-    type GalleryExample,
+    type GalleryEntry,
   } from "./example-to-component";
 
   export let open = false;
@@ -27,11 +31,15 @@
 
   const { developerChat } = featureFlags;
 
-  let examples: GalleryExample[] = [];
+  let examples: GalleryEntry[] = [];
   let loading = false;
   let importing = false;
   let searchValue = "";
   let selectedSubcategory: string | null = null;
+
+  // An AI import runs in the background after the dialog closes, so reopening the
+  // gallery must not start a second one alongside it.
+  $: busy = importing || $generatingComponentFilePath !== null;
 
   $: if (open && !examples.length && !loading) {
     loading = true;
@@ -65,10 +73,14 @@
     void createResourceAndNavigate(client, ResourceKind.Component);
   }
 
-  async function select(example: GalleryExample) {
-    if (importing) return;
+  async function select(entry: GalleryEntry) {
+    if (busy) return;
     importing = true;
     try {
+      // Specs are stored per example and fetched here, so opening the gallery
+      // doesn't download every example's inlined sample data.
+      const example = await loadExample(entry);
+
       if ($developerChat) {
         // AI-first import: the example spec goes into the agent prompt, a placeholder
         // file shows while it generates, and navigation happens once the generated
@@ -146,7 +158,7 @@
           {:else}
             <div class="grid grid-cols-3 gap-3">
               {#each filtered as example (`${example.subcategory}::${example.name}`)}
-                <ExampleCard {example} onSelect={select} />
+                <ExampleCard {example} onSelect={select} disabled={busy} />
               {:else}
                 <div class="text-sm text-fg-secondary p-4 col-span-3">
                   {m.component_examples_empty()}

@@ -365,6 +365,7 @@
   "component_ai_placeholder": "Describe a change and press Enter to edit with AI…",
   "component_connect_with_ai": "Connect to your data with AI",
   "component_example_imported": "Imported example as {path}",
+  "component_example_sample_badge": "Sample data",
   "component_examples_all": "All examples",
   "component_examples_description": "Import an example as a starting point, then connect it to your data in the component editor.",
   "component_examples_empty": "No examples match your search",
