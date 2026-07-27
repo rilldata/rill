@@ -174,15 +174,6 @@ func TestWebIdentityConfigurationValidation(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "multiple token sources",
-			config: &ConfigProperties{
-				RoleARN:                     testWebRoleARN,
-				WebIdentityTokenFile:        "/token",
-				GCPWorkloadIdentityAudience: "audience",
-			},
-			wantErr: "configure only one",
-		},
-		{
 			name: "token without role",
 			config: &ConfigProperties{
 				WebIdentityTokenFile: "/token",
@@ -194,7 +185,7 @@ func TestWebIdentityConfigurationValidation(t *testing.T) {
 			config: &ConfigProperties{
 				WebIdentityRoleARN: testWebRoleARN,
 			},
-			wantErr: "requires aws_web_identity_token_file or gcp_workload_identity_audience",
+			wantErr: "requires aws_web_identity_token_file",
 		},
 		{
 			name: "external ID without target role",
@@ -224,7 +215,6 @@ func requireCredentialSourcesCleared(t *testing.T, cfg *ConfigProperties) {
 	require.Empty(t, cfg.WebIdentityTokenFile)
 	require.Empty(t, cfg.WebIdentityRoleARN)
 	require.Empty(t, cfg.WebIdentityRoleSessionName)
-	require.Empty(t, cfg.GCPWorkloadIdentityAudience)
 }
 
 type recordedSTSRequests struct {

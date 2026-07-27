@@ -104,11 +104,6 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Description: "Optional session name for AssumeRoleWithWebIdentity. Defaults to 'rill-session'.",
 		},
-		{
-			Key:         "gcp_workload_identity_audience",
-			Type:        drivers.StringPropertyType,
-			Description: "Audience for GKE workload identity federation with AWS. Requires aws_web_identity_role_arn or, for backwards compatibility, aws_role_arn.",
-		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -142,18 +137,17 @@ type driver struct{}
 var _ drivers.Driver = driver{}
 
 type ConfigProperties struct {
-	AccessKeyID                 string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey             string `mapstructure:"aws_secret_access_key"`
-	SessionToken                string `mapstructure:"aws_access_token"`
-	Region                      string `mapstructure:"region"`
-	Endpoint                    string `mapstructure:"endpoint"`
-	RoleARN                     string `mapstructure:"aws_role_arn"`
-	RoleSessionName             string `mapstructure:"aws_role_session_name"`
-	ExternalID                  string `mapstructure:"aws_external_id"`
-	WebIdentityTokenFile        string `mapstructure:"aws_web_identity_token_file"`
-	WebIdentityRoleARN          string `mapstructure:"aws_web_identity_role_arn"`
-	WebIdentityRoleSessionName  string `mapstructure:"aws_web_identity_role_session_name"`
-	GCPWorkloadIdentityAudience string `mapstructure:"gcp_workload_identity_audience"`
+	AccessKeyID                string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey            string `mapstructure:"aws_secret_access_key"`
+	SessionToken               string `mapstructure:"aws_access_token"`
+	Region                     string `mapstructure:"region"`
+	Endpoint                   string `mapstructure:"endpoint"`
+	RoleARN                    string `mapstructure:"aws_role_arn"`
+	RoleSessionName            string `mapstructure:"aws_role_session_name"`
+	ExternalID                 string `mapstructure:"aws_external_id"`
+	WebIdentityTokenFile       string `mapstructure:"aws_web_identity_token_file"`
+	WebIdentityRoleARN         string `mapstructure:"aws_web_identity_role_arn"`
+	WebIdentityRoleSessionName string `mapstructure:"aws_web_identity_role_session_name"`
 	// A list of bucket path prefixes that this connector is allowed to access.
 	// Useful when different buckets or bucket prefixes use different credentials,
 	// allowing the system to select the appropriate connector based on the bucket path.
@@ -358,15 +352,13 @@ func GetConfigWithTemporaryCredentials(ctx context.Context, confProp *ConfigProp
 	cfg.WebIdentityTokenFile = ""
 	cfg.WebIdentityRoleARN = ""
 	cfg.WebIdentityRoleSessionName = ""
-	cfg.GCPWorkloadIdentityAudience = ""
 	return &cfg, nil
 }
 
 func requiresTemporaryCredentials(confProp *ConfigProperties) bool {
 	return confProp.RoleARN != "" ||
 		confProp.WebIdentityRoleARN != "" ||
-		confProp.WebIdentityTokenFile != "" ||
-		confProp.GCPWorkloadIdentityAudience != ""
+		confProp.WebIdentityTokenFile != ""
 }
 
 func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp *ConfigProperties, bucket string) (string, error) {
@@ -500,11 +492,8 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties, logger *zap.L
 
 // newCredentialsProvider returns credentials for connecting to AWS.
 func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (aws.CredentialsProvider, error) {
-	retriever, hasWebIdentity, err := webIdentityTokenRetriever(confProp)
-	if err != nil {
-		return nil, err
-	}
-	if hasWebIdentity {
+	if confProp.WebIdentityTokenFile != "" {
+		retriever := stscreds.IdentityTokenFile(confProp.WebIdentityTokenFile)
 		webIdentityRoleARN := confProp.WebIdentityRoleARN
 		targetRoleARN := confProp.RoleARN
 		legacyDirectRole := false
@@ -536,7 +525,7 @@ func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties, log
 		return awsutil.NewAssumeRoleCredentials(ctx, targetRoleARN, confProp.RoleSessionName, confProp.ExternalID, confProp.Region, webIdentityCredentials, logger)
 	}
 	if confProp.WebIdentityRoleARN != "" {
-		return nil, fmt.Errorf("aws_web_identity_role_arn requires aws_web_identity_token_file or gcp_workload_identity_audience")
+		return nil, fmt.Errorf("aws_web_identity_role_arn requires aws_web_identity_token_file")
 	}
 	// If a role ARN is provided, assume it using base credentials.
 	if confProp.RoleARN != "" {
@@ -570,21 +559,6 @@ func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties, log
 
 	// 3. Fallback to anonymous credentials
 	return aws.AnonymousCredentials{}, nil
-}
-
-func webIdentityTokenRetriever(confProp *ConfigProperties) (stscreds.IdentityTokenRetriever, bool, error) {
-	hasGCPAudience := confProp.GCPWorkloadIdentityAudience != ""
-	hasTokenFile := confProp.WebIdentityTokenFile != ""
-	if hasGCPAudience && hasTokenFile {
-		return nil, false, fmt.Errorf("configure only one of gcp_workload_identity_audience and aws_web_identity_token_file")
-	}
-	if hasGCPAudience {
-		return awsutil.GCPMetadataTokenRetriever{Audience: confProp.GCPWorkloadIdentityAudience}, true, nil
-	}
-	if hasTokenFile {
-		return stscreds.IdentityTokenFile(confProp.WebIdentityTokenFile), true, nil
-	}
-	return nil, false, nil
 }
 
 // assumeRole returns a credentials provider that assumes the role specified by the ARN using AWS SDK v2.

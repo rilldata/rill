@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -33,7 +32,6 @@ func TestGenerateSecretSQLWithAWSCredentials(t *testing.T) {
 		wantAssumeSigningKey  string
 		wantAssumeSourceToken string
 		forbiddenValues       []string
-		useGCPMetadata        bool
 	}{
 		{
 			name: "static access keys",
@@ -81,21 +79,6 @@ func TestGenerateSecretSQLWithAWSCredentials(t *testing.T) {
 			forbiddenValues:     []string{"test-jwt"},
 		},
 		{
-			name: "GCP workload identity",
-			config: map[string]any{
-				"region":                             "us-east-1",
-				"gcp_workload_identity_audience":     "rill-aws-access",
-				"aws_web_identity_role_arn":          "arn:aws:iam::123456789012:role/web-identity",
-				"aws_web_identity_role_session_name": "web-session",
-			},
-			wantAccessKeyID:     "WEB_KEY",
-			wantSecretAccessKey: "WEB_SECRET",
-			wantSessionToken:    "WEB_TOKEN",
-			wantActions:         []string{"AssumeRoleWithWebIdentity"},
-			forbiddenValues:     []string{"test-jwt"},
-			useGCPMetadata:      true,
-		},
-		{
 			name: "WebIdentity then STS assume role",
 			config: map[string]any{
 				"region":                             "us-east-1",
@@ -120,17 +103,6 @@ func TestGenerateSecretSQLWithAWSCredentials(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server, requests := newDuckDBTestSTSServer(t)
 			t.Setenv("AWS_ENDPOINT_URL_STS", server.URL)
-			if tt.useGCPMetadata {
-				metadataServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if r.Header.Get("Metadata-Flavor") != "Google" {
-						http.Error(w, "missing metadata header", http.StatusForbidden)
-						return
-					}
-					_, _ = w.Write([]byte("test-jwt"))
-				}))
-				t.Cleanup(metadataServer.Close)
-				t.Setenv("GCE_METADATA_HOST", strings.TrimPrefix(metadataServer.URL, "http://"))
-			}
 
 			connector, err := drivers.Open("s3", "", "default", tt.config, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 			require.NoError(t, err)

@@ -10,18 +10,12 @@ export const s3Schema: MultiStepFormSchema = {
       type: "string",
       title: "Authentication method",
       description: "Choose how to authenticate to S3",
-      enum: ["access_keys", "gcp_web_identity", "web_identity_file", "public"],
+      enum: ["access_keys", "web_identity_file", "public"],
       default: "access_keys",
       "x-display": "radio",
-      "x-enum-labels": [
-        "Access keys",
-        "GCP Workload Identity",
-        "OIDC token file",
-        "Public",
-      ],
+      "x-enum-labels": ["Access keys", "OIDC token file", "Public"],
       "x-enum-descriptions": [
         "Use AWS access key ID and secret access key.",
-        "Exchange a Google-signed workload identity token for AWS credentials.",
         "Exchange an OIDC token from a mounted file for AWS credentials.",
         "Access publicly readable buckets without credentials.",
       ],
@@ -36,15 +30,6 @@ export const s3Schema: MultiStepFormSchema = {
           "aws_role_arn",
           "aws_role_session_name",
           "aws_external_id",
-        ],
-        gcp_web_identity: [
-          "gcp_workload_identity_audience",
-          "aws_web_identity_role_arn",
-          "aws_web_identity_role_session_name",
-          "aws_role_arn",
-          "aws_role_session_name",
-          "aws_external_id",
-          "region",
         ],
         web_identity_file: [
           "aws_web_identity_token_file",
@@ -99,7 +84,7 @@ export const s3Schema: MultiStepFormSchema = {
       "x-placeholder": "us-east-1",
       "x-step": "connector",
       "x-visible-if": {
-        auth_method: ["access_keys", "gcp_web_identity", "web_identity_file"],
+        auth_method: ["access_keys", "web_identity_file"],
       },
     },
     endpoint: {
@@ -122,7 +107,7 @@ export const s3Schema: MultiStepFormSchema = {
       "x-env-var-name": "AWS_ROLE_ARN",
       "x-step": "connector",
       "x-visible-if": {
-        auth_method: ["access_keys", "gcp_web_identity", "web_identity_file"],
+        auth_method: ["access_keys", "web_identity_file"],
       },
       "x-advanced": true,
     },
@@ -133,7 +118,7 @@ export const s3Schema: MultiStepFormSchema = {
       "x-placeholder": "rill-session",
       "x-step": "connector",
       "x-visible-if": {
-        auth_method: ["access_keys", "gcp_web_identity", "web_identity_file"],
+        auth_method: ["access_keys", "web_identity_file"],
       },
       "x-advanced": true,
     },
@@ -144,7 +129,7 @@ export const s3Schema: MultiStepFormSchema = {
       "x-placeholder": "your-external-id",
       "x-step": "connector",
       "x-visible-if": {
-        auth_method: ["access_keys", "gcp_web_identity", "web_identity_file"],
+        auth_method: ["access_keys", "web_identity_file"],
       },
       "x-advanced": true,
     },
@@ -163,9 +148,7 @@ export const s3Schema: MultiStepFormSchema = {
       description: "AWS role whose trust policy accepts the OIDC identity",
       "x-placeholder": "arn:aws:iam::123456789012:role/WebIdentityRole",
       "x-step": "connector",
-      "x-visible-if": {
-        auth_method: ["gcp_web_identity", "web_identity_file"],
-      },
+      "x-visible-if": { auth_method: "web_identity_file" },
     },
     aws_web_identity_role_session_name: {
       type: "string",
@@ -173,20 +156,8 @@ export const s3Schema: MultiStepFormSchema = {
       description: "Optional session name for AssumeRoleWithWebIdentity",
       "x-placeholder": "rill-web-identity",
       "x-step": "connector",
-      "x-visible-if": {
-        auth_method: ["gcp_web_identity", "web_identity_file"],
-      },
+      "x-visible-if": { auth_method: "web_identity_file" },
       "x-advanced": true,
-    },
-    gcp_workload_identity_audience: {
-      type: "string",
-      title: "GCP workload identity audience",
-      description:
-        "Audience placed in the Google-signed OIDC token and matched by the AWS role trust policy",
-      "x-placeholder": "rill-aws-access",
-      "x-env-var-name": "GCP_WORKLOAD_IDENTITY_AUDIENCE",
-      "x-step": "connector",
-      "x-visible-if": { auth_method: "gcp_web_identity" },
     },
     path_prefixes: {
       type: "string",
@@ -231,15 +202,6 @@ export const s3Schema: MultiStepFormSchema = {
       if: { properties: { auth_method: { const: "access_keys" } } },
       then: {
         required: ["aws_access_key_id", "aws_secret_access_key"],
-      },
-    },
-    {
-      if: { properties: { auth_method: { const: "gcp_web_identity" } } },
-      then: {
-        required: [
-          "gcp_workload_identity_audience",
-          "aws_web_identity_role_arn",
-        ],
       },
     },
     {

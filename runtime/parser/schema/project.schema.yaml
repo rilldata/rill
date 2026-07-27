@@ -1128,9 +1128,6 @@ definitions:
             aws_web_identity_role_session_name:
               type: string
               description: Session name to use when assuming aws_web_identity_role_arn
-            gcp_workload_identity_audience:
-              type: string
-              description: Audience used to request a Google-signed OIDC token from the GCP metadata server
             path_prefixes:
                type: [string, array]
                description: |

@@ -72,17 +72,11 @@ describe("connector-schemas", () => {
     it("exposes S3 WebIdentity authentication fields", () => {
       const schema = getConnectorSchema("s3");
       expect(schema?.properties?.auth_method?.enum).toContain(
-        "gcp_web_identity",
-      );
-      expect(schema?.properties?.auth_method?.enum).toContain(
         "web_identity_file",
       );
       expect(schema?.properties).toHaveProperty("aws_web_identity_role_arn");
       expect(schema?.properties).toHaveProperty(
         "aws_web_identity_role_session_name",
-      );
-      expect(schema?.properties).toHaveProperty(
-        "gcp_workload_identity_audience",
       );
     });
   });

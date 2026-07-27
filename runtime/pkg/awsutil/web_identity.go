@@ -15,7 +15,7 @@ import (
 const credentialsExpiryWindow = 5 * time.Minute
 
 // NewWebIdentityCredentials returns a credentials provider that assumes roleARN by
-// exchanging a web identity token from retriever (a file or GCP metadata server).
+// exchanging a web identity token from retriever.
 // No base AWS credentials are required; the OIDC token authenticates the STS call.
 func NewWebIdentityCredentials(
 	ctx context.Context,
