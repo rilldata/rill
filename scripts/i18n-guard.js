@@ -299,8 +299,15 @@ function stripMustacheBlocks(src) {
     // An unmatched brace is more likely to be literal copy than a Svelte
     // expression, so leave it for the heuristic to report.
     if (depth !== 0) continue;
+    const isDirective = /[#:/@]/.test(chars[start + 1] ?? "");
     for (let i = start; i <= end; i++) {
       if (chars[i] !== "\n") chars[i] = " ";
+    }
+    // Keep Svelte control/special directives as tag-like boundaries so text
+    // from separate branches is reported and suppressible independently.
+    if (isDirective) {
+      chars[start] = "<";
+      chars[end] = ">";
     }
     start = end;
   }
@@ -358,7 +365,8 @@ for (const file of migratedFiles) {
     // Visible text nodes: content between a closing `>` and the next `<`.
     for (const match of markup.matchAll(/>([^<>]+)</g)) {
       if (!looksLikeCopy(match[1])) continue;
-      const line = lineOf(markup, match.index);
+      const textStart = match[1].search(/\S/);
+      const line = lineOf(markup, match.index + 1 + textStart);
       if (isIgnored(original, line)) continue;
       findings.push(`${rel}:${line}  text: ${displayCopy(match[1])}`);
     }

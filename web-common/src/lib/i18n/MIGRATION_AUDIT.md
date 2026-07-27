@@ -9,13 +9,13 @@ this document are a snapshot and should decrease as PRs land.
 
 ## Summary
 
-- Baseline: 260 candidates across 86 files
-- Current after PR 2: 223 candidates across 85 files
-- Current split: 108 candidates in `web-admin` and 115 in `web-common`
+- Corrected baseline: 270 candidates across 86 files
+- Current after PR 2: 233 candidates across 85 files
+- Current split: 116 candidates in `web-admin` and 117 in `web-common`
 - No candidates in `web-local`
-- Current categories: 116 visible-text findings, 50 attribute findings, and 57
+- Current categories: 126 visible-text findings, 50 attribute findings, and 57
   copy-property findings
-- At baseline, 72 candidates had an exact English-text match in the existing
+- Currently, 61 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -25,6 +25,11 @@ automatically scan Svelte, TypeScript, and JavaScript files that import the
 generated message namespace. It now checks Svelte text and human-facing
 attributes as well as common copy-bearing object properties such as `label`,
 `description`, and `message`.
+
+The corrected baseline also preserves Svelte control directives as text-scan
+boundaries. The initial expanded scan merged literals from adjacent `{#if}` and
+`{:else}` branches into single findings; splitting those branches added 10
+independently actionable findings.
 
 ## Migration rules
 
@@ -62,13 +67,13 @@ node scripts/i18n-guard.js --strict
 | --- | ---------------------------------------------------------- | ------------------: | -------------------------- |
 | 1   | Guard coverage improvements                                |                   — | Implemented on this branch |
 | 2   | Time presets and comparisons                               |                  37 | Implemented on this branch |
-| 3   | Canvas components and inspector                            |                  33 | Planned                    |
+| 3   | Canvas components and inspector                            |                  35 | Planned                    |
 | 4   | Workspaces and Visual Metrics                              |                  18 | Planned                    |
 | 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Planned                    |
 | 6   | Resources, connectors, and models                          |                  16 | Planned                    |
 | 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned                    |
-| 8   | Admin project status, GitHub, and user management          |                  28 | Planned                    |
-| 9   | Admin edit sessions and branches                           |                  25 | Planned                    |
+| 8   | Admin project status, GitHub, and user management          |                  29 | Planned                    |
+| 9   | Admin edit sessions and branches                           |                  32 | Planned                    |
 | 10  | Admin organizations, bookmarks, and view-as-user           |                  19 | Planned                    |
 | 11  | Admin alerts, reports, public URLs, and personal files     |                  18 | Planned                    |
 | 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned                    |
@@ -84,7 +89,7 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 
 - 37 — `web-common/src/lib/time/config.ts`
 
-### PR 3: Canvas components and inspector (33)
+### PR 3: Canvas components and inspector (35)
 
 - 4 — `web-common/src/features/canvas/CanvasBuilder.svelte`
 - 3 — `web-common/src/features/canvas/components/kpi/KPI.svelte`
@@ -94,8 +99,8 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 - 2 — `web-common/src/features/canvas/inspector/LabelsInput.svelte`
 - 2 — `web-common/src/features/canvas/inspector/chart/MetricsSQLInput.svelte`
 - 13 — `web-common/src/features/canvas/inspector/chart/field-config/SortConfig.svelte`
-- 2 — `web-common/src/features/canvas/inspector/filters/DimensionFiltersInput.svelte`
-- 1 — `web-common/src/features/canvas/inspector/filters/TimeFiltersInput.svelte`
+- 3 — `web-common/src/features/canvas/inspector/filters/DimensionFiltersInput.svelte`
+- 2 — `web-common/src/features/canvas/inspector/filters/TimeFiltersInput.svelte`
 
 ### PR 4: Workspaces and Visual Metrics (18)
 
@@ -141,27 +146,27 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 - 1 — `web-common/src/features/exports/pdf/CanvasPdfExportHeader.svelte`
 - 1 — `web-common/src/features/scheduled-reports/fields/RowsAndColumnsForm.svelte`
 
-### PR 8: Admin projects (28)
+### PR 8: Admin projects (29)
 
 - 3 — `web-admin/src/features/projects/ProjectCard.svelte`
 - 1 — `web-admin/src/features/projects/github/GithubConnectionDialog.svelte`
 - 1 — `web-admin/src/features/projects/status/overview/ClusterSize.svelte`
 - 1 — `web-admin/src/features/projects/status/resource-table/ActionsCell.svelte`
 - 5 — `web-admin/src/features/projects/status/resource-table/RefreshAllSourcesAndModelsConfirmDialog.svelte`
-- 1 — `web-admin/src/features/projects/status/resource-table/RefreshResourceConfirmDialog.svelte`
+- 2 — `web-admin/src/features/projects/status/resource-table/RefreshResourceConfirmDialog.svelte`
 - 7 — `web-admin/src/features/projects/status/tables/ModelActionsCell.svelte`
 - 1 — `web-admin/src/features/projects/status/tables/ProjectTables.svelte`
 - 3 — `web-admin/src/features/projects/user-management/OrgUserGroupSetRole.svelte`
 - 3 — `web-admin/src/features/projects/user-management/ProjectUserGroupSetRole.svelte`
 - 2 — `web-admin/src/features/projects/user-management/UsergroupSetRole.svelte`
 
-### PR 9: Admin edit sessions and branches (25)
+### PR 9: Admin edit sessions and branches (32)
 
 - 1 — `web-admin/src/features/branches/BranchesSection.svelte`
-- 3 — `web-admin/src/features/edit-session/CommitPopover.svelte`
+- 4 — `web-admin/src/features/edit-session/CommitPopover.svelte`
 - 12 — `web-admin/src/features/edit-session/EditBranchDialog.svelte`
 - 1 — `web-admin/src/features/edit-session/ExitButton.svelte`
-- 8 — `web-admin/src/features/edit-session/MergePopover.svelte`
+- 14 — `web-admin/src/features/edit-session/MergePopover.svelte`
 
 ### PR 10: Admin organizations, bookmarks, and view-as-user (19)
 
