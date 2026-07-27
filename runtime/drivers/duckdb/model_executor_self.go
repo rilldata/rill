@@ -618,20 +618,14 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		if err != nil {
 			return "", "", "", fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
-		if s3Config.RoleARN != "" {
-			// We need to retrieve temporary credentials and pass it to duckdb inline
-			// DuckDB does not support inlining initial key_id and secret used to retrieve temporary credentials
-			cfg, err := s3.GetConfigWithTemporaryCredentials(ctx, s3Config, logger)
-			if err != nil {
-				return "", "", "", fmt.Errorf("failed to get temporary credentials for s3 connector: %w", err)
-			}
-			s3Config.AccessKeyID = cfg.AccessKeyID
-			s3Config.SecretAccessKey = cfg.SecretAccessKey
-			s3Config.SessionToken = cfg.SessionToken
-			// clear role_arn so that subsequent calls like, to resolve region, do not fetch creds again
-			// next partition/model refresh will fetch new temporary credentials if needed
-			s3Config.RoleARN = ""
+		// DuckDB needs literal credentials in its temporary secret, so resolve any
+		// configured role or web identity chain before generating the SQL. The next
+		// partition or model refresh resolves fresh credentials.
+		cfg, err := s3.GetConfigWithTemporaryCredentials(ctx, s3Config, logger)
+		if err != nil {
+			return "", "", "", fmt.Errorf("failed to get temporary credentials for s3 connector: %w", err)
 		}
+		s3Config = cfg
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)

@@ -1119,6 +1119,18 @@ definitions:
             aws_external_id:
               type: string
               description: External ID for cross-account role assumption
+            aws_web_identity_token_file:
+              type: string
+              description: Path to an OIDC token file used for AssumeRoleWithWebIdentity
+            aws_web_identity_role_arn:
+              type: string
+              description: ARN of the role trusted by the OIDC provider. When aws_role_arn is also set, this role supplies credentials for assuming aws_role_arn
+            aws_web_identity_role_session_name:
+              type: string
+              description: Session name to use when assuming aws_web_identity_role_arn
+            gcp_workload_identity_audience:
+              type: string
+              description: Audience used to request a Google-signed OIDC token from the GCP metadata server
             path_prefixes:
                type: [string, array]
                description: |
