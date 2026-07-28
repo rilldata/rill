@@ -20,17 +20,32 @@
   let isCustomSortDropdownOpen = false;
 
   const sortOptions: { label: string; value: ChartSortDirectionOptions }[] = [
-    { label: "X-axis ascending", value: ChartSortType.X_ASC },
-    { label: "X-axis descending", value: ChartSortType.X_DESC },
-    { label: "Y-axis ascending", value: ChartSortType.Y_ASC },
-    { label: "Y-axis descending", value: ChartSortType.Y_DESC },
-    { label: "Y-axis delta ascending", value: ChartSortType.Y_DELTA_ASC },
-    { label: "Y-axis delta descending", value: ChartSortType.Y_DELTA_DESC },
-    { label: "Color ascending", value: ChartSortType.COLOR_ASC },
-    { label: "Color descending", value: ChartSortType.COLOR_DESC },
-    { label: "Measure ascending", value: ChartSortType.MEASURE_ASC },
-    { label: "Measure descending", value: ChartSortType.MEASURE_DESC },
-    { label: "Custom", value: ChartSortType.CUSTOM },
+    { label: m.canvas_sort_x_axis_ascending(), value: ChartSortType.X_ASC },
+    { label: m.canvas_sort_x_axis_descending(), value: ChartSortType.X_DESC },
+    { label: m.canvas_sort_y_axis_ascending(), value: ChartSortType.Y_ASC },
+    { label: m.canvas_sort_y_axis_descending(), value: ChartSortType.Y_DESC },
+    {
+      label: m.canvas_sort_y_axis_delta_ascending(),
+      value: ChartSortType.Y_DELTA_ASC,
+    },
+    {
+      label: m.canvas_sort_y_axis_delta_descending(),
+      value: ChartSortType.Y_DELTA_DESC,
+    },
+    { label: m.canvas_sort_color_ascending(), value: ChartSortType.COLOR_ASC },
+    {
+      label: m.canvas_sort_color_descending(),
+      value: ChartSortType.COLOR_DESC,
+    },
+    {
+      label: m.canvas_sort_measure_ascending(),
+      value: ChartSortType.MEASURE_ASC,
+    },
+    {
+      label: m.canvas_sort_measure_descending(),
+      value: ChartSortType.MEASURE_DESC,
+    },
+    { label: m.canvas_sort_custom(), value: ChartSortType.CUSTOM },
   ];
 
   $: sortOptionsForChart = sortOptions.filter((option) =>
@@ -93,7 +108,7 @@
           </Popover.Trigger>
           <Popover.Content align="end" class="w-[240px] p-0">
             <div class="px-3 py-2 border-b border-gray-200">
-              <span class="text-xs font-medium">Sort Order</span>
+              <span class="text-xs font-medium">{m.canvas_sort_order()}</span>
             </div>
             <DraggableList
               items={customSortDraggableItems || []}
@@ -103,7 +118,7 @@
             >
               {#snippet empty()}
                 <div class="px-2 py-2 text-xs text-fg-secondary">
-                  No sort item found
+                  {m.canvas_no_sort_item_found()}
                 </div>
               {/snippet}
               {#snippet item({ item })}

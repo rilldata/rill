@@ -12,7 +12,7 @@
   const tabs = [
     {
       tab: "options",
-      label: "Options",
+      label: m.canvas_options(),
     },
   ];
 
@@ -26,7 +26,7 @@
   $: if (isChartComponentType(componentType)) {
     tabs.push({
       tab: "config",
-      label: "Config",
+      label: m.canvas_config(),
     });
   }
 

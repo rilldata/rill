@@ -195,7 +195,7 @@
           {...props}
           class="data-wrapper overflow-hidden cursor-pointer"
           style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
-          aria-label="{measure?.name ?? ''} KPI data"
+          aria-label={m.kpi_data_aria({ measure: measure?.name ?? "" })}
           role="button"
           tabindex="0"
           onclick={modified({
@@ -244,7 +244,9 @@
           {#if showComparison}
             <div class="comparison-value-wrapper">
               {#if comparisonTotalResult.isError}
-                <div class="text-red-400">error loading comparison data</div>
+                <div class="text-red-400">
+                  {m.kpi_comparison_load_error()}
+                </div>
               {:else if comparisonTotalResult.isLoading}
                 <div class="loading h-[14px] w-6"></div>
                 <div class="loading h-[14px] w-6"></div>
@@ -282,7 +284,7 @@
                         >{getFormattedDiff(computedValues.delta)}</span
                       >
                     {:else}
-                      no change
+                      {m.kpi_no_change()}
                     {/if}
                   </span>
                 {/if}
