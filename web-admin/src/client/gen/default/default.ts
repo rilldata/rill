@@ -101,6 +101,7 @@ import type {
   AdminServiceUpdateOrganizationBody,
   AdminServiceUpdateOrganizationMemberUserAttributesBody,
   AdminServiceUpdateProjectBody,
+  AdminServiceUpdateProjectFileSyncScheduleBody,
   AdminServiceUpdateProjectVariablesBody,
   AdminServiceUpdateServiceBody,
   AdminServiceUpdateUsergroupBody,
@@ -171,6 +172,7 @@ import type {
   V1GetPersonalFileResponse,
   V1GetProjectAccessRequestResponse,
   V1GetProjectByIDResponse,
+  V1GetProjectFileSyncStatusResponse,
   V1GetProjectMemberUserResponse,
   V1GetProjectResponse,
   V1GetProjectVariablesResponse,
@@ -277,6 +279,7 @@ import type {
   V1SudoUpdateOrganizationQuotasResponse,
   V1SudoUpdateUserQuotasRequest,
   V1SudoUpdateUserQuotasResponse,
+  V1SyncProjectFilesToGitResponse,
   V1TriggerReconcileResponse,
   V1TriggerRedeployRequest,
   V1TriggerRedeployResponse,
@@ -289,6 +292,7 @@ import type {
   V1UpdateBookmarkResponse,
   V1UpdateOrganizationMemberUserAttributesResponse,
   V1UpdateOrganizationResponse,
+  V1UpdateProjectFileSyncScheduleResponse,
   V1UpdateProjectResponse,
   V1UpdateProjectVariablesResponse,
   V1UpdateServiceResponse,
@@ -7656,6 +7660,320 @@ export const createAdminServiceRedeployProject = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary SyncProjectFilesToGit flushes a project's staged user files (alerts, reports, personal dashboards) into its Git repo.
+ */
+export const adminServiceSyncProjectFilesToGit = (
+  org: string,
+  project: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SyncProjectFilesToGitResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/repo/sync-user-files`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+    signal,
+  });
+};
+
+export const getAdminServiceSyncProjectFilesToGitMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSyncProjectFilesToGit>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSyncProjectFilesToGit>>,
+  TError,
+  { org: string; project: string; data: AdminServiceTriggerReconcileBodyBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSyncProjectFilesToGit"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSyncProjectFilesToGit>>,
+    { org: string; project: string; data: AdminServiceTriggerReconcileBodyBody }
+  > = (props) => {
+    const { org, project, data } = props ?? {};
+
+    return adminServiceSyncProjectFilesToGit(org, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSyncProjectFilesToGitMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSyncProjectFilesToGit>>
+>;
+export type AdminServiceSyncProjectFilesToGitMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceSyncProjectFilesToGitMutationError = RpcStatus;
+
+/**
+ * @summary SyncProjectFilesToGit flushes a project's staged user files (alerts, reports, personal dashboards) into its Git repo.
+ */
+export const createAdminServiceSyncProjectFilesToGit = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSyncProjectFilesToGit>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        data: AdminServiceTriggerReconcileBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSyncProjectFilesToGit>>,
+  TError,
+  { org: string; project: string; data: AdminServiceTriggerReconcileBodyBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSyncProjectFilesToGitMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary UpdateProjectFileSyncSchedule configures periodic auto-sync of a project's user files to Git.
+ */
+export const adminServiceUpdateProjectFileSyncSchedule = (
+  org: string,
+  project: string,
+  adminServiceUpdateProjectFileSyncScheduleBody: AdminServiceUpdateProjectFileSyncScheduleBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1UpdateProjectFileSyncScheduleResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/repo/sync-user-files/schedule`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateProjectFileSyncScheduleBody,
+    signal,
+  });
+};
+
+export const getAdminServiceUpdateProjectFileSyncScheduleMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateProjectFileSyncSchedule>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceUpdateProjectFileSyncScheduleBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceUpdateProjectFileSyncSchedule>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    data: AdminServiceUpdateProjectFileSyncScheduleBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceUpdateProjectFileSyncSchedule"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateProjectFileSyncSchedule>>,
+    {
+      org: string;
+      project: string;
+      data: AdminServiceUpdateProjectFileSyncScheduleBody;
+    }
+  > = (props) => {
+    const { org, project, data } = props ?? {};
+
+    return adminServiceUpdateProjectFileSyncSchedule(org, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceUpdateProjectFileSyncScheduleMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceUpdateProjectFileSyncSchedule>>
+  >;
+export type AdminServiceUpdateProjectFileSyncScheduleMutationBody =
+  AdminServiceUpdateProjectFileSyncScheduleBody;
+export type AdminServiceUpdateProjectFileSyncScheduleMutationError = RpcStatus;
+
+/**
+ * @summary UpdateProjectFileSyncSchedule configures periodic auto-sync of a project's user files to Git.
+ */
+export const createAdminServiceUpdateProjectFileSyncSchedule = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceUpdateProjectFileSyncSchedule>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        data: AdminServiceUpdateProjectFileSyncScheduleBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceUpdateProjectFileSyncSchedule>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    data: AdminServiceUpdateProjectFileSyncScheduleBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceUpdateProjectFileSyncScheduleMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetProjectFileSyncStatus returns the Git-sync status of a project's staged user files.
+ */
+export const adminServiceGetProjectFileSyncStatus = (
+  org: string,
+  project: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetProjectFileSyncStatusResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/repo/sync-user-files/status`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetProjectFileSyncStatusQueryKey = (
+  org?: string,
+  project?: string,
+) => {
+  return [
+    `/v1/orgs/${org}/projects/${project}/repo/sync-user-files/status`,
+  ] as const;
+};
+
+export const getAdminServiceGetProjectFileSyncStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetProjectFileSyncStatus>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetProjectFileSyncStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetProjectFileSyncStatusQueryKey(org, project);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetProjectFileSyncStatus>>
+  > = ({ signal }) =>
+    adminServiceGetProjectFileSyncStatus(org, project, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetProjectFileSyncStatus>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetProjectFileSyncStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetProjectFileSyncStatus>>
+>;
+export type AdminServiceGetProjectFileSyncStatusQueryError = RpcStatus;
+
+/**
+ * @summary GetProjectFileSyncStatus returns the Git-sync status of a project's staged user files.
+ */
+
+export function createAdminServiceGetProjectFileSyncStatus<
+  TData = Awaited<ReturnType<typeof adminServiceGetProjectFileSyncStatus>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetProjectFileSyncStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetProjectFileSyncStatusQueryOptions(
+    org,
+    project,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
  */

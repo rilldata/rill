@@ -107,6 +107,7 @@ func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]driv
 	defer r.mu.RUnlock()
 
 	var entries []drivers.DirEntry
+	seen := make(map[string]bool)    // dedupes paths that exist in more than one underlying root (staging overlays Git).
 	for _, root := range r.roots() { // Incorporate matches from every underlying file system.
 		err := doublestar.GlobWalk(os.DirFS(root), path.Clean(path.Join(".", glob)), func(p string, d fs.DirEntry) error {
 			if skipDirs && d.IsDir() {
@@ -119,6 +120,14 @@ func (r *repo) ListGlob(ctx context.Context, glob string, skipDirs bool) ([]driv
 			if drivers.IsIgnored(p, r.ignorePaths) {
 				return nil
 			}
+			if seen[p] {
+				return nil
+			}
+			// A file deleted in the staging buffer is hidden even if a committed Git copy still exists.
+			if !d.IsDir() && r.virtual.isTombstoned(p) {
+				return nil
+			}
+			seen[p] = true
 			entries = append(entries, drivers.DirEntry{
 				Path:  p,
 				IsDir: d.IsDir(),
@@ -142,6 +151,11 @@ func (r *repo) Get(ctx context.Context, path string) (string, error) {
 	defer r.mu.RUnlock()
 
 	if drivers.IsIgnored(path, r.ignorePaths) {
+		return "", os.ErrNotExist
+	}
+
+	// A file deleted in the staging buffer is hidden even if a committed Git copy still exists.
+	if r.virtual.isTombstoned(path) {
 		return "", os.ErrNotExist
 	}
 
@@ -213,6 +227,11 @@ func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error)
 	defer r.mu.RUnlock()
 
 	if drivers.IsIgnored(path, r.ignorePaths) {
+		return nil, os.ErrNotExist
+	}
+
+	// A file deleted in the staging buffer is hidden even if a committed Git copy still exists.
+	if r.virtual.isTombstoned(path) {
 		return nil, os.ErrNotExist
 	}
 

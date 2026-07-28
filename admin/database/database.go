@@ -91,6 +91,17 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	// UpdateProjectUserFilesSyncInterval sets the interval for periodic auto-sync of user files to Git.
+	// Zero disables auto-sync.
+	UpdateProjectUserFilesSyncInterval(ctx context.Context, id string, seconds int64) error
+	// UpdateProjectUserFilesSyncedOn records that a user-files sync completed successfully just now,
+	// along with any warning it produced (e.g. direct Git edits it overwrote).
+	// It clears the error and warning from previous attempts.
+	UpdateProjectUserFilesSyncedOn(ctx context.Context, id, syncWarning string) error
+	// UpdateProjectUserFilesSyncError records the outcome of a failed user-files sync attempt,
+	// clearing any warning from a previous attempt. Pass an empty string to clear both
+	// (e.g. when a new sync is requested).
+	UpdateProjectUserFilesSyncError(ctx context.Context, id, syncError string) error
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
@@ -310,10 +321,27 @@ type DB interface {
 
 	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
+	// FindVirtualFileByName finds a live (not soft-deleted) virtual file by its resource name (the path stem)
+	// and subdir, independent of the owner segment in its path. It matches both the new
+	// "user_files/<seg>/<subdir>/<name>.yaml" layout and the legacy flat layout ("alerts/", "reports/",
+	// "personal/") so lookups keep working across the migration. Deleted files return ErrNotFound.
+	FindVirtualFileByName(ctx context.Context, projectID, environment, subdir, name string) (*VirtualFile, error)
 	// FindVirtualFilesByOwner TODO: pagination
 	FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*VirtualFile, error)
+	// FindStagedVirtualFiles returns the staging buffer for a project: every virtual file (including
+	// soft-deleted tombstones) whose content has not yet been confirmed in Git (sync_state != 'synced').
+	FindStagedVirtualFiles(ctx context.Context, projectID, environment string) ([]*VirtualFile, error)
+	// CountStagedVirtualFiles counts the files FindStagedVirtualFiles would return.
+	CountStagedVirtualFiles(ctx context.Context, projectID, environment string) (int, error)
+	// FindProjectIDsForUserFilesAutoSync returns the IDs of Git-connected projects that have auto-sync
+	// enabled, are due for a sync, and have staged virtual files. It's used by the periodic sync sweep.
+	FindProjectIDsForUserFilesAutoSync(ctx context.Context) ([]string, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
+	// MarkVirtualFileSynced marks a staged file as confirmed on the served branch, but only if its data and
+	// deleted flag still match the flushed values (i.e. it has not been edited since the flush). It bumps
+	// updated_on so the change propagates to runtimes via FindVirtualFiles. Returns true if updated.
+	MarkVirtualFileSynced(ctx context.Context, projectID, environment, path string, expectedData []byte, expectedDeleted bool) (bool, error)
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
@@ -493,6 +521,17 @@ type Project struct {
 	// Subpath is an optional subpath for the project files within the Git repository.
 	// It enables Rill files to be stored in a monorepo.
 	Subpath string `db:"subpath"`
+	// UserFilesSyncIntervalSeconds is the interval for periodic auto-sync of user files to Git.
+	// Zero means auto-sync is disabled.
+	UserFilesSyncIntervalSeconds int64 `db:"user_files_sync_interval_seconds"`
+	// UserFilesSyncedOn is the time of the last successful user-files sync (manual or scheduled).
+	UserFilesSyncedOn *time.Time `db:"user_files_synced_on"`
+	// UserFilesSyncError is the error from the most recent user-files sync attempt.
+	// It is empty when the last sync succeeded (or none ran yet).
+	UserFilesSyncError string `db:"user_files_sync_error"`
+	// UserFilesSyncWarning is the warning from the most recent successful user-files sync,
+	// e.g. direct Git edits the sync overwrote. It is empty when the last sync was clean.
+	UserFilesSyncWarning string `db:"user_files_sync_warning"`
 	// ProdVersion is the runtime version to use for the production deployment.
 	ProdVersion string `db:"prod_version"`
 	// PrimaryBranch is the Git branch to use for the primary production deployment for Git-connected projects.
@@ -1227,14 +1266,29 @@ type UpdateBookmarkOptions struct {
 	Shared      bool   `json:"shared"`
 }
 
-// VirtualFile represents an ad-hoc file for a project (not managed in Git)
+// VirtualFile represents an ad-hoc file for a project.
+// Virtual files act as a staging buffer for files that are promoted into the project's Git repo.
 type VirtualFile struct {
 	Path      string    `db:"path"`
 	Data      []byte    `db:"data"`
 	OwnerID   *string   `db:"owner_id"`
 	Deleted   bool      `db:"deleted"`
 	UpdatedOn time.Time `db:"updated_on"`
+	// SyncState tracks where the file is in the Git promotion lifecycle: "dirty" or "synced".
+	// Synced rows are kept as a path index for later edits; only synced tombstones are eventually purged.
+	SyncState string `db:"sync_state"`
+	// BaseData is the file's content when it last transitioned from synced to dirty, i.e. the version the
+	// staged change was based on. It is nil for rows that were never synced, and only populated by
+	// FindStagedVirtualFiles (other queries skip it to keep the runtime feed payload small).
+	BaseData []byte `db:"base_data"`
 }
+
+// Git sync states for a VirtualFile.
+// "pending_pr" is reserved for a future pull request flow for protected branches.
+const (
+	VirtualFileSyncStateDirty  = "dirty"
+	VirtualFileSyncStateSynced = "synced"
+)
 
 // InsertVirtualFileOptions defines options for inserting a VirtualFile
 type InsertVirtualFileOptions struct {

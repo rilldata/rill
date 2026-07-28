@@ -116,6 +116,8 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &DeleteExpiredDeviceAuthCodesWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeleteExpiredTokensWorker{admin: adm})
 	river.AddWorker(workers, &DeleteExpiredVirtualFilesWorker{admin: adm})
+	river.AddWorker(workers, &SyncUserFilesToGitWorker{admin: adm, logger: adm.Logger})
+	river.AddWorker(workers, &SyncAllUserFilesToGitWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeleteUnusedAssetsWorker{admin: adm})
 	river.AddWorker(workers, &DeploymentsHealthCheckWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &HibernateExpiredDeploymentsWorker{admin: adm, logger: adm.Logger})
@@ -140,6 +142,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		{&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true},           // every 6 hours
 		{&DeploymentsHealthCheckArgs{}, "0 */10 * * *", true},      // every 10 minutes
 		{&HibernateExpiredDeploymentsArgs{}, "*/15 * * * *", true}, // every 15 minutes
+		{&SyncAllUserFilesToGitArgs{}, "*/10 * * * *", false},      // every 10 minutes
 	}
 
 	var periodicJobs []*river.PeriodicJob
@@ -339,6 +342,29 @@ func (c *Client) ReconcileDeployment(ctx context.Context, deploymentID string) (
 		DeploymentID: deploymentID,
 	}, &river.InsertOpts{
 		MaxAttempts: 25, // Last retry, ~3 weeks after first run
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+			ByState: []rivertype.JobState{
+				rivertype.JobStateAvailable,
+				rivertype.JobStatePending,
+				rivertype.JobStateRunning,
+				rivertype.JobStateScheduled,
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) SyncUserFilesToGit(ctx context.Context, projectID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, SyncUserFilesToGitArgs{
+		ProjectID: projectID,
+	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 			ByState: []rivertype.JobState{

@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
-	"path"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -88,7 +88,10 @@ func (s *Server) CreatePersonalFile(ctx context.Context, req *adminv1.CreatePers
 	}
 
 	userID := auth.GetClaims(ctx).OwnerID()
-	virtualPath := virtualFilePathForPersonalFile(name)
+	virtualPath, err := s.admin.UserFilesPathForOwner(ctx, userID, admin.UserFilesSubdirCanvas, name)
+	if err != nil {
+		return nil, err
+	}
 
 	yaml, err := yamlForPersonalFile(req.DisplayName, auth.GetClaims(ctx).OwnerID(), req.Kind, req.Yaml)
 	if err != nil {
@@ -134,9 +137,8 @@ func (s *Server) GetPersonalFile(ctx context.Context, req *adminv1.GetPersonalFi
 	}
 
 	userID := auth.GetClaims(ctx).OwnerID()
-	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
-	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
+	vf, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirCanvas, req.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
@@ -145,9 +147,15 @@ func (s *Server) GetPersonalFile(ctx context.Context, req *adminv1.GetPersonalFi
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read file")
 	}
 
+	data, err := s.userFileContent(ctx, proj, vf)
+	if err != nil {
+		// The file was deleted directly in Git; the deletion is authoritative.
+		return nil, status.Errorf(codes.NotFound, "personal file %q no longer exists in the project's Git repository", req.Name)
+	}
+
 	return &adminv1.GetPersonalFileResponse{
-		Path: path.Join("__virtual__", virtualPath),
-		Yaml: string(vf.Data),
+		Path: vf.Path,
+		Yaml: string(data),
 	}, nil
 }
 
@@ -180,9 +188,8 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 	}
 
 	userID := auth.GetClaims(ctx).OwnerID()
-	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
-	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
+	vf, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirCanvas, req.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
@@ -200,7 +207,7 @@ func (s *Server) EditPersonalFile(ctx context.Context, req *adminv1.EditPersonal
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID:   proj.ID,
 		Environment: "prod",
-		Path:        virtualPath,
+		Path:        vf.Path,
 		OwnerID:     &userID,
 		Data:        yaml,
 	})
@@ -239,9 +246,8 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 	}
 
 	ownerID := auth.GetClaims(ctx).OwnerID()
-	virtualPath := virtualFilePathForPersonalFile(req.Name)
 
-	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualPath)
+	vf, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirCanvas, req.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get personal file: %w", err)
 	}
@@ -250,7 +256,7 @@ func (s *Server) DeletePersonalFile(ctx context.Context, req *adminv1.DeletePers
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete file")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualPath)
+	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", vf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
 	}
@@ -362,8 +368,4 @@ func randomVirtualFileName(displayName string) string {
 		name = name + "-" + uuid.New().String()[0:8]
 	}
 	return name
-}
-
-func virtualFilePathForPersonalFile(name string) string {
-	return path.Join("personal", name+".yaml")
 }

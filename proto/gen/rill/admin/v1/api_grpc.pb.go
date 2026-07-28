@@ -155,6 +155,9 @@ const (
 	AdminService_PullVirtualRepo_FullMethodName                        = "/rill.admin.v1.AdminService/PullVirtualRepo"
 	AdminService_GetVirtualFile_FullMethodName                         = "/rill.admin.v1.AdminService/GetVirtualFile"
 	AdminService_DeleteVirtualFile_FullMethodName                      = "/rill.admin.v1.AdminService/DeleteVirtualFile"
+	AdminService_SyncProjectFilesToGit_FullMethodName                  = "/rill.admin.v1.AdminService/SyncProjectFilesToGit"
+	AdminService_GetProjectFileSyncStatus_FullMethodName               = "/rill.admin.v1.AdminService/GetProjectFileSyncStatus"
+	AdminService_UpdateProjectFileSyncSchedule_FullMethodName          = "/rill.admin.v1.AdminService/UpdateProjectFileSyncSchedule"
 	AdminService_GetReportMeta_FullMethodName                          = "/rill.admin.v1.AdminService/GetReportMeta"
 	AdminService_GetAlertMeta_FullMethodName                           = "/rill.admin.v1.AdminService/GetAlertMeta"
 	AdminService_CreateReport_FullMethodName                           = "/rill.admin.v1.AdminService/CreateReport"
@@ -488,6 +491,12 @@ type AdminServiceClient interface {
 	GetVirtualFile(ctx context.Context, in *GetVirtualFileRequest, opts ...grpc.CallOption) (*GetVirtualFileResponse, error)
 	// DeleteVirtualFile deletes a virtual file from a project's virtual repo
 	DeleteVirtualFile(ctx context.Context, in *DeleteVirtualFileRequest, opts ...grpc.CallOption) (*DeleteVirtualFileResponse, error)
+	// SyncProjectFilesToGit flushes a project's staged user files (alerts, reports, personal dashboards) into its Git repo.
+	SyncProjectFilesToGit(ctx context.Context, in *SyncProjectFilesToGitRequest, opts ...grpc.CallOption) (*SyncProjectFilesToGitResponse, error)
+	// GetProjectFileSyncStatus returns the Git-sync status of a project's staged user files.
+	GetProjectFileSyncStatus(ctx context.Context, in *GetProjectFileSyncStatusRequest, opts ...grpc.CallOption) (*GetProjectFileSyncStatusResponse, error)
+	// UpdateProjectFileSyncSchedule configures periodic auto-sync of a project's user files to Git.
+	UpdateProjectFileSyncSchedule(ctx context.Context, in *UpdateProjectFileSyncScheduleRequest, opts ...grpc.CallOption) (*UpdateProjectFileSyncScheduleResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error)
 	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
@@ -1918,6 +1927,36 @@ func (c *adminServiceClient) DeleteVirtualFile(ctx context.Context, in *DeleteVi
 	return out, nil
 }
 
+func (c *adminServiceClient) SyncProjectFilesToGit(ctx context.Context, in *SyncProjectFilesToGitRequest, opts ...grpc.CallOption) (*SyncProjectFilesToGitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SyncProjectFilesToGitResponse)
+	err := c.cc.Invoke(ctx, AdminService_SyncProjectFilesToGit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetProjectFileSyncStatus(ctx context.Context, in *GetProjectFileSyncStatusRequest, opts ...grpc.CallOption) (*GetProjectFileSyncStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectFileSyncStatusResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetProjectFileSyncStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateProjectFileSyncSchedule(ctx context.Context, in *UpdateProjectFileSyncScheduleRequest, opts ...grpc.CallOption) (*UpdateProjectFileSyncScheduleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateProjectFileSyncScheduleResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateProjectFileSyncSchedule_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetReportMetaResponse)
@@ -2537,6 +2576,12 @@ type AdminServiceServer interface {
 	GetVirtualFile(context.Context, *GetVirtualFileRequest) (*GetVirtualFileResponse, error)
 	// DeleteVirtualFile deletes a virtual file from a project's virtual repo
 	DeleteVirtualFile(context.Context, *DeleteVirtualFileRequest) (*DeleteVirtualFileResponse, error)
+	// SyncProjectFilesToGit flushes a project's staged user files (alerts, reports, personal dashboards) into its Git repo.
+	SyncProjectFilesToGit(context.Context, *SyncProjectFilesToGitRequest) (*SyncProjectFilesToGitResponse, error)
+	// GetProjectFileSyncStatus returns the Git-sync status of a project's staged user files.
+	GetProjectFileSyncStatus(context.Context, *GetProjectFileSyncStatusRequest) (*GetProjectFileSyncStatusResponse, error)
+	// UpdateProjectFileSyncSchedule configures periodic auto-sync of a project's user files to Git.
+	UpdateProjectFileSyncSchedule(context.Context, *UpdateProjectFileSyncScheduleRequest) (*UpdateProjectFileSyncScheduleResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error)
 	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
@@ -3014,6 +3059,15 @@ func (UnimplementedAdminServiceServer) GetVirtualFile(context.Context, *GetVirtu
 }
 func (UnimplementedAdminServiceServer) DeleteVirtualFile(context.Context, *DeleteVirtualFileRequest) (*DeleteVirtualFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteVirtualFile not implemented")
+}
+func (UnimplementedAdminServiceServer) SyncProjectFilesToGit(context.Context, *SyncProjectFilesToGitRequest) (*SyncProjectFilesToGitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SyncProjectFilesToGit not implemented")
+}
+func (UnimplementedAdminServiceServer) GetProjectFileSyncStatus(context.Context, *GetProjectFileSyncStatusRequest) (*GetProjectFileSyncStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectFileSyncStatus not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateProjectFileSyncSchedule(context.Context, *UpdateProjectFileSyncScheduleRequest) (*UpdateProjectFileSyncScheduleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectFileSyncSchedule not implemented")
 }
 func (UnimplementedAdminServiceServer) GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReportMeta not implemented")
@@ -5580,6 +5634,60 @@ func _AdminService_DeleteVirtualFile_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SyncProjectFilesToGit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncProjectFilesToGitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SyncProjectFilesToGit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SyncProjectFilesToGit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SyncProjectFilesToGit(ctx, req.(*SyncProjectFilesToGitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetProjectFileSyncStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectFileSyncStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetProjectFileSyncStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetProjectFileSyncStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetProjectFileSyncStatus(ctx, req.(*GetProjectFileSyncStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateProjectFileSyncSchedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProjectFileSyncScheduleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateProjectFileSyncSchedule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateProjectFileSyncSchedule_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateProjectFileSyncSchedule(ctx, req.(*UpdateProjectFileSyncScheduleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetReportMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetReportMetaRequest)
 	if err := dec(in); err != nil {
@@ -6706,6 +6814,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteVirtualFile",
 			Handler:    _AdminService_DeleteVirtualFile_Handler,
+		},
+		{
+			MethodName: "SyncProjectFilesToGit",
+			Handler:    _AdminService_SyncProjectFilesToGit_Handler,
+		},
+		{
+			MethodName: "GetProjectFileSyncStatus",
+			Handler:    _AdminService_GetProjectFileSyncStatus_Handler,
+		},
+		{
+			MethodName: "UpdateProjectFileSyncSchedule",
+			Handler:    _AdminService_UpdateProjectFileSyncSchedule_Handler,
 		},
 		{
 			MethodName: "GetReportMeta",

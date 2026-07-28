@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path"
 	"slices"
 	"strconv"
 	"strings"
@@ -166,10 +165,15 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
 
+	virtualPath, err := s.admin.UserFilesPathForOwner(ctx, claims.OwnerID(), admin.UserFilesSubdirAlert, name)
+	if err != nil {
+		return nil, err
+	}
+
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID:   proj.ID,
 		Environment: "prod",
-		Path:        virtualFilePathForManagedAlert(name),
+		Path:        virtualPath,
 		Data:        data,
 		OwnerID:     nil,
 	})
@@ -237,10 +241,15 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
 
+	vf, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirAlert, req.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find alert file: %w", err)
+	}
+
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID:   proj.ID,
 		Environment: "prod",
-		Path:        virtualFilePathForManagedAlert(req.Name),
+		Path:        vf.Path,
 		Data:        data,
 		OwnerID:     nil,
 	})
@@ -339,14 +348,20 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		}
 	}
 
-	file, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
+	file, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirAlert, req.Name)
 	if err != nil {
 		return nil, err
 	}
 
+	data, err := s.userFileContent(ctx, proj, file)
+	if err != nil {
+		// The file was deleted directly in Git; the deletion is authoritative.
+		return nil, status.Errorf(codes.NotFound, "alert %q no longer exists in the project's Git repository", req.Name)
+	}
+
 	// Unmarshal file data to alertYAML
 	var alert alertYAML
-	err = yaml.Unmarshal(file.Data, &alert)
+	err = yaml.Unmarshal(data, &alert)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to unmarshal alert YAML: %s", err.Error())
 	}
@@ -375,7 +390,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 	}
 
 	if len(alert.Notify.Email.Recipients) == 0 && len(alert.Notify.Slack.Users) == 0 && len(alert.Notify.Slack.Channels) == 0 && len(alert.Notify.Slack.Webhooks) == 0 {
-		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
+		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", file.Path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
@@ -388,7 +403,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 			ProjectID:   proj.ID,
 			Environment: "prod",
-			Path:        virtualFilePathForManagedAlert(req.Name),
+			Path:        file.Path,
 			Data:        data,
 			OwnerID:     nil,
 		})
@@ -450,7 +465,12 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
+	vf, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirAlert, req.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find alert file: %w", err)
+	}
+
+	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", vf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
 	}
@@ -504,7 +524,7 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
+	vf, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirAlert, req.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -512,8 +532,14 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("failed to find file for alert %s", req.Name))
 	}
 
+	data, err := s.userFileContent(ctx, proj, vf)
+	if err != nil {
+		// The file was deleted directly in Git; the deletion is authoritative.
+		return nil, status.Errorf(codes.NotFound, "file for alert %q no longer exists in the project's Git repository", req.Name)
+	}
+
 	return &adminv1.GetAlertYAMLResponse{
-		Yaml: string(vf.Data),
+		Yaml: string(data),
 	}, nil
 }
 
@@ -654,10 +680,6 @@ func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
 	res.AdminNonce = annotations["admin_nonce"]
 
 	return res
-}
-
-func virtualFilePathForManagedAlert(name string) string {
-	return path.Join("alerts", name+".yaml")
 }
 
 func (s *Server) createMagicTokensAlert(ctx context.Context, projectID, alertName, ownerID string, emails []string, userAttributes map[string]any) (map[string]string, error) {

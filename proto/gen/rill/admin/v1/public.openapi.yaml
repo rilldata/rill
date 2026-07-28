@@ -905,6 +905,31 @@ components:
                 project:
                     $ref: '#/components/schemas/v1Project'
             type: object
+        v1GetProjectFileSyncStatusResponse:
+            properties:
+                lastSyncError:
+                    description: |-
+                        last_sync_error is the error from the most recent sync attempt. Empty if the last sync succeeded
+                        (or none ran yet). It is cleared when a new sync is requested.
+                    type: string
+                lastSyncWarning:
+                    description: |-
+                        last_sync_warning is the warning from the most recent successful sync, e.g. changes made directly
+                        in Git that the sync overwrote. Empty if the last sync was clean.
+                    type: string
+                lastSyncedOn:
+                    description: last_synced_on is the time of the last successful sync (manual or scheduled). Unset if never synced.
+                    format: date-time
+                    type: string
+                syncIntervalSeconds:
+                    description: sync_interval_seconds is the interval for periodic auto-sync. Zero means auto-sync is disabled.
+                    format: int64
+                    type: string
+                unsyncedCount:
+                    description: unsynced_count is the number of staged user files not yet committed to Git.
+                    format: int32
+                    type: integer
+            type: object
         v1GetProjectMemberUserResponse:
             properties:
                 member:
@@ -2254,6 +2279,8 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1SyncProjectFilesToGitResponse:
+            type: object
         v1Tool:
             properties:
                 description:
@@ -2350,6 +2377,12 @@ components:
             properties:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
+            type: object
+        v1UpdateProjectFileSyncScheduleResponse:
+            properties:
+                syncIntervalSeconds:
+                    format: int64
+                    type: string
             type: object
         v1UpdateProjectResponse:
             properties:
@@ -2490,6 +2523,11 @@ components:
                     type: boolean
                 path:
                     type: string
+                synced:
+                    description: |-
+                        synced indicates the file's content (or, for a deleted file, its absence) is confirmed in the project's
+                        Git repo. Runtimes drop their staged overlay copy of synced files and serve the Git copy instead.
+                    type: boolean
                 updatedOn:
                     format: date-time
                     type: string
@@ -3352,6 +3390,9 @@ paths:
     /v1/orgs/{org}/projects/{project}/personal-files: {}
     /v1/orgs/{org}/projects/{project}/personal-files/{name}: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
+    /v1/orgs/{org}/projects/{project}/repo/sync-user-files: {}
+    /v1/orgs/{org}/projects/{project}/repo/sync-user-files/schedule: {}
+    /v1/orgs/{org}/projects/{project}/repo/sync-user-files/status: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
     /v1/orgs/{org}/projects/{project}/reports/-/yaml: {}
     /v1/orgs/{org}/projects/{project}/reports/{name}: {}

@@ -46,6 +46,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
 	t.Run("TestAttributeValidation", func(t *testing.T) { testAttributeValidation(t, db) })
+	t.Run("TestVirtualFilesSync", func(t *testing.T) { testVirtualFilesSync(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
 		cases := []struct {
@@ -996,4 +997,223 @@ func randomName() string {
 		panic(err)
 	}
 	return "test_" + hex.EncodeToString(id)
+}
+
+func testVirtualFilesSync(t *testing.T, db database.DB) {
+	ctx := context.Background()
+	const env = "prod"
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: randomName()})
+	require.NoError(t, err)
+
+	gitRemote := "https://github.com/acme/repo.git"
+	installationID := int64(123)
+	gitProj, err := db.InsertProject(ctx, &database.InsertProjectOptions{
+		OrganizationID:       org.ID,
+		Name:                 "git-proj",
+		GitRemote:            &gitRemote,
+		GithubInstallationID: &installationID,
+		PrimaryBranch:        "main",
+	})
+	require.NoError(t, err)
+
+	nonGitProj, err := db.InsertProject(ctx, &database.InsertProjectOptions{
+		OrganizationID: org.ID,
+		Name:           "non-git-proj",
+	})
+	require.NoError(t, err)
+
+	// New writes are staged as dirty.
+	err = db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:   gitProj.ID,
+		Environment: env,
+		Path:        "user_files/jane-u1/alerts/my-alert.yaml",
+		Data:        []byte("v1"),
+	})
+	require.NoError(t, err)
+	vf, err := db.FindVirtualFile(ctx, gitProj.ID, env, "user_files/jane-u1/alerts/my-alert.yaml")
+	require.NoError(t, err)
+	require.Equal(t, database.VirtualFileSyncStateDirty, vf.SyncState)
+
+	count, err := db.CountStagedVirtualFiles(ctx, gitProj.ID, env)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
+
+	// The CAS fails when the row's data doesn't match the flushed bytes.
+	ok, err := db.MarkVirtualFileSynced(ctx, gitProj.ID, env, vf.Path, []byte("other"), false)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	// The CAS fails when the deleted flag doesn't match.
+	ok, err = db.MarkVirtualFileSynced(ctx, gitProj.ID, env, vf.Path, []byte("v1"), true)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	// The CAS succeeds on a match and bumps updated_on (so runtimes observe the transition).
+	before := vf.UpdatedOn
+	ok, err = db.MarkVirtualFileSynced(ctx, gitProj.ID, env, vf.Path, []byte("v1"), false)
+	require.NoError(t, err)
+	require.True(t, ok)
+	vf, err = db.FindVirtualFile(ctx, gitProj.ID, env, vf.Path)
+	require.NoError(t, err)
+	require.Equal(t, database.VirtualFileSyncStateSynced, vf.SyncState)
+	require.True(t, vf.UpdatedOn.After(before))
+
+	count, err = db.CountStagedVirtualFiles(ctx, gitProj.ID, env)
+	require.NoError(t, err)
+	require.Equal(t, 0, count)
+
+	// Any subsequent write resets the row to dirty, snapshotting the last-synced content as the base
+	// the edit was built on (used by the sync job to detect concurrent direct-Git edits).
+	err = db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:   gitProj.ID,
+		Environment: env,
+		Path:        vf.Path,
+		Data:        []byte("v2"),
+	})
+	require.NoError(t, err)
+	vf, err = db.FindVirtualFile(ctx, gitProj.ID, env, vf.Path)
+	require.NoError(t, err)
+	require.Equal(t, database.VirtualFileSyncStateDirty, vf.SyncState)
+	staged, err := db.FindStagedVirtualFiles(ctx, gitProj.ID, env)
+	require.NoError(t, err)
+	require.Len(t, staged, 1)
+	require.Equal(t, []byte("v1"), staged[0].BaseData)
+
+	// A delete is a staged change too (dirty tombstone). Writes to an already-dirty row keep the base.
+	require.NoError(t, db.UpdateVirtualFileDeleted(ctx, gitProj.ID, env, vf.Path))
+	vf, err = db.FindVirtualFile(ctx, gitProj.ID, env, vf.Path)
+	require.NoError(t, err)
+	require.True(t, vf.Deleted)
+	require.Equal(t, database.VirtualFileSyncStateDirty, vf.SyncState)
+	staged, err = db.FindStagedVirtualFiles(ctx, gitProj.ID, env)
+	require.NoError(t, err)
+	require.Len(t, staged, 1)
+	require.Equal(t, []byte("v1"), staged[0].BaseData)
+
+	// FindVirtualFileByName matches legacy and user_files layouts, preferring live rows over tombstones.
+	require.NoError(t, db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:   gitProj.ID,
+		Environment: env,
+		Path:        "personal/my-canvas.yaml",
+		Data:        []byte("legacy canvas"),
+	}))
+	found, err := db.FindVirtualFileByName(ctx, gitProj.ID, env, "canvas", "my-canvas")
+	require.NoError(t, err)
+	require.Equal(t, "personal/my-canvas.yaml", found.Path)
+
+	require.NoError(t, db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:   gitProj.ID,
+		Environment: env,
+		Path:        "user_files/jane-u1/canvas/my-canvas.yaml",
+		Data:        []byte("new canvas"),
+	}))
+	require.NoError(t, db.UpdateVirtualFileDeleted(ctx, gitProj.ID, env, "personal/my-canvas.yaml"))
+	found, err = db.FindVirtualFileByName(ctx, gitProj.ID, env, "canvas", "my-canvas")
+	require.NoError(t, err)
+	require.Equal(t, "user_files/jane-u1/canvas/my-canvas.yaml", found.Path)
+	require.False(t, found.Deleted)
+
+	_, err = db.FindVirtualFileByName(ctx, gitProj.ID, env, "alerts", "nonexistent")
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// LIKE metacharacters in the name match literally: a wildcard-laden name must not resolve to another file.
+	_, err = db.FindVirtualFileByName(ctx, gitProj.ID, env, "canvas", "my_canvas")
+	require.ErrorIs(t, err, database.ErrNotFound)
+	_, err = db.FindVirtualFileByName(ctx, gitProj.ID, env, "canvas", "%")
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// A name whose only row is a tombstone resolves as not found (a deleted resource must not resurface).
+	require.NoError(t, db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:   gitProj.ID,
+		Environment: env,
+		Path:        "user_files/jane-u1/alerts/gone.yaml",
+		Data:        []byte("x"),
+	}))
+	require.NoError(t, db.UpdateVirtualFileDeleted(ctx, gitProj.ID, env, "user_files/jane-u1/alerts/gone.yaml"))
+	_, err = db.FindVirtualFileByName(ctx, gitProj.ID, env, "alerts", "gone")
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// Retention: dirty tombstones of Git-connected projects are kept (the staged deletion still needs to be
+	// flushed); synced tombstones and tombstones of non-Git projects are purged.
+	require.NoError(t, db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:   nonGitProj.ID,
+		Environment: env,
+		Path:        "alerts/old-alert.yaml",
+		Data:        []byte("x"),
+	}))
+	require.NoError(t, db.UpdateVirtualFileDeleted(ctx, nonGitProj.ID, env, "alerts/old-alert.yaml"))
+	ok, err = db.MarkVirtualFileSynced(ctx, gitProj.ID, env, "personal/my-canvas.yaml", []byte{}, true)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	// Backdate all tombstones past the retention window.
+	conn := db.(*connection)
+	_, err = conn.getDB(ctx).ExecContext(ctx, "UPDATE virtual_files SET updated_on = now() - INTERVAL '2 days' WHERE deleted")
+	require.NoError(t, err)
+	require.NoError(t, db.DeleteExpiredVirtualFiles(ctx, 24*time.Hour))
+
+	// The dirty tombstone on the Git project survives.
+	vf, err = db.FindVirtualFile(ctx, gitProj.ID, env, "user_files/jane-u1/alerts/my-alert.yaml")
+	require.NoError(t, err)
+	require.True(t, vf.Deleted)
+	// The synced tombstone and the non-Git project's tombstone are gone.
+	_, err = db.FindVirtualFile(ctx, gitProj.ID, env, "personal/my-canvas.yaml")
+	require.ErrorIs(t, err, database.ErrNotFound)
+	_, err = db.FindVirtualFile(ctx, nonGitProj.ID, env, "alerts/old-alert.yaml")
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// Auto-sync sweep: only Git-connected projects with auto-sync enabled, staged files, and a due
+	// (or absent) last-synced time are returned.
+	ids, err := db.FindProjectIDsForUserFilesAutoSync(ctx)
+	require.NoError(t, err)
+	require.NotContains(t, ids, gitProj.ID) // interval not configured yet
+
+	require.NoError(t, db.UpdateProjectUserFilesSyncInterval(ctx, gitProj.ID, 3600))
+	ids, err = db.FindProjectIDsForUserFilesAutoSync(ctx)
+	require.NoError(t, err)
+	require.Contains(t, ids, gitProj.ID) // never synced => due
+
+	require.NoError(t, db.UpdateProjectUserFilesSyncedOn(ctx, gitProj.ID, ""))
+	ids, err = db.FindProjectIDsForUserFilesAutoSync(ctx)
+	require.NoError(t, err)
+	require.NotContains(t, ids, gitProj.ID) // synced just now => not due
+
+	_, err = conn.getDB(ctx).ExecContext(ctx, "UPDATE projects SET user_files_synced_on = now() - INTERVAL '2 hours' WHERE id = $1", gitProj.ID)
+	require.NoError(t, err)
+	ids, err = db.FindProjectIDsForUserFilesAutoSync(ctx)
+	require.NoError(t, err)
+	require.Contains(t, ids, gitProj.ID) // last sync older than the interval => due
+
+	proj, err := db.FindProject(ctx, gitProj.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(3600), proj.UserFilesSyncIntervalSeconds)
+	require.NotNil(t, proj.UserFilesSyncedOn)
+
+	// A recorded sync error is surfaced until a sync succeeds (which clears it).
+	require.NoError(t, db.UpdateProjectUserFilesSyncError(ctx, gitProj.ID, "push failed"))
+	proj, err = db.FindProject(ctx, gitProj.ID)
+	require.NoError(t, err)
+	require.Equal(t, "push failed", proj.UserFilesSyncError)
+	require.NoError(t, db.UpdateProjectUserFilesSyncedOn(ctx, gitProj.ID, ""))
+	proj, err = db.FindProject(ctx, gitProj.ID)
+	require.NoError(t, err)
+	require.Empty(t, proj.UserFilesSyncError)
+
+	// A sync warning (e.g. overwritten direct-Git edits) is surfaced until the next terminal sync
+	// outcome replaces it: a clean success or a failure clears it.
+	require.NoError(t, db.UpdateProjectUserFilesSyncedOn(ctx, gitProj.ID, "overwrote x.yaml"))
+	proj, err = db.FindProject(ctx, gitProj.ID)
+	require.NoError(t, err)
+	require.Equal(t, "overwrote x.yaml", proj.UserFilesSyncWarning)
+	require.Empty(t, proj.UserFilesSyncError)
+	require.NoError(t, db.UpdateProjectUserFilesSyncError(ctx, gitProj.ID, "push failed"))
+	proj, err = db.FindProject(ctx, gitProj.ID)
+	require.NoError(t, err)
+	require.Empty(t, proj.UserFilesSyncWarning)
+	require.NoError(t, db.UpdateProjectUserFilesSyncedOn(ctx, gitProj.ID, ""))
+	proj, err = db.FindProject(ctx, gitProj.ID)
+	require.NoError(t, err)
+	require.Empty(t, proj.UserFilesSyncWarning)
+	require.Empty(t, proj.UserFilesSyncError)
 }

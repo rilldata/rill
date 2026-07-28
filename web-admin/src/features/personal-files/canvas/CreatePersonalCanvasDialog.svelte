@@ -144,7 +144,7 @@
       <Dialog.Title>Create personal dashboard</Dialog.Title>
       <Dialog.Description>
         Personal dashboards are only visible to you. They live alongside the
-        project but never sync to git.
+        project, and a project admin can sync them to its Git repository.
       </Dialog.Description>
     </Dialog.Header>
 

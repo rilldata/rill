@@ -565,6 +565,21 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return c.projectFromDTO(res)
 }
 
+func (c *connection) UpdateProjectUserFilesSyncInterval(ctx context.Context, id string, seconds int64) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE projects SET user_files_sync_interval_seconds = $1, updated_on = now() WHERE id = $2", seconds, id)
+	return checkUpdateRow("project", res, err)
+}
+
+func (c *connection) UpdateProjectUserFilesSyncedOn(ctx context.Context, id, syncWarning string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE projects SET user_files_synced_on = now(), user_files_sync_error = '', user_files_sync_warning = $1 WHERE id = $2", syncWarning, id)
+	return checkUpdateRow("project", res, err)
+}
+
+func (c *connection) UpdateProjectUserFilesSyncError(ctx context.Context, id, syncError string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE projects SET user_files_sync_error = $1, user_files_sync_warning = '' WHERE id = $2", syncError, id)
+	return checkUpdateRow("project", res, err)
+}
+
 func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {
 	res := &database.ProjectsQuotaUsage{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
@@ -2894,7 +2909,7 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
 	var res []*database.VirtualFile
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT path, data, owner_id, deleted, updated_on
+		SELECT path, data, owner_id, deleted, updated_on, sync_state
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND (updated_on>$3 OR updated_on=$3 AND path>$4)
 		ORDER BY updated_on, path LIMIT $5
@@ -2908,7 +2923,7 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environmen
 func (c *connection) FindVirtualFile(ctx context.Context, projectID, environment, path string) (*database.VirtualFile, error) {
 	res := &database.VirtualFile{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT path, data, owner_id, deleted, updated_on
+		SELECT path, data, owner_id, deleted, updated_on, sync_state
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND path=$3
 	`, projectID, environment, path).StructScan(res)
@@ -2918,14 +2933,84 @@ func (c *connection) FindVirtualFile(ctx context.Context, projectID, environment
 	return res, nil
 }
 
+func (c *connection) FindVirtualFileByName(ctx context.Context, projectID, environment, subdir, name string) (*database.VirtualFile, error) {
+	res := &database.VirtualFile{}
+	// $3 matches the legacy flat path; $4 matches the "user_files/<seg>/<subdir>/<name>.yaml" layout.
+	// Soft-deleted rows (tombstones) are excluded: a deleted resource must resolve as not found,
+	// not resurface through a name lookup. Resource names embed a random suffix, so live-row collisions
+	// are not expected.
+	legacySubdir := subdir
+	if subdir == "canvas" {
+		legacySubdir = "personal" // Personal files were stored under "personal/" before the user_files layout.
+	}
+	legacyPath := legacySubdir + "/" + name + ".yaml"
+	// The name is caller-provided, so escape LIKE metacharacters: a stray % or _ must match literally,
+	// not act as a wildcard that could resolve to a different file.
+	escapedName := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(name)
+	newPattern := "user_files/%/" + subdir + "/" + escapedName + ".yaml"
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT path, data, owner_id, deleted, updated_on, sync_state
+		FROM virtual_files
+		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND (path=$3 OR path LIKE $4)
+		LIMIT 1
+	`, projectID, environment, legacyPath, newPattern).StructScan(res)
+	if err != nil {
+		return nil, parseErr("virtual file", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*database.VirtualFile, error) {
 	var res []*database.VirtualFile
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT path, data, owner_id, deleted, updated_on
+		SELECT path, data, owner_id, deleted, updated_on, sync_state
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND deleted=FALSE AND owner_id=$3
 		ORDER BY path
 	`, projectID, environment, ownerID)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindStagedVirtualFiles(ctx context.Context, projectID, environment string) ([]*database.VirtualFile, error) {
+	var res []*database.VirtualFile
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT path, data, owner_id, deleted, updated_on, sync_state, base_data
+		FROM virtual_files
+		WHERE project_id=$1 AND environment=$2 AND sync_state != 'synced'
+		ORDER BY path
+	`, projectID, environment)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CountStagedVirtualFiles(ctx context.Context, projectID, environment string) (int, error) {
+	var res int
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT COUNT(*) FROM virtual_files
+		WHERE project_id=$1 AND environment=$2 AND sync_state != 'synced'
+	`, projectID, environment).Scan(&res)
+	if err != nil {
+		return 0, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectIDsForUserFilesAutoSync(ctx context.Context) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT DISTINCT vf.project_id
+		FROM virtual_files vf
+		JOIN projects p ON p.id = vf.project_id
+		WHERE vf.sync_state != 'synced'
+			AND p.git_remote IS NOT NULL AND p.github_installation_id IS NOT NULL
+			AND p.user_files_sync_interval_seconds > 0
+			AND (p.user_files_synced_on IS NULL OR p.user_files_synced_on + make_interval(secs => p.user_files_sync_interval_seconds) < now())
+	`)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}
@@ -2937,13 +3022,20 @@ func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.Inser
 		return err
 	}
 
+	// Any write makes the file dirty again, so a concurrent sync (whose state transitions are gated on
+	// the data it flushed) will not mark a row synced that was edited after the flush.
+	// On the synced-to-dirty transition, the row's last-synced content is snapshotted into base_data:
+	// it is the version this write was based on, and the sync job compares it to the Git copy to detect
+	// edits made directly in Git while the row was dirty.
 	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO virtual_files (project_id, environment, owner_id, path, data, deleted)
-		VALUES ($1, $2, $3, $4, $5, FALSE)
+		INSERT INTO virtual_files (project_id, environment, owner_id, path, data, deleted, sync_state)
+		VALUES ($1, $2, $3, $4, $5, FALSE, 'dirty')
 		ON CONFLICT (project_id, environment, path) DO UPDATE SET
 			data = EXCLUDED.data,
 		    owner_id = EXCLUDED.owner_id,
 			deleted = FALSE,
+			sync_state = 'dirty',
+			base_data = CASE WHEN virtual_files.sync_state = 'synced' THEN virtual_files.data ELSE virtual_files.base_data END,
 			updated_on = now()
 	`, opts.ProjectID, opts.Environment, opts.OwnerID, opts.Path, opts.Data)
 	if err != nil {
@@ -2953,17 +3045,51 @@ func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.Inser
 }
 
 func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error {
+	// A delete is itself a staged change to flush to Git, so it is marked dirty.
+	// Like UpsertVirtualFile, the synced-to-dirty transition snapshots the last-synced content into
+	// base_data (SET expressions read the old row, so base_data sees data before it is cleared).
 	res, err := c.getDB(ctx).ExecContext(ctx, `
 		UPDATE virtual_files SET
 			data = ''::BYTEA,
 			deleted = TRUE,
+			sync_state = 'dirty',
+			base_data = CASE WHEN sync_state = 'synced' THEN data ELSE base_data END,
 			updated_on = now()
 		WHERE project_id=$1 AND environment=$2 AND path=$3`, projectID, environment, path)
 	return checkUpdateRow("virtual file", res, err)
 }
 
+func (c *connection) MarkVirtualFileSynced(ctx context.Context, projectID, environment, path string, expectedData []byte, expectedDeleted bool) (bool, error) {
+	// The update is gated on (data, deleted) so a row edited after the flush stays dirty for the next sync.
+	// updated_on is bumped so the transition reaches runtimes through the FindVirtualFiles feed,
+	// which lets them drop their staged overlay copy and serve the Git copy instead.
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE virtual_files SET
+			sync_state = 'synced',
+			base_data = NULL,
+			updated_on = now()
+		WHERE project_id=$1 AND environment=$2 AND path=$3 AND data=$4 AND deleted=$5 AND sync_state != 'synced'
+	`, projectID, environment, path, expectedData, expectedDeleted)
+	if err != nil {
+		return false, parseErr("virtual file", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, parseErr("virtual file", err)
+	}
+	return n > 0, nil
+}
+
 func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM virtual_files WHERE deleted AND updated_on + $1 < now()`, retention)
+	// Only tombstones may be purged, and for Git-connected projects only after the deletion is confirmed
+	// in Git (synced): purging a dirty tombstone would lose a staged deletion, and purging a live synced
+	// row would lose the path index used to find the file for later edits.
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM virtual_files vf
+		USING projects p
+		WHERE p.id = vf.project_id AND vf.deleted AND vf.updated_on + $1 < now()
+			AND (vf.sync_state = 'synced' OR p.git_remote IS NULL OR p.github_installation_id IS NULL)
+	`, retention)
 	return parseErr("virtual files", err)
 }
 

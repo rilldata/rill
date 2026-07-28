@@ -2175,6 +2175,87 @@ paths:
           in: query
           required: false
           type: boolean
+  /v1/orgs/{org}/projects/{project}/repo/sync-user-files:
+    post:
+      summary: SyncProjectFilesToGit flushes a project's staged user files (alerts, reports, personal dashboards) into its Git repo.
+      operationId: AdminService_SyncProjectFilesToGit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SyncProjectFilesToGitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+  /v1/orgs/{org}/projects/{project}/repo/sync-user-files/schedule:
+    post:
+      summary: UpdateProjectFileSyncSchedule configures periodic auto-sync of a project's user files to Git.
+      operationId: AdminService_UpdateProjectFileSyncSchedule
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectFileSyncScheduleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              syncIntervalSeconds:
+                type: string
+                format: int64
+                description: sync_interval_seconds is the interval for periodic auto-sync. Zero disables auto-sync.
+  /v1/orgs/{org}/projects/{project}/repo/sync-user-files/status:
+    get:
+      summary: GetProjectFileSyncStatus returns the Git-sync status of a project's staged user files.
+      operationId: AdminService_GetProjectFileSyncStatus
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectFileSyncStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/reports:
     post:
       summary: CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
@@ -5684,6 +5765,31 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1GetProjectFileSyncStatusResponse:
+    type: object
+    properties:
+      unsyncedCount:
+        type: integer
+        format: int32
+        description: unsynced_count is the number of staged user files not yet committed to Git.
+      syncIntervalSeconds:
+        type: string
+        format: int64
+        description: sync_interval_seconds is the interval for periodic auto-sync. Zero means auto-sync is disabled.
+      lastSyncedOn:
+        type: string
+        format: date-time
+        description: last_synced_on is the time of the last successful sync (manual or scheduled). Unset if never synced.
+      lastSyncError:
+        type: string
+        description: |-
+          last_sync_error is the error from the most recent sync attempt. Empty if the last sync succeeded
+          (or none ran yet). It is cleared when a new sync is requested.
+      lastSyncWarning:
+        type: string
+        description: |-
+          last_sync_warning is the warning from the most recent successful sync, e.g. changes made directly
+          in Git that the sync overwrote. Empty if the last sync was clean.
   v1GetProjectMemberUserResponse:
     type: object
     properties:
@@ -7072,6 +7178,8 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1SyncProjectFilesToGitResponse:
+    type: object
   v1Tool:
     type: object
     properties:
@@ -7169,6 +7277,12 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+  v1UpdateProjectFileSyncScheduleResponse:
+    type: object
+    properties:
+      syncIntervalSeconds:
+        type: string
+        format: int64
   v1UpdateProjectResponse:
     type: object
     properties:
@@ -7313,6 +7427,11 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      synced:
+        type: boolean
+        description: |-
+          synced indicates the file's content (or, for a deleted file, its absence) is confirmed in the project's
+          Git repo. Runtimes drop their staged overlay copy of synced files and serve the Git copy instead.
   v1WhitelistedDomain:
     type: object
     properties:

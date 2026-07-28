@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -213,10 +212,15 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
 
+	virtualPath, err := s.admin.UserFilesPathForOwner(ctx, claims.OwnerID(), admin.UserFilesSubdirReport, name)
+	if err != nil {
+		return nil, err
+	}
+
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID:   proj.ID,
 		Environment: "prod",
-		Path:        virtualFilePathForManagedReport(name),
+		Path:        virtualPath,
 		Data:        data,
 		OwnerID:     nil,
 	})
@@ -281,10 +285,15 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
 
+	vf, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirReport, req.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find report file: %w", err)
+	}
+
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID:   proj.ID,
 		Environment: "prod",
-		Path:        virtualFilePathForManagedReport(req.Name),
+		Path:        vf.Path,
 		Data:        data,
 		OwnerID:     nil,
 	})
@@ -372,14 +381,20 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 	}
 
-	file, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
+	file, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirReport, req.Name)
 	if err != nil {
 		return nil, err
 	}
 
+	data, err := s.userFileContent(ctx, proj, file)
+	if err != nil {
+		// The file was deleted directly in Git; the deletion is authoritative.
+		return nil, status.Errorf(codes.NotFound, "report %q no longer exists in the project's Git repository", req.Name)
+	}
+
 	// Unmarshal file data to reportYAML
 	var report reportYAML
-	err = yaml.Unmarshal(file.Data, &report)
+	err = yaml.Unmarshal(data, &report)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to unmarshal report YAML: %s", err.Error())
 	}
@@ -405,7 +420,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if len(report.Notify.Email.Recipients) == 0 && len(report.Notify.Slack.Users) == 0 && len(report.Notify.Slack.Channels) == 0 && len(report.Notify.Slack.Webhooks) == 0 {
-		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
+		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", file.Path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
@@ -418,7 +433,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 			ProjectID:   proj.ID,
 			Environment: "prod",
-			Path:        virtualFilePathForManagedReport(req.Name),
+			Path:        file.Path,
 			Data:        data,
 			OwnerID:     nil,
 		})
@@ -477,7 +492,12 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
+	vf, err := s.admin.DB.FindVirtualFileByName(ctx, proj.ID, "prod", admin.UserFilesSubdirReport, req.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find report file: %w", err)
+	}
+
+	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", vf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
 	}
@@ -917,8 +937,4 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	}
 
 	return res
-}
-
-func virtualFilePathForManagedReport(name string) string {
-	return path.Join("reports", name+".yaml")
 }

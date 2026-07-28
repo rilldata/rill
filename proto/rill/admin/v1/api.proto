@@ -1173,6 +1173,27 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/projects/{project_id}/repo/virtual/file"};
   }
 
+  // SyncProjectFilesToGit flushes a project's staged user files (alerts, reports, personal dashboards) into its Git repo.
+  rpc SyncProjectFilesToGit(SyncProjectFilesToGitRequest) returns (SyncProjectFilesToGitResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/repo/sync-user-files",
+      body: "*"
+    };
+  }
+
+  // GetProjectFileSyncStatus returns the Git-sync status of a project's staged user files.
+  rpc GetProjectFileSyncStatus(GetProjectFileSyncStatusRequest) returns (GetProjectFileSyncStatusResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/repo/sync-user-files/status"};
+  }
+
+  // UpdateProjectFileSyncSchedule configures periodic auto-sync of a project's user files to Git.
+  rpc UpdateProjectFileSyncSchedule(UpdateProjectFileSyncScheduleRequest) returns (UpdateProjectFileSyncScheduleResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/projects/{project}/repo/sync-user-files/schedule",
+      body: "*"
+    };
+  }
+
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
   rpc GetReportMeta(GetReportMetaRequest) returns (GetReportMetaResponse) {
     option (google.api.http) = {
@@ -3034,6 +3055,46 @@ message DeleteVirtualFileRequest {
 
 message DeleteVirtualFileResponse {}
 
+message SyncProjectFilesToGitRequest {
+  string org = 1;
+  string project = 2;
+}
+
+message SyncProjectFilesToGitResponse {}
+
+message GetProjectFileSyncStatusRequest {
+  string org = 1;
+  string project = 2;
+}
+
+message GetProjectFileSyncStatusResponse {
+  // unsynced_count is the number of staged user files not yet committed to Git.
+  int32 unsynced_count = 1;
+  // sync_interval_seconds is the interval for periodic auto-sync. Zero means auto-sync is disabled.
+  int64 sync_interval_seconds = 5;
+  // last_synced_on is the time of the last successful sync (manual or scheduled). Unset if never synced.
+  google.protobuf.Timestamp last_synced_on = 6;
+  // last_sync_error is the error from the most recent sync attempt. Empty if the last sync succeeded
+  // (or none ran yet). It is cleared when a new sync is requested.
+  string last_sync_error = 7;
+  // last_sync_warning is the warning from the most recent successful sync, e.g. changes made directly
+  // in Git that the sync overwrote. Empty if the last sync was clean.
+  string last_sync_warning = 8;
+  // Fields 2-4 are reserved for a future pull request flow (pending_pr_count, strategy, pull_request_number).
+  reserved 2, 3, 4;
+}
+
+message UpdateProjectFileSyncScheduleRequest {
+  string org = 1;
+  string project = 2;
+  // sync_interval_seconds is the interval for periodic auto-sync. Zero disables auto-sync.
+  int64 sync_interval_seconds = 3 [(validate.rules).int64.gte = 0];
+}
+
+message UpdateProjectFileSyncScheduleResponse {
+  int64 sync_interval_seconds = 1;
+}
+
 message GetReportMetaRequest {
   string project_id = 1;
   string report = 3;
@@ -3710,6 +3771,9 @@ message VirtualFile {
   bytes data = 2;
   bool deleted = 3;
   google.protobuf.Timestamp updated_on = 4;
+  // synced indicates the file's content (or, for a deleted file, its absence) is confirmed in the project's
+  // Git repo. Runtimes drop their staged overlay copy of synced files and serve the Git copy instead.
+  bool synced = 5;
 }
 
 message ReportOptions {

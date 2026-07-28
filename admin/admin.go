@@ -59,6 +59,7 @@ type Service struct {
 	StoppedDeploymentRetention time.Duration
 	Biller                     billing.Biller
 	PaymentProvider            payment.Provider
+	GitWriter                  *GitWriter
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiService drivers.AIService, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
@@ -144,6 +145,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		StoppedDeploymentRetention: opts.StoppedDeploymentRetention,
 		Biller:                     biller,
 		PaymentProvider:            p,
+		GitWriter:                  NewGitWriter(),
 	}, nil
 }
 

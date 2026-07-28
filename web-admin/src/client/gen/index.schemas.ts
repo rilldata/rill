@@ -716,6 +716,21 @@ export interface V1GetProjectByIDResponse {
   project?: V1Project;
 }
 
+export interface V1GetProjectFileSyncStatusResponse {
+  /** unsynced_count is the number of staged user files not yet committed to Git. */
+  unsyncedCount?: number;
+  /** sync_interval_seconds is the interval for periodic auto-sync. Zero means auto-sync is disabled. */
+  syncIntervalSeconds?: string;
+  /** last_synced_on is the time of the last successful sync (manual or scheduled). Unset if never synced. */
+  lastSyncedOn?: string;
+  /** last_sync_error is the error from the most recent sync attempt. Empty if the last sync succeeded
+(or none ran yet). It is cleared when a new sync is requested. */
+  lastSyncError?: string;
+  /** last_sync_warning is the warning from the most recent successful sync, e.g. changes made directly
+in Git that the sync overwrote. Empty if the last sync was clean. */
+  lastSyncWarning?: string;
+}
+
 export interface V1GetProjectMemberUserResponse {
   member?: V1ProjectMemberUser;
 }
@@ -1611,6 +1626,10 @@ export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
 }
 
+export interface V1SyncProjectFilesToGitResponse {
+  [key: string]: unknown;
+}
+
 export type V1ToolMeta = { [key: string]: unknown };
 
 export interface V1Tool {
@@ -1690,6 +1709,10 @@ export interface V1UpdateOrganizationMemberUserAttributesResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1UpdateProjectFileSyncScheduleResponse {
+  syncIntervalSeconds?: string;
 }
 
 export interface V1UpdateProjectResponse {
@@ -1776,6 +1799,9 @@ export interface V1VirtualFile {
   data?: string;
   deleted?: boolean;
   updatedOn?: string;
+  /** synced indicates the file's content (or, for a deleted file, its absence) is confirmed in the project's
+Git repo. Runtimes drop their staged overlay copy of synced files and serve the Git copy instead. */
+  synced?: boolean;
 }
 
 export interface V1WhitelistedDomain {
@@ -2180,6 +2206,11 @@ export type AdminServiceEditPersonalFileBody = {
 
 export type AdminServiceRedeployProjectParams = {
   superuserForceAccess?: boolean;
+};
+
+export type AdminServiceUpdateProjectFileSyncScheduleBody = {
+  /** sync_interval_seconds is the interval for periodic auto-sync. Zero disables auto-sync. */
+  syncIntervalSeconds?: string;
 };
 
 export type AdminServiceListMagicAuthTokensParams = {

@@ -35949,6 +35949,692 @@ var _ interface {
 	ErrorName() string
 } = DeleteVirtualFileResponseValidationError{}
 
+// Validate checks the field values on SyncProjectFilesToGitRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SyncProjectFilesToGitRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SyncProjectFilesToGitRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SyncProjectFilesToGitRequestMultiError, or nil if none found.
+func (m *SyncProjectFilesToGitRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SyncProjectFilesToGitRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	if len(errors) > 0 {
+		return SyncProjectFilesToGitRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SyncProjectFilesToGitRequestMultiError is an error wrapping multiple
+// validation errors returned by SyncProjectFilesToGitRequest.ValidateAll() if
+// the designated constraints aren't met.
+type SyncProjectFilesToGitRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SyncProjectFilesToGitRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SyncProjectFilesToGitRequestMultiError) AllErrors() []error { return m }
+
+// SyncProjectFilesToGitRequestValidationError is the validation error returned
+// by SyncProjectFilesToGitRequest.Validate if the designated constraints
+// aren't met.
+type SyncProjectFilesToGitRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SyncProjectFilesToGitRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SyncProjectFilesToGitRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SyncProjectFilesToGitRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SyncProjectFilesToGitRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SyncProjectFilesToGitRequestValidationError) ErrorName() string {
+	return "SyncProjectFilesToGitRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SyncProjectFilesToGitRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSyncProjectFilesToGitRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SyncProjectFilesToGitRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SyncProjectFilesToGitRequestValidationError{}
+
+// Validate checks the field values on SyncProjectFilesToGitResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SyncProjectFilesToGitResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SyncProjectFilesToGitResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SyncProjectFilesToGitResponseMultiError, or nil if none found.
+func (m *SyncProjectFilesToGitResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SyncProjectFilesToGitResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SyncProjectFilesToGitResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SyncProjectFilesToGitResponseMultiError is an error wrapping multiple
+// validation errors returned by SyncProjectFilesToGitResponse.ValidateAll()
+// if the designated constraints aren't met.
+type SyncProjectFilesToGitResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SyncProjectFilesToGitResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SyncProjectFilesToGitResponseMultiError) AllErrors() []error { return m }
+
+// SyncProjectFilesToGitResponseValidationError is the validation error
+// returned by SyncProjectFilesToGitResponse.Validate if the designated
+// constraints aren't met.
+type SyncProjectFilesToGitResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SyncProjectFilesToGitResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SyncProjectFilesToGitResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SyncProjectFilesToGitResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SyncProjectFilesToGitResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SyncProjectFilesToGitResponseValidationError) ErrorName() string {
+	return "SyncProjectFilesToGitResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SyncProjectFilesToGitResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSyncProjectFilesToGitResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SyncProjectFilesToGitResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SyncProjectFilesToGitResponseValidationError{}
+
+// Validate checks the field values on GetProjectFileSyncStatusRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetProjectFileSyncStatusRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetProjectFileSyncStatusRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetProjectFileSyncStatusRequestMultiError, or nil if none found.
+func (m *GetProjectFileSyncStatusRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetProjectFileSyncStatusRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	if len(errors) > 0 {
+		return GetProjectFileSyncStatusRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetProjectFileSyncStatusRequestMultiError is an error wrapping multiple
+// validation errors returned by GetProjectFileSyncStatusRequest.ValidateAll()
+// if the designated constraints aren't met.
+type GetProjectFileSyncStatusRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetProjectFileSyncStatusRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetProjectFileSyncStatusRequestMultiError) AllErrors() []error { return m }
+
+// GetProjectFileSyncStatusRequestValidationError is the validation error
+// returned by GetProjectFileSyncStatusRequest.Validate if the designated
+// constraints aren't met.
+type GetProjectFileSyncStatusRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetProjectFileSyncStatusRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetProjectFileSyncStatusRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetProjectFileSyncStatusRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetProjectFileSyncStatusRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetProjectFileSyncStatusRequestValidationError) ErrorName() string {
+	return "GetProjectFileSyncStatusRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetProjectFileSyncStatusRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetProjectFileSyncStatusRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetProjectFileSyncStatusRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetProjectFileSyncStatusRequestValidationError{}
+
+// Validate checks the field values on GetProjectFileSyncStatusResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *GetProjectFileSyncStatusResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetProjectFileSyncStatusResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetProjectFileSyncStatusResponseMultiError, or nil if none found.
+func (m *GetProjectFileSyncStatusResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetProjectFileSyncStatusResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for UnsyncedCount
+
+	// no validation rules for SyncIntervalSeconds
+
+	if all {
+		switch v := interface{}(m.GetLastSyncedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetProjectFileSyncStatusResponseValidationError{
+					field:  "LastSyncedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetProjectFileSyncStatusResponseValidationError{
+					field:  "LastSyncedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetLastSyncedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetProjectFileSyncStatusResponseValidationError{
+				field:  "LastSyncedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for LastSyncError
+
+	// no validation rules for LastSyncWarning
+
+	if len(errors) > 0 {
+		return GetProjectFileSyncStatusResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetProjectFileSyncStatusResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// GetProjectFileSyncStatusResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetProjectFileSyncStatusResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetProjectFileSyncStatusResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetProjectFileSyncStatusResponseMultiError) AllErrors() []error { return m }
+
+// GetProjectFileSyncStatusResponseValidationError is the validation error
+// returned by GetProjectFileSyncStatusResponse.Validate if the designated
+// constraints aren't met.
+type GetProjectFileSyncStatusResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetProjectFileSyncStatusResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetProjectFileSyncStatusResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetProjectFileSyncStatusResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetProjectFileSyncStatusResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetProjectFileSyncStatusResponseValidationError) ErrorName() string {
+	return "GetProjectFileSyncStatusResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetProjectFileSyncStatusResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetProjectFileSyncStatusResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetProjectFileSyncStatusResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetProjectFileSyncStatusResponseValidationError{}
+
+// Validate checks the field values on UpdateProjectFileSyncScheduleRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *UpdateProjectFileSyncScheduleRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateProjectFileSyncScheduleRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// UpdateProjectFileSyncScheduleRequestMultiError, or nil if none found.
+func (m *UpdateProjectFileSyncScheduleRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateProjectFileSyncScheduleRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	if m.GetSyncIntervalSeconds() < 0 {
+		err := UpdateProjectFileSyncScheduleRequestValidationError{
+			field:  "SyncIntervalSeconds",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return UpdateProjectFileSyncScheduleRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateProjectFileSyncScheduleRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// UpdateProjectFileSyncScheduleRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateProjectFileSyncScheduleRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateProjectFileSyncScheduleRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateProjectFileSyncScheduleRequestMultiError) AllErrors() []error { return m }
+
+// UpdateProjectFileSyncScheduleRequestValidationError is the validation error
+// returned by UpdateProjectFileSyncScheduleRequest.Validate if the designated
+// constraints aren't met.
+type UpdateProjectFileSyncScheduleRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateProjectFileSyncScheduleRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateProjectFileSyncScheduleRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateProjectFileSyncScheduleRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateProjectFileSyncScheduleRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateProjectFileSyncScheduleRequestValidationError) ErrorName() string {
+	return "UpdateProjectFileSyncScheduleRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateProjectFileSyncScheduleRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateProjectFileSyncScheduleRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateProjectFileSyncScheduleRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateProjectFileSyncScheduleRequestValidationError{}
+
+// Validate checks the field values on UpdateProjectFileSyncScheduleResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *UpdateProjectFileSyncScheduleResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateProjectFileSyncScheduleResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// UpdateProjectFileSyncScheduleResponseMultiError, or nil if none found.
+func (m *UpdateProjectFileSyncScheduleResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateProjectFileSyncScheduleResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for SyncIntervalSeconds
+
+	if len(errors) > 0 {
+		return UpdateProjectFileSyncScheduleResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateProjectFileSyncScheduleResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// UpdateProjectFileSyncScheduleResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateProjectFileSyncScheduleResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateProjectFileSyncScheduleResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateProjectFileSyncScheduleResponseMultiError) AllErrors() []error { return m }
+
+// UpdateProjectFileSyncScheduleResponseValidationError is the validation error
+// returned by UpdateProjectFileSyncScheduleResponse.Validate if the
+// designated constraints aren't met.
+type UpdateProjectFileSyncScheduleResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateProjectFileSyncScheduleResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateProjectFileSyncScheduleResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateProjectFileSyncScheduleResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateProjectFileSyncScheduleResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateProjectFileSyncScheduleResponseValidationError) ErrorName() string {
+	return "UpdateProjectFileSyncScheduleResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateProjectFileSyncScheduleResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateProjectFileSyncScheduleResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateProjectFileSyncScheduleResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateProjectFileSyncScheduleResponseValidationError{}
+
 // Validate checks the field values on GetReportMetaRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -48403,6 +49089,8 @@ func (m *VirtualFile) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Synced
 
 	if len(errors) > 0 {
 		return VirtualFileMultiError(errors)

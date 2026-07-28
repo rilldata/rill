@@ -13207,6 +13207,284 @@ export class DeleteVirtualFileResponse extends Message<DeleteVirtualFileResponse
 }
 
 /**
+ * @generated from message rill.admin.v1.SyncProjectFilesToGitRequest
+ */
+export class SyncProjectFilesToGitRequest extends Message<SyncProjectFilesToGitRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<SyncProjectFilesToGitRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SyncProjectFilesToGitRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SyncProjectFilesToGitRequest {
+    return new SyncProjectFilesToGitRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SyncProjectFilesToGitRequest {
+    return new SyncProjectFilesToGitRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SyncProjectFilesToGitRequest {
+    return new SyncProjectFilesToGitRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SyncProjectFilesToGitRequest | PlainMessage<SyncProjectFilesToGitRequest> | undefined, b: SyncProjectFilesToGitRequest | PlainMessage<SyncProjectFilesToGitRequest> | undefined): boolean {
+    return proto3.util.equals(SyncProjectFilesToGitRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SyncProjectFilesToGitResponse
+ */
+export class SyncProjectFilesToGitResponse extends Message<SyncProjectFilesToGitResponse> {
+  constructor(data?: PartialMessage<SyncProjectFilesToGitResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SyncProjectFilesToGitResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SyncProjectFilesToGitResponse {
+    return new SyncProjectFilesToGitResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SyncProjectFilesToGitResponse {
+    return new SyncProjectFilesToGitResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SyncProjectFilesToGitResponse {
+    return new SyncProjectFilesToGitResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SyncProjectFilesToGitResponse | PlainMessage<SyncProjectFilesToGitResponse> | undefined, b: SyncProjectFilesToGitResponse | PlainMessage<SyncProjectFilesToGitResponse> | undefined): boolean {
+    return proto3.util.equals(SyncProjectFilesToGitResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetProjectFileSyncStatusRequest
+ */
+export class GetProjectFileSyncStatusRequest extends Message<GetProjectFileSyncStatusRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<GetProjectFileSyncStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetProjectFileSyncStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectFileSyncStatusRequest {
+    return new GetProjectFileSyncStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectFileSyncStatusRequest {
+    return new GetProjectFileSyncStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectFileSyncStatusRequest {
+    return new GetProjectFileSyncStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectFileSyncStatusRequest | PlainMessage<GetProjectFileSyncStatusRequest> | undefined, b: GetProjectFileSyncStatusRequest | PlainMessage<GetProjectFileSyncStatusRequest> | undefined): boolean {
+    return proto3.util.equals(GetProjectFileSyncStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetProjectFileSyncStatusResponse
+ */
+export class GetProjectFileSyncStatusResponse extends Message<GetProjectFileSyncStatusResponse> {
+  /**
+   * unsynced_count is the number of staged user files not yet committed to Git.
+   *
+   * @generated from field: int32 unsynced_count = 1;
+   */
+  unsyncedCount = 0;
+
+  /**
+   * sync_interval_seconds is the interval for periodic auto-sync. Zero means auto-sync is disabled.
+   *
+   * @generated from field: int64 sync_interval_seconds = 5;
+   */
+  syncIntervalSeconds = protoInt64.zero;
+
+  /**
+   * last_synced_on is the time of the last successful sync (manual or scheduled). Unset if never synced.
+   *
+   * @generated from field: google.protobuf.Timestamp last_synced_on = 6;
+   */
+  lastSyncedOn?: Timestamp;
+
+  /**
+   * last_sync_error is the error from the most recent sync attempt. Empty if the last sync succeeded
+   * (or none ran yet). It is cleared when a new sync is requested.
+   *
+   * @generated from field: string last_sync_error = 7;
+   */
+  lastSyncError = "";
+
+  /**
+   * last_sync_warning is the warning from the most recent successful sync, e.g. changes made directly
+   * in Git that the sync overwrote. Empty if the last sync was clean.
+   *
+   * @generated from field: string last_sync_warning = 8;
+   */
+  lastSyncWarning = "";
+
+  constructor(data?: PartialMessage<GetProjectFileSyncStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetProjectFileSyncStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "unsynced_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "sync_interval_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "last_synced_on", kind: "message", T: Timestamp },
+    { no: 7, name: "last_sync_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "last_sync_warning", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectFileSyncStatusResponse {
+    return new GetProjectFileSyncStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectFileSyncStatusResponse {
+    return new GetProjectFileSyncStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectFileSyncStatusResponse {
+    return new GetProjectFileSyncStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectFileSyncStatusResponse | PlainMessage<GetProjectFileSyncStatusResponse> | undefined, b: GetProjectFileSyncStatusResponse | PlainMessage<GetProjectFileSyncStatusResponse> | undefined): boolean {
+    return proto3.util.equals(GetProjectFileSyncStatusResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateProjectFileSyncScheduleRequest
+ */
+export class UpdateProjectFileSyncScheduleRequest extends Message<UpdateProjectFileSyncScheduleRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * sync_interval_seconds is the interval for periodic auto-sync. Zero disables auto-sync.
+   *
+   * @generated from field: int64 sync_interval_seconds = 3;
+   */
+  syncIntervalSeconds = protoInt64.zero;
+
+  constructor(data?: PartialMessage<UpdateProjectFileSyncScheduleRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateProjectFileSyncScheduleRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "sync_interval_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectFileSyncScheduleRequest {
+    return new UpdateProjectFileSyncScheduleRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateProjectFileSyncScheduleRequest {
+    return new UpdateProjectFileSyncScheduleRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateProjectFileSyncScheduleRequest {
+    return new UpdateProjectFileSyncScheduleRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateProjectFileSyncScheduleRequest | PlainMessage<UpdateProjectFileSyncScheduleRequest> | undefined, b: UpdateProjectFileSyncScheduleRequest | PlainMessage<UpdateProjectFileSyncScheduleRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateProjectFileSyncScheduleRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateProjectFileSyncScheduleResponse
+ */
+export class UpdateProjectFileSyncScheduleResponse extends Message<UpdateProjectFileSyncScheduleResponse> {
+  /**
+   * @generated from field: int64 sync_interval_seconds = 1;
+   */
+  syncIntervalSeconds = protoInt64.zero;
+
+  constructor(data?: PartialMessage<UpdateProjectFileSyncScheduleResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateProjectFileSyncScheduleResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "sync_interval_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectFileSyncScheduleResponse {
+    return new UpdateProjectFileSyncScheduleResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateProjectFileSyncScheduleResponse {
+    return new UpdateProjectFileSyncScheduleResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateProjectFileSyncScheduleResponse {
+    return new UpdateProjectFileSyncScheduleResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateProjectFileSyncScheduleResponse | PlainMessage<UpdateProjectFileSyncScheduleResponse> | undefined, b: UpdateProjectFileSyncScheduleResponse | PlainMessage<UpdateProjectFileSyncScheduleResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateProjectFileSyncScheduleResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetReportMetaRequest
  */
 export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
@@ -18408,6 +18686,14 @@ export class VirtualFile extends Message<VirtualFile> {
    */
   updatedOn?: Timestamp;
 
+  /**
+   * synced indicates the file's content (or, for a deleted file, its absence) is confirmed in the project's
+   * Git repo. Runtimes drop their staged overlay copy of synced files and serve the Git copy instead.
+   *
+   * @generated from field: bool synced = 5;
+   */
+  synced = false;
+
   constructor(data?: PartialMessage<VirtualFile>) {
     super();
     proto3.util.initPartial(data, this);
@@ -18420,6 +18706,7 @@ export class VirtualFile extends Message<VirtualFile> {
     { no: 2, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 3, name: "deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 5, name: "synced", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): VirtualFile {

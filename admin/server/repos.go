@@ -246,5 +246,6 @@ func virtualFileToDTO(vf *database.VirtualFile) *adminv1.VirtualFile {
 		Data:      vf.Data,
 		Deleted:   vf.Deleted,
 		UpdatedOn: timestamppb.New(vf.UpdatedOn),
+		Synced:    vf.SyncState == database.VirtualFileSyncStateSynced,
 	}
 }
