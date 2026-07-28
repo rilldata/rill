@@ -1,4 +1,8 @@
-import { deriveTocEntries, type TocEntry } from "./toc";
+import {
+  CANVAS_TOC_REFRESH_EVENT,
+  deriveTocEntries,
+  type TocEntry,
+} from "./toc";
 
 // Activation band: a heading counts as "in view" once it reaches the top ~30% of the container.
 const ACTIVATION_ROOT_MARGIN = "0px 0px -70% 0px";
@@ -12,10 +16,11 @@ const SCROLL_MAX_WAIT_MS = 1000;
  * Owns the table-of-contents state and behaviour for a canvas dashboard.
  *
  * Canvas has no section-header primitive, so entries are derived from the `<h1>`–`<h3>` rendered
- * inside `markdown` components of the active tab (see `deriveTocEntries`) and kept in sync via a
- * MutationObserver. The section in view is tracked with a single IntersectionObserver (no per-frame
- * scroll math): the active entry is the topmost heading in the activation band, falling back to the
- * last heading above it when the band is empty, so exactly one entry is active at a time.
+ * inside `markdown` components of the active tab (see `deriveTocEntries`) and kept in sync via the
+ * `CANVAS_TOC_REFRESH_EVENT` those components dispatch when they mount, re-render, or unmount. The
+ * section in view is tracked with a single IntersectionObserver (no per-frame scroll math): the
+ * active entry is the topmost heading in the activation band, falling back to the last heading above
+ * it when the band is empty, so exactly one entry is active at a time.
  */
 export class CanvasTocController {
   /** Sections derived from the active tab's rendered headings. */
@@ -24,7 +29,6 @@ export class CanvasTocController {
   activeId = $state<string | null>(null);
 
   private observer: IntersectionObserver | undefined;
-  private mutationObserver: MutationObserver | undefined;
   // Per-id intersection state, so we can pick the topmost visible heading on each change.
   private readonly intersecting = new Map<string, boolean>();
   // While locked (during a click-to-scroll), observer updates are ignored so the active item stays
@@ -37,16 +41,18 @@ export class CanvasTocController {
   constructor(private readonly scrollContainer: HTMLElement) {
     this.refresh();
 
-    // Re-derive on any content change: tab switch, async markdown resolution, edits, filters, or the
-    // `.row-container` appearing (e.g. after required filters are satisfied). Observing the scroll
-    // container rather than `.row-container` keeps this resilient to remounts.
-    this.mutationObserver = new MutationObserver(() => this.scheduleRefresh());
-    this.mutationObserver.observe(scrollContainer, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
+    // Re-derive when markdown content changes (tab switch, async resolution, edits, or content
+    // appearing once required filters are satisfied) rather than observing the whole subtree for
+    // mutations, which would also fire on every chart, table, and tooltip update. Markdown
+    // components dispatch `CANVAS_TOC_REFRESH_EVENT` on the scroll container as they mount,
+    // re-render, and unmount.
+    scrollContainer.addEventListener(
+      CANVAS_TOC_REFRESH_EVENT,
+      this.onContentChange,
+    );
   }
+
+  private readonly onContentChange = () => this.scheduleRefresh();
 
   /** Smooth-scroll to a section on click, update the URL hash, and pin the highlight to it. */
   jumpTo(event: MouseEvent, entry: TocEntry) {
@@ -71,7 +77,10 @@ export class CanvasTocController {
   destroy() {
     clearTimeout(this.refreshTimer);
     this.cancelScrollWatch?.();
-    this.mutationObserver?.disconnect();
+    this.scrollContainer.removeEventListener(
+      CANVAS_TOC_REFRESH_EVENT,
+      this.onContentChange,
+    );
     this.observer?.disconnect();
   }
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CanvasTocController } from "./toc-controller.svelte";
+import { CANVAS_TOC_REFRESH_EVENT } from "./toc";
 
 // Controllable IntersectionObserver mock: capture the callback so tests can drive intersections.
 let ioCallback: IntersectionObserverCallback;
@@ -53,14 +54,6 @@ function buildContainer(headings: { id: string; top: number }[]): HTMLElement {
 describe("CanvasTocController", () => {
   beforeEach(() => {
     vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
-    vi.stubGlobal(
-      "MutationObserver",
-      class {
-        observe = vi.fn();
-        disconnect = vi.fn();
-        takeRecords = vi.fn();
-      },
-    );
     HTMLElement.prototype.scrollIntoView = vi.fn();
     observe.mockClear();
     disconnect.mockClear();
@@ -80,6 +73,24 @@ describe("CanvasTocController", () => {
     );
     expect(toc.entries.map((e) => e.id)).toEqual(["a", "b"]);
     expect(observe).toHaveBeenCalledTimes(2);
+  });
+
+  it("re-derives when a markdown refresh event fires", () => {
+    vi.useFakeTimers();
+    const container = buildContainer([{ id: "a", top: 0 }]);
+    const toc = new CanvasTocController(container);
+    expect(toc.entries.map((e) => e.id)).toEqual(["a"]);
+
+    // A markdown component renders a new heading and announces the change.
+    const heading = document.createElement("h2");
+    heading.id = "b";
+    heading.textContent = "b";
+    heading.getBoundingClientRect = () => ({ top: 100 }) as DOMRect;
+    container.querySelector(".canvas-markdown")!.appendChild(heading);
+    container.dispatchEvent(new CustomEvent(CANVAS_TOC_REFRESH_EVENT));
+    vi.advanceTimersByTime(150);
+
+    expect(toc.entries.map((e) => e.id)).toEqual(["a", "b"]);
   });
 
   it("keeps the last heading above the band when none are visible", () => {

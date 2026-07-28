@@ -65,8 +65,8 @@ describe("deriveTocEntries", () => {
     `);
     expect(deriveTocEntries(root).map((e) => e.id)).toEqual([
       "overview",
-      "overview-2",
-      "overview-3",
+      "overview_1",
+      "overview_2",
     ]);
   });
 

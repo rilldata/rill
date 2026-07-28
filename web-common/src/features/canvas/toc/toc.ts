@@ -8,12 +8,19 @@
  * container naturally scopes the TOC to the active tab(s).
  */
 
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+import { sanitizeSlug } from "@rilldata/web-common/lib/string-utils";
+
 /** Extra top offset applied when smooth-scrolling to a heading, so it doesn't sit flush against
  *  the top edge of the scroll container. */
 const SCROLL_MARGIN_TOP_PX = 16;
 
 /** Markdown heading levels the TOC is built from. */
 const HEADING_SELECTOR = ".canvas-markdown :is(h1, h2, h3)";
+
+/** Event a markdown component dispatches on the canvas scroll container when its rendered content
+ *  mounts, changes, or unmounts, so the TOC re-derives without observing the whole subtree. */
+export const CANVAS_TOC_REFRESH_EVENT = "canvas-toc-refresh";
 
 export type TocEntry = {
   /** Anchor id, assigned to the heading element if it lacked one. */
@@ -27,13 +34,12 @@ export type TocEntry = {
   el: HTMLElement;
 };
 
-/** Turn arbitrary heading text into a URL-hash-safe slug. */
+/** Turn arbitrary heading text into a URL-hash-safe slug: lowercase the text, sanitize it with the
+ *  shared `sanitizeSlug`, then collapse and trim the resulting hyphen runs. */
 export function slugify(text: string): string {
   return (
-    text
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
+    sanitizeSlug(text.trim().toLowerCase())
+      .replace(/-{2,}/g, "-")
       .replace(/^-+|-+$/g, "") || "section"
   );
 }
@@ -65,17 +71,12 @@ export function deriveTocEntries(
   // The shallowest level present becomes the top level; anything deeper nests one indent per level.
   const minLevel = Math.min(...headings.map((h) => h.level));
 
-  const usedIds = new Set<string>();
+  const usedIds: string[] = [];
 
   return headings.map(({ el, text, level }) => {
-    let id = el.id || slugify(text);
-    // Dedupe collisions with a numeric suffix, e.g. "overview", "overview-2".
-    if (usedIds.has(id)) {
-      let n = 2;
-      while (usedIds.has(`${id}-${n}`)) n++;
-      id = `${id}-${n}`;
-    }
-    usedIds.add(id);
+    // Dedupe collisions with a numeric suffix, e.g. "overview", "overview_1".
+    const id = getName(el.id || slugify(text), usedIds);
+    usedIds.push(id);
 
     if (el.id !== id) el.id = id;
     el.style.scrollMarginTop = `${SCROLL_MARGIN_TOP_PX}px`;
