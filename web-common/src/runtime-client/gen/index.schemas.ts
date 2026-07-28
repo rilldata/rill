@@ -916,6 +916,8 @@ export interface V1ExplorePreset {
   where?: V1Expression;
   /** Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future. */
   dimensionsWithInlistFilter?: string[];
+  pinnedFilters?: string[];
+  requiredFilters?: string[];
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */

@@ -38,11 +38,16 @@
     exploreTimeseriesWidth,
     tddChartHeight,
   } from "./dashboard-layout-store";
+  import { YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
+  import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/required/required-filters.ts";
+  import RequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/required/RequiredFiltersMessage.svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
   export let embedThemeName: Readable<string | null> | null = null;
+  export let yamlOnlyState: YAMLOnlyExploreState | undefined = undefined;
 
   // Vertical space reserved below the chart for the chart toolbar, axis, big
   // number, and a minimum detail table height when computing the drag maximum.
@@ -50,8 +55,10 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures },
-      dimensions: { getDimensionByName },
+      measures: { allMeasures, visibleMeasures },
+      measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
+      dimensions: { allDimensions, getDimensionByName },
+      dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
       pivot: { showPivot },
     },
     dashboardStore,
@@ -145,6 +152,54 @@
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);
 
+  // Create a readonly yaml explore state if not passed an instance.
+  $: resolvedYamlOnlyState = yamlOnlyState ?? new YAMLOnlyExploreState(false);
+  $: if (exploreSpec) {
+    resolvedYamlOnlyState.sync(exploreSpec);
+  }
+
+  $: dimensions = $allDimensions;
+  $: dimensionIdMap = getMapFromArray(
+    dimensions,
+    (dimension) => (dimension.name || dimension.column) as string,
+  );
+
+  $: measures = $allMeasures;
+  $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
+
+  $: pinnedFilters = new Set(resolvedYamlOnlyState.pinnedFilters.value);
+  $: requiredFilters = new Set(resolvedYamlOnlyState.requiredFilters.value);
+
+  $: currentDimensionFilters = $getDimensionFilterItems(
+    dimensionIdMap,
+    pinnedFilters,
+    requiredFilters,
+  );
+  $: allDimensionFilters = $getAllDimensionFilterItems(
+    currentDimensionFilters,
+    dimensionIdMap,
+    pinnedFilters,
+    requiredFilters,
+  );
+
+  $: currentMeasureFilters = $getMeasureFilterItems(
+    measureIdMap,
+    pinnedFilters,
+    requiredFilters,
+  );
+  $: allMeasureFilters = $getAllMeasureFilterItems(
+    currentMeasureFilters,
+    measureIdMap,
+    pinnedFilters,
+    requiredFilters,
+  );
+
+  $: missingRequiredFilters = getMissingRequiredFilters(
+    exploreSpec ?? {},
+    allDimensionFilters,
+    allMeasureFilters,
+  );
+
   // Clear the active theme when this dashboard is destroyed
   onDestroy(() => activeDashboardTheme.set(undefined));
 </script>
@@ -166,7 +221,12 @@
       {:else}
         {#key exploreName}
           <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-            <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
+            <Filters
+              {timeRanges}
+              {metricsViewName}
+              {hasTimeSeries}
+              yamlOnlyState={resolvedYamlOnlyState}
+            />
             <div class="absolute bottom-0 flex flex-col right-0">
               <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
             </div>
@@ -175,7 +235,9 @@
       {/if}
     </div>
 
-    {#if mockUserHasNoAccess}
+    {#if missingRequiredFilters.length}
+      <RequiredFiltersMessage {missingRequiredFilters} />
+    {:else if mockUserHasNoAccess}
       <!-- Additional safeguard for mock users without dashboard access. -->
       <ErrorPage
         statusCode={extractErrorStatusCode(exploreError)}
@@ -282,7 +344,7 @@
 
     <CellInspector />
 
-    {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
+    {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess && !missingRequiredFilters.length}
       <RowsViewerAccordion {metricsViewName} {exploreName} />
     {/if}
   </article>

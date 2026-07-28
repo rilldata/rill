@@ -37,7 +37,7 @@ import {
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import { FilterManager, flattenExpression } from "./filter-manager";
+import { FilterManager } from "./filter-manager";
 import { getFilterParam } from "./filter-state";
 import { Grid } from "./grid";
 import { TabGroup, type LayoutBlock } from "./tab-group";
@@ -50,6 +50,7 @@ import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
+import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
 export const lastVisitedState = new Map<string, string>();
 

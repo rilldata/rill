@@ -28,6 +28,5 @@ export const filterActions = {
    * Clears all filters and resets related fields
    */
   clearAllFilters,
-
   setTemporaryFilterName,
 };

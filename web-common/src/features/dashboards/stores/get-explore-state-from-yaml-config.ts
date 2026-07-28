@@ -21,6 +21,8 @@ import {
   V1TimeGrain,
   type V1ExploreSpec,
   type V1TimeRangeSummary,
+  V1Operation,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
@@ -28,6 +30,8 @@ import {
   DateTimeUnitToV1TimeGrain,
   isGrainAllowed,
 } from "@rilldata/web-common/lib/time/new-grains";
+import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 
 export function getExploreStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
@@ -38,6 +42,7 @@ export function getExploreStateFromYAMLConfig(
   return <Partial<ExploreState>>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
+    ...getExploreFilterStateFromYAMLConfig(exploreSpec),
     ...getExploreTimeStateFromYAMLConfig(
       exploreSpec,
       timeRangeSummary,
@@ -45,6 +50,38 @@ export function getExploreStateFromYAMLConfig(
     ),
     ...getExploreViewStateFromYAMLConfig(exploreSpec),
   };
+}
+
+export function getUrlForExploreYAMLDefaultState(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+) {
+  const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
+    exploreSpec,
+    timeRangeSummary,
+    metricsViewSpec.smallestTimeGrain,
+  );
+  const timeControlState = getTimeControlState(
+    metricsViewSpec,
+    exploreSpec,
+    timeRangeSummary,
+    exploreStateFromYAMLConfig as ExploreState,
+  );
+  // Temp fix to avoid refactoring TimeControlState
+  if (
+    exploreStateFromYAMLConfig.selectedTimeRange?.interval &&
+    timeControlState?.selectedTimeRange
+  ) {
+    timeControlState.selectedTimeRange.interval =
+      exploreStateFromYAMLConfig.selectedTimeRange.interval;
+  }
+  return convertPartialExploreStateToUrlParams(
+    exploreSpec,
+    metricsViewSpec,
+    exploreStateFromYAMLConfig,
+    timeControlState,
+  );
 }
 
 export function createUrlForExploreYAMLDefaultState(
@@ -65,28 +102,43 @@ export function createUrlForExploreYAMLDefaultState(
       const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
       const timeRangeSummary = timeRangeResp.data?.timeRangeSummary;
 
-      const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
-        exploreSpec,
-        timeRangeSummary,
-        metricsViewSpec.smallestTimeGrain,
-      );
-
-      const timeControlState = getTimeControlState(
+      const urlParams = getUrlForExploreYAMLDefaultState(
         metricsViewSpec,
         exploreSpec,
         timeRangeSummary,
-        exploreStateFromYAMLConfig as ExploreState,
-      );
-
-      const urlParams = convertPartialExploreStateToUrlParams(
-        exploreSpec,
-        metricsViewSpec,
-        exploreStateFromYAMLConfig,
-        timeControlState,
       );
       return `?${urlParams.toString()}`;
     },
   );
+}
+
+export function getExploreFilterStateFromYAMLConfig(
+  exploreSpec: V1ExploreSpec,
+): Partial<ExploreState> {
+  const filter = exploreSpec.defaultPreset?.where;
+  if (!filter) {
+    return {};
+  }
+
+  const flattened = flattenExpression(filter);
+  const { dimensionThresholdFilters, dimensionFilters } =
+    splitWhereFilter(flattened);
+
+  // Build dimensionFilterExcludeMode from the parsed filter expressions.
+  // NIN (NOT IN) operations indicate exclude mode for that dimension.
+  const dimensionFilterExcludeMode = new Map<string, boolean>();
+  for (const expr of dimensionFilters.cond?.exprs ?? []) {
+    const ident = expr.cond?.exprs?.[0]?.ident;
+    if (ident && expr.cond?.op === V1Operation.OPERATION_NIN) {
+      dimensionFilterExcludeMode.set(ident, true);
+    }
+  }
+
+  return {
+    whereFilter: dimensionFilters,
+    dimensionThresholdFilters,
+    dimensionFilterExcludeMode,
+  };
 }
 
 function getExploreTimeStateFromYAMLConfig(

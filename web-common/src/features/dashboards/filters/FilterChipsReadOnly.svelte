@@ -32,6 +32,8 @@ The main feature-set component for dashboard filters
   export let queryTimeEnd: string | undefined = undefined;
   export let hasBoldTimeRange: boolean = true;
   export let chipLayout: "wrap" | "scroll" = "wrap";
+  export let pinnedFilters: Set<string> = new Set();
+  export let requiredFilters: Set<string> = new Set();
 
   let scrollContainer: HTMLDivElement;
 
@@ -44,6 +46,8 @@ The main feature-set component for dashboard filters
     filters,
     dimensionsWithInlistFilter,
     metricsViewNames[0],
+    pinnedFilters,
+    requiredFilters,
   );
 
   $: measureIdMap = getMapFromArray(
@@ -53,6 +57,8 @@ The main feature-set component for dashboard filters
   $: measureFilters = getMeasureFilters(
     measureIdMap,
     dimensionThresholdFilters,
+    pinnedFilters,
+    requiredFilters,
   );
 
   function handleWheel(event: WheelEvent) {
@@ -81,7 +87,6 @@ The main feature-set component for dashboard filters
   {#if dimensionFilters.length > 0}
     {#each dimensionFilters as filterData (filterData.name)}
       {@const dimension = filterData.dimensions.get(metricsViewNames[0])}
-      <!-- <div animate:flip={{ duration: 200 }}> -->
       {#if dimension}
         <DimensionFilterReadOnlyChip
           pinned={filterData.pinned}
@@ -99,7 +104,6 @@ The main feature-set component for dashboard filters
           timeEnd={queryTimeEnd}
         />
       {/if}
-      <!-- </div> -->
     {/each}
   {/if}
   {#if measureFilters.length > 0}

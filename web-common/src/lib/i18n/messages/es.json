@@ -776,6 +776,17 @@
   "dashboard_replace_rows_cols_tag": "Reemplazar filas y columnas con esta etiqueta",
   "dashboard_replace_rows_tag": "Reemplazar filas con dimensiones de {name}",
   "dashboard_replace_rows_tag_dims": "Reemplazar filas con las dimensiones de esta etiqueta",
+  "dashboard_required_filters_body": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Este panel requiere valores para el siguiente filtro:",
+        "countPlural=other": "Este panel requiere valores para los siguientes filtros:"
+      }
+    }
+  ],
+  "dashboard_required_filters_heading": "Selecciona un valor para continuar",
   "dashboard_required_measure": "medida requerida",
   "dashboard_row_limit": "Límite de filas",
   "dashboard_row_limit_tooltip": "Solo se muestran hasta las N filas secundarias principales bajo cada dimensión",

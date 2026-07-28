@@ -7,6 +7,8 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
@@ -30,8 +32,13 @@ type ExploreYAML struct {
 		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
 		Measures            *FieldSelectorYAML `yaml:"measures"`
 		TimeRange           string             `yaml:"time_range"`
+		TimeGrain           string             `yaml:"time_grain"`
+		ComparisonTimeRange string             `yaml:"comparison_time_range"`
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
+		Filter              string             `yaml:"filter"`
+		PinnedFilters       []string           `yaml:"pinned_filters"`
+		RequiredFilters     []string           `yaml:"required_filters"`
 	} `yaml:"defaults"`
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
@@ -242,18 +249,48 @@ func (p *Parser) parseExplore(node *Node) error {
 		if tmp.Defaults.TimeRange != "" {
 			tr = &tmp.Defaults.TimeRange
 		}
+		var tg *string
+		if tmp.Defaults.TimeGrain != "" {
+			tg = &tmp.Defaults.TimeGrain
+		}
+
+		var ctr *string
+		if tmp.Defaults.ComparisonTimeRange != "" {
+			ctr = &tmp.Defaults.ComparisonTimeRange
+			// Only set comparison mode to time if not directly set
+			if tmp.Defaults.ComparisonMode == "" {
+				mode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME
+			}
+		}
+
 		var compareDim *string
 		if tmp.Defaults.ComparisonDimension != "" {
 			compareDim = &tmp.Defaults.ComparisonDimension
 		}
+
+		var filter *runtimev1.Expression
+		if tmp.Defaults.Filter != "" {
+			expr, err := metricssql.ParseFilter(tmp.Defaults.Filter)
+			if err != nil {
+				return fmt.Errorf("invalid filter expression: %q: %w", tmp.Defaults.Filter, err)
+			}
+
+			filter = metricsview.ExpressionToProto(expr)
+		}
+
 		defaultPreset = &runtimev1.ExplorePreset{
 			Dimensions:          presetDimensions,
 			DimensionsSelector:  presetDimensionsSelector,
 			Measures:            presetMeasures,
 			MeasuresSelector:    presetMeasuresSelector,
 			TimeRange:           tr,
+			TimeGrain:           tg,
+			CompareTimeRange:    ctr,
 			ComparisonMode:      mode,
 			ComparisonDimension: compareDim,
+			Where:               filter,
+			PinnedFilters:       tmp.Defaults.PinnedFilters,
+			RequiredFilters:     tmp.Defaults.RequiredFilters,
 		}
 	}
 

@@ -776,6 +776,17 @@
   "dashboard_replace_rows_cols_tag": "Replace rows and columns with this tag",
   "dashboard_replace_rows_tag": "Replace rows with dimensions in {name}",
   "dashboard_replace_rows_tag_dims": "Replace rows with this tag's dimensions",
+  "dashboard_required_filters_body": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This dashboard requires values for the following filter:",
+        "countPlural=other": "This dashboard requires values for the following filters:"
+      }
+    }
+  ],
+  "dashboard_required_filters_heading": "Select a value to continue",
   "dashboard_required_measure": "required measure",
   "dashboard_row_limit": "Row limit",
   "dashboard_row_limit_tooltip": "Only up to top N child rows are shown under each dimension",

@@ -162,6 +162,9 @@ export class Filters {
           $whereFilter,
           $dimensionsWithInlistFilter,
           this.metricsViewMetadata.metricsViewName,
+          // Not supported in alerts/reports, the consumers of this class
+          new Set(),
+          new Set(),
         );
       },
     );

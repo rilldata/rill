@@ -114,6 +114,78 @@ defaults:
 	})
 }
 
+func TestExploreRequiredFilters(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"models/m1.sql": `SELECT 'foo' as foo, 'bar' as bar, 1 as x`,
+		"metrics_views/mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+- column: bar
+measures:
+- name: x
+  expression: sum(x)
+security:
+  access: true
+`,
+	})
+
+	// A required filter naming an unknown field should fail validation.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+dimensions: '*'
+measures: '*'
+defaults:
+  required_filters: ['doesnt_exist']
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Nil(t, e1.GetExplore().State.ValidSpec)
+	require.Contains(t, e1.Meta.ReconcileError, `required filter "doesnt_exist"`)
+
+	// A required filter that names a dimension omitted from the explore should also fail.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+dimensions:
+  exclude: ['bar']
+measures: '*'
+defaults:
+  required_filters: ['bar']
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	e1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Nil(t, e1.GetExplore().State.ValidSpec)
+	require.Contains(t, e1.Meta.ReconcileError, `required filter "bar"`)
+
+	// A required filter that names a valid explore field should succeed.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+dimensions: '*'
+measures: '*'
+defaults:
+  required_filters: ['foo', 'x']
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	e1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.NotNil(t, e1.GetExplore().State.ValidSpec)
+	require.Equal(t, []string{"foo", "x"}, e1.GetExplore().State.ValidSpec.DefaultPreset.RequiredFilters)
+}
+
 func TestExploreTheme(t *testing.T) {
 	// Create source and model
 	rt, id := testruntime.NewInstance(t)

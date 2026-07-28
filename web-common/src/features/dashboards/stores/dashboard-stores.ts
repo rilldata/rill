@@ -547,6 +547,12 @@ const metricsViewReducers = {
     });
   },
 
+  reset(name: string) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.temporaryFilterName = null;
+    });
+  },
+
   setPivotTableMode(
     name: string,
     tableMode: PivotTableMode,
