@@ -12,6 +12,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { Play } from "lucide-svelte";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 
   export let disabled: boolean;
   export let href: string | null;
@@ -19,9 +20,9 @@
 
   const viewDashboard = () => {
     if (!href) return;
-    // temporary fix. we should do a proper fix by removing this on rill-dev when navigated to preview
     const [, entityType, entityName] = href.split("/");
     if (entityType === "explore") {
+      metricsExplorerStore.reset(entityName);
       clearExploreSessionStore(entityName, undefined);
       clearMostRecentExploreState(entityName, undefined);
     }

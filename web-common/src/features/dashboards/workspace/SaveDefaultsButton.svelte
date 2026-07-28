@@ -25,7 +25,7 @@
 
   let justClickedSaveAsDefault = $state(false);
 
-  const { dashboardStore, validSpecStore, timeRangeSummaryStore } =
+  const { dashboardStore, validSpecStore, timeRangeSummaryStore, exploreName } =
     getStateManagers();
   let exploreSpec = $derived($validSpecStore.data?.explore ?? {});
   let metricsViewSpec = $derived($validSpecStore.data?.metricsView ?? {});
@@ -57,6 +57,7 @@
     await saveExploreDefaults(
       runtimeClient,
       fileArtifact,
+      $exploreName,
       $dashboardStore,
       yamlOnlyState,
     );

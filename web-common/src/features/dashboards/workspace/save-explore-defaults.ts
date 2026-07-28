@@ -8,6 +8,7 @@ import { parseDocument } from "yaml";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { YAMLOnlyExploreState } from "@rilldata/web-common/features/dashboards/stores/yaml-only-explore-state.svelte.ts";
 import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains.ts";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 
 export type ComparisonModeValue = "none" | "time" | "dimension";
 
@@ -27,6 +28,7 @@ export type ExploreDefaults = {
 export async function saveExploreDefaults(
   runtimeClient: RuntimeClient,
   fileArtifact: FileArtifact,
+  exploreName: string,
   exploreState: ExploreState,
   yamlOnlyConfig: YAMLOnlyExploreState,
 ) {
@@ -95,4 +97,5 @@ export async function saveExploreDefaults(
 
   doc.set("defaults", defaults);
   fileArtifact.updateEditorContent(doc.toString(), false, true);
+  metricsExplorerStore.reset(exploreName);
 }
