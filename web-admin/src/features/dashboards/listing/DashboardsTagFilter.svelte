@@ -8,8 +8,12 @@
     getAllTagsForResources,
     getTagFilterLabel,
   } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
-
   import type { ArrayRuneStore } from "web-common/src/lib/store-utils/types.svelte.ts";
+  import {
+    getDashboardTagFavouritesStore,
+    sortByFavourites,
+  } from "./dashboard-favourites.ts";
+  import { page } from "$app/state";
 
   let {
     align = "start",
@@ -28,6 +32,15 @@
   let availableTags = $derived(getAllTagsForResources($dashboards?.data ?? []));
 
   let tagsLabel = $derived(getTagFilterLabel(selectedTagsStore.value));
+
+  let { organization, project } = $derived(page.params);
+  let tagsFavourites = $derived(
+    getDashboardTagFavouritesStore(organization, project),
+  );
+
+  let sortedTags = $derived(
+    sortByFavourites(availableTags, tagsFavourites.value, (t) => t.name),
+  );
 </script>
 
 {#if availableTags.length > 0}
@@ -45,7 +58,7 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content {align} class="w-48 max-h-72 overflow-y-auto">
-      {#each availableTags as tag (tag.name)}
+      {#each sortedTags as tag (tag.name)}
         <DropdownMenu.CheckboxItem
           checked={selectedTagsStore.value.includes(tag.name)}
           onCheckedChange={() => selectedTagsStore.toggle(tag.name)}

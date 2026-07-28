@@ -3,9 +3,12 @@ package ai
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai/instructions"
 )
@@ -123,6 +126,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 			SearchFilesName,
 			ReadFileName,
 			WriteFileName,
+			GetMetricsViewName,
 			ListBucketsName,
 			ListBucketObjectsName,
 			ListTablesName,
@@ -148,14 +152,25 @@ func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (st
 		return "", err
 	}
 
+	// For file types that may reference a metrics view, include the exact field names of the project's metrics views.
+	var metricsViewsInfo string
+	switch args.Type {
+	case "", "explore", "canvas", "api", "alert", "report":
+		metricsViewsInfo, err = t.metricsViewsInfo(ctx)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	// Prepare template data.
 	session := GetSession(ctx)
 	data := map[string]any{
-		"path":              args.Path,
-		"type":              args.Type,
-		"prompt":            args.Prompt,
-		"ai_instructions":   session.ProjectInstructions(),
-		"default_olap_info": olapInfo,
+		"path":               args.Path,
+		"type":               args.Type,
+		"prompt":             args.Prompt,
+		"ai_instructions":    session.ProjectInstructions(),
+		"default_olap_info":  olapInfo,
+		"metrics_views_info": metricsViewsInfo,
 	}
 
 	// Generate the user prompt
@@ -167,10 +182,62 @@ You should develop a Rill project file based on the following task description:
 
 Here is some important context:
 - You are running as a sub-agent of a larger developer agent. Stay aligned on your specific task and avoid extra discovery.
+- If the file references a metrics view (as explore and canvas dashboards do), only use the exact measure and dimension names of that metrics view. Use the field names listed below if present; if the metrics view is not listed, call 'get_metrics_view' (or read the metrics view's YAML file) BEFORE writing the file. Never guess field names based on display names or the task description.
 - When you call 'write_file', if it returns a parse or reconcile error, do your best to fix the issue and try again. If you think the error is unrelated to the current path, let the parent agent know to handle it.
 
 Here is some additional context that may or may not be relevant to your task:
 - Info about the project's default OLAP connector: {{ .default_olap_info }}.
+{{ if .metrics_views_info }}- The project's metrics views and their exact field names:
+{{ .metrics_views_info }}{{ end }}
 {{ if .ai_instructions }}- The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}{{ end }}
 `, data)
+}
+
+// metricsViewsInfo returns a summary of the project's valid metrics views with their exact dimension and measure names.
+// It is included in the user prompt for file types that reference metrics views, so the developer doesn't guess field names.
+func (t *DevelopFile) metricsViewsInfo(ctx context.Context) (string, error) {
+	session := GetSession(ctx)
+
+	ctrl, err := t.Runtime.Controller(ctx, session.InstanceID())
+	if err != nil {
+		return "", err
+	}
+
+	rs, err := ctrl.List(ctx, runtime.ResourceKindMetricsView, "", false)
+	if err != nil {
+		return "", err
+	}
+
+	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
+		return strings.Compare(a.Meta.Name.Name, b.Meta.Name.Name)
+	})
+
+	var sb strings.Builder
+	for _, r := range rs {
+		r, access, err := t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
+		if err != nil {
+			return "", err
+		}
+		if !access {
+			continue
+		}
+
+		spec := r.GetMetricsView().State.ValidSpec
+		if spec == nil {
+			continue
+		}
+
+		dimensions := make([]string, len(spec.Dimensions))
+		for i, d := range spec.Dimensions {
+			dimensions[i] = d.Name
+		}
+		measures := make([]string, len(spec.Measures))
+		for i, m := range spec.Measures {
+			measures[i] = fmt.Sprintf("%s (display name %q)", m.Name, m.DisplayName)
+		}
+
+		fmt.Fprintf(&sb, "  - %s: dimensions: [%s]; measures: [%s]\n", r.Meta.Name.Name, strings.Join(dimensions, ", "), strings.Join(measures, ", "))
+	}
+
+	return sb.String(), nil
 }

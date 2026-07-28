@@ -511,6 +511,10 @@
     @apply flex flex-row flex-wrap bg-input w-full p-1 px-2 gap-x-2 h-fit;
     @apply items-center;
     @apply border;
+    /* Cap the drop zone at ~3 chip rows so a large number of chips scrolls
+       within the zone instead of pushing the pivot table out of view. */
+    @apply overflow-y-auto;
+    max-height: 88px;
   }
 
   .valid {

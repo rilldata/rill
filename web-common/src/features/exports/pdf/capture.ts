@@ -78,8 +78,9 @@ export interface CaptureOptions {
   onProgress?: (ratio: number) => void;
 }
 
-// Rasterizes the filter bar (optional) and each canvas component into image
-// blocks positioned relative to the canvas content area. Per-block failures
+// Rasterizes the filter bar (optional) and each canvas block into images
+// positioned relative to the canvas content area: every component card plus the
+// label band above each exported tab (see captureTargetsIn). Per-block failures
 // degrade to a skipped block rather than aborting the whole export.
 export async function captureCanvasBlocks(
   opts: CaptureOptions,
@@ -108,12 +109,10 @@ export async function captureCanvasBlocks(
   const contentWidthPx = rowContainer.clientWidth;
   const backgroundColor = getComputedStyle(exportView).backgroundColor;
 
-  const articles = Array.from(
-    rowContainer.querySelectorAll<HTMLElement>("article.component-card"),
-  );
+  const targets = captureTargetsIn(rowContainer);
 
   const blocks: CapturedBlock[] = [];
-  const total = articles.length + (opts.includeFilters ? 1 : 0);
+  const total = targets.length + (opts.includeFilters ? 1 : 0);
   let done = 0;
   const reportProgress = () => opts.onProgress?.(total ? done / total : 1);
 
@@ -149,21 +148,21 @@ export async function captureCanvasBlocks(
     reportProgress();
   }
 
-  for (const article of articles) {
-    const rect = article.getBoundingClientRect();
+  for (const target of targets) {
+    const rect = target.getBoundingClientRect();
     try {
-      const dataUrl = await rasterizeNode(article, backgroundColor);
+      const dataUrl = await rasterizeNode(target, backgroundColor);
       blocks.push({
-        id: article.id,
+        id: target.id,
         dataUrl,
         xPx: rect.left - contentRect.left,
         yPx: rect.top - contentRect.top,
         widthPx: rect.width,
         heightPx: rect.height,
-        rowIndex: rowIndexFor(article, rowContainer),
+        rowIndex: rowIndexFor(target, rowContainer),
       });
     } catch (e) {
-      console.warn(`Failed to capture canvas component "${article.id}"`, e);
+      console.warn(`Failed to capture canvas block "${target.id}"`, e);
     }
     done += 1;
     reportProgress();
@@ -172,12 +171,44 @@ export async function captureCanvasBlocks(
   return { blocks, contentWidthPx, backgroundColor };
 }
 
-// Canvas rows are <section> elements; use the section's DOM order as the row
-// index so components in the same row are grouped and laid out together.
-function rowIndexFor(article: HTMLElement, rowContainer: HTMLElement): number {
-  const section = article.closest("section");
+// The units to rasterize, in document order: every component card (top-level
+// rows and exported tab rows alike, since the export view flattens tab groups
+// into plain rows) plus the label band above each exported tab (see
+// CanvasPdfExportTab). Capturing the bands keeps it visible in the PDF which
+// tab the rows below belong to.
+export function captureTargetsIn(rowContainer: HTMLElement): HTMLElement[] {
+  return Array.from(
+    rowContainer.querySelectorAll<HTMLElement>(
+      "article.component-card, section.pdf-tab-label-row",
+    ),
+  );
+}
+
+// Canvas rows (and tab label bands) are <section> elements; use the nearest
+// section's DOM order as the row index so blocks in the same row are grouped
+// and laid out together. A tab label band reports the index of the row section
+// that follows it, so the label and the tab's first row paginate as one unit
+// and the label can never be stranded alone at the bottom of a page (paginate
+// sizes a row by the vertical extent of its blocks). A label with no following
+// row (an empty tab) keeps its own index.
+export function rowIndexFor(
+  target: HTMLElement,
+  rowContainer: HTMLElement,
+): number {
+  let section: Element | null = target.closest("section");
   if (!section) return 0;
-  const sections = Array.from(rowContainer.querySelectorAll("section"));
+  if (section.classList.contains("pdf-tab-label-row")) {
+    const next = section.nextElementSibling;
+    if (
+      next?.tagName === "SECTION" &&
+      !next.classList.contains("pdf-tab-label-row")
+    ) {
+      section = next;
+    }
+  }
+  const sections: Element[] = Array.from(
+    rowContainer.querySelectorAll("section"),
+  );
   const index = sections.indexOf(section);
   return index === -1 ? 0 : index;
 }

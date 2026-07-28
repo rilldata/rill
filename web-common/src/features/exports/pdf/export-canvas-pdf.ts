@@ -24,6 +24,7 @@ export async function exportCanvasPdf(
   // Mount the off-screen export render (see CanvasPdfExportView) and force-enable
   // every component's data query; the tick() inside prepareCanvasForCapture
   // flushes it into the DOM before we capture. The live dashboard is untouched.
+  canvasEntity.exportAllTabs.set(opts.allTabs);
   canvasEntity.exportMode.set(true);
 
   try {

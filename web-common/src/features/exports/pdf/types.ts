@@ -19,6 +19,9 @@ export interface ExportProgress {
 // orchestrators (canvas, explore) receive these plus their own identifiers.
 export interface PdfExportRunOptions {
   includeFilters: boolean;
+  // When true, every tab of each tab group is exported, stacked in strip order;
+  // when false, only each group's active tab. Irrelevant without tab groups.
+  allTabs: boolean;
   onProgress?: (progress: ExportProgress) => void;
 }
 
@@ -26,6 +29,7 @@ export interface ExportCanvasPdfOptions {
   canvasName: string;
   instanceId: string;
   includeFilters: boolean;
+  allTabs: boolean;
   timeoutMs?: number;
   onProgress?: (progress: ExportProgress) => void;
 }
