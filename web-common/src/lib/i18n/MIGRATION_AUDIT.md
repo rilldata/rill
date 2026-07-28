@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PR 2: 233 candidates across 85 files
-- Current split: 116 candidates in `web-admin` and 117 in `web-common`
+- Current after PRs 2, 4, and 6: 199 candidates across 79 files
+- Current split: 116 candidates in `web-admin` and 83 in `web-common`
 - No candidates in `web-local`
-- Current categories: 126 visible-text findings, 50 attribute findings, and 57
+- Current categories: 105 visible-text findings, 41 attribute findings, and 53
   copy-property findings
-- Currently, 61 candidates have an exact English-text match in the existing
+- Currently, 53 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -68,9 +68,9 @@ node scripts/i18n-guard.js --strict
 | 1   | Guard coverage improvements                                |                   — | Implemented on this branch |
 | 2   | Time presets and comparisons                               |                  37 | Implemented on this branch |
 | 3   | Canvas components and inspector                            |                  35 | Planned                    |
-| 4   | Workspaces and Visual Metrics                              |                  18 | Planned                    |
+| 4   | Workspaces and Visual Metrics                              |                  18 | Implemented on this branch |
 | 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Planned                    |
-| 6   | Resources, connectors, and models                          |                  16 | Planned                    |
+| 6   | Resources, connectors, and models                          |                  16 | Implemented on this branch |
 | 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned                    |
 | 8   | Admin project status, GitHub, and user management          |                  29 | Planned                    |
 | 9   | Admin edit sessions and branches                           |                  32 | Planned                    |
@@ -79,9 +79,10 @@ node scripts/i18n-guard.js --strict
 | 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned                    |
 | 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned                    |
 
-PRs 1 and 2 are implemented on this branch. PRs 3–12 can be developed
-independently after it lands, but landing them sequentially reduces conflicts
-in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
+PRs 1, 2, 4, and 6 are implemented on this branch. The remaining PRs can be
+developed independently after it lands, but landing them sequentially reduces
+conflicts in `en.json` and `es.json`. PR 13 should land only after warning mode
+is clean.
 
 ## Finding inventory
 
@@ -102,7 +103,7 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 - 3 — `web-common/src/features/canvas/inspector/filters/DimensionFiltersInput.svelte`
 - 2 — `web-common/src/features/canvas/inspector/filters/TimeFiltersInput.svelte`
 
-### PR 4: Workspaces and Visual Metrics (18)
+### PR 4: Workspaces and Visual Metrics (18, completed)
 
 - 1 — `web-common/src/features/workspaces/ParquetWorkspace.svelte`
 - 17 — `web-common/src/features/workspaces/VisualMetrics.svelte`
@@ -126,7 +127,7 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 - 1 — `web-common/src/features/dashboards/time-series/measure-chart/MeasureChartBody.svelte`
 - 2 — `web-common/src/features/dashboards/time-series/measure-chart/MeasureChartHoverTooltip.svelte`
 
-### PR 6: Resources, connectors, and models (16)
+### PR 6: Resources, connectors, and models (16, completed)
 
 - 3 — `web-common/src/features/connectors/explorer/DatabaseExplorer.svelte`
 - 5 — `web-common/src/features/connectors/explorer/DatabaseSchemaEntry.svelte`
