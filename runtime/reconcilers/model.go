@@ -284,9 +284,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		// so we let it proceed as the escape hatch for a persistently failing check.
 		if err != nil {
 			if !model.Spec.TriggerFull {
+				// Note: not reusing refreshOn here since it is derived from the last successful refresh and may be in the past,
+				// where it would cause an immediate retrigger loop against a potentially failing connector.
+				retriggerOn, err2 := nextRefreshTime(time.Now(), model.Spec.RefreshSchedule)
+				if err2 != nil {
+					return runtime.ReconcileResult{Err: err2}
+				}
 				return runtime.ReconcileResult{
 					Err:       fmt.Errorf("failed to check if model output exists (trigger a full refresh to rebuild anyway): %w", err),
-					Retrigger: refreshOn,
+					Retrigger: retriggerOn,
 				}
 			}
 			r.C.Logger.Warn("failed to check if model output exists, proceeding because a full refresh was manually triggered", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
