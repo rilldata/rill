@@ -19,6 +19,12 @@
   let metricsViewFilePath = $derived(
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "",
   );
+  // When the explore is defined inline in the metrics view file, both items point
+  // at the same file; the ?view= param selects what gets edited.
+  let definedInMetricsView = $derived(
+    $exploreQuery.data?.explore?.explore?.state?.validSpec
+      ?.definedInMetricsView ?? false,
+  );
 </script>
 
 <DropdownMenu.Root>
@@ -31,11 +37,21 @@
     {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end">
-    <DropdownMenu.Item href={getFileHref(exploreFilePath)}>
+    <DropdownMenu.Item
+      href={getFileHref(
+        exploreFilePath,
+        definedInMetricsView ? "explore" : undefined,
+      )}
+    >
       <ExploreIcon size="16px" />
       Explore dashboard
     </DropdownMenu.Item>
-    <DropdownMenu.Item href={getFileHref(metricsViewFilePath)}>
+    <DropdownMenu.Item
+      href={getFileHref(
+        metricsViewFilePath,
+        definedInMetricsView ? "viz" : undefined,
+      )}
+    >
       <MetricsViewIcon size="16px" />
       Metrics View
     </DropdownMenu.Item>
