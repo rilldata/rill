@@ -324,7 +324,7 @@
 
 <div
   class="flex flex-col"
-  aria-label="{dimensionName} leaderboard"
+  aria-label={m.dashboard_dimension_leaderboard_aria({ name: dimensionName })}
   role="table"
   bind:this={container}
   onmouseenter={() => (hovered = true)}

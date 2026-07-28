@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PR 2: 233 candidates across 85 files
-- Current split: 116 candidates in `web-admin` and 117 in `web-common`
+- Current after PRs 2 and 5: 203 candidates across 69 files
+- Current split: 116 candidates in `web-admin` and 87 in `web-common`
 - No candidates in `web-local`
-- Current categories: 126 visible-text findings, 50 attribute findings, and 57
+- Current categories: 115 visible-text findings, 41 attribute findings, and 47
   copy-property findings
-- Currently, 61 candidates have an exact English-text match in the existing
+- Currently, 51 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -69,7 +69,7 @@ node scripts/i18n-guard.js --strict
 | 2   | Time presets and comparisons                               |                  37 | Implemented on this branch |
 | 3   | Canvas components and inspector                            |                  35 | Planned                    |
 | 4   | Workspaces and Visual Metrics                              |                  18 | Planned                    |
-| 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Planned                    |
+| 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Implemented on this branch |
 | 6   | Resources, connectors, and models                          |                  16 | Planned                    |
 | 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned                    |
 | 8   | Admin project status, GitHub, and user management          |                  29 | Planned                    |
@@ -107,7 +107,7 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 - 1 — `web-common/src/features/workspaces/ParquetWorkspace.svelte`
 - 17 — `web-common/src/features/workspaces/VisualMetrics.svelte`
 
-### PR 5: Dashboard UI, pivot, filters, and charts (30)
+### PR 5: Dashboard UI, pivot, filters, and charts (30, completed)
 
 - 2 — `web-common/src/features/dashboards/dimension-search/GlobalDimensionSearchResults.svelte`
 - 2 — `web-common/src/features/dashboards/dimension-table/DimensionDisplay.svelte`

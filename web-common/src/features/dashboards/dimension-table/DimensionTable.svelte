@@ -288,7 +288,9 @@ TableCells – the cell contents.
       {#if isFetching || $selectedValues.isFetching}
         <DelayedSpinner isLoading size="24px" />
       {:else}
-        <span class="text-fg-secondary">No results to show</span>
+        <span class="text-fg-secondary">
+          {m.dashboard_no_results_to_show()}
+        </span>
       {/if}
     </div>
   {/if}
