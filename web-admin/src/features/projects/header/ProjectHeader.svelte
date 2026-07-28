@@ -269,12 +269,7 @@
               />
             {/if}
             {#if hasUserAccess}
-              <ExploreBookmarks
-                {organization}
-                {project}
-                metricsViewName={exploreSpec.metricsView}
-                exploreName={dashboard}
-              />
+              <Bookmarks {organization} {project} />
               {#if $alertsFlag}
                 <CreateAlert />
               {/if}
@@ -285,8 +280,6 @@
           </StateManagersProvider>
         {/key}
       {/if}
-    {:else}
-      <Bookmarks {organization} {project} />
     {/if}
 
     {#if onCanvasDashboardPage}
@@ -297,13 +290,17 @@
         <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       {/if}
       {#if hasUserAccess}
-        <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+        <Bookmarks {organization} {project} />
         <ShareDashboardPopover
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
           canvasName={dashboard}
           instanceId={runtimeClient.instanceId}
         />
       {/if}
+    {/if}
+
+    {#if !onMetricsExplorerPage && !onCanvasDashboardPage}
+      <Bookmarks {organization} {project} />
     {/if}
 
     {#if onPersonalFilePage}

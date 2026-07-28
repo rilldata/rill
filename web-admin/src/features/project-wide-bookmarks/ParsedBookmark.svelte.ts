@@ -1,13 +1,6 @@
 import type { V1Bookmark } from "@rilldata/web-admin/client";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
-import {
-  createQueryServiceMetricsViewTimeRange,
-  createRuntimeServiceListResources,
-  type V1ExploreSpec,
-  type V1MetricsViewSpec,
-  type V1TimeRangeSummary,
-} from "@rilldata/web-common/runtime-client";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
@@ -16,6 +9,7 @@ import { page } from "$app/state";
 import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
 import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { ExploreSpecProvider } from "@rilldata/web-common/features/dashboards/ExploreSpecProvider.svelte.ts";
 
 interface BookmarkParser {
   // Url params directly converted from bookmark.
@@ -36,85 +30,49 @@ export class DefaultBookmarkParser implements BookmarkParser {
   }
 }
 
+// TODO: since we have a provider this can be moved directly to ParsedBookmark
 export class ExploreBookmarkParser implements BookmarkParser {
   public bookmarkUrlParams: URLSearchParams;
   public cleanup: (() => void) | undefined = undefined;
 
-  private exploreSpec = $state<V1ExploreSpec | undefined>(undefined);
-  private metricsViewSpec = $state<V1MetricsViewSpec | undefined>(undefined);
-  private timeRangeSummary = $state<V1TimeRangeSummary | undefined>(undefined);
-
-  public constructor(
-    private readonly runtimeClient: RuntimeClient,
-    private readonly bookmark: V1Bookmark,
-  ) {
-    const allResourcesQuery = createRuntimeServiceListResources(
-      this.runtimeClient,
-      {},
+  public constructor(runtimeClient: RuntimeClient, bookmark: V1Bookmark) {
+    const provider = new ExploreSpecProvider(
+      runtimeClient,
+      bookmark.resourceName ?? "",
     );
 
-    let timeRangeSummaryUnsub: (() => void) | undefined = undefined;
-    const allResourcesUnsub = allResourcesQuery.subscribe(
-      (allResourcesResp) => {
-        this.exploreSpec = allResourcesResp.data?.resources?.find(
-          (r) => r.meta?.name?.name === this.bookmark.resourceName,
-        )?.explore?.state?.validSpec;
-        if (!this.exploreSpec?.metricsView) return;
-
-        this.metricsViewSpec = allResourcesResp.data?.resources?.find(
-          (r) => r.meta?.name?.name === this.exploreSpec.metricsView,
-        )?.metricsView?.state?.validSpec;
-
-        if (!timeRangeSummaryUnsub) {
-          const timeRangeSummaryQuery = createQueryServiceMetricsViewTimeRange(
-            this.runtimeClient,
-            { metricsViewName: this.exploreSpec.metricsView },
-          );
-          timeRangeSummaryUnsub = timeRangeSummaryQuery.subscribe(
-            (timeRangeSummaryResp) => {
-              this.timeRangeSummary =
-                timeRangeSummaryResp.data?.timeRangeSummary;
-            },
-          );
-        }
-      },
-    );
-
-    this.cleanup = () => {
-      allResourcesUnsub();
-      timeRangeSummaryUnsub?.();
-    };
+    this.cleanup = provider.cleanup;
 
     this.bookmarkUrlParams = $derived.by(() => {
       let searchParams: URLSearchParams;
-      if (this.bookmark.data) {
+      if (bookmark.data) {
         const exploreStateFromBookmark = getDashboardStateFromUrl(
-          this.bookmark.data,
-          this.metricsViewSpec,
-          this.exploreSpec,
+          bookmark.data,
+          provider.metricsViewSpec,
+          provider.exploreSpec,
         );
 
         // We need to check if the bookmark's url is equal to current url or not to show an "active" state.
         // To avoid calculating it everytime we directly convert it to final url.
         searchParams = convertPartialExploreStateToUrlParams(
-          this.exploreSpec,
-          this.metricsViewSpec,
+          provider.exploreSpec,
+          provider.metricsViewSpec,
           exploreStateFromBookmark,
           getTimeControlState(
-            this.metricsViewSpec,
-            this.exploreSpec,
-            this.timeRangeSummary,
+            provider.metricsViewSpec,
+            provider.exploreSpec,
+            provider.timeRangeSummary,
             exploreStateFromBookmark,
           ),
         );
       } else {
-        searchParams = new URLSearchParams(this.bookmark.urlSearch ?? "");
+        searchParams = new URLSearchParams(bookmark.urlSearch ?? "");
       }
 
       const defaultUrlParams = getRillDefaultExploreUrlParams(
-        this.metricsViewSpec,
-        this.exploreSpec,
-        this.timeRangeSummary,
+        provider.metricsViewSpec,
+        provider.exploreSpec,
+        provider.timeRangeSummary,
       );
       return cleanUrlParams(searchParams, defaultUrlParams);
     });
@@ -148,7 +106,7 @@ export class ParsedBookmark {
     );
 
     this.isActive = $derived.by(() => {
-      if (this.filtersOnly) {
+      if (!this.filtersOnly) {
         return (
           parser.bookmarkUrlParams.toString() ===
           page.url.searchParams.toString()

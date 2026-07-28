@@ -1,4 +1,10 @@
-import { type V1Bookmark } from "@rilldata/web-admin/client";
+import {
+  getAdminServiceListBookmarksQueryKey,
+  type V1Bookmark,
+} from "@rilldata/web-admin/client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+
+export const BookmarksPageSize = 1000;
 
 export type Bookmarks = {
   home: V1Bookmark | undefined;
@@ -24,4 +30,13 @@ export function categorizeBookmarks(bookmarkResources: V1Bookmark[]) {
   });
 
   return bookmarks;
+}
+
+export function invalidateBookmarksQuery(projectId: string) {
+  return queryClient.refetchQueries({
+    queryKey: getAdminServiceListBookmarksQueryKey({
+      projectId,
+      pageSize: BookmarksPageSize,
+    }),
+  });
 }
