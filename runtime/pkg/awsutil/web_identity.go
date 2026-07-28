@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.uber.org/zap"
@@ -67,4 +68,23 @@ func newCredentialsCache(provider aws.CredentialsProvider) *aws.CredentialsCache
 		o.ExpiryWindow = credentialsExpiryWindow
 		o.ExpiryWindowJitterFrac = 0.2
 	})
+}
+
+func loadSTSConfig(ctx context.Context, region string, credentials aws.CredentialsProvider, logger *zap.Logger) (aws.Config, error) {
+	opts := []func(*config.LoadOptions) error{
+		config.WithCredentialsProvider(credentials),
+		config.WithLogger(NewAWSLogger(logger)),
+	}
+	if region != "" {
+		opts = append(opts, config.WithRegion(region))
+	}
+
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+	if err != nil {
+		return aws.Config{}, err
+	}
+	if cfg.Region == "" {
+		cfg.Region = "us-east-1"
+	}
+	return cfg, nil
 }

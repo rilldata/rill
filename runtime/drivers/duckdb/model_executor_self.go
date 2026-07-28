@@ -619,7 +619,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			return "", "", "", fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
 		// DuckDB needs literal credentials in its temporary secret, so resolve any
-		// configured role or web identity chain before generating the SQL. The next
+		// configured role or web identity credentials before generating the SQL. The next
 		// partition or model refresh resolves fresh credentials.
 		cfg, err := s3.GetConfigWithTemporaryCredentials(ctx, s3Config, logger)
 		if err != nil {

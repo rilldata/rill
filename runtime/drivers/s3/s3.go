@@ -122,17 +122,15 @@ type driver struct{}
 var _ drivers.Driver = driver{}
 
 type ConfigProperties struct {
-	AccessKeyID                string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey            string `mapstructure:"aws_secret_access_key"`
-	SessionToken               string `mapstructure:"aws_access_token"`
-	Region                     string `mapstructure:"region"`
-	Endpoint                   string `mapstructure:"endpoint"`
-	RoleARN                    string `mapstructure:"aws_role_arn"`
-	RoleSessionName            string `mapstructure:"aws_role_session_name"`
-	ExternalID                 string `mapstructure:"aws_external_id"`
-	WebIdentityTokenFile       string `mapstructure:"aws_web_identity_token_file"`
-	WebIdentityRoleARN         string `mapstructure:"aws_web_identity_role_arn"`
-	WebIdentityRoleSessionName string `mapstructure:"aws_web_identity_role_session_name"`
+	AccessKeyID          string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey      string `mapstructure:"aws_secret_access_key"`
+	SessionToken         string `mapstructure:"aws_access_token"`
+	Region               string `mapstructure:"region"`
+	Endpoint             string `mapstructure:"endpoint"`
+	RoleARN              string `mapstructure:"aws_role_arn"`
+	RoleSessionName      string `mapstructure:"aws_role_session_name"`
+	ExternalID           string `mapstructure:"aws_external_id"`
+	WebIdentityTokenFile string `mapstructure:"aws_web_identity_token_file"`
 	// A list of bucket path prefixes that this connector is allowed to access.
 	// Useful when different buckets or bucket prefixes use different credentials,
 	// allowing the system to select the appropriate connector based on the bucket path.
@@ -311,10 +309,10 @@ func BucketRegion(ctx context.Context, confProp *ConfigProperties, bucket string
 	return bucketRegionFromConfig(ctx, cfg, confProp, bucket)
 }
 
-// GetConfigWithTemporaryCredentials returns a new ConfigProperties with resolved temporary credentials.
-// If the config does not require role assumption or web identity federation, it returns the original config.
+// GetConfigWithTemporaryCredentials returns a new ConfigProperties with temporary credentials if the original config has a role ARN to assume.
+// If no role ARN is provided, it returns the original config.
 func GetConfigWithTemporaryCredentials(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (*ConfigProperties, error) {
-	if !requiresTemporaryCredentials(confProp) {
+	if confProp.RoleARN == "" {
 		return confProp, nil
 	}
 	credsProvider, err := newCredentialsProvider(ctx, confProp, logger)
@@ -335,15 +333,7 @@ func GetConfigWithTemporaryCredentials(ctx context.Context, confProp *ConfigProp
 	cfg.RoleSessionName = ""
 	cfg.ExternalID = ""
 	cfg.WebIdentityTokenFile = ""
-	cfg.WebIdentityRoleARN = ""
-	cfg.WebIdentityRoleSessionName = ""
 	return &cfg, nil
-}
-
-func requiresTemporaryCredentials(confProp *ConfigProperties) bool {
-	return confProp.RoleARN != "" ||
-		confProp.WebIdentityRoleARN != "" ||
-		confProp.WebIdentityTokenFile != ""
 }
 
 func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp *ConfigProperties, bucket string) (string, error) {
@@ -477,40 +467,9 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties, logger *zap.L
 
 // newCredentialsProvider returns credentials for connecting to AWS.
 func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (aws.CredentialsProvider, error) {
-	if confProp.WebIdentityTokenFile != "" {
-		retriever := stscreds.IdentityTokenFile(confProp.WebIdentityTokenFile)
-		webIdentityRoleARN := confProp.WebIdentityRoleARN
-		targetRoleARN := confProp.RoleARN
-		legacyDirectRole := false
-		if webIdentityRoleARN == "" {
-			// Backwards compatibility: the initial WebIdentity implementation used
-			// aws_role_arn as the direct federation role.
-			webIdentityRoleARN = targetRoleARN
-			targetRoleARN = ""
-			legacyDirectRole = true
-		}
-		if webIdentityRoleARN == "" {
-			return nil, fmt.Errorf("web identity credentials require aws_web_identity_role_arn or aws_role_arn")
-		}
-
-		webIdentitySessionName := confProp.WebIdentityRoleSessionName
-		if webIdentitySessionName == "" && legacyDirectRole {
-			webIdentitySessionName = confProp.RoleSessionName
-		}
-		webIdentityCredentials, err := awsutil.NewWebIdentityCredentials(ctx, webIdentityRoleARN, webIdentitySessionName, confProp.Region, retriever, logger)
-		if err != nil {
-			return nil, err
-		}
-		if targetRoleARN == "" {
-			if confProp.ExternalID != "" {
-				return nil, fmt.Errorf("aws_external_id requires a separate aws_role_arn target and aws_web_identity_role_arn source")
-			}
-			return webIdentityCredentials, nil
-		}
-		return awsutil.NewAssumeRoleCredentials(ctx, targetRoleARN, confProp.RoleSessionName, confProp.ExternalID, confProp.Region, webIdentityCredentials, logger)
-	}
-	if confProp.WebIdentityRoleARN != "" {
-		return nil, fmt.Errorf("aws_web_identity_role_arn requires aws_web_identity_token_file")
+	if confProp.WebIdentityTokenFile != "" && confProp.RoleARN != "" {
+		return awsutil.NewWebIdentityCredentials(ctx, confProp.RoleARN, confProp.RoleSessionName, confProp.Region,
+			stscreds.IdentityTokenFile(confProp.WebIdentityTokenFile), logger)
 	}
 	// If a role ARN is provided, assume it using base credentials.
 	if confProp.RoleARN != "" {
@@ -556,6 +515,9 @@ func assumeRole(ctx context.Context, confProp *ConfigProperties, logger *zap.Log
 	}
 
 	region := confProp.Region
+	if region == "" {
+		region = "us-east-1"
+	}
 
 	var credsProvider aws.CredentialsProvider
 
@@ -567,22 +529,41 @@ func assumeRole(ctx context.Context, confProp *ConfigProperties, logger *zap.Log
 			confProp.SessionToken,
 		)
 	} else if confProp.AllowHostAccess {
-		opts := []func(*config.LoadOptions) error{config.WithLogger(awsutil.NewAWSLogger(logger))}
-		if region != "" {
-			opts = append(opts, config.WithRegion(region))
-		}
-		hostCfg, err := config.LoadDefaultConfig(ctx, opts...)
+		hostCfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(region),
+			config.WithLogger(awsutil.NewAWSLogger(logger)),
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load host credentials: %w", err)
 		}
 		credsProvider = hostCfg.Credentials
-		if region == "" {
-			region = hostCfg.Region
-		}
 	} else {
 		// No valid credentials to assume role
 		return nil, fmt.Errorf("cannot assume role: no base credentials available")
 	}
 
-	return awsutil.NewAssumeRoleCredentials(ctx, confProp.RoleARN, sessionName, confProp.ExternalID, region, credsProvider, logger)
+	// Load AWS config with the chosen provider
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(region),
+		config.WithCredentialsProvider(credsProvider),
+		config.WithLogger(awsutil.NewAWSLogger(logger)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS config: %w", err)
+	}
+
+	// Create STS client with explicit configuration
+	stsClient := sts.NewFromConfig(cfg)
+
+	// Create an assume role provider that automatically refreshes credentials before expiration
+	assumeRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, confProp.RoleARN, func(o *stscreds.AssumeRoleOptions) {
+		o.RoleSessionName = sessionName
+		// Add external ID if provided to mitigate confused deputy problem
+		if confProp.ExternalID != "" {
+			o.ExternalID = &confProp.ExternalID
+		}
+	})
+
+	// Wrap in a credentials cache so multiple calls share refreshed credentials
+	return aws.NewCredentialsCache(assumeRoleProvider), nil
 }
