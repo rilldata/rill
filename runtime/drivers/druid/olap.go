@@ -115,6 +115,20 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		}
 		queryCfg.Priority = stmt.Priority
 	}
+	// The metrics view's query_attributes can identify the caller under the "user_email" and "service_token" keys
+	// (e.g. user_email: '{{ .user.email }}'); they are stamped on the Druid query context for attribution in Druid's query logs.
+	if email := stmt.QueryAttributes["user_email"]; email != "" {
+		if queryCfg == nil {
+			queryCfg = &druidsqldriver.QueryConfig{}
+		}
+		queryCfg.UserEmail = email
+	}
+	if svc := stmt.QueryAttributes["service_token"]; svc != "" {
+		if queryCfg == nil {
+			queryCfg = &druidsqldriver.QueryConfig{}
+		}
+		queryCfg.ServiceToken = svc
+	}
 
 	if queryCfg != nil {
 		ctx = druidsqldriver.WithQueryConfig(ctx, queryCfg)
