@@ -6,6 +6,7 @@ import {
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
 import { createExploreFromModel } from "../utils/exploreHelpers";
+import { waitForReconciliation } from "../utils/wait-for-reconciliation";
 import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("inline explore editing", () => {
@@ -25,8 +26,11 @@ test.describe("inline explore editing", () => {
       .getByRole("button", { name: "switch to explore editor" })
       .click();
 
-    // The visual explore editor renders next to the live dashboard preview
-    await expect(page.getByText("Edit dashboard")).toBeVisible();
+    // The visual explore editor renders next to the live dashboard preview;
+    // give the explore resource time to reconcile on slow machines.
+    await expect(page.getByText("Edit dashboard")).toBeVisible({
+      timeout: 15_000,
+    });
     await assertAdBidsDashboard(page);
 
     // Restrict measures and dimensions to a subset via the sidebar
@@ -78,11 +82,15 @@ test.describe("inline explore go-to-dashboard CTA", () => {
     test.setTimeout(60_000);
 
     // Define the explore inline in the existing metrics view, which the project's
-    // canvas dashboard is built on
-    await page.getByLabel("/metrics").click();
+    // canvas dashboard is built on. The nav tree renders expanded, so the entry
+    // is directly reachable.
     await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
     await page.getByRole("button", { name: "switch to code editor" }).click();
     await updateCodeEditor(page, METRICS_VIEW_WITH_INLINE_EXPLORE);
+
+    // The dropdown lists canvases by their validSpec display name, which is only
+    // available once the canvas has reconciled against the rewritten metrics view.
+    await waitForReconciliation(page);
 
     // The header CTA links to the metrics view's canvas dashboards
     await expect(
