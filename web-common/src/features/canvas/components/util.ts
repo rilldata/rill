@@ -11,6 +11,7 @@ import type {
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import {
+  type V1CanvasItem,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
   type V1ResolveCanvasResponseResolvedComponents,
@@ -18,6 +19,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
+import { ComponentRefComponent } from "./component-ref";
 import { ImageComponent } from "./image";
 import { LeaderboardComponent } from "./leaderboard";
 import { MarkdownCanvasComponent } from "./markdown";
@@ -120,6 +122,7 @@ const NON_CHART_TYPES = [
   "pivot",
   "leaderboard",
   "custom_chart",
+  "component_ref",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
@@ -152,6 +155,7 @@ const baseComponentMap = {
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
   custom_chart: CustomChartComponent,
+  component_ref: ComponentRefComponent,
 } as const;
 const IconMap = {
   markdown: TextIcon,
@@ -178,6 +182,7 @@ const baseDisplayMap = {
   image: "Image",
   leaderboard: "Leaderboard",
   custom_chart: "Custom Chart",
+  component_ref: "Custom viz",
 } as const;
 
 const chartDisplayMap = Object.fromEntries(
@@ -193,14 +198,45 @@ export function createComponent(
   resource: V1Resource,
   parent: CanvasEntity,
   path: ComponentPath,
+  item?: V1CanvasItem,
+  instanceId?: string,
 ): BaseCanvasComponent<any> {
-  const type = resource.component?.spec?.renderer as CanvasComponentType;
+  const type = getComponentInstanceType(resource, item);
+  if (type === "component_ref") {
+    const component = new ComponentRefComponent(resource, parent, path, item);
+    // Items referencing an external component share one resource, so the
+    // resource name can't identify the instance: use the positional instance id
+    // (also the components-store key and the selection id) so two references to
+    // the same component get distinct DOM ids and selection/cleanup state.
+    if (instanceId) component.id = instanceId;
+    return component;
+  }
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
   if (ComponentClass) {
     return new ComponentClass(resource, parent, path);
   }
   return new CartesianChartComponent(resource, parent, path);
+}
+
+/**
+ * Determines the component class type for a canvas item.
+ * Items that reference an externally defined component render through the
+ * component_ref wrapper regardless of the referenced component's renderer;
+ * everything else keys off the renderer.
+ */
+export function getComponentInstanceType(
+  resource: V1Resource | undefined,
+  item?: V1CanvasItem,
+  allowUnvalidatedSpec = true,
+): CanvasComponentType {
+  if (item && !item.definedInCanvas && item.component) {
+    return "component_ref";
+  }
+  return (resource?.component?.state?.validSpec?.renderer ??
+    (allowUnvalidatedSpec
+      ? resource?.component?.spec?.renderer
+      : undefined)) as CanvasComponentType;
 }
 
 export function isCanvasComponentType(

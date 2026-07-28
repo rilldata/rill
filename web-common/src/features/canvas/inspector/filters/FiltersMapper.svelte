@@ -21,10 +21,11 @@
 
   $: inputParams = component.inputParams().filter;
 
-  $: metricsView =
+  $: metricsView = (
     "metrics_view" in localParamValues
       ? (localParamValues.metrics_view ?? null)
-      : null;
+      : null
+  ) as string | null;
 
   $: excludedDimensions =
     type === "leaderboard"

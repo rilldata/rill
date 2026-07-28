@@ -2406,6 +2406,14 @@ definitions:
                               - **table** - Similar to Pivot table, add dimensions and measures to visualize your data
                               - **heatmap** - Heat Map chart to visualize distribution of data
                               - **donut_chart** - Donut or Pie chart to display sums of total
+                      params:
+                        type: object
+                        description: Values bound to the referenced component's declared params. Only valid together with `component`. Values must be scalars.
+                        additionalProperties:
+                          type:
+                            - string
+                            - number
+                            - boolean
                       width:
                         type:
                           - string
@@ -3156,6 +3164,11 @@ definitions:
           description:
             type: string
             description: Detailed description of the component's purpose and functionality
+          params:
+            type: array
+            description: List of typed parameters that canvases can bind values to when referencing this component. Bound values are available in the renderer properties' templating as `{{ .params.<name> }}`.
+            items:
+              $ref: '#/definitions/component_param_properties'
           input:
             type: array
             description: List of input variables that can be passed to the component
@@ -3396,6 +3409,50 @@ definitions:
         description: Overrides any properties in production environment.
 
 
+  component_param_properties:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Param name. Must be a valid identifier; referenced in the renderer properties' templating as `{{ .params.<name> }}`.
+      type:
+        type: string
+        enum:
+          - string
+          - number
+          - boolean
+          - metrics_view
+          - measure
+          - dimension
+          - time_dimension
+        description: Param type. Params of type `metrics_view` must be named `metrics_view` or end with `_metrics_view`.
+      description:
+        type: string
+        description: Human-facing description of the param
+      required:
+        type: boolean
+        description: If true, a canvas item referencing this component must bind a value for the param. Mutually exclusive with `default`.
+      default:
+        description: Default value used when the param is not bound
+        type:
+          - string
+          - number
+          - boolean
+      metrics_view:
+        type: string
+        description: For `measure`, `dimension` and `time_dimension` params, the name of a sibling param of type `metrics_view` whose bound metrics view the field must belong to. May be omitted when exactly one `metrics_view` param is declared.
+      options:
+        type: array
+        description: For scalar params, the allowed values. Renders as a select input in visual editors.
+        items:
+          type:
+            - string
+            - number
+            - boolean
+    required:
+      - name
+      - type
+    additionalProperties: false
   component_variable_properties:
     type: object
     properties:

@@ -5,10 +5,9 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasTabStrip from "./CanvasTabStrip.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import type { CanvasComponentType } from "./components/types";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
-  import type { EditTarget } from "./layout-util";
+  import type { AddableItem, EditTarget } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import type { TabGroup } from "./stores/tab-group";
@@ -39,13 +38,13 @@
   ) => void;
   export let addItems: (
     position: { row: number; column: number },
-    items: CanvasComponentType[],
+    items: AddableItem[],
     target?: EditTarget,
   ) => void;
   export let spreadEvenly: (index: number, target?: EditTarget) => void;
   export let initializeRow: (
     row: number,
-    type: CanvasComponentType,
+    type: AddableItem,
     target?: EditTarget,
   ) => void;
   export let updateRowHeight: (
@@ -186,6 +185,8 @@
                       label={m.canvas_add_widget_to_tab()}
                       onItemClick={(type) =>
                         initializeRow($grid.length, type, target)}
+                      onAddComponentRef={(componentName) =>
+                        initializeRow($grid.length, { componentName }, target)}
                     />
                   </div>
                 </div>
@@ -235,6 +236,8 @@
         componentForm
         label={m.canvas_add_widget_below_tabs()}
         onItemClick={(type) => initializeRow(blockIndex + 1, type)}
+        onAddComponentRef={(componentName) =>
+          initializeRow(blockIndex + 1, { componentName })}
         onAddTabGroup={() => onAddTabGroup(blockIndex + 1)}
       />
     </ItemWrapper>

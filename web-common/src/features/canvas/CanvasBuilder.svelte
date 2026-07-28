@@ -18,7 +18,6 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import type { CanvasComponentType } from "./components/types";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import EditableCanvasTabGroup from "./EditableCanvasTabGroup.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
@@ -26,6 +25,8 @@
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
+    canvasItemInstanceId,
+    componentNameFromInstanceId,
     generateNewAssets,
     mapGuard,
     mousePosition,
@@ -33,8 +34,13 @@
     tabNamePrefix,
     tabRowsPath,
     tabTargetFromPath,
+    type AddableItem,
     type EditTarget,
   } from "./layout-util";
+  import {
+    ResourceKind,
+    useFilteredResources,
+  } from "../entity-management/resource-selectors";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
@@ -105,6 +111,17 @@
   $: metricsViewQuery = useDefaultMetrics(
     runtimeClient,
     metricsViews?.[0]?.[0],
+  );
+
+  // Project component resources by name, used when adding component references.
+  $: componentResourcesQuery = useFilteredResources(
+    runtimeClient,
+    ResourceKind.Component,
+  );
+  $: componentResourceMap = Object.fromEntries(
+    ($componentResourcesQuery?.data ?? [])
+      .filter((res) => !!res.meta?.name?.name)
+      .map((res) => [res.meta!.name!.name as string, res]),
   );
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
@@ -200,7 +217,9 @@
     dragComponent = component;
 
     const id = component.id;
-    const element = document.querySelector("#" + id);
+    // getElementById, not querySelector: instance ids of referenced components
+    // contain "::", which is not valid in a CSS selector.
+    const element = document.getElementById(id);
     if (!element) return;
 
     const width = element.clientWidth;
@@ -349,14 +368,17 @@
           defaultMetrics,
           resolvedComponents,
           transaction,
+          componentResources: componentResourceMap,
         });
 
       if (selectedId) {
-        const idsAtPositions = specRows.map((row) => {
+        // Selection ids are per-position instance ids (which for items that
+        // reference an external component differ from the item's component name).
+        const idsAtPositions = specRows.map((row, rowIdx) => {
           return {
-            items: row.items?.map((item) => {
-              return item.component ?? "";
-            }),
+            items: row.items?.map((item, colIdx) =>
+              canvasItemInstanceId(item, rowIdx, colIdx, namePrefix),
+            ),
           };
         });
 
@@ -371,7 +393,9 @@
         const colIndex = ids[rowIndex]?.items?.indexOf(selectedId);
 
         if (colIndex !== undefined && colIndex !== -1 && rowIndex !== -1) {
-          const newIdOfSelected = getId(rowIndex, colIndex, namePrefix);
+          const newIdOfSelected = selectedId.includes("::")
+            ? `${componentNameFromInstanceId(selectedId)}::${namePrefix}${rowIndex}-${colIndex}`
+            : getId(rowIndex, colIndex, namePrefix);
 
           if (selectedId && newIdOfSelected)
             setSelectedComponent(newIdOfSelected);
@@ -386,16 +410,21 @@
 
   function addItems(
     position: { row: number; column: number },
-    items: CanvasComponentType[],
+    items: AddableItem[],
     target?: EditTarget,
   ) {
     if (!defaultMetrics) return;
 
     performTransaction(
       {
-        operations: items.map((type, i) => ({
+        operations: items.map((item, i) => ({
           type: "add",
-          componentType: type,
+          ...(typeof item === "string"
+            ? { componentType: item }
+            : {
+                componentType: "component_ref" as const,
+                componentName: item.componentName,
+              }),
           destination: {
             row: position.row,
             col: position.column + i,
@@ -407,10 +436,29 @@
     );
 
     const { namePrefix } = resolveTarget(target);
-    const id = getId(position.row, position.column, namePrefix);
+    const id = getInstanceId(
+      items[0],
+      position.row,
+      position.column,
+      namePrefix,
+    );
 
     setSelectedComponent(id);
     openSidebar();
+  }
+
+  // The client-side instance id an added item will get: the generated resource name
+  // for inline components, or the positional reference id for component references.
+  function getInstanceId(
+    item: AddableItem | undefined,
+    row: number,
+    column: number,
+    namePrefix = "",
+  ) {
+    if (item && typeof item !== "string") {
+      return `${item.componentName}::${namePrefix}${row}-${column}`;
+    }
+    return getId(row, column, namePrefix);
   }
 
   function updateContents() {
@@ -502,15 +550,11 @@
     if (convertRowToTabGroup(contents, rowIndex)) updateContents();
   }
 
-  function initializeRow(
-    row: number,
-    type: CanvasComponentType,
-    target?: EditTarget,
-  ) {
+  function initializeRow(row: number, item: AddableItem, target?: EditTarget) {
     if (!defaultMetrics) return;
 
     const { namePrefix } = resolveTarget(target);
-    const id = getId(row, 0, namePrefix);
+    const id = getInstanceId(item, row, 0, namePrefix);
 
     performTransaction(
       {
@@ -518,7 +562,12 @@
           {
             type: "add",
             insertRow: true,
-            componentType: type,
+            ...(typeof item === "string"
+              ? { componentType: item }
+              : {
+                  componentType: "component_ref" as const,
+                  componentName: item.componentName,
+                }),
             destination: {
               row,
               col: 0,
@@ -865,6 +914,9 @@
               onItemClick={(type) => {
                 initializeRow(specCanvasRows.length, type);
               }}
+              onAddComponentRef={(componentName) => {
+                initializeRow(specCanvasRows.length, { componentName });
+              }}
               onAddTabGroup={addTabGroupAction}
             />
           {:else if canvasData}
@@ -882,6 +934,10 @@
     disabled={!defaultMetrics}
     onItemClick={(type) => {
       initializeRow(specCanvasRows.length, type);
+      setTimeout(() => scrollToBottom(), 500);
+    }}
+    onAddComponentRef={(componentName) => {
+      initializeRow(specCanvasRows.length, { componentName });
       setTimeout(() => scrollToBottom(), 500);
     }}
     onAddTabGroup={addTabGroupAction}

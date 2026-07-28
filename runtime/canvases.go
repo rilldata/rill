@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -20,6 +21,19 @@ func CollectCanvasComponentNames(rows []*runtimev1.CanvasRow, out map[string]boo
 		if tg := row.GetTabGroup(); tg != nil {
 			for _, tab := range tg.Tabs {
 				CollectCanvasComponentNames(tab.Rows, out)
+			}
+		}
+	}
+}
+
+// CollectCanvasItems collects all items in the given rows,
+// descending into tab groups (one level deep, since tabs cannot be nested).
+func CollectCanvasItems(rows []*runtimev1.CanvasRow, out *[]*runtimev1.CanvasItem) {
+	for _, row := range rows {
+		*out = append(*out, row.Items...)
+		if tg := row.GetTabGroup(); tg != nil {
+			for _, tab := range tg.Tabs {
+				CollectCanvasItems(tab.Rows, out)
 			}
 		}
 	}
@@ -99,7 +113,9 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 		for k, v := range validSpec.RendererProperties.Fields {
 			switch k {
 			case "metrics_view":
-				if name := v.GetStringValue(); name != "" {
+				// Skip templated values (e.g. {{ .params.metrics_view }}):
+				// metrics views bound to params are collected from the canvas items below.
+				if name := v.GetStringValue(); name != "" && !strings.Contains(name, "{{") {
 					metricsViews[name] = true
 				}
 			case "metrics_sql":
@@ -142,6 +158,39 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 						metricsViews[q.MetricsView] = true
 					}
 				}
+			}
+		}
+	}
+
+	// Extract metrics views bound to component params by canvas items.
+	var items []*runtimev1.CanvasItem
+	CollectCanvasItems(spec.Rows, &items)
+	for _, item := range items {
+		cmp := components[item.Component]
+		if cmp == nil {
+			continue
+		}
+		validSpec := cmp.GetComponent().State.ValidSpec
+		if validSpec == nil && unsafe {
+			validSpec = cmp.GetComponent().Spec
+		}
+		if validSpec == nil {
+			continue
+		}
+		var bound map[string]any
+		if item.Params != nil {
+			bound = item.Params.AsMap()
+		}
+		for _, p := range validSpec.Params {
+			if p.Type != "metrics_view" {
+				continue
+			}
+			v, ok := bound[p.Name]
+			if !ok && p.Default != nil {
+				v = p.Default.AsInterface()
+			}
+			if name, ok := v.(string); ok && name != "" && !strings.Contains(name, "{{") {
+				metricsViews[name] = true
 			}
 		}
 	}

@@ -23,7 +23,7 @@ var _ Tool[*DevelopFileArgs, *DevelopFileResult] = (*DevelopFile)(nil)
 
 type DevelopFileArgs struct {
 	Path   string `json:"path" jsonschema:"The path of a .yaml or .sql file to create, update or delete."`
-	Type   string `json:"type,omitempty" jsonschema:"Type of Rill file to develop (optional, but recommended if known). Options: rill.yaml, .env, connector, model, metrics_view, explore, canvas, theme, api, alert, report."`
+	Type   string `json:"type,omitempty" jsonschema:"Type of Rill file to develop (optional, but recommended if known). Options: rill.yaml, .env, connector, model, metrics_view, explore, canvas, component, theme, api, alert, report."`
 	Prompt string `json:"prompt" jsonschema:"A detailed description of how to develop the file. Include any relevant details assuming no prior context except the path's current content and status (if any)."`
 }
 
@@ -76,7 +76,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 		if err != nil {
 			return nil, fmt.Errorf("failed to load developer agent resource-specific system prompt: %w", err)
 		}
-	case "connector", "model", "metrics_view", "explore", "canvas", "theme":
+	case "connector", "model", "metrics_view", "explore", "canvas", "component", "theme":
 		resourceInstructions, err = instructions.Load(fmt.Sprintf("resources/%s.md", args.Type), instructions.Options{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to load developer agent resource-specific system prompt: %w", err)

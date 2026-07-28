@@ -1922,6 +1922,270 @@ input:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestComponentParams(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/trend.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: time_dim
+    type: time_dimension
+    required: true
+  - name: limit
+    type: number
+    default: 500
+  - name: shape
+    type: string
+    default: line
+    options: [line, area]
+custom_chart:
+  metrics_sql: "SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}"
+  vega_spec: "{}"
+`,
+		// Component with a templated metrics_view renderer property: it must not produce a ref.
+		`components/tpl.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
+		// Component with a defaulted metrics_view param: the default must produce a ref,
+		// since the component depends on it even when no canvas binds the param.
+		`components/defaulted.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    default: mv_default
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: trend
+    params:
+      metrics_view: mv1
+      measure: total
+      time_dim: __time
+      limit: 100
+    width: 6
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "trend"},
+			Paths: []string{"/components/trend.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName: "Trend",
+				Renderer:    "custom_chart",
+				RendererProperties: must(structpb.NewStruct(map[string]any{
+					"metrics_sql": "SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}",
+					"vega_spec":   "{}",
+				})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Required: true},
+					{Name: "measure", Type: "measure", Required: true, MetricsViewParam: "metrics_view"},
+					{Name: "time_dim", Type: "time_dimension", Required: true, MetricsViewParam: "metrics_view"},
+					{Name: "limit", Type: "number", Default: structpb.NewNumberValue(500)},
+					{Name: "shape", Type: "string", Default: structpb.NewStringValue("line"), Options: []*structpb.Value{structpb.NewStringValue("line"), structpb.NewStringValue("area")}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "tpl"},
+			Paths: []string{"/components/tpl.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "Tpl",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "{{ .params.metrics_view }}"})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Required: true},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "defaulted"},
+			Paths: []string{"/components/defaulted.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "mv_default"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "Defaulted",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "{{ .params.metrics_view }}"})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Default: structpb.NewStringValue("mv_default")},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "d1"},
+			Paths: []string{"/canvases/d1.yaml"},
+			Refs: []ResourceName{
+				{Kind: ResourceKindComponent, Name: "trend"},
+				{Kind: ResourceKindMetricsView, Name: "mv1"},
+			},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName:          "D1",
+				AllowCustomTimeRange: true,
+				FiltersEnabled:       true,
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{
+								Component: "trend",
+								Params: must(structpb.NewStruct(map[string]any{
+									"metrics_view": "mv1",
+									"measure":      "total",
+									"time_dim":     "__time",
+									"limit":        100,
+								})),
+								Width: asPtr(uint32(6)),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestComponentParamErrors(t *testing.T) {
+	ctx := context.Background()
+
+	component := func(params string) string {
+		return fmt.Sprintf("type: component\nparams:\n%s\nkpi:\n  metrics_view: foo\n", params)
+	}
+
+	cases := []struct {
+		name    string
+		files   map[string]string
+		wantErr string
+	}{
+		{
+			name:    "duplicate param name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n  - name: a\n    type: number")},
+			wantErr: `duplicate param name "a"`,
+		},
+		{
+			name:    "invalid type",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: widget")},
+			wantErr: `invalid type "widget"`,
+		},
+		{
+			name:    "invalid name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: 1a\n    type: string")},
+			wantErr: `invalid param name "1a"`,
+		},
+		{
+			name:    "reserved name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: datum\n    type: string")},
+			wantErr: `param name "datum" is reserved`,
+		},
+		{
+			name:    "required with default",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n    required: true\n    default: x")},
+			wantErr: "cannot both be required and have a default",
+		},
+		{
+			name:    "default type mismatch",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: number\n    default: x")},
+			wantErr: "expected a number",
+		},
+		{
+			name:    "field param without metrics_view param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: measure")},
+			wantErr: `requires a param of type "metrics_view"`,
+		},
+		{
+			name:    "metrics_view param naming convention",
+			files:   map[string]string{`components/c.yaml`: component("  - name: mv\n    type: metrics_view")},
+			wantErr: `must be named "metrics_view" or end with "_metrics_view"`,
+		},
+		{
+			name:    "back-reference to non-metrics_view param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: metrics_view\n  - name: a\n    type: string\n  - name: b\n    type: measure\n    metrics_view: a")},
+			wantErr: `not a declared param of type "metrics_view"`,
+		},
+		{
+			name:    "options on field param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: metrics_view\n  - name: a\n    type: measure\n    options: [x, y]")},
+			wantErr: "options are only supported for scalar types",
+		},
+		{
+			name:    "default not in options",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n    default: z\n    options: [x, y]")},
+			wantErr: "not one of its options",
+		},
+		{
+			name: "undeclared param reference in renderer properties",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: a
+    type: string
+kpi:
+  metrics_view: foo
+  measure: "{{ .params.b }}"
+`},
+			wantErr: `reference undeclared param "b"`,
+		},
+		{
+			name: "params on inline component",
+			files: map[string]string{`canvases/d.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: Foo
+    params:
+      a: 1
+`},
+			wantErr: "cannot pass 'params' to an inline component",
+		},
+		{
+			name: "non-scalar param binding",
+			files: map[string]string{`canvases/d.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: c
+    params:
+      a: [1, 2]
+`},
+			wantErr: "only scalar values are supported",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			files := map[string]string{`rill.yaml`: ``}
+			for k, v := range tc.files {
+				files[k] = v
+			}
+			p, err := Parse(ctx, makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, tc.wantErr)
+		})
+	}
+}
+
 func TestCanvasTabGroups(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
