@@ -19,6 +19,7 @@
 
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceCreateReport,
@@ -47,6 +48,7 @@
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { onDestroy } from "svelte";
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
@@ -163,10 +165,29 @@
     currentProtobufState = get(dashboardStore).proto;
   }
 
-  // Canvas state is URL-param based; snapshot it so the scheduled PDF renders with the current filters and time range.
-  let currentCanvasState: string | undefined = undefined;
-  if (open && props.mode === "create-canvas") {
-    currentCanvasState = window.location.search.replace(/^\?/, "");
+  // Canvas state is URL-param based, and the canvas filter bar in the form edits the page URL
+  // directly. Snapshot the URL when the dialog opens (in edit mode, first replay the report's
+  // stored state so the form shows the report's filters), capture it on submit, and restore it
+  // when the dialog closes so the dashboard behind the dialog is left unchanged.
+  let originalCanvasPageSearch: string | undefined = undefined;
+  if (open && isCanvasReport) {
+    originalCanvasPageSearch = window.location.search;
+    if (props.mode === "edit") {
+      const state = props.reportSpec.annotations?.web_open_state;
+      void goto(`${window.location.pathname}${state ? `?${state}` : ""}`, {
+        replaceState: true,
+      });
+    }
+  }
+
+  $: if (!open) restoreCanvasPageState();
+  onDestroy(restoreCanvasPageState);
+
+  function restoreCanvasPageState() {
+    if (originalCanvasPageSearch === undefined) return;
+    const search = originalCanvasPageSearch;
+    originalCanvasPageSearch = undefined;
+    void goto(`${window.location.pathname}${search}`, { replaceState: true });
   }
 
   const schema = yup(
@@ -281,12 +302,8 @@
         exportFormat: V1ExportFormat.EXPORT_FORMAT_PDF,
         pdfIncludeFilters: values.pdfIncludeFilters,
         pdfAllTabs: values.pdfAllTabs,
-        webOpenState:
-          props.mode === "create-canvas"
-            ? currentCanvasState
-            : props.mode === "edit"
-              ? props.reportSpec.annotations?.web_open_state
-              : undefined,
+        // The canvas state (filters, time range, tabs) as edited in the form's filter bar.
+        webOpenState: window.location.search.replace(/^\?/, ""),
       };
     }
 

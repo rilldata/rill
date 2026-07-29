@@ -29,6 +29,8 @@
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
@@ -78,6 +80,8 @@
   $: showTabOptions = specHasTabGroups(
     $canvasQuery.data?.canvas?.state?.validSpec?.rows,
   );
+  $: canvasFiltersEnabled =
+    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
 </script>
 
 <form
@@ -144,6 +148,21 @@
           inverse
           label={m.export_pdf_tabs_all()}
         />
+      {/if}
+
+      {#if canvasFiltersEnabled}
+        <div class="flex flex-col gap-y-3">
+          <InputLabel
+            label={m.report_form_filters()}
+            id="filters"
+            capitalize={false}
+          />
+          <!-- The canvas filter bar edits the page URL, which the dialog snapshots
+               on submit and restores on close (see ScheduledReportDialog). -->
+          <CanvasProvider {canvasName} instanceId={runtimeClient.instanceId}>
+            <CanvasFilters {canvasName} maxWidth={820} />
+          </CanvasProvider>
+        </div>
       {/if}
     {:else}
       <Select
