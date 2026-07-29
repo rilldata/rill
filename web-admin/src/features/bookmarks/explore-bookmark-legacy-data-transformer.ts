@@ -40,6 +40,18 @@ export function createExploreBookmarkLegacyDataTransformer(
     },
   );
 }
+//
+// export function createExploreBookmarkLegacyDataTransformerV2(
+//   client: RuntimeClient,
+//   exploreName: string,
+// ) {
+//   const validSpecQuery = createQuery(
+//     getExploreValidSpecQueryOptions(client, exploreNameStore),
+//   );
+//   const timeRangeQuery = createQuery(
+//     getMetricsViewTimeRangeFromExploreQueryOptions(client, exploreNameStore),
+//   );
+// }
 
 export function exploreBookmarkDataTransformer({
   data,

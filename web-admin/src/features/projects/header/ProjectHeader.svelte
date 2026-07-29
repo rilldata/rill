@@ -54,6 +54,7 @@
   import { useReports } from "../../scheduled-reports/selectors";
   import SharePersonalFile from "web-admin/src/features/personal-files/SharePersonalFile.svelte";
   import VisualizationsBreadcrumbDropdown from "./VisualizationsBreadcrumbDropdown.svelte";
+  import Bookmarks from "@rilldata/web-admin/features/project-wide-bookmarks/Bookmarks.svelte";
 
   export let organization: string;
   export let project: string;
@@ -268,12 +269,7 @@
               />
             {/if}
             {#if hasUserAccess}
-              <ExploreBookmarks
-                {organization}
-                {project}
-                metricsViewName={exploreSpec.metricsView}
-                exploreName={dashboard}
-              />
+              <Bookmarks {organization} {project} />
               {#if $alertsFlag}
                 <CreateAlert />
               {/if}
@@ -294,13 +290,17 @@
         <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
       {/if}
       {#if hasUserAccess}
-        <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+        <Bookmarks {organization} {project} />
         <ShareDashboardPopover
           createMagicAuthTokens={projectPermissions.createMagicAuthTokens}
           canvasName={dashboard}
           instanceId={runtimeClient.instanceId}
         />
       {/if}
+    {/if}
+
+    {#if !onMetricsExplorerPage && !onCanvasDashboardPage}
+      <Bookmarks {organization} {project} />
     {/if}
 
     {#if onPersonalFilePage}

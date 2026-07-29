@@ -837,6 +837,7 @@ export interface V1LeaveOrganizationResponse {
 
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
+  nextPageToken?: string;
 }
 
 export interface V1ListDeploymentsResponse {
@@ -2495,6 +2496,8 @@ export type AdminServiceListBookmarksParams = {
   projectId?: string;
   resourceKind?: string;
   resourceName?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type AdminServiceSearchUsersParams = {
