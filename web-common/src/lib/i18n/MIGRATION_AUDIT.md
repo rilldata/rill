@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PR 3: 198 candidates across 75 files
-- Current split: 116 candidates in `web-admin` and 82 in `web-common`
+- Current after PRs 2–4 and 6: 164 candidates across 69 files
+- Current split: 116 candidates in `web-admin` and 48 in `web-common`
 - No candidates in `web-local`
-- Current categories: 111 visible-text findings, 49 attribute findings, and 38
+- Current categories: 90 visible-text findings, 40 attribute findings, and 34
   copy-property findings
-- Currently, 52 candidates have an exact English-text match in the existing
+- Currently, 44 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -68,9 +68,9 @@ node scripts/i18n-guard.js --strict
 | 1   | Guard coverage improvements                                |                   — | Completed |
 | 2   | Time presets and comparisons                               |                  37 | Completed |
 | 3   | Canvas components and inspector                            |                  35 | Completed |
-| 4   | Workspaces and Visual Metrics                              |                  18 | Planned   |
+| 4   | Workspaces and Visual Metrics                              |                  18 | Completed |
 | 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Planned   |
-| 6   | Resources, connectors, and models                          |                  16 | Planned   |
+| 6   | Resources, connectors, and models                          |                  16 | Completed |
 | 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned   |
 | 8   | Admin project status, GitHub, and user management          |                  29 | Planned   |
 | 9   | Admin edit sessions and branches                           |                  32 | Planned   |
@@ -79,9 +79,9 @@ node scripts/i18n-guard.js --strict
 | 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned   |
 | 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned   |
 
-PRs 1–3 are completed on this branch. PRs 4–12 can be developed independently,
-but landing them sequentially reduces conflicts in `en.json` and `es.json`. PR
-13 should land only after warning mode is clean.
+PRs 1–4 and 6 are completed. PRs 5 and 7–12 can be developed independently,
+but landing them sequentially reduces conflicts in `en.json` and `es.json`.
+PR 13 should land only after warning mode is clean.
 
 ## Finding inventory
 
@@ -102,7 +102,7 @@ but landing them sequentially reduces conflicts in `en.json` and `es.json`. PR
 - 3 — `web-common/src/features/canvas/inspector/filters/DimensionFiltersInput.svelte`
 - 2 — `web-common/src/features/canvas/inspector/filters/TimeFiltersInput.svelte`
 
-### PR 4: Workspaces and Visual Metrics (18)
+### PR 4: Workspaces and Visual Metrics (18, completed)
 
 - 1 — `web-common/src/features/workspaces/ParquetWorkspace.svelte`
 - 17 — `web-common/src/features/workspaces/VisualMetrics.svelte`
@@ -126,7 +126,7 @@ but landing them sequentially reduces conflicts in `en.json` and `es.json`. PR
 - 1 — `web-common/src/features/dashboards/time-series/measure-chart/MeasureChartBody.svelte`
 - 2 — `web-common/src/features/dashboards/time-series/measure-chart/MeasureChartHoverTooltip.svelte`
 
-### PR 6: Resources, connectors, and models (16)
+### PR 6: Resources, connectors, and models (16, completed)
 
 - 3 — `web-common/src/features/connectors/explorer/DatabaseExplorer.svelte`
 - 5 — `web-common/src/features/connectors/explorer/DatabaseSchemaEntry.svelte`

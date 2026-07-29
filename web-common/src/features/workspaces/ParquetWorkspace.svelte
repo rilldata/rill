@@ -83,7 +83,7 @@
 </script>
 
 <svelte:head>
-  <title>Rill Developer | {fileName}</title>
+  <title>{m.parquet_preview_page_title({ fileName })}</title>
 </svelte:head>
 
 <WorkspaceContainer inspector={false}>
