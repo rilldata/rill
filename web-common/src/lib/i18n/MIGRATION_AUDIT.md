@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PRs 2–6: 134 candidates across 53 files
-- Current split: 116 candidates in `web-admin` and 18 in `web-common`
+- Current after PRs 2–6 and 9: 102 candidates across 48 files
+- Current split: 84 candidates in `web-admin` and 18 in `web-common`
 - No candidates in `web-local`
-- Current categories: 79 visible-text findings, 31 attribute findings, and 24
+- Current categories: 47 visible-text findings, 31 attribute findings, and 24
   copy-property findings
-- Currently, 34 candidates have an exact English-text match in the existing
+- Currently, 28 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -73,13 +73,13 @@ node scripts/i18n-guard.js --strict
 | 6   | Resources, connectors, and models                          |                  16 | Completed |
 | 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned   |
 | 8   | Admin project status, GitHub, and user management          |                  29 | Planned   |
-| 9   | Admin edit sessions and branches                           |                  32 | Planned   |
+| 9   | Admin edit sessions and branches                           |                  32 | Completed |
 | 10  | Admin organizations, bookmarks, and view-as-user           |                  19 | Planned   |
 | 11  | Admin alerts, reports, public URLs, and personal files     |                  18 | Planned   |
 | 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned   |
 | 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned   |
 
-PRs 1–6 are completed. PRs 7–12 can be developed independently,
+PRs 1–6 and 9 are completed. PRs 7–8 and 10–12 can be developed independently,
 but landing them sequentially reduces conflicts in `en.json` and `es.json`.
 PR 13 should land only after warning mode is clean.
 
@@ -160,7 +160,7 @@ PR 13 should land only after warning mode is clean.
 - 3 — `web-admin/src/features/projects/user-management/ProjectUserGroupSetRole.svelte`
 - 2 — `web-admin/src/features/projects/user-management/UsergroupSetRole.svelte`
 
-### PR 9: Admin edit sessions and branches (32)
+### PR 9: Admin edit sessions and branches (32, completed)
 
 - 1 — `web-admin/src/features/branches/BranchesSection.svelte`
 - 4 — `web-admin/src/features/edit-session/CommitPopover.svelte`
