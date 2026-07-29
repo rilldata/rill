@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PRs 2 and 5: 203 candidates across 69 files
-- Current split: 116 candidates in `web-admin` and 87 in `web-common`
+- Current after PRs 2–6: 134 candidates across 53 files
+- Current split: 116 candidates in `web-admin` and 18 in `web-common`
 - No candidates in `web-local`
-- Current categories: 115 visible-text findings, 41 attribute findings, and 47
+- Current categories: 79 visible-text findings, 31 attribute findings, and 24
   copy-property findings
-- Currently, 51 candidates have an exact English-text match in the existing
+- Currently, 34 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -63,25 +63,25 @@ node scripts/i18n-guard.js --strict
 
 ## PR plan
 
-| PR  | Scope                                                      | Baseline candidates | Status                     |
-| --- | ---------------------------------------------------------- | ------------------: | -------------------------- |
-| 1   | Guard coverage improvements                                |                   — | Implemented on this branch |
-| 2   | Time presets and comparisons                               |                  37 | Implemented on this branch |
-| 3   | Canvas components and inspector                            |                  35 | Planned                    |
-| 4   | Workspaces and Visual Metrics                              |                  18 | Planned                    |
-| 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Implemented on this branch |
-| 6   | Resources, connectors, and models                          |                  16 | Planned                    |
-| 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned                    |
-| 8   | Admin project status, GitHub, and user management          |                  29 | Planned                    |
-| 9   | Admin edit sessions and branches                           |                  32 | Planned                    |
-| 10  | Admin organizations, bookmarks, and view-as-user           |                  19 | Planned                    |
-| 11  | Admin alerts, reports, public URLs, and personal files     |                  18 | Planned                    |
-| 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned                    |
-| 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned                    |
+| PR  | Scope                                                      | Baseline candidates | Status    |
+| --- | ---------------------------------------------------------- | ------------------: | --------- |
+| 1   | Guard coverage improvements                                |                   — | Completed |
+| 2   | Time presets and comparisons                               |                  37 | Completed |
+| 3   | Canvas components and inspector                            |                  35 | Completed |
+| 4   | Workspaces and Visual Metrics                              |                  18 | Completed |
+| 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Completed |
+| 6   | Resources, connectors, and models                          |                  16 | Completed |
+| 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned   |
+| 8   | Admin project status, GitHub, and user management          |                  29 | Planned   |
+| 9   | Admin edit sessions and branches                           |                  32 | Planned   |
+| 10  | Admin organizations, bookmarks, and view-as-user           |                  19 | Planned   |
+| 11  | Admin alerts, reports, public URLs, and personal files     |                  18 | Planned   |
+| 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned   |
+| 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned   |
 
-PRs 1 and 2 are implemented on this branch. PRs 3–12 can be developed
-independently after it lands, but landing them sequentially reduces conflicts
-in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
+PRs 1–6 are completed. PRs 7–12 can be developed independently,
+but landing them sequentially reduces conflicts in `en.json` and `es.json`.
+PR 13 should land only after warning mode is clean.
 
 ## Finding inventory
 
@@ -89,7 +89,7 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 
 - 37 — `web-common/src/lib/time/config.ts`
 
-### PR 3: Canvas components and inspector (35)
+### PR 3: Canvas components and inspector (35, completed)
 
 - 4 — `web-common/src/features/canvas/CanvasBuilder.svelte`
 - 3 — `web-common/src/features/canvas/components/kpi/KPI.svelte`
@@ -102,7 +102,7 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 - 3 — `web-common/src/features/canvas/inspector/filters/DimensionFiltersInput.svelte`
 - 2 — `web-common/src/features/canvas/inspector/filters/TimeFiltersInput.svelte`
 
-### PR 4: Workspaces and Visual Metrics (18)
+### PR 4: Workspaces and Visual Metrics (18, completed)
 
 - 1 — `web-common/src/features/workspaces/ParquetWorkspace.svelte`
 - 17 — `web-common/src/features/workspaces/VisualMetrics.svelte`
@@ -126,7 +126,7 @@ in `en.json` and `es.json`. PR 13 should land only after warning mode is clean.
 - 1 — `web-common/src/features/dashboards/time-series/measure-chart/MeasureChartBody.svelte`
 - 2 — `web-common/src/features/dashboards/time-series/measure-chart/MeasureChartHoverTooltip.svelte`
 
-### PR 6: Resources, connectors, and models (16)
+### PR 6: Resources, connectors, and models (16, completed)
 
 - 3 — `web-common/src/features/connectors/explorer/DatabaseExplorer.svelte`
 - 5 — `web-common/src/features/connectors/explorer/DatabaseSchemaEntry.svelte`
