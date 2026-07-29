@@ -260,7 +260,7 @@
   "billing_trial_expired_hibernating": "Your trial has expired and this org’s projects are now hibernating.",
   "billing_trial_expires_in": "Your trial expires in {duration}.",
   "billing_trial_percent_used": "{percent}% of trial used, projects will hibernate when trial ends",
-  "billing_unit_spec": "1 unit = 4GiB RAM, 1vGPU",
+  "billing_unit_spec": "1 unit = 4GiB RAM, 1vCPU",
   "billing_unknown": "Unknown",
   "billing_unlimited": "Unlimited",
   "billing_update_payment": "Update payment",
