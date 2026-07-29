@@ -143,7 +143,11 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer res.Close()
 
-	return q.populateResult(res, timeDim, mv.ValidSpec, nullImpl)
+	if err := q.populateResult(res, timeDim, mv.ValidSpec, nullImpl); err != nil {
+		return err
+	}
+	q.Result.ServingTable = rollupServingTable(e, mv.ValidSpec)
+	return nil
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {

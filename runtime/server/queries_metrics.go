@@ -419,6 +419,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 			Max:       valOrNullTime(ts.Max),
 			Watermark: valOrNullTime(ts.Watermark),
 		},
+		RollupTimeRanges:        rollupTimeRangeSummaries(ts),
 		MaxQueryTimeRangeMillis: metricsview.ResolveMaxQueryTimeRange(maxQueryTimeRange, time.Now()).Milliseconds(),
 	}, nil
 }
@@ -528,11 +529,13 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 	if req.ExecutionTime != nil {
-		// If override is set, we use it for every ref except `min`
+		// If override is set, we use it for every ref except `min`.
+		// Rollup timestamps are preserved as-is since they report actual data coverage.
 		ts = metricsview.TimestampsResult{
 			Min:       ts.Min,
 			Max:       req.ExecutionTime.AsTime(),
 			Watermark: req.ExecutionTime.AsTime(),
+			Rollups:   ts.Rollups,
 		}
 		now = req.ExecutionTime.AsTime()
 	}
@@ -603,6 +606,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			Max:       valOrNullTime(ts.Max),
 			Watermark: valOrNullTime(ts.Watermark),
 		},
+		RollupTimeRanges:        rollupTimeRangeSummaries(ts),
 		ResolvedTimeRanges:      timeRanges,
 		TimeRanges:              backwardsCompatibleRanges,
 		MaxQueryTimeRangeMillis: metricsview.ResolveMaxQueryTimeRange(maxQueryTimeRange, now).Milliseconds(),
@@ -809,4 +813,20 @@ func valOrNullTime(v time.Time) *timestamppb.Timestamp {
 		return nil
 	}
 	return timestamppb.New(v)
+}
+
+// rollupTimeRangeSummaries converts the rollup timestamps in a TimestampsResult
+// to time range summaries keyed by rollup table name. Returns nil when the metrics view has no rollups.
+func rollupTimeRangeSummaries(ts metricsview.TimestampsResult) map[string]*runtimev1.TimeRangeSummary {
+	if len(ts.Rollups) == 0 {
+		return nil
+	}
+	res := make(map[string]*runtimev1.TimeRangeSummary, len(ts.Rollups))
+	for table, rts := range ts.Rollups {
+		res[table] = &runtimev1.TimeRangeSummary{
+			Min: valOrNullTime(rts.Min),
+			Max: valOrNullTime(rts.Max),
+		}
+	}
+	return res
 }

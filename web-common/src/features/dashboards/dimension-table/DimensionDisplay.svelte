@@ -24,6 +24,14 @@
   } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
+  import {
+    computeCoverageWarning,
+    requestedStartMs,
+  } from "../rollup-coverage/rollup-coverage";
+  import {
+    registerWidgetServingTable,
+    servingTableOf,
+  } from "../rollup-coverage/rollup-coverage-store";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
@@ -64,7 +72,11 @@
     },
     dashboardStore,
     validSpecStore,
+    rollupCoverage,
   } = getStateManagers();
+
+  const updateServingTable = registerWidgetServingTable(rollupCoverage);
+  const { coverage, tablesInUse, rollupGrains } = rollupCoverage;
 
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
@@ -187,6 +199,19 @@
     },
   );
 
+  $: servingTable = servingTableOf($sortedQuery.data);
+  $: updateServingTable(`dimension-table:${dimensionName}`, servingTable);
+  $: coverageWarning =
+    servingTable !== undefined
+      ? computeCoverageWarning(
+          servingTable,
+          $coverage,
+          $tablesInUse,
+          $rollupGrains,
+          requestedStartMs(timeRange.start, comparisonTimeRange?.start),
+        )
+      : undefined;
+
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
@@ -252,6 +277,7 @@
       {areAllTableRowsSelected}
       isRowsEmpty={!tableRows.length}
       {hideStartPivotButton}
+      {coverageWarning}
       bind:searchText={$dimensionSearchText}
       onToggleSearchItems={toggleAllSearchItems}
     />

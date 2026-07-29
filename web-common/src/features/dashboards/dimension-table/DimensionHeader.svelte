@@ -11,6 +11,8 @@
   import { onDestroy } from "svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { SortType } from "../proto-state/derived-types";
+  import type { CoverageWarning } from "../rollup-coverage/rollup-coverage";
+  import RollupCoverageWarning from "../rollup-coverage/RollupCoverageWarning.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import ExcludeButton from "../toolbars/ExcludeButton.svelte";
   import SearchButton from "../toolbars/SearchButton.svelte";
@@ -23,6 +25,7 @@
   export let isRowsEmpty = true;
   export let searchText: string;
   export let hideStartPivotButton = false;
+  export let coverageWarning: CoverageWarning | undefined = undefined;
   export let onToggleSearchItems: () => void;
 
   const stateManagers = getStateManagers();
@@ -133,6 +136,10 @@
       <Back size="16px" />
       <span>{m.dashboard_menu_all_dimensions()}</span>
     </Button>
+
+    {#if coverageWarning}
+      <RollupCoverageWarning warning={coverageWarning} compact={false} />
+    {/if}
 
     <div class="shrink-0 flex items-center gap-x-1">
       <SelectAllButton

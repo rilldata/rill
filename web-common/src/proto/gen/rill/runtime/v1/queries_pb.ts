@@ -1195,6 +1195,14 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
   data: Struct[] = [];
 
   /**
+   * Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+   * Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
+   *
+   * @generated from field: string serving_table = 4;
+   */
+  servingTable = "";
+
+  /**
    * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
    * @generated from field: rill.runtime.v1.Trace trace = 3;
@@ -1211,6 +1219,7 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 4, name: "serving_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
@@ -2139,6 +2148,14 @@ export class MetricsViewComparisonResponse extends Message<MetricsViewComparison
   rows: MetricsViewComparisonRow[] = [];
 
   /**
+   * Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+   * Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
+   *
+   * @generated from field: string serving_table = 3;
+   */
+  servingTable = "";
+
+  /**
    * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
    * @generated from field: rill.runtime.v1.Trace trace = 2;
@@ -2154,6 +2171,7 @@ export class MetricsViewComparisonResponse extends Message<MetricsViewComparison
   static readonly typeName = "rill.runtime.v1.MetricsViewComparisonResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "rows", kind: "message", T: MetricsViewComparisonRow, repeated: true },
+    { no: 3, name: "serving_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
 
@@ -2660,6 +2678,14 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
   data: TimeSeriesValue[] = [];
 
   /**
+   * Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+   * Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
+   *
+   * @generated from field: string serving_table = 4;
+   */
+  servingTable = "";
+
+  /**
    * Traces of spans captured during request execution. Only populated if trace was set to true in the request.
    *
    * @generated from field: rill.runtime.v1.Trace trace = 3;
@@ -2676,6 +2702,7 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: TimeSeriesValue, repeated: true },
+    { no: 4, name: "serving_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "trace", kind: "message", T: Trace },
   ]);
 
@@ -3372,6 +3399,14 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   timeRangeSummary?: TimeRangeSummary;
 
   /**
+   * Time range summaries for the metrics view's rollups, keyed by rollup table name.
+   * Only populated when the metrics view has rollups.
+   *
+   * @generated from field: map<string, rill.runtime.v1.TimeRangeSummary> rollup_time_ranges = 4;
+   */
+  rollupTimeRanges: { [key: string]: TimeRangeSummary } = {};
+
+  /**
    * The metrics view's max_query_time_range property resolved into milliseconds against the current time.
    * Zero if the metrics view does not configure max_query_time_range.
    *
@@ -3395,6 +3430,7 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
   static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangeResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_range_summary", kind: "message", T: TimeRangeSummary },
+    { no: 4, name: "rollup_time_ranges", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: TimeRangeSummary} },
     { no: 3, name: "max_query_time_range_millis", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 2, name: "trace", kind: "message", T: Trace },
   ]);
@@ -3810,6 +3846,14 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
   fullTimeRange?: TimeRangeSummary;
 
   /**
+   * Time range summaries for the metrics view's rollups, keyed by rollup table name.
+   * Only populated when the metrics view has rollups.
+   *
+   * @generated from field: map<string, rill.runtime.v1.TimeRangeSummary> rollup_time_ranges = 6;
+   */
+  rollupTimeRanges: { [key: string]: TimeRangeSummary } = {};
+
+  /**
    * The resolved time ranges for the requested rilltime expressions.
    *
    * @generated from field: repeated rill.runtime.v1.ResolvedTimeRange resolved_time_ranges = 3;
@@ -3848,6 +3892,7 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
   static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "full_time_range", kind: "message", T: TimeRangeSummary },
+    { no: 6, name: "rollup_time_ranges", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: TimeRangeSummary} },
     { no: 3, name: "resolved_time_ranges", kind: "message", T: ResolvedTimeRange, repeated: true },
     { no: 2, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
     { no: 5, name: "max_query_time_range_millis", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
