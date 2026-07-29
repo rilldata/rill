@@ -16,6 +16,7 @@
   export let disabled: boolean;
   export let href: string | null;
   export let reconciling: boolean = false;
+  export let label: string = "Preview";
 
   const viewDashboard = () => {
     if (!href) return;
@@ -41,7 +42,7 @@
 
 <Tooltip distance={8} location="left">
   <Button
-    label="Preview"
+    {label}
     type="secondary"
     preload={false}
     compact
@@ -52,7 +53,7 @@
   >
     <div class="flex gap-x-1 items-center">
       <Play size={14} />
-      Preview
+      {label}
     </div>
   </Button>
   <TooltipContent slot="tooltip-content">

@@ -3,8 +3,6 @@ import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/expl
 import { test } from "../setup/base";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
-  AD_BIDS_EXPLORE_PATH,
-  AD_BIDS_METRICS_PATH,
   assertAdBidsDashboard,
   createAdBidsModel,
 } from "../utils/dataSpecifcHelpers";
@@ -16,7 +14,6 @@ import {
 import { assertLeaderboards } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { createSourceV2 } from "../utils/sourceHelpers";
-import { gotoNavEntry } from "../utils/waitHelpers";
 
 test.describe("explores", () => {
   test.use({ project: "Blank" });
@@ -68,37 +65,47 @@ test.describe("explores", () => {
 
     await page.getByRole("button", { name: "switch to code editor" }).click();
 
-    // Add `inf` alias to the time range
+    // Add `inf` alias to the time range of the inline explore
     const addAllTime = `
-type: explore
+version: 1
+type: metrics_view
 
-title: "Adbids dashboard"
-metrics_view: AdBids_model_metrics
+model: AdBids_model
+timeseries: timestamp
 
-dimensions: '*'
-measures: '*'
+dimensions:
+  - column: publisher
+  - column: domain
 
-time_ranges:
-  - PT6H
-  - PT24H
-  - P7D
-  - P14D
-  - P4W
-  - P12M
-  - rill-TD
-  - rill-WTD
-  - rill-MTD
-  - rill-QTD
-  - rill-YTD
-  - rill-PDC
-  - rill-PWC
-  - rill-PMC
-  - rill-PQC
-  - rill-PYC
-  - inf
+measures:
+  - name: total_records
+    display_name: Total records
+    expression: COUNT(*)
+    format_preset: humanize
+
+explore:
+  display_name: "Adbids dashboard"
+  time_ranges:
+    - PT6H
+    - PT24H
+    - P7D
+    - P14D
+    - P4W
+    - P12M
+    - rill-TD
+    - rill-WTD
+    - rill-MTD
+    - rill-QTD
+    - rill-YTD
+    - rill-PDC
+    - rill-PWC
+    - rill-PMC
+    - rill-PQC
+    - rill-PYC
+    - inf
 `;
 
-    await watcher.updateAndWaitForExplore(addAllTime);
+    await watcher.updateAndWaitForExplore(addAllTime, "AdBids_model_metrics");
 
     await clickPreviewButton(page);
 
@@ -255,42 +262,56 @@ time_ranges:
     //    Check that the data is updated for last 6 hours
     //    Change time range back to all time
 
-    // Edit Explore
+    // Edit Explore (defined inline in the metrics view file)
     await page.getByRole("button", { name: "Edit" }).click();
     await page.getByRole("menuitem", { name: "Explore" }).click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     // Get the dashboard name field and change it
 
     const changeDisplayNameDoc = `
-type: explore
+version: 1
+type: metrics_view
 
-title: "Adbids dashboard renamed"
-metrics_view: AdBids_model_metrics
+model: AdBids_model
+timeseries: timestamp
 
-dimensions: '*'
-measures: '*'
+dimensions:
+  - column: publisher
+  - column: domain
 
-time_ranges:
-  - PT6H
-  - PT24H
-  - P7D
-  - P14D
-  - P4W
-  - P12M
-  - rill-TD
-  - rill-WTD
-  - rill-MTD
-  - rill-QTD
-  - rill-YTD
-  - rill-PDC
-  - rill-PWC
-  - rill-PMC
-  - rill-PQC
-  - rill-PYC
-  - inf
+measures:
+  - name: total_records
+    display_name: Total records
+    expression: COUNT(*)
+    format_preset: humanize
+
+explore:
+  display_name: "Adbids dashboard renamed"
+  time_ranges:
+    - PT6H
+    - PT24H
+    - P7D
+    - P14D
+    - P4W
+    - P12M
+    - rill-TD
+    - rill-WTD
+    - rill-MTD
+    - rill-QTD
+    - rill-YTD
+    - rill-PDC
+    - rill-PWC
+    - rill-PMC
+    - rill-PQC
+    - rill-PYC
+    - inf
 `;
 
-    await watcher.updateAndWaitForExplore(changeDisplayNameDoc);
+    await watcher.updateAndWaitForExplore(
+      changeDisplayNameDoc,
+      "AdBids_model_metrics",
+    );
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -313,37 +334,33 @@ time_ranges:
 
     const addBackTimestampColumnDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    version: 1
-    type: metrics_view
-    title: "AdBids_model_dashboard"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures:
-      - label: Total records
-        expression: count(*)
-        name: total_records
-        description: Total number of records present
-        format_preset: humanize
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
-
-        `;
+version: 1
+type: metrics_view
+title: "AdBids_model_dashboard"
+model: "AdBids_model"
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Total records
+    expression: count(*)
+    name: total_records
+    description: Total number of records present
+    format_preset: humanize
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain
+    column: domain
+    description: ""
+explore:
+  display_name: "Adbids dashboard renamed"
+`;
 
     await page.getByRole("button", { name: "switch to code editor" }).click();
     await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
-    await page.getByRole("button", { name: "Create resource menu" }).click();
-    await page
-      .getByRole("menuitem", { name: "Adbids dashboard renamed" })
-      .click();
 
     // Preview
     await clickPreviewButton(page);
@@ -351,40 +368,37 @@ time_ranges:
     // Assert that time dimension is now week
     await expect(timeGrainSelector).toHaveText("as of latest week end");
 
-    // Edit Explore
+    // Edit the metrics view (the explore is defined inline in the same file)
     await page.getByRole("button", { name: "Edit" }).click();
-    await page.getByRole("menuitem", { name: "Explore" }).click();
-
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+    await page.getByRole("menuitem", { name: "Metrics View" }).click();
+    await page.getByRole("button", { name: "switch to code editor" }).click();
 
     // Write an incomplete measure
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    version: 1
-    type: metrics_view
-    title: "AdBids_model_dashboard"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures:
-      - label: Avg Bid Price
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
-        
-        `;
+version: 1
+type: metrics_view
+title: "AdBids_model_dashboard"
+model: "AdBids_model"
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Avg Bid Price
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain
+    column: domain
+    description: ""
+explore:
+  display_name: "Adbids dashboard renamed"
+`;
 
     await updateCodeEditor(page, docWithIncompleteMeasure);
-    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
     await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
-    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
     // Complete the measure
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
@@ -393,7 +407,6 @@ version: 1
 type: metrics_view
 title: "AdBids_model_dashboard_rename"
 model: "AdBids_model"
-default_time_range: ""
 smallest_time_grain: "week"
 timeseries: "timestamp"
 measures:
@@ -415,10 +428,11 @@ dimensions:
     label: Domain Name
     column: domain
     description: ""
-        `;
+explore:
+  display_name: "Adbids dashboard renamed"
+`;
 
     await updateCodeEditor(page, docWithCompleteMeasure);
-    await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
     await expect(page.getByRole("button", { name: "Preview" })).toBeEnabled();
 
     // Preview

@@ -27,10 +27,11 @@ Explore dashboards require minimal configuration. In most cases, you only need t
 
 ## Inline explores in metrics views
 
-Metrics views create an explore resource by default with the same name as the metrics view. For legacy reasons, this does not happen for metrics views containing `version: 1`. You can customize a metrics view's explore with the `explore:` property inside the metrics view file:
+The preferred way to create an explore is inline in the metrics view file: set `version: 1` and add an `explore:` block, which emits an explore resource with the same name as the metrics view (or `name:` if set):
 
 ```yaml
 # metrics/sales.yaml
+version: 1
 type: metrics_view
 display_name: Sales Analytics
 
@@ -45,8 +46,11 @@ measures:
   - name: total_revenue
     expression: SUM(revenue)
 
-# Inline explore configuration (optional)
+# Inline explore configuration
 explore:
+  display_name: Sales Dashboard
+  dimensions: '*'  # Optional: dimensions to expose ('*', a list, or {exclude: [...]}); defaults to all
+  measures: '*'    # Optional: measures to expose ('*', a list, or {exclude: [...]}); defaults to all
   time_ranges:
     - P7D
     - P30D
@@ -55,7 +59,9 @@ explore:
     time_range: P30D
 ```
 
-Use inline explores for simple cases where you want to keep the metrics view and its dashboard configuration together. Use separate explore files when you need multiple explores for the same metrics view or more complex configurations.
+For legacy reasons, metrics views without `version:` auto-emit an explore even without an `explore:` block; metrics views with `version: 1` only emit one when the block is present.
+
+Use inline explores to keep the metrics view and its dashboard configuration together. Use separate explore files when you need multiple explores for the same metrics view.
 
 ## Example with annotations
 
