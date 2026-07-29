@@ -131,6 +131,7 @@ export interface V1AlertOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  webhookUrls?: string[];
   /** Annotation for the subpath of <UI host>/org/project to open for the report. */
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
@@ -1341,6 +1342,7 @@ export interface V1ReportOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  webhookUrls?: string[];
   /** Annotation for the subpath of <UI host>/org/project to open for the report. */
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
