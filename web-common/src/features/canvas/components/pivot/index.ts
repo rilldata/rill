@@ -289,7 +289,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
           },
           row_limit: {
             type: "select",
-            label: "Row limit",
+            label: m.canvas_row_limit(),
             meta: {
               default: ROW_LIMIT_ALL_VALUE,
               options: [
@@ -297,7 +297,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
                   value: limit.toString(),
                   label: limit.toString(),
                 })),
-                { value: ROW_LIMIT_ALL_VALUE, label: "All" },
+                { value: ROW_LIMIT_ALL_VALUE, label: m.common_all() },
               ],
             },
           },
