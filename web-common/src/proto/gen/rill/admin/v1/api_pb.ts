@@ -18551,6 +18551,18 @@ export class ReportOptions extends Message<ReportOptions> {
   canvas = "";
 
   /**
+   * PDF rendering options for canvas reports with export_format=EXPORT_FORMAT_PDF.
+   *
+   * @generated from field: bool pdf_include_filters = 23;
+   */
+  pdfIncludeFilters = false;
+
+  /**
+   * @generated from field: bool pdf_all_tabs = 24;
+   */
+  pdfAllTabs = false;
+
+  /**
    * web_open_mode is used to determine how to create or disable open link for the report
    * - send "recipient" for reports that should be opened with recipient's permissions - requires login
    * - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
@@ -18587,6 +18599,8 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "pdf_include_filters", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 24, name: "pdf_all_tabs", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

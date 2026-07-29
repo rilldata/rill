@@ -2,23 +2,17 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
     getInitialScheduleFormValues,
     makeTimeZoneOptions,
     ReportFrequency,
   } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { Readable } from "svelte/store";
 
   export let data: Readable<ReturnType<typeof getInitialScheduleFormValues>>;
-  export let exploreName: string;
+  // Time zone options from the dashboard's spec (falls back to Local + UTC when undefined)
+  export let availableTimeZones: string[] | undefined = undefined;
 
-  const runtimeClient = useRuntimeClient();
-
-  // Pull the time zone options from the dashboard's spec
-  $: exploreSpec = useExploreValidSpec(runtimeClient, exploreName);
-  $: availableTimeZones = $exploreSpec.data?.explore?.timeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
 </script>
 

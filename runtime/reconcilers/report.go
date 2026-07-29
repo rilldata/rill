@@ -249,7 +249,25 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	}
 	if canvas != "" {
 		c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
-		conditionRes = append(conditionRes, c)
+
+		// Also allow access to the canvas's components and the resources their renderers reference (e.g. metrics views).
+		// This enables report recipients to render the canvas in the browser (e.g. for PDF exports).
+		ctr, err := r.C.Runtime.Controller(ctx, r.C.InstanceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get controller: %w", err)
+		}
+		canvasRes, err := ctr.Get(ctx, c, false)
+		if err == nil {
+			canvasResources, err := canvasTransitiveConditionResources(ctx, r.C, claims, canvasRes)
+			if err != nil {
+				return nil, err
+			}
+			conditionRes = append(conditionRes, canvasResources...)
+		} else {
+			// Canvas not found: still allow access to the name so requests fail with a clear error on the canvas itself.
+			conditionRes = append(conditionRes, c)
+		}
+
 		for _, r := range rules {
 			if rfa := r.GetFieldAccess(); rfa != nil {
 				rfa.ConditionResources = append(rfa.ConditionResources, c)
@@ -812,6 +830,8 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 		return "Excel"
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
 		return "Parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PDF:
+		return "PDF"
 	default:
 		return f.String()
 	}

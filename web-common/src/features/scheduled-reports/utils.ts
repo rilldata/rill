@@ -56,8 +56,19 @@ export function getNewReportInitialFormValues(
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
     exportLimit: "",
     exportIncludeHeader: false,
+    pdfIncludeFilters: true,
+    pdfAllTabs: true,
     ...extractNotification(undefined, userEmail, false),
     ...extractRowsAndColumns(aggregationRequest),
+  };
+}
+
+export function getNewCanvasReportInitialFormValues(
+  userEmail: string | undefined,
+) {
+  return {
+    ...getNewReportInitialFormValues(userEmail, {}),
+    exportFormat: V1ExportFormat.EXPORT_FORMAT_PDF as V1ExportFormat,
   };
 }
 
@@ -75,12 +86,20 @@ export function getExistingReportInitialFormValues(
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
     exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
+    pdfIncludeFilters: reportSpec.annotations?.pdf_include_filters !== "false",
+    pdfAllTabs: reportSpec.annotations?.pdf_all_tabs !== "false",
     ...extractNotification(reportSpec.notifiers, userEmail, true),
     ...extractRowsAndColumns(aggregationRequest),
   };
 }
 
+export function isCanvasReportSpec(reportSpec: V1ReportSpec): boolean {
+  return !!reportSpec.annotations?.canvas;
+}
+
 export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
+  if (reportSpec.annotations?.canvas) return reportSpec.annotations.canvas;
+
   if (reportSpec.annotations?.explore) return reportSpec.annotations.explore;
 
   if (reportSpec.annotations?.web_open_path)

@@ -156,11 +156,38 @@ func (r *CanvasReconciler) checkAnyComponentHasValidSpec(components map[string]*
 
 func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
-	var conditionKinds []string
+	conditionKinds := []string{runtime.ResourceKindTheme}
+
+	conditionResources, err := canvasTransitiveConditionResources(ctx, r.C, claims, res)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now build security rules based on the collected references.
+	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionKinds:     conditionKinds,
+					ConditionResources: conditionResources,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
+}
+
+// canvasTransitiveConditionResources returns the resources needed to render the given canvas:
+// the canvas itself, its components, and all resources referenced by component renderers (e.g. metrics views).
+// It is used to build transitive access rules for canvases; also for reports that reference a canvas.
+func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controller, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.ResourceName, error) {
 	var conditionResources []*runtimev1.ResourceName
 	refs := &rendererRefs{
-		rt:           r.C.Runtime,
-		instanceID:   r.C.InstanceID,
+		rt:           c.Runtime,
+		instanceID:   c.InstanceID,
 		claims:       claims,
 		metricsViews: make(map[string]bool),
 	}
@@ -179,10 +206,9 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 
 	// explicitly allow access to the canvas itself
 	conditionResources = append(conditionResources, res.Meta.Name)
-	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
 
 	// Get controller to fetch components
-	ctr, err := r.C.Runtime.Controller(ctx, r.C.InstanceID)
+	ctr, err := c.Runtime.Controller(ctx, c.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get controller: %w", err)
 	}
@@ -228,21 +254,7 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	// Add the discovered refs to the condition resources.
 	conditionResources = append(conditionResources, refs.result()...)
 
-	// Now build security rules based on the collected references.
-	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					ConditionKinds:     conditionKinds,
-					ConditionResources: conditionResources,
-					Allow:              true,
-					Exclusive:          true,
-				},
-			},
-		})
-	}
-
-	return rules, nil
+	return conditionResources, nil
 }
 
 // validateMetricsViewTimeConsistency checks that all the metrics views referenced by the canvas' components have the same first_day_of_week and first_month_of_year.

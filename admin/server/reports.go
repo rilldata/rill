@@ -561,6 +561,15 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 
+	if opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+		if opts.Canvas == "" {
+			return nil, fmt.Errorf("PDF export requires a canvas")
+		}
+		if opts.Resolver != "" || opts.QueryName != "" { // nolint:staticcheck // backwards compatibility
+			return nil, fmt.Errorf("PDF export does not support a query or data resolver")
+		}
+	}
+
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
 			opts.Resolver: opts.ResolverProperties,
@@ -568,7 +577,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	}
 	res.Query.Name = opts.QueryName         // nolint:staticcheck // backwards compatibility
 	res.Query.ArgsJSON = opts.QueryArgsJson // nolint:staticcheck // backwards compatibility
-	res.Export.Format = opts.ExportFormat.String()
+	res.Export.Format = exportFormatYAML(opts.ExportFormat)
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
 
@@ -593,6 +602,10 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	}
 	res.Annotations.Explore = opts.Explore
 	res.Annotations.Canvas = opts.Canvas
+	if opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+		res.Annotations.PdfIncludeFilters = strconv.FormatBool(opts.PdfIncludeFilters)
+		res.Annotations.PdfAllTabs = strconv.FormatBool(opts.PdfAllTabs)
+	}
 	return yaml.Marshal(res)
 }
 
@@ -604,19 +617,6 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
 		}
-	}
-
-	// Format export format as pretty string
-	var exportFormat string
-	switch opts.ExportFormat {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		exportFormat = "csv"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		exportFormat = "parquet"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		exportFormat = "xlsx"
-	default:
-		exportFormat = opts.ExportFormat.String()
 	}
 
 	res := reportYAML{}
@@ -633,7 +633,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	}
 	res.Query.Name = opts.QueryName // nolint:staticcheck // backwards compatibility
 	res.Query.Args = args
-	res.Export.Format = exportFormat
+	res.Export.Format = exportFormatYAML(opts.ExportFormat)
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Notify.Email.Recipients = opts.EmailRecipients
@@ -874,6 +874,9 @@ type reportAnnotations struct {
 	WebOpenMode      WebOpenMode `yaml:"web_open_mode,omitempty"`
 	Explore          string      `yaml:"explore,omitempty"`
 	Canvas           string      `yaml:"canvas,omitempty"`
+	// PDF rendering options for canvas reports with PDF export format ("true"/"false"; empty means default).
+	PdfIncludeFilters string `yaml:"pdf_include_filters,omitempty"`
+	PdfAllTabs        string `yaml:"pdf_all_tabs,omitempty"`
 }
 
 type WebOpenMode string
@@ -905,6 +908,8 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.WebOpenState = annotations["web_open_state"]
 	res.Explore = annotations["explore"]
 	res.Canvas = annotations["canvas"]
+	res.PdfIncludeFilters = annotations["pdf_include_filters"]
+	res.PdfAllTabs = annotations["pdf_all_tabs"]
 	switch annotations["web_open_mode"] {
 	case "recipient":
 		res.WebOpenMode = WebOpenModeRecipient
@@ -917,6 +922,22 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	}
 
 	return res
+}
+
+// exportFormatYAML formats an export format enum as the string used in report YAML (parsed by runtime/parser.parseExportFormat).
+func exportFormatYAML(f runtimev1.ExportFormat) string {
+	switch f {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return "csv"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return "xlsx"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		return "parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PDF:
+		return "pdf"
+	default:
+		return f.String()
+	}
 }
 
 func virtualFilePathForManagedReport(name string) string {

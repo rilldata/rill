@@ -5520,6 +5520,7 @@ definitions:
       - EXPORT_FORMAT_CSV
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
+      - EXPORT_FORMAT_PDF
     default: EXPORT_FORMAT_UNSPECIFIED
   v1ExportReportResponse:
     type: object

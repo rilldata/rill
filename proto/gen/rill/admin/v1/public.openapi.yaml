@@ -646,6 +646,7 @@ components:
                 - EXPORT_FORMAT_CSV
                 - EXPORT_FORMAT_XLSX
                 - EXPORT_FORMAT_PARQUET
+                - EXPORT_FORMAT_PDF
             type: string
         v1Expression:
             properties:
@@ -1873,6 +1874,11 @@ components:
                     type: string
                 intervalDuration:
                     type: string
+                pdfAllTabs:
+                    type: boolean
+                pdfIncludeFilters:
+                    description: PDF rendering options for canvas reports with export_format=EXPORT_FORMAT_PDF.
+                    type: boolean
                 queryArgsJson:
                     title: use resolver/resolver_properties instead
                     type: string

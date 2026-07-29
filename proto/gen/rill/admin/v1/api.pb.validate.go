@@ -48560,6 +48560,10 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for Canvas
 
+	// no validation rules for PdfIncludeFilters
+
+	// no validation rules for PdfAllTabs
+
 	// no validation rules for WebOpenMode
 
 	if len(errors) > 0 {

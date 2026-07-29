@@ -5424,6 +5424,7 @@ definitions:
       - EXPORT_FORMAT_CSV
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
+      - EXPORT_FORMAT_PDF
     default: EXPORT_FORMAT_UNSPECIFIED
   v1Expression:
     type: object
@@ -6722,6 +6723,11 @@ definitions:
         title: either canvas or explore should be set
       canvas:
         type: string
+      pdfIncludeFilters:
+        type: boolean
+        description: PDF rendering options for canvas reports with export_format=EXPORT_FORMAT_PDF.
+      pdfAllTabs:
+        type: boolean
       webOpenMode:
         type: string
         title: |-

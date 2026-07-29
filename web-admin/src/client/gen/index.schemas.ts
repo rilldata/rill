@@ -518,6 +518,7 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+  EXPORT_FORMAT_PDF: "EXPORT_FORMAT_PDF",
 } as const;
 
 export interface V1Expression {
@@ -1347,6 +1348,9 @@ export interface V1ReportOptions {
   webOpenState?: string;
   explore?: string;
   canvas?: string;
+  /** PDF rendering options for canvas reports with export_format=EXPORT_FORMAT_PDF. */
+  pdfIncludeFilters?: boolean;
+  pdfAllTabs?: boolean;
   webOpenMode?: string;
 }
 

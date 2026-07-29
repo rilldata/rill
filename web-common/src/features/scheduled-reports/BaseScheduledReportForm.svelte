@@ -24,15 +24,24 @@
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import {
+    ResourceKind,
+    useResource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   export let formId: string;
   export let data: Readable<ReportValues>;
   export let errors: SuperFormErrors<ReportValues>;
   export let submit: () => void;
   export let enhance;
+  // Exactly one of exploreName and canvasName is non-empty; canvasName selects the canvas PDF variant of the form.
   export let exploreName: string;
-  export let filters: Filters;
-  export let timeControls: TimeControls;
+  export let canvasName: string = "";
+  export let filters: Filters | undefined = undefined;
+  export let timeControls: TimeControls | undefined = undefined;
 
   const RUN_AS_OPTIONS = [
     {
@@ -53,6 +62,22 @@
   );
 
   $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
+
+  // Pull the time zone options from the dashboard's spec
+  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
+  $: canvasQuery = useResource<V1Resource>(
+    runtimeClient,
+    canvasName,
+    ResourceKind.Canvas,
+  );
+  $: availableTimeZones = canvasName
+    ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
+    : $exploreSpecQuery.data?.explore?.timeZones;
+
+  // Gates the all-tabs option in the canvas PDF variant.
+  $: showTabOptions = specHasTabGroups(
+    $canvasQuery.data?.canvas?.state?.validSpec?.rows,
+  );
 </script>
 
 <form
@@ -86,71 +111,108 @@
         {selectedRunAsOption.description}
       </div>
     {/if}
-    <ScheduleForm {data} {exploreName} />
-    <Select
-      bind:value={$data["exportFormat"]}
-      id="exportFormat"
-      label={m.report_form_format()}
-      options={[
-        {
-          value: V1ExportFormat.EXPORT_FORMAT_CSV,
-          label: m.report_form_format_csv(),
-        },
-        {
-          value: V1ExportFormat.EXPORT_FORMAT_PARQUET,
-          label: m.report_form_format_parquet(),
-        },
-        {
-          value: V1ExportFormat.EXPORT_FORMAT_XLSX,
-          label: m.report_form_format_xlsx(),
-        },
-      ]}
-    />
-    <Input
-      bind:value={$data["exportLimit"]}
-      errors={$errors["exportLimit"]}
-      id="exportLimit"
-      label={m.report_form_row_limit()}
-      optional
-      placeholder={m.report_form_row_limit_placeholder()}
-    />
-    <div class="flex items-center gap-x-1">
+    <ScheduleForm {data} {availableTimeZones} />
+    {#if canvasName}
+      <Select
+        value={V1ExportFormat.EXPORT_FORMAT_PDF}
+        id="exportFormat"
+        label={m.report_form_format()}
+        options={[
+          {
+            value: V1ExportFormat.EXPORT_FORMAT_PDF,
+            label: m.report_form_format_pdf(),
+          },
+        ]}
+        disabled
+      />
       <Checkbox
-        bind:checked={$data["exportIncludeHeader"]}
-        id="exportIncludeHeader"
+        bind:checked={$data["pdfIncludeFilters"]}
+        id="pdfIncludeFilters"
         onCheckedChange={(checked) => {
-          $data["exportIncludeHeader"] = Boolean(checked);
+          $data["pdfIncludeFilters"] = Boolean(checked);
         }}
         inverse
-        disabled={$data["exportFormat"] ===
-          V1ExportFormat.EXPORT_FORMAT_PARQUET}
-        label={m.report_form_include_metadata()}
+        label={m.export_pdf_include_filters()}
       />
-      <Tooltip location="right" alignment="middle" distance={8}>
-        <div class="text-fg-secondary" style="transform:translateY(-.5px)">
-          <InfoCircle size="13px" />
+      {#if showTabOptions}
+        <Checkbox
+          bind:checked={$data["pdfAllTabs"]}
+          id="pdfAllTabs"
+          onCheckedChange={(checked) => {
+            $data["pdfAllTabs"] = Boolean(checked);
+          }}
+          inverse
+          label={m.export_pdf_tabs_all()}
+        />
+      {/if}
+    {:else}
+      <Select
+        bind:value={$data["exportFormat"]}
+        id="exportFormat"
+        label={m.report_form_format()}
+        options={[
+          {
+            value: V1ExportFormat.EXPORT_FORMAT_CSV,
+            label: m.report_form_format_csv(),
+          },
+          {
+            value: V1ExportFormat.EXPORT_FORMAT_PARQUET,
+            label: m.report_form_format_parquet(),
+          },
+          {
+            value: V1ExportFormat.EXPORT_FORMAT_XLSX,
+            label: m.report_form_format_xlsx(),
+          },
+        ]}
+      />
+      <Input
+        bind:value={$data["exportLimit"]}
+        errors={$errors["exportLimit"]}
+        id="exportLimit"
+        label={m.report_form_row_limit()}
+        optional
+        placeholder={m.report_form_row_limit_placeholder()}
+      />
+      <div class="flex items-center gap-x-1">
+        <Checkbox
+          bind:checked={$data["exportIncludeHeader"]}
+          id="exportIncludeHeader"
+          onCheckedChange={(checked) => {
+            $data["exportIncludeHeader"] = Boolean(checked);
+          }}
+          inverse
+          disabled={$data["exportFormat"] ===
+            V1ExportFormat.EXPORT_FORMAT_PARQUET}
+          label={m.report_form_include_metadata()}
+        />
+        <Tooltip location="right" alignment="middle" distance={8}>
+          <div class="text-fg-secondary" style="transform:translateY(-.5px)">
+            <InfoCircle size="13px" />
+          </div>
+          <TooltipContent maxWidth="400px" slot="tooltip-content">
+            {m.report_form_metadata_tooltip()}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      {#if filters && timeControls}
+        <div class="flex flex-col gap-y-3">
+          <InputLabel
+            label={m.report_form_filters()}
+            id="filters"
+            capitalize={false}
+          />
+          <FiltersForm {filters} {timeControls} side="top" />
         </div>
-        <TooltipContent maxWidth="400px" slot="tooltip-content">
-          {m.report_form_metadata_tooltip()}
-        </TooltipContent>
-      </Tooltip>
-    </div>
+      {/if}
 
-    <div class="flex flex-col gap-y-3">
-      <InputLabel
-        label={m.report_form_filters()}
-        id="filters"
-        capitalize={false}
+      <RowsAndColumnsForm
+        bind:rows={$data["rows"]}
+        bind:columns={$data["columns"]}
+        columnErrors={$errors["columns"]}
+        {exploreName}
       />
-      <FiltersForm {filters} {timeControls} side="top" />
-    </div>
-
-    <RowsAndColumnsForm
-      bind:rows={$data["rows"]}
-      bind:columns={$data["columns"]}
-      columnErrors={$errors["columns"]}
-      {exploreName}
-    />
+    {/if}
 
     <MultiInput
       id="emailRecipients"
