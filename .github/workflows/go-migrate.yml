@@ -28,8 +28,8 @@ jobs:
       if: always()
       with:
         status: ${{ job.status }}
-        notification_title: "{workflow} has {status_message}"
-        message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+        notification_title: "{workflow} / {job} has {status_message}"
+        message_format: "{emoji} *{workflow} / {job}* {status_message} in <{repo_url}|{repo}>"
         footer: "Linked Repo <{repo_url}|{repo}>"
         notify_when: "failure"
       env:
@@ -75,8 +75,8 @@ jobs:
       if: always()
       with:
         status: ${{ job.status }}
-        notification_title: "{workflow} has {status_message}"
-        message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+        notification_title: "{workflow} / {job} has {status_message}"
+        message_format: "{emoji} *{workflow} / {job}* {status_message} in <{repo_url}|{repo}>"
         footer: "Linked Repo <{repo_url}|{repo}>"
         notify_when: "failure"
       env:
