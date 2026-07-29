@@ -23,7 +23,7 @@
   let { usedCredit, availableCredit, creditPercent } = $derived($planCredits);
 </script>
 
-<PlanContainer badge="Pro Trial" description="$250 free credit">
+<PlanContainer badge="Trial" description="$250 free credit">
   {#snippet info()}
     {m.billing_no_time_limit()}<br />
     {m.billing_pricing_details_compact()}<br />
