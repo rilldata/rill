@@ -21,7 +21,7 @@ import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 

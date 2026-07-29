@@ -24,14 +24,11 @@ export class MeasureFilterManager {
   public type: MeasureFilterType;
   public value1: string;
   public value2: string;
-  public pinned: boolean;
-  public required: boolean;
 
   public constructor(
     public readonly name: string,
     public readonly label: string,
-    public readonly measures: Map<string, MetricsViewSpecMeasure>,
-    public readonly editing: boolean, // TODO: maybe separate editing, pinned & required?
+    public readonly measures: Record<string, MetricsViewSpecMeasure>,
     initDimension: string = "",
     initExpr: V1Expression | undefined = undefined,
   ) {
@@ -47,8 +44,6 @@ export class MeasureFilterManager {
     this.type = $state(mappedMeasureFilter?.type ?? MeasureFilterType.Value);
     this.value1 = $state(mappedMeasureFilter?.value1 ?? "");
     this.value2 = $state(mappedMeasureFilter?.value2 ?? "");
-    this.pinned = $state(false);
-    this.required = $state(false);
     this.commit();
   }
 
@@ -59,14 +54,6 @@ export class MeasureFilterManager {
     this.value1 = newFilter.value1;
     this.value2 = newFilter.value2;
     this.commit();
-  }
-
-  public togglePinned() {
-    this.pinned = !this.pinned;
-  }
-
-  public toggleRequired() {
-    this.required = !this.required;
   }
 
   public clear() {

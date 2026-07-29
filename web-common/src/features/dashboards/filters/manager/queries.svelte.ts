@@ -1,6 +1,6 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
-import type { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/dimension-filter-manager.svelte.ts";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
+import type { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/DimensionFilterManager.svelte.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import {
   getQueryServiceMetricsViewAggregationQueryOptions,
@@ -39,7 +39,7 @@ export function getDimensionSearchQuery(
   }: DimensionSearchArgs,
 ) {
   const dimensionName = dimensionManager.name;
-  const mvName = [...dimensionManager.dimensions.keys()][0] ?? "";
+  const mvName = Object.keys(dimensionManager.dimensions)[0] ?? "";
 
   const otherDimsFilter = $derived.by(() => {
     manager.expr; // Force rederivation when expr changes.
@@ -91,7 +91,7 @@ export function getAllSearchResultsCount(
   }: DimensionSearchArgs,
 ) {
   const dimensionName = dimensionManager.name;
-  const mvName = [...dimensionManager.dimensions.keys()][0] ?? "";
+  const mvName = Object.keys(dimensionManager.dimensions)[0] ?? "";
   const countMeasureName = dimensionName + "__distinct_count";
 
   const otherDimsFilter = $derived.by(() => {

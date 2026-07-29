@@ -320,6 +320,7 @@
       {errors}
       {submit}
       {enhance}
+      metricsViewName={metricsViewName ?? ""}
       exploreName={exploreName ?? ""}
       {filters}
       {timeControls}

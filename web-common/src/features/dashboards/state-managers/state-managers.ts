@@ -33,7 +33,9 @@ import {
   contextColWidthDefaults,
   type ContextColWidths,
 } from "../leaderboard-context-column";
-import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
+import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
 export type StateManagers = {
   runtimeClient: RuntimeClient;
@@ -193,6 +195,9 @@ export function createStateManagers({
     }),
     contextColumnWidths,
     defaultExploreState,
-    expressionFilterManager: new ExpressionFilterManager(),
+    expressionFilterManager: new ExpressionFilterManager(
+      new MetricsViewsProvider(runtimeClient, [metricsViewName]),
+      new YAMLConfigProvider(),
+    ),
   };
 }

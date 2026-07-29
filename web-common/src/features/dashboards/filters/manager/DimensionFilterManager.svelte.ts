@@ -20,16 +20,13 @@ export class DimensionFilterManager {
   public selectedValues: string[];
   public inputText: string;
   public exclude: boolean;
-  public pinned: boolean;
-  public required: boolean;
 
   private oldMode: DimensionFilterMode;
 
   public constructor(
     public readonly name: string,
     public readonly label: string,
-    public readonly dimensions: Map<string, MetricsViewSpecDimension>,
-    public readonly editing: boolean, // TODO: maybe separate editing, pinned & required?
+    public readonly dimensions: Record<string, MetricsViewSpecDimension>,
     initExpr: V1Expression = createInExpression(name, []),
     isInList: boolean = false,
   ) {
@@ -61,8 +58,6 @@ export class DimensionFilterManager {
     this.selectedValues = $state(initSelectedValues);
     this.inputText = $state(initInputText);
     this.exclude = $state(initExclude);
-    this.pinned = $state(false);
-    this.required = $state(false);
     this.commit();
   }
 
@@ -71,7 +66,6 @@ export class DimensionFilterManager {
       this.name,
       this.label,
       this.dimensions,
-      this.editing,
       this.expr,
       this.mode === DimensionFilterMode.InList,
     );
@@ -135,14 +129,6 @@ export class DimensionFilterManager {
   public toggleExclude() {
     this.exclude = !this.exclude;
     this.commit();
-  }
-
-  public togglePinned() {
-    this.pinned = !this.pinned;
-  }
-
-  public toggleRequired() {
-    this.required = !this.required;
   }
 
   public clear() {

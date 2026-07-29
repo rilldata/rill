@@ -10,7 +10,7 @@
   import Select from "../../../components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+  import type { ExpressionFilterManager } from "../../dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let filters: ExpressionFilterManager;
@@ -20,7 +20,9 @@
 
   $: ({ form } = superFormInstance);
 
-  $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
+  // memoise to avoid rerenders
+  $: metricsViewName = $form["metricsViewName"];
+  $: exploreName = $form["exploreName"];
   $: metricsView = useMetricsViewValidSpec(runtimeClient, metricsViewName);
 
   $: measureOptions =
@@ -52,7 +54,13 @@
 
 <div class="flex flex-col gap-y-3">
   <FormSection title={m.alert_form_data_filters()}>
-    <FiltersForm {filters} {timeControls} maxWidth={750} />
+    <FiltersForm
+      {filters}
+      {metricsViewName}
+      {exploreName}
+      {timeControls}
+      maxWidth={750}
+    />
   </FormSection>
   <FormSection
     description={m.alert_form_data_measures_desc()}

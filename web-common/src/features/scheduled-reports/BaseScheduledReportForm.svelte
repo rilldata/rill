@@ -23,13 +23,14 @@
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+  import type { ExpressionFilterManager } from "../dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
 
   export let formId: string;
   export let data: Readable<ReportValues>;
   export let errors: SuperFormErrors<ReportValues>;
   export let submit: () => void;
   export let enhance;
+  export let metricsViewName: string;
   export let exploreName: string;
   export let filters: ExpressionFilterManager;
   export let timeControls: TimeControls;
@@ -142,7 +143,13 @@
         id="filters"
         capitalize={false}
       />
-      <FiltersForm {filters} {timeControls} side="top" />
+      <FiltersForm
+        {filters}
+        {metricsViewName}
+        {exploreName}
+        {timeControls}
+        side="top"
+      />
     </div>
 
     <RowsAndColumnsForm

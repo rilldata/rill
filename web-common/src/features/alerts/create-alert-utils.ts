@@ -10,9 +10,11 @@ import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/Ti
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
@@ -68,7 +70,10 @@ export function getNewAlertInitialFiltersFormValues(
     exploreName,
   );
 
-  const filters = new ExpressionFilterManager();
+  const filters = new ExpressionFilterManager(
+    new MetricsViewsProvider(client, [metricsViewName]),
+    new YAMLConfigProvider(),
+  );
   const fullExpr = mergeDimensionAndMeasureFilters(
     exploreState.whereFilter,
     exploreState.dimensionThresholdFilters ?? [],

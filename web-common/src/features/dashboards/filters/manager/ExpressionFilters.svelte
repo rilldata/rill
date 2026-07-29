@@ -5,13 +5,11 @@
   import { Button } from "@rilldata/web-common/components/button";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/manager/MeasureFilter.svelte";
   import { fly } from "svelte/transition";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
-  import { getFilteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
 
   let {
     expressionFilterManager,
+    filteredMeasures,
 
     timeEnd,
     timeStart,
@@ -21,6 +19,9 @@
     isUrlTooLongAfterInListFilter,
   }: {
     expressionFilterManager: ExpressionFilterManager;
+    // Explore spec can restrict the available measure vs metrics views.
+    // This is passed in explore context.
+    filteredMeasures?: string[];
 
     timeStart: string | undefined;
     timeEnd: string | undefined;
@@ -33,27 +34,30 @@
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
 
-  const runtimeClient = useRuntimeClient();
-
-  let validSpecQuery = $derived(
-    useExploreValidSpec(runtimeClient, expressionFilterManager.exploreName),
+  let metricsViewsProvider = $derived(
+    expressionFilterManager.metricsViewsProvider,
   );
-  let exploreSpec = $derived($validSpecQuery.data?.explore ?? {});
+  let yamlConfigProvider = $derived(expressionFilterManager.yamlConfigProvider);
 
-  let allMeasures = $derived([
-    ...expressionFilterManager.measureIdMap.values(),
-  ]);
-  let allDimensions = $derived([
-    ...expressionFilterManager.dimensionIdMap.values(),
-  ]);
+  let allDimensions = $derived(metricsViewsProvider.dimensions);
 
   let filteredSimpleMeasures = $derived(
-    getFilteredSimpleMeasures(allMeasures, exploreSpec.measures),
+    filteredMeasures
+      ? metricsViewsProvider.simpleMeasures.filter((m) =>
+          filteredMeasures.includes(m.name ?? ""),
+        )
+      : metricsViewsProvider.simpleMeasures,
   );
 
   let hasFilters = $derived(
     expressionFilterManager.dimensionFilterManagers.length > 0 ||
       expressionFilterManager.measureFilterManagers.length > 0,
+  );
+  // Required and pinned filters have a chip even without a value, so there is nothing to clear
+  // unless a chip actually holds a filter.
+  let hasClearableFilters = $derived(
+    expressionFilterManager.dimensionFilterManagers.some((dfm) => !!dfm.expr) ||
+      expressionFilterManager.measureFilterManagers.some((mfm) => !!mfm.expr),
   );
 
   let measureHasFilter = $derived((name: string) =>
@@ -66,14 +70,6 @@
       (dfm) => dfm.name === name,
     ),
   );
-
-  function handleAddNew(name: string) {
-    if (expressionFilterManager.measureIdMap.has(name)) {
-      expressionFilterManager.addTemporaryMeasureFilter(name);
-    } else {
-      expressionFilterManager.addTemporaryDimensionFilter(name);
-    }
-  }
 </script>
 
 <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
@@ -91,12 +87,13 @@
         <DimensionFilter
           manager={expressionFilterManager}
           {dimensionManager}
+          {yamlConfigProvider}
           {timeStart}
           {timeEnd}
           {timeControlsReady}
           {timeDimension}
-          openOnMount={expressionFilterManager.temporaryFilter ===
-            dimensionManager}
+          openOnMount={expressionFilterManager.temporaryFilterName ===
+            dimensionManager.name}
           isUrlTooLongAfterInListFilter={isUrlTooLongAfterInListFilter
             ? (values) =>
                 isUrlTooLongAfterInListFilter(dimensionManager.name, values)
@@ -107,9 +104,10 @@
       {#each expressionFilterManager.measureFilterManagers as measureManager (measureManager.name)}
         <MeasureFilter
           {measureManager}
+          {yamlConfigProvider}
           {allDimensions}
-          openOnMount={expressionFilterManager.temporaryFilter ===
-            measureManager}
+          openOnMount={expressionFilterManager.temporaryFilterName ===
+            measureManager.name}
         />
       {/each}
     {/if}
@@ -119,11 +117,12 @@
       {filteredSimpleMeasures}
       {dimensionHasFilter}
       {measureHasFilter}
-      setTemporaryFilterName={handleAddNew}
+      setTemporaryFilterName={(name: string) =>
+        expressionFilterManager.addTemporaryFilter(name)}
     />
     <!-- if filters are present, place a chip at the end of the flex container
     that enables clearing all filters -->
-    {#if hasFilters}
+    {#if hasClearableFilters}
       <Button type="text" onClick={() => expressionFilterManager.clear()}>
         {m.dashboard_clear_filters()}
       </Button>

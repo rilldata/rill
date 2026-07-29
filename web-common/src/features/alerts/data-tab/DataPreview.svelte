@@ -10,7 +10,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PreviewEmpty from "../PreviewEmpty.svelte";
   import type { DimensionTableRow } from "../../dashboards/dimension-table/dimension-table-types";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+  import type { ExpressionFilterManager } from "../../dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
 
   let {
     formValues,

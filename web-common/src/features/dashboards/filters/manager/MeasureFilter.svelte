@@ -10,15 +10,18 @@
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
   import MeasureFilterForm from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterForm.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import type { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/measure-filter-manager.svelte.ts";
+  import type { MeasureFilterManager } from "./MeasureFilterManager.svelte.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
   let {
     measureManager,
+    yamlConfigProvider,
     openOnMount = true,
     allDimensions,
     side = "bottom",
   }: {
     measureManager: MeasureFilterManager;
+    yamlConfigProvider: YAMLConfigProvider;
     openOnMount?: boolean;
     allDimensions: MetricsViewSpecDimension[];
     side?: "top" | "right" | "bottom" | "left";
@@ -26,14 +29,20 @@
 
   // svelte-ignore state_referenced_locally
   let open = $state(openOnMount && !measureManager.expr);
-  // svelte-ignore state_referenced_locally
-  let curPinned = $state(measureManager.pinned);
-  // svelte-ignore state_referenced_locally
-  let curRequired = $state(measureManager.required);
 
-  let missingRequired = $derived(
-    measureManager.required && !measureManager.expr,
+  let pinned = $derived(
+    Boolean(yamlConfigProvider.pinnedFilters[measureManager.name]),
   );
+  let required = $derived(
+    Boolean(yamlConfigProvider.requiredFilters[measureManager.name]),
+  );
+  let missingRequired = $derived(required && !measureManager.expr);
+
+  // Pinned and required are edited locally and only persisted once the popover closes.
+  // svelte-ignore state_referenced_locally
+  let curPinned = $state(pinned);
+  // svelte-ignore state_referenced_locally
+  let curRequired = $state(required);
 
   let filter = $derived(
     measureManager.expr
@@ -48,25 +57,28 @@
   );
 
   function onApply(dimension: string, filter: MeasureFilterEntry) {
-    if (measureManager.pinned !== curPinned) {
-      measureManager.togglePinned();
-    }
-    if (measureManager.required !== curRequired) {
-      measureManager.toggleRequired();
-    }
+    persistPinnedAndRequired();
     measureManager.apply(dimension, filter);
+  }
+
+  function persistPinnedAndRequired() {
+    if (pinned !== curPinned) {
+      yamlConfigProvider.togglePinnedFilter(measureManager.name);
+    }
+    if (required !== curRequired) {
+      yamlConfigProvider.toggleRequiredFilter(measureManager.name);
+    }
   }
 </script>
 
 <Popover.Root
   bind:open
-  onOpenChange={() => {
-    if (!open) return;
-    if (measureManager.pinned !== curPinned) {
-      measureManager.togglePinned();
-    }
-    if (measureManager.required !== curRequired) {
-      measureManager.toggleRequired();
+  onOpenChange={(open) => {
+    if (open) {
+      curPinned = pinned;
+      curRequired = required;
+    } else {
+      persistPinnedAndRequired();
     }
   }}
 >
@@ -88,7 +100,7 @@
           error={!!missingRequired}
           theme
           onRemove={() => measureManager.clear()}
-          removable={!curPinned && !measureManager.required}
+          removable={!pinned && !required}
           removeTooltipText={m.dashboard_remove_label({
             label: measureManager.label,
           })}
@@ -109,7 +121,7 @@
                 >{measureManager.name}</svelte:fragment
               >
               <svelte:fragment slot="description"
-                >{measureManager.required
+                >{required
                   ? m.dashboard_required_measure()
                   : measureManager.label || ""}</svelte:fragment
               >
@@ -139,8 +151,8 @@
       onApply={({ dimension, filter }) => onApply(dimension, filter)}
       bind:pinned={curPinned}
       bind:required={curRequired}
-      showPinControl={measureManager.editing}
-      showRequiredControl={measureManager.editing}
+      showPinControl={yamlConfigProvider.editable}
+      showRequiredControl={yamlConfigProvider.editable}
       {side}
     />
   {/if}

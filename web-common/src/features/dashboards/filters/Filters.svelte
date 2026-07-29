@@ -114,25 +114,6 @@
   let exploreState = $derived(useExploreState($exploreName));
   let activeTimeZone = $derived($exploreState?.selectedTimezone);
 
-  let measureIdMap = $derived(
-    getMapFromArray($allMeasures, (measure) => measure.name as string),
-  );
-
-  let dimensionIdMap = $derived(
-    getMapFromArray(
-      $allDimensions,
-      (dimension) => (dimension.name || dimension.column) as string,
-    ),
-  );
-
-  $effect(() =>
-    expressionFilterManager.syncSpec(
-      metricsViewName,
-      $exploreName,
-      measureIdMap,
-      dimensionIdMap,
-    ),
-  );
   $effect(() =>
     setFilter(
       expressionFilterManager.expr,
@@ -496,6 +477,7 @@
 
   <ExpressionFilters
     {expressionFilterManager}
+    filteredMeasures={exploreSpec?.measures}
     {timeStart}
     {timeEnd}
     timeDimension={$dashboardStore.selectedTimeDimension}

@@ -24,17 +24,19 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PinButton from "../PinButton.svelte";
   import RequiredButton from "../RequiredButton.svelte";
-  import { DimensionFilterManager } from "./dimension-filter-manager.svelte.ts";
+  import { DimensionFilterManager } from "./DimensionFilterManager.svelte.ts";
   import {
     getAllSearchResultsCount,
     getDimensionSearchQuery,
   } from "@rilldata/web-common/features/dashboards/filters/manager/queries.svelte.ts";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+  import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
   import { onMount } from "svelte";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
   let {
     manager,
     dimensionManager,
+    yamlConfigProvider,
     openOnMount = true,
     readOnly = false,
     timeStart,
@@ -47,6 +49,7 @@
   }: {
     manager: ExpressionFilterManager;
     dimensionManager: DimensionFilterManager;
+    yamlConfigProvider: YAMLConfigProvider;
     openOnMount?: boolean;
     readOnly?: boolean;
     timeStart: string | undefined;
@@ -66,9 +69,19 @@
 
   const client = useRuntimeClient();
 
-  let missingRequired = $derived(
-    Boolean(dimensionManager.pinned && !dimensionManager.expr),
+  let pinned = $derived(
+    Boolean(yamlConfigProvider.pinnedFilters[dimensionManager.name]),
   );
+  let required = $derived(
+    Boolean(yamlConfigProvider.requiredFilters[dimensionManager.name]),
+  );
+  let missingRequired = $derived(Boolean(required && !dimensionManager.expr));
+
+  // Pinned and required are edited locally and only persisted once the dropdown closes.
+  // svelte-ignore state_referenced_locally
+  let curPinned = $state(pinned);
+  // svelte-ignore state_referenced_locally
+  let curRequired = $state(required);
 
   $effect(() => checkSearchText(curSearchText));
 
@@ -237,7 +250,11 @@
         dimensionManager.mode === DimensionFilterMode.InList
           ? mergeDimensionSearchValues(dimensionManager.selectedValues)
           : dimensionManager.inputText;
+      curPinned = pinned;
+      curRequired = required;
     } else {
+      persistPinnedAndRequired();
+
       // Apply proxy changes for Select mode when dropdown closes
       if (proxyDimensionManager.mode === DimensionFilterMode.Select) {
         dimensionManager.expr = proxyDimensionManager.expr;
@@ -263,8 +280,26 @@
 
   function onApply(close = true) {
     if (disableApplyButton) return;
+    persistPinnedAndRequired();
+    if (proxyDimensionManager.mode === DimensionFilterMode.Contains) {
+      proxyDimensionManager.setContainsText(
+        curSearchText,
+        proxyDimensionManager.exclude,
+      );
+    }
     dimensionManager.expr = proxyDimensionManager.expr;
     if (close) open = false;
+  }
+
+  // Closing via the trigger goes through handleOpenChange, but applying closes the dropdown
+  // directly, so both paths persist the staged pinned and required states.
+  function persistPinnedAndRequired() {
+    if (pinned !== curPinned) {
+      yamlConfigProvider.togglePinnedFilter(dimensionManager.name);
+    }
+    if (required !== curRequired) {
+      yamlConfigProvider.toggleRequiredFilter(dimensionManager.name);
+    }
   }
 
   function handleItemClick(value: string) {
@@ -307,9 +342,7 @@
           label={`${dimensionManager.name} filter`}
           theme
           onRemove={() => dimensionManager.clear()}
-          removable={!readOnly &&
-            !proxyDimensionManager.pinned &&
-            !dimensionManager.pinned}
+          removable={!readOnly && !pinned && !required}
           {readOnly}
           removeTooltipText="remove {dimensionManager.selectedValues
             .length} value{dimensionManager.selectedValues.length !== 1
@@ -340,7 +373,7 @@
                 >{dimensionManager.name}</svelte:fragment
               >
               <svelte:fragment slot="description"
-                >{dimensionManager.pinned
+                >{required
                   ? "required dimension"
                   : "dimension"}</svelte:fragment
               >
@@ -364,7 +397,7 @@
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
-      {#if dimensionManager.editing}
+      {#if yamlConfigProvider.editable}
         <div
           class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
         >
@@ -372,12 +405,12 @@
 
           <div class="flex flex-row items-center gap-x-1">
             <RequiredButton
-              required={proxyDimensionManager.required}
-              onToggleRequired={() => proxyDimensionManager.toggleRequired()}
+              required={curRequired}
+              onToggleRequired={() => (curRequired = !curRequired)}
             />
             <PinButton
-              pinned={proxyDimensionManager.pinned}
-              onTogglePin={() => proxyDimensionManager.togglePinned()}
+              pinned={curPinned}
+              onTogglePin={() => (curPinned = !curPinned)}
             />
           </div>
         </div>

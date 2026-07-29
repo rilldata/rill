@@ -19,13 +19,16 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/expression-filter-manager.svelte.ts";
+  import type { ExpressionFilterManager } from "../dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilters.svelte";
 
   const runtimeClient = useRuntimeClient();
 
   export let filters: ExpressionFilterManager;
+  // TODO: make this support canvas
+  export let metricsViewName: string;
+  export let exploreName: string;
   export let timeControls: TimeControls;
   export let maxWidth: number | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
@@ -42,10 +45,7 @@
     displayTimeComparison,
   } = timeControls);
 
-  const validSpecQuery = useExploreValidSpec(
-    runtimeClient,
-    filters.exploreName,
-  );
+  const validSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
   $: allTimeRange = $allTimeRangeStore;
   $: exploreSpec = $validSpecQuery.data?.explore ?? {};
   $: metricsViewSpec = $validSpecQuery.data?.metricsView ?? {};
@@ -159,13 +159,13 @@
 
     await queryClient.cancelQueries({
       predicate: (query) =>
-        invalidationForMetricsViewData(query, filters.metricsViewName),
+        invalidationForMetricsViewData(query, metricsViewName),
     });
 
     const { interval, grain } = await deriveInterval(
       name,
       runtimeClient,
-      filters.metricsViewName,
+      metricsViewName,
       $selectedTimezone,
       timeDimension,
     );
@@ -272,6 +272,7 @@
 
   <ExpressionFilters
     expressionFilterManager={filters}
+    filteredMeasures={exploreSpec?.measures}
     {timeStart}
     {timeEnd}
     {timeDimension}
