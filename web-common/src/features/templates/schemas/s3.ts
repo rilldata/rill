@@ -23,7 +23,6 @@ export const s3Schema: MultiStepFormSchema = {
         access_keys: [
           "aws_access_key_id",
           "aws_secret_access_key",
-          "aws_access_token",
           "region",
           "endpoint",
           "aws_role_arn",
@@ -53,18 +52,6 @@ export const s3Schema: MultiStepFormSchema = {
       "x-env-var-name": "AWS_SECRET_ACCESS_KEY",
       "x-step": "connector",
       "x-visible-if": { auth_method: "access_keys" },
-    },
-    aws_access_token: {
-      type: "string",
-      title: "Session Token",
-      description:
-        "Optional AWS session token when the access key is temporary",
-      "x-placeholder": "Enter AWS session token",
-      "x-secret": true,
-      "x-env-var-name": "AWS_SESSION_TOKEN",
-      "x-step": "connector",
-      "x-visible-if": { auth_method: "access_keys" },
-      "x-advanced": true,
     },
     region: {
       type: "string",

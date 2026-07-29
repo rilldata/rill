@@ -71,6 +71,7 @@ func TestGenerateSecretSQLWithAWSCredentials(t *testing.T) {
 				"aws_web_identity_token_file": tokenPath,
 				"aws_role_arn":                "arn:aws:iam::123456789012:role/web-identity",
 				"aws_role_session_name":       "web-session",
+				"allow_host_access":           false,
 			},
 			wantAccessKeyID:     "WEB_KEY",
 			wantSecretAccessKey: "WEB_SECRET",

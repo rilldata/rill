@@ -38,6 +38,7 @@ func TestGetConfigWithTemporaryCredentialsWebIdentity(t *testing.T) {
 		RoleSessionName:      "web-session",
 		WebIdentityTokenFile: tokenPath,
 		Region:               "us-east-1",
+		AllowHostAccess:      false,
 	}, zap.NewNop())
 	require.NoError(t, err)
 	require.Equal(t, "WEB_KEY", cfg.AccessKeyID)

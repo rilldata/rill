@@ -45,15 +45,6 @@ var spec = drivers.Spec{
 			Required:    false,
 		},
 		{
-			Key:         "aws_access_token",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "AWS session token",
-			Description: "Optional AWS session token for temporary explicit credentials",
-			Placeholder: "Enter your AWS session token",
-			Secret:      true,
-			Required:    false,
-		},
-		{
 			Key:         "region",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Region",
@@ -467,6 +458,9 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties, logger *zap.L
 
 // newCredentialsProvider returns credentials for connecting to AWS.
 func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (aws.CredentialsProvider, error) {
+	// WebIdentityTokenFile is an explicit credential source injected by the hosted
+	// runtime. It intentionally remains available when AllowHostAccess is false;
+	// that flag only prevents discovery of ambient credentials from the host.
 	if confProp.WebIdentityTokenFile != "" && confProp.RoleARN != "" {
 		return awsutil.NewWebIdentityCredentials(ctx, confProp.RoleARN, confProp.RoleSessionName, confProp.Region,
 			stscreds.IdentityTokenFile(confProp.WebIdentityTokenFile), logger)
