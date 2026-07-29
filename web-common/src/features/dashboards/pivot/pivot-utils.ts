@@ -10,7 +10,6 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
-  Period,
   TimeOffsetType,
   type AvailableTimeGrain,
   type TimeRangeString,
@@ -125,7 +124,7 @@ export function getTimeForQuery(
       startTimeOfLastInterval = startTimeDt;
     }
 
-    const duration = TIME_GRAIN[filter.interval]?.duration as Period;
+    const duration = TIME_GRAIN[filter.interval]?.duration;
     const endTimeDt = getOffset(
       startTimeOfLastInterval,
       duration,
@@ -607,7 +606,14 @@ export function getValuesForFlatTable(
 /**
  * Shared core for all pivot filter builders. Takes dimension name/value pairs,
  * separates time dimensions into TimeFilters, creates IN expressions for the rest,
- * computes the narrowed time range, and merges everything with optional extra filters.
+ * and computes the narrowed time range.
+ *
+ * The returned expression describes only the clicked element; the dashboard's
+ * global where filter is deliberately left out. Click-to-filter reads these
+ * expressions back to decide which dimension values to toggle, so folding the
+ * global filter in here would make deselecting a pivot cell also drop unrelated
+ * global filters. Callers that query data with the result (the rows viewer)
+ * merge config.whereFilter themselves.
  *
  * Every public getFiltersFor* function delegates here after extracting its
  * dimension entries from whichever data source it uses (positional rowId,
@@ -616,7 +622,6 @@ export function getValuesForFlatTable(
 export function buildPivotFilter(
   config: PivotDataStoreConfig,
   dimEntries: Array<{ name: string; value: string | null }>,
-  extraFilters?: V1Expression,
 ): PivotFilter {
   const timeFilters: TimeFilters[] = [];
   const dimExprs: V1Expression[] = [];
@@ -637,15 +642,7 @@ export function buildPivotFilter(
     dimExprs.length > 0 ? createAndExpression(dimExprs) : undefined;
   const timeRange = getTimeForQuery(config.time, timeFilters);
 
-  let filters: V1Expression | undefined;
-  if (extraFilters) {
-    const combined = mergeFilters(dimFilter, extraFilters);
-    filters = mergeFilters(combined, config.whereFilter);
-  } else {
-    filters = mergeFilters(dimFilter, config.whereFilter);
-  }
-
-  return { filters, timeRange };
+  return { filters: dimFilter, timeRange };
 }
 
 export function getFiltersForCell(
