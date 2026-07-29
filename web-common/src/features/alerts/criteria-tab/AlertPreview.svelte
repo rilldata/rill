@@ -50,8 +50,5 @@
     <AlertPreviewTable {rows} {columns} />
   </div>
 {:else}
-  <div>
-    Given the above criteria, this alert will not trigger for the current time
-    range.
-  </div>
+  <div>{m.alert_form_criteria_no_trigger_current_range()}</div>
 {/if}
