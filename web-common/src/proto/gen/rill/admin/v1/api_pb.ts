@@ -2822,6 +2822,15 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   navigation = false;
 
   /**
+   * HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+   * It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+   * In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
+   *
+   * @generated from field: bool hide_navigation_bar = 18;
+   */
+  hideNavigationBar = false;
+
+  /**
    * Blob containing UI state for rendering the initial embed. Not currently supported.
    *
    * @generated from field: string state = 7;
@@ -2864,6 +2873,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "hide_navigation_bar", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 17, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

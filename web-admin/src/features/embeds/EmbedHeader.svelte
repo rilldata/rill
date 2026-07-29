@@ -18,7 +18,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let activeResource: V1ResourceName;
-  export let navigationEnabled: boolean = true;
+  export let navigationBarEnabled: boolean = true;
 
   const runtimeClient = useRuntimeClient();
   const { twoTieredNavigation, dashboardChat } = featureFlags;
@@ -26,7 +26,7 @@
   $: onProjectPage = !activeResource;
   $: showDashboardChat = $dashboardChat && !onProjectPage;
 
-  $: shouldRender = navigationEnabled || showDashboardChat;
+  $: shouldRender = navigationBarEnabled || showDashboardChat;
 
   // Dashboard breadcrumb
   $: dashboardsQuery = useValidDashboards(runtimeClient);
@@ -55,7 +55,7 @@
 
 {#if $isErrorStoreEmpty && shouldRender}
   <div class="flex items-center w-full">
-    {#if navigationEnabled}
+    {#if navigationBarEnabled}
       <nav class="flex-1">
         <ol class="flex items-center pl-4">
           {#if !onProjectPage}
