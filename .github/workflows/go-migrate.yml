@@ -23,6 +23,18 @@ jobs:
       run: |
         ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
 
+    - name: Notify Slack
+      uses: ravsamhq/notify-slack-action@v2
+      if: always()
+      with:
+        status: ${{ job.status }}
+        notification_title: "{workflow} has {status_message}"
+        message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+        footer: "Linked Repo <{repo_url}|{repo}>"
+        notify_when: "failure"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}
+
   validate-apply:
     runs-on: ubuntu-22.04
     needs: validate-sequential
