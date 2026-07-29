@@ -193,7 +193,7 @@
   "billing_fix_payment_issues": "Por favor, solucione los problemas de pago: {details}",
   "billing_free_credit_desc": "$250 de crédito gratis",
   "billing_free_trial_info": "prueba gratuita · 30 días, no se requiere tarjeta de crédito. Los proyectos entran en hibernación cuando finaliza la prueba.",
-  "billing_free_trial_with_credits": "Está en una prueba gratuita con {amount}$ en créditos.",
+  "billing_free_trial_with_credits": "Está en una prueba gratuita con ${amount} en créditos.",
   "billing_got_it": "Entendido",
   "billing_highlight_1m_ai_tokens": "1M tokens de IA / puesto / mes",
   "billing_highlight_2m_ai_tokens": "2M tokens de IA / puesto / mes",
