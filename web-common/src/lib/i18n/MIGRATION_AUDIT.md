@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PRs 2–4 and 6: 164 candidates across 69 files
-- Current split: 116 candidates in `web-admin` and 48 in `web-common`
+- Current after PRs 2–6: 134 candidates across 53 files
+- Current split: 116 candidates in `web-admin` and 18 in `web-common`
 - No candidates in `web-local`
-- Current categories: 90 visible-text findings, 40 attribute findings, and 34
+- Current categories: 79 visible-text findings, 31 attribute findings, and 24
   copy-property findings
-- Currently, 44 candidates have an exact English-text match in the existing
+- Currently, 34 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -69,7 +69,7 @@ node scripts/i18n-guard.js --strict
 | 2   | Time presets and comparisons                               |                  37 | Completed |
 | 3   | Canvas components and inspector                            |                  35 | Completed |
 | 4   | Workspaces and Visual Metrics                              |                  18 | Completed |
-| 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Planned   |
+| 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Completed |
 | 6   | Resources, connectors, and models                          |                  16 | Completed |
 | 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned   |
 | 8   | Admin project status, GitHub, and user management          |                  29 | Planned   |
@@ -79,7 +79,7 @@ node scripts/i18n-guard.js --strict
 | 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned   |
 | 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned   |
 
-PRs 1–4 and 6 are completed. PRs 5 and 7–12 can be developed independently,
+PRs 1–6 are completed. PRs 7–12 can be developed independently,
 but landing them sequentially reduces conflicts in `en.json` and `es.json`.
 PR 13 should land only after warning mode is clean.
 
@@ -107,7 +107,7 @@ PR 13 should land only after warning mode is clean.
 - 1 — `web-common/src/features/workspaces/ParquetWorkspace.svelte`
 - 17 — `web-common/src/features/workspaces/VisualMetrics.svelte`
 
-### PR 5: Dashboard UI, pivot, filters, and charts (30)
+### PR 5: Dashboard UI, pivot, filters, and charts (30, completed)
 
 - 2 — `web-common/src/features/dashboards/dimension-search/GlobalDimensionSearchResults.svelte`
 - 2 — `web-common/src/features/dashboards/dimension-table/DimensionDisplay.svelte`
