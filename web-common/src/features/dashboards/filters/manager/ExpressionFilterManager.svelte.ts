@@ -17,7 +17,7 @@ import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/f
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
-type FilterManager = DimensionFilterManager | MeasureFilterManager;
+type FilterManager = MeasureFilterManager | DimensionFilterManager;
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -32,35 +32,21 @@ export class ExpressionFilterManager {
   public exprParam: string = $state("");
   /** Name of the filter added from the filter menu. Its chip opens as soon as it is rendered. */
   public temporaryFilterName: string | undefined = $state(undefined);
-  /**
-   * Names of the filters that get a chip even though the param does not cover them and they are
-   * neither required nor pinned: the one added from the filter menu and the ones created by a chart
-   * interaction.
-   */
-  private localFilterNames: string[] = $state([]);
 
-  public dimensionFilterManagers: DimensionFilterManager[];
-  public measureFilterManagers: MeasureFilterManager[];
   /** True when the param cannot be represented as chips. */
   public isComplexFilter: boolean;
   public expr: V1Expression;
+  public exprByMetricsView: Record<string, V1Expression>;
 
-  private parsedParam: ReturnType<typeof convertFilterParamToExpression>;
-  /** Managers for the filters in the param, keyed by name and in param order. */
-  private paramFilterManagers: {
-    dimension: Map<string, DimensionFilterManager>;
-    measure: Map<string, MeasureFilterManager>;
+  public filterManagers: {
+    measures: MeasureFilterManager[];
+    dimensions: DimensionFilterManager[];
   };
-  private filterManagers: {
-    dimension: DimensionFilterManager[];
-    measure: MeasureFilterManager[];
-  };
-  /**
-   * Managers for the filters the param does not cover. They are kept across rebuilds so that a
-   * rebuild cannot drop an edit that has not reached the param yet; `setExprParam` drops the ones
-   * the param has caught up with.
-   */
-  private readonly outOfParamManagers = new Map<string, FilterManager>();
+
+  private readonly parsedParam: ReturnType<
+    typeof convertFilterParamToExpression
+  >;
+  private readonly filterManagersMap: Record<string, FilterManager>;
 
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
@@ -85,88 +71,102 @@ export class ExpressionFilterManager {
         ? isExpressionUnsupported(this.parsedParam.expr)
         : false,
     );
-    this.paramFilterManagers = $derived.by(() =>
-      this.buildParamFilterManagers(),
+    this.filterManagers = $derived.by(() =>
+      this.buildFilterManagers(this.buildParamFilterManagers()),
     );
-    this.filterManagers = $derived.by(() => this.buildFilterManagers());
-    this.dimensionFilterManagers = $derived(this.filterManagers.dimension);
-    this.measureFilterManagers = $derived(this.filterManagers.measure);
+    this.filterManagersMap = $derived.by(() =>
+      Object.fromEntries([
+        ...this.filterManagers.dimensions.map(
+          (dfm) => [dfm.name, dfm] as [string, DimensionFilterManager],
+        ),
+        ...this.filterManagers.measures.map(
+          (mfm) => [mfm.name, mfm] as [string, MeasureFilterManager],
+        ),
+      ]),
+    );
 
     this.expr = $derived.by(() => {
-      const dimExprs = this.dimensionFilterManagers
+      const dimExprs = this.filterManagers.dimensions
         .filter((dfm) => !!dfm.expr)
         .map((d) => d.expr as V1Expression);
-      const mesExprs = this.measureFilterManagers
+      const mesExprs = this.filterManagers.measures
         .filter((mfm) => !!mfm.expr)
         .map((m) => m.expr as V1Expression);
       return createAndExpression(dimExprs.concat(mesExprs));
     });
+    this.exprByMetricsView = $derived.by(() =>
+      this.buildExpressionsByMetricsView(),
+    );
   }
 
   public setExprParam(exprParam: string) {
+    if (exprParam === this.exprParam) return;
+    console.log("new filter", exprParam);
+    this.temporaryFilterName = undefined;
     this.exprParam = exprParam;
-
-    // Once the param covers a filter its param manager takes over, so drop the manager that was
-    // kept for it. Keeping it would restore the value it used to have when the filter is cleared.
-    for (const name of this.outOfParamManagers.keys()) {
-      if (this.isInParam(name)) this.outOfParamManagers.delete(name);
-    }
-
-    const localFilterNames = this.localFilterNames.filter(
-      (name) => !this.isInParam(name),
-    );
-    // Assigning unconditionally would rebuild every manager on any url change.
-    if (localFilterNames.length !== this.localFilterNames.length) {
-      this.localFilterNames = localFilterNames;
-    }
-
-    if (this.temporaryFilterName && this.isInParam(this.temporaryFilterName)) {
-      this.temporaryFilterName = undefined;
-    }
   }
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
-  public addTemporaryFilter(name: string) {
-    if (!this.getFilterManager(name)) return;
+  public addNewFilter(name: string) {
+    if (
+      !this.metricsViewsProvider.dimensionSpecs[name] &&
+      !this.metricsViewsProvider.measureSpecs[name]
+    ) {
+      return;
+    }
 
+    console.log("new filter", name);
     this.temporaryFilterName = name;
-    this.addLocalFilterName(name);
   }
 
   public dimensionFilterAction(
     name: string,
     callback: (dimensionFilterManager: DimensionFilterManager) => any,
   ) {
-    const dimensionFilterManager = this.getFilterManager(name);
+    const dimensionFilterManager =
+      this.filterManagersMap[name] ?? this.createDimensionFilterManager(name);
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 
     const ret = callback(dimensionFilterManager);
-    // A filter this action created needs a chip until the param catches up with it.
-    if (dimensionFilterManager.expr) this.addLocalFilterName(name);
+    if (dimensionFilterManager.expr && !(name in this.filterManagersMap)) {
+      this.filterManagers = {
+        ...this.filterManagers,
+        dimensions: [...this.filterManagers.dimensions, dimensionFilterManager],
+      };
+    }
     return ret;
   }
 
   public clear() {
-    this.exprParam = "";
-    this.localFilterNames = [];
     this.temporaryFilterName = undefined;
-    this.outOfParamManagers.clear();
+    this.exprParam = "";
   }
 
-  public getOtherDimensionsFilter(name: string) {
-    const exprs = this.dimensionFilterManagers
-      .filter((dfm) => !!dfm.expr && dfm.name !== name)
+  /**
+   * Filters that apply to `metricsViewName`, other than the one on `name`.
+   * Used to narrow the values shown in a dimension filter by the rest of the filter bar.
+   */
+  public getOtherDimensionsFilter(name: string, metricsViewName: string) {
+    const exprs = this.filterManagers.dimensions
+      .filter(
+        (dfm) =>
+          !!dfm.expr &&
+          dfm.name !== name &&
+          !!this.metricsViewsProvider.dimensionSpecs[dfm.name]?.[
+            metricsViewName
+          ],
+      )
       .map((d) => d.expr as V1Expression);
     return exprs.length === 0 ? undefined : createAndExpression(exprs);
   }
 
   /** Managers for the filters in the param, keyed by name and in param order. */
   private buildParamFilterManagers() {
-    const dimension = new Map<string, DimensionFilterManager>();
-    const measure = new Map<string, MeasureFilterManager>();
+    const measuresMap = new Map<string, MeasureFilterManager>();
+    const dimensionsMap = new Map<string, DimensionFilterManager>();
 
     const { expr, dimensionsWithInlistFilter } = this.parsedParam;
-    if (!expr || this.isComplexFilter) return { dimension, measure };
+    if (!expr || this.isComplexFilter) return { measuresMap, dimensionsMap };
 
     forEachIdentifier(expr, (e, ident) => {
       // Both filter types are keyed off a dimension: a dimension filter by the dimension it filters
@@ -181,11 +181,10 @@ export class ExpressionFilterManager {
 
         const measureFilterManager = this.createMeasureFilterManager(
           measureName,
-          ident,
           firstValueExpr,
         );
         if (measureFilterManager)
-          measure.set(measureName, measureFilterManager);
+          measuresMap.set(measureName, measureFilterManager);
       } else {
         const dimensionFilterManager = this.createDimensionFilterManager(
           ident,
@@ -193,86 +192,86 @@ export class ExpressionFilterManager {
           dimensionsWithInlistFilter.includes(ident),
         );
         if (dimensionFilterManager)
-          dimension.set(ident, dimensionFilterManager);
+          dimensionsMap.set(ident, dimensionFilterManager);
       }
     });
 
-    return { dimension, measure };
+    return { measuresMap, dimensionsMap };
   }
 
   /**
    * Managers in chip order: required filters first, then pinned ones, then the rest of the param
    * filters in param order, and finally the filters the param does not cover yet.
    */
-  private buildFilterManagers() {
-    const dimension: DimensionFilterManager[] = [];
-    const measure: MeasureFilterManager[] = [];
+  private buildFilterManagers({
+    measuresMap,
+    dimensionsMap,
+  }: {
+    measuresMap: Map<string, MeasureFilterManager>;
+    dimensionsMap: Map<string, DimensionFilterManager>;
+  }) {
+    const dimensions: DimensionFilterManager[] = [];
+    const measures: MeasureFilterManager[] = [];
     const added = new Set<string>();
 
     const add = (name: string) => {
       if (added.has(name)) return;
 
-      const filterManager = this.getFilterManager(name);
+      const filterManager =
+        dimensionsMap.get(name) ??
+        measuresMap.get(name) ??
+        this.createDimensionFilterManager(name) ??
+        this.createMeasureFilterManager(name);
       if (!filterManager) return;
 
       added.add(name);
       if (filterManager instanceof MeasureFilterManager) {
-        measure.push(filterManager);
+        measures.push(filterManager);
       } else {
-        dimension.push(filterManager);
+        dimensions.push(filterManager);
       }
     };
 
     // Required and pinned filters lead the chips and have a chip even without a value.
     const { requiredFilters, pinnedFilters } = this.yamlConfigProvider;
-    const configuredFilters = new Set([
-      ...Object.keys(requiredFilters),
-      ...Object.keys(pinnedFilters),
-    ]);
-    for (const name of configuredFilters) {
-      if (requiredFilters[name] || pinnedFilters[name]) add(name);
-    }
+    Object.keys(requiredFilters).forEach((name) => add(name));
+    Object.keys(pinnedFilters).forEach((name) => add(name));
 
-    this.paramFilterManagers.dimension.forEach((_, name) => add(name));
-    this.paramFilterManagers.measure.forEach((_, name) => add(name));
-    this.localFilterNames.forEach((name) => add(name));
+    // Next comes dimensions from params
+    const shouldAddTempDimension = Boolean(
+      this.temporaryFilterName &&
+        !dimensionsMap.has(this.temporaryFilterName) &&
+        this.temporaryFilterName in this.metricsViewsProvider.dimensionSpecs,
+    );
+    sortFilterIterator(
+      dimensionsMap.keys(),
+      shouldAddTempDimension ? this.temporaryFilterName : undefined,
+    ).forEach((name) => add(name));
 
-    return { dimension, measure };
+    // Next comes measures from params
+    const shouldAddTempMeasure =
+      this.temporaryFilterName &&
+      !measuresMap.has(this.temporaryFilterName) &&
+      this.temporaryFilterName in this.metricsViewsProvider.measureSpecs;
+    sortFilterIterator(
+      measuresMap.keys(),
+      shouldAddTempMeasure ? this.temporaryFilterName : undefined,
+    ).forEach((name) => add(name));
+
+    return { measures, dimensions };
   }
 
-  /**
-   * Manager for a filter by name: the param one when the param covers the filter, else one that is
-   * kept until the param does. Returns undefined when no metrics view defines the filter.
-   */
-  private getFilterManager(name: string): FilterManager | undefined {
-    const paramFilterManager =
-      this.paramFilterManagers.dimension.get(name) ??
-      this.paramFilterManagers.measure.get(name);
-    if (paramFilterManager) return paramFilterManager;
+  private createMeasureFilterManager(name: string, initExpr?: V1Expression) {
+    const measureSpecs = this.metricsViewsProvider.measureSpecs[name];
+    if (!measureSpecs) return undefined;
 
-    const outOfParamManager = this.outOfParamManagers.get(name);
-    if (outOfParamManager) return outOfParamManager;
-
-    const filterManager =
-      this.createDimensionFilterManager(name) ??
-      this.createMeasureFilterManager(name);
-    if (filterManager) this.outOfParamManagers.set(name, filterManager);
-    return filterManager;
-  }
-
-  private isInParam(name: string) {
-    return (
-      this.paramFilterManagers.dimension.has(name) ||
-      this.paramFilterManagers.measure.has(name)
+    return new MeasureFilterManager(
+      name,
+      getMeasureDisplayName(Object.values(measureSpecs)[0]),
+      initExpr,
     );
   }
 
-  private addLocalFilterName(name: string) {
-    if (this.isInParam(name) || this.localFilterNames.includes(name)) return;
-    this.localFilterNames = [...this.localFilterNames, name];
-  }
-
-  /** Returns undefined when no metrics view defines the dimension. */
   private createDimensionFilterManager(
     name: string,
     initExpr?: V1Expression,
@@ -284,27 +283,50 @@ export class ExpressionFilterManager {
     return new DimensionFilterManager(
       name,
       getDimensionDisplayName(Object.values(dimensionSpecs)[0]),
-      dimensionSpecs,
       initExpr,
       isInList,
     );
   }
 
-  /** Returns undefined when no metrics view defines the measure. */
-  private createMeasureFilterManager(
-    name: string,
-    initDimension?: string,
-    initExpr?: V1Expression,
-  ) {
-    const measureSpecs = this.metricsViewsProvider.measureSpecs[name];
-    if (!measureSpecs) return undefined;
+  private buildExpressionsByMetricsView() {
+    const exprsByMetricsView = Object.fromEntries(
+      this.metricsViewsProvider.metricsViewNames.map((m) => [
+        m,
+        [] as V1Expression[],
+      ]),
+    );
 
-    return new MeasureFilterManager(
-      name,
-      getMeasureDisplayName(Object.values(measureSpecs)[0]),
-      measureSpecs,
-      initDimension,
-      initExpr,
+    this.filterManagers.dimensions.forEach((dfm) => {
+      if (!dfm.expr) return;
+      Object.keys(
+        this.metricsViewsProvider.dimensionSpecs[dfm.name] ?? {},
+      ).forEach((mv) => {
+        exprsByMetricsView[mv]?.push(dfm.expr!);
+      });
+    });
+
+    this.filterManagers.measures.forEach((mfm) => {
+      if (!mfm.expr) return;
+      Object.keys(
+        this.metricsViewsProvider.measureSpecs[mfm.name] ?? {},
+      ).forEach((mv) => {
+        exprsByMetricsView[mv]?.push(mfm.expr!);
+      });
+    });
+
+    return Object.fromEntries(
+      Object.entries(exprsByMetricsView)
+        .filter(([, exprs]) => exprs.length > 0)
+        .map(([mv, exprs]) => [mv, createAndExpression(exprs)]),
     );
   }
+}
+
+function sortFilterIterator(
+  iterator: MapIterator<string> | SetIterator<string>,
+  tempName: string | undefined,
+) {
+  const newArr = [...iterator];
+  if (tempName) newArr.push(tempName);
+  return newArr.sort((a, b) => (a > b ? 1 : -1));
 }

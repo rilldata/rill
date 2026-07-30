@@ -1,6 +1,10 @@
 import type { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  filterExpressions,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 
 export function clearAllFilters({ dashboard }: DashboardMutables) {
   const hasFilters =
@@ -26,11 +30,15 @@ export function setTemporaryFilterName(
 
 export function setFilter(
   { dashboard }: DashboardMutables,
-  expr: V1Expression,
+  expr: V1Expression | undefined,
   inList: string[],
 ) {
-  dashboard.whereFilter = expr;
-  dashboard.dimensionThresholdFilters = inList;
+  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+    expr ? filterExpressions(expr, () => true) : undefined,
+  );
+  dashboard.whereFilter = dimensionFilters;
+  dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
+  dashboard.dimensionsWithInlistFilter = inList;
 }
 
 export const filterActions = {

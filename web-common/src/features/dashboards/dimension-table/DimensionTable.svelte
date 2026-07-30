@@ -61,7 +61,7 @@ TableCells – the cell contents.
   } = getStateManagers();
 
   let excludeMode = $derived(
-    expressionFilterManager.dimensionFilterManagers.find(
+    expressionFilterManager.filterManagers.dimensions.find(
       (dfm) => dfm.name === dimensionName,
     )?.exclude ?? false,
   );

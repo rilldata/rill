@@ -40,7 +40,6 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilters.svelte";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
   const { rillTime } = featureFlags;
@@ -63,8 +62,7 @@
       filters: { setFilter },
     },
     selectors: {
-      measures: { allMeasures },
-      dimensions: { allDimensions, timeDimensions },
+      dimensions: { timeDimensions },
       pivot: { showPivot },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
@@ -116,8 +114,8 @@
 
   $effect(() =>
     setFilter(
-      expressionFilterManager.expr,
-      expressionFilterManager.dimensionFilterManagers
+      expressionFilterManager.exprByMetricsView[metricsViewName],
+      expressionFilterManager.filterManagers.dimensions
         .filter((dfm) => dfm.expr && dfm.mode === DimensionFilterMode.InList)
         .map((dfm) => dfm.name),
     ),

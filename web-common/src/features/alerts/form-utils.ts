@@ -47,7 +47,7 @@ export type AlertFormValues = {
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
-  expr: V1Expression,
+  expr: V1Expression | undefined,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {

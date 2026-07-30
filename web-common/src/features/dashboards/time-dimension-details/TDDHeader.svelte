@@ -86,7 +86,7 @@
   );
 
   const excludeMode = $derived(
-    expressionFilterManager.dimensionFilterManagers.find(
+    expressionFilterManager.filterManagers.dimensions.find(
       (dfm) => dfm.name === dimensionName,
     )?.exclude ?? false,
   );

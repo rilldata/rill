@@ -1,7 +1,5 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
-import type { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/DimensionFilterManager.svelte.ts";
-import { createQuery } from "@tanstack/svelte-query";
 import {
   getQueryServiceMetricsViewAggregationQueryOptions,
   V1BuiltinMeasure,
@@ -13,8 +11,11 @@ import {
   createLikeExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
+import { createReactiveQueries } from "@rilldata/web-common/lib/svelte-query/reactive-queries.svelte.ts";
 
 type DimensionSearchArgs = {
+  manager: ExpressionFilterManager;
+  dimensionName: string;
   mode: DimensionFilterMode;
   searchText: string;
   values: string[];
@@ -24,113 +25,157 @@ type DimensionSearchArgs = {
   enabled?: boolean;
 };
 
-export function getDimensionSearchQuery(
+/**
+ * Returns the search results from the search input in a dimension filter.
+ *
+ * A dimension can be defined by more than one metrics view, so this queries each of them and merges
+ * the values. `getArgs` is read reactively, as are the specs, so the queries follow both the input
+ * in the dropdown and the metrics views as they load.
+ *
+ * Must be called during component init, once per dimension filter.
+ */
+export function createDimensionSearchQuery(
   client: RuntimeClient,
-  manager: ExpressionFilterManager,
-  dimensionManager: DimensionFilterManager,
-  {
-    mode,
-    searchText,
-    values,
-    timeStart,
-    timeEnd,
-    timeDimension,
-    enabled,
-  }: DimensionSearchArgs,
+  getArgs: () => DimensionSearchArgs,
 ) {
-  const dimensionName = dimensionManager.name;
-  const mvName = Object.keys(dimensionManager.dimensions)[0] ?? "";
+  return createReactiveQueries(
+    () => {
+      const {
+        manager,
+        dimensionName,
+        mode,
+        searchText,
+        values,
+        timeStart,
+        timeEnd,
+        timeDimension,
+        enabled,
+      } = getArgs();
 
-  const otherDimsFilter = $derived.by(() => {
-    manager.expr; // Force rederivation when expr changes.
-    return manager.getOtherDimensionsFilter(dimensionManager.name);
-  });
-  const where = getFilterForSearchArgs(dimensionManager.name, {
-    mode,
-    searchText,
-    values,
-    additionalFilter: otherDimsFilter,
-  });
-
-  const optionsStore = $derived(
-    getQueryServiceMetricsViewAggregationQueryOptions(
-      client,
-      {
-        metricsView: mvName,
-        dimensions: [{ name: dimensionName }],
-        timeRange: { start: timeStart, end: timeEnd, timeDimension },
-        limit: "250",
-        offset: "0",
-        sort: [{ name: dimensionName }],
-        where,
-      },
-      {
-        query: {
-          select: (resp) =>
-            resp.data?.map((d) => d[dimensionName] as string) ?? [],
-          enabled,
-        },
-      },
-    ),
+      return getMetricsViewsForDimension(manager, dimensionName).map(
+        (metricsView) =>
+          getQueryServiceMetricsViewAggregationQueryOptions(
+            client,
+            {
+              metricsView,
+              dimensions: [{ name: dimensionName }],
+              timeRange: { start: timeStart, end: timeEnd, timeDimension },
+              limit: "250",
+              offset: "0",
+              sort: [{ name: dimensionName }],
+              where: getFilterForSearchArgs(dimensionName, {
+                mode,
+                searchText,
+                values,
+                additionalFilter: manager.getOtherDimensionsFilter(
+                  dimensionName,
+                  metricsView,
+                ),
+              }),
+            },
+            {
+              query: {
+                enabled,
+                select: (resp) =>
+                  resp.data?.map((d) => d[dimensionName] as string) ?? [],
+              },
+            },
+          ),
+      );
+    },
+    (valuesPerMetricsView) => [
+      ...new Set(valuesPerMetricsView.flatMap((values) => values ?? [])),
+    ],
   );
-  return createQuery(optionsStore);
 }
 
-export function getAllSearchResultsCount(
+/**
+ * Returns the matched search results count.
+ *
+ * 1. For Select this will be disabled.
+ * 2. For InList mode, it returns the count of values actually present in the data source.
+ * 3. For Contains mode, it returns the count of values matching the search text.
+ *
+ * Must be called during component init, once per dimension filter.
+ */
+export function createDimensionSearchCountQuery(
   client: RuntimeClient,
-  manager: ExpressionFilterManager,
-  dimensionManager: DimensionFilterManager,
-  {
-    mode,
-    searchText,
-    values,
-    timeStart,
-    timeEnd,
-    timeDimension,
-    enabled,
-  }: DimensionSearchArgs,
+  getArgs: () => DimensionSearchArgs,
 ) {
-  const dimensionName = dimensionManager.name;
-  const mvName = Object.keys(dimensionManager.dimensions)[0] ?? "";
-  const countMeasureName = dimensionName + "__distinct_count";
+  return createReactiveQueries(
+    () => {
+      const {
+        manager,
+        dimensionName,
+        mode,
+        searchText,
+        values,
+        timeStart,
+        timeEnd,
+        timeDimension,
+        enabled,
+      } = getArgs();
+      const countMeasureName = dimensionName + "__distinct_count";
 
-  const otherDimsFilter = $derived.by(() => {
-    manager.expr; // Force rederivation when expr changes.
-    return manager.getOtherDimensionsFilter(dimensionManager.name);
-  });
-  const where = getFilterForSearchArgs(dimensionManager.name, {
-    mode,
-    searchText,
-    values,
-    additionalFilter: otherDimsFilter,
-  });
-  const optionsStore = $derived(
-    getQueryServiceMetricsViewAggregationQueryOptions(
-      client,
-      {
-        metricsView: mvName,
-        measures: [
-          {
-            name: countMeasureName,
-            builtinMeasure: V1BuiltinMeasure.BUILTIN_MEASURE_COUNT_DISTINCT,
-            builtinMeasureArgs: [dimensionName],
-          },
-        ],
-        timeRange: { start: timeStart, end: timeEnd, timeDimension },
-        where,
-      },
-      {
-        query: {
-          enabled,
-          select: (resp) => {
-            if (!resp.data?.length) return 0;
-            return resp.data[0][countMeasureName] as number;
-          },
-        },
-      },
-    ),
+      return getMetricsViewsForDimension(manager, dimensionName).map(
+        (metricsView) =>
+          getQueryServiceMetricsViewAggregationQueryOptions(
+            client,
+            {
+              metricsView,
+              measures: [
+                {
+                  name: countMeasureName,
+                  builtinMeasure:
+                    V1BuiltinMeasure.BUILTIN_MEASURE_COUNT_DISTINCT,
+                  builtinMeasureArgs: [dimensionName],
+                },
+              ],
+              timeRange: { start: timeStart, end: timeEnd, timeDimension },
+              where: getFilterForSearchArgs(dimensionName, {
+                mode,
+                searchText,
+                values,
+                additionalFilter: manager.getOtherDimensionsFilter(
+                  dimensionName,
+                  metricsView,
+                ),
+              }),
+            },
+            {
+              query: {
+                enabled,
+                select: (resp) =>
+                  resp.data?.length
+                    ? (resp.data[0][countMeasureName] as number)
+                    : 0,
+              },
+            },
+          ),
+      );
+    },
+    // Absent while the queries are loading or disabled, so that the chip does not show a count yet.
+    (countPerMetricsView) =>
+      countPerMetricsView.some((count) => count !== undefined)
+        ? countPerMetricsView.reduce(
+            (total, count) => (total ?? 0) + (count ?? 0),
+            0,
+          )
+        : undefined,
   );
-  return createQuery(optionsStore);
+}
+
+/**
+ * Metrics views that define the dimension. A dimension filter only applies to those, and querying a
+ * metrics view without the dimension errors.
+ */
+function getMetricsViewsForDimension(
+  manager: ExpressionFilterManager,
+  dimensionName: string,
+) {
+  return Object.keys(
+    manager.metricsViewsProvider.dimensionSpecs[dimensionName] ?? {},
+  );
 }
 
 /**

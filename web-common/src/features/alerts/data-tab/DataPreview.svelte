@@ -32,7 +32,7 @@
         ...formValues,
         criteria: [],
       },
-      filters.expr,
+      filters.exprByMetricsView[formValues.metricsViewName],
       timeControls,
     ),
   );

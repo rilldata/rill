@@ -58,7 +58,7 @@
 
   function onApply(dimension: string, filter: MeasureFilterEntry) {
     persistPinnedAndRequired();
-    measureManager.apply(dimension, filter);
+    measureManager.setMeasureFilter(dimension, filter);
   }
 
   function persistPinnedAndRequired() {

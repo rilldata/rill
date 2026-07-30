@@ -235,7 +235,7 @@
       ],
     );
     updatedAggregationRequest.where = sanitiseExpression(
-      filters.expr,
+      filters.exprByMetricsView[metricsViewName],
       undefined,
     );
 

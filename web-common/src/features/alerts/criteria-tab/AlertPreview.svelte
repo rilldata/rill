@@ -30,7 +30,7 @@
       runtimeClient,
       queryClient,
       formValues,
-      filters.expr,
+      filters.exprByMetricsView[formValues.metricsViewName],
       timeControls,
     ),
   );

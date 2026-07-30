@@ -12,10 +12,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import type {
-  Filters,
-  FiltersState,
-} from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-import type {
   TimeControls,
   TimeControlState,
 } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
@@ -47,7 +43,7 @@ export function getAlertPreviewData(
   client: RuntimeClient,
   queryClient: QueryClient,
   formValues: AlertFormValues,
-  expr: V1Expression,
+  expr: V1Expression | undefined,
   timeControls: TimeControls,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
@@ -77,7 +73,7 @@ export function getAlertPreviewData(
 
 function getAlertPreviewQueryRequest(
   formValues: AlertFormValues,
-  expr: V1Expression,
+  expr: V1Expression | undefined,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {

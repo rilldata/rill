@@ -149,7 +149,7 @@
     return Interval.fromDateTimes(start, end) as Interval<true>;
   })();
   $: includedValuesForDimension =
-    expressionFilterManager.dimensionFilterManagers.find(
+    expressionFilterManager.filterManagers.dimensions.find(
       (dfm) => dfm.name === comparisonDimension,
     )?.selectedValues ?? [];
   $: chartDimensionValues = includedValuesForDimension.slice(

@@ -9,7 +9,7 @@ export class YAMLConfigProvider {
   public requiredFilters = $state<Record<string, boolean>>({});
   public specRequiredFilters = $state<Record<string, boolean>>({});
 
-  public constructor(public readonly editable: boolean) {}
+  public constructor(public readonly editable: boolean = false) {}
 
   public syncWithCanvas(canvasSpec: V1CanvasSpec) {
     const pinnedFilters = canvasSpec.pinnedFilters

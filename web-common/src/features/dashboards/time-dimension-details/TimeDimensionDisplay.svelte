@@ -95,7 +95,7 @@
   });
   const formattedData = $derived(timeDimensionDataCopy);
   const excludeMode = $derived(
-    expressionFilterManager.dimensionFilterManagers.find(
+    expressionFilterManager.filterManagers.dimensions.find(
       (dfm) => dfm.name === dimensionName,
     )?.exclude ?? false,
   );
@@ -118,9 +118,9 @@
 
   // Create a time formatter for the column headers
   const timeFormatter = $derived(
-    timeFormat(
-      timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
-    ) as (d: Date) => string,
+    timeFormat(timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M") as (
+      d: Date,
+    ) => string,
   );
 
   function highlightCell(x: number | undefined, y: number | undefined) {

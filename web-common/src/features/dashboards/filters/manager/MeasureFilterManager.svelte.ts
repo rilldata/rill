@@ -1,7 +1,4 @@
-import type {
-  MetricsViewSpecMeasure,
-  V1Expression,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import {
   mapExprToMeasureFilter,
   mapMeasureFilterToExpr,
@@ -19,35 +16,39 @@ import {
 export class MeasureFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
 
-  public dimension: string;
-  public operation: MeasureFilterOperation;
-  public type: MeasureFilterType;
-  public value1: string;
-  public value2: string;
+  public dimension = $state("");
+  public operation = $state(MeasureFilterOperation.LessThan);
+  public type = $state(MeasureFilterType.Value);
+  public value1 = $state("");
+  public value2 = $state("");
 
   public constructor(
     public readonly name: string,
     public readonly label: string,
-    public readonly measures: Record<string, MetricsViewSpecMeasure>,
-    initDimension: string = "",
     initExpr: V1Expression | undefined = undefined,
   ) {
+    this.reconcile(initExpr);
+  }
+
+  public reconcile(expr: V1Expression | undefined) {
+    const dimension = expr?.cond?.exprs?.[0]?.ident;
+    const firstValueExpr = expr?.cond?.exprs?.[1];
+
     const unwrappedHavingFilter = removeWrapperAndOrExpression(
-      initExpr?.subquery?.having,
+      firstValueExpr?.subquery?.having,
     );
     const mappedMeasureFilter = mapExprToMeasureFilter(unwrappedHavingFilter);
 
-    this.dimension = $state(initDimension);
-    this.operation = $state(
-      mappedMeasureFilter?.operation ?? MeasureFilterOperation.LessThan,
-    );
-    this.type = $state(mappedMeasureFilter?.type ?? MeasureFilterType.Value);
-    this.value1 = $state(mappedMeasureFilter?.value1 ?? "");
-    this.value2 = $state(mappedMeasureFilter?.value2 ?? "");
+    this.dimension = dimension ?? "";
+    this.operation =
+      mappedMeasureFilter?.operation ?? MeasureFilterOperation.LessThan;
+    this.type = mappedMeasureFilter?.type ?? MeasureFilterType.Value;
+    this.value1 = mappedMeasureFilter?.value1 ?? "";
+    this.value2 = mappedMeasureFilter?.value2 ?? "";
     this.commit();
   }
 
-  public apply(dimension: string, newFilter: MeasureFilterEntry) {
+  public setMeasureFilter(dimension: string, newFilter: MeasureFilterEntry) {
     this.dimension = dimension;
     this.operation = newFilter.operation;
     this.type = newFilter.type;

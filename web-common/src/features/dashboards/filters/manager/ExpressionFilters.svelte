@@ -50,23 +50,25 @@
   );
 
   let hasFilters = $derived(
-    expressionFilterManager.dimensionFilterManagers.length > 0 ||
-      expressionFilterManager.measureFilterManagers.length > 0,
+    expressionFilterManager.filterManagers.dimensions.length > 0 ||
+      expressionFilterManager.filterManagers.measures.length > 0,
   );
   // Required and pinned filters have a chip even without a value, so there is nothing to clear
   // unless a chip actually holds a filter.
   let hasClearableFilters = $derived(
-    expressionFilterManager.dimensionFilterManagers.some((dfm) => !!dfm.expr) ||
-      expressionFilterManager.measureFilterManagers.some((mfm) => !!mfm.expr),
+    expressionFilterManager.filterManagers.dimensions.some(
+      (dfm) => !!dfm.expr,
+    ) ||
+      expressionFilterManager.filterManagers.measures.some((mfm) => !!mfm.expr),
   );
 
   let measureHasFilter = $derived((name: string) =>
-    expressionFilterManager.measureFilterManagers.some(
+    expressionFilterManager.filterManagers.measures.some(
       (mfm) => mfm.name === name,
     ),
   );
   let dimensionHasFilter = $derived((name: string) =>
-    expressionFilterManager.dimensionFilterManagers.some(
+    expressionFilterManager.filterManagers.dimensions.some(
       (dfm) => dfm.name === name,
     ),
   );
@@ -83,7 +85,7 @@
         {m.dashboard_no_filters_selected()}
       </div>
     {:else}
-      {#each expressionFilterManager.dimensionFilterManagers as dimensionManager (dimensionManager.name)}
+      {#each expressionFilterManager.filterManagers.dimensions as dimensionManager (dimensionManager.name)}
         <DimensionFilter
           manager={expressionFilterManager}
           {dimensionManager}
@@ -101,7 +103,7 @@
         />
       {/each}
 
-      {#each expressionFilterManager.measureFilterManagers as measureManager (measureManager.name)}
+      {#each expressionFilterManager.filterManagers.measures as measureManager (measureManager.name)}
         <MeasureFilter
           {measureManager}
           {yamlConfigProvider}
@@ -118,7 +120,7 @@
       {dimensionHasFilter}
       {measureHasFilter}
       setTemporaryFilterName={(name: string) =>
-        expressionFilterManager.addTemporaryFilter(name)}
+        expressionFilterManager.addNewFilter(name)}
     />
     <!-- if filters are present, place a chip at the end of the flex container
     that enables clearing all filters -->

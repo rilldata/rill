@@ -26,8 +26,8 @@
   import RequiredButton from "../RequiredButton.svelte";
   import { DimensionFilterManager } from "./DimensionFilterManager.svelte.ts";
   import {
-    getAllSearchResultsCount,
-    getDimensionSearchQuery,
+    createDimensionSearchCountQuery,
+    createDimensionSearchQuery,
   } from "@rilldata/web-common/features/dashboards/filters/manager/queries.svelte.ts";
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
   import { onMount } from "svelte";
@@ -65,7 +65,6 @@
 
   let open = $state(false);
   let curSearchText = $state("");
-  let inListTooLong = $state(false);
 
   const client = useRuntimeClient();
 
@@ -83,7 +82,21 @@
   // svelte-ignore state_referenced_locally
   let curRequired = $state(required);
 
-  $effect(() => checkSearchText(curSearchText));
+  // Only InList mode parses the input as a list of values; the other modes treat it as search text,
+  // so this is read behind a mode check everywhere it is used.
+  let inListValues = $derived.by(() => {
+    const values = splitDimensionSearchText(curSearchText);
+    if (values.length <= 1) return curSearchText === "" ? [] : values;
+
+    // Include both the applied values and the ones in the input so the below-fold query can find
+    // applied values that might not be in the top 250.
+    return [...new Set([...dimensionManager.selectedValues, ...values])];
+  });
+  let inListTooLong = $derived(
+    proxyDimensionManager.mode === DimensionFilterMode.InList &&
+      inListValues.length > 0 &&
+      isUrlTooLongAfterInListFilter(inListValues),
+  );
 
   let enableSearchQuery = $derived(
     Boolean(timeControlsReady && open) &&
@@ -91,39 +104,54 @@
         (proxyDimensionManager.mode === DimensionFilterMode.Contains &&
           curSearchText.length > 0) ||
         (proxyDimensionManager.mode === DimensionFilterMode.InList &&
-          proxyDimensionManager.selectedValues.length > 0)),
+          inListValues.length > 0)),
   );
 
-  let searchResultsQuery = $derived(
-    getDimensionSearchQuery(client, manager, dimensionManager, {
-      mode: proxyDimensionManager.mode,
-      values: proxyDimensionManager.selectedValues,
-      searchText: curSearchText,
-      timeStart,
-      timeEnd,
-      timeDimension,
-      enabled: enableSearchQuery,
-    }),
-  );
-  let {
-    data: searchResults,
-    error: errorFromSearchResults,
-    isFetching: isFetchingFromSearchResults,
-  } = $derived($searchResultsQuery);
-  let correctedSearchResults = $derived(enableSearchQuery ? searchResults : []);
+  // The queries are created once and follow the dropdown through the args getter, so changing the
+  // mode or the search text updates them instead of replacing them.
+  const searchResultsQuery = createDimensionSearchQuery(client, () => ({
+    manager,
+    dimensionName: dimensionManager.name,
+    mode: proxyDimensionManager.mode,
+    values: inListValues,
+    searchText: curSearchText,
+    timeStart,
+    timeEnd,
+    timeDimension,
+    enabled: enableSearchQuery,
+  }));
+  // The query only returns the top 250 values, so applied values outside that window are merged back
+  // in: Select mode shows them as checked, InList mode lists them among the values it matched.
+  let correctedSearchResults = $derived.by(() => {
+    if (!enableSearchQuery) return [];
+
+    const searchResults = searchResultsQuery.current.data;
+    const appliedValues =
+      proxyDimensionManager.mode === DimensionFilterMode.InList
+        ? inListValues
+        : proxyDimensionManager.mode === DimensionFilterMode.Select
+          ? dimensionManager.selectedValues
+          : [];
+    if (!appliedValues.length) return searchResults;
+
+    return [...new Set([...searchResults, ...appliedValues])];
+  });
 
   let enableSearchCountQuery = $derived(
     Boolean(timeControlsReady) &&
       ((proxyDimensionManager.mode === DimensionFilterMode.Contains &&
         curSearchText.length > 0) ||
         (proxyDimensionManager.mode === DimensionFilterMode.InList &&
-          proxyDimensionManager.selectedValues.length > 0)),
+          inListValues.length > 0)),
   );
 
-  let allSearchResultsCountQuery = $derived(
-    getAllSearchResultsCount(client, manager, dimensionManager, {
+  const allSearchResultsCountQuery = createDimensionSearchCountQuery(
+    client,
+    () => ({
+      manager,
+      dimensionName: dimensionManager.name,
       mode: proxyDimensionManager.mode,
-      values: proxyDimensionManager.selectedValues,
+      values: inListValues,
       searchText: curSearchText,
       timeStart,
       timeEnd,
@@ -131,16 +159,12 @@
       enabled: enableSearchCountQuery,
     }),
   );
-  let {
-    data: allSearchResultsCount,
-    error: errorFromAllSearchResultsCount,
-    isFetching: isFetchingFromAllSearchResultsCount,
-  } = $derived($allSearchResultsCountQuery);
+  let allSearchResultsCount = $derived(allSearchResultsCountQuery.current.data);
   let searchResultCountText = $derived(
     enableSearchCountQuery
       ? proxyDimensionManager.mode === DimensionFilterMode.Contains
         ? `${allSearchResultsCount} results`
-        : `${allSearchResultsCount} of ${proxyDimensionManager.selectedValues.length} matched`
+        : `${allSearchResultsCount} of ${inListValues.length} matched`
       : "0 results",
   );
 
@@ -149,10 +173,12 @@
   );
 
   let error = $derived(
-    errorFromSearchResults ?? errorFromAllSearchResultsCount,
+    searchResultsQuery.current.error ??
+      allSearchResultsCountQuery.current.error,
   );
   let isFetching = $derived(
-    isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount,
+    searchResultsQuery.current.isFetching ||
+      allSearchResultsCountQuery.current.isFetching,
   );
 
   let showExtraInfo = $derived(
@@ -163,14 +189,14 @@
     getEffectiveSelectedValues(
       proxyDimensionManager.mode,
       proxyDimensionManager.selectedValues,
-      correctedSearchResults ?? [],
+      correctedSearchResults,
       dimensionManager.selectedValues,
     ),
   );
   let allSelected = $derived(
     Boolean(
       effectiveSelectedValues.length &&
-        correctedSearchResults?.length === effectiveSelectedValues.length,
+        correctedSearchResults.length === effectiveSelectedValues.length,
     ),
   );
 
@@ -187,44 +213,20 @@
   let { checkedItems, uncheckedItems } = $derived(
     getItemLists(
       proxyDimensionManager.mode,
-      correctedSearchResults ?? [],
+      correctedSearchResults,
       dimensionManager.selectedValues,
       curSearchText,
     ),
   );
 
-  function checkSearchText(inputText: string) {
-    inListTooLong = false;
-
-    // Only InList mode parses bulk values. Other modes treat input as search text.
-    if (proxyDimensionManager.mode !== DimensionFilterMode.InList) return;
-
-    const values = splitDimensionSearchText(inputText);
-
-    if (values.length <= 1) {
-      proxyDimensionManager.selectedValues = inputText === "" ? [] : values;
-      return;
-    }
-
-    // Include both existing selected values and new search values so the
-    // below-fold query can find existing selected values that might not be
-    // in the top 250.
-    proxyDimensionManager.selectedValues = [
-      ...new Set([...proxyDimensionManager.selectedValues, ...values]),
-    ];
-    inListTooLong = isUrlTooLongAfterInListFilter(
-      proxyDimensionManager.selectedValues,
-    );
-  }
-
   function handleModeChange(newMode: DimensionFilterMode) {
-    curSearchText = "";
     switch (newMode) {
       case DimensionFilterMode.Select:
         proxyDimensionManager.setSelectedValues(
           [...proxyDimensionManager.selectedValues],
           proxyDimensionManager.exclude,
         );
+        curSearchText = "";
         break;
 
       case DimensionFilterMode.InList:
@@ -232,36 +234,47 @@
           [...proxyDimensionManager.selectedValues],
           proxyDimensionManager.exclude,
         );
+        // The values carried over stay editable as text.
+        curSearchText = mergeDimensionSearchValues(
+          proxyDimensionManager.selectedValues,
+        );
         break;
 
       case DimensionFilterMode.Contains:
         proxyDimensionManager.setContainsText(
-          curSearchText,
+          "",
           proxyDimensionManager.exclude,
         );
+        curSearchText = "";
         break;
     }
-    checkSearchText(curSearchText);
   }
 
   function handleOpenChange(open: boolean) {
     if (open) {
-      curSearchText =
-        dimensionManager.mode === DimensionFilterMode.InList
-          ? mergeDimensionSearchValues(dimensionManager.selectedValues)
-          : dimensionManager.inputText;
+      resetSearchText();
       curPinned = pinned;
       curRequired = required;
     } else {
       persistPinnedAndRequired();
 
-      // Apply proxy changes for Select mode when dropdown closes
+      // Select mode applies when the dropdown closes. The other modes only apply through the Apply
+      // button, so drop whatever they staged.
       if (proxyDimensionManager.mode === DimensionFilterMode.Select) {
-        dimensionManager.expr = proxyDimensionManager.expr;
+        dimensionManager.apply(proxyDimensionManager);
       } else {
-        proxyDimensionManager = dimensionManager.clone();
+        proxyDimensionManager.apply(dimensionManager);
+        resetSearchText();
       }
     }
+  }
+
+  /** Resets the input to the applied filter: the list of values in InList mode, the search text otherwise. */
+  function resetSearchText() {
+    curSearchText =
+      dimensionManager.mode === DimensionFilterMode.InList
+        ? mergeDimensionSearchValues(dimensionManager.selectedValues)
+        : dimensionManager.inputText;
   }
 
   function handleToggleExcludeMode() {
@@ -281,13 +294,23 @@
   function onApply(close = true) {
     if (disableApplyButton) return;
     persistPinnedAndRequired();
-    if (proxyDimensionManager.mode === DimensionFilterMode.Contains) {
-      proxyDimensionManager.setContainsText(
-        curSearchText,
-        proxyDimensionManager.exclude,
-      );
+    // Select mode stages straight onto the proxy; the other two stage in the input.
+    switch (proxyDimensionManager.mode) {
+      case DimensionFilterMode.InList:
+        proxyDimensionManager.setInList(
+          [...inListValues],
+          proxyDimensionManager.exclude,
+        );
+        break;
+
+      case DimensionFilterMode.Contains:
+        proxyDimensionManager.setContainsText(
+          curSearchText,
+          proxyDimensionManager.exclude,
+        );
+        break;
     }
-    dimensionManager.expr = proxyDimensionManager.expr;
+    dimensionManager.apply(proxyDimensionManager);
     if (close) open = false;
   }
 
@@ -311,13 +334,13 @@
       openOnMount &&
       !dimensionManager.selectedValues?.length &&
       !dimensionManager.inputText;
-    curSearchText = dimensionManager.inputText;
+    resetSearchText();
   });
 </script>
 
 <svelte:window
   onkeydown={(e) => {
-    if (e.key === "Enter") onApply();
+    if (open && e.key === "Enter") onApply();
   }}
 />
 
@@ -357,10 +380,10 @@
             show={1}
             {smallChip}
             values={proxyDimensionManager.mode === DimensionFilterMode.InList
-              ? proxyDimensionManager.selectedValues
+              ? inListValues
               : effectiveSelectedValues}
             matchedCount={allSearchResultsCount}
-            loading={isFetchingFromAllSearchResultsCount}
+            loading={allSearchResultsCountQuery.current.isFetching}
             search={proxyDimensionManager.mode === DimensionFilterMode.Contains
               ? curSearchText
               : undefined}
@@ -466,7 +489,7 @@
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
           List is too long. Please remove some values.
         </div>
-      {:else if correctedSearchResults}
+      {:else}
         <DropdownMenu.Group
           class="px-1"
           aria-label={`${dimensionManager.name} results`}

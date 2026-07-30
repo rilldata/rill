@@ -2,7 +2,6 @@ import { page } from "$app/state";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 import {
-  type MetricsViewSpecDimension,
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -16,31 +15,37 @@ import {
 export class DimensionFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
 
-  public mode: DimensionFilterMode;
-  public selectedValues: string[];
-  public inputText: string;
-  public exclude: boolean;
+  public mode = $state(DimensionFilterMode.Select);
+  public selectedValues = $state<string[]>([]);
+  public inputText = $state("");
+  public exclude = $state(false);
 
   private oldMode: DimensionFilterMode;
 
   public constructor(
     public readonly name: string,
     public readonly label: string,
-    public readonly dimensions: Record<string, MetricsViewSpecDimension>,
     initExpr: V1Expression = createInExpression(name, []),
     isInList: boolean = false,
+    // Filter dropdown doesnt immediately apply changes.
+    // This marks this manager as ephemeral, it will not notify about mode changes.
+    private readonly ephemeral: boolean = false,
   ) {
+    this.reconcile(initExpr, isInList ? [name] : []);
+  }
+
+  public reconcile(expr: V1Expression, inList: string[]) {
     let initMode: DimensionFilterMode = DimensionFilterMode.Select;
     let initSelectedValues: string[] = [];
     let initInputText: string = "";
     let initExclude: boolean = false;
 
-    const op = initExpr.cond?.op;
+    const op = expr.cond?.op;
     if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
-      initMode = isInList
+      initMode = inList.includes(this.name)
         ? DimensionFilterMode.InList
         : DimensionFilterMode.Select;
-      initSelectedValues = getValuesInExpression(initExpr);
+      initSelectedValues = getValuesInExpression(expr);
       initExclude = op === V1Operation.OPERATION_NIN;
     } else if (
       op === V1Operation.OPERATION_LIKE ||
@@ -48,27 +53,35 @@ export class DimensionFilterManager {
     ) {
       initMode = DimensionFilterMode.Contains;
       initInputText = sanitizeSearchText(
-        initExpr.cond?.exprs?.[1]?.val?.toString?.() ?? "",
+        expr.cond?.exprs?.[1]?.val?.toString?.() ?? "",
       );
       initExclude = op === V1Operation.OPERATION_NLIKE;
     }
 
-    this.mode = $state(initMode);
+    this.mode = initMode;
     this.oldMode = initMode;
-    this.selectedValues = $state(initSelectedValues);
-    this.inputText = $state(initInputText);
-    this.exclude = $state(initExclude);
-    this.commit();
+    this.selectedValues = initSelectedValues;
+    this.inputText = initInputText;
+    this.exclude = initExclude;
+    this.commit(false);
   }
 
   public clone() {
     return new DimensionFilterManager(
       this.name,
       this.label,
-      this.dimensions,
       this.expr,
       this.mode === DimensionFilterMode.InList,
+      true,
     );
+  }
+
+  public apply(dimensionManager: DimensionFilterManager) {
+    this.mode = dimensionManager.mode;
+    this.selectedValues = [...dimensionManager.selectedValues];
+    this.inputText = dimensionManager.inputText;
+    this.exclude = dimensionManager.exclude;
+    this.commit();
   }
 
   public setSelectedValues(dimensionValues: string[], exclude: boolean) {
@@ -138,10 +151,14 @@ export class DimensionFilterManager {
     this.commit();
   }
 
-  public commit() {
+  public commit(notify: boolean = true) {
     switch (this.mode) {
       case DimensionFilterMode.Select:
-        if (this.oldMode !== DimensionFilterMode.Select) {
+        if (
+          this.oldMode !== DimensionFilterMode.Select &&
+          !this.ephemeral &&
+          notify
+        ) {
           eventBus.emit("notification", {
             message: "Converted filter type to Select",
             link: {
