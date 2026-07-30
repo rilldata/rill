@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PRs 2–6 and 8: 105 candidates across 42 files
-- Current split: 87 candidates in `web-admin` and 18 in `web-common`
+- Current after PRs 2–8: 87 candidates across 32 files
+- Current split: 87 candidates in `web-admin` and 0 in `web-common`
 - No candidates in `web-local`
-- Current categories: 62 visible-text findings, 28 attribute findings, and 15
+- Current categories: 52 visible-text findings, 24 attribute findings, and 11
   copy-property findings
-- Currently, 19 candidates have an exact English-text match in the existing
+- Currently, 18 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -71,7 +71,7 @@ node scripts/i18n-guard.js --strict
 | 4   | Workspaces and Visual Metrics                              |                  18 | Completed |
 | 5   | Dashboard UI, pivot, filters, and charts                   |                  30 | Completed |
 | 6   | Resources, connectors, and models                          |                  16 | Completed |
-| 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Planned   |
+| 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Completed |
 | 8   | Admin project status, GitHub, and user management          |                  29 | Completed |
 | 9   | Admin edit sessions and branches                           |                  32 | Planned   |
 | 10  | Admin organizations, bookmarks, and view-as-user           |                  19 | Planned   |
@@ -79,7 +79,7 @@ node scripts/i18n-guard.js --strict
 | 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned   |
 | 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned   |
 
-PRs 1–6 and 8 are completed. PRs 7 and 9–12 can be developed independently,
+PRs 1–8 are completed. PRs 9–12 can be developed independently,
 but landing them sequentially reduces conflicts in `en.json` and `es.json`.
 PR 13 should land only after warning mode is clean.
 
@@ -133,7 +133,7 @@ PR 13 should land only after warning mode is clean.
 - 2 — `web-common/src/features/models/workspace/ModelWorkspaceCTAs.svelte`
 - 6 — `web-common/src/features/resources/ResourcesFilterableTable.svelte`
 
-### PR 7: Shared interaction surfaces (18)
+### PR 7: Shared interaction surfaces (18, completed)
 
 - 1 — `web-common/src/components/forms/Select.svelte`
 - 1 — `web-common/src/components/searchable-filter-menu/SearchableMenuContent.svelte`
