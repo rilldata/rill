@@ -43,7 +43,7 @@
   {#if collapsed}
     <!-- Collapsed state: icon-only buttons -->
     <div class="collapsed-actions">
-      <span title="Expand sidebar">
+      <span title={m.chat_expand_sidebar()}>
         <Button type="secondary" square onClick={onToggle}>
           <HideSidebar side="left" open={false} size="16px" />
         </Button>
@@ -67,7 +67,7 @@
     <!-- Expanded state: full sidebar -->
     <div class="conversation-sidebar-header">
       <div class="header-row">
-        <span title="Collapse sidebar">
+        <span title={m.chat_collapse_sidebar()}>
           <Button type="secondary" square onClick={onToggle}>
             <HideSidebar side="left" open={true} size="16px" />
           </Button>
@@ -90,12 +90,14 @@
           <DelayedContent visible={isLoading} delay={300}>
             <div class="flex flex-row items-center gap-x-2">
               <Spinner size="1em" status={EntityStatus.Running} />
-              Loading conversations...
+              {m.chat_loading_conversations()}
             </div>
           </DelayedContent>
         </div>
       {:else if isError}
-        <div class="error-conversations">Error loading conversations</div>
+        <div class="error-conversations">
+          {m.chat_error_loading_conversations()}
+        </div>
       {:else if conversations.length}
         {#each conversations as conversation}
           <a
