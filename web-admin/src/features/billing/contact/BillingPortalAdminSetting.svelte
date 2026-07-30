@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
-  import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
+  import ChangeBillingPortalAdminDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingPortalAdminDialog.svelte";
+  import { getOrganizationBillingPortalAdminUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -10,56 +10,56 @@
   let { organization, canEdit }: { organization: string; canEdit: boolean } =
     $props();
 
-  let billingContactUser = $derived(
-    getOrganizationBillingContactUser(organization),
+  let billingPortalAdminUser = $derived(
+    getOrganizationBillingPortalAdminUser(organization),
   );
 
-  let isUpdateBillingContactDialogOpen = $state(false);
+  let isUpdateBillingPortalAdminDialogOpen = $state(false);
 </script>
 
 <section>
   <h2 class="section-header">
-    {m.billing_contact_header()}
+    {m.billing_portal_admin_header()}
     <Tooltip location="right" alignment="middle" distance={8}>
       <span class="text-fg-muted flex">
         <InfoCircle size="16px" />
       </span>
       <TooltipContent maxWidth="240px" slot="tooltip-content">
-        {m.billing_contact_tooltip()}
+        {m.billing_portal_admin_tooltip()}
       </TooltipContent>
     </Tooltip>
   </h2>
   <div class="section-card">
     <div class="card-content">
-      {#if $billingContactUser}
+      {#if $billingPortalAdminUser}
         <AvatarListItem
-          name={$billingContactUser.displayName ||
-            $billingContactUser.email ||
+          name={$billingPortalAdminUser.displayName ||
+            $billingPortalAdminUser.email ||
             ""}
-          email={$billingContactUser.email}
-          photoUrl={$billingContactUser.photoUrl}
+          email={$billingPortalAdminUser.email}
+          photoUrl={$billingPortalAdminUser.photoUrl}
         />
       {:else}
         <span class="text-sm text-fg-tertiary"
-          >{m.billing_no_billing_contact()}</span
+          >{m.billing_no_billing_portal_admin()}</span
         >
       {/if}
     </div>
     {#if canEdit}
       <button
         class="manage-btn"
-        onclick={() => (isUpdateBillingContactDialogOpen = true)}
+        onclick={() => (isUpdateBillingPortalAdminDialogOpen = true)}
       >
-        {m.billing_change_billing_contact()}
+        {m.billing_change_billing_portal_admin()}
       </button>
     {/if}
   </div>
 </section>
 
-<ChangeBillingContactDialog
-  bind:open={isUpdateBillingContactDialogOpen}
+<ChangeBillingPortalAdminDialog
+  bind:open={isUpdateBillingPortalAdminDialogOpen}
   {organization}
-  currentBillingContact={$billingContactUser?.email}
+  currentBillingPortalAdmin={$billingPortalAdminUser?.email}
 />
 
 <style lang="postcss">

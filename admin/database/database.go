@@ -61,6 +61,7 @@ type DB interface {
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	FindOrganizationByCustomDomain(ctx context.Context, domain string) (*Organization, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
+	CheckUserIsBillingPortalAdmin(ctx context.Context, orgID, userID string) (bool, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
@@ -399,6 +400,7 @@ type Organization struct {
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
+	BillingPortalAdmin                  string    `db:"billing_portal_admin"`
 	BillingPlanName                     *string   `db:"billing_plan_name"`
 	BillingPlanDisplayName              *string   `db:"billing_plan_display_name"`
 	CreatedByUserID                     *string   `db:"created_by_user_id"`
@@ -425,6 +427,7 @@ type InsertOrganizationOptions struct {
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
+	BillingPortalAdmin                  string
 	CreatedByUserID                     *string
 }
 
@@ -449,6 +452,7 @@ type UpdateOrganizationOptions struct {
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
 	BillingEmail                        string
+	BillingPortalAdmin                  string
 	BillingPlanName                     *string
 	BillingPlanDisplayName              *string
 	CreatedByUserID                     *string

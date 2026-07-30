@@ -786,6 +786,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
    */
   billingEmail?: string;
 
+  /**
+   * @generated from field: optional string billing_portal_admin = 19;
+   */
+  billingPortalAdmin?: string;
+
   constructor(data?: PartialMessage<UpdateOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -804,6 +809,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "billing_portal_admin", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationRequest {
@@ -16612,6 +16618,11 @@ export class Organization extends Message<Organization> {
   billingEmail = "";
 
   /**
+   * @generated from field: string billing_portal_admin = 19;
+   */
+  billingPortalAdmin = "";
+
+  /**
    * @generated from field: optional string billing_plan_name = 14;
    */
   billingPlanName?: string;
@@ -16653,6 +16664,7 @@ export class Organization extends Message<Organization> {
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "billing_portal_admin", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "billing_plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 15, name: "billing_plan_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
@@ -17282,6 +17294,11 @@ export class OrganizationPermissions extends Message<OrganizationPermissions> {
    */
   manageOrgAdmins = false;
 
+  /**
+   * @generated from field: bool manage_org_billing = 11;
+   */
+  manageOrgBilling = false;
+
   constructor(data?: PartialMessage<OrganizationPermissions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -17300,6 +17317,7 @@ export class OrganizationPermissions extends Message<OrganizationPermissions> {
     { no: 6, name: "read_org_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "manage_org_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "manage_org_admins", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "manage_org_billing", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationPermissions {

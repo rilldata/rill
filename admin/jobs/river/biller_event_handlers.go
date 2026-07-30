@@ -365,6 +365,7 @@ func (w *PlanChangedWorker) Work(ctx context.Context, job *river.Job[PlanChanged
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
+			BillingPortalAdmin:                  org.BillingPortalAdmin,
 			BillingPlanName:                     &planName,
 			BillingPlanDisplayName:              &planDisplayName,
 			CreatedByUserID:                     org.CreatedByUserID,

@@ -1033,6 +1033,7 @@ export interface V1Organization {
   billingCustomerId?: string;
   paymentCustomerId?: string;
   billingEmail?: string;
+  billingPortalAdmin?: string;
   billingPlanName?: string;
   billingPlanDisplayName?: string;
   createdOn?: string;
@@ -1086,6 +1087,7 @@ export interface V1OrganizationPermissions {
   readOrgMembers?: boolean;
   manageOrgMembers?: boolean;
   manageOrgAdmins?: boolean;
+  manageOrgBilling?: boolean;
 }
 
 export interface V1OrganizationQuotas {
@@ -1883,6 +1885,7 @@ export type AdminServiceUpdateOrganizationBody = {
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
   billingEmail?: string;
+  billingPortalAdmin?: string;
 };
 
 export type AdminServiceGetBillingCreditBalanceParams = {

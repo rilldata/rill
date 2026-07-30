@@ -5,6 +5,7 @@
   } from "@rilldata/web-admin/client";
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
   import BillingContactSetting from "@rilldata/web-admin/features/billing/contact/BillingContactSetting.svelte";
+  import BillingPortalAdminSetting from "@rilldata/web-admin/features/billing/contact/BillingPortalAdminSetting.svelte";
   import Payment from "@rilldata/web-admin/features/billing/Payment.svelte";
   import Plan from "@rilldata/web-admin/features/billing/plans/Plan.svelte";
   import {
@@ -20,6 +21,9 @@
   let { data }: { data: PageData } = $props();
 
   let organization = $derived(data.organization);
+  let canEditBillingContacts = $derived(
+    !!data.organizationPermissions?.manageOrg,
+  );
   let categorisedIssues = $derived(
     useCategorisedOrganizationBillingIssues(organization),
   );
@@ -60,7 +64,11 @@
     {#if isPaidPlan}
       <Payment {organization} />
     {/if}
-    <BillingContactSetting {organization} />
+    <BillingContactSetting {organization} canEdit={canEditBillingContacts} />
+    <BillingPortalAdminSetting
+      {organization}
+      canEdit={canEditBillingContacts}
+    />
     <PlanActions {organization} />
   </div>
 {/if}

@@ -12,7 +12,8 @@
   let { children, data }: { children: Snippet; data: PageData } = $props();
 
   let { billingPortalUrl } = $derived(data);
-  let showUsageSettings = $derived(Boolean(billingPortalUrl));
+  let manageOrg = $derived(!!data.organizationPermissions?.manageOrg);
+  let showUsageSettings = $derived(Boolean(billingPortalUrl) && manageOrg);
 
   let organization = $derived($page.params.organization);
   let basePage = $derived(`/${organization}/-/settings`);
@@ -26,7 +27,7 @@
   // page is ready. Pro and Team users still get a `View detailed usage` link
   // out to the Orb billing portal from the Plan card.
   let navItems = $derived([
-    { label: m.settings_nav_general(), route: "", hasPermission: true },
+    { label: m.settings_nav_general(), route: "", hasPermission: manageOrg },
     { label: m.settings_nav_billing(), route: "/billing", hasPermission: true },
     ...(isPaidPlan
       ? [

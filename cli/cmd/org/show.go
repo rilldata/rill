@@ -56,8 +56,9 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.Printf("Custom Thumbnail: %s\n", org.ThumbnailUrl)
 			ch.Printf("Custom Domain: %s\n", org.CustomDomain)
 			ch.Printf("Default Project Role: %s\n", defaultProjectRole)
-			if res.Permissions.ManageOrg { // Mirrors redaction rules in organizationToDTO
+			if res.Permissions.ManageOrg || res.Permissions.ManageOrgBilling { // Mirrors redaction rules in organizationToDTO
 				ch.Printf("Billing Email: %s\n", org.BillingEmail)
+				ch.Printf("Billing Portal Admin: %s\n", org.BillingPortalAdmin)
 			}
 			ch.Printf("Created On: %s\n", org.CreatedOn.AsTime().Format(time.RFC3339Nano))
 			ch.Printf("Updated On: %s\n", org.UpdatedOn.AsTime().Format(time.RFC3339Nano))

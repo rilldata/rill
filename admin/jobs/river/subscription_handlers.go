@@ -81,6 +81,7 @@ func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *riv
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
+			BillingPortalAdmin:                  org.BillingPortalAdmin,
 			BillingPlanName:                     org.BillingPlanName,
 			BillingPlanDisplayName:              org.BillingPlanDisplayName,
 			CreatedByUserID:                     org.CreatedByUserID,

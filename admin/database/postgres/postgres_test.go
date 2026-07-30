@@ -36,6 +36,7 @@ func TestPostgres(t *testing.T) {
 	defer func() { require.NoError(t, db.Close()) }()
 
 	t.Run("TestOrganizations", func(t *testing.T) { testOrganizations(t, db) })
+	t.Run("TestBillingPortalAdmin", func(t *testing.T) { testBillingPortalAdmin(t, db) })
 	t.Run("TestOrgsWithPagination", func(t *testing.T) { testOrgsWithPagination(t, db) })
 	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
 	t.Run("TestProjectsWithAnnotations", func(t *testing.T) { testProjectsWithAnnotations(t, db) })
@@ -160,6 +161,54 @@ func testOrganizations(t *testing.T, db database.DB) {
 	org, err = db.FindOrganizationByName(ctx, "foo")
 	require.ErrorIs(t, err, database.ErrNotFound)
 	require.Nil(t, org)
+}
+
+func testBillingPortalAdmin(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "accounting@rilldata.com"})
+	require.NoError(t, err)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{
+		Name:               randomName(),
+		BillingEmail:       "admin@rilldata.com",
+		BillingPortalAdmin: "billing@rilldata.com",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "billing@rilldata.com", org.BillingPortalAdmin)
+
+	// The user's email does not match the billing portal admin.
+	ok, err := db.CheckUserIsBillingPortalAdmin(ctx, org.ID, user.ID)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	// The match is case-insensitive.
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:               org.Name,
+		BillingEmail:       org.BillingEmail,
+		BillingPortalAdmin: "Accounting@RillData.com",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Accounting@RillData.com", org.BillingPortalAdmin)
+
+	ok, err = db.CheckUserIsBillingPortalAdmin(ctx, org.ID, user.ID)
+	require.NoError(t, err)
+	require.True(t, ok)
+
+	// An empty billing portal admin matches no one.
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:         org.Name,
+		BillingEmail: org.BillingEmail,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "", org.BillingPortalAdmin)
+
+	ok, err = db.CheckUserIsBillingPortalAdmin(ctx, org.ID, user.ID)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
 }
 
 func testOrgsWithPagination(t *testing.T, db database.DB) {

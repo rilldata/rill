@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/admin/database"
@@ -2430,6 +2431,95 @@ func TestRBAC(t *testing.T) {
 		require.Equal(t, database.ProjectRoleNameViewer, invites.Invites[0].RoleName)
 		require.True(t, invites.Invites[0].RestrictResources)
 		require.Empty(t, invites.Invites[0].Resources)
+	})
+
+	t.Run("Billing portal admins get access to billing only", func(t *testing.T) {
+		u1, c1 := fix.NewUser(t)
+		u2, c2 := fix.NewUser(t)
+
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		org := r1.Organization.Name
+
+		// The billing portal admin defaults to the creator's email.
+		require.Equal(t, u1.Email, r1.Organization.BillingPortalAdmin)
+
+		// u2 is not a member and cannot access the org or its billing.
+		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Org: org})
+		require.Error(t, err)
+		_, err = c2.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{Org: org})
+		require.Error(t, err)
+
+		// A non-admin member cannot change the billing portal admin.
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:   org,
+			Email: u2.Email,
+			Role:  database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c2.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Org:                org,
+			BillingPortalAdmin: &u2.Email,
+		})
+		require.Error(t, err)
+		_, err = c1.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+			Org:   org,
+			Email: u2.Email,
+		})
+		require.NoError(t, err)
+
+		// An org admin can set the billing portal admin to any email, even a non-member's.
+		// Use different casing to check the match is case-insensitive.
+		mixedCaseEmail := strings.ToUpper(u2.Email[:1]) + u2.Email[1:]
+		r2, err := c1.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Org:                org,
+			BillingPortalAdmin: &mixedCaseEmail,
+		})
+		require.NoError(t, err)
+		require.Equal(t, mixedCaseEmail, r2.Organization.BillingPortalAdmin)
+
+		// u2 can now read the org with billing permissions and the privileged fields.
+		r3, err := c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Org: org})
+		require.NoError(t, err)
+		require.True(t, r3.Permissions.ManageOrgBilling)
+		require.True(t, r3.Permissions.ReadOrg)
+		require.False(t, r3.Permissions.ManageOrg)
+		require.False(t, r3.Permissions.ReadProjects)
+		require.Equal(t, u1.Email, r3.Organization.BillingEmail)
+
+		// u2 can access billing APIs.
+		_, err = c2.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{Org: org})
+		require.NoError(t, err)
+		_, err = c2.ListOrganizationBillingIssues(ctx, &adminv1.ListOrganizationBillingIssuesRequest{Org: org})
+		require.NoError(t, err)
+
+		// u2 cannot access anything else.
+		_, err = c2.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Org:                org,
+			BillingPortalAdmin: &u2.Email,
+		})
+		require.Error(t, err)
+		_, err = c2.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{Org: org})
+		require.Error(t, err)
+		_, err = c2.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{Org: org})
+		require.Error(t, err)
+
+		// The org does not appear in u2's org list since they are not a member.
+		r4, err := c2.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+		require.NoError(t, err)
+		require.Len(t, r4.Organizations, 0)
+
+		// Changing the billing portal admin revokes u2's access.
+		otherEmail := "someone-else@example.com"
+		_, err = c1.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Org:                org,
+			BillingPortalAdmin: &otherEmail,
+		})
+		require.NoError(t, err)
+		_, err = c2.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Org: org})
+		require.Error(t, err)
+		_, err = c2.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{Org: org})
+		require.Error(t, err)
 	})
 }
 

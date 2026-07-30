@@ -11,6 +11,19 @@ import { getOrgAdminMembers } from "@rilldata/web-admin/features/organizations/u
 export function getOrganizationBillingContactUser(
   organization: string,
 ): Readable<V1User | undefined> {
+  return getOrganizationBillingUser(organization, "billingEmail");
+}
+
+export function getOrganizationBillingPortalAdminUser(
+  organization: string,
+): Readable<V1User | undefined> {
+  return getOrganizationBillingUser(organization, "billingPortalAdmin");
+}
+
+function getOrganizationBillingUser(
+  organization: string,
+  field: "billingEmail" | "billingPortalAdmin",
+): Readable<V1User | undefined> {
   return derived(
     [
       createAdminServiceGetOrganization(
@@ -23,33 +36,37 @@ export function getOrganizationBillingContactUser(
       getOrgAdminMembers(organization),
     ],
     ([orgResp, currentUser, orgAdminsResp], set) => {
-      if (
-        orgResp.data?.organization?.billingEmail ===
-        currentUser.data?.user?.email
-      ) {
-        set(currentUser.data?.user);
-        return;
-      }
-
-      const billingEmail = orgResp.data?.organization?.billingEmail;
-
-      const adminUser: V1OrganizationMemberUser | undefined = billingEmail
-        ? orgAdminsResp.data?.pages
-            ?.flatMap((p) => p.members ?? [])
-            ?.find((m) => m.userEmail === billingEmail)
-        : undefined;
-
-      if (!adminUser) {
+      const email = orgResp.data?.organization?.[field];
+      if (!email) {
         set(undefined);
         return;
       }
 
-      set({
-        id: adminUser.userId,
-        email: adminUser.userEmail,
-        displayName: adminUser.userName,
-        photoUrl: adminUser.userPhotoUrl,
-      } satisfies V1User);
+      if (email === currentUser.data?.user?.email) {
+        set(currentUser.data?.user);
+        return;
+      }
+
+      // The org admins query fails for users without member read access
+      // (e.g. a billing portal admin), in which case we fall back to the raw email below.
+      const adminUser: V1OrganizationMemberUser | undefined =
+        orgAdminsResp.data?.pages
+          ?.flatMap((p) => p.members ?? [])
+          ?.find((m) => m.userEmail === email);
+
+      if (adminUser) {
+        set({
+          id: adminUser.userId,
+          email: adminUser.userEmail,
+          displayName: adminUser.userName,
+          photoUrl: adminUser.userPhotoUrl,
+        } satisfies V1User);
+        return;
+      }
+
+      // The email does not belong to an org admin (or the members list is unavailable);
+      // show the raw email.
+      set({ email } satisfies V1User);
     },
   );
 }

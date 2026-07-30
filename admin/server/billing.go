@@ -34,7 +34,7 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 
 	claims := auth.GetClaims(ctx)
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgBilling && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org subscriptions")
 	}
 
@@ -68,7 +68,7 @@ func (s *Server) GetBillingCreditBalance(ctx context.Context, req *adminv1.GetBi
 
 	claims := auth.GetClaims(ctx)
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgBilling && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org credit balance")
 	}
 
@@ -95,7 +95,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	claims := auth.GetClaims(ctx)
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgBilling && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org billing plan")
 	}
 
@@ -303,7 +303,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 
 	claims := auth.GetClaims(ctx)
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgBilling && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to cancel org subscription")
 	}
 
@@ -370,7 +370,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 
 	claims := auth.GetClaims(ctx)
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgBilling && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to renew org subscription")
 	}
 
@@ -491,7 +491,7 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 
 	claims := auth.GetClaims(ctx)
 	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgBilling && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
 	}
 
@@ -558,6 +558,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		BillingCustomerID:                   valOrDefault(req.BillingCustomerId, org.BillingCustomerID),
 		PaymentCustomerID:                   valOrDefault(req.PaymentCustomerId, org.PaymentCustomerID),
 		BillingEmail:                        org.BillingEmail,
+		BillingPortalAdmin:                  org.BillingPortalAdmin,
 		BillingPlanName:                     org.BillingPlanName,
 		BillingPlanDisplayName:              org.BillingPlanDisplayName,
 		CreatedByUserID:                     org.CreatedByUserID,
@@ -1178,6 +1179,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		BillingPlanDisplayName:              &sub.Plan.DisplayName,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
+		BillingPortalAdmin:                  org.BillingPortalAdmin,
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
@@ -1269,6 +1271,7 @@ func (s *Server) getSubscriptionAndUpdateOrg(ctx context.Context, org *database.
 			BillingCustomerID:                   org.BillingCustomerID,
 			PaymentCustomerID:                   org.PaymentCustomerID,
 			BillingEmail:                        org.BillingEmail,
+			BillingPortalAdmin:                  org.BillingPortalAdmin,
 			BillingPlanName:                     &planName,
 			BillingPlanDisplayName:              &planDisplayName,
 			CreatedByUserID:                     org.CreatedByUserID,

@@ -124,15 +124,25 @@ func (c *connection) CheckOrganizationHasPublicProjects(ctx context.Context, org
 	return res, nil
 }
 
+func (c *connection) CheckUserIsBillingPortalAdmin(ctx context.Context, orgID, userID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		"SELECT EXISTS (SELECT 1 FROM orgs o JOIN users u ON u.id=$2 WHERE o.id=$1 AND o.billing_portal_admin<>'' AND lower(o.billing_portal_admin)=lower(u.email))", orgID, userID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertOrganization(ctx context.Context, opts *database.InsertOrganizationOptions) (*database.Organization, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, logo_dark_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id, quota_seats)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.QuotaSeats).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, logo_dark_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, billing_portal_admin, created_by_user_id, quota_seats)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.BillingPortalAdmin, opts.CreatedByUserID, opts.QuotaSeats).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -151,8 +161,8 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, logo_dark_asset_id=$5, favicon_asset_id=$6, thumbnail_asset_id=$7, custom_domain=$8, default_project_role_id=$9, quota_projects=$10, quota_deployments=$11, quota_slots_total=$12, quota_slots_per_deployment=$13, quota_outstanding_invites=$14, quota_storage_limit_bytes_per_deployment=$15, billing_customer_id=$16, payment_customer_id=$17, billing_email=$18, created_by_user_id=$19, billing_plan_name=$20, billing_plan_display_name=$21, quota_seats=$22, updated_on=now() WHERE id=$23 RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, opts.QuotaSeats, id).StructScan(res)
+		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, logo_dark_asset_id=$5, favicon_asset_id=$6, thumbnail_asset_id=$7, custom_domain=$8, default_project_role_id=$9, quota_projects=$10, quota_deployments=$11, quota_slots_total=$12, quota_slots_per_deployment=$13, quota_outstanding_invites=$14, quota_storage_limit_bytes_per_deployment=$15, billing_customer_id=$16, payment_customer_id=$17, billing_email=$18, billing_portal_admin=$19, created_by_user_id=$20, billing_plan_name=$21, billing_plan_display_name=$22, quota_seats=$23, updated_on=now() WHERE id=$24 RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.BillingPortalAdmin, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, opts.QuotaSeats, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}

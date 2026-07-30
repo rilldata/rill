@@ -25,13 +25,16 @@
     {
       route: `/${organization}/-/settings`,
       label: m.org_tab_settings(),
-      hasPermission: organizationPermissions.manageOrg,
+      hasPermission:
+        organizationPermissions.manageOrg ||
+        organizationPermissions.manageOrgBilling,
     },
   ];
 
   $: showTabs =
     organizationPermissions.manageOrg ||
-    organizationPermissions.manageOrgMembers;
+    organizationPermissions.manageOrgMembers ||
+    organizationPermissions.manageOrgBilling;
 
   $: selectedIndex = tabs?.findLastIndex((t) => pathname.startsWith(t.route));
 </script>
