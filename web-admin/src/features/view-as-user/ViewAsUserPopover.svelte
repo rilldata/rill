@@ -29,11 +29,11 @@
 </script>
 
 <div class="px-0.5 pt-1 pb-2 text-[10px] text-fg-secondary text-left">
-  Test your <a
+  {m.view_as_user_intro_prefix()} <a
     target="_blank"
     href="https://docs.rilldata.com/developers/build/metrics-view/security#rill-cloud"
-    >security policies</a
-  > by viewing this project from the perspective of another user.
+    >{m.view_as_user_security_policies()}</a
+  > {m.view_as_user_intro_suffix()}
 </div>
 
 <Command.Root>
@@ -41,7 +41,7 @@
   <Command.List>
     <Command.Empty>{m.common_no_results_found()}</Command.Empty>
     <Command.Group>
-      <Command.GroupHeading>Users</Command.GroupHeading>
+      <Command.GroupHeading>{m.view_as_user_users()}</Command.GroupHeading>
       <Command.GroupItems>
         {#each clientSideUsers as user}
           <Command.Item onSelect={() => handleViewAsUser(user)}>

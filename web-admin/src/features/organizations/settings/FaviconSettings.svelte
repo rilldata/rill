@@ -71,14 +71,18 @@
     <UploadImagePopover
       imageUrl={organizationFaviconUrl}
       accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-      label="favicon"
+      label={m.settings_favicon_title()}
       {organization}
       loading={isLoading}
       error={getRpcErrorMessage(error)}
       {onSave}
       {onRemove}
     >
-      <img src="/favicon.png" alt="favicon" class="h-10" />
+      <img
+        src="/favicon.png"
+        alt={m.settings_favicon_title()}
+        class="h-10"
+      />
     </UploadImagePopover>
   </div>
 </SettingsContainer>

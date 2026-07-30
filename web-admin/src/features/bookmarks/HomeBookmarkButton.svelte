@@ -56,7 +56,7 @@
           compact
           square
           type="secondary"
-          label="Home bookmark dropdown"
+          label={m.bookmark_home_dropdown_label()}
           active={open || isHomeBookmarkActive}
         >
           <HomeBookmark size="16px" className="flex-none" />
@@ -76,7 +76,7 @@
           <a
             href={fullHomeBookmarkUrl}
             class="flex flex-row gap-x-2 w-full min-h-7"
-            aria-label="Home Bookmark Entry"
+            aria-label={m.bookmark_home_entry_aria_label()}
             onclick={goToDashboardHome}
           >
             <HomeBookmark size="16px" />
@@ -118,7 +118,7 @@
           href={fullHomeBookmarkUrl}
           onClick={goToDashboardHome}
           class="border border-primary-300"
-          label="Go to home bookmark"
+          label={m.bookmark_go_to_home_label()}
           active={isHomeBookmarkActive}
         >
           <HomeBookmark
