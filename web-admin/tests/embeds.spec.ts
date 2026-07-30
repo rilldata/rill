@@ -626,9 +626,19 @@ test.describe("Embeds", () => {
       await expect(frame.getByText("Home", { exact: true })).toHaveCount(0);
 
       // The component's drill-through to an explore dashboard is still offered.
-      // The toolbar is revealed on hover, so hover before asserting visibility.
-      await kpi.hover();
-      const exploreLink = frame.getByLabel(/^Go to /).first();
+      // Every explore-linkable component on this canvas renders its own toolbar,
+      // so scope the link to the component being hovered rather than taking the
+      // canvas's first one.
+      const kpiComponent = frame
+        .locator("article.component-card")
+        .filter({ has: kpi });
+      const exploreLink = kpiComponent.getByLabel(
+        "Go to Programmatic Ads Bids",
+      );
+      await expect(exploreLink).toHaveCount(1);
+
+      // The toolbar is revealed on hover.
+      await kpiComponent.hover();
       await expect(exploreLink).toBeVisible();
 
       await exploreLink.click();
