@@ -16,19 +16,19 @@ export function getSnoozeOptions() {
     },
     {
       value: HOUR.toString(),
-      label: "1 hour",
+      label: m.snooze_one_hour(),
     },
     {
       value: DAY.toString(),
-      label: "1 day",
+      label: m.snooze_one_day(),
     },
     {
       value: WEEK.toString(),
-      label: "1 week",
+      label: m.snooze_one_week(),
     },
     {
       value: MONTH.toString(),
-      label: "1 month",
+      label: m.snooze_one_month(),
     },
   ];
 }
