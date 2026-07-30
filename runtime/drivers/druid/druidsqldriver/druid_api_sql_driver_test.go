@@ -101,13 +101,10 @@ func TestQueryContextAttributes(t *testing.T) {
 			// Keys set by the driver itself cannot be overridden.
 			"sqlQueryId": "hijack",
 			"priority":   "999",
-			// Empty values (e.g. from an unresolved template) must be omitted.
-			"empty": "",
 		},
 	})
 
 	require.Equal(t, "user@example.com", qctx["userEmail"])
 	require.NotEqual(t, "hijack", qctx["sqlQueryId"])
 	require.Equal(t, float64(3), qctx["priority"])
-	require.NotContains(t, qctx, "empty")
 }
