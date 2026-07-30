@@ -55,14 +55,13 @@ describe("getNewCanvasReportInitialFormValues", () => {
 });
 
 describe("getExistingReportInitialFormValues", () => {
-  it("extracts PDF options from annotations", () => {
+  it("extracts PDF options from the web_open_state annotation", () => {
     const reportSpec: V1ReportSpec = {
       displayName: "My Canvas Report",
       exportFormat: V1ExportFormat.EXPORT_FORMAT_PDF,
       annotations: {
         canvas: "c1",
-        pdf_include_filters: "false",
-        pdf_all_tabs: "true",
+        web_open_state: "tr=P7D&pdf_include_filters=false&pdf_all_tabs=true",
       },
     };
     const values = getExistingReportInitialFormValues(
@@ -75,7 +74,7 @@ describe("getExistingReportInitialFormValues", () => {
     expect(values.pdfAllTabs).toBe(true);
   });
 
-  it("defaults PDF options to true when annotations are absent", () => {
+  it("defaults PDF options to true when the state has none", () => {
     const values = getExistingReportInitialFormValues(
       { annotations: {} },
       "user@example.com",

@@ -1515,7 +1515,7 @@
   "report_form_save": "Save report",
   "report_form_save_button": "Save",
   "report_form_schedule": "Schedule report",
-  "report_form_schedule_pdf_button": "Schedule email delivery...",
+  "report_form_schedule_pdf_button": "Create scheduled export...",
   "report_form_slack_channels_hint": "We'll send alerts directly to these channels.",
   "report_form_slack_not_configured": "Slack has not been configured for this project. Read the {link} to learn more.",
   "report_form_slack_title": "Slack notifications",

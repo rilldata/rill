@@ -1326,6 +1326,12 @@ export interface V1RenewBillingSubscriptionResponse {
 
 export type V1ReportOptionsResolverProperties = { [key: string]: unknown };
 
+/**
+ * Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+ */
+export type V1ReportOptionsMetricsViewFilters = { [key: string]: V1Expression };
+
 export interface V1ReportOptions {
   displayName?: string;
   refreshCron?: string;
@@ -1348,9 +1354,9 @@ export interface V1ReportOptions {
   webOpenState?: string;
   explore?: string;
   canvas?: string;
-  /** PDF rendering options for canvas reports with export_format=EXPORT_FORMAT_PDF. */
-  pdfIncludeFilters?: boolean;
-  pdfAllTabs?: boolean;
+  /** Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+Baked into the report's security rules so magic-token recipients cannot query unfiltered data. */
+  metricsViewFilters?: V1ReportOptionsMetricsViewFilters;
   webOpenMode?: string;
 }
 

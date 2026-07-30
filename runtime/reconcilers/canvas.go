@@ -207,12 +207,6 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 	// explicitly allow access to the canvas itself
 	conditionResources = append(conditionResources, res.Meta.Name)
 
-	// Get controller to fetch components
-	ctr, err := c.Runtime.Controller(ctx, c.InstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get controller: %w", err)
-	}
-
 	// Collect all component names referenced by the canvas (including those nested in tab groups)
 	componentNames := make(map[string]bool)
 	runtime.CollectCanvasComponentNames(spec.Rows, componentNames)
@@ -227,7 +221,7 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 		conditionResources = append(conditionResources, componentRef)
 
 		// Get component resource
-		componentRes, err := ctr.Get(ctx, componentRef, false)
+		componentRes, err := c.Get(ctx, componentRef, false)
 		if err != nil {
 			// If component is not found, skip it but still allow access to the component name
 			continue

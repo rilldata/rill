@@ -73,6 +73,7 @@ notify:
       - user_1@example.com
 annotations:
   canvas: c1
+  metrics_view_filters: '{"mv1":{"cond":{"op":"OPERATION_EQ","exprs":[{"ident":"foo"},{"val":"foo"}]}}}'
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
@@ -112,16 +113,19 @@ annotations:
 		require.True(t, sec.CanAccess())
 	}
 
-	// The metrics views referenced by the canvas's components should be accessible
+	// The metrics views referenced by the canvas's components should be accessible.
+	// The filters captured in the report's "metrics_view_filters" annotation should be applied as a query filter.
 	mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
 	sec, err = rt.ResolveSecurity(ctx, id, claims, mv1)
 	require.NoError(t, err)
 	require.True(t, sec.CanAccess())
+	require.NotNil(t, sec.QueryFilter())
 
 	mv2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv2")
 	sec, err = rt.ResolveSecurity(ctx, id, claims, mv2)
 	require.NoError(t, err)
 	require.True(t, sec.CanAccess())
+	require.Nil(t, sec.QueryFilter())
 
 	// A metrics view not referenced by the canvas should not be accessible
 	mv3 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv3")

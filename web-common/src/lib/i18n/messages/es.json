@@ -1524,7 +1524,7 @@
   "report_form_save": "Guardar informe",
   "report_form_save_button": "Guardar",
   "report_form_schedule": "Programar informe",
-  "report_form_schedule_pdf_button": "Programar envío por correo...",
+  "report_form_schedule_pdf_button": "Crear exportación programada...",
   "report_form_slack_channels_hint": "Enviaremos alertas directamente a estos canales.",
   "report_form_slack_not_configured": "Slack no ha sido configurado para este proyecto. Lee la {link} para saber más.",
   "report_form_slack_title": "Notificaciones de Slack",

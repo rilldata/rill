@@ -77,6 +77,9 @@ export function getExistingReportInitialFormValues(
   userEmail: string | undefined,
   aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
+  const pdfOptions = getPdfOptionsFromWebOpenState(
+    reportSpec.annotations?.web_open_state,
+  );
   return {
     title: reportSpec.displayName ?? "",
     webOpenMode:
@@ -86,10 +89,21 @@ export function getExistingReportInitialFormValues(
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
     exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
-    pdfIncludeFilters: reportSpec.annotations?.pdf_include_filters !== "false",
-    pdfAllTabs: reportSpec.annotations?.pdf_all_tabs !== "false",
+    ...pdfOptions,
     ...extractNotification(reportSpec.notifiers, userEmail, true),
     ...extractRowsAndColumns(aggregationRequest),
+  };
+}
+
+// For canvas PDF reports, the rendering options are stored as extra params
+// in the web_open_state annotation (the canvas state query string).
+export function getPdfOptionsFromWebOpenState(
+  webOpenState: string | undefined,
+) {
+  const stateParams = new URLSearchParams(webOpenState ?? "");
+  return {
+    pdfIncludeFilters: stateParams.get("pdf_include_filters") !== "false",
+    pdfAllTabs: stateParams.get("pdf_all_tabs") !== "false",
   };
 }
 

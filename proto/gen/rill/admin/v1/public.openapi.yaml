@@ -1874,11 +1874,13 @@ components:
                     type: string
                 intervalDuration:
                     type: string
-                pdfAllTabs:
-                    type: boolean
-                pdfIncludeFilters:
-                    description: PDF rendering options for canvas reports with export_format=EXPORT_FORMAT_PDF.
-                    type: boolean
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    description: |-
+                        Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+                        Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+                    type: object
                 queryArgsJson:
                     title: use resolver/resolver_properties instead
                     type: string

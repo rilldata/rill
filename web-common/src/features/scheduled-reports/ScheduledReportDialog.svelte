@@ -64,6 +64,8 @@
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getCanvasFilters } from "../canvas/filters/canvas-filter-expressions";
+  import { getCanvasStoreUnguarded } from "../canvas/state-managers/state-managers";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
@@ -296,14 +298,25 @@
     };
 
     if (isCanvasReport) {
+      // The canvas state (filters, time range, tabs) as edited in the form's filter bar,
+      // plus the PDF rendering options, which the export page reads back from this state.
+      const stateParams = new URLSearchParams(window.location.search);
+      stateParams.set("pdf_include_filters", String(values.pdfIncludeFilters));
+      stateParams.set("pdf_all_tabs", String(values.pdfAllTabs));
+
+      // The selected filters are also baked into the report's security rules,
+      // so magic-token recipients cannot query data beyond them.
+      const canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
+      const metricsViewFilters = canvasStore
+        ? getCanvasFilters(canvasStore.canvasEntity)
+        : undefined;
+
       return {
         ...commonOptions,
         canvas: canvasName,
         exportFormat: V1ExportFormat.EXPORT_FORMAT_PDF,
-        pdfIncludeFilters: values.pdfIncludeFilters,
-        pdfAllTabs: values.pdfAllTabs,
-        // The canvas state (filters, time range, tabs) as edited in the form's filter bar.
-        webOpenState: window.location.search.replace(/^\?/, ""),
+        webOpenState: stateParams.toString(),
+        metricsViewFilters,
       };
     }
 

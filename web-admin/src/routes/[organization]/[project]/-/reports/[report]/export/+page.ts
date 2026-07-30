@@ -31,7 +31,7 @@ export async function load({ parent, url }) {
 
   return {
     canvasName,
-    pdfIncludeFilters: spec.annotations?.pdf_include_filters !== "false",
-    pdfAllTabs: spec.annotations?.pdf_all_tabs !== "false",
+    pdfIncludeFilters: stateParams.get("pdf_include_filters") !== "false",
+    pdfAllTabs: stateParams.get("pdf_all_tabs") !== "false",
   };
 }

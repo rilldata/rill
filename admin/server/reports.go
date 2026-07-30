@@ -21,6 +21,7 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -602,10 +603,11 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	}
 	res.Annotations.Explore = opts.Explore
 	res.Annotations.Canvas = opts.Canvas
-	if opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
-		res.Annotations.PdfIncludeFilters = strconv.FormatBool(opts.PdfIncludeFilters)
-		res.Annotations.PdfAllTabs = strconv.FormatBool(opts.PdfAllTabs)
+	filtersJSON, err := metricsViewFiltersJSON(opts.MetricsViewFilters)
+	if err != nil {
+		return nil, err
 	}
+	res.Annotations.MetricsViewFilters = filtersJSON
 	return yaml.Marshal(res)
 }
 
@@ -631,6 +633,15 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 			opts.Resolver: opts.ResolverProperties,
 		}
 	}
+	if opts.ExportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+		if opts.Canvas == "" {
+			return nil, fmt.Errorf("PDF export requires a canvas")
+		}
+		if opts.Resolver != "" || opts.QueryName != "" { // nolint:staticcheck // backwards compatibility
+			return nil, fmt.Errorf("PDF export does not support a query or data resolver")
+		}
+	}
+
 	res.Query.Name = opts.QueryName // nolint:staticcheck // backwards compatibility
 	res.Query.Args = args
 	res.Export.Format = exportFormatYAML(opts.ExportFormat)
@@ -648,7 +659,46 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	if !res.Annotations.WebOpenMode.Valid() {
 		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
 	}
+	if opts.Explore != "" && opts.Canvas != "" {
+		return nil, fmt.Errorf("cannot set both explore and canvas")
+	}
+	res.Annotations.Explore = opts.Explore
+	res.Annotations.Canvas = opts.Canvas
+	if opts.Canvas != "" {
+		// Canvas reports need the captured canvas state and filters to render correctly.
+		res.Annotations.WebOpenState = opts.WebOpenState
+		filtersJSON, err := metricsViewFiltersJSON(opts.MetricsViewFilters)
+		if err != nil {
+			return nil, err
+		}
+		res.Annotations.MetricsViewFilters = filtersJSON
+	}
 	return yaml.Marshal(res)
+}
+
+// metricsViewFiltersJSON serializes per-metrics-view filter expressions to a JSON object
+// of metrics view name to filter expression in protojson format.
+// It is stored in the "metrics_view_filters" report annotation and parsed by the report reconciler.
+func metricsViewFiltersJSON(filters map[string]*runtimev1.Expression) (string, error) {
+	if len(filters) == 0 {
+		return "", nil
+	}
+	res := make(map[string]json.RawMessage, len(filters))
+	for mv, expr := range filters {
+		if mv == "" {
+			return "", fmt.Errorf("empty metrics view name in metrics view filters")
+		}
+		data, err := protojson.Marshal(expr)
+		if err != nil {
+			return "", fmt.Errorf("failed to serialize filter for metrics view %q: %w", mv, err)
+		}
+		res[mv] = data
+	}
+	data, err := json.Marshal(res)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize metrics view filters: %w", err)
+	}
+	return string(data), nil
 }
 
 func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
@@ -874,9 +924,10 @@ type reportAnnotations struct {
 	WebOpenMode      WebOpenMode `yaml:"web_open_mode,omitempty"`
 	Explore          string      `yaml:"explore,omitempty"`
 	Canvas           string      `yaml:"canvas,omitempty"`
-	// PDF rendering options for canvas reports with PDF export format ("true"/"false"; empty means default).
-	PdfIncludeFilters string `yaml:"pdf_include_filters,omitempty"`
-	PdfAllTabs        string `yaml:"pdf_all_tabs,omitempty"`
+	// Per-metrics-view filters of the canvas at scheduling time, as a JSON object of
+	// metrics view name to filter expression in protojson format (canvas reports only).
+	// The report reconciler bakes these into the report's transitive security rules.
+	MetricsViewFilters string `yaml:"metrics_view_filters,omitempty"`
 }
 
 type WebOpenMode string
@@ -908,8 +959,7 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.WebOpenState = annotations["web_open_state"]
 	res.Explore = annotations["explore"]
 	res.Canvas = annotations["canvas"]
-	res.PdfIncludeFilters = annotations["pdf_include_filters"]
-	res.PdfAllTabs = annotations["pdf_all_tabs"]
+	res.MetricsViewFilters = annotations["metrics_view_filters"]
 	switch annotations["web_open_mode"] {
 	case "recipient":
 		res.WebOpenMode = WebOpenModeRecipient
