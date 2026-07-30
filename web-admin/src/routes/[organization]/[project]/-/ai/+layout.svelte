@@ -9,7 +9,6 @@
   import APIIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
   import ProjectChat from "@rilldata/web-common/features/chat/ProjectChat.svelte";
   import { setConnectClientContext } from "@rilldata/web-common/features/chat/connect/connect-client-context";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;

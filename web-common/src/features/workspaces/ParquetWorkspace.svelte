@@ -67,7 +67,9 @@
   let error = $derived.by(() => {
     if ($instanceQuery.isLoading) return null;
     if (!repoRoot)
-      return new Error("Could not resolve the project directory for this file.");
+      return new Error(
+        "Could not resolve the project directory for this file.",
+      );
     if (!duckDbConnector)
       return new Error("Previewing Parquet files requires a DuckDB connector.");
     return $previewQuery.error;
