@@ -157,10 +157,16 @@
             id="filters"
             capitalize={false}
           />
-          <!-- The canvas filter bar edits the page URL, which the dialog snapshots
-               on submit and restores on close (see ScheduledReportDialog). -->
+          <!-- Read-only display of the canvas filters the report will render with
+               (the dashboard's current filters when creating, the report's captured
+               state when editing; see ScheduledReportDialog). Report forms must not
+               change the underlying dashboard view, so editing is disabled until
+               unified filters support in-memory editing. The inert attribute is
+               needed because the time range pill has no read-only mode. -->
           <CanvasProvider {canvasName} instanceId={runtimeClient.instanceId}>
-            <CanvasFilters {canvasName} maxWidth={820} />
+            <div inert>
+              <CanvasFilters {canvasName} maxWidth={820} readOnly />
+            </div>
           </CanvasProvider>
         </div>
       {/if}

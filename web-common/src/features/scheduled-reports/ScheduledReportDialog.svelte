@@ -167,10 +167,10 @@
     currentProtobufState = get(dashboardStore).proto;
   }
 
-  // Canvas state is URL-param based, and the canvas filter bar in the form edits the page URL
-  // directly. Snapshot the URL when the dialog opens (in edit mode, first replay the report's
-  // stored state so the form shows the report's filters), capture it on submit, and restore it
-  // when the dialog closes so the dashboard behind the dialog is left unchanged.
+  // Canvas state is URL-param based. In edit mode, replay the report's stored state into the
+  // page URL so the form's read-only filter bar shows the report's filters; snapshot the
+  // original URL first and restore it when the dialog closes so the page is left unchanged.
+  // The state is captured back from the URL on submit.
   let originalCanvasPageSearch: string | undefined = undefined;
   if (open && isCanvasReport) {
     originalCanvasPageSearch = window.location.search;
@@ -298,7 +298,7 @@
     };
 
     if (isCanvasReport) {
-      // The canvas state (filters, time range, tabs) as edited in the form's filter bar,
+      // The canvas state (filters, time range, tabs) the report will render with,
       // plus the PDF rendering options, which the export page reads back from this state.
       const stateParams = new URLSearchParams(window.location.search);
       stateParams.set("pdf_include_filters", String(values.pdfIncludeFilters));

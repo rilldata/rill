@@ -7,6 +7,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
+  import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
   import type { ExportProgress } from "@rilldata/web-common/features/exports/pdf/types";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
@@ -24,6 +25,7 @@
   $: ({ instanceId } = runtimeClient);
   $: ({ organization, project, report } = $page.params);
   $: token = $page.url.searchParams.get("token");
+  $: executionTime = $page.url.searchParams.get("execution_time");
 
   let state: "generating" | "done" | "error" = "generating";
   let errorMessage = "";
@@ -76,6 +78,14 @@
 
   // Runs when the canvas provider's slot content mounts, i.e. once the canvas store is initialized.
   function startExportOnMount(_node: HTMLElement) {
+    // Anchor relative time ranges at the report's execution time,
+    // so the PDF shows data for the scheduled run rather than the download time.
+    if (executionTime) {
+      getCanvasStoreUnguarded(
+        canvasName,
+        instanceId,
+      )?.canvasEntity.timeManager.executionTimeStore.set(executionTime);
+    }
     void runExport();
   }
 
