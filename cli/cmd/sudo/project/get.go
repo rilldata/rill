@@ -48,6 +48,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Prod version: %s\n", project.ProdVersion)
 			fmt.Printf("Primary branch: %s\n", project.PrimaryBranch)
 			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
+			fmt.Printf("Override disk GB: %d\n", project.OverrideDiskGb)
 			fmt.Printf("Primary deployment ID: %s\n", project.PrimaryDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
 			fmt.Printf("Prod deployment status: %s\n", prodDeploymentStatus(res.Deployment))
