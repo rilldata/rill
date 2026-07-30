@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PRs 2–9: 55 candidates across 27 files
-- Current split: 55 candidates in `web-admin` and 0 in `web-common`
+- Current after PRs 2–9 and 12: 37 candidates across 17 files
+- Current split: 37 candidates in `web-admin` and 0 in `web-common`
 - No candidates in `web-local`
-- Current categories: 20 visible-text findings, 24 attribute findings, and 11
+- Current categories: 12 visible-text findings, 20 attribute findings, and 5
   copy-property findings
-- Currently, 12 candidates have an exact English-text match in the existing
+- Currently, 6 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -76,11 +76,10 @@ node scripts/i18n-guard.js --strict
 | 9   | Admin edit sessions and branches                           |                  32 | Completed |
 | 10  | Admin organizations, bookmarks, and view-as-user           |                  19 | Planned   |
 | 11  | Admin alerts, reports, public URLs, and personal files     |                  18 | Planned   |
-| 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Planned   |
+| 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Completed |
 | 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned   |
 
-PRs 1–9 are completed. PRs 10–12 can be developed independently,
-but landing them sequentially reduces conflicts in `en.json` and `es.json`.
+PRs 1–9 and 12 are completed. PRs 10 and 11 can be developed independently.
 PR 13 should land only after warning mode is clean.
 
 ## Finding inventory
@@ -191,7 +190,7 @@ PR 13 should land only after warning mode is clean.
 - 2 — `web-admin/src/features/scheduled-reports/history/NoRunsYet.svelte`
 - 3 — `web-admin/src/features/scheduled-reports/metadata/ReportMetadata.svelte`
 
-### PR 12: Admin routes and onboarding (18)
+### PR 12: Admin routes and onboarding (18, completed)
 
 - 1 — `web-admin/src/routes/+page.svelte`
 - 2 — `web-admin/src/routes/-/embed/+layout.svelte`
