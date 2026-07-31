@@ -458,6 +458,8 @@ type DruidQueryContext struct {
 	UseCache                   *bool  `json:"useCache,omitempty"`
 	PopulateCache              *bool  `json:"populateCache,omitempty"`
 	Priority                   int    `json:"priority,omitempty"`
+	UserEmail                  string `json:"rillUserEmail,omitempty"`
+	ServiceToken               string `json:"rillServiceToken,omitempty"`
 }
 
 type DruidParameter struct {
@@ -482,13 +484,19 @@ func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConf
 			Value: arg.Value,
 		}
 	}
+
 	var useCache, populateCache *bool
 	priority := 0
+	userEmail := ""
+	serviceToken := ""
 	if queryCfg != nil {
 		useCache = queryCfg.UseCache
 		populateCache = queryCfg.PopulateCache
 		priority = queryCfg.Priority
+		userEmail = queryCfg.UserEmail
+		serviceToken = queryCfg.ServiceToken
 	}
+
 	return &DruidRequest{
 		Query:          query,
 		Header:         true,
@@ -501,6 +509,8 @@ func newDruidRequest(query string, args []driver.NamedValue, queryCfg *QueryConf
 			UseCache:                   useCache,
 			PopulateCache:              populateCache,
 			Priority:                   priority,
+			UserEmail:                  userEmail,
+			ServiceToken:               serviceToken,
 		},
 	}
 }
@@ -517,6 +527,8 @@ type QueryConfig struct {
 	UseCache      *bool
 	PopulateCache *bool
 	Priority      int
+	UserEmail     string
+	ServiceToken  string
 }
 
 type queryCfgCtxKey struct{}
