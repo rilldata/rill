@@ -17,6 +17,7 @@
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations.ts";
 
@@ -42,7 +43,7 @@
   let cancelError = $derived(getErrorForMutation($planCanceller));
   let cycleEndFormatted = $derived.by(() => {
     if (!cycleEnd) return "";
-    return new Date(cycleEnd).toLocaleDateString(undefined, {
+    return new Date(cycleEnd).toLocaleDateString(getLocale(), {
       month: "long",
       day: "numeric",
       year: "numeric",
