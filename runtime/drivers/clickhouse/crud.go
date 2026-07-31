@@ -696,7 +696,7 @@ func (c *Connection) syncReplica(ctx context.Context, tableName string) error {
 		return err
 	}
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s.%s", c.onClusterClause(), safeSQLName(database), safeSQLName(localTableName(tableName))),
+		Query:    fmt.Sprintf("SYSTEM SYNC REPLICA %s %s.%s LIGHTWEIGHT", c.onClusterClause(), safeSQLName(database), safeSQLName(localTableName(tableName))),
 		Priority: 1,
 	})
 }
