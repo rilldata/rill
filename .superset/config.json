@@ -1,8 +1,0 @@
-{
-  "setup": [
-    "npm ci",
-    "go mod download"
-  ],
-  "teardown": [],
-  "run": []
-}

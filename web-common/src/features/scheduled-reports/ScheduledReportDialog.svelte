@@ -136,15 +136,17 @@
             | string
             | undefined) ?? props.reportSpec.queryName)
         : undefined;
+  // Canvas reports have no query, and their queryArgsJson is an empty string (not undefined),
+  // so they must not go through JSON.parse.
   $: aggregationRequest = (
     props.mode === "create"
       ? props.query.metricsViewAggregationRequest
-      : props.mode === "edit"
+      : props.mode === "edit" && !isCanvasReport
         ? JSON.parse(
             (props.reportSpec.resolverProperties?.query_args_json as
               | string
-              | undefined) ??
-              props.reportSpec.queryArgsJson ??
+              | undefined) ||
+              props.reportSpec.queryArgsJson ||
               "{}",
           )
         : {}

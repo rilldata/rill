@@ -120,8 +120,8 @@ export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
     return getExploreName(reportSpec.annotations.web_open_path);
 
   const queryArgsJson = JSON.parse(
-    (reportSpec.resolverProperties?.query_args_json as string | undefined) ??
-      reportSpec.queryArgsJson ??
+    (reportSpec.resolverProperties?.query_args_json as string | undefined) ||
+      reportSpec.queryArgsJson ||
       "{}",
   );
 

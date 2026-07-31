@@ -32,6 +32,15 @@ describe("getDashboardNameFromReport", () => {
     };
     expect(getDashboardNameFromReport(reportSpec)).toEqual("my_metrics_view");
   });
+
+  it("does not throw for query-less reports with empty queryArgsJson", () => {
+    // Proto string fields default to "", which must not be passed to JSON.parse.
+    const reportSpec: V1ReportSpec = {
+      annotations: {},
+      queryArgsJson: "",
+    };
+    expect(getDashboardNameFromReport(reportSpec)).toEqual("");
+  });
 });
 
 describe("isCanvasReportSpec", () => {
