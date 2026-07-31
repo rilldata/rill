@@ -78,11 +78,7 @@
       {onSave}
       {onRemove}
     >
-      <img
-        src="/favicon.png"
-        alt={m.settings_favicon_title()}
-        class="h-10"
-      />
+      <img src="/favicon.png" alt={m.settings_favicon_title()} class="h-10" />
     </UploadImagePopover>
   </div>
 </SettingsContainer>

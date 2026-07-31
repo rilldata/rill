@@ -29,11 +29,10 @@
 </script>
 
 <div class="px-0.5 pt-1 pb-2 text-[10px] text-fg-secondary text-left">
-  {m.view_as_user_intro_prefix()} <a
-    target="_blank"
-    href="https://docs.rilldata.com/developers/build/metrics-view/security#rill-cloud"
-    >{m.view_as_user_security_policies()}</a
-  > {m.view_as_user_intro_suffix()}
+  {@html m.view_as_user_description({
+    docsUrl:
+      "https://docs.rilldata.com/developers/build/metrics-view/security#rill-cloud",
+  })}
 </div>
 
 <Command.Root>
