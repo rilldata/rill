@@ -27,6 +27,10 @@
   export let showBanner = false;
   export let projectId: string | undefined = undefined;
   export let allowUnvalidatedSpec = false;
+  // When set, relative time ranges are anchored at this time instead of now/latest
+  // (e.g. for scheduled report exports). Applied when the store is resolved,
+  // before any component subscribes to the time interval.
+  export let executionTime: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -143,6 +147,11 @@
     existingStore: CanvasStore | undefined,
     instanceId: string,
   ) {
+    if (executionTime) {
+      existingStore?.canvasEntity.timeManager.executionTimeStore.set(
+        executionTime,
+      );
+    }
     if (fetchedCanvas && !isReconciling) {
       const metricsViews: Record<string, V1MetricsView | undefined> = {};
       const refMetricsViews = fetchedCanvas?.referencedMetricsViews;
@@ -173,6 +182,11 @@
           client,
           allowUnvalidatedSpec,
         );
+        if (executionTime) {
+          newStore.canvasEntity.timeManager.executionTimeStore.set(
+            executionTime,
+          );
+        }
         newStore.canvasEntity.acquire();
         release?.(); // release our reference to the previous entity, if any
         release = newStore.canvasEntity.release;

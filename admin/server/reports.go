@@ -603,11 +603,13 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	}
 	res.Annotations.Explore = opts.Explore
 	res.Annotations.Canvas = opts.Canvas
-	filtersJSON, err := metricsViewFiltersJSON(opts.MetricsViewFilters)
-	if err != nil {
-		return nil, err
+	if opts.Canvas != "" {
+		filtersJSON, err := metricsViewFiltersJSON(opts.MetricsViewFilters)
+		if err != nil {
+			return nil, err
+		}
+		res.Annotations.MetricsViewFilters = filtersJSON
 	}
-	res.Annotations.MetricsViewFilters = filtersJSON
 	return yaml.Marshal(res)
 }
 
@@ -676,6 +678,10 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	return yaml.Marshal(res)
 }
 
+// reportFilterMaxSize limits the total size of the serialized filter expressions stored in a report's annotations.
+// Mirrors magicAuthTokenFilterMaxSize for magic auth token filters.
+const reportFilterMaxSize = 1024
+
 // metricsViewFiltersJSON serializes per-metrics-view filter expressions to a JSON object
 // of metrics view name to filter expression in protojson format.
 // It is stored in the "metrics_view_filters" report annotation and parsed by the report reconciler.
@@ -683,6 +689,7 @@ func metricsViewFiltersJSON(filters map[string]*runtimev1.Expression) (string, e
 	if len(filters) == 0 {
 		return "", nil
 	}
+	var filterSize int
 	res := make(map[string]json.RawMessage, len(filters))
 	for mv, expr := range filters {
 		if mv == "" {
@@ -691,6 +698,10 @@ func metricsViewFiltersJSON(filters map[string]*runtimev1.Expression) (string, e
 		data, err := protojson.Marshal(expr)
 		if err != nil {
 			return "", fmt.Errorf("failed to serialize filter for metrics view %q: %w", mv, err)
+		}
+		filterSize += len(data)
+		if filterSize > reportFilterMaxSize {
+			return "", fmt.Errorf("filter size exceeds limit of %d bytes", reportFilterMaxSize)
 		}
 		res[mv] = data
 	}

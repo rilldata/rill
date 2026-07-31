@@ -16,9 +16,13 @@ export async function load({ parent, url, params }) {
     const path = token
       ? `/${organization}/${project}/-/share/${token}/canvas/${canvasName}`
       : `/${organization}/${project}/canvas/${canvasName}`;
-    const search = new URLSearchParams(
+    const stateParams = new URLSearchParams(
       report.report.spec.annotations?.web_open_state ?? "",
-    ).toString();
+    );
+    // Internal PDF rendering options, not part of the canvas state.
+    stateParams.delete("pdf_include_filters");
+    stateParams.delete("pdf_all_tabs");
+    const search = stateParams.toString();
     redirect(307, search ? `${path}?${search}` : path);
   }
 

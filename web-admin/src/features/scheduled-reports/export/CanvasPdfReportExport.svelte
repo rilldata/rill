@@ -7,12 +7,12 @@
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
-  import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
   import type { ExportProgress } from "@rilldata/web-common/features/exports/pdf/types";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { onDestroy, onMount } from "svelte";
 
   export let canvasName: string;
   export let includeFilters = true;
@@ -21,6 +21,9 @@
   const runtimeClient = useRuntimeClient();
   // The export can take a while for large canvases since every component query must complete.
   const EXPORT_TIMEOUT_MS = 120_000;
+  // The canvas render is off-screen, so a canvas that never resolves (e.g. a reconcile
+  // error) would otherwise leave the page stuck on the progress state forever.
+  const CANVAS_LOAD_TIMEOUT_MS = 60_000;
 
   $: ({ instanceId } = runtimeClient);
   $: ({ organization, project, report } = $page.params);
@@ -44,6 +47,9 @@
     const stateParams = new URLSearchParams(window.location.search);
     stateParams.delete("token");
     stateParams.delete("execution_time");
+    // Internal PDF rendering options, not part of the canvas state.
+    stateParams.delete("pdf_include_filters");
+    stateParams.delete("pdf_all_tabs");
     stateParams.forEach((value, key) =>
       dashboardUrl.searchParams.set(key, value),
     );
@@ -78,16 +84,19 @@
 
   // Runs when the canvas provider's slot content mounts, i.e. once the canvas store is initialized.
   function startExportOnMount(_node: HTMLElement) {
-    // Anchor relative time ranges at the report's execution time,
-    // so the PDF shows data for the scheduled run rather than the download time.
-    if (executionTime) {
-      getCanvasStoreUnguarded(
-        canvasName,
-        instanceId,
-      )?.canvasEntity.timeManager.executionTimeStore.set(executionTime);
-    }
     void runExport();
   }
+
+  let canvasLoadTimer: ReturnType<typeof setTimeout>;
+  onMount(() => {
+    canvasLoadTimer = setTimeout(() => {
+      if (!started && state === "generating") {
+        errorMessage = m.report_pdf_export_canvas_load_failed();
+        state = "error";
+      }
+    }, CANVAS_LOAD_TIMEOUT_MS);
+  });
+  onDestroy(() => clearTimeout(canvasLoadTimer));
 
   const PROGRESS_COPY: Record<ExportProgress["phase"], () => string> = {
     preparing: () => m.export_pdf_rendering_charts(),
@@ -145,7 +154,13 @@
      and painted, so the host is positioned off-viewport instead of display:none. -->
 <div class="canvas-host" aria-hidden="true">
   {#key `${instanceId}::${canvasName}`}
-    <CanvasProvider {canvasName} {instanceId}>
+    <!-- executionTime anchors relative time ranges at the report's scheduled run,
+         so the PDF shows the same data the report was generated for. -->
+    <CanvasProvider
+      {canvasName}
+      {instanceId}
+      executionTime={executionTime ?? undefined}
+    >
       <div class="size-full" use:startExportOnMount>
         <CanvasDashboardEmbed {canvasName} navigationEnabled={false} />
       </div>

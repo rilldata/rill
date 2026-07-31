@@ -20,6 +20,7 @@ import {
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
   V1ExportFormat,
+  type V1Expression,
   type V1MetricsViewAggregationRequest,
   type V1Notifier,
   type V1Query,
@@ -105,6 +106,19 @@ export function getPdfOptionsFromWebOpenState(
     pdfIncludeFilters: stateParams.get("pdf_include_filters") !== "false",
     pdfAllTabs: stateParams.get("pdf_all_tabs") !== "false",
   };
+}
+
+// Parses a report's "metrics_view_filters" annotation (a JSON object of metrics view
+// name to filter expression in protojson format) back into the shape sent on ReportOptions.
+export function parseMetricsViewFiltersAnnotation(
+  annotation: string | undefined,
+): Record<string, V1Expression> | undefined {
+  if (!annotation) return undefined;
+  try {
+    return JSON.parse(annotation) as Record<string, V1Expression>;
+  } catch {
+    return undefined;
+  }
 }
 
 export function isCanvasReportSpec(reportSpec: V1ReportSpec): boolean {

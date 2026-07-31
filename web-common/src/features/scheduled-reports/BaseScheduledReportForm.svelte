@@ -161,10 +161,12 @@
                (the dashboard's current filters when creating, the report's captured
                state when editing; see ScheduledReportDialog). Report forms must not
                change the underlying dashboard view, so editing is disabled until
-               unified filters support in-memory editing. The inert attribute is
-               needed because the time range pill has no read-only mode. -->
+               unified filters support in-memory editing. Pointer events are forced
+               off on all descendants (the time range pill has no read-only mode and
+               the bar re-enables pointer-events internally), which keeps the bar in
+               the accessibility tree, unlike inert. -->
           <CanvasProvider {canvasName} instanceId={runtimeClient.instanceId}>
-            <div inert>
+            <div class="readonly-filter-bar">
               <CanvasFilters {canvasName} maxWidth={820} readOnly />
             </div>
           </CanvasProvider>
@@ -290,3 +292,9 @@
     {/if}
   </div>
 </form>
+
+<style lang="postcss">
+  .readonly-filter-bar :global(*) {
+    pointer-events: none !important;
+  }
+</style>

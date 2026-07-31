@@ -43,6 +43,7 @@
     getNewCanvasReportInitialFormValues,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
+    parseMetricsViewFiltersAnnotation,
     ReportRunAs,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
@@ -276,7 +277,9 @@
     },
   ));
 
-  $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
+  let localError: string | undefined = undefined;
+  $: generalErrors =
+    $errors._errors?.[0] ?? localError ?? $mutation.error?.message;
 
   function buildReportOptions(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -308,10 +311,22 @@
 
       // The selected filters are also baked into the report's security rules,
       // so magic-token recipients cannot query data beyond them.
+      // The filter capture must not silently fail open: if the canvas store is
+      // not available, fall back to the report's stored filters in edit mode,
+      // and refuse to submit in create mode.
       const canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
-      const metricsViewFilters = canvasStore
+      let metricsViewFilters = canvasStore
         ? getCanvasFilters(canvasStore.canvasEntity)
         : undefined;
+      if (!canvasStore) {
+        if (props.mode === "edit") {
+          metricsViewFilters = parseMetricsViewFiltersAnnotation(
+            props.reportSpec.annotations?.metrics_view_filters,
+          );
+        } else {
+          throw new Error(m.report_form_canvas_loading());
+        }
+      }
 
       return {
         ...commonOptions,
@@ -358,13 +373,21 @@
   }
 
   async function handleSubmit(values: ReportValues) {
+    localError = undefined;
+    let options: ReturnType<typeof buildReportOptions>;
+    try {
+      options = buildReportOptions(values);
+    } catch (e) {
+      localError = e instanceof Error ? e.message : String(e);
+      return;
+    }
     try {
       await $mutation.mutateAsync({
         org: organization,
         project,
         name: reportName,
         data: {
-          options: buildReportOptions(values),
+          options,
         },
       });
 
