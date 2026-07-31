@@ -70,7 +70,9 @@
 
     eventBus.emit("notification", {
       type: "success",
-      message: `Dashboard ${displayName} deleted successfully`,
+      message: m.personal_files_dashboard_deleted_notification({
+        name: displayName,
+      }),
     });
     await goto(`/${organization}/${project}`);
   }
@@ -106,10 +108,10 @@
       <div class="flex items-center gap-2">
         <h1 class="text-lg font-medium">{displayName}</h1>
         <span class="text-xs text-secondary-foreground">
-          Personal — only you can see this
+          {m.personal_files_canvas_visibility()}
         </span>
       </div>
-      <Button type="primary" onClick={toggleMode}>Edit</Button>
+      <Button type="primary" onClick={toggleMode}>{m.canvas_edit()}</Button>
     </div>
     {#key `${runtimeClient.instanceId}::${name}`}
       <div class="flex-1 min-h-0">

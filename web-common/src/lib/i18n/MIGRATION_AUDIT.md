@@ -10,12 +10,12 @@ this document are a snapshot and should decrease as PRs land.
 ## Summary
 
 - Corrected baseline: 270 candidates across 86 files
-- Current after PRs 2–9 and 12: 37 candidates across 17 files
-- Current split: 37 candidates in `web-admin` and 0 in `web-common`
+- Current after PRs 2–12: 0 candidates across 0 files
+- Current split: 0 candidates in `web-admin` and 0 in `web-common`
 - No candidates in `web-local`
-- Current categories: 12 visible-text findings, 20 attribute findings, and 5
+- Current categories: 0 visible-text findings, 0 attribute findings, and 0
   copy-property findings
-- Currently, 6 candidates have an exact English-text match in the existing
+- Currently, 0 candidates have an exact English-text match in the existing
   catalog; each still needs a semantic/context check before reusing that key
 - Message catalogs currently pass integrity checks
 
@@ -74,13 +74,12 @@ node scripts/i18n-guard.js --strict
 | 7   | Shared alerts, chat, reports, exports, and components      |                  18 | Completed |
 | 8   | Admin project status, GitHub, and user management          |                  29 | Completed |
 | 9   | Admin edit sessions and branches                           |                  32 | Completed |
-| 10  | Admin organizations, bookmarks, and view-as-user           |                  19 | Planned   |
-| 11  | Admin alerts, reports, public URLs, and personal files     |                  18 | Planned   |
+| 10  | Admin organizations, bookmarks, and view-as-user           |                  19 | Completed |
+| 11  | Admin alerts, reports, public URLs, and personal files     |                  18 | Completed |
 | 12  | Admin routes, page titles, onboarding, and access requests |                  18 | Completed |
 | 13  | Final audit, intentional suppressions, and strict mode     |                   — | Planned   |
 
-PRs 1–9 and 12 are completed. PRs 10 and 11 can be developed independently.
-PR 13 should land only after warning mode is clean.
+PRs 1–12 are completed. PR 13 can now enable strict mode.
 
 ## Finding inventory
 
@@ -167,7 +166,7 @@ PR 13 should land only after warning mode is clean.
 - 1 — `web-admin/src/features/edit-session/ExitButton.svelte`
 - 14 — `web-admin/src/features/edit-session/MergePopover.svelte`
 
-### PR 10: Admin organizations, bookmarks, and view-as-user (19)
+### PR 10: Admin organizations, bookmarks, and view-as-user (19, completed)
 
 - 1 — `web-admin/src/features/bookmarks/Bookmarks.svelte`
 - 1 — `web-admin/src/features/bookmarks/BookmarksMenuItem.svelte`
@@ -179,7 +178,7 @@ PR 13 should land only after warning mode is clean.
 - 2 — `web-admin/src/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte`
 - 4 — `web-admin/src/features/view-as-user/ViewAsUserPopover.svelte`
 
-### PR 11: Admin operational surfaces (18)
+### PR 11: Admin operational surfaces (18, completed)
 
 - 1 — `web-admin/src/features/alerts/metadata/AlertFilterCriteria.svelte`
 - 1 — `web-admin/src/features/alerts/metadata/AlertFilters.svelte`
