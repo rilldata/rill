@@ -42,6 +42,9 @@
   // Exactly one of exploreName and canvasName is non-empty; canvasName selects the canvas PDF variant of the form.
   export let exploreName: string;
   export let canvasName: string = "";
+  // Canvas state (URL search string) to display instead of the page URL; set when
+  // editing a report so the filter bar shows the report's captured state.
+  export let canvasStateOverride: string | undefined = undefined;
   export let filters: Filters | undefined = undefined;
   export let timeControls: TimeControls | undefined = undefined;
 
@@ -165,7 +168,12 @@
                off on all descendants (the time range pill has no read-only mode and
                the bar re-enables pointer-events internally), which keeps the bar in
                the accessibility tree, unlike inert. -->
-          <CanvasProvider {canvasName} instanceId={runtimeClient.instanceId}>
+          <CanvasProvider
+            {canvasName}
+            instanceId={runtimeClient.instanceId}
+            isolated
+            urlStateOverride={canvasStateOverride}
+          >
             <div class="readonly-filter-bar">
               <CanvasFilters {canvasName} maxWidth={820} readOnly />
             </div>

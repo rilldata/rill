@@ -155,11 +155,16 @@
 <div class="canvas-host" aria-hidden="true">
   {#key `${instanceId}::${canvasName}`}
     <!-- executionTime anchors relative time ranges at the report's scheduled run,
-         so the PDF shows the same data the report was generated for. -->
+         so the PDF shows the same data the report was generated for.
+         isolated prevents page-URL side effects: without it, a canvas with no
+         captured state would redirect to last-visited/bookmark state (dropping the
+         token from the URL), and the token-bearing params would be saved as the
+         canvas's last-visited state. -->
     <CanvasProvider
       {canvasName}
       {instanceId}
       executionTime={executionTime ?? undefined}
+      isolated
     >
       <div class="size-full" use:startExportOnMount>
         <CanvasDashboardEmbed {canvasName} navigationEnabled={false} />

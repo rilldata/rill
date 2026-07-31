@@ -19,7 +19,6 @@
 
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceCreateReport,
@@ -49,7 +48,6 @@
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { onDestroy } from "svelte";
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
@@ -170,29 +168,22 @@
     currentProtobufState = get(dashboardStore).proto;
   }
 
-  // Canvas state is URL-param based. In edit mode, replay the report's stored state into the
-  // page URL so the form's read-only filter bar shows the report's filters; snapshot the
-  // original URL first and restore it when the dialog closes so the page is left unchanged.
-  // The state is captured back from the URL on submit.
-  let originalCanvasPageSearch: string | undefined = undefined;
-  if (open && isCanvasReport) {
-    originalCanvasPageSearch = window.location.search;
-    if (props.mode === "edit") {
-      const state = props.reportSpec.annotations?.web_open_state;
-      void goto(`${window.location.pathname}${state ? `?${state}` : ""}`, {
-        replaceState: true,
-      });
-    }
-  }
+  // Canvas state is URL-param based. In create mode, the canvas page's current URL is the
+  // state to display and save. In edit mode, the report's stored state is applied to the
+  // form's canvas store directly (via urlStateOverride), never through the page URL: the
+  // dialog is on the report page, whose URL must not be rewritten.
+  const canvasStateOverride =
+    props.mode === "edit" && isCanvasReport
+      ? stripPdfOptionsParams(
+          props.reportSpec.annotations?.web_open_state ?? "",
+        )
+      : undefined;
 
-  $: if (!open) restoreCanvasPageState();
-  onDestroy(restoreCanvasPageState);
-
-  function restoreCanvasPageState() {
-    if (originalCanvasPageSearch === undefined) return;
-    const search = originalCanvasPageSearch;
-    originalCanvasPageSearch = undefined;
-    void goto(`${window.location.pathname}${search}`, { replaceState: true });
+  function stripPdfOptionsParams(state: string): string {
+    const stateParams = new URLSearchParams(state);
+    stateParams.delete("pdf_include_filters");
+    stateParams.delete("pdf_all_tabs");
+    return stateParams.toString();
   }
 
   const schema = yup(
@@ -305,7 +296,13 @@
     if (isCanvasReport) {
       // The canvas state (filters, time range, tabs) the report will render with,
       // plus the PDF rendering options, which the export page reads back from this state.
-      const stateParams = new URLSearchParams(window.location.search);
+      // Create mode captures the canvas page's URL; edit mode reuses the report's stored
+      // state (the dialog is on the report page, whose URL carries no canvas state).
+      const stateParams = new URLSearchParams(
+        props.mode === "edit"
+          ? (props.reportSpec.annotations?.web_open_state ?? "")
+          : window.location.search,
+      );
       stateParams.set("pdf_include_filters", String(values.pdfIncludeFilters));
       stateParams.set("pdf_all_tabs", String(values.pdfAllTabs));
 
@@ -440,6 +437,7 @@
       {enhance}
       exploreName={exploreName ?? ""}
       {canvasName}
+      {canvasStateOverride}
       {filters}
       {timeControls}
     />
