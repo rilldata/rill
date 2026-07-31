@@ -29,6 +29,7 @@
   import ExploreFiltersSection from "./ExploreFiltersSection.svelte";
   import { convertDateToMinutes } from "./form-utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
 
   const queryClient = useQueryClient();
 
@@ -173,7 +174,7 @@
         <div class="flex items-center gap-x-1 pl-[30px]">
           <label for="expires-at" class="text-fg-secondary font-medium">
             {m.public_url_access_expires({
-              date: new Date($form.expiresAt).toLocaleDateString(undefined, {
+              date: new Date($form.expiresAt).toLocaleDateString(getLocale(), {
                 year: "numeric",
                 month: "short",
                 day: "numeric",
