@@ -124,9 +124,9 @@
 
 <svelte:head>
   {#if activeResource}
-    <title>{activeResource.name} - Rill</title>
+    <title>{m.embed_page_title({ resourceName: activeResource.name })}</title>
   {:else}
-    <title>Rill</title>
+    <title>{m.embed_default_page_title()}</title>
   {/if}
 </svelte:head>
 
