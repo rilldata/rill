@@ -1,5 +1,5 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import {
   getQueryServiceMetricsViewAggregationQueryOptions,
   V1BuiltinMeasure,

@@ -19,9 +19,9 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
-  import type { ExpressionFilterManager } from "../dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
+  import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-  import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilters.svelte";
+  import ExpressionFilters from "../dashboards/filters/ExpressionFilters.svelte";
 
   const runtimeClient = useRuntimeClient();
 

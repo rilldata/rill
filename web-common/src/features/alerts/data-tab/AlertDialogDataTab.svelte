@@ -10,7 +10,7 @@
   import Select from "../../../components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
-  import type { ExpressionFilterManager } from "../../dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
+  import type { ExpressionFilterManager } from "../../dashboards/filters/ExpressionFilterManager.svelte.ts";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let filters: ExpressionFilterManager;

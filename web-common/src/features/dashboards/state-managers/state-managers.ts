@@ -33,7 +33,7 @@ import {
   contextColWidthDefaults,
   type ContextColWidths,
 } from "../leaderboard-context-column";
-import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
@@ -69,6 +69,7 @@ export type StateManagers = {
   contextColumnWidths: Writable<ContextColWidths>;
   defaultExploreState: Readable<V1ExplorePreset>;
   expressionFilterManager: ExpressionFilterManager;
+  cleanup: () => void;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -167,6 +168,14 @@ export function createStateManagers({
     },
   );
 
+  const metricsViewProvider = new MetricsViewsProvider(runtimeClient, [
+    metricsViewName,
+  ]);
+  const expressionFilterManager = new ExpressionFilterManager(
+    metricsViewProvider,
+    new YAMLConfigProvider(),
+  );
+
   return {
     runtimeClient,
     metricsViewName: metricsViewNameStore,
@@ -195,9 +204,9 @@ export function createStateManagers({
     }),
     contextColumnWidths,
     defaultExploreState,
-    expressionFilterManager: new ExpressionFilterManager(
-      new MetricsViewsProvider(runtimeClient, [metricsViewName]),
-      new YAMLConfigProvider(),
-    ),
+    expressionFilterManager,
+    cleanup: () => {
+      metricsViewProvider.cleanup();
+    },
   };
 }

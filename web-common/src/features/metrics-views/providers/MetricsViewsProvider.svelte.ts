@@ -53,15 +53,18 @@ export class MetricsViewsProvider {
   public maxQueryTimeRange: Duration | undefined;
   /** True once every metrics view has a spec and every time series metrics view has a summary. */
   public ready: boolean;
+  public metricsViewNames = $state<string[]>([]);
 
-  public cleanup: () => void;
+  public cleanup: () => void; // TODO: ensure this is called by creators
 
   private readonly timeRangeUnsubs = new Map<string, () => void>();
 
   public constructor(
     public readonly runtimeClient: RuntimeClient,
-    public readonly metricsViewNames: string[],
+    initMetricsViewNames: string[],
   ) {
+    this.metricsViewNames = initMetricsViewNames;
+
     const allResourcesQuery = createRuntimeServiceListResources(
       runtimeClient,
       {},
@@ -133,6 +136,10 @@ export class MetricsViewsProvider {
       this.timeRangeUnsubs.forEach((unsub) => unsub());
       this.timeRangeUnsubs.clear();
     };
+  }
+
+  public setMetricsViewNames(metricsViewNames: string[]) {
+    this.metricsViewNames = metricsViewNames;
   }
 
   private processResources(resources: V1Resource[]) {

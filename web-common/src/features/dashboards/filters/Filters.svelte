@@ -39,7 +39,7 @@
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/manager/ExpressionFilters.svelte";
+  import ExpressionFilters from "./ExpressionFilters.svelte";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
   const { rillTime } = featureFlags;

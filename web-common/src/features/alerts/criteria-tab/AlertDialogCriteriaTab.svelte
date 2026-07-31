@@ -6,7 +6,7 @@
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import type { SuperForm } from "sveltekit-superforms/client";
-  import type { ExpressionFilterManager } from "../../dashboards/filters/manager/ExpressionFilterManager.svelte.ts";
+  import type { ExpressionFilterManager } from "../../dashboards/filters/ExpressionFilterManager.svelte.ts";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let filters: ExpressionFilterManager;

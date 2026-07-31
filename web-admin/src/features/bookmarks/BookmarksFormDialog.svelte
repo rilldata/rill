@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     createAdminServiceCreateBookmark,
@@ -20,9 +20,6 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
-  import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
-  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { deriveInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -35,43 +32,68 @@
   import { InfoIcon } from "lucide-svelte";
   import type { Interval } from "luxon";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import CanvasFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/CanvasFilterChipsReadOnly.svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string, boolean } from "yup";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
+  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+  import {
+    CanvasConfigProvider,
+    YAMLConfigProvider,
+  } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
-  export let organization: string;
-  export let project: string;
-  export let projectId: string;
-  export let resource: { name: string; kind: ResourceKind };
-  export let bookmark: BookmarkEntry | null = null;
-  export let defaultUrlParams: URLSearchParams | undefined = undefined;
-  export let showFiltersOnly: boolean = true;
-  export let metricsViewNames: string[];
-  export let onClose = () => {};
+  let {
+    organization,
+    project,
+    projectId,
+    resource,
+    bookmark,
+    defaultUrlParams,
+    showFiltersOnly,
+    metricsViewNames,
+    onClose,
+  }: {
+    organization: string;
+    project: string;
+    projectId: string;
+    resource: { name: string; kind: ResourceKind };
+    bookmark: BookmarkEntry | null;
+    defaultUrlParams: URLSearchParams | undefined;
+    showFiltersOnly: boolean;
+    metricsViewNames: string[];
+    onClose: () => void;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
-  let filterState: undefined | Awaited<ReturnType<typeof processUrl>> =
-    undefined;
+  let { name: resourceName, kind: resourceKind } = $derived(resource);
+  let expressionFilterManager = $derived(
+    new ExpressionFilterManager(
+      new MetricsViewsProvider(runtimeClient, []),
+      resourceKind === ResourceKind.Canvas
+        ? new CanvasConfigProvider(runtimeClient, resourceName)
+        : new YAMLConfigProvider(),
+    ),
+  );
+  // TODO: make ExpressionFilterManager reactive
 
-  $: ({ name: resourceName, kind: resourceKind } = resource);
+  let curUrlParams = $derived(page.url.searchParams);
 
-  $: ({ url } = $page);
-  $: curUrlParams = url.searchParams;
+  let timeFilterState = $state<
+    | {
+        queryTimeStart: string;
+        queryTimeEnd: string;
+        displayTimeRange: V1TimeRange;
+        selectedTimeRange: string;
+      }
+    | undefined
+  >(undefined);
 
-  $: bookmarkUrl = bookmark?.url || $page.url.searchParams.toString();
-
-  $: processUrl(bookmarkUrl)
-    .then((state) => {
-      filterState = state;
-    })
-    .catch(console.error);
-
-  async function processUrl(searchParams: string) {
-    const searchParamsObj = new URLSearchParams(searchParams);
+  $effect(() => void processTimeFromUrl());
+  async function processTimeFromUrl() {
+    const searchParamsObj = new URLSearchParams(curUrlParams);
     const rangeExpression = searchParamsObj.get(
       ExploreStateURLParams.TimeRange,
     );
@@ -121,53 +143,30 @@
 
       const selectedTimeRange = formatTimeRange(start, end, grain, timeZone);
 
-      if (resource.kind === ResourceKind.Canvas) {
-        const uiFilters = getCanvasStore(
-          resourceName,
-          runtimeClient.instanceId,
-        ).canvasEntity.filterManager.getUIFiltersFromString(searchParams);
-
-        return {
-          uiFilters,
-          queryTimeStart: start,
-          queryTimeEnd: end,
-          displayTimeRange: timeRange,
-          selectedTimeRange,
-        };
-      }
-
-      const { expr, dimensionsWithInlistFilter } = getFiltersFromText(
-        searchParamsObj.get(ExploreStateURLParams.Filters) || "",
-      );
-
-      const { dimensionFilters, dimensionThresholdFilters } =
-        splitWhereFilter(expr);
-
-      return {
-        dimensionThresholdFilters,
-        dimensionsWithInlistFilter,
-        filters: dimensionFilters,
+      timeFilterState = {
         queryTimeStart: start,
         queryTimeEnd: end,
         displayTimeRange: timeRange,
         selectedTimeRange,
       };
     } catch {
-      return undefined;
+      timeFilterState = undefined;
     }
   }
-
-  // Adding it here to get a newline in
-  $: CategoryTooltip = m.bookmark_category_tooltip();
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
   const initialValues = {
+    // eslint-disable-next-line svelte/valid-compile
     displayName: bookmark?.resource.displayName || m.bookmark_default_label(),
+    // eslint-disable-next-line svelte/valid-compile
     description: bookmark?.resource.description ?? "",
+    // eslint-disable-next-line svelte/valid-compile
     shared: bookmark?.resource.shared ? "true" : "false",
+    // eslint-disable-next-line svelte/valid-compile
     filtersOnly: bookmark?.filtersOnly ?? false,
+    // eslint-disable-next-line svelte/valid-compile
     absoluteTimeRange: bookmark?.absoluteTimeRange ?? false,
   };
 
@@ -239,8 +238,8 @@
     },
   );
 
-  $: error = getRpcErrorMessage(
-    $bookmarkCreator.error ?? $bookmarkUpdater.error,
+  let error = $derived(
+    getRpcErrorMessage($bookmarkCreator.error ?? $bookmarkUpdater.error),
   );
 </script>
 
@@ -286,24 +285,12 @@
             {m.bookmark_filters_inherited()}
           </div>
         </Label>
-        {#if filterState && "uiFilters" in filterState}
-          <CanvasFilterChipsReadOnly
-            col={false}
-            uiFilters={filterState.uiFilters}
-            timeRangeString={filterState.displayTimeRange.expression}
-            comparisonRange={undefined}
-            timeStart={filterState.queryTimeStart}
-            timeEnd={filterState.queryTimeEnd}
-          />
-        {:else if filterState}
-          <ExploreFilterChipsReadOnly
-            filters={filterState.filters}
-            dimensionsWithInlistFilter={filterState.dimensionsWithInlistFilter}
-            dimensionThresholdFilters={filterState.dimensionThresholdFilters}
-            displayTimeRange={filterState.displayTimeRange}
-            queryTimeStart={filterState.queryTimeStart}
-            queryTimeEnd={filterState.queryTimeEnd}
-            {metricsViewNames}
+        {#if timeFilterState}
+          <ReadonlyExpressionFilters
+            {expressionFilterManager}
+            displayTimeRange={timeFilterState.displayTimeRange}
+            queryTimeStart={timeFilterState.queryTimeStart}
+            queryTimeEnd={timeFilterState.queryTimeEnd}
           />
         {/if}
       </div>
@@ -317,7 +304,7 @@
             { value: "true", label: m.bookmark_managed_bookmarks() },
           ]}
           slot="manage-project"
-          tooltip={CategoryTooltip}
+          tooltip={m.bookmark_category_tooltip()}
         />
       </ProjectAccessControls>
       {#if showFiltersOnly}
@@ -366,9 +353,9 @@
               </TooltipContent>
             </Tooltip>
           </div>
-          {#if filterState}
+          {#if timeFilterState}
             <div class="text-fg-secondary text-sm">
-              {filterState.selectedTimeRange}
+              {timeFilterState.selectedTimeRange}
             </div>
           {/if}
         </Label>

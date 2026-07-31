@@ -1,4 +1,4 @@
-import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/DimensionFilterManager.svelte.ts";
+import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters-v2/DimensionFilterManager.svelte.ts";
 import {
   type V1Expression,
   V1Operation,
@@ -13,7 +13,7 @@ import {
   getDimensionDisplayName,
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/manager/MeasureFilterManager.svelte.ts";
+import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters-v2/MeasureFilterManager.svelte.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
@@ -35,7 +35,6 @@ export class ExpressionFilterManager {
 
   /** True when the param cannot be represented as chips. */
   public isComplexFilter: boolean;
-  public expr: V1Expression;
   public exprByMetricsView: Record<string, V1Expression>;
 
   public filterManagers: {
@@ -85,15 +84,6 @@ export class ExpressionFilterManager {
       ]),
     );
 
-    this.expr = $derived.by(() => {
-      const dimExprs = this.filterManagers.dimensions
-        .filter((dfm) => !!dfm.expr)
-        .map((d) => d.expr as V1Expression);
-      const mesExprs = this.filterManagers.measures
-        .filter((mfm) => !!mfm.expr)
-        .map((m) => m.expr as V1Expression);
-      return createAndExpression(dimExprs.concat(mesExprs));
-    });
     this.exprByMetricsView = $derived.by(() =>
       this.buildExpressionsByMetricsView(),
     );

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/manager/DimensionFilter.svelte";
-  import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
-  import { Button } from "@rilldata/web-common/components/button";
-  import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/manager/MeasureFilter.svelte";
+  import DimensionFilter from "./dimension-filters-v2/DimensionFilter.svelte";
+  import FilterButton from "web-common/src/features/dashboards/filters/FilterButton.svelte";
+  import { Button } from "web-common/src/components/button";
+  import MeasureFilter from "./measure-filters-v2/MeasureFilter.svelte";
   import { fly } from "svelte/transition";
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
 
@@ -26,7 +26,7 @@
     timeStart: string | undefined;
     timeEnd: string | undefined;
     timeControlsReady: boolean | undefined;
-    timeDimension: string | undefined;
+    timeDimension?: string | undefined;
 
     isUrlTooLongAfterInListFilter?: (name: string, values: string[]) => boolean;
   } = $props();
