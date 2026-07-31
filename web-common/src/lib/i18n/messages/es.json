@@ -268,7 +268,7 @@
   "billing_unlimited": "Ilimitado",
   "billing_update_payment": "Actualizar pago",
   "billing_update_payment_methods": "Actualizar métodos de pago",
-  "billing_upgrade": "Actualizar",
+  "billing_upgrade": "Mejorar el plan",
   "billing_upgrade_to_paid_plan": "Actualizar a plan de pago",
   "billing_upgrade_to_wake": "Actualice para reactivar los proyectos y recuperar el acceso completo.",
   "billing_upgrade_within_to_maintain": "Actualice dentro de {duration} para mantener el acceso.",
