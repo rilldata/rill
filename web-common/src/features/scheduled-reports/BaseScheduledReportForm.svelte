@@ -159,6 +159,7 @@
             label={m.report_form_filters()}
             id="filters"
             capitalize={false}
+            hint={m.report_form_filters_readonly_hint()}
           />
           <!-- Read-only display of the canvas filters the report will render with
                (the dashboard's current filters when creating, the report's captured

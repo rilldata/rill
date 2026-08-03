@@ -1592,6 +1592,7 @@
   "report_form_email_recurring": "Email recurring exports to recipients.",
   "report_form_filters": "Filters",
   "report_form_filters_aria": "Filters form",
+  "report_form_filters_readonly_hint": "Filters are read-only. The report uses the dashboard's filters from when it was created. To change them, adjust the filters on the dashboard and create a new report.",
   "report_form_format": "Format",
   "report_form_format_csv": "CSV",
   "report_form_format_parquet": "Parquet",

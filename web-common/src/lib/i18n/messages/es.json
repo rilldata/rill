@@ -1601,6 +1601,7 @@
   "report_form_email_recurring": "Envía exportaciones recurrentes por correo a los destinatarios.",
   "report_form_filters": "Filtros",
   "report_form_filters_aria": "Formulario de filtros",
+  "report_form_filters_readonly_hint": "Los filtros son de solo lectura. El informe usa los filtros del panel de cuando se creó. Para cambiarlos, ajusta los filtros en el panel y crea un informe nuevo.",
   "report_form_format": "Formato",
   "report_form_format_csv": "CSV",
   "report_form_format_parquet": "Parquet",
