@@ -1,15 +1,16 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DimensionFilter from "./dimension-filters-v2/DimensionFilter.svelte";
-  import FilterButton from "web-common/src/features/dashboards/filters/FilterButton.svelte";
   import { Button } from "web-common/src/components/button";
   import MeasureFilter from "./measure-filters-v2/MeasureFilter.svelte";
   import { fly } from "svelte/transition";
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
+  import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";
 
   let {
     expressionFilterManager,
     filteredMeasures,
+    filteredDimensions,
 
     timeEnd,
     timeStart,
@@ -19,8 +20,9 @@
     isUrlTooLongAfterInListFilter,
   }: {
     expressionFilterManager: ExpressionFilterManager;
-    // Explore spec can restrict the available measure vs metrics views.
+    // Explore spec can restrict the available dimension/measure vs metrics views.
     // This is passed in explore context.
+    filteredDimensions?: string[];
     filteredMeasures?: string[];
 
     timeStart: string | undefined;
@@ -39,14 +41,12 @@
   );
   let yamlConfigProvider = $derived(expressionFilterManager.yamlConfigProvider);
 
-  let allDimensions = $derived(metricsViewsProvider.dimensions);
-
-  let filteredSimpleMeasures = $derived(
-    filteredMeasures
-      ? metricsViewsProvider.simpleMeasures.filter((m) =>
-          filteredMeasures.includes(m.name ?? ""),
+  let allDimensions = $derived(
+    filteredDimensions
+      ? metricsViewsProvider.dimensions.filter((d) =>
+          filteredDimensions.includes(d.name!),
         )
-      : metricsViewsProvider.simpleMeasures,
+      : metricsViewsProvider.dimensions,
   );
 
   let hasFilters = $derived(
@@ -62,17 +62,27 @@
       expressionFilterManager.filterManagers.measures.some((mfm) => !!mfm.expr),
   );
 
-  let measureHasFilter = $derived((name: string) =>
-    expressionFilterManager.filterManagers.measures.some(
-      (mfm) => mfm.name === name,
+  let excludedDimensions = $derived(
+    Object.fromEntries(
+      filteredDimensions
+        ? metricsViewsProvider.dimensions
+            .filter((d) => !filteredDimensions.includes(d.name!))
+            .map((m) => [m.name!, true])
+        : [],
     ),
   );
-  let dimensionHasFilter = $derived((name: string) =>
-    expressionFilterManager.filterManagers.dimensions.some(
-      (dfm) => dfm.name === name,
+  let excludedMeasures = $derived(
+    Object.fromEntries(
+      filteredMeasures
+        ? metricsViewsProvider.measures
+            .filter((m) => !filteredMeasures.includes(m.name!))
+            .map((m) => [m.name!, true])
+        : [],
     ),
   );
 </script>
+
+<!-- TODO: complex filters -->
 
 <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
@@ -114,14 +124,12 @@
       {/each}
     {/if}
 
-    <FilterButton
-      {allDimensions}
-      {filteredSimpleMeasures}
-      {dimensionHasFilter}
-      {measureHasFilter}
-      setTemporaryFilterName={(name: string) =>
-        expressionFilterManager.addNewFilter(name)}
+    <AddExpressionFilterButton
+      {expressionFilterManager}
+      {excludedDimensions}
+      {excludedMeasures}
     />
+
     <!-- if filters are present, place a chip at the end of the flex container
     that enables clearing all filters -->
     {#if hasClearableFilters}

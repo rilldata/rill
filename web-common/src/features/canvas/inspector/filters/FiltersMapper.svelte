@@ -11,7 +11,7 @@
   $: ({
     specStore,
     type,
-    localFilters,
+    localExpressionFilters,
     localTimeControls,
     parent: { name: canvasName },
     timeAndFilterStore,
@@ -28,8 +28,13 @@
 
   $: excludedDimensions =
     type === "leaderboard"
-      ? new Set((localParamValues as LeaderboardSpec).dimensions)
-      : new Set<string>();
+      ? Object.fromEntries(
+          (localParamValues as LeaderboardSpec).dimensions.map((d) => [
+            d,
+            true,
+          ]),
+        )
+      : {};
 
   $: entries = Object.entries(inputParams) as [
     AllKeys<ComponentSpec>,
@@ -55,9 +60,7 @@
         {/if}
       {:else if config.type == "dimension_filters" && metricsView}
         <DimensionFiltersInput
-          {localFilters}
-          {canvasName}
-          {metricsView}
+          {localExpressionFilters}
           updateLocalFilterString={(newString) => {
             component.updateProperty("dimension_filters", newString);
           }}

@@ -33,8 +33,8 @@ import type {
   ComponentPath,
   SearchParamsStore,
 } from "../stores/canvas-entity";
-import type { FilterState } from "../stores/filter-state";
 import { TimeState } from "../stores/time-state";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -45,7 +45,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // Path in the YAML where the component is stored
   pathInYAML: ComponentPath;
   // Widget specific dimension and measure filters
-  localFilters: FilterState;
+  localExpressionFilters: ExpressionFilterManager;
   // Widget specific time filters
   localTimeControls: TimeState;
 
@@ -150,12 +150,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.metricsViewName,
     );
 
-    this.localFilters = this.parent.filterManager.createLocalFilterStore(
-      this.metricsViewName,
-    );
+    this.localExpressionFilters =
+      this.parent.expressionFilterManager.createLocalFilterStore(
+        this.metricsViewName,
+      );
 
     this.unsubscribeSpec = this.specStore.subscribe((spec) => {
-      this.localFilters.onFilterStringChange(
+      this.localExpressionFilters.setParamForMetricsView(
+        this.metricsViewName,
         spec["dimension_filters"] as string,
       );
 

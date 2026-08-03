@@ -483,6 +483,7 @@
     measure={screenshotDialogMeasure}
     metricsViewName={chartMetricsViewName}
     tddChartType={tddChartType ?? TDDChart.DEFAULT}
+    {expressionFilterManager}
     where={chartWhere}
     {timeDimension}
     {timeStart}

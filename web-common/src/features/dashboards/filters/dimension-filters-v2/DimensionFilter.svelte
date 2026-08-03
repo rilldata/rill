@@ -52,7 +52,7 @@
     openOnMount?: boolean;
     timeStart: string | undefined;
     timeEnd: string | undefined;
-    timeDimension: string | undefined;
+    timeDimension?: string | undefined;
     timeControlsReady: boolean | undefined;
     smallChip?: boolean;
     side?: "top" | "right" | "bottom" | "left";

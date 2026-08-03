@@ -475,6 +475,7 @@
 
   <ExpressionFilters
     {expressionFilterManager}
+    filteredDimensions={exploreSpec?.dimensions}
     filteredMeasures={exploreSpec?.measures}
     {timeStart}
     {timeEnd}

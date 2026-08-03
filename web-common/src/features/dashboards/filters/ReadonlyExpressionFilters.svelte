@@ -15,6 +15,7 @@
     queryTimeEnd = undefined,
     hasBoldTimeRange = true,
     chipLayout = "wrap",
+    ariaLabel = m.dashboard_readonly_filter_chips_aria(),
   }: {
     expressionFilterManager: ExpressionFilterManager;
     displayTimeRange?: V1TimeRange | undefined;
@@ -22,10 +23,23 @@
     queryTimeStart?: string | undefined;
     queryTimeEnd?: string | undefined;
     hasBoldTimeRange?: boolean;
-    chipLayout?: "wrap" | "scroll";
+    chipLayout?: "wrap" | "scroll" | "col";
+    ariaLabel?: string | undefined;
   } = $props();
 
   let scrollContainer: HTMLDivElement;
+
+  // Readonly filters sections do not care about empty temporary, pinned or required filters.
+  let nonEmptyDimensionManagers = $derived(
+    expressionFilterManager.filterManagers.dimensions.filter(
+      (dimensionManager) => !!dimensionManager.expr,
+    ),
+  );
+  let nonEmptyMeasureManager = $derived(
+    expressionFilterManager.filterManagers.measures.filter(
+      (measureManager) => !!measureManager.expr,
+    ),
+  );
 
   function handleWheel(event: WheelEvent) {
     if (chipLayout === "scroll" && event.deltaY !== 0) {
@@ -39,7 +53,8 @@
   class="relative flex flex-row items-center gap-x-2 gap-y-2 w-full max-w-full"
   class:scrollable-chips={chipLayout === "scroll"}
   class:flex-wrap={chipLayout === "wrap"}
-  aria-label={m.dashboard_readonly_filter_chips_aria()}
+  class:flex-col={chipLayout === "col"}
+  aria-label={ariaLabel}
   bind:this={scrollContainer}
   onwheel={handleWheel}
 >
@@ -51,7 +66,7 @@
     />
   {/if}
 
-  {#each expressionFilterManager.filterManagers.dimensions as dimensionManager (dimensionManager.name)}
+  {#each nonEmptyDimensionManagers as dimensionManager (dimensionManager.name)}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyDimensionFilter
         manager={expressionFilterManager}
@@ -63,7 +78,7 @@
     </div>
   {/each}
 
-  {#each expressionFilterManager.filterManagers.measures as measureManager (measureManager.name)}
+  {#each nonEmptyMeasureManager as measureManager (measureManager.name)}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyMeasureFilter
         {measureManager}

@@ -15,7 +15,7 @@ import {
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters-v2/MeasureFilterManager.svelte.ts";
-import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
@@ -42,15 +42,16 @@ export class ExpressionFilterManager {
   /** True when the param cannot be represented as chips. */
   public isComplexFilter: boolean;
   public exprByMetricsView: Record<string, V1Expression>;
+  public hasSomeFilter: boolean;
 
   public filterManagers: {
     measures: MeasureFilterManager[];
     dimensions: DimensionFilterManager[];
   };
+  public readonly filterManagersMap: Record<string, FilterManager>;
 
   private prevUrlParams = $state("");
   private parsedUrlParams = $state<ParsedUrlParamsByMV>({});
-  private readonly filterManagersMap: Record<string, FilterManager>;
 
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
@@ -72,6 +73,9 @@ export class ExpressionFilterManager {
 
     this.exprByMetricsView = $derived.by(() =>
       this.buildExpressionsByMetricsView(),
+    );
+    this.hasSomeFilter = $derived(
+      Object.keys(this.exprByMetricsView).length > 0,
     );
   }
 
@@ -106,6 +110,11 @@ export class ExpressionFilterManager {
     const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
     const filterParam = expr ? convertExpressionToFilterParam(expr) : "";
     this.setUrlParams(new URLSearchParams(`${paramKey}=${filterParam}`));
+  }
+
+  public setParamForMetricsView(mvName: string, param: string) {
+    const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
+    this.setUrlParams(new URLSearchParams(`${paramKey}=${param}`));
   }
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
@@ -159,6 +168,15 @@ export class ExpressionFilterManager {
       )
       .map((d) => d.expr as V1Expression);
     return exprs.length === 0 ? undefined : createAndExpression(exprs);
+  }
+
+  public createLocalFilterStore(metricsViewName: string) {
+    return new ExpressionFilterManager(
+      new MetricsViewsProvider(this.metricsViewsProvider.runtimeClient, [
+        metricsViewName,
+      ]),
+      this.yamlConfigProvider,
+    );
   }
 
   /** Managers for the filters in the param, keyed by name and in param order. */
