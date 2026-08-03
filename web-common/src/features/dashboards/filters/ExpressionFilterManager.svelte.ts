@@ -1,13 +1,14 @@
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters-v2/DimensionFilterManager.svelte.ts";
+import { type V1Expression } from "@rilldata/web-common/runtime-client";
 import {
-  type V1Expression,
-  V1Operation,
-} from "@rilldata/web-common/runtime-client";
-import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+  convertExpressionToFilterParam,
+  convertFilterParamToExpression,
+} from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import {
   createAndExpression,
   forEachIdentifier,
   isExpressionUnsupported,
+  maybeWrapAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
   getDimensionDisplayName,
@@ -16,8 +17,13 @@ import {
 import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters-v2/MeasureFilterManager.svelte.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 type FilterManager = MeasureFilterManager | DimensionFilterManager;
+type ParsedUrlParamsByMV = Record<
+  string,
+  ReturnType<typeof convertFilterParamToExpression>
+>;
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -42,34 +48,14 @@ export class ExpressionFilterManager {
     dimensions: DimensionFilterManager[];
   };
 
-  private readonly parsedParam: ReturnType<
-    typeof convertFilterParamToExpression
-  >;
+  private prevUrlParams = $state("");
+  private parsedUrlParams = $state<ParsedUrlParamsByMV>({});
   private readonly filterManagersMap: Record<string, FilterManager>;
 
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
   ) {
-    this.parsedParam = $derived.by(() => {
-      const { expr, dimensionsWithInlistFilter } =
-        convertFilterParamToExpression(this.exprParam);
-      // A param with a single filter parses to that filter alone, so wrap it to get the AND of
-      // individual filters the rest of the class works with.
-      const needsWrapper =
-        !!expr &&
-        expr.cond?.op !== V1Operation.OPERATION_AND &&
-        expr.cond?.op !== V1Operation.OPERATION_OR;
-      return {
-        expr: needsWrapper ? createAndExpression([expr]) : expr,
-        dimensionsWithInlistFilter,
-      };
-    });
-    this.isComplexFilter = $derived(
-      this.parsedParam.expr
-        ? isExpressionUnsupported(this.parsedParam.expr)
-        : false,
-    );
     this.filterManagers = $derived.by(() =>
       this.buildFilterManagers(this.buildParamFilterManagers()),
     );
@@ -89,11 +75,37 @@ export class ExpressionFilterManager {
     );
   }
 
-  public setExprParam(exprParam: string) {
-    if (exprParam === this.exprParam) return;
-    console.log("new filter", exprParam);
-    this.temporaryFilterName = undefined;
-    this.exprParam = exprParam;
+  public setUrlParams = (searchParams: URLSearchParams) => {
+    const newParsedUrlParams = {} as ParsedUrlParamsByMV;
+    const newParams = [] as string[];
+    let isSomeComplexFilter = false;
+
+    const singularFilter = searchParams.get(ExploreStateURLParams.Filters);
+    this.metricsViewsProvider.metricsViewNames.forEach((name: string) => {
+      const paramKey = `${ExploreStateURLParams.Filters}.${name}`;
+      const filterString = searchParams.get(paramKey) ?? singularFilter ?? "";
+      newParams.push(`${paramKey}=${filterString}`);
+
+      const { expr, dimensionsWithInlistFilter } =
+        convertFilterParamToExpression(filterString);
+      isSomeComplexFilter ||= expr ? isExpressionUnsupported(expr) : false;
+      newParsedUrlParams[name] = {
+        expr: maybeWrapAndExpression(expr),
+        dimensionsWithInlistFilter,
+      };
+    });
+
+    const newParam = newParams.join("&");
+    if (this.prevUrlParams === newParam) return;
+    this.prevUrlParams = newParam;
+    this.parsedUrlParams = newParsedUrlParams;
+    this.isComplexFilter = isSomeComplexFilter;
+  };
+
+  public setExprForMetricsView(mvName: string, expr: V1Expression | undefined) {
+    const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
+    const filterParam = expr ? convertExpressionToFilterParam(expr) : "";
+    this.setUrlParams(new URLSearchParams(`${paramKey}=${filterParam}`));
   }
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
@@ -105,7 +117,6 @@ export class ExpressionFilterManager {
       return;
     }
 
-    console.log("new filter", name);
     this.temporaryFilterName = name;
   }
 
@@ -129,7 +140,7 @@ export class ExpressionFilterManager {
 
   public clear() {
     this.temporaryFilterName = undefined;
-    this.exprParam = "";
+    this.setUrlParams(new URLSearchParams());
   }
 
   /**
@@ -155,36 +166,44 @@ export class ExpressionFilterManager {
     const measuresMap = new Map<string, MeasureFilterManager>();
     const dimensionsMap = new Map<string, DimensionFilterManager>();
 
-    const { expr, dimensionsWithInlistFilter } = this.parsedParam;
-    if (!expr || this.isComplexFilter) return { measuresMap, dimensionsMap };
+    if (this.isComplexFilter) return { measuresMap, dimensionsMap };
 
-    forEachIdentifier(expr, (e, ident) => {
-      // Both filter types are keyed off a dimension: a dimension filter by the dimension it filters
-      // and a measure filter by the dimension its subquery groups by.
-      if (!this.metricsViewsProvider.dimensionSpecs[ident]) return;
+    // Go through exprs of parsed url params for each metrics views.
+    Object.entries(this.parsedUrlParams).forEach(
+      ([, { expr, dimensionsWithInlistFilter }]) => {
+        if (!expr) return;
 
-      const firstValueExpr = e?.cond?.exprs?.[1];
+        forEachIdentifier(expr, (e, ident) => {
+          // Both filter types are keyed off a dimension: a dimension filter by the dimension it filters
+          // and a measure filter by the dimension its subquery groups by.
+          if (!this.metricsViewsProvider.dimensionSpecs[ident]) return;
 
-      if (firstValueExpr?.subquery) {
-        const measureName = firstValueExpr.subquery.measures?.[0];
-        if (!measureName) return;
+          const firstValueExpr = e?.cond?.exprs?.[1];
 
-        const measureFilterManager = this.createMeasureFilterManager(
-          measureName,
-          firstValueExpr,
-        );
-        if (measureFilterManager)
-          measuresMap.set(measureName, measureFilterManager);
-      } else {
-        const dimensionFilterManager = this.createDimensionFilterManager(
-          ident,
-          e,
-          dimensionsWithInlistFilter.includes(ident),
-        );
-        if (dimensionFilterManager)
-          dimensionsMap.set(ident, dimensionFilterManager);
-      }
-    });
+          if (firstValueExpr?.subquery) {
+            // Having a subquery means this is a measure filter.
+            const measureName = firstValueExpr.subquery.measures?.[0];
+            if (!measureName) return;
+
+            const measureFilterManager = this.createMeasureFilterManager(
+              measureName,
+              firstValueExpr,
+            );
+            if (measureFilterManager)
+              measuresMap.set(measureName, measureFilterManager);
+          } else {
+            // Everything else is a dimension filter for now.
+            const dimensionFilterManager = this.createDimensionFilterManager(
+              ident,
+              e,
+              dimensionsWithInlistFilter.includes(ident),
+            );
+            if (dimensionFilterManager)
+              dimensionsMap.set(ident, dimensionFilterManager);
+          }
+        });
+      },
+    );
 
     return { measuresMap, dimensionsMap };
   }

@@ -403,6 +403,14 @@ export function removeWrapperAndOrExpression(
   return expression.cond?.exprs?.[0];
 }
 
+export function maybeWrapAndExpression(expr: V1Expression | undefined) {
+  const needsWrapper =
+    !!expr &&
+    expr.cond?.op !== V1Operation.OPERATION_AND &&
+    expr.cond?.op !== V1Operation.OPERATION_OR;
+  return needsWrapper ? createAndExpression([expr]) : expr;
+}
+
 const SupportedOperations = new Set<V1Operation>([
   V1Operation.OPERATION_IN,
   V1Operation.OPERATION_NIN,

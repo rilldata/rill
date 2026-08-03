@@ -69,17 +69,20 @@
   const runtimeClient = useRuntimeClient();
 
   let { name: resourceName, kind: resourceKind } = $derived(resource);
+  const metricsViewsProvider = new MetricsViewsProvider(runtimeClient, []);
+  $effect(() => metricsViewsProvider.setMetricsViewNames(metricsViewNames));
   let expressionFilterManager = $derived(
     new ExpressionFilterManager(
-      new MetricsViewsProvider(runtimeClient, []),
+      metricsViewsProvider,
       resourceKind === ResourceKind.Canvas
         ? new CanvasConfigProvider(runtimeClient, resourceName)
         : new YAMLConfigProvider(),
     ),
   );
-  // TODO: make ExpressionFilterManager reactive
+  let { setUrlParams } = $derived(expressionFilterManager);
 
   let curUrlParams = $derived(page.url.searchParams);
+  $effect(() => setUrlParams(curUrlParams));
 
   let timeFilterState = $state<
     | {

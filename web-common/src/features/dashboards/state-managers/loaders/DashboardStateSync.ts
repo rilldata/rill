@@ -189,9 +189,7 @@ export class DashboardStateSync {
     }
 
     log("INIT", redirectUrl);
-    this.expressionFilterManager.setExprParam(
-      redirectUrl.searchParams.get(ExploreStateURLParams.Filters) ?? "",
-    );
+    this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -302,9 +300,7 @@ export class DashboardStateSync {
     }
 
     log("URL", redirectUrl);
-    this.expressionFilterManager.setExprParam(
-      redirectUrl.searchParams.get(ExploreStateURLParams.Filters) ?? "",
-    );
+    this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -361,9 +357,7 @@ export class DashboardStateSync {
       }
 
       log("GOTO", newUrl);
-      this.expressionFilterManager.setExprParam(
-        newUrl.searchParams.get(ExploreStateURLParams.Filters) ?? "",
-      );
+      this.expressionFilterManager.setUrlParams(newUrl.searchParams);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {

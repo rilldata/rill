@@ -26,7 +26,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
@@ -140,11 +139,7 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
     new MetricsViewsProvider(client, [metricsViewName]),
     new YAMLConfigProvider(),
   );
-  filters.setExprParam(
-    aggregationRequest.where
-      ? convertExpressionToFilterParam(aggregationRequest.where)
-      : "",
-  );
+  filters.setExprForMetricsView(metricsViewName, aggregationRequest.where);
 
   const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange,
