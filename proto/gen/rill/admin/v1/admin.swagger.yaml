@@ -1760,6 +1760,12 @@ paths:
               navigation:
                 type: boolean
                 description: Navigation denotes whether navigation between different resources should be enabled in the embed.
+              hideNavigationBar:
+                type: boolean
+                description: |-
+                  HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+                  It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+                  In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
               state:
                 type: string
                 description: Blob containing UI state for rendering the initial embed. Not currently supported.

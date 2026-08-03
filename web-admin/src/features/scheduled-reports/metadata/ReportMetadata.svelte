@@ -180,7 +180,10 @@
         {/if}
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-fg-primary text-lg font-bold" aria-label="Report name">
+        <h1
+          class="text-fg-primary text-lg font-bold"
+          aria-label={m.report_metadata_name_aria()}
+        >
           {reportSpec.displayName}
         </h1>
         <div class="grow"></div>
@@ -211,7 +214,10 @@
     <!-- Three columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-6">
       <!-- Dashboard -->
-      <div class="flex flex-col gap-y-3" aria-label="Report dashboard name">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.report_metadata_dashboard_name_aria()}
+      >
         {#if dashboardTitle}
           <MetadataLabel>{m.report_dashboard()}</MetadataLabel>
           <MetadataValue>
@@ -240,7 +246,10 @@
       </div>
 
       <!-- Frequency -->
-      <div class="flex flex-col gap-y-3" aria-label="Report schedule">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.report_metadata_schedule_aria()}
+      >
         <MetadataLabel>{m.report_repeats()}</MetadataLabel>
         <MetadataValue>
           {humanReadableFrequency}

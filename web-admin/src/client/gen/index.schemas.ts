@@ -2146,6 +2146,10 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
+  /** HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available. */
+  hideNavigationBar?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */
   state?: string;
   /** DEPRECATED: Additional parameters to set outright in the generated URL query. */

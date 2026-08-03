@@ -93,8 +93,8 @@ rather than hand-rolled `count === 1 ? ... : ...` logic.
 `scripts/i18n-guard.js` scans explicitly migrated Svelte areas and source files
 that import the generated message namespace for hardcoded user-facing strings.
 It checks Svelte markup plus common copy-bearing properties in scripts and
-TypeScript/JavaScript, and runs in `npm run quality`. It is a heuristic and
-currently **warning-only**; the final migration chunk flips it to `--strict`
-(fatal). Add any migrated leaf components without their own message import to
-`MIGRATED_GLOBS`. Suppress an intentional literal with an `i18n-ignore` comment
-on the line or the line above it.
+TypeScript/JavaScript, and runs in `npm run quality` with `--strict`, making new
+findings fatal. Add any migrated leaf components without their own message
+import to `MIGRATED_GLOBS`. Suppress an intentional literal with an
+`i18n-ignore` comment on the line or the line above it, including a concise
+reason for the suppression.

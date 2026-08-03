@@ -91,9 +91,9 @@ echo "== i18n guard: catalog integrity + migrated areas =="
 # that import the generated message namespace. It runs unconditionally rather
 # than under an app filter: migrated files span apps and are independent of
 # which files a given PR touched. Catalog integrity errors are exact and fatal;
-# hardcoded-string findings are heuristic and non-fatal for now: the final i18n
-# migration chunk adds --strict to make them fatal too.
-node ./scripts/i18n-guard.js || exit_code=$?
+# hardcoded-string findings are heuristic, but migrated areas are now clean and
+# enforced: --strict makes any new finding fatal.
+node ./scripts/i18n-guard.js --strict || exit_code=$?
 
 if [[ "$LOCAL" == "true" ]]; then
   echo ""

@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -282,7 +283,13 @@ func (c *Connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 	}
 
 	_, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
-	return err == nil, nil
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error {

@@ -6628,6 +6628,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for Navigation
 
+	// no validation rules for HideNavigationBar
+
 	// no validation rules for State
 
 	// no validation rules for Query

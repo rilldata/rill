@@ -51,7 +51,8 @@
 </script>
 
 <svelte:head>
-  <title>{projectDisplayName} - Rill</title>
+  <title>{m.home_project_page_title({ projectName: projectDisplayName })}</title
+  >
 </svelte:head>
 
 <ContentContainer maxWidth={900}>

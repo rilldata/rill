@@ -69,7 +69,10 @@
   });
 </script>
 
-<div class="flex flex-row gap-2" aria-label="criteria-{index}">
+<div
+  class="flex flex-row gap-2"
+  aria-label={m.alert_form_criteria_item_aria({ index })}
+>
   <Select
     bind:value={$form["criteria"][index].measure}
     id="field"

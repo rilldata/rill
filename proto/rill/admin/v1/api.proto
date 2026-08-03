@@ -1767,6 +1767,10 @@ message GetIFrameRequest {
   string theme_mode = 15 [(validate.rules).string = {ignore_empty: true, in: ["light", "dark", "system"]}];
   // Navigation denotes whether navigation between different resources should be enabled in the embed.
   bool navigation = 13;
+  // HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+  // It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+  // In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
+  bool hide_navigation_bar = 18;
   // Blob containing UI state for rendering the initial embed. Not currently supported.
   string state = 7;
   // DEPRECATED: Additional parameters to set outright in the generated URL query.

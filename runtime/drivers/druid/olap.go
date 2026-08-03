@@ -97,28 +97,15 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
 
-	var queryCfg *druidsqldriver.QueryConfig
-	if stmt.UseCache != nil {
-		queryCfg = &druidsqldriver.QueryConfig{
-			UseCache: stmt.UseCache,
-		}
+	queryCfg := &druidsqldriver.QueryConfig{
+		UseCache:      stmt.UseCache,
+		PopulateCache: stmt.PopulateCache,
+		Attributes:    stmt.QueryAttributes, // Attributes are passed through to the Druid query context
 	}
-	if stmt.PopulateCache != nil {
-		if queryCfg == nil {
-			queryCfg = &druidsqldriver.QueryConfig{}
-		}
-		queryCfg.PopulateCache = stmt.PopulateCache
-	}
-	if !c.config.SkipQueryPriority && stmt.Priority != 0 {
-		if queryCfg == nil {
-			queryCfg = &druidsqldriver.QueryConfig{}
-		}
+	if !c.config.SkipQueryPriority {
 		queryCfg.Priority = stmt.Priority
 	}
-
-	if queryCfg != nil {
-		ctx = druidsqldriver.WithQueryConfig(ctx, queryCfg)
-	}
+	ctx = druidsqldriver.WithQueryConfig(ctx, queryCfg)
 
 	var rows *sqlx.Rows
 
