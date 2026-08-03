@@ -29,6 +29,7 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import {
+    getScreenNameFromPage,
     isEditPage,
     isProjectInvitePage,
     isProjectPage,
@@ -51,7 +52,10 @@
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
+  import {
+    behaviourEvent,
+    metricsService,
+  } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
@@ -245,6 +249,20 @@
         version: cloudVersion,
       });
     }
+  });
+
+  // Fire a page view for every dashboard, canvas and project page the user opens.
+  // This runs off `page` rather than `afterNavigate` because the first page view has to wait for the
+  // current user query above to resolve, which happens after the initial navigation has completed.
+  // Only the path is tracked: the query string changes on every filter and time range tweak, which
+  // would turn page views into an interaction firehose.
+  let lastTrackedPath: string | undefined;
+  $effect(() => {
+    const path = page.url.pathname;
+    // Events are dropped until loadCloudFields has run, so wait on the same inputs it needs.
+    if (!project || !$user.data?.user?.id || path === lastTrackedPath) return;
+    lastTrackedPath = path;
+    void behaviourEvent?.firePageViewEvent(getScreenNameFromPage(page));
   });
 </script>
 

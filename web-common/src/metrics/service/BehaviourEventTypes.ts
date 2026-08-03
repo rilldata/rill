@@ -4,6 +4,10 @@ import type { MetricsEventScreenName, MetricsEventSpace } from "./MetricsTypes";
 import type { SourceEventFields } from "./SourceEventTypes";
 
 export enum BehaviourEventAction {
+  // PageView fires on every page load and navigation.
+  // Navigate is narrower: it only fires when the user clicks through to a resource from
+  // somewhere in the app, and records where they came from.
+  PageView = "page-view",
   Navigate = "navigate",
 
   DeployIntent = "deploy-intent",
