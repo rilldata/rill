@@ -3,6 +3,11 @@ import {
   MAX_ROW_EXPANSION_LIMIT,
   SHOW_MORE_BUTTON,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  encodeExpandKeyValue,
+  expandKeyDepth,
+  expandKeySegments,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
@@ -59,26 +64,21 @@ export function getValuesForExpandedKey(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   key: string,
-  hasTotalsRow = true,
 ): string[] {
-  const indices = key.split(".").map((index) => parseInt(index, 10));
-
-  if (hasTotalsRow) {
-    // The first row is always the totals row for the expanded context with measures
-    indices[0] = indices[0] - 1;
-  }
-
-  // Retrieve the value from the nested array
-  let currentValue: PivotDataRow[] | undefined = tableData;
+  // Each row stores its own value under rowDimensions[0] at every depth, so
+  // match key segments against that to resolve a key to the actual values.
+  const anchor = rowDimensions[0];
   const dimensionValues: string[] = [];
+  let currentRows: PivotDataRow[] | undefined = tableData;
 
-  indices.forEach((index, i) => {
-    if (!currentValue?.[index]) {
-      return;
-    }
-    dimensionValues.push(currentValue[index]?.[rowDimensions[i]] as string);
-    currentValue = currentValue[index]?.subRows;
-  });
+  for (const segment of expandKeySegments(key)) {
+    const node = currentRows?.find(
+      (row) => encodeExpandKeyValue(row[anchor]) === segment,
+    );
+    if (!node) break;
+    dimensionValues.push(node[anchor] as string);
+    currentRows = node.subRows;
+  }
   return dimensionValues;
 }
 
@@ -201,7 +201,7 @@ export function queryExpandedRowMeasureValues(
   }
   return derived(
     Object.keys(expanded)?.map((expandIndex) => {
-      const nestLevel = expandIndex?.split(".")?.length;
+      const nestLevel = expandKeyDepth(expandIndex);
 
       if (nestLevel >= rowDimensionNames.length)
         return readable({
@@ -216,7 +216,6 @@ export function queryExpandedRowMeasureValues(
         tableData,
         rowDimensionNames,
         expandIndex,
-        config.pivot?.showTotalsRow !== false && numMeasures > 0,
       );
 
       if (
@@ -478,35 +477,21 @@ export function addExpandedDataToPivot(
     const rowValues = expandedRowData.rowDimensionValues;
 
     if (rowValues.length === 0) return;
-    const indices = expandedRowData.expandIndex
-      .split(".")
-      .map((index) => parseInt(index, 10));
+    const segments = expandKeySegments(expandedRowData.expandIndex);
 
-    if (
-      config.pivot?.showTotalsRow !== false &&
-      config.measureNames.length > 0
-    ) {
-      // The first row is always the totals row for the expanded context with measures
-      indices[0] = indices[0] - 1;
+    let node: PivotDataRow | undefined;
+    let currentRows: PivotDataRow[] | undefined = pivotData;
+    for (const segment of segments) {
+      node = currentRows?.find(
+        (row) => encodeExpandKeyValue(row[rowDimensions[0]]) === segment,
+      );
+      if (!node) break;
+      currentRows = node.subRows;
     }
 
-    let parent: PivotDataRow[] = pivotData; // Keep a reference to the parent array
-    let lastIdx = 0;
-
-    // Traverse the data array to the right position
-    for (let i = 0; i < indices.length; i++) {
-      if (!parent[indices[i]]) break;
-      if (i < indices.length - 1) {
-        const subRows = parent[indices[i]].subRows;
-        if (!subRows) break;
-        parent = subRows;
-      }
-      lastIdx = indices[i];
-    }
-
-    // Update the specific array at the position
-    if (parent[lastIdx] && parent[lastIdx].subRows) {
-      const anchorDimension = rowDimensions[indices.length];
+    // Update the node's subRows in place
+    if (node && node.subRows) {
+      const anchorDimension = rowDimensions[segments.length];
 
       let skeletonSubTable: PivotDataRow[] = [
         { [anchorDimension]: LOADING_CELL },
@@ -540,7 +525,7 @@ export function addExpandedDataToPivot(
            * is greater than number of nest levels expanded except
            * for the last level
            */
-          if (numRowDimensions - 1 > indices.length) {
+          if (numRowDimensions - 1 > segments.length) {
             newRow.subRows = [{ [rowDimensions[0]]: LOADING_CELL }];
           }
           return newRow;
@@ -558,7 +543,7 @@ export function addExpandedDataToPivot(
         } as PivotDataRow);
       }
 
-      parent[lastIdx].subRows = mappedSubRows;
+      node.subRows = mappedSubRows;
     }
   });
   return pivotData;
