@@ -163,11 +163,11 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 	if renderer == "custom_chart" {
 		if inline {
 			if _, ok := props["spec"]; ok {
-				return nil, nil, errors.New(`renderer property "spec" is not supported in an inline canvas chart: use "vega_spec", or define a component file to author a Flint spec`)
+				return nil, nil, errors.New(`renderer property "spec" is not supported in an inline canvas chart: use "vega_spec", or define a component file to author a chart spec`)
 			}
 		} else {
 			if _, ok := props["vega_spec"]; ok {
-				return nil, nil, errors.New(`renderer property "vega_spec" is not supported in a component file: use "spec" with a Flint chart spec`)
+				return nil, nil, errors.New(`renderer property "vega_spec" is not supported in a component file: use "spec" with a chart spec`)
 			}
 			if spec, ok := props["spec"]; ok {
 				if _, ok := spec.(map[string]any); !ok {

@@ -92,7 +92,7 @@ export async function importGalleryChartWithAgent(
       }
 
       developerChatActions.startChat(
-        `The component at ${filePath} you just created has an error: "${error}". Fix the file so it parses and reconciles cleanly, keeping all the earlier requirements (top-level custom_chart block containing metrics_sql and a Flint spec, a trivial templated metrics_sql selecting every field param the spec references, and typed role-named params).`,
+        `The component at ${filePath} you just created has an error: "${error}". Fix it with develop_file (type "component") so it parses and reconciles cleanly, keeping its chart type and bound channels.`,
       );
       await waitUntil(() => get(conversation.isStreaming));
       await waitUntil(() => !get(conversation.isStreaming), -1);
@@ -102,54 +102,50 @@ export async function importGalleryChartWithAgent(
   }
 }
 
+/**
+ * Beyond the example's own spec, the prompt carries only what is specific to the chosen entry. The
+ * general rules of authoring a component — the file's shape, the param types, the metrics_sql
+ * dialect, the encoding vocabulary — reach the sub-agent through the component resource
+ * instructions that develop_file loads for `type: component`, so restating them here would only be
+ * a second copy to keep in sync.
+ */
 function buildImportPrompt(filePath: string, entry: GalleryEntry): string {
-  const bindings = entry.bindings
-    .map(
-      (binding) =>
-        `  - channel "${binding.channel}" takes a ${binding.role} (suggested param name: ${binding.param})`,
-    )
-    .join("\n");
-
   return [
-    `Create a Rill component (custom viz) at ${filePath} that draws a Flint "${entry.chartType}".`,
-    entry.description
-      ? `The example it is based on: ${entry.description}.`
-      : "",
+    `Create a Rill component (custom viz) at ${filePath}, by calling develop_file with type "component" and passing every detail below in its prompt.`,
     "",
-    "The file MUST follow exactly this YAML skeleton — its only top-level keys are type, display_name, params, and custom_chart. Never put metrics_sql or spec at the top level, and never wrap custom_chart under a renderer: key:",
+    "Use this spec, which is the example's own, verbatim — the same chart type, the same channels and no others, and the same chart properties. Declare one param per channel, typed as annotated:",
     "```yaml",
-    "type: component",
-    `display_name: "${entry.chartType}"`,
-    "params:",
-    "  - name: metrics_view",
-    "    type: metrics_view",
-    "    required: true",
-    "  # ...one required param per bound channel, plus a limit param",
-    "custom_chart:",
-    "  metrics_sql: SELECT {{ .params.<field> }}, ... FROM {{ .params.metrics_view }} ORDER BY ... LIMIT {{ .params.limit }}",
-    "  spec:",
-    `    chartType: ${entry.chartType}`,
-    "    encodings:",
-    '      <channel>: { field: "{{ .params.<param> }}" }',
+    exampleSpecYAML(entry),
     "```",
     "",
-    `Bind these channels:`,
-    bindings,
-    "",
-    "Requirements:",
-    "- Pick the most suitable metrics view in this project for the chart's shape, and bind each param to a real field of that metrics view.",
-    "- Declare a required param named metrics_view of type metrics_view, and one required param per bound channel typed dimension, measure, or time_dimension (never string, and no defaults).",
-    "- Name params after their role in the chart (x_axis, y_axis, color, size, ...), not after the column names, and give each a description.",
-    "- The metrics_sql MUST be a single trivial statement of the form SELECT {{ .params.<dim> }}, {{ .params.<measure> }} FROM {{ .params.metrics_view }} with an ORDER BY and LIMIT. Metrics SQL is a restricted dialect: NO CTEs, JOINs, subqueries, window functions, CASE expressions, or aggregate functions (measures are already aggregated).",
-    "- Every field param the spec's encodings or the ORDER BY references MUST also appear in the SELECT list — a field can only be used if it is selected.",
-    `- Declare a number param named limit (not required) with default ${entry.defaultLimit}, and end the SQL with LIMIT {{ .params.limit }}. Flint drops rows that overflow the axis, so do not raise it much above this.`,
-    "- Order a time series by the time dimension ascending; order anything else by the main measure descending so the LIMIT keeps the largest rows.",
-    '- Do NOT set an encoding\'s "type" or "aggregate": Rill supplies each field\'s semantics from the metrics view, so Flint already knows measures are quantitative, dimensions categorical, and the time dimension temporal. Hardcoding them is what breaks the component when it is rebound to a different metrics view.',
-    "- Do NOT set colors, fonts, axis titles, tick counts, widths or heights anywhere. Flint derives all of them. There is no title field in a Flint spec — the component's display_name is the title.",
-    "- The only encoding keys that exist are field, type, aggregate, sortOrder, sortBy and scheme. Anything else (bin, stack, timeUnit, axis, legend, format) is not part of the format.",
+    `- Use "${entry.chartType}" as the display_name.`,
+    entry.description ? `- The example it is based on: ${entry.description}` : "",
+    `- Give the limit param a default of ${entry.defaultLimit}, which suits this chart's density.`,
+    "- Order a time series by the time dimension ascending; order anything else by the main measure descending, without an order_by param.",
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/**
+ * The gallery entry's chart spec, written out the way the component file should carry it: each
+ * channel bound to a templated param and annotated with the param type it takes, and the example's
+ * chartProperties preserved (a donut without its innerRadius is a pie).
+ */
+function exampleSpecYAML(entry: GalleryEntry): string {
+  const lines = [`chartType: ${entry.chartType}`, "encodings:"];
+  for (const binding of entry.bindings) {
+    lines.push(
+      `  ${binding.channel}: { field: "{{ .params.${binding.param} }}" } # ${binding.role} param`,
+    );
+  }
+  if (entry.chartProperties) {
+    lines.push("chartProperties:");
+    for (const [key, value] of Object.entries(entry.chartProperties)) {
+      lines.push(`  ${key}: ${JSON.stringify(value)}`);
+    }
+  }
+  return lines.join("\n");
 }
 
 /**
@@ -209,7 +205,7 @@ async function waitForReconcileOutcome(
 
 /**
  * Static structure check for generated components: the renderer must be a
- * custom_chart with both metrics_sql and vega_spec. A component whose YAML
+ * custom_chart with both metrics_sql and spec. A component whose YAML
  * misplaces these (top-level metrics_sql, a renderer: wrapper, no renderer at
  * all) still reconciles as a tolerated draft, so the import loop must catch it.
  * Returns an error message to feed back to the agent, or null when valid.
@@ -252,7 +248,7 @@ export function missingSelectedParamsError(
   const sqlProp = rendererProperties?.metrics_sql;
   const sql = Array.isArray(sqlProp) ? sqlProp.join(" ") : sqlProp;
   if (typeof sql !== "string" || !sql) return null;
-  // The Flint spec is a nested object; serializing it is enough to find param references.
+  // The chart spec is a nested object; serializing it is enough to find param references.
   const spec = JSON.stringify(rendererProperties?.spec ?? "");
 
   const fieldParams = new Set(
@@ -289,8 +285,8 @@ function paramRefs(text: string): string[] {
 }
 
 /**
- * Static check for encodings that override the semantics Rill already supplies. Flint derives each
- * field's type from the metrics view, so a hardcoded "type" is at best redundant and at worst wrong
+ * Static check for encodings that override the semantics Rill already supplies. Each field's type is
+ * derived from the metrics view, so a hardcoded "type" is at best redundant and at worst wrong
  * — a dimension typed "quantitative" renders a blank chart. That only shows at render time, which
  * the component's own reconcile cannot catch.
  * Returns an error message to feed back to the agent, or null when consistent.
@@ -319,7 +315,7 @@ export function invalidDimensionEncodingError(
     }
   });
   if (issues.length === 0) return null;
-  return `${issues.join("; ")} — dimension params are categorical, and Rill already tells Flint each field's type from the metrics view, so remove the "type" from these encodings (bind a measure param instead if the channel needs numeric values)`;
+  return `${issues.join("; ")} — dimension params are categorical, and Rill already derives each field's type from the metrics view, so remove the "type" from these encodings (bind a measure param instead if the channel needs numeric values)`;
 }
 
 /** Walks the spec, invoking cb for each object with a templated "field" property. */

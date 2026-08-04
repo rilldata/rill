@@ -3202,8 +3202,8 @@ definitions:
   custom_chart_properties:
     type: object
     description: |
-      A custom visualization: a Metrics SQL query plus a Flint chart spec describing how to draw it.
-      Flint derives scales, axes, formats, sorting, stacking and layout from the data and from the
+      A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
+      Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
       metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
     properties:
       metrics_sql:
@@ -3222,7 +3222,7 @@ definitions:
     properties:
       chartType:
         type: string
-        description: The Flint chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
       encodings:
         type: object
         description: |
@@ -3252,12 +3252,12 @@ definitions:
       type:
         type: string
         enum: [quantitative, nominal, ordinal, temporal]
-        description: Overrides the type Flint derives from the field's semantics. Rarely needed.
+        description: Overrides the type derived from the field's semantics. Rarely needed.
       aggregate:
         type: string
         enum: [count, sum, average, mean]
         description: |
-          Aggregates rows within Flint. Rarely needed in Rill: measures selected from a metrics view
+          Aggregates rows within the chart. Rarely needed in Rill: measures selected from a metrics view
           are already aggregated.
       sortOrder:
         type: string

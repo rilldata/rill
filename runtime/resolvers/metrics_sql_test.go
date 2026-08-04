@@ -281,3 +281,70 @@ func TestMetricsSQLWithAdditionalTimeZone(t *testing.T) {
 
 	require.Error(t, err, "Should error for invalid timezone")
 }
+
+func TestMetricsSQLWithAdditionalTimeGrain(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	testruntime.RequireParseErrors(t, rt, instanceID, nil)
+
+	resolve := func(props map[string]any) []map[string]any {
+		res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+			InstanceID:         instanceID,
+			Resolver:           "metrics_sql",
+			ResolverProperties: props,
+			Args:               nil,
+			Claims:             &runtime.SecurityClaims{},
+		})
+		require.NoError(t, err)
+		defer res.Close()
+
+		var rows []map[string]any
+		require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
+		require.Greater(t, len(rows), 0)
+		return rows
+	}
+
+	// Timestamps of the rows, requiring the time dimension to keep its name in the result.
+	timestamps := func(rows []map[string]any) []time.Time {
+		var res []time.Time
+		for _, row := range rows {
+			raw, ok := row["timestamp"].(string)
+			require.True(t, ok, "expected a timestamp column, got %v", row)
+			ts, err := time.Parse(time.RFC3339, raw)
+			require.NoError(t, err)
+			res = append(res, ts)
+		}
+		return res
+	}
+
+	const sql = "SELECT timestamp, bid_price FROM ad_bids_metrics ORDER BY timestamp LIMIT 500"
+
+	// Without a grain, the time dimension is selected at its native resolution.
+	ungrouped := timestamps(resolve(map[string]any{"sql": sql}))
+
+	// With a grain, the same SQL is bucketed.
+	daily := timestamps(resolve(map[string]any{"sql": sql, "additional_time_grain": "day"}))
+	require.Less(t, len(daily), len(ungrouped))
+	for _, ts := range daily {
+		require.Equal(t, ts.Truncate(24*time.Hour), ts, "expected a day-floored timestamp")
+	}
+
+	// A grain declared in the SQL is the author's choice and is not overridden.
+	monthly := timestamps(resolve(map[string]any{
+		"sql":                   "SELECT date_trunc('month', timestamp) AS timestamp, bid_price FROM ad_bids_metrics ORDER BY timestamp LIMIT 500",
+		"additional_time_grain": "day",
+	}))
+	require.Less(t, len(monthly), len(daily))
+	for _, ts := range monthly {
+		require.Equal(t, 1, ts.Day(), "expected a month-floored timestamp")
+	}
+
+	_, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           "metrics_sql",
+		ResolverProperties: map[string]any{"sql": sql, "additional_time_grain": "fortnight"},
+		Args:               nil,
+		Claims:             &runtime.SecurityClaims{},
+	})
+	require.Error(t, err, "should error for an invalid time grain")
+}

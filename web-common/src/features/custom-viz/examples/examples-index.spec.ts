@@ -78,6 +78,13 @@ describe("flint chart catalog", () => {
     }
   });
 
+  it("excludes the chart types Rill does not offer", () => {
+    // Maps need semantics Rill never derives, and a KPI card duplicates the canvas widget.
+    for (const chartType of ["Map", "Choropleth", "KPI Card"]) {
+      expect(chartTypes, chartType).not.toContain(chartType);
+    }
+  });
+
   it("gives every example a title and a description to browse by", () => {
     for (const chart of charts) {
       expect(chart.title, chart.name).toBeTruthy();

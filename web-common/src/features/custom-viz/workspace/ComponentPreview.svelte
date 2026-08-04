@@ -8,7 +8,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrain, type V1Resource } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceResolveComponent } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
@@ -27,7 +27,7 @@
     sendComponentFilePrompt(
       client,
       filePath,
-      `The component fails to render with this error: "${error}". Fix the file so it renders cleanly. Keep the structure valid: a top-level custom_chart block containing a templated metrics_sql and a Flint spec under "spec". The metrics_sql must be trivial (SELECT params FROM {{ .params.metrics_view }} with ORDER BY and LIMIT; every field referenced by the encodings or ORDER BY must be in the SELECT list; no CTEs/JOINs/subqueries/window functions/CASE/aggregates, and never wrap measures in aggregate functions). The spec must set a valid Flint chartType and bind each encoding channel to a field, using typed role-named params.`,
+      `It fails to render with this error: "${error}". Fix it so it renders cleanly, keeping its chart type and bound channels.`,
     );
   }
 
@@ -125,11 +125,14 @@
   {:else}
     <!-- overflow-hidden bounds charts with fixed/step sizes to the preview area. -->
     <div class="flex-1 min-h-[320px] max-h-full overflow-hidden">
+      <!-- The preview has no dashboard time controls to inherit a grain from, so it buckets by day:
+           enough to keep a time series readable, where the raw timestamps would render one mark per event. -->
       <FlintChartRenderer
         name={componentName}
         spec={flintSpec}
         {metricsSQL}
         {metricsViewName}
+        timeGrain={V1TimeGrain.TIME_GRAIN_DAY}
         showDataTable
         {themeMode}
       />

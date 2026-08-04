@@ -3,6 +3,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -30,6 +31,9 @@ type metricsSQLProps struct {
 	AdditionalWhereByMetricsView map[string]*metricsview.Expression `mapstructure:"additional_where_by_metrics_view"`
 	// AdditionalTimeRange is a time range filter to apply to the metrics SQL.
 	AdditionalTimeRange *metricsview.TimeRange `mapstructure:"additional_time_range"`
+	// AdditionalTimeGrain buckets the time dimensions selected by the metrics SQL at this grain.
+	// Dimensions that already declare a grain, i.e. an explicit date_trunc in the SQL, are left alone.
+	AdditionalTimeGrain metricsview.TimeGrain `mapstructure:"additional_time_grain"`
 }
 
 type metricsSQLArgs struct {
@@ -48,6 +52,9 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	if props.SQL == "" {
 		return nil, errors.New(`metrics SQL: missing required property "sql"`)
 	}
+	if !props.AdditionalTimeGrain.Valid() {
+		return nil, fmt.Errorf("metrics SQL: invalid time grain %q", props.AdditionalTimeGrain)
+	}
 
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
@@ -56,6 +63,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			attribute.String("time_zone", props.TimeZone),
 			attribute.Bool("has_additional_where", props.AdditionalWhere != nil || len(props.AdditionalWhereByMetricsView) > 0),
 			attribute.Bool("has_additional_time_range", props.AdditionalTimeRange != nil),
+			attribute.String("additional_time_grain", string(props.AdditionalTimeGrain)),
 		)
 	}
 
@@ -79,22 +87,24 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
+	getMetricsView := func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+		mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+		if err != nil {
+			return nil, err
+		}
+		sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
+		if err != nil {
+			return nil, err
+		}
+		if !sec.CanAccess() {
+			return nil, runtime.ErrForbidden
+		}
+		return mv, nil
+	}
+
 	// Create a metrics SQL parser
 	compiler := metricssql.New(&metricssql.CompilerOptions{
-		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
-			mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
-			if err != nil {
-				return nil, err
-			}
-			sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
-			if err != nil {
-				return nil, err
-			}
-			if !sec.CanAccess() {
-				return nil, runtime.ErrForbidden
-			}
-			return mv, nil
-		},
+		GetMetricsView: getMetricsView,
 		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
 			sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
 			if err != nil {
@@ -126,6 +136,15 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 
 	// Inject the additional time range if provided
 	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
+
+	// Bucket the query's time dimensions if a grain was provided
+	if props.AdditionalTimeGrain != metricsview.TimeGrainUnspecified {
+		mv, err := getMetricsView(ctx, query.MetricsView)
+		if err != nil {
+			return nil, err
+		}
+		applyAdditionalTimeGrain(query, mv.GetMetricsView().State.ValidSpec, props.AdditionalTimeGrain)
+	}
 
 	// Set the additional timezone if provided
 	if props.TimeZone != "" {
@@ -166,6 +185,41 @@ func applyAdditionalWhere(current, additional *metricsview.Expression) *metricsv
 				additional,
 			},
 		},
+	}
+}
+
+// applyAdditionalTimeGrain floors the query's time dimensions at the given grain.
+// A dimension that already computes a time floor came from an explicit date_trunc in the metrics SQL,
+// so it keeps the bucket its author asked for.
+// The dimension's name is left untouched, so the result columns are the same as without a grain.
+func applyAdditionalTimeGrain(query *metricsview.Query, spec *runtimev1.MetricsViewSpec, grain metricsview.TimeGrain) {
+	if spec == nil {
+		return
+	}
+
+	for i, dim := range query.Dimensions {
+		if dim.Compute != nil {
+			continue
+		}
+
+		// The primary time dimension is not necessarily declared in the dimensions list, so check it separately.
+		isTime := dim.Name == spec.TimeDimension
+		for _, d := range spec.Dimensions {
+			if d.Name == dim.Name {
+				isTime = d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+				break
+			}
+		}
+		if !isTime {
+			continue
+		}
+
+		query.Dimensions[i].Compute = &metricsview.DimensionCompute{
+			TimeFloor: &metricsview.DimensionComputeTimeFloor{
+				Dimension: dim.Name,
+				Grain:     grain,
+			},
+		}
 	}
 }
 

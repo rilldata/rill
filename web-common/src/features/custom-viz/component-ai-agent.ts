@@ -38,7 +38,9 @@ export function sendComponentFilePrompt(
     conversationManager.enterNewConversationMode();
   }
 
-  const fullPrompt = `Update the component file ${filePath} (a standalone custom viz with declared params; type: component). ${userPrompt}`;
+  // develop_file with type "component" is what loads the component authoring instructions, so ask
+  // for it by name rather than leaving the routing to the agent.
+  const fullPrompt = `Update the component file ${filePath} (a standalone custom viz with declared params) by calling develop_file with type "component". ${userPrompt}`;
   developerChatActions.startChat(fullPrompt);
 
   const conversation = get(conversationManager.getCurrentConversation());

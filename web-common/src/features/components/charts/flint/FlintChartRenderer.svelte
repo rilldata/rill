@@ -12,10 +12,11 @@
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import {
     createRuntimeServiceQueryResolver,
+    V1TimeGrain,
     type V1Expression,
-    type V1TimeGrain,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View } from "svelte-vega";
   import { convertV1ExpressionToMapstructure } from "../custom/expression-utils";
@@ -50,7 +51,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: filterKey = JSON.stringify({ whereFilter, timeRange });
+  $: filterKey = JSON.stringify({ whereFilter, timeRange, timeGrain });
 
   // Only enable queries when the time range has resolved. When no timeRange is provided at all
   // (e.g. standalone component preview, outside a canvas), queries run unfiltered instead of waiting.
@@ -67,6 +68,15 @@
           ? { additional_where: convertV1ExpressionToMapstructure(whereFilter) }
           : {}),
         ...(timeRange ? { additional_time_range: timeRange } : {}),
+        // The grain buckets the query's time dimensions, so the chart shows one mark per bucket of
+        // the dashboard's time controls rather than one per raw timestamp. A component that writes
+        // its own date_trunc keeps that bucket instead.
+        ...(timeGrain && timeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+          ? { additional_time_grain: V1TimeGrainToDateTimeUnit[timeGrain] }
+          : {}),
+        // The time zone rides on the time range, which the resolver reads as a filter only; the
+        // grain needs it as well, or the buckets are cut on UTC boundaries.
+        ...(timeRange?.timeZone ? { time_zone: timeRange.timeZone } : {}),
       } as unknown as PartialMessage<Struct>,
     },
     {

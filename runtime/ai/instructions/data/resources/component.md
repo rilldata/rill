@@ -8,11 +8,11 @@ description: Detailed instructions and examples for developing component (custom
 
 Components are reusable visualizations ("custom viz") defined as standalone `type: component` files, conventionally under `viz_library/`. A component declares typed **params** and a **renderer**; canvas dashboards reference the component by name and bind values to its params. This makes one visualization reusable across many dashboards with different metrics views, measures, and dimensions.
 
-Charts are described with [Flint](https://microsoft.github.io/flint-chart/), a chart compiler: you state the chart type and which field goes on which channel, and Flint derives the scales, axes, number formats, sorting, stacking, colors and layout from the data and from the metrics view's semantics. You do not write Vega-Lite here. Do not set axis titles, tick counts, colors, fonts, widths or heights; they are computed.
+Charts are described with a declarative chart spec: you state the chart type and which field goes on which channel, and Rill derives the scales, axes, number formats, sorting, stacking, colors and layout from the data and from the metrics view's semantics. You do not write Vega-Lite here. **Do not set axis titles, tick counts, colors, fonts, widths or heights anywhere**; they are computed.
 
 ## Anatomy
 
-A component file's only top-level keys are `type`, `display_name`, `description` (optional), `params`, and one renderer block such as `custom_chart` (which contains `metrics_sql` and `spec`). Never place `metrics_sql` or `spec` at the top level of the YAML, and never wrap the renderer under a `renderer:` key; a file without a proper renderer block parses as an empty draft and renders nothing.
+A component file's only top-level keys are `type`, `display_name`, `description` (optional), `params`, and one renderer block such as `custom_chart` (which contains `metrics_sql` and `spec`). **Never place `metrics_sql` or `spec` at the top level of the YAML, and never wrap the renderer under a `renderer:` key.** A file without a proper renderer block parses as an empty draft and renders nothing: it reports no error, so a misplaced block is silent.
 
 ```yaml
 # viz_library/measure_trend.yaml
@@ -82,7 +82,15 @@ Constraints enforced by the parser:
 
 A value that consists of exactly one `{{ .params.X }}` placeholder keeps the param's type, so a `number` param used as `innerRadius: "{{ .params.inner_radius }}"` arrives as a number, not a string. Partial interpolations such as `LIMIT {{ .params.limit }}` are ordinary strings.
 
-## The Flint spec
+## Creating a new component
+
+A new component is written from a chart type and a set of channels, without being told which data to use:
+
+- Pick the metrics view in the project that best fits the chart's shape, and **bind every field param to a field that metrics view actually declares** — never invent field names, and confirm them by reading the metrics view rather than guessing from the component's own naming.
+- **Declare a required `metrics_view` param, plus one required param per channel the chart binds, typed `dimension`, `measure` or `time_dimension`.** Field params are never `string` and never have a default.
+- Bind only the channels the chart type calls for; an unused channel left in the spec renders empty.
+
+## The chart spec
 
 `spec` is a YAML mapping with three keys:
 
@@ -90,20 +98,22 @@ A value that consists of exactly one `{{ .params.X }}` placeholder keeps the par
 - `encodings` (required): maps a visual channel to a field. Each value is either a field name or a mapping.
 - `chartProperties` (optional): per-chart-type presentation tuning. Properties that don't apply to the chart type are ignored.
 
-An encoding mapping supports exactly six keys, and nothing else:
+**An encoding mapping supports exactly these six keys, and nothing else:**
 
 | Key | Purpose |
 | --- | --- |
 | `field` | The column to bind. Usually `"{{ .params.<name> }}"`. |
-| `type` | `quantitative`, `nominal`, `ordinal` or `temporal`. Rarely needed: Rill supplies each field's semantics from the metrics view, so Flint already knows measures are quantitative, dimensions categorical, and the time dimension temporal. |
+| `type` | `quantitative`, `nominal`, `ordinal` or `temporal`. Rarely needed: Rill supplies each field's semantics from the metrics view, so the chart already knows measures are quantitative, dimensions categorical, and the time dimension temporal. |
 | `aggregate` | `count`, `sum`, `average` or `mean`. Rarely needed: measures selected from a metrics view are already aggregated. |
 | `sortOrder` | `ascending` or `descending`. |
 | `sortBy` | Channel or field to sort this channel's values by, e.g. `x` or `y`. |
 | `scheme` | Color scheme name for the `color` channel, e.g. `viridis`, `tableau10`. |
 
-Common channels: `x`, `y`, `color`, `size`, `shape`, `opacity`, `column` and `row` (small multiples), `group` (dodge/cluster category, distinct from `color`), `detail`, `order`, `angle`, `goal` (bullet target), `metric`/`value`/`goal` (KPI card), `latitude`/`longitude`/`id` (maps). Which channels a chart type accepts varies; bind only the ones it uses.
+The Vega-Lite keys `bin`, `stack`, `timeUnit`, `axis`, `legend`, `format`, `scale`, `mark` and `config` do not exist here. Binning, stacking, time bucketing, axis and legend configuration, and number formatting are all derived; a chart type that needs one applies it itself.
 
-There is no `title` in a Flint spec. Set `display_name` on the component instead.
+Common channels: `x`, `y`, `color`, `size`, `shape`, `opacity`, `column` and `row` (small multiples), `group` (dodge/cluster category, distinct from `color`), `detail`, `order`, `angle`, `goal` (bullet target). Which channels a chart type accepts varies; bind only the ones it uses.
+
+There is no `title` in a chart spec. Set `display_name` on the component instead.
 
 ### Chart types
 
@@ -117,11 +127,13 @@ Lines and areas: `Line Chart`, `Sparkline`, `Bump Chart`, `Slope Chart`, `Area C
 
 Circular: `Pie Chart`, `Donut Chart`, `Rose Chart`, `Radar Chart`
 
-Tables and maps: `Heatmap`, `Bar Table`, `KPI Card`, `Map`, `Choropleth`
+Tables: `Heatmap`, `Bar Table`
+
+Single numbers are not a chart type here: a canvas has a native KPI widget for those.
 
 ### Examples
 
-A ranked bar chart. Metrics SQL picks the top rows; Flint orders the bars:
+A ranked bar chart. Metrics SQL picks the top rows; the chart orders the bars:
 
 ```yaml
 custom_chart:
@@ -166,12 +178,12 @@ Small multiples: one panel per value of a dimension:
 `metrics_sql` queries metrics views as virtual tables, and it is a deliberately restricted dialect — treat it as "pick columns", not general SQL:
 
 - Keep queries trivial: `SELECT <dimensions and measures> FROM <metrics view>` with an `ORDER BY` and `LIMIT`. For parameterized components that means `SELECT {{ .params.<dim> }}, {{ .params.<measure> }} FROM {{ .params.metrics_view }}`.
-- Make the sort customizable: declare a required `string` param named `order_by` and write `ORDER BY {{ .params.order_by }} DESC`. The visual editor treats `order_by` specially by name: it renders a dropdown of the field values bound to the component's other params and defaults it to the measure. Time-series charts instead order by the time dimension ascending, without an `order_by` param.
-- Declare a `number` param named `limit` (not required, with a default) and end the SQL with `LIMIT {{ .params.limit }}` so dashboards can tune the row count. Choose the default from the chart's visual density: around 10 where each row is a large mark (bars, arcs, text), up to 100 for charts that stay readable with many small marks (scatterplots, heatmaps, strip plots), and up to 2000 for time series. Flint drops rows beyond what the axis can legibly fit and reports it as a warning, so an oversized limit silently truncates the chart.
-- Every field the `spec` encodings or the `ORDER BY` reference must also appear in the `SELECT` list; ordering by an unselected field fails at query time, and encodings reading unselected fields render empty.
+- Order a time series by its time dimension ascending, and anything else by the main measure descending so the `LIMIT` keeps the rows the chart should show. To let a dashboard choose the sort instead, declare a required `string` param named `order_by` and write `ORDER BY {{ .params.order_by }} DESC`: the visual editor treats `order_by` specially by name, rendering a dropdown of the field values bound to the component's other params and defaulting it to the measure.
+- Declare a `number` param named `limit` (not required, with a default) and end the SQL with `LIMIT {{ .params.limit }}` so dashboards can tune the row count. Choose the default from the chart's visual density: around 10 where each row is a large mark (bars, arcs, text), up to 100 for charts that stay readable with many small marks (scatterplots, heatmaps, strip plots), and up to 2000 for time series. Rows beyond what the axis can legibly fit are dropped and reported as a warning, so an oversized limit silently truncates the chart.
+- **Every field the `spec` encodings or the `ORDER BY` reference must also appear in the `SELECT` list.** Ordering by an unselected field fails at query time, and encodings reading unselected fields render empty.
 - NOT supported: CTEs (`WITH`), JOINs, subqueries, window functions, `CASE` expressions, and aggregate functions. Measures are already aggregated; never wrap them in `SUM()`/`AVG()`/`COUNT()`. Grouping by the selected dimensions is implicit.
-- Column aliases (`AS x`) are not reflected in the output: result columns always keep the metrics view field names, so reference `{{ .params.<name> }}` in the encodings and `ORDER BY` the field itself, never an alias.
-- `date_trunc('<grain>', <time_dimension>)` is the one supported shaping function, for time bucketing.
+- Renaming a dimension or measure with `AS` is rejected: result columns keep the metrics view field names, so reference `{{ .params.<name> }}` in the encodings and `ORDER BY` the field itself, never an alias.
+- **Select a time dimension plainly; do not bucket it with `date_trunc`.** A selected time dimension is bucketed automatically at the grain of whatever time controls the chart is placed under, so a plain `SELECT {{ .params.<time_dim> }}` is what lets a dashboard drive the chart. Reach for `date_trunc('<grain>', <time_dimension>)` only when the chart is meant to stay at one fixed bucket regardless of the dashboard, and then alias it back to the field's own name — `date_trunc('month', {{ .params.<time_dim> }}) AS {{ .params.<time_dim> }}` — because an unaliased `date_trunc` produces a column named after the expression, which no encoding can reference.
 - A component issues exactly one query. Charts that need several datasets cannot be expressed.
 
 If a visualization needs cross-row derivations (running sums, per-group offsets, rankings), they cannot be expressed here: pick a chart type that computes what you need (`Waterfall Chart`, `Bump Chart`, `ECDF Plot`) or simplify the chart to direct field encodings.
@@ -180,7 +192,7 @@ If a visualization needs cross-row derivations (running sums, per-group offsets,
 
 - Give the component a clear `display_name` and `description`; they are shown in the visual editor's widget picker.
 - Name params after their role in the chart (`x_axis`, `y_axis`, `color`, `size`, ...) rather than after the underlying column names, and set a `description` on each param.
-- Do not set `type` or `aggregate` on an encoding unless the derived behaviour is actually wrong; the semantics Rill supplies are usually right, and hardcoding them is what breaks a component when it is rebound to a different metrics view.
+- **Do not set `type` or `aggregate` on an encoding** unless the derived behaviour is actually wrong; the semantics Rill supplies are usually right, and hardcoding them is what breaks a component when it is rebound to a different metrics view. A dimension typed `quantitative` renders a blank chart.
 - New params on an already-used component should be optional or have a default, otherwise existing dashboards break.
 - Components are validated leniently while they contain unresolved `{{ .params.* }}` placeholders; the fully-bound instance is validated in each canvas that references it.
 - Inline `custom_chart` blocks inside a canvas are a different, Vega-Lite-based widget and still use `vega_spec`. A component file must use `spec`, and an inline canvas chart must not.

@@ -6,7 +6,7 @@ sidebar_position: 15
 
 Custom viz components are reusable visualizations defined as standalone `type: component` files. A component declares typed **params** and renders a [custom chart](/reference/project-files/component) built from a Metrics SQL query and a chart spec. Canvas dashboards reference the component by name and bind values to its params, so one visualization can be reused across many dashboards with different metrics views, measures, and dimensions.
 
-Charts are described with [Flint](https://microsoft.github.io/flint-chart/), a chart compiler: you state the chart type and which field goes on which channel, and Flint derives the scales, axes, number formats, sorting, stacking, colors, and layout. Rill supplies the semantics of each field from your metrics view — a currency measure formats as currency, the time dimension is treated as temporal at the dashboard's grain — so the spec stays short and the same component adapts when it is bound to a different metrics view.
+Charts are described declaratively: you state the chart type and which field goes on which channel, and Rill derives the scales, axes, number formats, sorting, stacking, colors, and layout. Rill supplies the semantics of each field from your metrics view — a currency measure formats as currency, the time dimension is treated as temporal at the dashboard's grain — so the spec stays short and the same component adapts when it is bound to a different metrics view.
 
 Unlike an inline `custom_chart` widget, a custom viz lives in its own file (conventionally under `viz_library/`), has a declared parameter contract that Rill validates, and can be developed in a dedicated editor with a live preview.
 
@@ -42,7 +42,7 @@ custom_chart:
       y: { field: "{{ .params.measure }}" }
 ```
 
-There is no schema, sizing, mark, or encoding type to write: `chartType` and `encodings` are the whole spec. An encoding accepts only `field`, `type`, `aggregate`, `sortOrder`, `sortBy`, and `scheme` — and `type` and `aggregate` are rarely needed, since Rill already tells Flint that measures are quantitative and pre-aggregated. Presentation tuning that a chart type exposes (`innerRadius`, `stackMode`, `interpolate`, …) goes under an optional `chartProperties` mapping.
+There is no schema, sizing, mark, or encoding type to write: `chartType` and `encodings` are the whole spec. An encoding accepts only `field`, `type`, `aggregate`, `sortOrder`, `sortBy`, and `scheme` — and `type` and `aggregate` are rarely needed, since Rill already knows that measures are quantitative and pre-aggregated. Presentation tuning that a chart type exposes (`innerRadius`, `stackMode`, `interpolate`, …) goes under an optional `chartProperties` mapping.
 
 The component editor shows a live preview. Use the **Test values** panel to bind preview-only values to the params; dashboards set their own values. The **Used by** panel lists every dashboard referencing the component.
 
@@ -87,6 +87,8 @@ rows:
 
 Bindings are validated when the canvas reconciles: unknown params, missing required params, and fields that don't exist in the bound metrics view are reported as errors on the dashboard. Canvas-level time and dimension filters apply to custom viz like any other widget.
 
+A time dimension selected by the `metrics_sql` is bucketed at the dashboard's time grain, so a time series re-buckets when the time controls change, just like a native chart. Write `date_trunc('<grain>', <field>) AS <field>` in the query only when a chart should stay at one fixed bucket regardless of the dashboard; the alias is required, or the column comes out named after the expression and the encodings can no longer reference it. The component editor's preview has no time controls to inherit from and renders at day grain.
+
 ## Starting from a chart type
 
 **Add → Custom viz** opens a gallery of every chart type Rill can render, grouped by family (bars, lines and areas, distributions, circular, points, tables and maps) and labelled with the fields each one needs — for example a heatmap needs two categorical fields and a measure. Picking one writes a component with a required `metrics_view` param, one typed param per channel named after its chart role (`x_axis`, `color`, …), a templated `metrics_sql`, and a row limit sized to the chart's visual density.
@@ -97,7 +99,7 @@ When the AI assistant is enabled, the chart type is handed to it instead, and it
 
 A component issues exactly one Metrics SQL query, so charts that layer several datasets cannot be expressed. Cross-row derivations (running totals, rankings, per-group offsets) are not available in Metrics SQL either — use a chart type that computes them, such as `Waterfall Chart`, `Bump Chart`, or `ECDF Plot`.
 
-Flint drops rows that overflow what an axis can legibly fit and reports it above the chart, so a row limit set far above a chart's density silently truncates rather than crowds.
+Rows that overflow what an axis can legibly fit are dropped and reported above the chart, so a row limit set far above a chart's density silently truncates rather than crowds.
 
 Inline `custom_chart` widgets inside a canvas are a separate, Vega-Lite-based widget and continue to use `vega_spec`. A component file must use `spec`.
 

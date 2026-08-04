@@ -322,8 +322,8 @@ _[object]_ - (no description)
 
 ### `custom_chart`
 
-_[object]_ - A custom visualization: a Metrics SQL query plus a Flint chart spec describing how to draw it.
-Flint derives scales, axes, formats, sorting, stacking and layout from the data and from the
+_[object]_ - A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
+Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
 metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
 
 
@@ -334,7 +334,7 @@ metrics view's semantics, so the spec only states the chart type and which field
 
   - **`spec`** - _[object]_ - (no description)
 
-    - **`chartType`** - _[string]_ - The Flint chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+    - **`chartType`** - _[string]_ - The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
 
     - **`encodings`** - _[object]_ - Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
     to a field. Each value is either a field name or an encoding object.

@@ -102,11 +102,14 @@ const SOURCE_URL = "https://github.com/microsoft/flint-chart";
 
 type Role = "measure" | "dimension" | "time_dimension";
 
-/**
- * Chart types excluded because Rill never derives the semantics they need: our metrics view mapping
- * emits Category for every non-temporal dimension, so geographic channels would silently degrade.
- */
-const EXCLUDED_CHART_TYPES = new Set(["Map", "Choropleth"]);
+/** Chart types kept out of the gallery, each with the reason reported in the skip log. */
+const EXCLUDED_CHART_TYPES = new Map([
+  // Rill never derives the semantics these need: our metrics view mapping emits Category for every
+  // non-temporal dimension, so geographic channels would silently degrade.
+  ["Map", "needs semantics Rill never derives"],
+  ["Choropleth", "needs semantics Rill never derives"],
+  ["KPI Card", "Rill has a native KPI widget"],
+]);
 
 /** Semantic types Rill cannot produce; any example using one is skipped. */
 const UNSUPPORTED_SEMANTIC_TYPES = new Set(["Latitude", "Longitude"]);
@@ -441,8 +444,8 @@ async function main() {
     }
   }
 
-  for (const chartType of EXCLUDED_CHART_TYPES) {
-    skipped.push(`${chartType} — excluded: needs semantics Rill never derives`);
+  for (const [chartType, reason] of EXCLUDED_CHART_TYPES) {
+    skipped.push(`${chartType} — excluded: ${reason}`);
   }
 
   for (const [chartType, forChartType] of candidates) {
