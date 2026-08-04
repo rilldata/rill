@@ -36,7 +36,7 @@
   let sizeClass = $derived(ClassForSize[size]);
 
   let outlineClass = $derived(
-    noOutline ? "" : "border rounded-[2px] shadow-xs bg-white",
+    noOutline ? "" : "border rounded-[2px] shadow-xs",
   );
 </script>
 
