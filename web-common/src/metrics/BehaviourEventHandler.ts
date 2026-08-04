@@ -99,6 +99,13 @@ export class BehaviourEventHandler {
     ]);
   }
 
+  public fireGithubStarEvent(action: BehaviourEventAction) {
+    return this.metricsService.dispatch("githubStarEvent", [
+      this.commonUserMetrics,
+      action,
+    ]);
+  }
+
   public fireGithubIntentEvent(
     action: BehaviourEventAction,
     githubFields?: GithubEventFields,

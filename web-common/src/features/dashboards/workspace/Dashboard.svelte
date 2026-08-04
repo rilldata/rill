@@ -12,8 +12,9 @@
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { onDestroy } from "svelte";
-  import { readable, type Readable } from "svelte/store";
+  import { githubStarNudge } from "@rilldata/web-common/features/github-star/github-star.svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { get, readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { useRuntimeClient } from "../../../runtime-client/v2";
@@ -57,9 +58,18 @@
     dashboardStore,
   } = StateManagers;
 
-  const { cloudDataViewer, readOnly } = featureFlags;
+  const { adminServer, cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
+
+  onMount(() => {
+    // A rendered dashboard is the payoff moment that arms the GitHub star nudge.
+    // The nudge is Rill Developer only, so Cloud and embeds must not even arm it:
+    // web-admin sets adminServer synchronously during root layout init, and embeds
+    // reset it to false, hence both checks. `adminServer` is read once here rather
+    // than tracked, since a dashboard never moves between Cloud and Developer.
+    if (!isEmbedded && !get(adminServer)) githubStarNudge.armPayoff();
+  });
 
   let exploreContainerWidth: number;
   let exploreContainerHeight: number;
