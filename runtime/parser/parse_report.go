@@ -115,24 +115,19 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// Determine if using new data resolver or legacy query
+	// Determine if using new data resolver or legacy query.
+	// If neither is set, the resolver stays empty, which is only allowed for dashboard-render reports (export format "pdf").
 	var resolver string
 	var resolverProps *structpb.Struct
-	isLegacyQuery := tmp.Data == nil
 
-	if !isLegacyQuery {
+	if tmp.Data != nil {
 		var refs []ResourceName
 		resolver, resolverProps, refs, err = p.parseDataYAML(node.Paths, tmp.Data, node.Connector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
-	} else {
-		// Query name
-		if tmp.Query.Name == "" {
-			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
-		}
-
+	} else if tmp.Query.Name != "" {
 		// Query args
 		if tmp.Query.ArgsJSON != "" {
 			// Validate JSON
@@ -169,6 +164,19 @@ func (p *Parser) parseReport(node *Node) error {
 	}
 	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED && (resolver == "legacy_metrics" || resolver == "sql" || resolver == "metrics") {
 		return fmt.Errorf(`missing required property "export.format"`)
+	}
+
+	// Reports with export format "pdf" are rendered from a dashboard in the browser instead of executing a query;
+	// they must reference a canvas and must not have a query or data resolver.
+	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+		if resolver != "" {
+			return fmt.Errorf(`export format "pdf" does not support "data" or "query" properties`)
+		}
+		if tmp.Annotations["canvas"] == "" {
+			return fmt.Errorf(`export format "pdf" requires the "canvas" annotation`)
+		}
+	} else if resolver == "" {
+		return fmt.Errorf(`missing required property "data" or "query.name"`)
 	}
 
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
@@ -290,6 +298,8 @@ func parseExportFormat(s string) (runtimev1.ExportFormat, error) {
 		return runtimev1.ExportFormat_EXPORT_FORMAT_XLSX, nil
 	case "parquet":
 		return runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET, nil
+	case "pdf":
+		return runtimev1.ExportFormat_EXPORT_FORMAT_PDF, nil
 	default:
 		if val, ok := runtimev1.ExportFormat_value[s]; ok {
 			return runtimev1.ExportFormat(val), nil

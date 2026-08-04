@@ -18561,6 +18561,14 @@ export class ReportOptions extends Message<ReportOptions> {
   canvas = "";
 
   /**
+   * Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+   * Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+   *
+   * @generated from field: map<string, rill.runtime.v1.Expression> metrics_view_filters = 23;
+   */
+  metricsViewFilters: { [key: string]: Expression } = {};
+
+  /**
    * web_open_mode is used to determine how to create or disable open link for the report
    * - send "recipient" for reports that should be opened with recipient's permissions - requires login
    * - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
@@ -18597,6 +18605,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "metrics_view_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 18, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

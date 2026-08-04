@@ -3736,6 +3736,9 @@ message ReportOptions {
   string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
   string explore = 16; // either canvas or explore should be set
   string canvas = 17;
+  // Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+  // Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+  map<string, rill.runtime.v1.Expression> metrics_view_filters = 23;
   /* web_open_mode is used to determine how to create or disable open link for the report
     - send "recipient" for reports that should be opened with recipient's permissions - requires login
     - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required

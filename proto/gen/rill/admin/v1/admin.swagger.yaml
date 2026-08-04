@@ -5430,6 +5430,7 @@ definitions:
       - EXPORT_FORMAT_CSV
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
+      - EXPORT_FORMAT_PDF
     default: EXPORT_FORMAT_UNSPECIFIED
   v1Expression:
     type: object
@@ -6728,6 +6729,13 @@ definitions:
         title: either canvas or explore should be set
       canvas:
         type: string
+      metricsViewFilters:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
+        description: |-
+          Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+          Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
       webOpenMode:
         type: string
         title: |-

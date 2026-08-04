@@ -646,6 +646,7 @@ components:
                 - EXPORT_FORMAT_CSV
                 - EXPORT_FORMAT_XLSX
                 - EXPORT_FORMAT_PARQUET
+                - EXPORT_FORMAT_PDF
             type: string
         v1Expression:
             properties:
@@ -1873,6 +1874,13 @@ components:
                     type: string
                 intervalDuration:
                     type: string
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    description: |-
+                        Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+                        Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+                    type: object
                 queryArgsJson:
                     title: use resolver/resolver_properties instead
                     type: string

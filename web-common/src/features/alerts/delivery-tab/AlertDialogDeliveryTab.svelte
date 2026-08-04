@@ -9,6 +9,7 @@
   import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { SuperForm } from "sveltekit-superforms/client";
 
@@ -20,6 +21,10 @@
   $: ({ form, errors } = superFormInstance);
 
   $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
+
+  // Time zone options from the dashboard's spec
+  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
+  $: availableTimeZones = $exploreSpecQuery.data?.explore?.timeZones;
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -50,7 +55,7 @@
       </Button>
     </div>
     {#if !$form["refreshWhenDataRefreshes"]}
-      <ScheduleForm data={form} {exploreName} />
+      <ScheduleForm data={form} {availableTimeZones} />
     {/if}
   </FormSection>
 

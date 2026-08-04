@@ -31,6 +31,9 @@ export interface ExportCanvasPdfOptions {
   includeFilters: boolean;
   allTabs: boolean;
   timeoutMs?: number;
+  // URL printed in the PDF footer. Defaults to the current page URL; override it
+  // when the current URL should not be shared (e.g. it carries an auth token).
+  dashboardUrl?: string;
   onProgress?: (progress: ExportProgress) => void;
 }
 

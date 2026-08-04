@@ -2955,6 +2955,7 @@ definitions:
                   - csv
                   - xlsx
                   - parquet
+                  - pdf
                 description: Export file format
               include_header:
                 type: boolean
