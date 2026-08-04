@@ -39,7 +39,8 @@ export class CanvasConfigProvider extends YAMLConfigProvider {
       canvas: canvasName,
     });
     this.cleanup = resolveCanvasQuery.subscribe((resolveCanvasResp) => {
-      const canvasSpec = resolveCanvasResp.data?.canvas ?? {};
+      const canvasSpec =
+        resolveCanvasResp.data?.canvas?.canvas?.state?.validSpec ?? {};
 
       this.defaultFilters = Object.fromEntries(
         Object.entries(canvasSpec.defaultPreset?.filterExpr ?? {}).map(

@@ -54,13 +54,12 @@ import {
   get,
   writable,
 } from "svelte/store";
-import type { FilterManager } from "../../stores/filter-manager";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 interface PivotClickToFilterArgs {
   pivotConfig: Readable<PivotDataStoreConfig>;
   pivotDataStore: PivotDataStore;
-  filterManager: FilterManager;
-  metricsViewName: string;
+  filterManager: ExpressionFilterManager;
   componentId: string;
   activeComponent: Readable<string | null>;
   selfFilteredDimensions: Writable<Set<string>>;
@@ -89,7 +88,6 @@ export function createPivotClickToFilter(
     pivotConfig,
     pivotDataStore,
     filterManager,
-    metricsViewName,
     componentId,
     activeComponent,
     selfFilteredDimensions,
@@ -248,7 +246,7 @@ export function createPivotClickToFilter(
 
   /**
    * Shared skeleton for all filter updates: clones selection state, applies
-   * removals and additions to the FilterManager, updates stores, and syncs URL.
+   * removals and additions to the filter manager, and updates the stores.
    */
   function applyFilterUpdate(opts: {
     removals: ExtractedFilter[];
@@ -264,8 +262,6 @@ export function createPivotClickToFilter(
     if (allDimFilters.length === 0) return;
 
     const preExistingDims = getActiveDimensionNames(get(whereFilterStore));
-    const filterClass = filterManager.metricsViewFilters.get(metricsViewName);
-    if (!filterClass) return;
 
     // Clone and update selection sets
     const $clickSelection = get(clickSelectionStore);
@@ -273,13 +269,6 @@ export function createPivotClickToFilter(
     const updatedCells = new Map($clickSelection.cellSelections);
     const updatedColHeaders = new Set($clickSelection.columnHeaderSelections);
     updateSelectionSets(updatedRowHeaders, updatedCells, updatedColHeaders);
-
-    // Clear temporary filter status for all affected dimensions
-    allDimFilters.forEach(({ dimensionName }) => {
-      filterManager.checkTemporaryFilter(dimensionName, [metricsViewName]);
-    });
-
-    let filterString: string | null = null;
 
     // Remove orphaned values
     if (removals.length > 0) {
@@ -295,22 +284,8 @@ export function createPivotClickToFilter(
           ? values.filter((v) => !stillNeeded.has(v))
           : values;
         if (orphanedValues.length > 0) {
-          filterString = filterClass.toggleDimensionValueSelections(
-            dimensionName,
-            orphanedValues,
-            false,
-            false,
-          );
-        }
-      }
-
-      // If no orphans were found (all values still retained by other
-      // selections), get the current filter string for URL sync.
-      if (filterString === null && additions.length === 0) {
-        for (const { dimensionName } of removals) {
-          filterString = filterClass.addDimensionValueSelections(
-            dimensionName,
-            [],
+          filterManager.dimensionFilterAction(dimensionName, (dfm) =>
+            dfm.removeSelectedValues(orphanedValues as string[]),
           );
         }
       }
@@ -318,9 +293,8 @@ export function createPivotClickToFilter(
 
     // Add new values
     for (const { dimensionName, values } of additions) {
-      filterString = filterClass.addDimensionValueSelections(
-        dimensionName,
-        values,
+      filterManager.dimensionFilterAction(dimensionName, (dfm) =>
+        dfm.appendSelectedValues(values as string[]),
       );
     }
 
@@ -341,12 +315,6 @@ export function createPivotClickToFilter(
     });
     if (wasInactive && get(selfFilteredDimensions).size > 0) {
       onBecomeActive?.();
-    }
-
-    if (filterString !== null) {
-      filterManager.applyFiltersToUrl(
-        new Map([[metricsViewName, filterString]]),
-      );
     }
   }
 

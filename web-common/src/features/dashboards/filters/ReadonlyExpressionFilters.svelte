@@ -16,6 +16,7 @@
     hasBoldTimeRange = true,
     chipLayout = "wrap",
     ariaLabel = m.dashboard_readonly_filter_chips_aria(),
+    showPinned = false,
   }: {
     expressionFilterManager: ExpressionFilterManager;
     displayTimeRange?: V1TimeRange | undefined;
@@ -25,19 +26,19 @@
     hasBoldTimeRange?: boolean;
     chipLayout?: "wrap" | "scroll" | "col";
     ariaLabel?: string | undefined;
+    showPinned?: boolean;
   } = $props();
 
   let scrollContainer: HTMLDivElement;
 
-  // Readonly filters sections do not care about empty temporary, pinned or required filters.
   let nonEmptyDimensionManagers = $derived(
     expressionFilterManager.filterManagers.dimensions.filter(
-      (dimensionManager) => !!dimensionManager.expr,
+      (dimensionManager) => showPinned || !!dimensionManager.expr,
     ),
   );
   let nonEmptyMeasureManager = $derived(
     expressionFilterManager.filterManagers.measures.filter(
-      (measureManager) => !!measureManager.expr,
+      (measureManager) => showPinned || !!measureManager.expr,
     ),
   );
 
@@ -74,6 +75,7 @@
         yamlConfigProvider={expressionFilterManager.yamlConfigProvider}
         timeStart={queryTimeStart}
         timeEnd={queryTimeEnd}
+        {showPinned}
       />
     </div>
   {/each}
@@ -83,6 +85,7 @@
       <ReadonlyMeasureFilter
         {measureManager}
         yamlConfigProvider={expressionFilterManager.yamlConfigProvider}
+        {showPinned}
       />
     </div>
   {/each}

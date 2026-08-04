@@ -18,12 +18,14 @@
     yamlConfigProvider,
     openOnMount = true,
     allDimensions,
+    removable = true,
     side = "bottom",
   }: {
     measureManager: MeasureFilterManager;
     yamlConfigProvider: YAMLConfigProvider;
     openOnMount?: boolean;
     allDimensions: MetricsViewSpecDimension[];
+    removable?: boolean;
     side?: "top" | "right" | "bottom" | "left";
   } = $props();
 
@@ -100,7 +102,7 @@
           error={!!missingRequired}
           theme
           onRemove={() => measureManager.clear()}
-          removable={!pinned && !required}
+          removable={removable && !pinned && !required}
           removeTooltipText={m.dashboard_remove_label({
             label: measureManager.label,
           })}

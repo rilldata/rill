@@ -8,16 +8,22 @@
   let {
     measureManager,
     yamlConfigProvider,
+    showPinned,
   }: {
     measureManager: MeasureFilterManager;
     yamlConfigProvider: YAMLConfigProvider;
+    showPinned: boolean;
   } = $props();
 
   let pinned = $derived(
-    Boolean(yamlConfigProvider.pinnedFilters[measureManager.name]),
+    Boolean(
+      showPinned && yamlConfigProvider.pinnedFilters[measureManager.name],
+    ),
   );
   let required = $derived(
-    Boolean(yamlConfigProvider.requiredFilters[measureManager.name]),
+    Boolean(
+      showPinned && yamlConfigProvider.requiredFilters[measureManager.name],
+    ),
   );
   let missingRequired = $derived(required && !measureManager.expr);
 

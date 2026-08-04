@@ -5,6 +5,7 @@ import type {
   V1GetResourceResponse,
   V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
+  V1Resource,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { afterAll, beforeAll, vi } from "vitest";
@@ -12,6 +13,9 @@ import { asyncWait } from "../../lib/waitUtils";
 
 export class DashboardFetchMocks {
   private responses = new Map<string, any>();
+  // Every resource mocked so far, keyed by name. GetResource serves one of these,
+  // ListResources serves all of them.
+  private resources = new Map<string, V1Resource>();
   private aggregationRequestMocks: {
     regex: RegExp;
     response: V1MetricsViewAggregationResponse;
@@ -32,20 +36,22 @@ export class DashboardFetchMocks {
   }
 
   public mockMetricsView(name: string, resp: V1MetricsViewSpec) {
-    this.responses.set(`resource__${name}`, {
-      resource: {
-        meta: {
-          name: {
-            kind: ResourceKind.MetricsView,
-            name,
-          },
-        },
-        metricsView: {
-          state: {
-            validSpec: resp,
-          },
+    const resource: V1Resource = {
+      meta: {
+        name: {
+          kind: ResourceKind.MetricsView,
+          name,
         },
       },
+      metricsView: {
+        state: {
+          validSpec: resp,
+        },
+      },
+    };
+    this.resources.set(name, resource);
+    this.responses.set(`resource__${name}`, {
+      resource,
     } as V1GetResourceResponse);
   }
 
@@ -201,6 +207,11 @@ export class DashboardFetchMocks {
     } else if (service === "RuntimeService" && method === "GetResource") {
       const name = parsed.name?.name;
       responseData = this.responses.get(`resource__${name}`);
+    } else if (service === "RuntimeService" && method === "ListResources") {
+      const resources = [...this.resources.values()].filter(
+        (resource) => !parsed.kind || resource.meta?.name?.kind === parsed.kind,
+      );
+      responseData = { resources };
     } else if (
       service === "QueryService" &&
       method === "MetricsViewTimeRange"

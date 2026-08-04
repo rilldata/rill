@@ -126,7 +126,6 @@ export class CanvasEntity {
   // This may sometimes be false due to discrepancy between two different ways
   // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
   defaultUrlParamsStore = writable<URLSearchParams>(new URLSearchParams());
-  viewingDefaultsStore: Readable<boolean>;
   filtersEnabledStore = writable<boolean>(true);
   _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
   _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
@@ -223,59 +222,6 @@ export class CanvasEntity {
     this.expressionFilterManager = new ExpressionFilterManager(
       this.metricsViewsProvider,
       this.yamlConfigProvider,
-    );
-
-    this.viewingDefaultsStore = derived(
-      [
-        this.searchParams,
-        this.defaultUrlParamsStore,
-        this.filterManager.pinnedFilterKeysStore,
-        this.filterManager.defaultPinnedFilterKeysStore,
-        this.filterManager.requiredFilterKeysStore,
-        this.filterManager.defaultRequiredFilterKeysStore,
-      ],
-      ([
-        $searchParams,
-        $defaultUrlParams,
-        pinnedFilters,
-        defaultPinnedFilterKeys,
-        requiredFilters,
-        defaultRequiredFilterKeys,
-      ]) => {
-        if (
-          defaultPinnedFilterKeys.symmetricDifference(pinnedFilters).size > 0
-        ) {
-          return false;
-        }
-        if (
-          defaultRequiredFilterKeys.symmetricDifference(requiredFilters).size >
-          0
-        ) {
-          return false;
-        }
-        if ($defaultUrlParams.size === 0) {
-          return false;
-        }
-
-        for (const [key, value] of $defaultUrlParams.entries()) {
-          if ($searchParams.get(key) !== value) {
-            // Ignore time range if not set
-            if (
-              $searchParams.get(key) === null &&
-              key === ExploreStateURLParams.TimeRange
-            ) {
-              continue;
-            }
-            return false;
-          }
-        }
-        for (const [key, value] of $searchParams.entries()) {
-          if ($defaultUrlParams.get(key) !== value) {
-            return false;
-          }
-        }
-        return true;
-      },
     );
   }
 

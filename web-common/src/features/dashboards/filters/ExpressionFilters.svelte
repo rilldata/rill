@@ -82,8 +82,6 @@
   );
 </script>
 
-<!-- TODO: complex filters -->
-
 <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
     {#if !hasFilters}

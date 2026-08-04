@@ -17,12 +17,14 @@
     yamlConfigProvider,
     timeStart,
     timeEnd,
+    showPinned,
   }: {
     manager: ExpressionFilterManager;
     dimensionManager: DimensionFilterManager;
     yamlConfigProvider: YAMLConfigProvider;
     timeStart: string | undefined;
     timeEnd: string | undefined;
+    showPinned: boolean;
   } = $props();
 
   let effectiveLabel = $derived(
@@ -32,10 +34,14 @@
   );
 
   let pinned = $derived(
-    Boolean(yamlConfigProvider.pinnedFilters[dimensionManager.name]),
+    Boolean(
+      showPinned && yamlConfigProvider.pinnedFilters[dimensionManager.name],
+    ),
   );
   let required = $derived(
-    Boolean(yamlConfigProvider.requiredFilters[dimensionManager.name]),
+    Boolean(
+      showPinned && yamlConfigProvider.requiredFilters[dimensionManager.name],
+    ),
   );
   let missingRequired = $derived(Boolean(required && !dimensionManager.expr));
 

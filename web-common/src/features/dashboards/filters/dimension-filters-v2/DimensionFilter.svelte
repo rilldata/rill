@@ -38,11 +38,12 @@
     dimensionManager,
     yamlConfigProvider,
     openOnMount = true,
-    timeStart,
-    timeEnd,
+    timeStart = undefined,
+    timeEnd = undefined,
     timeDimension = undefined,
     timeControlsReady,
     smallChip = false,
+    removable = true,
     side = "bottom",
     isUrlTooLongAfterInListFilter = () => false,
   }: {
@@ -50,11 +51,12 @@
     dimensionManager: DimensionFilterManager;
     yamlConfigProvider: YAMLConfigProvider;
     openOnMount?: boolean;
-    timeStart: string | undefined;
-    timeEnd: string | undefined;
+    timeStart?: string | undefined;
+    timeEnd?: string | undefined;
     timeDimension?: string | undefined;
     timeControlsReady: boolean | undefined;
     smallChip?: boolean;
+    removable?: boolean;
     side?: "top" | "right" | "bottom" | "left";
     isUrlTooLongAfterInListFilter?: (values: string[]) => boolean;
   } = $props();
@@ -363,7 +365,7 @@
           label={`${dimensionManager.name} filter`}
           theme
           onRemove={() => dimensionManager.clear()}
-          removable={!pinned && !required}
+          removable={removable && !pinned && !required}
           removeTooltipText="remove {dimensionManager.selectedValues
             .length} value{dimensionManager.selectedValues.length !== 1
             ? 's'

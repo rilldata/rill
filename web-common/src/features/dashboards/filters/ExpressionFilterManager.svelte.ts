@@ -18,6 +18,7 @@ import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/f
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import { writable, type Writable } from "svelte/store";
 
 type FilterManager = MeasureFilterManager | DimensionFilterManager;
 type ParsedUrlParamsByMV = Record<
@@ -34,14 +35,17 @@ type ParsedUrlParamsByMV = Record<
  * from the filter menu, and the ones created by a chart interaction.
  */
 export class ExpressionFilterManager {
-  /** Filter param the managers are derived from. */
+  // Filter param the managers are derived from.
   public exprParam: string = $state("");
-  /** Name of the filter added from the filter menu. Its chip opens as soon as it is rendered. */
+  // Name of the filter added from the filter menu. Its chip opens as soon as it is rendered.
   public temporaryFilterName: string | undefined = $state(undefined);
 
-  /** True when the param cannot be represented as chips. */
+  // True when the param cannot be represented as chips.
   public isComplexFilter: boolean;
   public exprByMetricsView: Record<string, V1Expression>;
+  // Temporary svelte4 store for legacy components
+  public exprByMetricsViewStore: Writable<Record<string, V1Expression>> =
+    writable({});
   public hasSomeFilter: boolean;
 
   public filterManagers: {
@@ -50,6 +54,7 @@ export class ExpressionFilterManager {
   };
   public readonly filterManagersMap: Record<string, FilterManager>;
 
+  // Raw parsed expression from url params. Validated expression is stored in exprByMetricsView.
   private prevUrlParams = $state("");
   private parsedUrlParams = $state<ParsedUrlParamsByMV>({});
 
@@ -77,6 +82,10 @@ export class ExpressionFilterManager {
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
     );
+
+    $effect(() => {
+      this.exprByMetricsViewStore.set(this.exprByMetricsView);
+    });
   }
 
   public setUrlParams = (searchParams: URLSearchParams) => {
@@ -107,14 +116,22 @@ export class ExpressionFilterManager {
   };
 
   public setExprForMetricsView(mvName: string, expr: V1Expression | undefined) {
+    const prevURLSearch = new URLSearchParams(this.prevUrlParams);
+
     const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
     const filterParam = expr ? convertExpressionToFilterParam(expr) : "";
-    this.setUrlParams(new URLSearchParams(`${paramKey}=${filterParam}`));
+    prevURLSearch.set(paramKey, filterParam);
+
+    this.setUrlParams(prevURLSearch);
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
+    const prevURLSearch = new URLSearchParams(this.prevUrlParams);
+
     const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
-    this.setUrlParams(new URLSearchParams(`${paramKey}=${param}`));
+    prevURLSearch.set(paramKey, param);
+
+    this.setUrlParams(prevURLSearch);
   }
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
@@ -179,6 +196,40 @@ export class ExpressionFilterManager {
     );
   }
 
+  public createDimensionOrMeasureManagerForName(name: string) {
+    return (
+      this.createDimensionFilterManager(name) ??
+      this.createMeasureFilterManager(name)
+    );
+  }
+
+  public createDimensionOrMeasureManagerForExpr(
+    expr: V1Expression,
+    dimensionsWithInlistFilter: string[] = [],
+  ) {
+    const ident = expr?.cond?.exprs?.[0]?.ident ?? "";
+    // Both filter types are keyed off a dimension: a dimension filter by the dimension it filters
+    // and a measure filter by the dimension its subquery groups by.
+    if (!this.metricsViewsProvider.dimensionSpecs[ident]) return undefined;
+
+    const firstValueExpr = expr?.cond?.exprs?.[1];
+
+    if (firstValueExpr?.subquery) {
+      // Having a subquery means this is a measure filter.
+      const measureName = firstValueExpr.subquery.measures?.[0];
+      if (!measureName) return undefined;
+
+      return this.createMeasureFilterManager(measureName, firstValueExpr);
+    } else {
+      // Everything else is a dimension filter for now.
+      return this.createDimensionFilterManager(
+        ident,
+        expr,
+        dimensionsWithInlistFilter.includes(ident),
+      );
+    }
+  }
+
   /** Managers for the filters in the param, keyed by name and in param order. */
   private buildParamFilterManagers() {
     const measuresMap = new Map<string, MeasureFilterManager>();
@@ -192,32 +243,15 @@ export class ExpressionFilterManager {
         if (!expr) return;
 
         forEachIdentifier(expr, (e, ident) => {
-          // Both filter types are keyed off a dimension: a dimension filter by the dimension it filters
-          // and a measure filter by the dimension its subquery groups by.
-          if (!this.metricsViewsProvider.dimensionSpecs[ident]) return;
-
-          const firstValueExpr = e?.cond?.exprs?.[1];
-
-          if (firstValueExpr?.subquery) {
-            // Having a subquery means this is a measure filter.
-            const measureName = firstValueExpr.subquery.measures?.[0];
-            if (!measureName) return;
-
-            const measureFilterManager = this.createMeasureFilterManager(
-              measureName,
-              firstValueExpr,
-            );
-            if (measureFilterManager)
-              measuresMap.set(measureName, measureFilterManager);
-          } else {
-            // Everything else is a dimension filter for now.
-            const dimensionFilterManager = this.createDimensionFilterManager(
-              ident,
-              e,
-              dimensionsWithInlistFilter.includes(ident),
-            );
-            if (dimensionFilterManager)
-              dimensionsMap.set(ident, dimensionFilterManager);
+          const manager = this.createDimensionOrMeasureManagerForExpr(
+            e,
+            dimensionsWithInlistFilter,
+          );
+          if (!manager) return;
+          if (manager instanceof DimensionFilterManager) {
+            dimensionsMap.set(ident, manager);
+          } else if (manager instanceof MeasureFilterManager) {
+            measuresMap.set(ident, manager);
           }
         });
       },
@@ -247,8 +281,7 @@ export class ExpressionFilterManager {
       const filterManager =
         dimensionsMap.get(name) ??
         measuresMap.get(name) ??
-        this.createDimensionFilterManager(name) ??
-        this.createMeasureFilterManager(name);
+        this.createDimensionOrMeasureManagerForName(name);
       if (!filterManager) return;
 
       added.add(name);
