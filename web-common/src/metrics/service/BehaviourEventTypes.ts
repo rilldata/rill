@@ -72,6 +72,11 @@ export interface BehaviourEvent
   screen_name: MetricsEventScreenName;
   source_screen: MetricsEventScreenName;
   count: number;
+  // The resource the page is showing, e.g. "explore" and the name of the explore dashboard.
+  // Sent unhashed, unlike `entity_id`, because these identify a deployed cloud resource that the
+  // page URL already names in plain text.
+  resource_type: string;
+  resource_name: string;
 }
 
 export interface AddDataBehaviourEventFields {

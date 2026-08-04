@@ -25,10 +25,16 @@ export class BehaviourEventHandler {
     this.commonUserMetrics = commonUserMetrics;
   }
 
-  public firePageViewEvent(screen_name: MetricsEventScreenName) {
+  public firePageViewEvent(
+    screen_name: MetricsEventScreenName,
+    resource_type: string,
+    resource_name: string,
+  ) {
     return this.metricsService.dispatch("pageViewEvent", [
       this.commonUserMetrics,
       screen_name,
+      resource_type,
+      resource_name,
     ]);
   }
 

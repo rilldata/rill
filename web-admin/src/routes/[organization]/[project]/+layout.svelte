@@ -29,6 +29,7 @@
     getAdminServiceListDeploymentsQueryKey,
   } from "@rilldata/web-admin/client";
   import {
+    getResourceFromPage,
     getScreenNameFromPage,
     isEditPage,
     isProjectInvitePage,
@@ -254,15 +255,24 @@
   // Fire a page view for every dashboard, canvas and project page the user opens.
   // This runs off `page` rather than `afterNavigate` because the first page view has to wait for the
   // current user query above to resolve, which happens after the initial navigation has completed.
-  // Only the path is tracked: the query string changes on every filter and time range tweak, which
-  // would turn page views into an interaction firehose.
-  let lastTrackedPath: string | undefined;
+  //
+  // Views are deduped on the path plus the explore view mode. The view mode is a query param rather
+  // than a path segment, so keying on the path alone would never record a user switching to pivot or
+  // time dimension detail. The rest of the query string is deliberately excluded: filters, time range
+  // and sort change on nearly every interaction, and keying on them would emit an event per click.
+  let lastTrackedView: string | undefined;
   $effect(() => {
-    const path = page.url.pathname;
+    const trackedView = `${page.url.pathname}?view=${page.url.searchParams.get("view") ?? ""}`;
     // Events are dropped until loadCloudFields has run, so wait on the same inputs it needs.
-    if (!project || !$user.data?.user?.id || path === lastTrackedPath) return;
-    lastTrackedPath = path;
-    void behaviourEvent?.firePageViewEvent(getScreenNameFromPage(page));
+    if (!project || !$user.data?.user?.id || trackedView === lastTrackedView)
+      return;
+    lastTrackedView = trackedView;
+    const resource = getResourceFromPage(page);
+    void behaviourEvent?.firePageViewEvent(
+      getScreenNameFromPage(page),
+      resource.type,
+      resource.name,
+    );
   });
 </script>
 

@@ -15,12 +15,12 @@ import {
 import type { SourceConnectionType, SourceFileType } from "./SourceEventTypes";
 
 export class BehaviourEventFactory extends MetricsEventFactory {
-  // The page the user landed on is carried by the base event's `page_url`, so the screen name is
-  // all this needs on top of it.
   public pageViewEvent(
     commonFields: CommonFields,
     commonUserFields: CommonUserFields,
     screen_name: MetricsEventScreenName,
+    resource_type: string,
+    resource_name: string,
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
@@ -30,6 +30,8 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     ) as BehaviourEvent;
     event.action = BehaviourEventAction.PageView;
     event.screen_name = screen_name;
+    event.resource_type = resource_type;
+    event.resource_name = resource_name;
     return event;
   }
 
