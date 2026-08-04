@@ -256,19 +256,11 @@ custom_chart:
     FROM {{ .params.metrics_view }}
     ORDER BY {{ .params.order_by }} DESC
     LIMIT {{ .params.limit }}
-  vega_spec: |
-    {
-      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-      "width": "container",
-      "height": "container",
-      "autosize": {"type": "fit"},
-      "data": {"name": "query1"},
-      "mark": "bar",
-      "encoding": {
-        "x": {"field": "{{ .params.dimension }}", "type": "nominal", "sort": "-y"},
-        "y": {"field": "{{ .params.measure }}", "type": "quantitative"}
-      }
-    }
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: { field: "{{ .params.dimension }}", sortBy: y, sortOrder: descending }
+      y: { field: "{{ .params.measure }}" }
 `;
     case ResourceKind.Canvas:
       return `# Explore YAML

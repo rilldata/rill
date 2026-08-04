@@ -27,7 +27,7 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors.ts";
   import { directoryState } from "../../file-explorer/directory-store.ts";
-  import VegaExamplesDialog from "@rilldata/web-common/features/custom-viz/examples/VegaExamplesDialog.svelte";
+  import ChartTypesDialog from "@rilldata/web-common/features/custom-viz/examples/ChartTypesDialog.svelte";
   import { createResourceAndNavigate } from "./new-files.ts";
   import AddAiConnectorDialog from "../../connectors/ai/AddAiConnectorDialog.svelte";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
@@ -47,7 +47,7 @@
   let showExploreDialog = false;
   let generateDataDialog = false;
   let showAiConnectorDialog = false;
-  let showVegaExamplesDialog = false;
+  let showChartTypesDialog = false;
   let addDataModalOpen = false;
   let addDataConnector = "";
   let addDataTargetResource: ResourceKind | undefined;
@@ -248,7 +248,7 @@
     {#if $customComponents}
       <DropdownMenu.Item
         class="flex gap-x-2 items-center"
-        onclick={() => (showVegaExamplesDialog = true)}
+        onclick={() => (showChartTypesDialog = true)}
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Component]}
@@ -339,7 +339,7 @@
 <GenerateSampleData type="modal" bind:open={generateDataDialog} />
 
 {#if $customComponents}
-  <VegaExamplesDialog bind:open={showVegaExamplesDialog} />
+  <ChartTypesDialog bind:open={showChartTypesDialog} />
 {/if}
 
 <AddDataModal

@@ -293,14 +293,20 @@ describe("substituteArgsRecursively", () => {
       substituteArgsRecursively(
         {
           metrics_sql: ["SELECT {{ .params.m }} FROM mv"],
-          vega_spec: '{"title": "{{ .params.m }}"}',
+          spec: {
+            chartType: "Bar Chart",
+            encodings: { y: { field: "{{ .params.m }}" } },
+          },
           count: 1,
         },
         { m: "total" },
       ),
     ).toEqual({
       metrics_sql: ["SELECT total FROM mv"],
-      vega_spec: '{"title": "total"}',
+      spec: {
+        chartType: "Bar Chart",
+        encodings: { y: { field: "total" } },
+      },
       count: 1,
     });
   });

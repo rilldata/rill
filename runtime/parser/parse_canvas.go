@@ -479,7 +479,7 @@ func (p *Parser) parseCanvasInlineComponent(canvasName, posKey string, props map
 		return "", nil, err
 	}
 
-	spec, refs, err := p.parseComponentYAML(tmp)
+	spec, refs, err := p.parseComponentYAML(tmp, true)
 	if err != nil {
 		return "", nil, err
 	}

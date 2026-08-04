@@ -76,8 +76,9 @@ type rendererValidator struct {
 // validateCustomChart validates properties for custom_chart.
 // It only rejects malformed values, not incomplete ones: the visual editor persists draft custom
 // charts with empty properties, so completeness is enforced at render time instead.
-// metrics_sql queries are validated at query time, and vega_spec is validated as JSON only when
-// it contains no template placeholders.
+// metrics_sql queries are validated at query time; vega_spec (inline canvas charts) is validated as
+// JSON only when it contains no template placeholders; spec (Flint, component files) is checked
+// structurally. Which of the two is permitted is enforced at parse time, not here.
 func validateCustomChart(props map[string]any) error {
 	if raw, ok := pathutil.GetPath(props, "metrics_sql"); ok {
 		switch v := raw.(type) {
@@ -102,6 +103,63 @@ func validateCustomChart(props map[string]any) error {
 		var m map[string]any
 		if err := json.Unmarshal([]byte(vegaSpec), &m); err != nil {
 			return fmt.Errorf("renderer property 'vega_spec' is not a valid JSON object: %w", err)
+		}
+	}
+
+	if raw, ok := props["spec"]; ok {
+		if err := validateFlintSpec(raw); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateFlintSpec structurally checks a Flint chart spec. It deliberately does not check chartType
+// against Flint's registry: the registry lives in the JS package, so the frontend validates that.
+func validateFlintSpec(raw any) error {
+	spec, ok := raw.(map[string]any)
+	if !ok {
+		return errors.New("renderer property 'spec' must be a mapping")
+	}
+
+	if v, ok := spec["chartType"]; ok {
+		s, ok := v.(string)
+		if !ok {
+			return errors.New("renderer property 'spec.chartType' must be a string")
+		}
+		if strings.TrimSpace(s) == "" {
+			return errors.New("renderer property 'spec.chartType' must not be empty")
+		}
+	}
+
+	raw, ok = spec["encodings"]
+	if !ok {
+		return nil
+	}
+	encodings, ok := raw.(map[string]any)
+	if !ok {
+		return errors.New("renderer property 'spec.encodings' must be a mapping")
+	}
+	for channel, raw := range encodings {
+		// A channel is either a field-name shorthand, an encoding object, or an array of either.
+		entries, ok := raw.([]any)
+		if !ok {
+			entries = []any{raw}
+		}
+		for _, entry := range entries {
+			switch e := entry.(type) {
+			case string:
+				// Field-name shorthand; nothing to check.
+			case map[string]any:
+				if v, ok := e["field"]; ok {
+					if _, ok := v.(string); !ok {
+						return fmt.Errorf("renderer property 'spec.encodings.%s.field' must be a string", channel)
+					}
+				}
+			default:
+				return fmt.Errorf("renderer property 'spec.encodings.%s' must be a field name or an encoding mapping", channel)
+			}
 		}
 	}
 

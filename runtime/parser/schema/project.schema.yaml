@@ -3192,9 +3192,83 @@ definitions:
             $ref: '#/definitions/markdown_properties'
           image:
             $ref: '#/definitions/image_properties'
+          custom_chart:
+            $ref: '#/definitions/custom_chart_properties'
         required:
           - type
         additionalProperties: false
+
+  # Custom Chart Properties (Flint)
+  custom_chart_properties:
+    type: object
+    description: |
+      A custom visualization: a Metrics SQL query plus a Flint chart spec describing how to draw it.
+      Flint derives scales, axes, formats, sorting, stacking and layout from the data and from the
+      metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+    properties:
+      metrics_sql:
+        type: string
+        description: |
+          Metrics SQL query selecting the dimensions and measures to plot, e.g.
+          `SELECT {{ .params.dim }}, {{ .params.measure }} FROM {{ .params.metrics_view }} LIMIT 10`.
+          Measures arrive pre-aggregated; do not wrap them in aggregate functions.
+      spec:
+        $ref: '#/definitions/flint_chart_spec'
+    additionalProperties: false
+
+  # Flint Chart Spec
+  flint_chart_spec:
+    type: object
+    properties:
+      chartType:
+        type: string
+        description: The Flint chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+      encodings:
+        type: object
+        description: |
+          Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+          to a field. Each value is either a field name or an encoding object.
+        additionalProperties:
+          oneOf:
+            - type: string
+            - $ref: '#/definitions/flint_chart_encoding'
+            - type: array
+              items:
+                oneOf:
+                  - type: string
+                  - $ref: '#/definitions/flint_chart_encoding'
+      chartProperties:
+        type: object
+        description: Per-chart-type presentation tuning, e.g. `innerRadius`, `stackMode`, `interpolate`.
+    additionalProperties: false
+
+  # Flint Chart Encoding
+  flint_chart_encoding:
+    type: object
+    properties:
+      field:
+        type: string
+        description: Name of the column to bind to this channel.
+      type:
+        type: string
+        enum: [quantitative, nominal, ordinal, temporal]
+        description: Overrides the type Flint derives from the field's semantics. Rarely needed.
+      aggregate:
+        type: string
+        enum: [count, sum, average, mean]
+        description: |
+          Aggregates rows within Flint. Rarely needed in Rill: measures selected from a metrics view
+          are already aggregated.
+      sortOrder:
+        type: string
+        enum: [ascending, descending]
+      sortBy:
+        type: string
+        description: Channel or field to sort this channel's values by, e.g. `y`.
+      scheme:
+        type: string
+        description: Color scheme name for the `color` channel, e.g. `viridis`, `tableau10`.
+    additionalProperties: false
 
   # Chart Properties
   chart_properties:

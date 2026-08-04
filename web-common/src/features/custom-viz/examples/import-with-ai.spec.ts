@@ -28,20 +28,40 @@ describe("missingRendererError", () => {
     expect(error).toContain('"renderer"');
   });
 
-  it("flags a custom_chart missing metrics_sql or vega_spec", () => {
-    expect(missingRendererError("custom_chart", { vega_spec: "{}" })).toContain(
-      "metrics_sql",
-    );
+  it("flags a custom_chart missing metrics_sql or spec", () => {
+    expect(
+      missingRendererError("custom_chart", {
+        spec: { chartType: "Bar Chart" },
+      }),
+    ).toContain("metrics_sql");
     expect(
       missingRendererError("custom_chart", { metrics_sql: "SELECT 1" }),
-    ).toContain("vega_spec");
+    ).toContain("spec");
+  });
+
+  it("flags a spec with no chartType or no encodings", () => {
+    expect(
+      missingRendererError("custom_chart", {
+        metrics_sql: "SELECT 1",
+        spec: { encodings: { x: { field: "a" } } },
+      }),
+    ).toContain("chartType");
+    expect(
+      missingRendererError("custom_chart", {
+        metrics_sql: "SELECT 1",
+        spec: { chartType: "Bar Chart", encodings: {} },
+      }),
+    ).toContain("encodings");
   });
 
   it("passes a complete custom_chart", () => {
     expect(
       missingRendererError("custom_chart", {
         metrics_sql: "SELECT 1",
-        vega_spec: "{}",
+        spec: {
+          chartType: "Bar Chart",
+          encodings: { x: { field: "{{ .params.x_axis }}" } },
+        },
       }),
     ).toBeNull();
   });
@@ -55,8 +75,14 @@ describe("missingSelectedParamsError", () => {
       metrics_sql: [
         "SELECT {{ .params.x_axis }}, {{ .params.y_axis }} FROM {{ .params.metrics_view }} ORDER BY {{ .params.size }} DESC LIMIT 10",
       ],
-      vega_spec:
-        '{"encoding": {"x": {"field": "{{ .params.x_axis }}"}, "y": {"field": "{{ .params.y_axis }}"}, "size": {"field": "{{ .params.size }}"}}}',
+      spec: {
+        chartType: "Scatter Plot",
+        encodings: {
+          x: { field: "{{ .params.x_axis }}" },
+          y: { field: "{{ .params.y_axis }}" },
+          size: { field: "{{ .params.size }}" },
+        },
+      },
     });
     expect(error).toContain("{{ .params.size }}");
     expect(error).toContain("SELECT list");
@@ -67,7 +93,7 @@ describe("missingSelectedParamsError", () => {
       metrics_sql: [
         "SELECT {{ .params.x_axis }}, {{ .params.y_axis }}, {{ .params.size }} FROM {{ .params.metrics_view }} ORDER BY {{ .params.size }} DESC LIMIT 10",
       ],
-      vega_spec: '{"size": {"field": "{{ .params.size }}"}}',
+      spec: { encodings: { size: { field: "{{ .params.size }}" } } },
     });
     expect(error).toBeNull();
   });
@@ -78,55 +104,48 @@ describe("missingSelectedParamsError", () => {
       {
         metrics_sql:
           "SELECT {{ .params.x_axis }}, {{ .params.size }} FROM {{ .params.metrics_view }} ORDER BY {{ .params.size }} DESC LIMIT {{ .params.limit }}",
-        vega_spec: '{"x": {"field": "{{ .params.x_axis }}"}}',
+        spec: { encodings: { x: { field: "{{ .params.x_axis }}" } } },
       },
     );
     expect(error).toBeNull();
   });
 
-  it("flags binned/quantitative encodings bound to dimension params", () => {
-    // Real failure case: a generated 2D histogram binning two categorical
-    // dimensions as quantitative axes, rendering a blank chart.
+  it("flags quantitative/temporal types hardcoded onto dimension params", () => {
+    // Dimensions are categorical, so typing them numerically renders a blank chart.
     const error = invalidDimensionEncodingError(PARAMS, {
-      vega_spec: JSON.stringify({
-        mark: "circle",
-        encoding: {
-          x: {
-            field: "{{ .params.x_axis }}",
-            type: "quantitative",
-            bin: { maxbins: 10 },
-          },
-          y: {
-            field: "{{ .params.y_axis }}",
-            type: "quantitative",
-            bin: { maxbins: 10 },
-          },
+      spec: {
+        chartType: "Scatter Plot",
+        encodings: {
+          x: { field: "{{ .params.x_axis }}", type: "quantitative" },
+          y: { field: "{{ .params.y_axis }}", type: "temporal" },
           size: { field: "{{ .params.size }}", type: "quantitative" },
         },
-      }),
+      },
     });
     expect(error).toContain('"x_axis"');
     expect(error).toContain('"y_axis"');
     expect(error).not.toContain('"size"'); // Measures may be quantitative.
-    expect(error).toContain("nominal");
+    expect(error).toContain('remove the "type"');
   });
 
-  it("accepts dimension params encoded as nominal/ordinal", () => {
+  it("accepts encodings that leave the type to Rill's semantics", () => {
     const error = invalidDimensionEncodingError(PARAMS, {
-      vega_spec: JSON.stringify({
-        encoding: {
-          x: { field: "{{ .params.x_axis }}", type: "nominal" },
-          y: { field: "{{ .params.y_axis }}", type: "ordinal" },
+      spec: {
+        encodings: {
+          x: { field: "{{ .params.x_axis }}" },
+          y: { field: "{{ .params.y_axis }}", type: "nominal" },
           size: { field: "{{ .params.size }}", type: "quantitative" },
         },
-      }),
+      },
     });
     expect(error).toBeNull();
   });
 
   it("is lenient when there is no SQL or no field params", () => {
     expect(missingSelectedParamsError(PARAMS, undefined)).toBeNull();
-    expect(missingSelectedParamsError(PARAMS, { vega_spec: "{}" })).toBeNull();
+    expect(
+      missingSelectedParamsError(PARAMS, { spec: { chartType: "Bar Chart" } }),
+    ).toBeNull();
     expect(
       missingSelectedParamsError(
         [{ name: "metrics_view", type: "metrics_view" }],

@@ -99,10 +99,14 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		},
 	}
 
-	// Resolve templating in the renderer properties
+	// Resolve templating in the renderer properties.
+	// Numeric and boolean params are substituted before templating so they keep their type;
+	// see canvas.CoerceScalarParams.
 	var rendererProps *structpb.Struct
 	if spec.RendererProperties != nil {
-		v, err := parser.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td, false)
+		props := canvas.CoerceScalarParams(spec.RendererProperties.AsMap(), spec.Params, effectiveArgs)
+
+		v, err := parser.ResolveTemplateRecursively(props, td, false)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to resolve renderer properties: %s", err.Error())
 		}

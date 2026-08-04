@@ -319,3 +319,25 @@ _[object]_ - (no description)
   - **`title`** - _[string]_ - Image title
 
   - **`description`** - _[string]_ - Image description
+
+### `custom_chart`
+
+_[object]_ - A custom visualization: a Metrics SQL query plus a Flint chart spec describing how to draw it.
+Flint derives scales, axes, formats, sorting, stacking and layout from the data and from the
+metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+
+
+  - **`metrics_sql`** - _[string]_ - Metrics SQL query selecting the dimensions and measures to plot, e.g.
+  `SELECT {{ .params.dim }}, {{ .params.measure }} FROM {{ .params.metrics_view }} LIMIT 10`.
+  Measures arrive pre-aggregated; do not wrap them in aggregate functions.
+
+
+  - **`spec`** - _[object]_ - (no description)
+
+    - **`chartType`** - _[string]_ - The Flint chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+
+    - **`encodings`** - _[object]_ - Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+    to a field. Each value is either a field name or an encoding object.
+
+
+    - **`chartProperties`** - _[object]_ - Per-chart-type presentation tuning, e.g. `innerRadius`, `stackMode`, `interpolate`.

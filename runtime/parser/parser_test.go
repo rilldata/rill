@@ -1947,7 +1947,11 @@ params:
     options: [line, area]
 custom_chart:
   metrics_sql: "SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}"
-  vega_spec: "{}"
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: "{{ .params.time_dim }}"}
+      y: {field: "{{ .params.measure }}"}
 `,
 		// Component with a templated metrics_view renderer property: it must not produce a ref.
 		`components/tpl.yaml`: `
@@ -1993,7 +1997,13 @@ rows:
 				Renderer:    "custom_chart",
 				RendererProperties: must(structpb.NewStruct(map[string]any{
 					"metrics_sql": "SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}",
-					"vega_spec":   "{}",
+					"spec": map[string]any{
+						"chartType": "Line Chart",
+						"encodings": map[string]any{
+							"x": map[string]any{"field": "{{ .params.time_dim }}"},
+							"y": map[string]any{"field": "{{ .params.measure }}"},
+						},
+					},
 				})),
 				Params: []*runtimev1.ComponentParam{
 					{Name: "metrics_view", Type: "metrics_view", Required: true},

@@ -873,7 +873,7 @@ image:
 
 Build fully custom visualizations using Metrics SQL queries and Vega-Lite specifications. Use this when the built-in chart types are insufficient and you need complete control over the visualization.
 
-**Prefer a standalone component over an inline block.** Instead of embedding the `custom_chart` block in the canvas, create a `type: component` file under `viz_library/` that declares typed params, and reference it from the canvas item with `component: <name>` plus a `params:` map. This keeps canvas files small and makes the visualization reusable across dashboards. See the component resource instructions for the file format, param types, and templating conventions. Use an inline `custom_chart` block only for trivial one-off charts. Example reference:
+**Prefer a standalone component over an inline block.** Instead of embedding the `custom_chart` block in the canvas, create a `type: component` file under `viz_library/` that declares typed params, and reference it from the canvas item with `component: <name>` plus a `params:` map. This keeps canvas files small and makes the visualization reusable across dashboards. Note that component files describe charts with a Flint spec under `spec`, not with `vega_spec`: the format below applies only to inline blocks. See the component resource instructions for the file format, param types, and templating conventions. Use an inline `custom_chart` block only for trivial one-off charts. Example reference:
 
 ```yaml
 rows:

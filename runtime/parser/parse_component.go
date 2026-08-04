@@ -93,7 +93,7 @@ func (p *Parser) parseComponent(node *Node) error {
 	}
 
 	// Parse into a ComponentSpec
-	spec, refs, err := p.parseComponentYAML(tmp)
+	spec, refs, err := p.parseComponentYAML(tmp, false)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,9 @@ func (p *Parser) parseComponent(node *Node) error {
 
 // parseComponentYAML parses and validates a ComponentYAML.
 // It is separated from parseComponent to allow inline creation of components from a canvas YAML file.
-func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpec, []ResourceName, error) {
+// The inline flag selects the custom chart spec format: inline canvas charts author Vega-Lite under
+// "vega_spec", while standalone component files author Flint under "spec".
+func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1.ComponentSpec, []ResourceName, error) {
 	// Display name backwards compatibility
 	if tmp.Title != "" && tmp.DisplayName == "" {
 		tmp.DisplayName = tmp.Title
@@ -154,6 +156,25 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	}
 	if n > 1 {
 		return nil, nil, errors.New(`multiple renderers are not allowed`)
+	}
+
+	// Enforce the custom chart spec format for this context. Presence is not required:
+	// the visual editor persists drafts with empty renderer properties.
+	if renderer == "custom_chart" {
+		if inline {
+			if _, ok := props["spec"]; ok {
+				return nil, nil, errors.New(`renderer property "spec" is not supported in an inline canvas chart: use "vega_spec", or define a component file to author a Flint spec`)
+			}
+		} else {
+			if _, ok := props["vega_spec"]; ok {
+				return nil, nil, errors.New(`renderer property "vega_spec" is not supported in a component file: use "spec" with a Flint chart spec`)
+			}
+			if spec, ok := props["spec"]; ok {
+				if _, ok := spec.(map[string]any); !ok {
+					return nil, nil, errors.New(`renderer property "spec" must be a mapping`)
+				}
+			}
+		}
 	}
 
 	// We generally treat the renderer props as untyped, but since "metrics_view" is a very common field,

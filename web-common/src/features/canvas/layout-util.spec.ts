@@ -100,7 +100,10 @@ rows:
           rendererProperties: {
             metrics_sql:
               "SELECT {{ .params.measure }} FROM {{ .params.metrics_view }}",
-            vega_spec: "{}",
+            spec: {
+              chartType: "Bar Chart",
+              encodings: { y: { field: "{{ .params.measure }}" } },
+            },
           },
           params: [
             { name: "metrics_view", type: "metrics_view", required: true },

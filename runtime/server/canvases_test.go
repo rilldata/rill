@@ -2,7 +2,6 @@ package server_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -702,7 +701,15 @@ params:
     default: false
 custom_chart:
   metrics_sql: "SELECT country, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}"
-  vega_spec: '{"mark": "line", "params": [{"name": "smooth", "value": true, "bind": {"input": "checkbox"}}]}'
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: country}
+      y: {field: "{{ .params.measure }}"}
+    chartProperties:
+      pointCount: "{{ .params.limit }}"
+      showPoints: "{{ .params.smooth }}"
+      label: "Top {{ .params.limit }}"
 `,
 		},
 	})
@@ -729,20 +736,19 @@ custom_chart:
 	props := res.RendererProperties.AsMap()
 	require.Equal(t, "SELECT country, count AS value FROM mv1 LIMIT 500", props["metrics_sql"])
 
-	// Scalar params should be injected as native Vega-Lite params:
-	// the author-declared "smooth" param keeps its bind but gets the bound value,
-	// and the "limit" param is appended with its default.
-	var vegaSpec map[string]any
-	require.NoError(t, json.Unmarshal([]byte(props["vega_spec"].(string)), &vegaSpec))
-	vegaParams := vegaSpec["params"].([]any)
-	require.Len(t, vegaParams, 2)
-	smooth := vegaParams[0].(map[string]any)
-	require.Equal(t, "smooth", smooth["name"])
-	require.Equal(t, false, smooth["value"])
-	require.Equal(t, map[string]any{"input": "checkbox"}, smooth["bind"])
-	limit := vegaParams[1].(map[string]any)
-	require.Equal(t, "limit", limit["name"])
-	require.Equal(t, float64(500), limit["value"])
+	// Field params are templated into the spec as strings.
+	spec := props["spec"].(map[string]any)
+	encodings := spec["encodings"].(map[string]any)
+	require.Equal(t, "count", encodings["y"].(map[string]any)["field"])
+
+	// Numeric and boolean params keep their type when a value is exactly one placeholder,
+	// so Flint receives 500 and false rather than "500" and "false".
+	chartProps := spec["chartProperties"].(map[string]any)
+	require.Equal(t, float64(500), chartProps["pointCount"])
+	require.Equal(t, false, chartProps["showPoints"])
+
+	// Partial interpolations remain strings.
+	require.Equal(t, "Top 500", chartProps["label"])
 
 	// The resolved args should contain the merged defaults and provided args.
 	require.Equal(t, map[string]any{
@@ -803,7 +809,11 @@ params:
     required: true
 custom_chart:
   metrics_sql: "SELECT country, {{ .params.measure }} AS value FROM {{ .params.metrics_view }}"
-  vega_spec: '{"mark": "line"}'
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: ts}
+      y: {field: value}
 `,
 			// Built-in renderer with a templated metrics_view: ResolveCanvas must not
 			// treat the raw template string as a metrics view resource name.

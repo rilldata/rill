@@ -1,46 +1,40 @@
 <script lang="ts">
   import type { PartialMessage, Struct } from "@bufbuild/protobuf";
-  import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
-  import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
-  import CustomChartRenderer from "@rilldata/web-common/features/components/charts/custom/CustomChartRenderer.svelte";
-  import {
-    CONVERT_EXAMPLE_PROMPT,
-    sendComponentFilePrompt,
-  } from "@rilldata/web-common/features/custom-viz/component-ai-agent";
+  import FlintChartRenderer from "@rilldata/web-common/features/components/charts/flint/FlintChartRenderer.svelte";
+  import type { FlintChartSpec } from "@rilldata/web-common/features/custom-viz/flint/compile";
+  import { sendComponentFilePrompt } from "@rilldata/web-common/features/custom-viz/component-ai-agent";
   import { substituteArgsRecursively } from "@rilldata/web-common/features/custom-viz/params";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceResolveComponent } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { View, VisualizationSpec } from "svelte-vega";
 
   export let componentName: string;
   export let resource: V1Resource | undefined;
   export let args: Record<string, unknown>;
-  // The component's file path; enables the "connect with AI" action in sample-data mode.
+  // The component's file path; enables the "fix with AI" action.
   export let filePath: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
   const { developerChat } = featureFlags;
 
-  let inlineViewVL: View;
-
-  function convertWithAI() {
-    if (!filePath) return;
-    sendComponentFilePrompt(client, filePath, CONVERT_EXAMPLE_PROMPT);
-  }
-
   function fixWithAI(error: string) {
     if (!filePath) return;
     sendComponentFilePrompt(
       client,
       filePath,
-      `The component fails to render with this error: "${error}". Fix the file so it renders cleanly. Keep the structure valid: top-level custom_chart block, a trivial templated metrics_sql (SELECT params FROM {{ .params.metrics_view }} with ORDER BY and LIMIT; every field param referenced by the encodings or ORDER BY must be in the SELECT list; no CTEs/JOINs/subqueries/window functions/CASE/aggregates), typed role-named params, encoding types matching the bound param types (dimension → nominal/ordinal and never binned, time_dimension → temporal, measure → quantitative), no dataset-reshaping Vega transforms (only row-local calculate transforms the geometry needs), and no invented config properties.`,
+      `The component fails to render with this error: "${error}". Fix the file so it renders cleanly. Keep the structure valid: a top-level custom_chart block containing a templated metrics_sql and a Flint spec under "spec". The metrics_sql must be trivial (SELECT params FROM {{ .params.metrics_view }} with ORDER BY and LIMIT; every field referenced by the encodings or ORDER BY must be in the SELECT list; no CTEs/JOINs/subqueries/window functions/CASE/aggregates, and never wrap measures in aggregate functions). The spec must set a valid Flint chartType and bind each encoding channel to a field, using typed role-named params.`,
     );
   }
+
+  // The preview has no canvas parent, so there is no theme object to apply; only
+  // the light/dark mode, which the chart's colors resolve from CSS variables.
+  let themeMode: "light" | "dark";
+  $: themeMode = $themeControl === "dark" ? "dark" : "light";
 
   $: componentSpec =
     resource?.component?.state?.validSpec ?? resource?.component?.spec;
@@ -83,36 +77,27 @@
     : optimisticProps;
 
   $: metricsSQL = normalizeMetricsSQL(resolvedProps?.metrics_sql);
-  $: vegaSpec = resolvedProps?.vega_spec as string | undefined;
+  $: flintSpec = resolvedProps?.spec as FlintChartSpec | undefined;
 
-  // Sample-data mode: the spec carries inline data (e.g. imported from the Vega-Lite
-  // examples gallery) and declares no queries, so it renders without a metrics view.
-  $: inlineSpec = parseInlineDataSpec(vegaSpec, metricsSQL);
+  // The metrics view the preview is bound to, from whichever param declares it.
+  $: metricsViewParam = componentSpec?.params?.find(
+    (param) => param.type === "metrics_view",
+  );
+  $: metricsViewName = (
+    metricsViewParam?.name
+      ? (args[metricsViewParam.name] ?? metricsViewParam.default)
+      : undefined
+  ) as string | undefined;
 
-  function normalizeMetricsSQL(value: unknown): string[] {
-    if (typeof value === "string") return [value];
+  function normalizeMetricsSQL(value: unknown): string | undefined {
+    if (typeof value === "string") return value.trim() ? value : undefined;
     if (Array.isArray(value)) {
-      return value.filter(
+      return value.find(
         (entry): entry is string =>
           typeof entry === "string" && entry.trim().length > 0,
       );
     }
-    return [];
-  }
-
-  function parseInlineDataSpec(
-    spec: string | undefined,
-    metricsSQL: string[],
-  ): VisualizationSpec | null {
-    if (!spec || metricsSQL.length > 0) return null;
-    try {
-      const parsed = JSON.parse(spec);
-      const hasInlineData =
-        parsed?.data?.values !== undefined || parsed?.datasets !== undefined;
-      return hasInlineData ? (parsed as VisualizationSpec) : null;
-    } catch {
-      return null;
-    }
+    return undefined;
   }
 </script>
 
@@ -125,28 +110,6 @@
         renderer: renderer ?? "",
       })}
     />
-  {:else if inlineSpec}
-    <div
-      class="mb-2 px-3 py-1.5 text-xs rounded-sm bg-surface-subtle text-fg-secondary w-fit flex items-center gap-x-3"
-    >
-      {m.component_preview_sample_data()}
-      {#if $developerChat && filePath}
-        <button
-          class="text-primary-600 hover:text-primary-700 font-medium"
-          onclick={convertWithAI}
-        >
-          {m.component_connect_with_ai()}
-        </button>
-      {/if}
-    </div>
-    <div class="flex-1 min-h-0 max-h-full overflow-hidden">
-      <VegaLiteRenderer
-        spec={inlineSpec}
-        canvasDashboard
-        config={getRillTheme(true)}
-        bind:viewVL={inlineViewVL}
-      />
-    </div>
   {:else if $resolvedQuery.error && !optimisticProps}
     <div class="flex flex-col items-center justify-center gap-y-2 flex-1">
       <ComponentError error={$resolvedQuery.error.message} />
@@ -162,11 +125,13 @@
   {:else}
     <!-- overflow-hidden bounds charts with fixed/step sizes to the preview area. -->
     <div class="flex-1 min-h-[320px] max-h-full overflow-hidden">
-      <CustomChartRenderer
+      <FlintChartRenderer
         name={componentName}
-        spec={vegaSpec}
+        spec={flintSpec}
         {metricsSQL}
+        {metricsViewName}
         showDataTable
+        {themeMode}
       />
     </div>
   {/if}

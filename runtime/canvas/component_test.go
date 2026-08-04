@@ -972,26 +972,32 @@ func TestValidateCustomChart(t *testing.T) {
 		Files: metricsViewFiles(),
 	})
 
-	// Valid: static metrics_sql string and a JSON vega_spec.
+	// Valid: static metrics_sql string and a Flint spec.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
 custom_chart:
   metrics_sql: SELECT foo, y FROM mv1
-  vega_spec: '{"mark": "bar"}'
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: foo}
+      y: {field: y}
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// Valid: metrics_sql as a list of queries.
+	// Valid: channels may bind a bare field name instead of an encoding mapping.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
 custom_chart:
-  metrics_sql:
-  - SELECT foo, y FROM mv1
-  - SELECT bar, z FROM mv1
-  vega_spec: '{"mark": "bar"}'
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: foo
+      y: [y]
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
@@ -1013,26 +1019,70 @@ custom_chart:
 type: component
 custom_chart:
   metrics_sql: 42
-  vega_spec: '{"mark": "bar"}'
+  spec:
+    chartType: Bar Chart
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
 
-	// Invalid: untemplated vega_spec that is not valid JSON.
+	// Invalid: Vega-Lite is not authored at the component level.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
 custom_chart:
   metrics_sql: SELECT foo, y FROM mv1
-  vega_spec: 'not json'
+  vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"vega_spec" is not supported in a component file`,
+	})
+
+	// Invalid: spec must be a mapping, not a JSON string.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec: '{"chartType": "Bar Chart"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"spec" must be a mapping`,
+	})
+
+	// Invalid: empty chartType.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: ""
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
-	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "not a valid JSON object")
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'spec.chartType' must not be empty")
 
-	// Valid: a parameterized component with templated properties reconciles,
-	// including a vega_spec that only becomes valid JSON after templates resolve.
+	// Invalid: an encoding channel that is neither a field name nor an encoding mapping.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: 42
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a field name or an encoding mapping")
+
+	// Valid: a parameterized component with templated properties reconciles.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
@@ -1045,7 +1095,11 @@ params:
     required: true
 custom_chart:
   metrics_sql: SELECT foo, {{ .params.measure }} AS value FROM {{ .params.metrics_view }}
-  vega_spec: '{"mark": "bar", "title": "{{ .params.measure }}"}'
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: foo}
+      y: {field: "{{ .params.measure }}"}
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
@@ -1060,7 +1114,10 @@ params:
     required: true
 custom_chart:
   metrics_sql: 42
-  vega_spec: '{"mark": "bar", "title": "{{ .params.metrics_view }}"}'
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: "{{ .params.metrics_view }}"}
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)

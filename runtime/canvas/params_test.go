@@ -126,3 +126,73 @@ func TestValidateParamBindings(t *testing.T) {
 	err = canvas.ValidateParamBindings(withDefault, nil, mvs)
 	require.ErrorContains(t, err, `not a measure in metrics view "mv1"`)
 }
+
+func TestCoerceScalarParams(t *testing.T) {
+	params := testParams(t)
+	args := map[string]any{
+		"metrics_view": "mv1",
+		"measure":      "total",
+		"limit":        10.0,
+		"smooth":       true,
+		"shape":        "area",
+	}
+
+	props := map[string]any{
+		// Partial interpolation: stays a string, resolved by normal templating.
+		"metrics_sql": "SELECT {{ .params.measure }} FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}",
+		"spec": map[string]any{
+			"chartType": "Line Chart",
+			"encodings": map[string]any{
+				// Field params are strings either way.
+				"y": map[string]any{"field": "{{ .params.measure }}"},
+			},
+			"chartProperties": map[string]any{
+				"pointCount":  "{{ .params.limit }}",
+				"interpolate": "{{ .params.smooth }}",
+				// String params are left alone: templating already yields the right type.
+				"mark": "{{ .params.shape }}",
+				// Whitespace and the legacy .args alias are both accepted.
+				"padded": "{{   .args.limit   }}",
+				// Not a param reference.
+				"label": "Top {{ .params.limit }} rows",
+			},
+			"nested": []any{"{{ .params.limit }}", "keep"},
+		},
+	}
+
+	got := canvas.CoerceScalarParams(props, params, args)
+
+	spec := got["spec"].(map[string]any)
+	chartProps := spec["chartProperties"].(map[string]any)
+
+	require.Equal(t, 10.0, chartProps["pointCount"])
+	require.Equal(t, true, chartProps["interpolate"])
+	require.Equal(t, "{{ .params.shape }}", chartProps["mark"])
+	require.Equal(t, 10.0, chartProps["padded"])
+	require.Equal(t, "Top {{ .params.limit }} rows", chartProps["label"])
+	require.Equal(t, []any{10.0, "keep"}, spec["nested"])
+
+	// Untouched: not a whole-string param reference.
+	require.Equal(t, props["metrics_sql"], got["metrics_sql"])
+	require.Equal(t, "{{ .params.measure }}", spec["encodings"].(map[string]any)["y"].(map[string]any)["field"])
+
+	// The input is not modified.
+	require.Equal(t, "{{ .params.limit }}", props["spec"].(map[string]any)["chartProperties"].(map[string]any)["pointCount"])
+}
+
+func TestCoerceScalarParamsNoScalarArgs(t *testing.T) {
+	props := map[string]any{"spec": map[string]any{"chartType": "Line Chart"}}
+	args := map[string]any{"metrics_view": "mv1"}
+
+	// Returns the props unchanged when there is nothing to coerce.
+	require.Equal(t, props, canvas.CoerceScalarParams(props, testParams(t), args))
+}
+
+func TestCoerceScalarParamsSkipsTemplatedArgs(t *testing.T) {
+	params := testParams(t)
+	// An arg that is itself still templated must not be substituted.
+	args := map[string]any{"limit": "{{ .params.outer }}"}
+	props := map[string]any{"n": "{{ .params.limit }}"}
+
+	require.Equal(t, props, canvas.CoerceScalarParams(props, params, args))
+}

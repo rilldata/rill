@@ -3,6 +3,7 @@ package canvas
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -180,6 +181,70 @@ func InjectVegaParams(vegaSpec string, params []*runtimev1.ComponentParam, args 
 		return "", err
 	}
 	return string(out), nil
+}
+
+// wholeStringParamRef matches a string consisting of exactly one param placeholder and nothing else.
+var wholeStringParamRef = regexp.MustCompile(`^\s*\{\{\s*\.(?:params|args)\.(\w+)\s*\}\}\s*$`)
+
+// CoerceScalarParams substitutes numeric and boolean param values into renderer properties
+// with their original type, rather than as strings.
+//
+// Template resolution always yields strings, so a structured renderer property such as a Flint
+// spec's "chartProperties: {innerRadius: {{ .params.inner_radius }}}" would otherwise reach the
+// renderer as "60" instead of 60 and silently degrade. This only applies to values that consist of
+// exactly one placeholder: partial interpolations like "LIMIT {{ .params.limit }}" are strings by
+// nature and are left to normal templating.
+//
+// It returns a copy; the input is not modified.
+func CoerceScalarParams(props map[string]any, params []*runtimev1.ComponentParam, args map[string]any) map[string]any {
+	values := make(map[string]any)
+	for _, p := range params {
+		switch p.Type {
+		case "number", "boolean":
+		default:
+			continue
+		}
+		v, ok := args[p.Name]
+		if !ok || v == nil || isTemplated(v) {
+			continue
+		}
+		values[p.Name] = v
+	}
+	if len(values) == 0 {
+		return props
+	}
+
+	res, _ := coerceScalarParams(props, values).(map[string]any)
+	return res
+}
+
+func coerceScalarParams(val any, values map[string]any) any {
+	switch val := val.(type) {
+	case string:
+		m := wholeStringParamRef.FindStringSubmatch(val)
+		if m == nil {
+			return val
+		}
+		v, ok := values[m[1]]
+		if !ok {
+			return val
+		}
+		return v
+	case map[string]any:
+		res := make(map[string]any, len(val))
+		for k, v := range val {
+			res[k] = coerceScalarParams(v, values)
+		}
+		return res
+	case []any:
+		res := make([]any, len(val))
+		for i, v := range val {
+			res[i] = coerceScalarParams(v, values)
+		}
+		return res
+	default:
+		return val
+	}
 }
 
 // effectiveParamValue returns the value bound to a param, falling back to its default.

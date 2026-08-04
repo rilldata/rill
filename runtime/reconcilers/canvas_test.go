@@ -451,7 +451,11 @@ params:
     default: 500
 custom_chart:
   metrics_sql: SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}
-  vega_spec: '{"mark": "line"}'
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: ts}
+      y: {field: value}
 `,
 		"c1.yaml": `
 type: canvas
