@@ -1,4 +1,5 @@
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
+import { stripInternalReportParams } from "@rilldata/web-common/features/scheduled-reports/utils";
 import { redirect } from "@sveltejs/kit";
 
 export async function load({ parent, url, params }) {
@@ -16,12 +17,9 @@ export async function load({ parent, url, params }) {
     const path = token
       ? `/${organization}/${project}/-/share/${token}/canvas/${canvasName}`
       : `/${organization}/${project}/canvas/${canvasName}`;
-    const stateParams = new URLSearchParams(
-      report.report.spec.annotations?.web_open_state ?? "",
+    const stateParams = stripInternalReportParams(
+      new URLSearchParams(report.report.spec.annotations?.web_open_state ?? ""),
     );
-    // Internal PDF rendering options, not part of the canvas state.
-    stateParams.delete("pdf_include_filters");
-    stateParams.delete("pdf_all_tabs");
     const search = stateParams.toString();
     redirect(307, search ? `${path}?${search}` : path);
   }

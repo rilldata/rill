@@ -10,6 +10,7 @@
   import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
   import type { ExportProgress } from "@rilldata/web-common/features/exports/pdf/types";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { stripInternalReportParams } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy, onMount } from "svelte";
@@ -44,12 +45,11 @@
         : `/${organization}/${project}/canvas/${canvasName}`,
       window.location.origin,
     );
-    const stateParams = new URLSearchParams(window.location.search);
+    const stateParams = stripInternalReportParams(
+      new URLSearchParams(window.location.search),
+    );
     stateParams.delete("token");
     stateParams.delete("execution_time");
-    // Internal PDF rendering options, not part of the canvas state.
-    stateParams.delete("pdf_include_filters");
-    stateParams.delete("pdf_all_tabs");
     stateParams.forEach((value, key) =>
       dashboardUrl.searchParams.set(key, value),
     );

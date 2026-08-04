@@ -85,6 +85,12 @@
   );
   $: canvasFiltersEnabled =
     $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
+
+  // Keyboard counterpart of the read-only filter bar's pointer-events guard:
+  // its controls remain focusable, so kick focus back out to keep them inoperable.
+  function blurFocusedDescendant(event: FocusEvent) {
+    if (event.target instanceof HTMLElement) event.target.blur();
+  }
 </script>
 
 <form
@@ -168,14 +174,15 @@
                unified filters support in-memory editing. Pointer events are forced
                off on all descendants (the time range pill has no read-only mode and
                the bar re-enables pointer-events internally), which keeps the bar in
-               the accessibility tree, unlike inert. -->
+               the accessibility tree, unlike inert; blurring on focus covers keyboard
+               interaction, which pointer-events does not block. -->
           <CanvasProvider
             {canvasName}
             instanceId={runtimeClient.instanceId}
             isolated
             urlStateOverride={canvasStateOverride}
           >
-            <div class="readonly-filter-bar">
+            <div class="readonly-filter-bar" onfocusin={blurFocusedDescendant}>
               <CanvasFilters {canvasName} maxWidth={820} readOnly />
             </div>
           </CanvasProvider>

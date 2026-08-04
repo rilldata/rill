@@ -1,3 +1,4 @@
+import { getPdfOptionsFromWebOpenState } from "@rilldata/web-common/features/scheduled-reports/utils";
 import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
 import { redirect } from "@sveltejs/kit";
 
@@ -31,7 +32,6 @@ export async function load({ parent, url }) {
 
   return {
     canvasName,
-    pdfIncludeFilters: stateParams.get("pdf_include_filters") !== "false",
-    pdfAllTabs: stateParams.get("pdf_all_tabs") !== "false",
+    ...getPdfOptionsFromWebOpenState(spec.annotations?.web_open_state),
   };
 }

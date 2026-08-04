@@ -13,6 +13,7 @@
   import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
+  import { stripInternalReportParams } from "@rilldata/web-common/features/scheduled-reports/utils";
   import {
     ResourceKind,
     useResource,
@@ -119,9 +120,10 @@
 
   // Canvas reports link to the canvas page with the captured state applied.
   $: canvasUrl = (() => {
+    if (!$dashboardName.data) return "";
     const path = `/${organization}/${project}/canvas/${$dashboardName.data}`;
-    const search = new URLSearchParams(
-      reportSpec?.annotations?.web_open_state ?? "",
+    const search = stripInternalReportParams(
+      new URLSearchParams(reportSpec?.annotations?.web_open_state ?? ""),
     ).toString();
     return search ? `${path}?${search}` : path;
   })();

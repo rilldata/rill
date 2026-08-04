@@ -155,29 +155,22 @@ func (r *CanvasReconciler) checkAnyComponentHasValidSpec(components map[string]*
 }
 
 func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	var rules []*runtimev1.SecurityRule
-	conditionKinds := []string{runtime.ResourceKindTheme}
-
 	conditionResources, err := canvasTransitiveConditionResources(ctx, r.C, claims, res)
 	if err != nil {
 		return nil, err
 	}
 
-	// Now build security rules based on the collected references.
-	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					ConditionKinds:     conditionKinds,
-					ConditionResources: conditionResources,
-					Allow:              true,
-					Exclusive:          true,
-				},
+	// Build a security rule based on the collected references.
+	return []*runtimev1.SecurityRule{{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				ConditionKinds:     []string{runtime.ResourceKindTheme},
+				ConditionResources: conditionResources,
+				Allow:              true,
+				Exclusive:          true,
 			},
-		})
-	}
-
-	return rules, nil
+		},
+	}}, nil
 }
 
 // canvasTransitiveConditionResources returns the resources needed to render the given canvas:

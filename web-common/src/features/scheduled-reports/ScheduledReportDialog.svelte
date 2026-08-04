@@ -43,6 +43,7 @@
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
     parseMetricsViewFiltersAnnotation,
+    stripInternalReportParams,
     ReportRunAs,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
@@ -174,17 +175,10 @@
   // dialog is on the report page, whose URL must not be rewritten.
   const canvasStateOverride =
     props.mode === "edit" && isCanvasReport
-      ? stripPdfOptionsParams(
-          props.reportSpec.annotations?.web_open_state ?? "",
-        )
+      ? stripInternalReportParams(
+          new URLSearchParams(props.reportSpec.annotations?.web_open_state),
+        ).toString()
       : undefined;
-
-  function stripPdfOptionsParams(state: string): string {
-    const stateParams = new URLSearchParams(state);
-    stateParams.delete("pdf_include_filters");
-    stateParams.delete("pdf_all_tabs");
-    return stateParams.toString();
-  }
 
   const schema = yup(
     object({

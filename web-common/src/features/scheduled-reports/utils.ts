@@ -108,6 +108,18 @@ export function getPdfOptionsFromWebOpenState(
   };
 }
 
+// Internal PDF rendering options stored alongside the canvas state in web_open_state.
+// They are not part of the canvas state and must be stripped from any params applied
+// to a canvas or shown in a user-facing URL.
+const INTERNAL_REPORT_PARAMS = ["pdf_include_filters", "pdf_all_tabs"];
+
+export function stripInternalReportParams(
+  params: URLSearchParams,
+): URLSearchParams {
+  for (const param of INTERNAL_REPORT_PARAMS) params.delete(param);
+  return params;
+}
+
 // Parses a report's "metrics_view_filters" annotation (a JSON object of metrics view
 // name to filter expression in protojson format) back into the shape sent on ReportOptions.
 export function parseMetricsViewFiltersAnnotation(
