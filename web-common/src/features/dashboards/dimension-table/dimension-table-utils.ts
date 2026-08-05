@@ -179,9 +179,10 @@ const HEADER_ICON_WIDTHS = 16;
 const HEADER_X_PAD = CHARACTER_X_PAD;
 const HEADER_FLEX_SPACING = 14;
 // const CHARACTER_LIMIT_FOR_WRAPPING = 9;
-/** Context column cells are right aligned with a 10px gutter; the rest is
- * breathing room so the value doesn't butt up against the previous column. */
-const COMPARISON_X_PAD = 16;
+/** A context column cell loses 18px to chrome: a 10px gutter on the cell and
+ * an 8px inset on the label. The rest is breathing room, so the value doesn't
+ * butt up against the previous column. */
+const COMPARISON_X_PAD = 24;
 
 export function estimateColumnSizes(
   columns: VirtualizedTableColumns[],
