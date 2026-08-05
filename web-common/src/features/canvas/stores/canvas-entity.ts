@@ -57,6 +57,7 @@ import {
   YAMLConfigProvider,
 } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import { ExpressionFilterURLSync } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterURLSync.svelte.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -210,8 +211,6 @@ export class CanvasEntity {
     // override is applied.
     this.themeName.set(undefined);
 
-    this.processSpec(this.spec);
-
     this.metricsView = new MetricsViewSelectors(
       this.client,
       this._metricsViews,
@@ -223,6 +222,10 @@ export class CanvasEntity {
       this.metricsViewsProvider,
       this.yamlConfigProvider,
     );
+    // Create the URL sync component
+    new ExpressionFilterURLSync(this.expressionFilterManager);
+
+    this.processSpec(this.spec);
   }
 
   checkAndSetMaxWidth = ({ maxWidth }: V1CanvasSpec) => {
@@ -295,7 +298,7 @@ export class CanvasEntity {
     if (!validSpec) return;
 
     if (metricsViews) this._metricsViews.set(metricsViews);
-    this.metricsViewsProvider.setMetricsViewNames(Object.keys(metricsViews));
+    this.metricsViewsProvider?.setMetricsViewNames(Object.keys(metricsViews));
 
     this.checkAndSetFilterEnabled(validSpec);
     this.checkAndSetFileArtifact(filePath);
@@ -499,7 +502,6 @@ export class CanvasEntity {
 
     if (redirected) return;
 
-    this.filterManager.onUrlChange(searchParams);
     this.searchParams.set(searchParams);
     this.saveSnapshot(searchParams.toString());
     this.timeManager.state.onUrlChange(searchParams);

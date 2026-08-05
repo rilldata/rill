@@ -158,7 +158,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.unsubscribeSpec = this.specStore.subscribe((spec) => {
       this.localExpressionFilters.setParamForMetricsView(
         this.metricsViewName,
-        spec["dimension_filters"] as string,
+        (spec["dimension_filters"] ?? "") as string,
       );
 
       this.localTimeControls.onUrlChange(

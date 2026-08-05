@@ -213,6 +213,7 @@ export class DashboardStateSync {
     urlSearchParams: URLSearchParams,
     type: AfterNavigate["type"],
   ) {
+    console.log("handleURLChange", type);
     // Since we call this in afterNavigation, there could be a scenario where navigation completes but data for init isnt loaded yet.
     // Init already incorporates the url into the state so we can skip this processing.
     if (this.updating || !this.initialized) return;
@@ -319,6 +320,7 @@ export class DashboardStateSync {
    * This will check if the url needs to be changed and will navigate to the new url.
    */
   private async gotoNewState(exploreState: ExploreState) {
+    console.log("gotoNewState");
     // Updating state either in handleExploreInit or handleURLChange will synchronously update the state triggering this function.
     // Since those methods handle redirect themselves we need to skip this logic.
     // Those methods need to replace the current URL while this does a direct navigation.

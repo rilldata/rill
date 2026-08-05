@@ -183,10 +183,12 @@
     </div>
   {/if}
 
-  <ExpressionFilters
-    {expressionFilterManager}
-    {timeStart}
-    {timeEnd}
-    timeControlsReady={!hasTimeSeries || !!interval}
-  />
+  <div class="pointer-events-auto ml-2">
+    <ExpressionFilters
+      {expressionFilterManager}
+      {timeStart}
+      {timeEnd}
+      timeControlsReady={!hasTimeSeries || !!interval}
+    />
+  </div>
 </div>

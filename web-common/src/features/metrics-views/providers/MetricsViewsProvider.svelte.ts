@@ -10,6 +10,7 @@ import {
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { isSimpleMeasure } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
 import { Duration } from "luxon";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
@@ -63,6 +64,7 @@ export class MetricsViewsProvider {
 
   public cleanup: () => void; // TODO: ensure this is called by creators
 
+  private resources: V1Resource[] = [];
   private readonly timeRangeUnsubs = new Map<string, () => void>();
 
   public constructor(
@@ -74,9 +76,14 @@ export class MetricsViewsProvider {
     const allResourcesQuery = createRuntimeServiceListResources(
       runtimeClient,
       {},
+      undefined,
+      queryClient,
     );
-    const allResourcesUnsub = allResourcesQuery.subscribe((allResourcesResp) =>
-      this.processResources(allResourcesResp.data?.resources ?? []),
+    const allResourcesUnsub = allResourcesQuery.subscribe(
+      (allResourcesResp) => {
+        this.resources = allResourcesResp.data?.resources ?? [];
+        this.processResources();
+      },
     );
 
     this.timeRangeSummary = $derived.by(() => {
@@ -146,9 +153,10 @@ export class MetricsViewsProvider {
 
   public setMetricsViewNames(metricsViewNames: string[]) {
     this.metricsViewNames = metricsViewNames;
+    this.processResources();
   }
 
-  private processResources(resources: V1Resource[]) {
+  private processResources() {
     const specs: Record<string, V1MetricsViewSpec> = {};
 
     const measureSpecs: Record<
@@ -165,7 +173,7 @@ export class MetricsViewsProvider {
     const dimensions: MetricsViewSpecDimension[] = [];
 
     for (const metricsViewName of this.metricsViewNames) {
-      const spec = resources.find(
+      const spec = this.resources.find(
         (resource) => resource.meta?.name?.name === metricsViewName,
       )?.metricsView?.state?.validSpec;
       if (!spec) continue;
@@ -222,6 +230,8 @@ export class MetricsViewsProvider {
     const timeRangeQuery = createQueryServiceMetricsViewTimeRange(
       this.runtimeClient,
       { metricsViewName },
+      undefined,
+      queryClient,
     );
     this.timeRangeUnsubs.set(
       metricsViewName,

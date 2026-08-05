@@ -41,6 +41,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ExpressionFilters from "./ExpressionFilters.svelte";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
+  import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 
   const { rillTime } = featureFlags;
 
@@ -112,14 +113,19 @@
   let exploreState = $derived(useExploreState($exploreName));
   let activeTimeZone = $derived($exploreState?.selectedTimezone);
 
-  $effect(() =>
-    setFilter(
-      expressionFilterManager.exprByMetricsView[metricsViewName],
-      expressionFilterManager.filterManagers.dimensions
-        .filter((dfm) => dfm.expr && dfm.mode === DimensionFilterMode.InList)
-        .map((dfm) => dfm.name),
-    ),
-  );
+  // There seems to be an infinite loop here. Checking synced param should be temporary.
+  // TODO: fix it by making sure we do not trigger effect.
+  let prevSyncedUrlParam = "";
+  $effect(() => {
+    const expr = expressionFilterManager.exprByMetricsView[metricsViewName];
+    const inList = expressionFilterManager.inList;
+
+    const urlParam = convertExpressionToFilterParam(expr, inList);
+    if (urlParam === prevSyncedUrlParam) return;
+
+    prevSyncedUrlParam = urlParam;
+    setFilter(expr, inList);
+  });
 
   let selectedRangeAlias = $derived(
     selectedTimeRange?.name === TimeRangePreset.CUSTOM

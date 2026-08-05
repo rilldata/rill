@@ -29,6 +29,7 @@ import {
   type DimensionOrMeasureManager,
   MetricsViewFilterManager,
 } from "@rilldata/web-common/features/dashboards/filters/MetricsViewFilterManager.svelte.ts";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
 type ParsedUrlParamsByMV = Record<
   MetricsViewName,
@@ -50,6 +51,7 @@ export class ExpressionFilterManager {
   // Temporary svelte4 store for legacy components
   public exprByMetricsViewStore: Writable<Record<string, V1Expression>> =
     writable({});
+  public inList: string[];
   public hasSomeFilter: boolean;
 
   // Name of the filter added from the filter menu. Its chip opens as soon as it is rendered.
@@ -95,6 +97,11 @@ export class ExpressionFilterManager {
 
     this.filterManagers = $derived.by(() =>
       this.buildFilterManagers(this.buildParamFilterManagers()),
+    );
+    this.inList = $derived(
+      this.filterManagers.dimensions
+        .filter((dfm) => dfm.mode === DimensionFilterMode.InList)
+        .map((dfm) => dfm.name),
     );
     this.filterManagersMap = $derived.by(() =>
       Object.fromEntries([
@@ -143,6 +150,7 @@ export class ExpressionFilterManager {
     });
 
     const newParam = newParams.join("&");
+    console.log("setUrlParams", newParam);
     if (this.prevUrlParams === newParam) return;
     this.prevUrlParams = newParam;
     this.parsedUrlParams = newParsedUrlParams;
