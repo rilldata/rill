@@ -176,7 +176,7 @@
         compact
         square
         type="secondary"
-        label="Other bookmark dropdown"
+        label={m.bookmark_other_dropdown_label()}
         active={open}
       >
         <BookmarkIcon class="flex-none" size="16px" />

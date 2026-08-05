@@ -165,7 +165,7 @@
       DateTime.fromJSDate(date).setZone(selectedTimeZone),
       DateTime.fromJSDate(date)
         .setZone(selectedTimeZone)
-        .plus({ [TIME_GRAIN[timeGrain]?.label || "minute"]: 1 }),
+        .plus({ [TIME_GRAIN[timeGrain]?.unit || "minute"]: 1 }),
     );
 
     hoveredIntervalCache.set(cacheKey, interval);

@@ -1767,6 +1767,10 @@ message GetIFrameRequest {
   string theme_mode = 15 [(validate.rules).string = {ignore_empty: true, in: ["light", "dark", "system"]}];
   // Navigation denotes whether navigation between different resources should be enabled in the embed.
   bool navigation = 13;
+  // HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+  // It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+  // In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
+  bool hide_navigation_bar = 18;
   // Blob containing UI state for rendering the initial embed. Not currently supported.
   string state = 7;
   // DEPRECATED: Additional parameters to set outright in the generated URL query.
@@ -3732,6 +3736,9 @@ message ReportOptions {
   string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
   string explore = 16; // either canvas or explore should be set
   string canvas = 17;
+  // Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+  // Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+  map<string, rill.runtime.v1.Expression> metrics_view_filters = 23;
   /* web_open_mode is used to determine how to create or disable open link for the report
     - send "recipient" for reports that should be opened with recipient's permissions - requires login
     - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required

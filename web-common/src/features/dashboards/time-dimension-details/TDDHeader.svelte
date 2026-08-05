@@ -209,7 +209,8 @@
   <div class="flex gap-x-6 items-center font-normal text-fg-secondary">
     <div class="flex items-center gap-x-4">
       <div class="flex items-center gap-x-1">
-        <Row size="16px" /> Rows
+        <Row size="16px" />
+        {m.dashboard_rows()}
       </div>
 
       <ComparisonSelector {exploreName} />
@@ -217,7 +218,8 @@
 
     <div class="flex items-center gap-x-4 pl-2">
       <div class="flex items-center gap-x-1">
-        <Column size="16px" /> Columns
+        <Column size="16px" />
+        {m.dashboard_columns()}
       </div>
       <div class="flex items-center gap-x-2">
         <TimeGrainSelector

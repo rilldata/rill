@@ -209,7 +209,9 @@
       );
 
       eventBus.emit("notification", {
-        message: `Removed ${labels.length} items from filter`,
+        message: m.dashboard_removed_items_filter({
+          count: labels.length.toString(),
+        }),
       });
       return;
     } else {
@@ -218,7 +220,9 @@
         (dimensionManager) => dimensionManager.appendSelectedValues(labels),
       );
       eventBus.emit("notification", {
-        message: `Added ${newValuesSelected.length} items to filter`,
+        message: m.dashboard_added_items_filter({
+          count: newValuesSelected.length.toString(),
+        }),
       });
     }
   }

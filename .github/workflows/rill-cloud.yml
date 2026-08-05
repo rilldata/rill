@@ -34,6 +34,18 @@ jobs:
       run: |
         ./scripts/check_migrations.sh runtime/drivers/sqlite/migrations
 
+    - name: Notify Slack
+      uses: ravsamhq/notify-slack-action@v2
+      if: always()
+      with:
+        status: ${{ job.status }}
+        notification_title: "{workflow} / {job} has {status_message}"
+        message_format: "{emoji} *{workflow} / {job}* {status_message} in <{repo_url}|{repo}>"
+        footer: "Linked Repo <{repo_url}|{repo}>"
+        notify_when: "failure"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}
+
   build:
     # https://github.com/orgs/community/discussions/54860
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
@@ -128,8 +140,8 @@ jobs:
         if: always()
         with:
           status: ${{ job.status }}
-          notification_title: "{workflow} has {status_message}"
-          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          notification_title: "{workflow} / {job} has {status_message}"
+          message_format: "{emoji} *{workflow} / {job}* {status_message} in <{repo_url}|{repo}>"
           footer: "Linked Repo <{repo_url}|{repo}>"
           notify_when: "failure"
         env:

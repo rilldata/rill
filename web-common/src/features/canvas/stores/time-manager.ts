@@ -27,6 +27,9 @@ export class TimeManager {
   allowCustomRangeStore = writable<boolean>(true);
   // Tightest max_query_time_range across referenced metrics views.
   maxQueryTimeRangeStore = writable<Duration | undefined>(undefined);
+  // When set, relative time ranges are anchored at this time instead of now/latest.
+  // Used by scheduled report exports to render data as of the report's execution time.
+  executionTimeStore = writable<string | undefined>(undefined);
   specInitialized = false;
   state: TimeState;
 

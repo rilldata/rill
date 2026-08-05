@@ -258,3 +258,51 @@ export const useGetExploresForMetricsView = (
     (res) => res.explore?.spec?.metricsView === metricsViewName,
   );
 };
+
+// Canvases don't reference metrics views directly: each canvas has refs to its
+// component resources, whose refs in turn name the metrics view they query.
+// Walking the resource graph refs (canvas → component → metrics view) delegates
+// the knowledge of how components reference metrics views to the parser.
+// Note: components that only reference a metrics view through a `metrics_sql`
+// query get no metrics view ref from the parser and are missed here; full parity
+// with the backend's runtime.ResolveCanvas would require a reverse-lookup API.
+export const useGetCanvasesForMetricsView = (
+  client: RuntimeClient,
+  metricsViewName: string,
+) => {
+  return createRuntimeServiceListResources(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => {
+          const componentNames = new Set(
+            data.resources
+              ?.filter(
+                (res) =>
+                  res.meta?.name?.kind === ResourceKind.Component &&
+                  res.meta?.refs?.some(
+                    (ref) =>
+                      ref.kind === ResourceKind.MetricsView &&
+                      ref.name === metricsViewName,
+                  ),
+              )
+              .map((res) => res.meta?.name?.name),
+          );
+          return (
+            data.resources?.filter(
+              (res) =>
+                res.meta?.name?.kind === ResourceKind.Canvas &&
+                res.meta?.refs?.some(
+                  (ref) =>
+                    ref.kind === ResourceKind.Component &&
+                    componentNames.has(ref.name),
+                ),
+            ) ?? []
+          );
+        },
+      },
+    },
+    queryClient,
+  );
+};

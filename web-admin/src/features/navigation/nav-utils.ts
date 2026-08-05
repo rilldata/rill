@@ -178,3 +178,29 @@ export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   }
   return MetricsEventScreenName.Unknown;
 }
+
+/**
+ * Identifies the resource a page is showing, for telemetry.
+ * Returns empty strings on pages that aren't showing a named resource, in which case consumers fall
+ * back to parsing the resource out of the page URL.
+ *
+ * The type values are also produced by that URL fallback, which lives in the `rill_ui_telemetry_model`
+ * model of the rill-cloud-metrics project. Keep the two vocabularies in step: they land in the same
+ * column, so a value only used by one of them reads as two different resource types over time.
+ */
+export function getResourceFromPage(page: Page): {
+  type: string;
+  name: string;
+} {
+  switch (true) {
+    case isMetricsExplorerPage(page):
+      return { type: "explore", name: page.params.dashboard ?? "" };
+    case isCanvasDashboardPage(page):
+      return { type: "canvas", name: page.params.dashboard ?? "" };
+    case isReportPage(page):
+      return { type: "report", name: page.params.report ?? "" };
+    case isAlertPage(page):
+      return { type: "alert", name: page.params.alert ?? "" };
+  }
+  return { type: "", name: "" };
+}

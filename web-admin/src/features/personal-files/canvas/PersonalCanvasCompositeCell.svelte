@@ -45,7 +45,7 @@
       {title !== "" ? title : name}
     </span>
     {#if error}
-      <Tag color="red">Error</Tag>
+      <Tag color="red">{m.dashboard_error_tag()}</Tag>
     {/if}
   </div>
   <div

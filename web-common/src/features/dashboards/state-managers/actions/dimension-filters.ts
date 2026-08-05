@@ -71,7 +71,7 @@ export function toggleMultipleDimensionValueSelections(
     expr.cond?.op === V1Operation.OPERATION_NLIKE;
   if (wasInListFilter || wasLikeFilter) {
     eventBus.emit("notification", {
-      message: "Converted filter type to Select",
+      message: m.filter_converted_to_select(),
       link: {
         text: m.common_undo(),
         href: get(page).url.href,
@@ -83,7 +83,7 @@ export function toggleMultipleDimensionValueSelections(
     dashboard.dimensionsWithInlistFilter.filter((d) => d !== dimensionName);
   if (wasLikeFilter) {
     eventBus.emit("notification", {
-      message: "Converted filter type to Select",
+      message: m.filter_converted_to_select(),
       link: {
         text: m.common_undo(),
         href: get(page).url.href,

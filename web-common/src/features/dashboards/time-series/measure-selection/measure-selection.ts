@@ -70,7 +70,7 @@ export class MeasureSelection {
     const endJsDate = get(this.end);
     if (!startJsDate) return;
 
-    const grain = TIME_GRAIN[this.timeGrain].label;
+    const grain = TIME_GRAIN[this.timeGrain].unit;
     const start = roundDownToTimeUnit(
       startJsDate,
       grain,

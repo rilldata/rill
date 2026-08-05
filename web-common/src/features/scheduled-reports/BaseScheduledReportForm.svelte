@@ -24,6 +24,15 @@
   import Checkbox from "../../components/forms/Checkbox.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import {
+    ResourceKind,
+    useResource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+  import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   export let formId: string;
   export let data: Readable<ReportValues>;
@@ -54,6 +63,30 @@
   );
 
   $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
+
+  // Pull the time zone options from the dashboard's spec
+  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
+  $: canvasQuery = useResource<V1Resource>(
+    runtimeClient,
+    canvasName,
+    ResourceKind.Canvas,
+  );
+  $: availableTimeZones = canvasName
+    ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
+    : $exploreSpecQuery.data?.explore?.timeZones;
+
+  // Gates the all-tabs option in the canvas PDF variant.
+  $: showTabOptions = specHasTabGroups(
+    $canvasQuery.data?.canvas?.state?.validSpec?.rows,
+  );
+  $: canvasFiltersEnabled =
+    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
+
+  // Keyboard counterpart of the read-only filter bar's pointer-events guard:
+  // its controls remain focusable, so kick focus back out to keep them inoperable.
+  function blurFocusedDescendant(event: FocusEvent) {
+    if (event.target instanceof HTMLElement) event.target.blur();
+  }
 </script>
 
 <form
@@ -87,77 +120,144 @@
         {selectedRunAsOption.description}
       </div>
     {/if}
-    <ScheduleForm {data} {exploreName} />
-    <Select
-      bind:value={$data["exportFormat"]}
-      id="exportFormat"
-      label={m.report_form_format()}
-      options={[
-        {
-          value: V1ExportFormat.EXPORT_FORMAT_CSV,
-          label: m.report_form_format_csv(),
-        },
-        {
-          value: V1ExportFormat.EXPORT_FORMAT_PARQUET,
-          label: m.report_form_format_parquet(),
-        },
-        {
-          value: V1ExportFormat.EXPORT_FORMAT_XLSX,
-          label: m.report_form_format_xlsx(),
-        },
-      ]}
-    />
-    <Input
-      bind:value={$data["exportLimit"]}
-      errors={$errors["exportLimit"]}
-      id="exportLimit"
-      label={m.report_form_row_limit()}
-      optional
-      placeholder={m.report_form_row_limit_placeholder()}
-    />
-    <div class="flex items-center gap-x-1">
+    <ScheduleForm {data} {availableTimeZones} />
+    {#if canvasName}
+      <Select
+        value={V1ExportFormat.EXPORT_FORMAT_PDF}
+        id="exportFormat"
+        label={m.report_form_format()}
+        options={[
+          {
+            value: V1ExportFormat.EXPORT_FORMAT_PDF,
+            label: m.report_form_format_pdf(),
+          },
+        ]}
+        disabled
+      />
       <Checkbox
-        bind:checked={$data["exportIncludeHeader"]}
-        id="exportIncludeHeader"
+        bind:checked={$data["pdfIncludeFilters"]}
+        id="pdfIncludeFilters"
         onCheckedChange={(checked) => {
-          $data["exportIncludeHeader"] = Boolean(checked);
+          $data["pdfIncludeFilters"] = Boolean(checked);
         }}
         inverse
-        disabled={$data["exportFormat"] ===
-          V1ExportFormat.EXPORT_FORMAT_PARQUET}
-        label={m.report_form_include_metadata()}
+        label={m.export_pdf_include_filters()}
       />
-      <Tooltip location="right" alignment="middle" distance={8}>
-        <div class="text-fg-secondary" style="transform:translateY(-.5px)">
-          <InfoCircle size="13px" />
+      {#if showTabOptions}
+        <Checkbox
+          bind:checked={$data["pdfAllTabs"]}
+          id="pdfAllTabs"
+          onCheckedChange={(checked) => {
+            $data["pdfAllTabs"] = Boolean(checked);
+          }}
+          inverse
+          label={m.export_pdf_tabs_all()}
+        />
+      {/if}
+
+      {#if canvasFiltersEnabled}
+        <div class="flex flex-col gap-y-3">
+          <InputLabel
+            label={m.report_form_filters()}
+            id="filters"
+            capitalize={false}
+            hint={m.report_form_filters_readonly_hint()}
+          />
+          <!-- Read-only display of the canvas filters the report will render with
+               (the dashboard's current filters when creating, the report's captured
+               state when editing; see ScheduledReportDialog). Report forms must not
+               change the underlying dashboard view, so editing is disabled until
+               unified filters support in-memory editing. Pointer events are forced
+               off on all descendants (the time range pill has no read-only mode and
+               the bar re-enables pointer-events internally), which keeps the bar in
+               the accessibility tree, unlike inert; blurring on focus covers keyboard
+               interaction, which pointer-events does not block. -->
+          <CanvasProvider
+            {canvasName}
+            instanceId={runtimeClient.instanceId}
+            isolated
+            urlStateOverride={canvasStateOverride}
+          >
+            <div class="readonly-filter-bar" onfocusin={blurFocusedDescendant}>
+              <CanvasFilters {canvasName} maxWidth={820} readOnly />
+            </div>
+          </CanvasProvider>
         </div>
-        <TooltipContent maxWidth="400px" slot="tooltip-content">
-          {m.report_form_metadata_tooltip()}
-        </TooltipContent>
-      </Tooltip>
-    </div>
-
-    <div class="flex flex-col gap-y-3">
-      <InputLabel
-        label={m.report_form_filters()}
-        id="filters"
-        capitalize={false}
+      {/if}
+    {:else}
+      <Select
+        bind:value={$data["exportFormat"]}
+        id="exportFormat"
+        label={m.report_form_format()}
+        options={[
+          {
+            value: V1ExportFormat.EXPORT_FORMAT_CSV,
+            label: m.report_form_format_csv(),
+          },
+          {
+            value: V1ExportFormat.EXPORT_FORMAT_PARQUET,
+            label: m.report_form_format_parquet(),
+          },
+          {
+            value: V1ExportFormat.EXPORT_FORMAT_XLSX,
+            label: m.report_form_format_xlsx(),
+          },
+        ]}
       />
-      <FiltersForm
-        {filters}
-        {metricsViewName}
+      <Input
+        bind:value={$data["exportLimit"]}
+        errors={$errors["exportLimit"]}
+        id="exportLimit"
+        label={m.report_form_row_limit()}
+        optional
+        placeholder={m.report_form_row_limit_placeholder()}
+      />
+      <div class="flex items-center gap-x-1">
+        <Checkbox
+          bind:checked={$data["exportIncludeHeader"]}
+          id="exportIncludeHeader"
+          onCheckedChange={(checked) => {
+            $data["exportIncludeHeader"] = Boolean(checked);
+          }}
+          inverse
+          disabled={$data["exportFormat"] ===
+            V1ExportFormat.EXPORT_FORMAT_PARQUET}
+          label={m.report_form_include_metadata()}
+        />
+        <Tooltip location="right" alignment="middle" distance={8}>
+          <div class="text-fg-secondary" style="transform:translateY(-.5px)">
+            <InfoCircle size="13px" />
+          </div>
+          <TooltipContent maxWidth="400px" slot="tooltip-content">
+            {m.report_form_metadata_tooltip()}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      {#if filters && timeControls}
+        <div class="flex flex-col gap-y-3">
+          <InputLabel
+            label={m.report_form_filters()}
+            id="filters"
+            capitalize={false}
+          />
+          <FiltersForm
+            {filters}
+            {metricsViewName}
+            {exploreName}
+            {timeControls}
+            side="top"
+          />
+        </div>
+      {/if}
+
+      <RowsAndColumnsForm
+        bind:rows={$data["rows"]}
+        bind:columns={$data["columns"]}
+        columnErrors={$errors["columns"]}
         {exploreName}
-        {timeControls}
-        side="top"
       />
-    </div>
-
-    <RowsAndColumnsForm
-      bind:rows={$data["rows"]}
-      bind:columns={$data["columns"]}
-      columnErrors={$errors["columns"]}
-      {exploreName}
-    />
+    {/if}
 
     <MultiInput
       id="emailRecipients"
@@ -210,3 +310,9 @@
     {/if}
   </div>
 </form>
+
+<style lang="postcss">
+  .readonly-filter-bar :global(*) {
+    pointer-events: none !important;
+  }
+</style>

@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/proto"
 )
 
 // Retry policy for requests to the runtime.
@@ -68,6 +72,39 @@ func New(runtimeHost, bearerToken string) (*Client, error) {
 		RuntimeServiceClient: runtimev1.NewRuntimeServiceClient(conn),
 		conn:                 conn,
 	}, nil
+}
+
+// ListResources retrieves all pages of resources.
+func (c *Client) ListResources(ctx context.Context, req *runtimev1.ListResourcesRequest, opts ...grpc.CallOption) (*runtimev1.ListResourcesResponse, error) {
+	pageReq := proto.Clone(req).(*runtimev1.ListResourcesRequest)
+	pageSize := pageReq.PageSize
+	if pageSize == 0 {
+		pageSize = 100
+	}
+
+	resources, err := pagination.CollectAll(ctx, func(ctx context.Context, pageSize uint32, token string) ([]*runtimev1.Resource, string, error) {
+		pageReq.PageSize = pageSize
+		pageReq.PageToken = token
+		page, err := c.RuntimeServiceClient.ListResources(ctx, pageReq, opts...)
+		if err != nil {
+			return nil, "", err
+		}
+		return page.Resources, page.NextPageToken, nil
+	}, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	slices.SortFunc(resources, func(a, b *runtimev1.Resource) int {
+		an := a.Meta.Name
+		bn := b.Meta.Name
+		if an.Kind != bn.Kind {
+			return strings.Compare(an.Kind, bn.Kind)
+		}
+		return strings.Compare(an.Name, bn.Name)
+	})
+
+	return &runtimev1.ListResourcesResponse{Resources: resources}, nil
 }
 
 // Close closes the client connection.

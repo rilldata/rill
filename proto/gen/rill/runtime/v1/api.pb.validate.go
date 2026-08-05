@@ -7072,6 +7072,23 @@ func (m *ListResourcesRequest) validate(all bool) error {
 
 	// no validation rules for SkipSecurityChecks
 
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 10000 {
+			err := ListResourcesRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 10000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
 	if len(errors) > 0 {
 		return ListResourcesRequestMultiError(errors)
 	}
@@ -7207,6 +7224,8 @@ func (m *ListResourcesResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return ListResourcesResponseMultiError(errors)

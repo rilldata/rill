@@ -17,19 +17,24 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { LayoutBlock } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import ExportDashboardForm from "@rilldata/web-common/features/exports/pdf/ExportDashboardForm.svelte";
   import { exportCanvasPdf } from "@rilldata/web-common/features/exports/pdf/export-canvas-pdf";
   import type { PdfExportRunOptions } from "@rilldata/web-common/features/exports/pdf/types";
+  import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { readable } from "svelte/store";
 
   export let createMagicAuthTokens: boolean;
   // Provide canvas identifiers to enable the "PDF" tab (canvas dashboards only).
   export let canvasName: string | undefined = undefined;
   export let instanceId: string | undefined = undefined;
 
-  const { hidePublicUrl } = featureFlags;
+  const { hidePublicUrl, reports } = featureFlags;
   let isOpen = false;
   let copied = false;
+  let showScheduledReportDialog = false;
   let runPdfExport: ((o: PdfExportRunOptions) => Promise<void>) | null = null;
 
   // Bind the (now-narrowed) identifiers in a helper so the returned closure keeps
@@ -41,6 +46,18 @@
     return (o: PdfExportRunOptions) =>
       exportCanvasPdf({ canvasName: name, instanceId: id, ...o });
   }
+
+  const emptyLayout = readable<LayoutBlock[]>([]);
+  // Resolved when the popover opens (the canvas store may not yet be
+  // initialized when this header button first mounts).
+  $: layoutStore =
+    (isOpen &&
+      canvasName &&
+      instanceId &&
+      getCanvasStoreUnguarded(canvasName, instanceId)?.canvasEntity.layout) ||
+    emptyLayout;
+  // Gates the all-tabs/active-tab option in the PDF export form.
+  $: hasTabGroups = $layoutStore.some((block) => block.kind === "tab-group");
 
   function onCopy() {
     navigator.clipboard.writeText(window.location.href).catch(console.error);
@@ -104,15 +121,36 @@
       </TabsContent>
       {#if runPdfExport}
         <TabsContent value="pdf" class="mt-0 p-4">
-          <ExportDashboardForm
-            runExport={runPdfExport}
-            onComplete={() => (isOpen = false)}
-          />
+          <div class="flex flex-col gap-y-4">
+            <ExportDashboardForm
+              runExport={runPdfExport}
+              showTabOptions={hasTabGroups}
+              onComplete={() => (isOpen = false)}
+            />
+            {#if $reports}
+              <Button
+                type="secondary"
+                onClick={() => {
+                  showScheduledReportDialog = true;
+                  isOpen = false;
+                }}
+              >
+                {m.report_form_schedule_pdf_button()}
+              </Button>
+            {/if}
+          </div>
         </TabsContent>
       {/if}
     </Tabs>
   </PopoverContent>
 </Popover>
+
+{#if showScheduledReportDialog && canvasName}
+  <ScheduledReportDialog
+    bind:open={showScheduledReportDialog}
+    props={{ mode: "create-canvas", canvasName }}
+  />
+{/if}
 
 <style lang="postcss">
   h3 {

@@ -2822,6 +2822,15 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   navigation = false;
 
   /**
+   * HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+   * It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+   * In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
+   *
+   * @generated from field: bool hide_navigation_bar = 18;
+   */
+  hideNavigationBar = false;
+
+  /**
    * Blob containing UI state for rendering the initial embed. Not currently supported.
    *
    * @generated from field: string state = 7;
@@ -2864,6 +2873,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "hide_navigation_bar", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 17, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -18551,6 +18561,14 @@ export class ReportOptions extends Message<ReportOptions> {
   canvas = "";
 
   /**
+   * Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+   * Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+   *
+   * @generated from field: map<string, rill.runtime.v1.Expression> metrics_view_filters = 23;
+   */
+  metricsViewFilters: { [key: string]: Expression } = {};
+
+  /**
    * web_open_mode is used to determine how to create or disable open link for the report
    * - send "recipient" for reports that should be opened with recipient's permissions - requires login
    * - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
@@ -18587,6 +18605,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "metrics_view_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 18, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

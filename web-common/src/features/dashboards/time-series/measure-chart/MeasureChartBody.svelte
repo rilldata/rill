@@ -532,7 +532,9 @@
       <g class="data-readout">
         <text
           class="fill-fg-muted text-outline text-[11px]"
-          aria-label="{measureName} primary time label"
+          aria-label={m.dashboard_measure_chart_primary_time_label_aria({
+            name: measureName,
+          })}
           x={pb.left + 6}
           y={pb.top + 10}
         >

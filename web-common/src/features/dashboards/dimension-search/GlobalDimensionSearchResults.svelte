@@ -74,10 +74,12 @@
     <div class="flex flex-col divide-y divide-gray-200">
       {#if $results.errors.length}
         <div class="text-center p-2 w-full text-red-500">
-          Search error. Try again.
+          {m.dashboard_dimension_search_error()}
         </div>
       {:else if $results.completed && responses.length === 0}
-        <div class="text-fg-disabled text-center p-2 w-full">no results</div>
+        <div class="text-fg-disabled text-center p-2 w-full">
+          {m.dashboard_dimension_search_no_results()}
+        </div>
       {:else}
         {#if $results.progress < 100}
           <div class="flex flex-row items-center gap-x-2 px-2">

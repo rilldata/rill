@@ -19,6 +19,7 @@ export class MetricsEventFactory {
       event_time: new Date().toISOString(),
       event_type: eventType,
       event_name: eventName,
+      page_url: window.location.href,
     };
   }
 }

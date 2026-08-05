@@ -24,6 +24,7 @@ export async function exportCanvasPdf(
   // Mount the off-screen export render (see CanvasPdfExportView) and force-enable
   // every component's data query; the tick() inside prepareCanvasForCapture
   // flushes it into the DOM before we capture. The live dashboard is untouched.
+  canvasEntity.exportAllTabs.set(opts.allTabs);
   canvasEntity.exportMode.set(true);
 
   try {
@@ -63,7 +64,7 @@ export async function exportCanvasPdf(
       filename: buildPdfFilename(title),
       backgroundColor,
       generatedAt,
-      dashboardUrl: window.location.href,
+      dashboardUrl: opts.dashboardUrl ?? window.location.href,
     });
     opts.onProgress?.({ phase: "assembling", ratio: 1 });
   } finally {

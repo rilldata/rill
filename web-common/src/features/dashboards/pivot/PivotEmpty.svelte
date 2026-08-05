@@ -20,8 +20,9 @@
     {#if !isEmbedded}
       <div class="text-fg-secondary">
         {m.dashboard_pivot_need_help_discord()}
-        <a target="_blank" rel="noopener" href="https://discord.gg/2ubRfjC7Rh"
-          >Discord</a
+        <a target="_blank" rel="noopener" href="https://discord.gg/2ubRfjC7Rh">
+          <!-- i18n-ignore: standalone product name -->
+          Discord</a
         >
       </div>
     {/if}
@@ -42,7 +43,7 @@
           target="_blank"
           rel="noopener"
           href="https://docs.rilldata.com/guide/dashboards/explore/pivot"
-          >docs</a
+          >{m.common_docs()}</a
         >.
       </div>
     {/if}
@@ -67,7 +68,7 @@
         <a
           target="_blank"
           href="https://docs.rilldata.com/guide/dashboards/explore/pivot"
-          >docs</a
+          >{m.common_docs()}</a
         >.
       </div>
     {/if}

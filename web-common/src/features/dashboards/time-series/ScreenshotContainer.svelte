@@ -171,6 +171,7 @@
         </div>
 
         <footer class="flex items-center justify-between text-xs text-fg-muted">
+          <!-- i18n-ignore: standalone product name -->
           <span>Rill</span>
           <span>{m.dashboard_generated({ time: generatedTime })}</span>
         </footer>

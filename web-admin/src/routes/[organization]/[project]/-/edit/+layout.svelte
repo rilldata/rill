@@ -31,6 +31,7 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -245,13 +246,14 @@
 
 {#snippet envEditDisabled()}
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
-    <InfoIcon size={14} /> Manage environment variables in
+    <InfoIcon size={14} />
+    {m.edit_env_manage_in_settings()}
     <a
       href="/{organization}/{project}/-/settings/environment-variables"
       target="_blank"
       rel="noopener"
     >
-      Settings →
+      {m.edit_env_settings_link()}
     </a>
   </div>
 {/snippet}

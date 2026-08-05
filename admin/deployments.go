@@ -417,7 +417,7 @@ func (s *Service) DeleteDeploymentInner(ctx context.Context, depl *database.Depl
 					CommitMessage: "Auto checkpoint",
 				})
 				if err != nil {
-					s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+					s.Logger.Warn("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 				}
 			}
 
@@ -427,7 +427,7 @@ func (s *Service) DeleteDeploymentInner(ctx context.Context, depl *database.Depl
 				InstanceId: depl.RuntimeInstanceID,
 			})
 			if err != nil {
-				s.Logger.Error("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+				s.Logger.Warn("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
 	}
