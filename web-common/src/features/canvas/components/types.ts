@@ -3,10 +3,11 @@ import type { CircularCanvasChartSpec } from "@rilldata/web-common/features/canv
 import type { ScatterPlotCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/ScatterPlotChart";
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type { ChartType } from "../../components/charts/types";
+import type { CustomChart } from "./charts/custom-chart";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { LeaderboardSpec } from "./leaderboard";
-import type { CustomChart } from "./charts/custom-chart";
+import type { MapSpec } from "./map";
 import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
 
@@ -19,6 +20,7 @@ export type ComponentWithMetricsView =
   | KPISpec
   | KPIGridSpec
   | LeaderboardSpec
+  | MapSpec
   | CustomChart;
 
 export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
@@ -59,6 +61,7 @@ export type CanvasComponentType =
   | "pivot"
   | "table"
   | "leaderboard"
+  | "map"
   | "custom_chart";
 
 interface LineChart {
@@ -90,6 +93,9 @@ export interface PivotTemplateT {
 export interface TableTemplateT {
   table: TableSpec;
 }
+export interface MapTemplateT {
+  map: MapSpec;
+}
 
 export type TemplateSpec =
   | ChartTemplates
@@ -97,4 +103,5 @@ export type TemplateSpec =
   | PivotTemplateT
   | MarkdownTemplateT
   | ImageTemplateT
-  | TableTemplateT;
+  | TableTemplateT
+  | MapTemplateT;

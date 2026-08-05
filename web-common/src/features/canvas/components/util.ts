@@ -5,21 +5,35 @@ import {
 import { CustomChartComponent } from "@rilldata/web-common/features/canvas/components/charts/custom-chart";
 import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
+import BigNumberIcon from "@rilldata/web-common/features/canvas/icons/BigNumberIcon.svelte";
+import ChartIcon from "@rilldata/web-common/features/canvas/icons/ChartIcon.svelte";
+import LeaderboardIcon from "@rilldata/web-common/features/canvas/icons/LeaderboardIcon.svelte";
+import MapIcon from "@rilldata/web-common/features/canvas/icons/MapIcon.svelte";
+import TableIcon from "@rilldata/web-common/features/canvas/icons/TableIcon.svelte";
+import TextIcon from "@rilldata/web-common/features/canvas/icons/TextIcon.svelte";
 import type {
   ComponentInputParam,
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import {
+  CHART_CONFIG,
+  type ChartMetadataConfig,
+} from "@rilldata/web-common/features/components/charts/config.ts";
+import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
+import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
+import {
   type V1ComponentSpec,
   type V1MetricsViewSpec,
   type V1ResolveCanvasResponseResolvedComponents,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import { readable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
 import { ImageComponent } from "./image";
 import { LeaderboardComponent } from "./leaderboard";
+import { MapComponent } from "./map";
 import { MarkdownCanvasComponent } from "./markdown";
 import { PivotCanvasComponent } from "./pivot";
 import type {
@@ -27,18 +41,6 @@ import type {
   ComponentCommonProperties,
   ComponentSpec,
 } from "./types";
-import ChartIcon from "@rilldata/web-common/features/canvas/icons/ChartIcon.svelte";
-import TableIcon from "@rilldata/web-common/features/canvas/icons/TableIcon.svelte";
-import TextIcon from "@rilldata/web-common/features/canvas/icons/TextIcon.svelte";
-import BigNumberIcon from "@rilldata/web-common/features/canvas/icons/BigNumberIcon.svelte";
-import LeaderboardIcon from "@rilldata/web-common/features/canvas/icons/LeaderboardIcon.svelte";
-import {
-  CHART_CONFIG,
-  type ChartMetadataConfig,
-} from "@rilldata/web-common/features/components/charts/config.ts";
-import { readable } from "svelte/store";
-import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
-import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -119,6 +121,7 @@ const NON_CHART_TYPES = [
   "table",
   "pivot",
   "leaderboard",
+  "map",
   "custom_chart",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
@@ -151,6 +154,7 @@ const baseComponentMap = {
   leaderboard: LeaderboardComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
+  map: MapComponent,
   custom_chart: CustomChartComponent,
 } as const;
 const IconMap = {
@@ -158,6 +162,7 @@ const IconMap = {
   kpi_grid: BigNumberIcon,
   leaderboard: LeaderboardIcon,
   table: TableIcon,
+  map: MapIcon,
 };
 
 const chartComponentMap = Object.fromEntries(
@@ -177,6 +182,7 @@ const baseDisplayMap = {
   pivot: "Pivot",
   image: "Image",
   leaderboard: "Leaderboard",
+  map: "Map",
   custom_chart: "Custom Chart",
 } as const;
 
