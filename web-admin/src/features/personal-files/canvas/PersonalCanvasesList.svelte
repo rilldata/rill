@@ -11,6 +11,7 @@
   import PersonalCanvasCompositeCell from "@rilldata/web-admin/features/personal-files/canvas/PersonalCanvasCompositeCell.svelte";
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     org,
@@ -68,8 +69,10 @@
     <header class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <Lock size="16px" />
-        <h2 class="text-lg font-medium">My dashboards</h2>
-        <span class="text-sm text-fg-secondary">Only visible to you</span>
+        <h2 class="text-lg font-medium">{m.personal_files_canvases_title()}</h2>
+        <span class="text-sm text-fg-secondary">
+          {m.personal_files_canvases_visibility_hint()}
+        </span>
       </div>
       <CreatePersonalCanvasDialog {org} {project} />
     </header>
@@ -89,10 +92,10 @@
           <ResourceListEmptyState
             slot="empty"
             icon={ExploreIcon}
-            message="You don't have any personal canvases yet."
+            message={m.personal_files_canvases_empty_message()}
           >
             <span slot="action">
-              Create one to explore the project's data your way.
+              {m.personal_files_canvases_empty_action()}
             </span>
           </ResourceListEmptyState>
         </ResourceList>
