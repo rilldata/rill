@@ -61,6 +61,9 @@
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { Throttler } from "@rilldata/web-common/lib/throttler";
+
+  const PAGE_VIEW_THROTTLE_TIMEOUT = 250;
 
   let { children }: { children: Snippet } = $props();
 
@@ -260,6 +263,14 @@
   // than a path segment, so keying on the path alone would never record a user switching to pivot or
   // time dimension detail. The rest of the query string is deliberately excluded: filters, time range
   // and sort change on nearly every interaction, and keying on them would emit an event per click.
+  //
+  // Events are throttled so that pages the user only passes through, like clicking into a dashboard
+  // and immediately hitting back, don't each record a view. The throttler keeps the most recent
+  // callback, so the page the user actually landed on is the one reported.
+  const pageViewThrottler = new Throttler(
+    PAGE_VIEW_THROTTLE_TIMEOUT,
+    PAGE_VIEW_THROTTLE_TIMEOUT,
+  );
   let lastTrackedView: string | undefined;
   $effect(() => {
     const trackedView = `${page.url.pathname}?view=${page.url.searchParams.get("view") ?? ""}`;
@@ -267,11 +278,15 @@
     if (!project || !$user.data?.user?.id || trackedView === lastTrackedView)
       return;
     lastTrackedView = trackedView;
+    // Capture the page's fields now; `page` will have moved on by the time the throttler fires.
+    const screenName = getScreenNameFromPage(page);
     const resource = getResourceFromPage(page);
-    void behaviourEvent?.firePageViewEvent(
-      getScreenNameFromPage(page),
-      resource.type,
-      resource.name,
+    pageViewThrottler.throttle(() =>
+      behaviourEvent?.firePageViewEvent(
+        screenName,
+        resource.type,
+        resource.name,
+      ),
     );
   });
 </script>
