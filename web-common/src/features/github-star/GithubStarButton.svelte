@@ -7,9 +7,6 @@
   } from "@rilldata/web-common/components/popover";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import {
     GITHUB_STAR_URL,
     githubStarNudge,
@@ -28,8 +25,6 @@
   // relying on a `showFooterLinks={false}` in an unrelated layout.
   const { adminServer } = featureFlags;
 
-  const metadataQuery = createLocalServiceGetMetadata();
-
   let open = $state(false);
   /**
    * Whether a nudge is outstanding, i.e. the popover opened by itself and the user
@@ -42,25 +37,15 @@
   /** The popover has no trigger, so it anchors to the footer link instead. */
   let anchor = $state<HTMLAnchorElement | null>(null);
 
-  // A user who ran `rill telemetry disable` has signalled that they do not want to
-  // be marketed to. They keep the button; they do not get the unprompted nudge.
-  const analyticsEnabled = $derived(
-    $metadataQuery.data?.analyticsEnabled !== false,
-  );
-
   // Opening a popover on a timer has no reactive equivalent, so this is one of the
   // cases where an effect is the right tool.
   $effect(() => {
-    if ($adminServer || autoOpened || !nudge.visible || !analyticsEnabled)
-      return;
+    if ($adminServer || autoOpened || !nudge.visible) return;
 
     const timeout = setTimeout(() => {
       autoOpened = true;
       nudging = true;
       open = true;
-      void behaviourEvent?.fireGithubStarEvent(
-        BehaviourEventAction.GithubStarShown,
-      );
     }, AUTO_OPEN_DELAY_MS);
 
     return () => clearTimeout(timeout);
@@ -73,27 +58,18 @@
     // silent ignores would re-ask engaged users at every mute expiry.
     nudging = false;
     nudge.recordSoftDismiss();
-    void behaviourEvent?.fireGithubStarEvent(
-      BehaviourEventAction.GithubStarDismissed,
-    );
   }
 
   // Shared by the footer link and the popover's primary action: both send the user
   // to the repo, so both retire the nudge.
   function star() {
     nudge.recordStar();
-    void behaviourEvent?.fireGithubStarEvent(
-      BehaviourEventAction.GithubStarClicked,
-    );
     nudging = false;
     open = false;
   }
 
   function optOut() {
     nudge.recordOptOut();
-    void behaviourEvent?.fireGithubStarEvent(
-      BehaviourEventAction.GithubStarOptedOut,
-    );
     nudging = false;
     open = false;
   }

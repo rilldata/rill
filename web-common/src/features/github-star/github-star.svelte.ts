@@ -23,26 +23,18 @@ const INITIAL_STATE: GithubStarState = { status: "unarmed", dismissCount: 0 };
 
 /**
  * Tracks whether to nudge the user to star Rill on GitHub.
- *
- * The nudge is armed by a payoff moment (a dashboard rendering) rather than by
- * install or upgrade: a fresh install has no accumulated value to be happy about,
- * and Rill ships patches every few days, so an upgrade trigger would nag the most
- * engaged users hardest.
- *
- * Dismissal escalates rather than muting for a fixed period. An "X" click is
- * ambiguous between "not now" and "no", and the client cannot tell which, so a
- * flat mute would re-ask forever. Escalating to permanent caps an install at
- * three asks.
+ * The nudge is armed by a dashboard render.
+ * Dismissal escalates rather than muting for a fixed period. After three soft dismissals, the nudge is retired.
  */
 export class GithubStarNudge {
-  #state = $state<GithubStarState>(INITIAL_STATE);
+  private currentState = $state<GithubStarState>(INITIAL_STATE);
 
-  constructor() {
-    this.#state = readState();
+  public constructor() {
+    this.currentState = readState();
   }
 
-  get state() {
-    return this.#state;
+  public get state() {
+    return this.currentState;
   }
 
   /**
@@ -50,24 +42,24 @@ export class GithubStarNudge {
    * Recomputed whenever the state changes; mutes last 30+ days, so re-reading on
    * each app load is ample granularity for expiry.
    */
-  get visible() {
-    return isVisible(this.#state);
+  public get visible() {
+    return isVisible(this.currentState);
   }
 
   /** Called when the user reaches a payoff moment: a dashboard rendered. */
-  armPayoff() {
-    if (this.#state.status !== "unarmed") return;
-    this.#commit({ ...this.#state, status: "armed" });
+  public armPayoff() {
+    if (this.currentState.status !== "unarmed") return;
+    this.commit({ ...this.currentState, status: "armed" });
   }
 
   /** The user starred. Terminal. */
-  recordStar() {
-    this.#commit({ ...this.#state, status: "done" });
+  public recordStar() {
+    this.commit({ ...this.currentState, status: "done" });
   }
 
   /** The user clicked "Don't show again". Terminal. */
-  recordOptOut() {
-    this.#commit({ ...this.#state, status: "done" });
+  public recordOptOut() {
+    this.commit({ ...this.currentState, status: "done" });
   }
 
   /**
@@ -75,24 +67,24 @@ export class GithubStarNudge {
    * indistinguishable from the client, and not counting silent ignores would let
    * engaged users be re-asked every 30 days with no backoff.
    */
-  recordSoftDismiss() {
-    if (!isVisible(this.#state)) return;
+  public recordSoftDismiss() {
+    if (!isVisible(this.currentState)) return;
 
-    const dismissCount = this.#state.dismissCount + 1;
+    const dismissCount = this.currentState.dismissCount + 1;
     const muteDays = MUTE_SCHEDULE_DAYS[dismissCount - 1];
     if (muteDays === undefined) {
-      this.#commit({ ...this.#state, status: "done", dismissCount });
+      this.commit({ ...this.currentState, status: "done", dismissCount });
       return;
     }
-    this.#commit({
-      ...this.#state,
+    this.commit({
+      ...this.currentState,
       dismissCount,
       mutedUntil: Date.now() + muteDays * DAY_MS,
     });
   }
 
-  #commit(next: GithubStarState) {
-    this.#state = next;
+  private commit(next: GithubStarState) {
+    this.currentState = next;
     writeState(next);
   }
 }

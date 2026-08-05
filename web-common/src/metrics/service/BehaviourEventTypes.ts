@@ -32,12 +32,6 @@ export enum BehaviourEventAction {
   GithubConnectFailure = "ghconnected-failure",
   GithubDisconnect = "ghconnected-disconnect",
 
-  // GitHub star nudge actions
-  GithubStarShown = "github-star-shown",
-  GithubStarClicked = "github-star-clicked",
-  GithubStarDismissed = "github-star-dismissed",
-  GithubStarOptedOut = "github-star-opted-out",
-
   // Welcome/Connector actions
   AddDataIntent = "add-data-intent",
   WelcomePageViewed = "welcome-page-viewed",

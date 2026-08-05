@@ -63,11 +63,8 @@
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   onMount(() => {
-    // A rendered dashboard is the payoff moment that arms the GitHub star nudge.
-    // The nudge is Rill Developer only, so Cloud and embeds must not even arm it:
-    // web-admin sets adminServer synchronously during root layout init, and embeds
-    // reset it to false, hence both checks. `adminServer` is read once here rather
-    // than tracked, since a dashboard never moves between Cloud and Developer.
+    // Github star nudge is Rill developer only.
+    // Nudge on dashboard render.
     if (!isEmbedded && !get(adminServer)) githubStarNudge.armPayoff();
   });
 

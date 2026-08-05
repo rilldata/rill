@@ -126,24 +126,6 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     return event;
   }
 
-  public githubStarEvent(
-    commonFields: CommonFields,
-    commonUserFields: CommonUserFields,
-    action: BehaviourEventAction,
-  ): BehaviourEvent {
-    const event = this.getBaseMetricsEvent(
-      "behavioral",
-      action,
-      commonFields,
-      commonUserFields,
-    ) as BehaviourEvent;
-    event.action = action;
-    event.medium = BehaviourEventMedium.Button;
-    event.space = MetricsEventSpace.LeftPanel;
-    event.screen_name = MetricsEventScreenName.Unknown;
-    return event;
-  }
-
   public githubIntent(
     commonFields: CommonFields,
     commonUserFields: CommonUserFields,

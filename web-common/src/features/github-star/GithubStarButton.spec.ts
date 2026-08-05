@@ -1,19 +1,5 @@
 import { render, screen } from "@testing-library/svelte";
-import { readable } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-// The metadata query hits the local-only runtime service; stub it so the
-// component can read `analyticsEnabled` without a server.
-const analyticsEnabled = vi.hoisted(() => ({ value: true }));
-vi.mock("@rilldata/web-common/runtime-client/local-service", () => ({
-  createLocalServiceGetMetadata: () =>
-    readable({ data: { analyticsEnabled: analyticsEnabled.value } }),
-}));
-
-const fireGithubStarEvent = vi.hoisted(() => vi.fn());
-vi.mock("@rilldata/web-common/metrics/initMetrics", () => ({
-  behaviourEvent: { fireGithubStarEvent },
-}));
 
 import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 import GithubStarButton from "./GithubStarButton.svelte";
@@ -44,7 +30,6 @@ function renderOutsideElement() {
 describe("GithubStarButton", () => {
   beforeEach(() => {
     localStorage.clear();
-    analyticsEnabled.value = true;
     featureFlags.adminServer.resetToDefault();
     vi.useFakeTimers();
   });
@@ -64,7 +49,6 @@ describe("GithubStarButton", () => {
     expect(screen.queryByText("Star us on GitHub")).not.toBeInTheDocument();
     expect(screen.queryByText("Enjoying Rill?")).not.toBeInTheDocument();
     expect(nudge.state.dismissCount).toBe(0);
-    expect(fireGithubStarEvent).not.toHaveBeenCalled();
   });
 
   it("always renders the footer link, pointing straight at the repo", () => {
@@ -87,7 +71,6 @@ describe("GithubStarButton", () => {
     await settle();
 
     expect(screen.getByText("Enjoying Rill?")).toBeInTheDocument();
-    expect(fireGithubStarEvent).toHaveBeenCalledWith("github-star-shown");
   });
 
   it("does not take the keyboard when the nudge opens", async () => {
@@ -127,16 +110,6 @@ describe("GithubStarButton", () => {
     expect(document.activeElement).toBe(editor);
   });
 
-  it("keeps the button but withholds the nudge when telemetry is disabled", async () => {
-    analyticsEnabled.value = false;
-    const nudge = renderArmed();
-    await settle();
-
-    expect(screen.getByText("Star us on GitHub")).toBeInTheDocument();
-    expect(screen.queryByText("Enjoying Rill?")).not.toBeInTheDocument();
-    expect(nudge.state.dismissCount).toBe(0);
-  });
-
   it("counts dismissing the nudge with Escape as a soft dismissal", async () => {
     const nudge = renderArmed();
     await settle();
@@ -148,7 +121,6 @@ describe("GithubStarButton", () => {
     expect(nudge.state.status).toBe("armed");
     expect(nudge.state.dismissCount).toBe(1);
     expect(nudge.state.mutedUntil).toBeGreaterThan(Date.now());
-    expect(fireGithubStarEvent).toHaveBeenCalledWith("github-star-dismissed");
   });
 
   it("retires the nudge when the footer link is clicked, without opening the popover", async () => {
@@ -161,10 +133,6 @@ describe("GithubStarButton", () => {
     expect(screen.queryByText("Enjoying Rill?")).not.toBeInTheDocument();
     expect(nudge.state.status).toBe("done");
     expect(nudge.state.dismissCount).toBe(0);
-    expect(fireGithubStarEvent).toHaveBeenCalledWith("github-star-clicked");
-    expect(fireGithubStarEvent).not.toHaveBeenCalledWith(
-      "github-star-dismissed",
-    );
   });
 
   it("records an opt-out as terminal without spending a dismissal", async () => {
@@ -176,7 +144,6 @@ describe("GithubStarButton", () => {
 
     expect(nudge.state.status).toBe("done");
     expect(nudge.state.dismissCount).toBe(0);
-    expect(fireGithubStarEvent).toHaveBeenCalledWith("github-star-opted-out");
   });
 
   it("records the star click as terminal without spending a dismissal", async () => {
@@ -188,7 +155,6 @@ describe("GithubStarButton", () => {
 
     expect(nudge.state.status).toBe("done");
     expect(nudge.state.dismissCount).toBe(0);
-    expect(fireGithubStarEvent).toHaveBeenCalledWith("github-star-clicked");
   });
 
   it("does not re-open unprompted after being dismissed", async () => {
