@@ -13,7 +13,7 @@
     type GithubStarNudge,
   } from "./github-star.svelte";
 
-  /** Injectable so tests get an isolated instance instead of the module singleton. */
+  /** Injectable so tests can supply a nudge backed by their own store. */
   let { nudge = githubStarNudge }: { nudge?: GithubStarNudge } = $props();
 
   /** Grace period so the nudge does not appear mid route transition. */

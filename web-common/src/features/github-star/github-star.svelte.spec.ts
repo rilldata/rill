@@ -1,3 +1,4 @@
+import { SvelteLocalStorage } from "@rilldata/web-common/lib/store-utils/svelte-local-storage.svelte.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GithubStarNudge } from "./github-star.svelte";
 
@@ -9,9 +10,16 @@ function atDay(days: number) {
   vi.setSystemTime(START + days * DAY_MS);
 }
 
+/** A fresh nudge that re-reads localStorage, standing in for an app reload. */
+function reload() {
+  SvelteLocalStorage.clearInstanceCache();
+  return new GithubStarNudge();
+}
+
 describe("GithubStarNudge", () => {
   beforeEach(() => {
     localStorage.clear();
+    SvelteLocalStorage.clearInstanceCache();
     vi.useFakeTimers();
     vi.setSystemTime(START);
   });
@@ -30,7 +38,7 @@ describe("GithubStarNudge", () => {
 
   it("persists the armed state across reloads", () => {
     new GithubStarNudge().armPayoff();
-    expect(new GithubStarNudge().visible).toBe(true);
+    expect(reload().visible).toBe(true);
   });
 
   it("treats a star click as terminal", () => {
@@ -43,7 +51,7 @@ describe("GithubStarNudge", () => {
     nudge.armPayoff();
     expect(nudge.visible).toBe(false);
     atDay(365);
-    expect(new GithubStarNudge().visible).toBe(false);
+    expect(reload().visible).toBe(false);
   });
 
   it("treats an explicit opt-out as terminal", () => {
@@ -52,7 +60,7 @@ describe("GithubStarNudge", () => {
     nudge.recordOptOut();
 
     atDay(365);
-    expect(new GithubStarNudge().visible).toBe(false);
+    expect(reload().visible).toBe(false);
   });
 
   it("mutes a soft dismissal until the following day", () => {
@@ -63,9 +71,9 @@ describe("GithubStarNudge", () => {
     expect(nudge.state.status).toBe("armed");
     expect(nudge.visible).toBe(false);
     atDay(0.99);
-    expect(new GithubStarNudge().visible).toBe(false);
+    expect(reload().visible).toBe(false);
     atDay(1);
-    expect(new GithubStarNudge().visible).toBe(true);
+    expect(reload().visible).toBe(true);
   });
 
   it("continues asking daily until the user stars or opts out", () => {
@@ -74,7 +82,7 @@ describe("GithubStarNudge", () => {
     let asks = 0;
     for (let day = 0; day < 400; day++) {
       atDay(day);
-      const nudge = new GithubStarNudge();
+      const nudge = reload();
       if (nudge.visible) {
         asks++;
         nudge.recordSoftDismiss();
@@ -82,7 +90,7 @@ describe("GithubStarNudge", () => {
     }
 
     expect(asks).toBe(400);
-    expect(new GithubStarNudge().state.status).toBe("armed");
+    expect(reload().state.status).toBe("armed");
   });
 
   it("ignores a soft dismissal while muted", () => {
@@ -114,10 +122,10 @@ describe("GithubStarNudge", () => {
 
   it("treats corrupt stored state as unarmed", () => {
     localStorage.setItem("rill:github-star", "{not json");
-    expect(new GithubStarNudge().visible).toBe(false);
+    expect(reload().visible).toBe(false);
 
     localStorage.setItem("rill:github-star", JSON.stringify({ nonsense: 1 }));
-    expect(new GithubStarNudge().visible).toBe(false);
+    expect(reload().visible).toBe(false);
   });
 
   it("degrades to in-memory when localStorage throws", () => {

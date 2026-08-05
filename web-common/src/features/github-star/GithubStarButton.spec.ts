@@ -2,16 +2,28 @@ import { render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+import { InMemoryRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
 import GithubStarButton from "./GithubStarButton.svelte";
-import { GITHUB_STAR_URL, GithubStarNudge } from "./github-star.svelte";
+import {
+  GITHUB_STAR_URL,
+  GithubStarNudge,
+  type GithubStarState,
+} from "./github-star.svelte";
 
 /** Lets the auto-open timer and the resulting Svelte update settle. */
 function settle() {
   return vi.advanceTimersByTimeAsync(2000);
 }
 
+/** A nudge of its own, so these tests neither touch localStorage nor the app-wide singleton. */
+function createNudge() {
+  return new GithubStarNudge(
+    new InMemoryRuneStore<GithubStarState>({ status: "unarmed" }),
+  );
+}
+
 function renderArmed() {
-  const nudge = new GithubStarNudge();
+  const nudge = createNudge();
   nudge.armPayoff();
   render(GithubStarButton, { props: { nudge } });
   return nudge;
@@ -29,7 +41,6 @@ function renderOutsideElement() {
 
 describe("GithubStarButton", () => {
   beforeEach(() => {
-    localStorage.clear();
     featureFlags.adminServer.resetToDefault();
     vi.useFakeTimers();
   });
@@ -53,7 +64,7 @@ describe("GithubStarButton", () => {
   });
 
   it("always renders the footer link, pointing straight at the repo", () => {
-    render(GithubStarButton, { props: { nudge: new GithubStarNudge() } });
+    render(GithubStarButton, { props: { nudge: createNudge() } });
 
     const link = screen.getByText("Star us on GitHub").closest("a");
     expect(link).toHaveAttribute("href", GITHUB_STAR_URL);
@@ -61,7 +72,7 @@ describe("GithubStarButton", () => {
   });
 
   it("does not open unprompted when no payoff has happened", async () => {
-    render(GithubStarButton, { props: { nudge: new GithubStarNudge() } });
+    render(GithubStarButton, { props: { nudge: createNudge() } });
     await settle();
 
     expect(screen.queryByText("Enjoying Rill?")).not.toBeInTheDocument();

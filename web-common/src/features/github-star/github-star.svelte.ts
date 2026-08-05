@@ -1,3 +1,6 @@
+import { SvelteLocalStorage } from "@rilldata/web-common/lib/store-utils/svelte-local-storage.svelte.ts";
+import type { RuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
+
 export const GITHUB_STAR_URL = "https://github.com/rilldata/rill";
 
 const STORAGE_KEY = "rill:github-star";
@@ -20,14 +23,15 @@ const INITIAL_STATE: GithubStarState = { status: "unarmed" };
  * A soft dismissal mutes it for one day; only starring or opting out retires it.
  */
 export class GithubStarNudge {
-  private currentState = $state<GithubStarState>(INITIAL_STATE);
-
-  public constructor() {
-    this.currentState = readState();
-  }
+  public constructor(
+    private readonly store: RuneStore<GithubStarState> = SvelteLocalStorage.createJsonStore<GithubStarState>(
+      STORAGE_KEY,
+      INITIAL_STATE,
+    ),
+  ) {}
 
   public get state() {
-    return this.currentState;
+    return this.store.value;
   }
 
   /**
@@ -36,23 +40,23 @@ export class GithubStarNudge {
    * granularity for the one-day mute to expire.
    */
   public get visible() {
-    return isVisible(this.currentState);
+    return isVisible(this.store.value);
   }
 
   /** Called when the user reaches a payoff moment: a dashboard rendered. */
   public armPayoff() {
-    if (this.currentState.status !== "unarmed") return;
-    this.commit({ ...this.currentState, status: "armed" });
+    if (this.state.status === "armed" || this.state.status === "done") return;
+    this.store.setter({ ...this.state, status: "armed" });
   }
 
   /** The user starred. Terminal. */
   public recordStar() {
-    this.commit({ ...this.currentState, status: "done" });
+    this.store.setter({ ...this.state, status: "done" });
   }
 
   /** The user clicked "Don't show again". Terminal. */
   public recordOptOut() {
-    this.commit({ ...this.currentState, status: "done" });
+    this.store.setter({ ...this.state, status: "done" });
   }
 
   /**
@@ -60,47 +64,18 @@ export class GithubStarNudge {
    * until the following day.
    */
   public recordSoftDismiss() {
-    if (!isVisible(this.currentState)) return;
+    if (!this.visible) return;
 
-    this.commit({
-      ...this.currentState,
+    this.store.setter({
+      ...this.state,
       mutedUntil: Date.now() + DAY_MS,
     });
-  }
-
-  private commit(next: GithubStarState) {
-    this.currentState = next;
-    writeState(next);
   }
 }
 
 export function isVisible(state: GithubStarState, now = Date.now()) {
   if (state.status !== "armed") return false;
   return !state.mutedUntil || state.mutedUntil <= now;
-}
-
-function readState(): GithubStarState {
-  try {
-    // Accessing localStorage can throw rather than return null: a sandboxed or
-    // storage-partitioned iframe raises a SecurityError, and it is absent on the server.
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return INITIAL_STATE;
-    const parsed = JSON.parse(raw) as GithubStarState;
-    if (!parsed || typeof parsed.status !== "string") return INITIAL_STATE;
-    return { ...INITIAL_STATE, ...parsed };
-  } catch {
-    // Corrupt or unreadable state degrades to "unarmed" rather than throwing.
-    // The worst case is one extra ask.
-    return INITIAL_STATE;
-  }
-}
-
-function writeState(state: GithubStarState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // no-op: nudge degrades to in-memory only
-  }
 }
 
 export const githubStarNudge = new GithubStarNudge();
