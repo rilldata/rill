@@ -11,6 +11,10 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { isSimpleMeasure } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
 import { Duration } from "luxon";
 
+export type MetricsViewName = string;
+export type DimensionName = string;
+export type MeasureName = string;
+
 /**
  * Reactive view over a set of metrics views.
  *
@@ -24,22 +28,24 @@ import { Duration } from "luxon";
  */
 export class MetricsViewsProvider {
   /** Valid spec per metrics view name. Absent while the resource is loading or invalid. */
-  public specs = $state<Record<string, V1MetricsViewSpec>>({});
+  public specs = $state<Record<MetricsViewName, V1MetricsViewSpec>>({});
   /** Time range summary per metrics view name. Absent for metrics views without a time dimension. */
-  public timeRangeSummaries = $state<Record<string, V1TimeRangeSummary>>({});
+  public timeRangeSummaries = $state<
+    Record<MetricsViewName, V1TimeRangeSummary>
+  >({});
   /** Max queryable time range in milliseconds per metrics view name. Zero when unrestricted. */
   public maxQueryTimeRangeMillis = $state<Record<string, number>>({});
 
+  /** Dimension spec per metrics view, keyed by dimension name (or column when unnamed). */
+  public dimensionSpecs = $state<
+    Record<DimensionName, Record<MetricsViewName, MetricsViewSpecDimension>>
+  >({});
   /**
    * Measure spec per metrics view, keyed by measure name.
    * The same measure name can be defined by more than one metrics view.
    */
   public measureSpecs = $state<
-    Record<string, Record<string, MetricsViewSpecMeasure>>
-  >({});
-  /** Dimension spec per metrics view, keyed by dimension name (or column when unnamed). */
-  public dimensionSpecs = $state<
-    Record<string, Record<string, MetricsViewSpecDimension>>
+    Record<MeasureName, Record<MetricsViewName, MetricsViewSpecMeasure>>
   >({});
 
   /** Deduped by name across metrics views; the first metrics view to define a name wins. */

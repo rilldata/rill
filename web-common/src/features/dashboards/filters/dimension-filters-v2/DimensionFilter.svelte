@@ -504,7 +504,7 @@
                 class="text-xs cursor-pointer"
                 checked={selected}
                 showXForSelected={proxyDimensionManager.exclude}
-                onclick={() => handleItemClick(name)}
+                onCheckedChange={() => handleItemClick(name)}
               >
                 <span>
                   {#if label.length > 240}
@@ -542,7 +542,7 @@
               showXForSelected={proxyDimensionManager.exclude}
               disabled={proxyDimensionManager.mode !==
                 DimensionFilterMode.Select}
-              onclick={() => handleItemClick(name)}
+              onCheckedChange={() => handleItemClick(name)}
             >
               <span>
                 {#if label.length > 240}

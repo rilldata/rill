@@ -12,9 +12,12 @@ import {
   createSubQueryExpression,
   removeWrapperAndOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 
 export class MeasureFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
+  // String representation of the filter expression. Used to check duplicate expressions across metrics views.
+  public param: string = $state("");
 
   public dimension = $state("");
   public operation = $state(MeasureFilterOperation.LessThan);
@@ -31,11 +34,10 @@ export class MeasureFilterManager {
   }
 
   public reconcile(expr: V1Expression | undefined) {
-    const dimension = expr?.cond?.exprs?.[0]?.ident;
-    const firstValueExpr = expr?.cond?.exprs?.[1];
+    const dimension = expr?.subquery?.dimension;
 
     const unwrappedHavingFilter = removeWrapperAndOrExpression(
-      firstValueExpr?.subquery?.having,
+      expr?.subquery?.having,
     );
     const mappedMeasureFilter = mapExprToMeasureFilter(unwrappedHavingFilter);
 
@@ -58,7 +60,9 @@ export class MeasureFilterManager {
   }
 
   public clear() {
-    this.expr = undefined;
+    this.value1 = "";
+    this.value2 = "";
+    this.dimension = "";
     this.commit();
   }
 
@@ -74,5 +78,6 @@ export class MeasureFilterManager {
     this.expr = hasFilter
       ? createSubQueryExpression(this.dimension, [this.name], measureFilterExpr)
       : undefined;
+    this.param = this.expr ? convertExpressionToFilterParam(this.expr, []) : "";
   }
 }

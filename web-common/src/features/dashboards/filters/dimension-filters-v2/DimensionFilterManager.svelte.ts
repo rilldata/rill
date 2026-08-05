@@ -11,9 +11,12 @@ import {
   createLikeExpression,
   getValuesInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 
 export class DimensionFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
+  // String representation of the filter expression. Used to check duplicate expressions across metrics views.
+  public param: string = $state("");
 
   public mode = $state(DimensionFilterMode.Select);
   public selectedValues = $state<string[]>([]);
@@ -147,7 +150,6 @@ export class DimensionFilterManager {
   public clear() {
     this.selectedValues = [];
     this.inputText = "";
-    this.expr = undefined;
     this.commit();
   }
 
@@ -181,6 +183,13 @@ export class DimensionFilterManager {
         break;
     }
     this.oldMode = this.mode;
+
+    this.param = this.expr
+      ? convertExpressionToFilterParam(
+          this.expr,
+          this.mode === DimensionFilterMode.InList ? [this.name] : [],
+        )
+      : "";
   }
 }
 
