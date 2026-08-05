@@ -17,6 +17,11 @@
   import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
+  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
@@ -31,6 +36,7 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -142,87 +148,104 @@
   });
 </script>
 
-<div class="edit-session">
-  {#if isLoading}
-    <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
-  {:else if isErrored}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <ErrorPage
-      statusCode={500}
-      header="Edit session failed"
-      body={deployment?.statusMessage ||
-        "The editing environment encountered an error. Please try again."}
-    />
-  {:else if isStopped && deployment?.id}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <BranchDeploymentStopped
-      {organization}
-      {project}
-      deploymentId={deployment.id}
-      status={deploymentStatus}
-      canManage={!!projectPermissions?.manageDev}
-      {branch}
-      bind:starting
-    />
-  {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
-    {#key `${runtimeHost}::${instanceId}::${hasPrimaryDeployment}`}
-      <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
-        {#if !inProjectWelcomePage}
-          <ProjectHeader
-            {organization}
-            {project}
-            {projectPermissions}
-            manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-            manageOrgMembers={organizationPermissions?.manageOrgMembers}
-            readProjects={organizationPermissions?.readProjects}
-            {primaryBranch}
-            {planDisplayName}
-            {organizationLogoUrl}
-            editContext={true}
-          />
-          <EditSessionTimeoutBanner
-            usedOn={deployment.usedOn}
-            {devTtlSeconds}
-          />
-        {/if}
-        <FileAndResourceWatcher
-          lifecycle="none"
-          {onBeforeReconnect}
-          errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
-        >
+<!-- The in-browser editor needs a real keyboard and a wide canvas, so below `md`
+     we show a "use desktop" notice instead. `contents` keeps this wrapper out
+     of the box tree at `md` and up, so it doesn't affect the editor's layout. -->
+<div class="hidden md:contents">
+  <div class="edit-session">
+    {#if isLoading}
+      <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
+    {:else if isErrored}
+      <SlimProjectHeader
+        {organization}
+        {project}
+        readProjects={organizationPermissions?.readProjects}
+        {planDisplayName}
+        {organizationLogoUrl}
+      />
+      <ErrorPage
+        statusCode={500}
+        header="Edit session failed"
+        body={deployment?.statusMessage ||
+          "The editing environment encountered an error. Please try again."}
+      />
+    {:else if isStopped && deployment?.id}
+      <SlimProjectHeader
+        {organization}
+        {project}
+        readProjects={organizationPermissions?.readProjects}
+        {planDisplayName}
+        {organizationLogoUrl}
+      />
+      <BranchDeploymentStopped
+        {organization}
+        {project}
+        deploymentId={deployment.id}
+        status={deploymentStatus}
+        canManage={!!projectPermissions?.manageDev}
+        {branch}
+        bind:starting
+      />
+    {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
+      {#key `${runtimeHost}::${instanceId}::${hasPrimaryDeployment}`}
+        <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
           {#if !inProjectWelcomePage}
-            <WelcomeRedirector />
+            <ProjectHeader
+              {organization}
+              {project}
+              {projectPermissions}
+              manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+              manageOrgMembers={organizationPermissions?.manageOrgMembers}
+              readProjects={organizationPermissions?.readProjects}
+              {primaryBranch}
+              {planDisplayName}
+              {organizationLogoUrl}
+              editContext={true}
+            />
+            <EditSessionTimeoutBanner
+              usedOn={deployment.usedOn}
+              {devTtlSeconds}
+            />
           {/if}
-          <slot />
-        </FileAndResourceWatcher>
-      </RuntimeProvider>
-    {/key}
-  {:else}
-    <SlimProjectHeader
-      {organization}
-      {project}
-      readProjects={organizationPermissions?.readProjects}
-      {planDisplayName}
-      {organizationLogoUrl}
-    />
-    <ErrorPage
-      statusCode={404}
-      header="No active edit session"
-      body="This editing session is no longer active. Use the Edit button to start a new one."
-    />
-  {/if}
+          <FileAndResourceWatcher
+            lifecycle="none"
+            {onBeforeReconnect}
+            errorBody="Lost connection to the editing environment. Try ending the session and starting a new one."
+          >
+            {#if !inProjectWelcomePage}
+              <WelcomeRedirector />
+            {/if}
+            <slot />
+          </FileAndResourceWatcher>
+        </RuntimeProvider>
+      {/key}
+    {:else}
+      <SlimProjectHeader
+        {organization}
+        {project}
+        readProjects={organizationPermissions?.readProjects}
+        {planDisplayName}
+        {organizationLogoUrl}
+      />
+      <ErrorPage
+        statusCode={404}
+        header="No active edit session"
+        body="This editing session is no longer active. Use the Edit button to start a new one."
+      />
+    {/if}
+  </div>
+</div>
+
+<div class="flex md:hidden">
+  <CtaLayoutContainer>
+    <CtaContentContainer>
+      <CtaHeader>{m.edit_desktop_only_title()}</CtaHeader>
+      <CtaMessage>{m.edit_desktop_only_message()}</CtaMessage>
+      <CtaButton variant="secondary" href={`/${organization}/${project}`}>
+        {m.edit_desktop_only_back_link()}
+      </CtaButton>
+    </CtaContentContainer>
+  </CtaLayoutContainer>
 </div>
 
 {#if $overlay !== null}
@@ -245,13 +268,14 @@
 
 {#snippet envEditDisabled()}
   <div class="flex flex-row gap-2 items-center w-fit text-sm">
-    <InfoIcon size={14} /> Manage environment variables in
+    <InfoIcon size={14} />
+    {m.edit_env_manage_in()}
     <a
       href="/{organization}/{project}/-/settings/environment-variables"
       target="_blank"
       rel="noopener"
     >
-      Settings →
+      {m.edit_env_settings_link()}
     </a>
   </div>
 {/snippet}

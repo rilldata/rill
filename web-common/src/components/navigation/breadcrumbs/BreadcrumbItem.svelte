@@ -70,9 +70,9 @@
   }
 </script>
 
-<li class="flex items-center gap-x-2 px-2">
+<li class="flex items-center gap-x-2 px-2 min-w-0">
   <div
-    class="flex flex-row gap-x-1 items-center"
+    class="flex flex-row gap-x-1 items-center min-w-0"
     aria-label="Breadcrumb navigation, level {depth}"
   >
     {#if selected}
@@ -84,11 +84,11 @@
           ? "#top"
           : linkMaker(currentPath, depth, current, selected, "")}
         class={[
-          "text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2",
+          "text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2 min-w-0",
           { current: isCurrentPage },
         ]}
       >
-        <span>{selected?.label}</span>
+        <span class="truncate">{selected?.label}</span>
       </a>
       {#if selected?.pill}
         <Chip type="dimension" label={selected.pill} readOnly compact>

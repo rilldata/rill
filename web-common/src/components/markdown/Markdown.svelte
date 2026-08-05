@@ -150,6 +150,10 @@
     @apply w-full text-xs;
     border-collapse: collapse;
     margin-bottom: 0.5rem;
+    /* Wide tables scroll within the message instead of stretching the page. */
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   :global(.chat-markdown th) {

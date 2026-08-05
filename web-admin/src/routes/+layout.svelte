@@ -153,8 +153,8 @@
   <QueryClientProvider client={queryClient}>
     <main
       class="flex flex-col bg-surface-base dark:bg-surface-background"
-      class:min-h-screen={!$dynamicHeight}
-      class:h-screen={!$dynamicHeight}
+      class:min-h-dvh={!$dynamicHeight}
+      class:h-dvh={!$dynamicHeight}
       use:pageContentSizeHandler
     >
       <BannerCenter />

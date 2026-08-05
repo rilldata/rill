@@ -7,6 +7,7 @@
   import { removeBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { onMount } from "svelte";
   import { type V1ProjectPermissions } from "../../client";
 
   export let projectPermissions: V1ProjectPermissions;
@@ -62,6 +63,28 @@
 
   $: selectedIndex = tabs?.findLastIndex((t) => isSelected(t.route, pathname));
 
+  let scroller: HTMLDivElement;
+  let navElement: HTMLElement;
+  let canScrollLeft = false;
+  let canScrollRight = false;
+
+  function updateFades() {
+    if (!scroller) return;
+    canScrollLeft = scroller.scrollLeft > 0;
+    canScrollRight =
+      scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 1;
+  }
+
+  onMount(() => {
+    updateFades();
+    // Observe the nav too: tabs mount/unmount with permissions and feature
+    // flags, which changes scrollWidth without resizing the scroller itself.
+    const observer = new ResizeObserver(updateFades);
+    observer.observe(scroller);
+    observer.observe(navElement);
+    return () => observer.disconnect();
+  });
+
   function isSelected(tabRoute: string, currentPathname: string) {
     // Strip @branch from both sides so comparison works regardless of branch
     const normalizedTab = removeBranchFromPath(tabRoute);
@@ -79,31 +102,63 @@
   }
 </script>
 
-<div class="bg-surface-base">
-  <nav>
-    {#each tabs as tab, i (tab.route)}
-      {#if tab.hasPermission}
-        <Tab
-          route={tab.route}
-          label={tab.label}
-          selected={selectedIndex === i}
-          {organization}
-          {project}
-        />
-      {/if}
-    {/each}
-  </nav>
+<div class="tabs-container bg-surface-base">
+  <!-- On narrow viewports the tab row scrolls horizontally; the selection
+       indicator scrolls with it since both share the scroller. The edge
+       fades signal the hidden overflow on either side. -->
+  <div class="tabs-scroller" bind:this={scroller} on:scroll={updateFades}>
+    <nav bind:this={navElement}>
+      {#each tabs as tab, i (tab.route)}
+        {#if tab.hasPermission}
+          <Tab
+            route={tab.route}
+            label={tab.label}
+            selected={selectedIndex === i}
+            {organization}
+            {project}
+          />
+        {/if}
+      {/each}
+    </nav>
 
-  {#if $width}
-    <span style:width="{$width}px" style:transform="translateX({$position}px) "
-    ></span>
-  {/if}
+    {#if $width}
+      <span
+        style:width="{$width}px"
+        style:transform="translateX({$position}px) "
+      ></span>
+    {/if}
+  </div>
+
+  <div class="fade left" class:visible={canScrollLeft}></div>
+  <div class="fade right" class:visible={canScrollRight}></div>
 </div>
 
 <style lang="postcss">
-  div {
-    @apply border-b pt-1;
+  .tabs-container {
+    @apply relative border-b;
+  }
+
+  .tabs-scroller {
+    @apply pt-1;
     @apply gap-y-[3px] flex flex-col;
+    @apply overflow-x-auto;
+  }
+
+  .fade {
+    @apply absolute inset-y-0 w-8 pointer-events-none;
+    @apply opacity-0 transition-opacity duration-200;
+  }
+
+  .fade.visible {
+    @apply opacity-100;
+  }
+
+  .fade.left {
+    @apply left-0 bg-gradient-to-r from-surface-base to-transparent;
+  }
+
+  .fade.right {
+    @apply right-0 bg-gradient-to-l from-surface-base to-transparent;
   }
 
   nav {
