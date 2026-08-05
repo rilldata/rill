@@ -111,24 +111,34 @@
       customAnchor={anchor}
       align="start"
       side="top"
-      class="w-[260px] p-4"
+      sideOffset={8}
+      class="github-star-popover w-[280px] overflow-hidden border-primary-200 bg-surface-overlay p-0 shadow-xl"
       role="status"
       trapFocus={false}
       onOpenAutoFocus={(e: Event) => e.preventDefault()}
       onCloseAutoFocus={(e: Event) => e.preventDefault()}
     >
-      <div class="flex flex-col gap-y-3">
-        <div class="flex flex-col gap-y-1">
-          <h3 class="text-sm font-medium text-fg-primary">
-            {m.github_star_title()}
-          </h3>
-          <p class="text-xs text-fg-secondary">
-            {m.github_star_message()}
-          </p>
+      <div aria-hidden="true" class="h-1 bg-accent-primary"></div>
+      <div class="flex flex-col gap-y-4 p-4">
+        <div class="flex items-start gap-x-3">
+          <div
+            class="grid size-9 shrink-0 place-content-center rounded-full bg-primary-50 text-accent-primary-action"
+          >
+            <Github size="18px" className="fill-current" />
+          </div>
+          <div class="flex flex-col gap-y-1">
+            <h3 class="text-[15px] font-semibold leading-5 text-fg-primary">
+              {m.github_star_title()}
+            </h3>
+            <p class="text-xs leading-4 text-fg-secondary">
+              {m.github_star_message()}
+            </p>
+          </div>
         </div>
         <div class="flex flex-col gap-y-1">
           <Button
-            type="secondary"
+            type="primary"
+            wide
             href={GITHUB_STAR_URL}
             target="_blank"
             rel="noreferrer noopener"
@@ -145,3 +155,23 @@
     </PopoverContent>
   </Popover>
 {/if}
+
+<style>
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.github-star-popover[data-state="open"]) {
+      animation: github-star-popover-in 180ms ease-out;
+      transform-origin: bottom left;
+    }
+  }
+
+  @keyframes github-star-popover-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+</style>

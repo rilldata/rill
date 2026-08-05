@@ -4,27 +4,20 @@ const STORAGE_KEY = "rill:github-star";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/**
- * Mute applied after the Nth soft dismiss.
- * Running off the end of the schedule is terminal: three ignores is a no.
- */
-const MUTE_SCHEDULE_DAYS = [30, 90];
-
 export type GithubStarStatus = "unarmed" | "armed" | "done";
 
 export interface GithubStarState {
   status: GithubStarStatus;
-  dismissCount: number;
   /** While in the future, an armed nudge stays hidden. */
   mutedUntil?: number;
 }
 
-const INITIAL_STATE: GithubStarState = { status: "unarmed", dismissCount: 0 };
+const INITIAL_STATE: GithubStarState = { status: "unarmed" };
 
 /**
  * Tracks whether to nudge the user to star Rill on GitHub.
  * The nudge is armed by a dashboard render.
- * Dismissal escalates rather than muting for a fixed period. After three soft dismissals, the nudge is retired.
+ * A soft dismissal mutes it for one day; only starring or opting out retires it.
  */
 export class GithubStarNudge {
   private currentState = $state<GithubStarState>(INITIAL_STATE);
@@ -39,8 +32,8 @@ export class GithubStarNudge {
 
   /**
    * Whether the nudge should be shown right now.
-   * Recomputed whenever the state changes; mutes last 30+ days, so re-reading on
-   * each app load is ample granularity for expiry.
+   * Recomputed whenever the state changes; re-reading on each app load is ample
+   * granularity for the one-day mute to expire.
    */
   public get visible() {
     return isVisible(this.currentState);
@@ -63,23 +56,15 @@ export class GithubStarNudge {
   }
 
   /**
-   * Any other exit: X, click-outside, timeout, navigating away. These are
-   * indistinguishable from the client, and not counting silent ignores would let
-   * engaged users be re-asked every 30 days with no backoff.
+   * A non-terminal exit, such as Escape, X, or click-outside, mutes the nudge
+   * until the following day.
    */
   public recordSoftDismiss() {
     if (!isVisible(this.currentState)) return;
 
-    const dismissCount = this.currentState.dismissCount + 1;
-    const muteDays = MUTE_SCHEDULE_DAYS[dismissCount - 1];
-    if (muteDays === undefined) {
-      this.commit({ ...this.currentState, status: "done", dismissCount });
-      return;
-    }
     this.commit({
       ...this.currentState,
-      dismissCount,
-      mutedUntil: Date.now() + muteDays * DAY_MS,
+      mutedUntil: Date.now() + DAY_MS,
     });
   }
 
@@ -105,7 +90,7 @@ function readState(): GithubStarState {
     return { ...INITIAL_STATE, ...parsed };
   } catch {
     // Corrupt or unreadable state degrades to "unarmed" rather than throwing.
-    // The worst case is one extra ask, which the backoff then bounds.
+    // The worst case is one extra ask.
     return INITIAL_STATE;
   }
 }

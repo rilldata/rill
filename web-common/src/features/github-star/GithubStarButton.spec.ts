@@ -48,7 +48,8 @@ describe("GithubStarButton", () => {
     // Neither the button nor the nudge: this is a Rill Developer feature.
     expect(screen.queryByText("Star us on GitHub")).not.toBeInTheDocument();
     expect(screen.queryByText("Enjoying Rill?")).not.toBeInTheDocument();
-    expect(nudge.state.dismissCount).toBe(0);
+    expect(nudge.state.status).toBe("armed");
+    expect(nudge.state.mutedUntil).toBeUndefined();
   });
 
   it("always renders the footer link, pointing straight at the repo", () => {
@@ -119,7 +120,6 @@ describe("GithubStarButton", () => {
 
     // Still armed, but muted: the ask is deferred rather than abandoned.
     expect(nudge.state.status).toBe("armed");
-    expect(nudge.state.dismissCount).toBe(1);
     expect(nudge.state.mutedUntil).toBeGreaterThan(Date.now());
   });
 
@@ -132,7 +132,7 @@ describe("GithubStarButton", () => {
 
     expect(screen.queryByText("Enjoying Rill?")).not.toBeInTheDocument();
     expect(nudge.state.status).toBe("done");
-    expect(nudge.state.dismissCount).toBe(0);
+    expect(nudge.state.mutedUntil).toBeUndefined();
   });
 
   it("records an opt-out as terminal without spending a dismissal", async () => {
@@ -143,7 +143,7 @@ describe("GithubStarButton", () => {
     await settle();
 
     expect(nudge.state.status).toBe("done");
-    expect(nudge.state.dismissCount).toBe(0);
+    expect(nudge.state.mutedUntil).toBeUndefined();
   });
 
   it("records the star click as terminal without spending a dismissal", async () => {
@@ -154,7 +154,7 @@ describe("GithubStarButton", () => {
     await settle();
 
     expect(nudge.state.status).toBe("done");
-    expect(nudge.state.dismissCount).toBe(0);
+    expect(nudge.state.mutedUntil).toBeUndefined();
   });
 
   it("does not re-open unprompted after being dismissed", async () => {

@@ -55,32 +55,20 @@ describe("GithubStarNudge", () => {
     expect(new GithubStarNudge().visible).toBe(false);
   });
 
-  it("escalates soft dismissals to 30 days, then 90 days, then permanently", () => {
-    const first = new GithubStarNudge();
-    first.armPayoff();
+  it("mutes a soft dismissal until the following day", () => {
+    const nudge = new GithubStarNudge();
+    nudge.armPayoff();
+    nudge.recordSoftDismiss();
 
-    first.recordSoftDismiss();
-    expect(first.visible).toBe(false);
-    atDay(29);
+    expect(nudge.state.status).toBe("armed");
+    expect(nudge.visible).toBe(false);
+    atDay(0.99);
     expect(new GithubStarNudge().visible).toBe(false);
-    atDay(31);
+    atDay(1);
     expect(new GithubStarNudge().visible).toBe(true);
-
-    const second = new GithubStarNudge();
-    second.recordSoftDismiss();
-    atDay(31 + 89);
-    expect(new GithubStarNudge().visible).toBe(false);
-    atDay(31 + 91);
-    expect(new GithubStarNudge().visible).toBe(true);
-
-    const third = new GithubStarNudge();
-    third.recordSoftDismiss();
-    expect(third.state.status).toBe("done");
-    atDay(3650);
-    expect(new GithubStarNudge().visible).toBe(false);
   });
 
-  it("caps an install at three asks", () => {
+  it("continues asking daily until the user stars or opts out", () => {
     new GithubStarNudge().armPayoff();
 
     let asks = 0;
@@ -93,25 +81,25 @@ describe("GithubStarNudge", () => {
       }
     }
 
-    expect(asks).toBe(3);
+    expect(asks).toBe(400);
+    expect(new GithubStarNudge().state.status).toBe("armed");
   });
 
   it("ignores a soft dismissal while muted", () => {
     const nudge = new GithubStarNudge();
     nudge.armPayoff();
     nudge.recordSoftDismiss();
-    expect(nudge.state.dismissCount).toBe(1);
+    const mutedUntil = nudge.state.mutedUntil;
 
-    // A dismissal that could not have been seen must not advance the backoff.
+    // A dismissal that could not have been seen must not extend the mute.
     nudge.recordSoftDismiss();
-    expect(nudge.state.dismissCount).toBe(1);
+    expect(nudge.state.mutedUntil).toBe(mutedUntil);
   });
 
   it("ignores a soft dismissal that was never armed", () => {
     const nudge = new GithubStarNudge();
     nudge.recordSoftDismiss();
 
-    expect(nudge.state.dismissCount).toBe(0);
     expect(nudge.state.status).toBe("unarmed");
   });
 
