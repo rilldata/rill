@@ -119,6 +119,7 @@ TableCells – the cell contents.
     estimateColumnSize = estimateColumnSizes(
       columns,
       columnWidths,
+      rows,
       containerWidth,
       config,
     );
