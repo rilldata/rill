@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import type { CommonUserFields, MetricsEvent } from "./MetricsTypes";
 import type { CommonFields } from "./MetricsTypes";
+import { sanitizePageUrl } from "./sanitizePageUrl";
 
 export class MetricsEventFactory {
   protected getBaseMetricsEvent(
@@ -19,7 +20,7 @@ export class MetricsEventFactory {
       event_time: new Date().toISOString(),
       event_type: eventType,
       event_name: eventName,
-      page_url: window.location.href,
+      page_url: sanitizePageUrl(window.location.href),
     };
   }
 }
