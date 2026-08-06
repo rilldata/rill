@@ -9,7 +9,7 @@
 
   /**
    * Test-only harness that supplies the contexts app code expects and runs `init`
-   * during component initialisation. Anything created in `init` therefore gets a
+   * during component initialization. Anything created in `init` therefore gets a
    * QueryClient for `createQuery` and an owner for its `$effect`s.
    */
   let {

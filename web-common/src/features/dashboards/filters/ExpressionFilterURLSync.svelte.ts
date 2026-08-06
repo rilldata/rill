@@ -5,12 +5,11 @@ import { convertExpressionToFilterParam } from "@rilldata/web-common/features/da
 import { goto } from "$app/navigation";
 
 export class ExpressionFilterURLSync {
-  private prevUrlSearch = "";
-
   public constructor(expressionFilterManager: ExpressionFilterManager) {
     $effect(() => expressionFilterManager.setUrlParams(page.url.searchParams));
+
     $effect(() => {
-      const newUrlSearchParams = new URLSearchParams(page.url.searchParams);
+      const newUrl = new URL(page.url);
 
       expressionFilterManager.metricsViewsProvider.metricsViewNames.forEach(
         (mvName) => {
@@ -20,18 +19,15 @@ export class ExpressionFilterURLSync {
               expressionFilterManager.exprByMetricsView[mvName],
               expressionFilterManager.inList,
             );
-            newUrlSearchParams.set(key, param);
+            newUrl.searchParams.set(key, param);
           } else {
-            newUrlSearchParams.delete(key);
+            newUrl.searchParams.delete(key);
           }
         },
       );
 
-      const newUrlSearch = newUrlSearchParams.toString();
-      if (newUrlSearch === this.prevUrlSearch) return;
-
-      this.prevUrlSearch = newUrlSearch;
-      void goto(`?${newUrlSearch}`);
+      if (newUrl.search === page.url.search) return;
+      void goto(newUrl);
     });
   }
 }

@@ -21,6 +21,7 @@ import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -83,10 +84,20 @@ export class DashboardStateSync {
       void this.handleExploreInit(initExploreState.data);
     });
 
-    this.unsubExploreState = this.exploreStore.subscribe((exploreState) => {
-      if (!exploreState || !this.initialized) return;
-      void this.gotoNewState(exploreState);
-    });
+    const fullStateStore = derived(
+      [this.exploreStore, this.expressionFilterManager.exprByMetricsViewStore],
+      (s) => s,
+    );
+    this.unsubExploreState = fullStateStore.subscribe(
+      ([exploreState, exprByMetricsViewStore]) => {
+        if (!exploreState || !this.initialized) return;
+        void this.gotoNewState({
+          ...exploreState,
+          whereFilter:
+            Object.values(exprByMetricsViewStore)[0] ?? createAndExpression([]),
+        });
+      },
+    );
 
     setContext(DASHBOARD_STATE_SYNC_KEY, this);
   }
@@ -213,7 +224,6 @@ export class DashboardStateSync {
     urlSearchParams: URLSearchParams,
     type: AfterNavigate["type"],
   ) {
-    console.log("handleURLChange", type);
     // Since we call this in afterNavigation, there could be a scenario where navigation completes but data for init isnt loaded yet.
     // Init already incorporates the url into the state so we can skip this processing.
     if (this.updating || !this.initialized) return;
@@ -267,6 +277,7 @@ export class DashboardStateSync {
       metricsExplorerStore.mergePartialExplorerEntity(
         this.exploreName,
         partialExplore,
+        this.expressionFilterManager,
       );
       // Get time controls state after explore state is updated.
       const timeControlsState = get(this.timeControlStore);
@@ -320,7 +331,6 @@ export class DashboardStateSync {
    * This will check if the url needs to be changed and will navigate to the new url.
    */
   private async gotoNewState(exploreState: ExploreState) {
-    console.log("gotoNewState");
     // Updating state either in handleExploreInit or handleURLChange will synchronously update the state triggering this function.
     // Since those methods handle redirect themselves we need to skip this logic.
     // Those methods need to replace the current URL while this does a direct navigation.
@@ -358,7 +368,6 @@ export class DashboardStateSync {
       }
 
       log("GOTO", newUrl);
-      this.expressionFilterManager.setUrlParams(newUrl.searchParams);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {

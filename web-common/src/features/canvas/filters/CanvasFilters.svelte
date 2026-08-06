@@ -11,12 +11,10 @@
 
   let {
     maxWidth,
-    builder = false,
     canvasName,
   }: {
     readOnly?: boolean;
     maxWidth: number;
-    builder?: boolean;
     canvasName: string;
   } = $props();
 

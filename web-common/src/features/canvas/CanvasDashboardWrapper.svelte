@@ -27,7 +27,7 @@
     children: Snippet;
     canvasName: string;
     maxWidth: number;
-    clientWidth: number;
+    clientWidth?: number;
     showGrabCursor?: boolean;
     filtersEnabled?: boolean | undefined;
     embedded?: boolean;
@@ -74,7 +74,7 @@
           if (e.target === e.currentTarget) onClick();
         }}
       >
-        <CanvasFilters {canvasName} {maxWidth} {builder} />
+        <CanvasFilters {canvasName} {maxWidth} />
       </header>
     {/if}
 

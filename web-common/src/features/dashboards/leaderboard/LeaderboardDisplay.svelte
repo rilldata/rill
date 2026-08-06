@@ -20,8 +20,7 @@
   } from "./leaderboard-widths";
 
   export let metricsViewName: string;
-  export let whereFilter: V1Expression;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let whereFilter: V1Expression | undefined;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
@@ -104,7 +103,6 @@
               leaderboardMeasures={$leaderboardMeasures}
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
-              {dimensionThresholdFilters}
               {tableWidth}
               {timeRange}
               {dimensionColumnWidth}
@@ -120,7 +118,7 @@
               selectedValues={selectedDimensionValues(
                 client,
                 [metricsViewName],
-                $dashboardStore.whereFilter,
+                whereFilter,
                 dimension.name,
                 timeRange.start,
                 timeRange.end,

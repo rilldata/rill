@@ -33,6 +33,7 @@ import {
   type PivotMeasureFormatting,
   type PivotTableMode,
 } from "../pivot/types";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -206,6 +207,7 @@ const metricsViewReducers = {
   mergePartialExplorerEntity(
     name: string,
     partialExploreState: Partial<ExploreState>,
+    expressionFilterManager: ExpressionFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -213,6 +215,17 @@ const metricsViewReducers = {
       for (const key in partialExploreState) {
         exploreState[key] = partialExploreState[key];
       }
+
+      const mvName =
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+      if (mvName) {
+        exploreState.whereFilter =
+          expressionFilterManager.exprByMetricsView[mvName] ??
+          createAndExpression([]);
+        exploreState.dimensionsWithInlistFilter =
+          expressionFilterManager.inList;
+      }
+
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
       if (!partialExploreState.showTimeComparison) {

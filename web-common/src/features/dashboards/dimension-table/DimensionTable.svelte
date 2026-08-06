@@ -143,7 +143,7 @@ TableCells – the cell contents.
       estimateColumnSize = estimateColumnSizes(
         columns,
         columnWidths,
-        containerWidth,
+        rows,
         config,
       );
 

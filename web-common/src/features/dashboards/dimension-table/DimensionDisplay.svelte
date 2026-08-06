@@ -22,13 +22,10 @@
     getComparisonRequestMeasures,
     getURIRequestMeasure,
   } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
-  import { sanitiseExpression } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
@@ -37,9 +34,8 @@
 
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
-  export let whereFilter: V1Expression;
+  export let whereFilter: V1Expression | undefined;
   export let metricsViewName: string;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let visibleMeasureNames: string[];
   export let timeControlsReady: boolean;
   export let dimension: MetricsViewSpecDimension;
@@ -68,7 +64,7 @@
   $: selectedValues = selectedDimensionValues(
     client,
     [metricsViewName],
-    $dashboardStore.whereFilter,
+    whereFilter,
     dimensionName,
     timeRange.start,
     timeRange.end,
@@ -85,7 +81,7 @@
       $leaderboardShowContextForAllMeasures
         ? null
         : $leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
+      whereFilter,
       visibleMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
@@ -118,13 +114,7 @@
       measures: filteredMeasures.filter(
         (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
       ),
-      where: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(whereFilter, dimensionName),
-          dimensionThresholdFilters,
-        ),
-        undefined,
-      ),
+      where: getFiltersForOtherDimensions(whereFilter, dimensionName),
       timeRange,
     },
     {
@@ -155,11 +145,6 @@
     !!comparisonTimeRange,
   );
 
-  $: where = sanitiseExpression(
-    mergeDimensionAndMeasureFilters(filterSet, dimensionThresholdFilters),
-    undefined,
-  );
-
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     client,
     {
@@ -169,7 +154,7 @@
       timeRange,
       comparisonTimeRange,
       sort,
-      where,
+      where: whereFilter,
       limit: queryLimit.toString(),
       offset: "0",
     },

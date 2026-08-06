@@ -162,7 +162,7 @@ export class DimensionFilterManager {
           notify
         ) {
           eventBus.emit("notification", {
-            message: "Converted filter type to Select",
+            message: m.filter_converted_to_select(),
             link: {
               text: m.common_undo(),
               href: page.url.href,

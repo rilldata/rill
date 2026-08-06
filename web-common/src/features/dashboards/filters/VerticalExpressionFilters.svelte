@@ -73,7 +73,7 @@
   <div class="ml-auto">
     {#if hasFilters}
       <Button type="text" onClick={() => expressionFilterManager.clear()}>
-        Clear filters
+        {m.dashboard_clear_filters()}
       </Button>
     {/if}
   </div>

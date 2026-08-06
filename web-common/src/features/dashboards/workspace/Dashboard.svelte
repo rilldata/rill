@@ -13,7 +13,7 @@
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { onDestroy } from "svelte";
-  import { readable, type Readable } from "svelte/store";
+  import { derived, readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { useRuntimeClient } from "../../../runtime-client/v2";
@@ -38,6 +38,7 @@
     exploreTimeseriesWidth,
     tddChartHeight,
   } from "./dashboard-layout-store";
+  import { createAndExpression } from "../stores/filter-utils";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -55,6 +56,7 @@
       pivot: { showPivot },
     },
     dashboardStore,
+    expressionFilterManager,
   } = StateManagers;
 
   const { cloudDataViewer, readOnly } = featureFlags;
@@ -67,8 +69,11 @@
 
   const client = useRuntimeClient();
 
-  $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
-    $dashboardStore);
+  $: ({ selectedTimeDimension } = $dashboardStore);
+  $: whereFilter = derived(
+    expressionFilterManager.exprByMetricsViewStore,
+    (exprByMetricsViewStore) => Object.values(exprByMetricsViewStore)[0],
+  );
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -257,8 +262,7 @@
               <DimensionDisplay
                 dimension={selectedDimension}
                 {metricsViewName}
-                {whereFilter}
-                {dimensionThresholdFilters}
+                whereFilter={$whereFilter}
                 {timeRange}
                 {comparisonTimeRange}
                 {timeControlsReady}
@@ -268,8 +272,7 @@
             {:else}
               <LeaderboardDisplay
                 {metricsViewName}
-                {whereFilter}
-                {dimensionThresholdFilters}
+                whereFilter={$whereFilter}
                 {timeRange}
                 {comparisonTimeRange}
                 {timeControlsReady}

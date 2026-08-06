@@ -77,10 +77,12 @@ export function updateFilterOnSearch(
 }
 
 export function getDimensionFilterWithSearch(
-  filters: V1Expression,
+  filters: V1Expression | undefined,
   searchText: string,
   dimensionName: string,
 ) {
+  if (!filters) return undefined;
+
   const filterForDimension =
     getFiltersForOtherDimensions(filters, dimensionName) ??
     createAndExpression([]);
@@ -190,7 +192,6 @@ export function estimateColumnSizes(
     [key: string]: number;
   },
   rows: DimensionTableRow[],
-  containerWidth: number,
   config: DimensionTableConfig,
 ): number[] {
   const estimatedColumnSizes = columns.map((column, i) => {
