@@ -16,7 +16,11 @@ export class YAMLConfigProvider {
 
   public cleanup: (() => void) | undefined = undefined;
 
-  public constructor(public readonly editable: boolean = false) {}
+  public constructor(public editable: boolean = false) {}
+
+  public setEditable(newEditable: boolean) {
+    this.editable = newEditable;
+  }
 
   public togglePinnedFilter(filter: string) {
     this.pinnedFilters[filter] = !this.pinnedFilters[filter];

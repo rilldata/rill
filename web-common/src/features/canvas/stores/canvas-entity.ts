@@ -38,8 +38,6 @@ import {
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import { FilterManager, flattenExpression } from "./filter-manager";
-import { getFilterParam } from "./filter-state";
 import { Grid } from "./grid";
 import { TabGroup, type LayoutBlock } from "./tab-group";
 import { getComparisonTypeFromRangeString } from "./time-state";
@@ -58,6 +56,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import { ExpressionFilterURLSync } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterURLSync.svelte.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -97,9 +97,6 @@ export class CanvasEntity {
 
   // Time state controls
   timeManager: TimeManager;
-
-  // Dimension and measure filter state
-  filterManager: FilterManager;
 
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
@@ -302,7 +299,7 @@ export class CanvasEntity {
     if (!validSpec) return;
 
     if (metricsViews) this._metricsViews.set(metricsViews);
-    this.metricsViewsProvider?.setMetricsViewNames(Object.keys(metricsViews));
+    this.metricsViewsProvider.setMetricsViewNames(Object.keys(metricsViews));
 
     this.checkAndSetFilterEnabled(validSpec);
     this.checkAndSetFileArtifact(filePath);
@@ -315,38 +312,7 @@ export class CanvasEntity {
 
     this.titleStore.set(validSpec.displayName ?? "");
 
-    const defaultPreset = validSpec?.defaultPreset ?? {};
-    const filterExpressions = defaultPreset.filterExpr ?? {};
-    const pinnedFilters = validSpec?.pinnedFilters ?? [];
-    const requiredFilters = validSpec?.requiredFilters ?? [];
-
-    if (metricsViews) {
-      if (this.filterManager) {
-        this.filterManager.updateConfig(
-          metricsViews,
-          pinnedFilters,
-          filterExpressions,
-          requiredFilters,
-        );
-      } else {
-        this.filterManager = new FilterManager(
-          metricsViews,
-          this.instanceId,
-          pinnedFilters,
-          filterExpressions,
-          requiredFilters,
-        );
-        // Clears the active component when a global filter changes through
-        // FilterManager.actions.* (user-driven filter UI). Pivot click-to-filter
-        // bypasses actions and mutates FilterState directly, so it does NOT
-        // trigger this callback; see pivot-click-to-filter.ts for details.
-        this.filterManager.onFilterChange = () => this.clearActiveComponent();
-      }
-    } else {
-      // need to find a better way to initialize this in certain contextx - bgh
-      this.filterManager = new FilterManager({}, "", [], {});
-      this.filterManager.onFilterChange = () => this.clearActiveComponent();
-    }
+    // TODO: onFilterChange for non-pivot-click-to-filter and call this.clearActiveComponent.
 
     this.processRows({ canvas, components, metricsViews, filePath });
   };
@@ -367,10 +333,12 @@ export class CanvasEntity {
     // Persist pinned and required independently. Render-time treats a filter as
     // visible whenever it's in either set, so we don't dedupe here: doing so
     // would silently drop the pin flag if a user later toggled required off.
-    const pinnedNames = Array.from(pinnedFilters).map((f) => f.split("::")[1]);
-    const requiredNames = Array.from(requiredFilters).map(
-      (f) => f.split("::")[1],
-    );
+    const pinnedNames = pinnedFilters
+      .map((f) => f.split("::").pop())
+      .filter(Boolean) as string[];
+    const requiredNames = requiredFilters
+      .map((f) => f.split("::").pop())
+      .filter(Boolean) as string[];
     const timeRange = get(this.timeManager.state.rangeStore);
     const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
 
@@ -1058,7 +1026,7 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
     ([metricsViewName, { expression }]) => {
       if (expression) {
         const flattened = flattenExpression(expression);
-        const urlFormat = getFilterParam(flattened, [], []);
+        const urlFormat = convertExpressionToFilterParam(flattened, []);
 
         if (urlFormat) {
           defaultSearchParams.set(

@@ -147,15 +147,25 @@ function createFactoryArgs(
   };
 }
 
-/** Create factory with a real filter manager and this component set as active */
+/**
+ * Create factory with a real filter manager and this component set as active.
+ *
+ * `globalFilter` is a filter the dashboard already carries before any pivot
+ * click. It is seeded into the filter manager and reflected in
+ * `whereFilterStore`, mirroring the renderer, where `whereFilterStore` derives
+ * from the filter manager's expression for the metrics view.
+ */
 function setup(
   config: PivotDataStoreConfig,
   data: PivotDataRow[],
   columnDimensionAxes: Record<string, string[]> = {},
-  whereFilter?: V1Expression,
+  globalFilter?: V1Expression,
 ) {
   const selfFilteredDimensions = writable<Set<string>>(new Set());
   const fm = createFilterManager();
+  if (globalFilter) {
+    fm.setExprForMetricsView(PIVOT_TEST_METRICS_NAME, globalFilter);
+  }
 
   const result = createPivotClickToFilter(
     createFactoryArgs({
@@ -164,7 +174,7 @@ function setup(
       filterManager: fm,
       activeComponent: writable<string | null>("pivot-1"),
       selfFilteredDimensions,
-      whereFilterStore: writable<V1Expression | undefined>(whereFilter),
+      whereFilterStore: writable<V1Expression | undefined>(globalFilter),
     }),
   );
 
@@ -653,16 +663,10 @@ describe("unrelated global filters are left alone", () => {
     createInExpression("device", ["mobile"]),
   ]);
 
-  /** Assert a dimension was neither added to nor removed from the filter set. */
-  function expectUntouched(
-    filterClass: ReturnType<typeof stubFilterManagerWithClass>["filterClass"],
-    dimensionName: string,
-  ) {
-    expectNoToggle(filterClass, dimensionName);
-    const addCalls = filterClass.addDimensionValueSelections.mock.calls.filter(
-      (call: unknown[]) => call[0] === dimensionName,
-    );
-    expect(addCalls).toHaveLength(0);
+  /** Assert the global filter's values are intact: neither dropped nor duplicated. */
+  function expectGlobalFilterIntact(fm: ExpressionFilterManager) {
+    expect(selectedValues(fm, "domain")).toEqual(["google.com"]);
+    expect(selectedValues(fm, "device")).toEqual(["mobile"]);
   }
 
   const flatConfig = makeConfig({
@@ -674,21 +678,12 @@ describe("unrelated global filters are left alone", () => {
   const flatData: PivotDataRow[] = [{ country: "US", revenue: 100 }];
 
   it("does not re-add global filter values when selecting a cell", () => {
-    const { result, filterClass } = setup(
-      flatConfig,
-      flatData,
-      {},
-      globalFilter,
-    );
+    const { result, fm } = setup(flatConfig, flatData, {}, globalFilter);
 
     result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
 
-    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
-      "country",
-      ["US"],
-    );
-    expectUntouched(filterClass, "domain");
-    expectUntouched(filterClass, "device");
+    expect(selectedValues(fm, "country")).toEqual(["US"]);
+    expectGlobalFilterIntact(fm);
 
     result.destroy();
   });
@@ -709,27 +704,14 @@ describe("unrelated global filters are left alone", () => {
   });
 
   it("keeps global filters when deselecting a cell", () => {
-    const { result, filterClass } = setup(
-      flatConfig,
-      flatData,
-      {},
-      globalFilter,
-    );
+    const { result, fm } = setup(flatConfig, flatData, {}, globalFilter);
 
     result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
-    filterClass.toggleDimensionValueSelections.mockClear();
-    filterClass.addDimensionValueSelections.mockClear();
     result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
 
     expect(sel(result).cellSelections.size).toBe(0);
-    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "country",
-      ["US"],
-      false,
-      false,
-    );
-    expectUntouched(filterClass, "domain");
-    expectUntouched(filterClass, "device");
+    expect(selectedValues(fm, "country")).toEqual([]);
+    expectGlobalFilterIntact(fm);
 
     result.destroy();
   });
@@ -742,29 +724,17 @@ describe("unrelated global filters are left alone", () => {
     });
     const nestedData: PivotDataRow[] = [{ country: "US", revenue: 100 }];
 
-    const { result, filterClass } = setup(
-      nestedConfig,
-      nestedData,
-      {},
-      globalFilter,
-    );
+    const { result, fm } = setup(nestedConfig, nestedData, {}, globalFilter);
 
     result.handleCellClickToFilter("1", "country", true, nestedData[0]);
     expect(sel(result).rowHeaderSelections.size).toBe(1);
+    expect(selectedValues(fm, "country")).toEqual(["US"]);
 
-    filterClass.toggleDimensionValueSelections.mockClear();
-    filterClass.addDimensionValueSelections.mockClear();
     result.handleCellClickToFilter("1", "country", true, nestedData[0]);
 
     expect(sel(result).rowHeaderSelections.size).toBe(0);
-    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "country",
-      ["US"],
-      false,
-      false,
-    );
-    expectUntouched(filterClass, "domain");
-    expectUntouched(filterClass, "device");
+    expect(selectedValues(fm, "country")).toEqual([]);
+    expectGlobalFilterIntact(fm);
 
     result.destroy();
   });
@@ -777,22 +747,16 @@ describe("unrelated global filters are left alone", () => {
       whereFilter: globalFilter,
     });
 
-    const { result, filterClass } = setup(colConfig, [], {}, globalFilter);
+    const { result, fm } = setup(colConfig, [], {}, globalFilter);
 
     result.handleColumnHeaderClick({ region: "NA" });
-    filterClass.toggleDimensionValueSelections.mockClear();
-    filterClass.addDimensionValueSelections.mockClear();
+    expect(selectedValues(fm, "region")).toEqual(["NA"]);
+
     result.handleColumnHeaderClick({ region: "NA" });
 
     expect(sel(result).columnHeaderSelections.size).toBe(0);
-    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "region",
-      ["NA"],
-      false,
-      false,
-    );
-    expectUntouched(filterClass, "domain");
-    expectUntouched(filterClass, "device");
+    expect(selectedValues(fm, "region")).toEqual([]);
+    expectGlobalFilterIntact(fm);
 
     result.destroy();
   });
@@ -805,19 +769,14 @@ describe("unrelated global filters are left alone", () => {
       whereFilter: globalFilter,
     });
 
-    const { result, filterClass } = setup(colConfig, [], {}, globalFilter);
+    const { result, fm } = setup(colConfig, [], {}, globalFilter);
 
     result.handleColumnHeaderClick({ region: "NA" });
-    filterClass.toggleDimensionValueSelections.mockClear();
-    filterClass.addDimensionValueSelections.mockClear();
     result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
 
-    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
-      "category",
-      ["Electronics"],
-    );
-    expectUntouched(filterClass, "domain");
-    expectUntouched(filterClass, "device");
+    expect(selectedValues(fm, "region")).toEqual(["NA"]);
+    expect(selectedValues(fm, "category")).toEqual(["Electronics"]);
+    expectGlobalFilterIntact(fm);
 
     result.destroy();
   });
@@ -836,12 +795,7 @@ describe("unrelated global filters are left alone", () => {
       },
     ];
 
-    const { result, filterClass } = setup(
-      nestedConfig,
-      nestedData,
-      {},
-      globalFilter,
-    );
+    const { result, fm } = setup(nestedConfig, nestedData, {}, globalFilter);
 
     result.handleCellClickToFilter(
       "1.0",
@@ -849,18 +803,15 @@ describe("unrelated global filters are left alone", () => {
       false,
       nestedData[0].subRows![0],
     );
-    filterClass.toggleDimensionValueSelections.mockClear();
-    filterClass.addDimensionValueSelections.mockClear();
+    expect(selectedValues(fm, "inner")).toEqual(["US-East"]);
+
     result.handleCellClickToFilter("1", "outer", true, nestedData[0]);
 
-    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
-      "inner",
-      ["US-East"],
-      false,
-      false,
-    );
-    expectUntouched(filterClass, "domain");
-    expectUntouched(filterClass, "device");
+    // The evicted child cell's inner value is dropped, the clicked row header's
+    // outer value takes its place, and the global filter is untouched.
+    expect(selectedValues(fm, "inner")).toEqual([]);
+    expect(selectedValues(fm, "outer")).toEqual(["Zoom"]);
+    expectGlobalFilterIntact(fm);
 
     result.destroy();
   });

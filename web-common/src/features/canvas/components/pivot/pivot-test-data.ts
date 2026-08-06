@@ -20,6 +20,10 @@ export const PIVOT_OUTER_DIMENSION = "outer";
 export const PIVOT_INNER_DIMENSION = "inner";
 export const PIVOT_BOROUGH_DIMENSION = "borough";
 
+// Dimensions that only ever appear in a dashboard-level filter, never in a pivot.
+export const PIVOT_DOMAIN_DIMENSION = "domain";
+export const PIVOT_DEVICE_DIMENSION = "device";
+
 // Column dimensions.
 export const PIVOT_REGION_DIMENSION = "region";
 export const PIVOT_CATEGORY_DIMENSION = "category";
@@ -91,6 +95,14 @@ export const PIVOT_DIMENSIONS: MetricsViewSpecDimension[] = [
   },
   {
     name: PIVOT_ENV_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
+  },
+  {
+    name: PIVOT_DOMAIN_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
+  },
+  {
+    name: PIVOT_DEVICE_DIMENSION,
     dataType: { code: TypeCode.CODE_STRING },
   },
 ];

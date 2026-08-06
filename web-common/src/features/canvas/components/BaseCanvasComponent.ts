@@ -14,7 +14,7 @@ import type {
   V1Resource,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { ComponentType, SvelteComponent } from "svelte";
+import type { Component, ComponentType, SvelteComponent } from "svelte";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
@@ -64,8 +64,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   private unsubscribeSpec: Unsubscriber;
 
   abstract type: CanvasComponentType;
-  // Component responsible for DOM rendering
-  abstract component: ComponentType<SvelteComponent>;
+  // Component responsible for DOM rendering.
+  // The union covers both Svelte 4 class components and Svelte 5 (runes) components,
+  // since the display components are being migrated one at a time.
+  abstract component: Component<any> | ComponentType<SvelteComponent>;
   // Will be deprecated
   abstract minSize: ComponentSize;
   // Will be deprecated

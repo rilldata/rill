@@ -41,8 +41,12 @@
   export let enhance;
   export let metricsViewName: string;
   export let exploreName: string;
-  export let filters: ExpressionFilterManager;
-  export let timeControls: TimeControls;
+  export let canvasName: string = "";
+  // Canvas state (URL search string) to display instead of the page URL; set when
+  // editing a report so the filter bar shows the report's captured state.
+  export let canvasStateOverride: string | undefined = undefined;
+  export let filters: ExpressionFilterManager | undefined = undefined;
+  export let timeControls: TimeControls | undefined = undefined;
 
   const RUN_AS_OPTIONS = [
     {

@@ -1,11 +1,11 @@
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
-  V1Operation,
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
   type V1Condition,
   type V1Expression,
+  V1Operation,
   type V1Subquery,
 } from "@rilldata/web-common/runtime-client";
 
@@ -537,4 +537,59 @@ export function flattenInExpressionValues(expr: V1Expression) {
     vals,
     expr.cond!.op === V1Operation.OPERATION_NIN,
   );
+}
+
+// This should be deprecated eventually in favor of better support for variously formatted expressions
+export function flattenExpression(
+  expression: V1Expression | undefined,
+): V1Expression {
+  if (!expression) {
+    return createAndExpression([]);
+  }
+
+  let root: V1Expression;
+
+  // Ensure top level is an OPERATION_AND
+  if (!expression.cond || expression.cond.op !== V1Operation.OPERATION_AND) {
+    root = createAndExpression([expression]);
+  } else {
+    root = expression;
+  }
+
+  const rootCond = root.cond;
+  if (
+    !rootCond ||
+    rootCond.op !== V1Operation.OPERATION_AND ||
+    !Array.isArray(rootCond.exprs)
+  ) {
+    return root;
+  }
+
+  // Recursively flatten all nested ANDs, preserving order
+  rootCond.exprs = flattenAndExprs(rootCond.exprs);
+
+  // Normalize array-valued IN/NIN expressions into individual value expressions
+  rootCond.exprs = rootCond.exprs.map(flattenInExpressionValues);
+
+  return root;
+}
+
+function flattenAndExprs(exprs: V1Expression[]): V1Expression[] {
+  const result: V1Expression[] = [];
+
+  for (const expr of exprs) {
+    const cond = expr.cond;
+    if (
+      cond &&
+      cond.op === V1Operation.OPERATION_AND &&
+      Array.isArray(cond.exprs)
+    ) {
+      // Inline children in order
+      result.push(...flattenAndExprs(cond.exprs));
+    } else {
+      result.push(expr);
+    }
+  }
+
+  return result;
 }

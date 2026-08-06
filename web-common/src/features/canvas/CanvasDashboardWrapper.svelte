@@ -17,7 +17,7 @@
     children,
     canvasName,
     maxWidth,
-    clientWidth = 0,
+    clientWidth = $bindable(0),
     showGrabCursor = false,
     filtersEnabled = undefined,
     embedded = false,
@@ -27,7 +27,7 @@
     children: Snippet;
     canvasName: string;
     maxWidth: number;
-    clientWidth?: number;
+    clientWidth: number;
     showGrabCursor?: boolean;
     filtersEnabled?: boolean | undefined;
     embedded?: boolean;
@@ -46,6 +46,9 @@
       yamlConfigProvider,
     },
   } = $derived(getCanvasStore(canvasName, instanceId));
+  $effect(() => {
+    yamlConfigProvider.setEditable(builder);
+  });
 
   let missingRequiredFilters = $derived(
     getMissingRequiredFilters(expressionFilterManager, yamlConfigProvider),
