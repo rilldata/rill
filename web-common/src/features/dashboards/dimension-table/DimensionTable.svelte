@@ -1,4 +1,4 @@
-<!-- @component 
+<!-- @component
 Creates a virtualized dimension table. This consists of four sub-components:
 ColumnHeaders – sticky column headers. Utilizes the columnVirtualizer (for now).
 TableCells – the cell contents.
@@ -22,15 +22,31 @@ TableCells – the cell contents.
   import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
-  export let rows: DimensionTableRow[];
-  export let columns: VirtualizedTableColumns[];
-  export let selectedValues: ReturnType<typeof selectedDimensionValues>;
-  export let dimensionName: string;
-  export let isFetching: boolean;
-  export let onSelectItem: (data: {
-    index: number;
-    meta: boolean;
-  }) => void = () => {};
+  let {
+    rows,
+    columns,
+    selectedValues,
+    dimensionName,
+    isFetching,
+    rowOverscanAmount = 120,
+    columnOverscanAmount = 12,
+    onSelectItem,
+  }: {
+    rows: DimensionTableRow[];
+    columns: VirtualizedTableColumns[];
+    selectedValues: ReturnType<typeof selectedDimensionValues>;
+    dimensionName: string;
+    isFetching: boolean;
+
+    /** the overscan values tell us how much to render off-screen. These may be set by the consumer
+     * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
+     * to render on initial load.
+     */
+    rowOverscanAmount?: number;
+    columnOverscanAmount?: number;
+
+    onSelectItem: (data: { index: number; meta: boolean }) => void;
+  } = $props();
 
   const {
     actions: {
@@ -39,44 +55,41 @@ TableCells – the cell contents.
     },
     selectors: {
       sorting: { sortByMeasure },
-      dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
+    expressionFilterManager,
   } = getStateManagers();
 
-  $: excludeMode = $isFilterExcludeMode(dimensionName);
-  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
-
-  /** the overscan values tell us how much to render off-screen. These may be set by the consumer
-   * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
-   * to render on initial load.
-   */
-  export let rowOverscanAmount = 120;
-  export let columnOverscanAmount = 12;
+  let excludeMode = $derived(
+    expressionFilterManager.filterManagers.dimensions.find(
+      (dfm) => dfm.name === dimensionName,
+    )?.exclude ?? false,
+  );
+  let isBeingCompared = $derived($isBeingComparedReadable(dimensionName));
 
   let container: HTMLDivElement;
 
-  let containerWidth: number;
+  let containerWidth: number = $state(0);
 
   /** this is a perceived character width value, in pixels, when our monospace
    * font is 12px high. */
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
-  $: selectedIndex =
+  let selectedIndex = $derived(
     $selectedValues.data?.map((label) => {
       return rows.findIndex((row) => row[dimensionName] === label);
-    }) ?? [];
+    }) ?? [],
+  );
 
-  let rowScrollOffset = 0;
-  $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
-  let colScrollOffset = 0;
-  $: colScrollOffset = $columnVirtualizer?.scrollOffset || 0;
+  let rowScrollOffset = $state(0);
+  let colScrollOffset = $state(0);
 
   /** if we're inferring the column widths from static-ish data, let's
    * find the largest strings in the column and use that to bootstrap the
    * column widths.
    */
+  // svelte-ignore state_referenced_locally
   const { columnWidths, largestColumnLength } = estimateColumnCharacterWidths(
     columns,
     rows,
@@ -90,83 +103,96 @@ TableCells – the cell contents.
   /* set context for child components */
   setContext("config", config);
 
-  let estimateColumnSize: number[] = [];
+  let estimateColumnSize: number[] = $state([]);
 
   /* Separate out dimension column */
-  $: dimensionColumn = columns?.find(
-    (c) => c.name == dimensionName,
-  ) as VirtualizedTableColumns;
-  $: measureColumns = columns?.filter((c) => c.name !== dimensionName) ?? [];
+  let dimensionColumn = $derived(
+    columns?.find((c) => c.name == dimensionName) as VirtualizedTableColumns,
+  );
+  let measureColumns = $derived(
+    columns?.filter((c) => c.name !== dimensionName) ?? [],
+  );
 
-  let horizontalScrolling = false;
+  let horizontalScrolling = $state(false);
 
-  let manualDimensionColumnWidth: number | null = null;
+  let manualDimensionColumnWidth: number | null = $state(null);
 
-  $: rowVirtualizer = createVirtualizer({
-    getScrollElement: () => container,
-    count: rows.length,
-    estimateSize: () => config.rowHeight,
-    // Provides a stable identity for each virtualized row so the virtualizer can reuse DOM nodes
-    // instead of remounting them during fast scrolls or data updates. This reduces blank frames,
-    // preserves focus/hover state, and avoids unnecessary re-renders.
-    getItemKey: (index) => String(rows?.[index]?.[dimensionName] ?? index),
-    overscan: rowOverscanAmount,
-    paddingStart: config.columnHeaderHeight,
-    initialOffset: rowScrollOffset,
+  let rowVirtualizer = $derived(
+    createVirtualizer({
+      getScrollElement: () => container,
+      count: rows.length,
+      estimateSize: () => config.rowHeight,
+      // Provides a stable identity for each virtualized row so the virtualizer can reuse DOM nodes
+      // instead of remounting them during fast scrolls or data updates. This reduces blank frames,
+      // preserves focus/hover state, and avoids unnecessary re-renders.
+      getItemKey: (index) => String(rows?.[index]?.[dimensionName] ?? index),
+      overscan: rowOverscanAmount,
+      paddingStart: config.columnHeaderHeight,
+      initialOffset: rowScrollOffset,
+    }),
+  );
+  $effect(() => {
+    rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
+  });
+  $effect(() => {
+    colScrollOffset = $columnVirtualizer?.scrollOffset || 0;
   });
 
-  $: if (rows && columns) {
-    estimateColumnSize = estimateColumnSizes(
-      columns,
-      columnWidths,
-      rows,
-      containerWidth,
-      config,
-    );
+  $effect(() => {
+    if (rows && columns) {
+      estimateColumnSize = estimateColumnSizes(
+        columns,
+        columnWidths,
+        rows,
+        config,
+      );
 
-    if (manualDimensionColumnWidth !== null) {
-      estimateColumnSize[0] = manualDimensionColumnWidth;
+      if (manualDimensionColumnWidth !== null) {
+        estimateColumnSize[0] = manualDimensionColumnWidth;
+      }
     }
-  }
-
-  $: columnVirtualizer = createVirtualizer({
-    getScrollElement: () => container,
-    horizontal: true,
-    count: measureColumns.length,
-    getItemKey: (index) => measureColumns[index].name,
-    estimateSize: (index) => {
-      return estimateColumnSize[index + 1];
-    },
-    overscan: columnOverscanAmount,
-    paddingStart: estimateColumnSize[0] + FILTER_COLUMN_WIDTH,
-    initialOffset: colScrollOffset,
   });
 
-  $: virtualRows = $rowVirtualizer?.getVirtualItems() ?? [];
-  $: virtualHeight = $rowVirtualizer?.getTotalSize() ?? 0;
+  let columnVirtualizer = $derived(
+    createVirtualizer({
+      getScrollElement: () => container,
+      horizontal: true,
+      count: measureColumns.length,
+      getItemKey: (index) => measureColumns[index].name,
+      estimateSize: (index) => {
+        return estimateColumnSize[index + 1];
+      },
+      overscan: columnOverscanAmount,
+      paddingStart: estimateColumnSize[0] + FILTER_COLUMN_WIDTH,
+      initialOffset: colScrollOffset,
+    }),
+  );
 
-  $: virtualColumns = $columnVirtualizer?.getVirtualItems() ?? [];
-  $: virtualWidth = $columnVirtualizer?.getTotalSize() ?? 0;
+  let virtualRows = $derived($rowVirtualizer?.getVirtualItems() ?? []);
+  let virtualHeight = $derived($rowVirtualizer?.getTotalSize() ?? 0);
 
-  let activeIndex;
+  let virtualColumns = $derived($columnVirtualizer?.getVirtualItems() ?? []);
+  let virtualWidth = $derived($columnVirtualizer?.getTotalSize() ?? 0);
+
+  let activeIndex: number = $state(-1);
   function setActiveIndex(index: number) {
     activeIndex = index;
   }
   function clearActiveIndex() {
-    activeIndex = false;
+    activeIndex = -1;
   }
 
   /** handle scrolling tooltip suppression */
-  let scrolling = false;
-  let timeoutID;
-  $: {
+  let scrolling = $state(false);
+  let timeoutID: ReturnType<typeof setTimeout> = $state(0 as any);
+  $effect(() => {
     if (scrolling) {
       if (timeoutID) clearTimeout(timeoutID);
       timeoutID = setTimeout(() => {
         scrolling = false;
       }, 200);
     }
-  }
+  });
 
   function onSelectItemHandler(data: { index: number; meta: boolean }) {
     // store previous scroll position before re-render

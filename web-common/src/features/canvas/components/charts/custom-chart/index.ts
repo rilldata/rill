@@ -81,9 +81,10 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     if (!match) return;
 
     this.metricsViewName = match[1];
-    this.localFilters = this.parent.filterManager.createLocalFilterStore(
-      this.metricsViewName,
-    );
+    this.localExpressionFilters =
+      this.parent.expressionFilterManager.createLocalFilterStore(
+        this.metricsViewName,
+      );
     // Update specStore in-memory so the filter system has a metrics_view name
     // to work with. This does NOT persist to YAML — only setSpec() and
     // updateProperty() write to YAML via updateYAML().

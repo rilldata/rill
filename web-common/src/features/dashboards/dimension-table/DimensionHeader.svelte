@@ -18,39 +18,51 @@
   import StartPivotButton from "../toolbars/StartPivotButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
 
-  export let dimensionName: string;
-  export let areAllTableRowsSelected = false;
-  export let isRowsEmpty = true;
-  export let searchText: string;
-  export let hideStartPivotButton = false;
-  export let onToggleSearchItems: () => void;
+  let {
+    dimensionName,
+    areAllTableRowsSelected,
+    isRowsEmpty,
+    searchText = $bindable(""),
+    hideStartPivotButton,
+    onToggleSearchItems,
+  }: {
+    dimensionName: string;
+    areAllTableRowsSelected: boolean;
+    isRowsEmpty: boolean;
+    searchText: string;
+    hideStartPivotButton: boolean;
+    onToggleSearchItems: () => void;
+  } = $props();
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
-      dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
     },
     actions: {
       sorting: { toggleSort },
       dimensions: { setPrimaryDimension },
-      dimensionsFilter: { toggleDimensionFilterMode },
       leaderboard: { toggleLeaderboardShowContextForAllMeasures },
     },
     timeRangeSummaryStore,
     dashboardStore,
     exploreName,
+    expressionFilterManager,
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
 
-  $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
+  let exploreHasTimeDimension = $derived(!!$timeRangeSummaryStore.data);
 
-  $: excludeMode = $isFilterExcludeMode(dimensionName);
+  let excludeMode = $derived(
+    expressionFilterManager.filterManagers.dimensions.find(
+      (dfm) => dfm.name === dimensionName,
+    )?.exclude ?? false,
+  );
 
-  let isLeaderboardActionsOpen = false;
+  let isLeaderboardActionsOpen = $state(false);
 
   function resetSearchText() {
     searchText = "";
@@ -72,10 +84,13 @@
     setPrimaryDimension("");
   };
   function toggleFilterMode() {
-    toggleDimensionFilterMode(dimensionName);
+    expressionFilterManager.dimensionFilterAction(
+      dimensionName,
+      (dimensionManager) => dimensionManager.toggleExclude(),
+    );
   }
 
-  let showReplacePivotModal = false;
+  let showReplacePivotModal = $state(false);
   function startPivotForDimensionTable() {
     const pivot = $dashboardStore?.pivot;
 

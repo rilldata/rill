@@ -27,11 +27,15 @@ export function createBatches<T>(array: T[], batchSize: number): T[][] {
   return batches;
 }
 
-export function arrayUnorderedEquals<T>(src: T[], tar: T[]) {
+export function arrayUnorderedEquals<T>(src: Iterable<T>, tar: Iterable<T>) {
   const srcSet = new Set<T>(src);
   const tarSet = new Set<T>(tar);
   if (srcSet.size !== tarSet.size) return false;
-  return tar.every((t) => srcSet.has(t));
+
+  for (const t of tar) {
+    if (!srcSet.has(t)) return false;
+  }
+  return true;
 }
 
 export function arrayOrderedEquals<T>(src: T[], tar: T[]) {

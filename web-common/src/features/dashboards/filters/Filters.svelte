@@ -1,15 +1,8 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
-  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
-  import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
-  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
-  import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import {
@@ -23,8 +16,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Duration, Interval } from "luxon";
-  import { flip } from "svelte/animate";
-  import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
   import { applyDimensionInListMode as applyDimensionInListModeDirectly } from "../state-managers/actions/dimension-filters";
   import {
@@ -39,8 +30,6 @@
   import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
-  import FilterButton from "./FilterButton.svelte";
-  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -50,50 +39,31 @@
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import ExpressionFilters from "./ExpressionFilters.svelte";
 
   const { rillTime } = featureFlags;
 
-  export let readOnly = false;
-  export let timeRanges: V1ExploreTimeRange[];
-  export let metricsViewName: string;
-  export let hasTimeSeries: boolean;
-
-  /** the height of a row of chips */
-  const ROW_HEIGHT = "26px";
+  let {
+    timeRanges,
+    metricsViewName,
+    hasTimeSeries,
+  }: {
+    timeRanges: V1ExploreTimeRange[];
+    metricsViewName: string;
+    hasTimeSeries: boolean;
+  } = $props();
 
   const StateManagers = getStateManagers();
   const {
     exploreName,
     validSpecStore,
-    actions: {
-      dimensionsFilter: {
-        toggleMultipleDimensionValueSelections,
-        applyDimensionInListMode,
-        applyDimensionContainsMode,
-        removeDimensionFilter,
-        toggleDimensionFilterMode,
-      },
-
-      measuresFilter: { setMeasureFilter, removeMeasureFilter },
-      filters: { clearAllFilters, setTemporaryFilterName },
-    },
     selectors: {
-      dimensions: { allDimensions, timeDimensions },
-      dimensionFilters: {
-        dimensionHasFilter,
-        getDimensionFilterItems,
-        getAllDimensionFilterItems,
-      },
-      measures: { allMeasures, filteredSimpleMeasures },
-      measureFilters: {
-        getMeasureFilterItems,
-        getAllMeasureFilterItems,
-        measureHasFilter,
-      },
+      dimensions: { timeDimensions },
       pivot: { showPivot },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     dashboardStore,
+    expressionFilterManager,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -104,21 +74,24 @@
 
   const client = useRuntimeClient();
 
-  $: timeRangeQuery = useMetricsViewTimeRange(client, metricsViewName);
-
-  $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
-
-  $: watermark = timeRangeSummary?.watermark;
-
-  $: maxQueryTimeRangeMillis = Number(
-    $timeRangeQuery.data?.maxQueryTimeRangeMillis ?? 0,
+  let timeRangeQuery = $derived(
+    useMetricsViewTimeRange(client, metricsViewName),
   );
-  $: maxQueryTimeRange =
+
+  let timeRangeSummary = $derived($timeRangeQuery.data?.timeRangeSummary);
+
+  let watermark = $derived(timeRangeSummary?.watermark);
+
+  let maxQueryTimeRangeMillis = $derived(
+    Number($timeRangeQuery.data?.maxQueryTimeRangeMillis ?? 0),
+  );
+  let maxQueryTimeRange = $derived(
     maxQueryTimeRangeMillis > 0
       ? Duration.fromMillis(maxQueryTimeRangeMillis)
-      : undefined;
+      : undefined,
+  );
 
-  $: ({
+  let {
     selectedTimeRange,
     allTimeRange,
     showTimeComparison,
@@ -127,106 +100,76 @@
     timeStart,
     timeEnd,
     ready: timeControlsReady,
-  } = $timeControlsStore);
+  } = $derived($timeControlsStore);
 
-  $: exploreSpec = $validSpecStore.data?.explore ?? {};
-  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+  let exploreSpec = $derived($validSpecStore.data?.explore ?? {});
+  let metricsViewSpec = $derived($validSpecStore.data?.metricsView ?? {});
 
-  $: exploreState = useExploreState($exploreName);
-  $: activeTimeZone = $exploreState?.selectedTimezone;
+  let exploreState = $derived(useExploreState($exploreName));
+  let activeTimeZone = $derived($exploreState?.selectedTimezone);
 
-  $: selectedRangeAlias =
+  let selectedRangeAlias = $derived(
     selectedTimeRange?.name === TimeRangePreset.CUSTOM
       ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
-      : selectedTimeRange?.name;
-
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
-
-  $: dimensions = $allDimensions;
-  $: dimensionIdMap = getMapFromArray(
-    dimensions,
-    (dimension) => (dimension.name || dimension.column) as string,
+      : selectedTimeRange?.name,
   );
 
-  $: measures = $allMeasures;
-  $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
+  let activeTimeGrain = $derived(selectedTimeRange?.interval);
+  let defaultTimeRange = $derived(exploreSpec.defaultPreset?.timeRange);
 
-  $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
-  $: allDimensionFilters = $getAllDimensionFilterItems(
-    currentDimensionFilters,
-    dimensionIdMap,
-  );
+  let { selectedTimeDimension } = $derived($dashboardStore);
 
-  $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
-  $: allMeasureFilters = $getAllMeasureFilterItems(
-    currentMeasureFilters,
-    measureIdMap,
-  );
+  let availableTimeZones = $derived(getPinnedTimeZones(exploreSpec));
 
-  // hasFilter only checks for complete filters and excludes temporary ones
-  $: hasFilters =
-    currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
-
-  $: ({ whereFilter, selectedTimeDimension } = $dashboardStore);
-
-  $: isComplexFilter = isExpressionUnsupported(whereFilter);
-
-  $: availableTimeZones = getPinnedTimeZones(exploreSpec);
-
-  $: allTimeRangeInterval = allTimeRange
-    ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-    : Interval.invalid("Invalid interval");
-
-  $: maybeInterval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : allTimeRange
+  let allTimeRangeInterval = $derived(
+    allTimeRange
       ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : undefined;
+      : Interval.invalid("Invalid interval"),
+  );
 
-  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
+  let maybeInterval = $derived(
+    selectedTimeRange
+      ? Interval.fromDateTimes(
+          DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+          DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
+        )
+      : allTimeRange
+        ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
+        : undefined,
+  );
 
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
+  let interval = $derived(maybeInterval?.isValid ? maybeInterval : undefined);
 
-  $: primaryTimeDimension = metricsViewSpec.timeDimension;
+  let baseTimeRange = $derived(
+    selectedTimeRange?.start &&
+      selectedTimeRange?.end && {
+        name: selectedTimeRange?.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+      },
+  );
 
-  $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
-    return {
-      value: timeDim.name!,
-      label: timeDim.displayName || timeDim.name!,
-      description: timeDim.description,
-    };
-  });
+  let primaryTimeDimension = $derived(metricsViewSpec.timeDimension);
 
-  $: maybeMinDate = allTimeRange?.start
-    ? DateTime.fromJSDate(allTimeRange.start)
-    : undefined;
-  $: maybeMaxDate = allTimeRange?.end
-    ? DateTime.fromJSDate(allTimeRange.end)
-    : undefined;
+  let timeDimensionOptions = $derived(
+    $timeDimensions.map((timeDim) => {
+      return {
+        value: timeDim.name!,
+        label: timeDim.displayName || timeDim.name!,
+        description: timeDim.description,
+      };
+    }),
+  );
 
-  $: minDate = maybeMinDate?.isValid ? maybeMinDate : undefined;
-  $: maxDate = maybeMaxDate?.isValid ? maybeMaxDate : undefined;
+  let maybeMinDate = $derived(
+    allTimeRange?.start ? DateTime.fromJSDate(allTimeRange.start) : undefined,
+  );
+  let maybeMaxDate = $derived(
+    allTimeRange?.end ? DateTime.fromJSDate(allTimeRange.end) : undefined,
+  );
 
-  function handleMeasureFilterApply(
-    dimension: string,
-    measureName: string,
-    oldDimension: string,
-    filter: MeasureFilterEntry,
-  ) {
-    if (oldDimension && oldDimension !== dimension) {
-      removeMeasureFilter(oldDimension, measureName);
-    }
-    setMeasureFilter(dimension, filter);
-  }
+  let minDate = $derived(maybeMinDate?.isValid ? maybeMinDate : undefined);
+  let maxDate = $derived(maybeMaxDate?.isValid ? maybeMaxDate : undefined);
 
   async function onTimeDimensionSelect(column: string) {
     // Capture time range name before any state changes
@@ -398,9 +341,10 @@
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
   }
 
-  $: usingRillTime =
+  let usingRillTime = $derived(
     !selectedRangeAlias?.startsWith("P") &&
-    !selectedRangeAlias?.startsWith("rill-");
+      !selectedRangeAlias?.startsWith("rill-"),
+  );
 
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (usingRillTime && selectedRangeAlias) {
@@ -516,98 +460,14 @@
     </div>
   {/if}
 
-  <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
-    {#if !readOnly}
-      <Filter size="16px" className="text-fg-secondary flex-none mt-[5px]" />
-    {/if}
-    <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
-      {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={whereFilter} />
-      {:else if !allDimensionFilters.length && !allMeasureFilters.length}
-        <div
-          in:fly={{ duration: 200, x: 8 }}
-          class="text-fg-muted grid ml-1 items-center"
-          style:min-height={ROW_HEIGHT}
-        >
-          {m.dashboard_no_filters_selected()}
-        </div>
-      {:else}
-        {#each allDimensionFilters as filterData (filterData.name)}
-          <div animate:flip={{ duration: 200 }}>
-            <DimensionFilter
-              expressionMap={new Map([
-                [metricsViewName, $dashboardStore.whereFilter],
-              ])}
-              {filterData}
-              {readOnly}
-              {timeStart}
-              {timeEnd}
-              timeDimension={selectedTimeDimension}
-              {timeControlsReady}
-              removeDimensionFilter={async (name) =>
-                removeDimensionFilter(name)}
-              toggleDimensionFilterMode={async (name) => {
-                toggleDimensionFilterMode(name);
-              }}
-              toggleDimensionValueSelections={async (
-                name,
-                values,
-                _metricsViewNames,
-                keepPillVisible,
-                isExclusiveFilter,
-                exclude,
-              ) =>
-                toggleMultipleDimensionValueSelections(
-                  name,
-                  values,
-                  keepPillVisible ?? true,
-                  isExclusiveFilter,
-                  exclude,
-                )}
-              applyDimensionInListMode={async (name, values) =>
-                applyDimensionInListMode(name, values)}
-              applyDimensionContainsMode={async (name, searchText) =>
-                applyDimensionContainsMode(name, searchText)}
-              isUrlTooLongAfterInListFilter={(values) =>
-                isUrlTooLongAfterInListFilter(filterData.name, values)}
-            />
-          </div>
-        {/each}
-        {#each allMeasureFilters as filterData (filterData.name)}
-          <div animate:flip={{ duration: 200 }}>
-            <MeasureFilter
-              {filterData}
-              allDimensions={dimensions}
-              onRemove={() =>
-                removeMeasureFilter(filterData.dimensionName, filterData.name)}
-              onApply={({ dimension, oldDimension, filter }) =>
-                handleMeasureFilterApply(
-                  dimension,
-                  filterData.name,
-                  oldDimension,
-                  filter,
-                )}
-            />
-          </div>
-        {/each}
-      {/if}
-
-      {#if !readOnly}
-        <FilterButton
-          allDimensions={dimensions}
-          filteredSimpleMeasures={$filteredSimpleMeasures()}
-          dimensionHasFilter={$dimensionHasFilter}
-          measureHasFilter={$measureHasFilter}
-          {setTemporaryFilterName}
-        />
-        <!-- if filters are present, place a chip at the end of the flex container 
-      that enables clearing all filters -->
-        {#if hasFilters}
-          <Button type="text" onClick={clearAllFilters}
-            >{m.dashboard_clear_filters()}</Button
-          >
-        {/if}
-      {/if}
-    </div>
-  </div>
+  <ExpressionFilters
+    {expressionFilterManager}
+    filteredDimensions={exploreSpec?.dimensions}
+    filteredMeasures={exploreSpec?.measures}
+    {timeStart}
+    {timeEnd}
+    timeDimension={$dashboardStore.selectedTimeDimension}
+    {timeControlsReady}
+    {isUrlTooLongAfterInListFilter}
+  />
 </div>

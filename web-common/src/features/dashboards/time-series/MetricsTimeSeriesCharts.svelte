@@ -66,13 +66,13 @@
     dashboardStore,
     selectors: {
       measures: { allMeasures, visibleMeasures, getMeasureByName },
-      dimensionFilters: { includedDimensionValues },
       charts: { canPanLeft, canPanRight, getNewPanRange },
       tags: { measureTagIndex },
     },
     actions: {
       measures: { setMeasureVisibility },
     },
+    expressionFilterManager,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -148,9 +148,10 @@
     const [start, end] = a <= b ? [a, b] : [b, a];
     return Interval.fromDateTimes(start, end) as Interval<true>;
   })();
-  $: includedValuesForDimension = $includedDimensionValues(
-    comparisonDimension as string,
-  );
+  $: includedValuesForDimension =
+    expressionFilterManager.filterManagers.dimensions.find(
+      (dfm) => dfm.name === comparisonDimension,
+    )?.selectedValues ?? [];
   $: chartDimensionValues = includedValuesForDimension.slice(
     0,
     showTimeDimensionDetail ? 11 : 7,
@@ -482,6 +483,7 @@
     measure={screenshotDialogMeasure}
     metricsViewName={chartMetricsViewName}
     tddChartType={tddChartType ?? TDDChart.DEFAULT}
+    {expressionFilterManager}
     where={chartWhere}
     {timeDimension}
     {timeStart}

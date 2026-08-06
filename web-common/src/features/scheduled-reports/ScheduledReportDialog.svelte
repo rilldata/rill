@@ -28,7 +28,6 @@
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
-    aggregationRequestWithFilters,
     aggregationRequestWithRowsAndColumns,
     aggregationRequestWithTimeRange,
     buildAggregationRequest,
@@ -70,6 +69,7 @@
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
   export let open: boolean;
   export let props:
@@ -328,13 +328,11 @@
       };
     }
 
-    const filtersState = filters!.toState();
     const timeControlsState = timeControls!.toState();
     const updatedAggregationRequest = buildAggregationRequest(
       aggregationRequest,
       [
         aggregationRequestWithTimeRange(exploreSpec, timeControlsState),
-        aggregationRequestWithFilters(filtersState),
         aggregationRequestWithRowsAndColumns({
           exploreSpec,
           rows: values.rows,
@@ -343,6 +341,10 @@
           selectedTimezone: timeControlsState.selectedTimezone,
         }),
       ],
+    );
+    updatedAggregationRequest.where = sanitiseExpression(
+      filters?.exprByMetricsView[metricsViewName],
+      undefined,
     );
     return {
       ...commonOptions,
@@ -429,6 +431,7 @@
       {errors}
       {submit}
       {enhance}
+      metricsViewName={metricsViewName ?? ""}
       exploreName={exploreName ?? ""}
       {canvasName}
       {canvasStateOverride}

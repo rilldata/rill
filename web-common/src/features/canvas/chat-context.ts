@@ -41,7 +41,7 @@ function getActiveCanvasContext(
 
     const canvasFiltersStore = derived(
       [
-        canvasStore.canvasEntity.filterManager.filterMapStore,
+        canvasStore.canvasEntity.expressionFilterManager.exprByMetricsViewStore,
         canvasStore.canvasEntity.timeManager.state.interval,
       ],
       ([filtersMap, selectedInterval]) => {
@@ -64,7 +64,7 @@ function getActiveCanvasContext(
 
       if (filtersMap.size) {
         analystAgentContext.wherePerMetricsView = {};
-        filtersMap.forEach((expr, mv) => {
+        Object.entries(filtersMap).forEach(([mv, expr]) => {
           if (expr.cond?.exprs?.length) {
             analystAgentContext.wherePerMetricsView![mv] = expr;
           }

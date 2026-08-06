@@ -19,12 +19,10 @@
   export let open: boolean;
 
   const {
-    actions: {
-      dimensionsFilter: { toggleDimensionValueSelection },
-    },
     timeRangeSummaryStore,
     metricsViewName,
     validSpecStore,
+    expressionFilterManager,
   } = getStateManagers();
 
   const client = useRuntimeClient();
@@ -49,7 +47,10 @@
 
   function onItemSelect(dimension: string, value: any) {
     onSelect();
-    toggleDimensionValueSelection(dimension, value, false, true);
+    expressionFilterManager.dimensionFilterAction(
+      dimension,
+      (dimensionManager) => dimensionManager.toggleValue(value, false),
+    );
   }
 </script>
 

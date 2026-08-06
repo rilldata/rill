@@ -8,18 +8,86 @@ import type {
   MetricsViewSpecMeasure,
   V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { derived } from "svelte/store";
+import { page } from "$app/stores";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers.ts";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 
-export function hasDashboardWhereFilter(exploreState: ExploreState) {
-  return exploreState.whereFilter?.cond?.exprs?.length;
+export function convertDateToMinutes(date: string) {
+  const now = new Date();
+  const future = new Date(date);
+  const diff = future.getTime() - now.getTime();
+  return Math.floor(diff / 60000);
 }
 
-export function hasDashboardDimensionThresholdFilter(
-  exploreState: ExploreState,
+/**
+ * Creates a store for fields and sanitized state based on dashboard kind.
+ * For Canvas, we return only return the sanitized url state.
+ * For Explore, we return specific fields and sanitized url state. Check {@link getSanitizedExploreStateParam}
+ */
+export function createFieldsAndStateForKind(
+  resourceKind: ResourceKind | undefined,
 ) {
-  return exploreState.dimensionThresholdFilters?.length;
+  if (!resourceKind || resourceKind === ResourceKind.Canvas) {
+    return derived(page, (pageState) => {
+      return {
+        fields: undefined,
+        sanitizedState: getSanitizedStateUrl(pageState.url),
+        queryTimeStart: undefined,
+        queryTimeEnd: undefined,
+      };
+    });
+  }
+
+  const stateManagers = getStateManagers();
+  const {
+    dashboardStore,
+    selectors: {
+      measures: { visibleMeasures },
+      dimensions: { visibleDimensions },
+    },
+    validSpecStore,
+  } = stateManagers;
+  const timeControlStore = useTimeControlStore(stateManagers);
+  return derived(
+    [
+      dashboardStore,
+      visibleMeasures,
+      visibleDimensions,
+      validSpecStore,
+      timeControlStore,
+    ],
+    ([
+      dashboardState,
+      $visibleMeasures,
+      $visibleDimensions,
+      validSpecState,
+      timeControlState,
+    ]) => {
+      const exploreFields = getExploreFields(
+        dashboardState,
+        $visibleDimensions,
+        $visibleMeasures,
+      );
+      const sanitizedState = getSanitizedExploreStateParam(
+        dashboardState,
+        exploreFields,
+        validSpecState.data?.explore,
+      );
+
+      return {
+        fields: exploreFields,
+        sanitizedState,
+        queryTimeStart: timeControlState.timeStart,
+        queryTimeEnd: timeControlState.timeEnd,
+      };
+    },
+  );
 }
 
-export function getExploreFields(
+function getExploreFields(
   exploreState: ExploreState,
   visibleDimensions: MetricsViewSpecDimension[],
   visibleMeasures: MetricsViewSpecMeasure[],
@@ -55,11 +123,12 @@ export function getExploreFields(
   ] as string[];
 }
 
-export function convertDateToMinutes(date: string) {
-  const now = new Date();
-  const future = new Date(date);
-  const diff = future.getTime() - now.getTime();
-  return Math.floor(diff / 60000);
+function hasDashboardWhereFilter(exploreState: ExploreState) {
+  return exploreState.whereFilter?.cond?.exprs?.length;
+}
+
+function hasDashboardDimensionThresholdFilter(exploreState: ExploreState) {
+  return exploreState.dimensionThresholdFilters?.length;
 }
 
 /**
@@ -67,7 +136,7 @@ export function convertDateToMinutes(date: string) {
  * It removes all state that refers to fields that will be hidden, like filters, pivot chips, and visible field keys.
  * This ensures we do not leak hidden information to the URL recipient.
  */
-export function getSanitizedExploreStateParam(
+function getSanitizedExploreStateParam(
   exploreState: ExploreState,
   metricsViewFields: string[] | undefined,
   exploreSpec: V1ExploreSpec,
@@ -137,4 +206,25 @@ export function getSanitizedExploreStateParam(
   } as ExploreState;
 
   return getProtoFromDashboardState(sanitizedDashboardState, exploreSpec);
+}
+
+/**
+ * Returns the sanitized state from the URL.
+ * Removes filter parameters (f and f.*) so locked filters don't appear in the shared URL.
+ * This ensures we do not leak hidden filter information to the URL recipient.
+ */
+export function getSanitizedStateUrl(currentUrl: URL): string {
+  const searchParams = new URLSearchParams(currentUrl.search);
+  const filterPrefix: string = ExploreStateURLParams.Filters; // "f"
+
+  // Remove all filter-related parameters (f, f.metricsViewName, etc.)
+  const keysToDelete: string[] = [];
+  searchParams.forEach((_, key) => {
+    if (key === filterPrefix || key.startsWith(`${filterPrefix}.`)) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach((key) => searchParams.delete(key));
+
+  return searchParams.toString();
 }

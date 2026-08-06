@@ -20,6 +20,8 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -54,6 +56,7 @@ export class DashboardStateSync {
     private readonly exploreName: string,
     private readonly extraPrefix: string | undefined,
     private readonly dataLoader: DashboardStateDataLoader,
+    private readonly expressionFilterManager: ExpressionFilterManager,
   ) {
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
@@ -81,10 +84,20 @@ export class DashboardStateSync {
       void this.handleExploreInit(initExploreState.data);
     });
 
-    this.unsubExploreState = this.exploreStore.subscribe((exploreState) => {
-      if (!exploreState || !this.initialized) return;
-      void this.gotoNewState(exploreState);
-    });
+    const fullStateStore = derived(
+      [this.exploreStore, this.expressionFilterManager.exprByMetricsViewStore],
+      (s) => s,
+    );
+    this.unsubExploreState = fullStateStore.subscribe(
+      ([exploreState, exprByMetricsViewStore]) => {
+        if (!exploreState || !this.initialized) return;
+        void this.gotoNewState({
+          ...exploreState,
+          whereFilter:
+            Object.values(exprByMetricsViewStore)[0] ?? createAndExpression([]),
+        });
+      },
+    );
 
     setContext(DASHBOARD_STATE_SYNC_KEY, this);
   }
@@ -185,6 +198,8 @@ export class DashboardStateSync {
       );
     }
 
+    log("INIT", redirectUrl);
+    this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -262,6 +277,7 @@ export class DashboardStateSync {
       metricsExplorerStore.mergePartialExplorerEntity(
         this.exploreName,
         partialExplore,
+        this.expressionFilterManager,
       );
       // Get time controls state after explore state is updated.
       const timeControlsState = get(this.timeControlStore);
@@ -294,6 +310,8 @@ export class DashboardStateSync {
       this.updating = false;
     }
 
+    log("URL", redirectUrl);
+    this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -349,6 +367,7 @@ export class DashboardStateSync {
         );
       }
 
+      log("GOTO", newUrl);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -361,4 +380,13 @@ export class DashboardStateSync {
       this.updating = false;
     }
   }
+}
+
+function log(label: string, toUrl: URL) {
+  const fromUrlSearch = get(page).url.search;
+  const toUrlSearch = toUrl.search;
+  const equal = fromUrlSearch === toUrlSearch;
+  console.log(
+    `[${label}] ${fromUrlSearch} =${equal ? "X" : "="}> ${toUrlSearch}`,
+  );
 }

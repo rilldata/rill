@@ -13,15 +13,17 @@
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-  import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
 
   export let open = false;
   export let measure: MetricsViewSpecMeasure;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
+  export let expressionFilterManager: ExpressionFilterManager;
   export let tddChartType: TDDChart = TDDChart.DEFAULT;
   export let timeDimension: string | undefined = undefined;
   export let timeStart: string | undefined = undefined;
@@ -123,12 +125,7 @@
           </div>
         </header>
 
-        <ExploreFilterChipsReadOnly
-          metricsViewNames={[metricsViewName]}
-          filters={where}
-          dimensionsWithInlistFilter={[]}
-          dimensionThresholdFilters={[]}
-        />
+        <ReadonlyExpressionFilters {expressionFilterManager} />
 
         <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
           {#if timeGranularity}
