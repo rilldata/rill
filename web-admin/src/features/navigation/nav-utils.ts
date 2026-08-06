@@ -159,22 +159,24 @@ export function isOnboardingPage(page: Page): boolean {
   );
 }
 
+// `isProjectPage` matches every `/{org}/{project}/-/*` route bar a few exceptions, so it subsumes
+// reports and alerts. It has to be tested last, or the specific screens below it are never reached.
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):
       return MetricsEventScreenName.Organization;
-    case isProjectPage(page):
-      return MetricsEventScreenName.Project;
     case isMetricsExplorerPage(page):
       return MetricsEventScreenName.Dashboard;
     case isCanvasDashboardPage(page):
       return MetricsEventScreenName.Canvas;
+    case isReportExportPage(page):
+      return MetricsEventScreenName.ReportExport;
     case isReportPage(page):
       return MetricsEventScreenName.Report;
     case isAlertPage(page):
       return MetricsEventScreenName.Alert;
-    case isReportExportPage(page):
-      return MetricsEventScreenName.ReportExport;
+    case isProjectPage(page):
+      return MetricsEventScreenName.Project;
   }
   return MetricsEventScreenName.Unknown;
 }
