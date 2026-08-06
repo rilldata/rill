@@ -40,23 +40,26 @@ export class GithubStarNudge {
    * granularity for the one-day mute to expire.
    */
   public get visible() {
-    return isVisible(this.store.value);
+    const { status, mutedUntil } = this.store.value;
+    if (status !== "armed") return false;
+    return !mutedUntil || mutedUntil <= Date.now();
   }
 
   /** Called when the user reaches a payoff moment: a dashboard rendered. */
   public armPayoff() {
-    if (this.state.status === "armed" || this.state.status === "done") return;
-    this.store.setter({ ...this.state, status: "armed" });
+    const { status } = this.store.value;
+    if (status === "armed" || status === "done") return;
+    this.store.setter({ ...this.store.value, status: "armed" });
   }
 
   /** The user starred. Terminal. */
   public recordStar() {
-    this.store.setter({ ...this.state, status: "done" });
+    this.store.setter({ ...this.store.value, status: "done" });
   }
 
   /** The user clicked "Don't show again". Terminal. */
   public recordOptOut() {
-    this.store.setter({ ...this.state, status: "done" });
+    this.store.setter({ ...this.store.value, status: "done" });
   }
 
   /**
@@ -67,15 +70,10 @@ export class GithubStarNudge {
     if (!this.visible) return;
 
     this.store.setter({
-      ...this.state,
+      ...this.store.value,
       mutedUntil: Date.now() + DAY_MS,
     });
   }
-}
-
-export function isVisible(state: GithubStarState, now = Date.now()) {
-  if (state.status !== "armed") return false;
-  return !state.mutedUntil || state.mutedUntil <= now;
 }
 
 export const githubStarNudge = new GithubStarNudge();
