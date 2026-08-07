@@ -285,6 +285,7 @@ type DB interface {
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
+	UpdateOrganizationInviteAttributes(ctx context.Context, id string, attributes map[string]any) error
 
 	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*ProjectInviteWithRole, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
@@ -1073,19 +1074,21 @@ type MemberUsergroup struct {
 type OrganizationInvite struct {
 	ID              string
 	Email           string
-	OrgID           string    `db:"org_id"`
-	OrgRoleID       string    `db:"org_role_id"`
-	UsergroupIDs    []string  `db:"usergroup_ids"`
-	InvitedByUserID *string   `db:"invited_by_user_id"`
-	CreatedOn       time.Time `db:"created_on"`
+	OrgID           string         `db:"org_id"`
+	OrgRoleID       string         `db:"org_role_id"`
+	UsergroupIDs    []string       `db:"usergroup_ids"`
+	Attributes      map[string]any `db:"attributes"`
+	InvitedByUserID *string        `db:"invited_by_user_id"`
+	CreatedOn       time.Time      `db:"created_on"`
 }
 
 // OrganizationInviteWithRole is a convenience type used for display-friendly representation of an OrganizationInvite.
 type OrganizationInviteWithRole struct {
-	ID        string
-	Email     string
-	RoleName  string  `db:"role_name"`
-	InvitedBy *string `db:"invited_by"`
+	ID         string
+	Email      string
+	RoleName   string         `db:"role_name"`
+	Attributes map[string]any `db:"attributes"`
+	InvitedBy  *string        `db:"invited_by"`
 }
 
 // ProjectInvite represents an outstanding invitation to join a project.
@@ -1161,10 +1164,11 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 }
 
 type InsertOrganizationInviteOptions struct {
-	Email     string `validate:"email"`
-	InviterID string
-	OrgID     string `validate:"required"`
-	RoleID    string `validate:"required"`
+	Email      string `validate:"email"`
+	InviterID  string
+	OrgID      string `validate:"required"`
+	RoleID     string `validate:"required"`
+	Attributes map[string]any
 }
 
 type InsertProjectInviteOptions struct {

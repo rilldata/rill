@@ -1156,6 +1156,15 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
 	}
 
+	// Attributes are org-scoped and feed security policies, so setting them requires org-level member management permission.
+	var attrs map[string]any
+	if req.Attributes != nil {
+		if !claims.OrganizationPermissions(ctx, proj.OrganizationID).ManageOrgMembers {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to set user attributes")
+		}
+		attrs = req.Attributes.AsMap()
+	}
+
 	// Check outstanding invites quota
 	count, err := s.admin.DB.CountInvitesForOrganization(ctx, proj.OrganizationID)
 	if err != nil {
@@ -1207,14 +1216,16 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		// Insert an organization guest invite (will fail with a constraint error if an org-level invite already exists).
 		// NOTE: Not using a transaction here for simplicity. The operation is idempotent and worst-case the user becomes a guest member with no access.
 		err = s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-			Email:     req.Email,
-			OrgID:     proj.OrganizationID,
-			RoleID:    guestRole.ID,
-			InviterID: invitedByUserID,
+			Email:      req.Email,
+			OrgID:      proj.OrganizationID,
+			RoleID:     guestRole.ID,
+			InviterID:  invitedByUserID,
+			Attributes: attrs,
 		})
 		if err != nil && !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
 		}
+		orgInviteExisted := errors.Is(err, database.ErrNotUnique)
 
 		// Find the organization invite
 		orgInvite, err := s.admin.DB.FindOrganizationInvite(ctx, proj.OrganizationID, req.Email)
@@ -1223,6 +1234,14 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 				return nil, err
 			}
 			return nil, fmt.Errorf("expected but failed to find organization invite: %w", err)
+		}
+
+		// If the org invite already existed, update its attributes only when explicitly provided, to avoid clearing them on a plain re-invite.
+		if orgInviteExisted && req.Attributes != nil {
+			err = s.admin.DB.UpdateOrganizationInviteAttributes(ctx, orgInvite.ID, attrs)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// Invite user to join the project
@@ -1273,7 +1292,8 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	}
 
 	// Add or update the user to the project with the requested role and resource scope.
-	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil, restrictResources, resources)
+	// The attributes only apply if the user is not already an org member (they are set on the newly created guest org membership).
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, attrs, restrictResources, resources)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err

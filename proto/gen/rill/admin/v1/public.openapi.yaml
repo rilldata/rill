@@ -1420,6 +1420,8 @@ components:
             type: object
         v1OrganizationInvite:
             properties:
+                attributes:
+                    type: object
                 email:
                     type: string
                 invitedBy:
@@ -2792,6 +2794,11 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                attributes:
+                                    description: |-
+                                        Custom attributes to set on the new membership.
+                                        If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                                    type: object
                                 email:
                                     type: string
                                 role:
@@ -3212,6 +3219,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                attributes:
+                                    description: |-
+                                        Custom attributes to set on the user's org membership (attributes are org-scoped).
+                                        If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                                        Setting attributes requires permission to manage org members.
+                                    type: object
                                 email:
                                     type: string
                                 resources:

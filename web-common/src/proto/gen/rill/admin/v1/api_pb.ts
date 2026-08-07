@@ -5289,6 +5289,14 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
   role = "";
 
   /**
+   * Custom attributes to set on the new membership.
+   * If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+   *
+   * @generated from field: google.protobuf.Struct attributes = 5;
+   */
+  attributes?: Struct;
+
+  /**
    * @generated from field: bool superuser_force_access = 4;
    */
   superuserForceAccess = false;
@@ -5304,6 +5312,7 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "attributes", kind: "message", T: Struct },
     { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -7565,6 +7574,15 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
    */
   resources: ResourceName[] = [];
 
+  /**
+   * Custom attributes to set on the user's org membership (attributes are org-scoped).
+   * If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+   * Setting attributes requires permission to manage org members.
+   *
+   * @generated from field: google.protobuf.Struct attributes = 7;
+   */
+  attributes?: Struct;
+
   constructor(data?: PartialMessage<AddProjectMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7579,6 +7597,7 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 7, name: "attributes", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUserRequest {
@@ -17858,6 +17877,11 @@ export class OrganizationInvite extends Message<OrganizationInvite> {
    */
   invitedBy = "";
 
+  /**
+   * @generated from field: google.protobuf.Struct attributes = 4;
+   */
+  attributes?: Struct;
+
   constructor(data?: PartialMessage<OrganizationInvite>) {
     super();
     proto3.util.initPartial(data, this);
@@ -17869,6 +17893,7 @@ export class OrganizationInvite extends Message<OrganizationInvite> {
     { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "attributes", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationInvite {

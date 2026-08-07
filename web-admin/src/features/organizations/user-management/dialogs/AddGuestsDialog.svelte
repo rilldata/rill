@@ -21,6 +21,7 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
+  import KeyValueInput from "@rilldata/web-common/components/forms/KeyValueInput.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -46,6 +47,8 @@
   let selectedRole: OrgUserRoles = OrgUserRoles.Viewer;
   let roleDropdownOpen = false;
   let hasAutoSelectedProject = false;
+  let showAttributes = false;
+  let attributeRows: Array<{ key: string; value: string }> = [];
 
   function resetDialogState() {
     failedInvites = [];
@@ -54,6 +57,19 @@
     hasAutoSelectedProject = false;
     projectDropdownOpen = false;
     roleDropdownOpen = false;
+    showAttributes = false;
+    attributeRows = [];
+  }
+
+  // Builds the attributes object from the key/value rows, skipping rows with an empty key.
+  // The same attributes apply to every invited email.
+  function buildAttributes(): Record<string, string> | undefined {
+    const attrs: Record<string, string> = {};
+    for (const { key, value } of attributeRows) {
+      const trimmedKey = key.trim();
+      if (trimmedKey) attrs[trimmedKey] = value;
+    }
+    return Object.keys(attrs).length > 0 ? attrs : undefined;
   }
 
   // Projects list
@@ -102,7 +118,7 @@
         $addProjectMemberUser.mutateAsync({
           org: organization,
           project: projectName,
-          data: { email, role: selectedRole },
+          data: { email, role: selectedRole, attributes: buildAttributes() },
         }),
       ),
     );
@@ -316,6 +332,33 @@
             {/each}
           </Dropdown.Content>
         </Dropdown.Root>
+      </div>
+
+      <div class="mt-3 flex flex-col gap-y-1">
+        <button
+          type="button"
+          class="flex items-center gap-x-1 text-xs font-medium text-fg-secondary hover:text-fg-primary w-fit"
+          onclick={() => (showAttributes = !showAttributes)}
+        >
+          <CaretDownIcon
+            size="12px"
+            className={showAttributes ? "" : "-rotate-90"}
+          />
+          {m.users_custom_attributes()}
+        </button>
+        {#if showAttributes}
+          <div class="text-[11px] text-fg-secondary">
+            {m.users_custom_attributes_hint()}
+          </div>
+          <KeyValueInput
+            id="invite-guest-attributes"
+            bind:value={attributeRows}
+            keyPlaceholder={m.users_attribute_key_placeholder()}
+            valuePlaceholder={m.users_attribute_value_placeholder()}
+            itemLabel={m.users_custom_attributes()}
+            addLabel={m.users_add_attribute()}
+          />
+        {/if}
       </div>
 
       {#if failedInvites.length > 0}
