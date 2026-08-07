@@ -350,7 +350,7 @@ func (p *Parser) decodeNodeYAML(node *Node, knownFields bool, dst any) error {
 			// Using node.YAMLRaw instead of node.YAML because we need to set KnownFields for metrics views
 			dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
 			dec.KnownFields(true)
-			err = dec.Decode(dst)
+			err = filterCustomFieldErrors(dec.Decode(dst))
 		} else {
 			err = node.YAML.Decode(dst)
 		}
