@@ -32,7 +32,7 @@
   {#if attributeEntries.length > 0}
     <Tooltip location="right" alignment="start" distance={8}>
       <Chip
-        type="blue"
+        type="dimension"
         label={m.users_attributes_count({ count: attributeEntries.length })}
         compact
         readOnly
