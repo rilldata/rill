@@ -32,7 +32,7 @@
 
   $: hasNextPage = Boolean($listOrganizationMemberUsergroups.hasNextPage);
 
-  $: isFetchingNextPage = $listOrganizationMemberUsergroups.isFetching;
+  $: isFetchingNextPage = $listOrganizationMemberUsergroups.isFetchingNextPage;
 
   function handleLoadMore() {
     if ($listOrganizationMemberUsergroups.hasNextPage) {

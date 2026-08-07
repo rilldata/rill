@@ -174,7 +174,7 @@ export function getOrgUsergroupsInfinite(organization: string) {
   return createAdminServiceListOrganizationMemberUsergroupsInfinite(
     organization,
     {
-      pageSize: PAGE_SIZE,
+      pageSize: INFINITE_PAGE_SIZE,
       includeCounts: true,
     },
     {
