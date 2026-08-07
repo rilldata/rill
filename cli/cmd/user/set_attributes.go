@@ -9,6 +9,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -42,10 +44,13 @@ func SetAttributesCmd(ch *cmdutil.Helper) *cobra.Command {
 					Email: email,
 				})
 				if err != nil {
-					return fmt.Errorf("failed to get existing user: %w", err)
+					// The user may not have signed up yet but have a pending invite; the update below handles that case.
+					if status.Code(err) != codes.NotFound {
+						return fmt.Errorf("failed to get existing user: %w", err)
+					}
 				}
 
-				if existingUser.Member.Attributes != nil && len(existingUser.Member.Attributes.Fields) > 0 {
+				if existingUser != nil && existingUser.Member.Attributes != nil && len(existingUser.Member.Attributes.Fields) > 0 {
 					ch.PrintfWarn("User already has attributes. This will overwrite existing attributes.\n")
 					ch.PrintfWarn("Current attributes:\n")
 					for key, value := range existingUser.Member.Attributes.AsMap() {

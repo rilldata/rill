@@ -21,6 +21,7 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
+  import KeyValueInput from "@rilldata/web-common/components/forms/KeyValueInput.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation.ts";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
@@ -44,6 +45,19 @@
     createAdminServiceAddOrganizationMemberUser();
 
   let failedInvites: string[] = [];
+  let showAttributes = false;
+  let attributeRows: Array<{ key: string; value: string }> = [];
+
+  // Builds the attributes object from the key/value rows, skipping rows with an empty key.
+  // The same attributes apply to every invited email.
+  function buildAttributes(): Record<string, string> | undefined {
+    const attrs: Record<string, string> = {};
+    for (const { key, value } of attributeRows) {
+      const trimmedKey = key.trim();
+      if (trimmedKey) attrs[trimmedKey] = value;
+    }
+    return Object.keys(attrs).length > 0 ? attrs : undefined;
+  }
 
   async function handleCreate(
     newEmail: string,
@@ -55,6 +69,7 @@
       data: {
         email: newEmail,
         role: newRole,
+        attributes: buildAttributes(),
         superuserForceAccess: isSuperUser,
       },
     });
@@ -172,6 +187,8 @@
       isSuperUser = false;
       failedInvites = [];
       $form.emails = [""];
+      showAttributes = false;
+      attributeRows = [];
     }
   }}
 >
@@ -190,6 +207,8 @@
       isSuperUser = false;
       failedInvites = [];
       $form.emails = [""];
+      showAttributes = false;
+      attributeRows = [];
     }}
   >
     <DialogHeader>
@@ -262,6 +281,33 @@
           </Button>
         </svelte:fragment>
       </MultiInput>
+
+      <div class="mt-3 flex flex-col gap-y-1">
+        <button
+          type="button"
+          class="flex items-center gap-x-1 text-xs font-medium text-fg-secondary hover:text-fg-primary w-fit"
+          onclick={() => (showAttributes = !showAttributes)}
+        >
+          <CaretDownIcon
+            size="12px"
+            className={showAttributes ? "" : "-rotate-90"}
+          />
+          {m.users_custom_attributes()}
+        </button>
+        {#if showAttributes}
+          <div class="text-[11px] text-fg-secondary">
+            {m.users_custom_attributes_hint()}
+          </div>
+          <KeyValueInput
+            id="invite-attributes"
+            bind:value={attributeRows}
+            keyPlaceholder={m.users_attribute_key_placeholder()}
+            valuePlaceholder={m.users_attribute_value_placeholder()}
+            itemLabel={m.users_custom_attributes()}
+            addLabel={m.users_add_attribute()}
+          />
+        {/if}
+      </div>
 
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">

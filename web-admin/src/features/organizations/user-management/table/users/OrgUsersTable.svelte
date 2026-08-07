@@ -60,6 +60,7 @@
         pendingAcceptance: "invitedBy" in row.original,
         photoUrl: row.original.userPhotoUrl,
         role: row.original.roleName,
+        attributes: row.original.attributes,
       }),
     meta: {
       widthPercent: 50,

@@ -2077,6 +2077,9 @@ message AddOrganizationMemberUserRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
   string role = 3;
+  // Custom attributes to set on the new membership.
+  // If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+  google.protobuf.Struct attributes = 5;
   bool superuser_force_access = 4;
 }
 
@@ -2337,6 +2340,10 @@ message AddProjectMemberUserRequest {
   string role = 4 [(validate.rules).string.min_len = 1];
   optional bool restrict_resources = 5;
   repeated ResourceName resources = 6;
+  // Custom attributes to set on the user's org membership (attributes are org-scoped).
+  // If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+  // Setting attributes requires permission to manage org members.
+  google.protobuf.Struct attributes = 7;
 }
 
 message AddProjectMemberUserResponse {
@@ -3635,6 +3642,7 @@ message OrganizationInvite {
   string email = 1;
   string role_name = 2;
   string invited_by = 3;
+  google.protobuf.Struct attributes = 4;
 }
 
 message ProjectInvite {

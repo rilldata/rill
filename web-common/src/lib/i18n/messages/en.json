@@ -2143,6 +2143,7 @@
   "users_access_changed_everyone": "Project access changed to everyone",
   "users_access_changed_invite_only": "Project access changed to invite-only",
   "users_access_level": "Access level",
+  "users_add_attribute": "Add attribute",
   "users_add_guest": "Add guest",
   "users_add_guests_button": "Add guests",
   "users_add_guests_description": "Guests can only access provisioned projects with assigned roles. They do not have organization-wide access.",
@@ -2177,6 +2178,18 @@
     }
   ],
   "users_and_more": "and {count} more",
+  "users_attribute_key_placeholder": "Key",
+  "users_attribute_value_placeholder": "Value",
+  "users_attributes_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} attribute",
+        "countPlural=other": "{count} attributes"
+      }
+    }
+  ],
   "users_billing_change_role_desc": "This user is currently the billing contact. To change their role, assign another admin as the billing contact first.",
   "users_billing_change_role_title": "Assign a new billing contact first to change this user's role",
   "users_billing_remove_desc": "This user is the current billing contact and can't be removed. To proceed, assign another admin as the billing contact.",
@@ -2188,6 +2201,8 @@
   "users_convert_user_to_role": "Convert {user} to {role}",
   "users_copy_url": "Copy URL",
   "users_create": "Create",
+  "users_custom_attributes": "Custom attributes",
+  "users_custom_attributes_hint": "Applied to every invited user's organization membership. Can be referenced in security policies.",
   "users_email_or_group_placeholder": "Email or group, separated by commas",
   "users_email_placeholder": "Add emails, separated by commas",
   "users_error": "Error",
