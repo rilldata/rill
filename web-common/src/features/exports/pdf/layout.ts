@@ -63,7 +63,8 @@ export function resolveOrientation(
 }
 
 // Groups blocks into canvas rows (preserving DOM order within a row) and walks
-// them top-to-bottom, scaling the on-screen layout to the page content width.
+// them top-to-bottom, fitting the on-screen layout to the page content width:
+// wider captures are scaled down, narrower ones keep their size and are centred.
 // A row that would overflow the current page moves wholesale to the next page;
 // a single-block row taller than a full page is sliced across pages.
 export function paginate(
@@ -78,8 +79,16 @@ export function paginate(
 
   const contentWidthPt = pageWidthPt - 2 * marginPt;
   const contentHeightPt = pageHeightPt - 2 * marginPt;
+  // Never magnify. Blocks are a fixed-resolution raster, so stretching a capture
+  // narrower than the page (a phone-width dashboard) both softens it and inflates
+  // every row past the page height, which slices charts across pages: a doughnut
+  // ends up halved, and the rest of the page is left empty. At 1:1 the content
+  // keeps its natural size and is centred in the content box.
   const scale =
-    opts.contentWidthPx > 0 ? contentWidthPt / opts.contentWidthPx : 1;
+    opts.contentWidthPx > 0
+      ? Math.min(contentWidthPt / opts.contentWidthPx, 1)
+      : 1;
+  const contentOffsetPt = (contentWidthPt - opts.contentWidthPx * scale) / 2;
 
   const rows = groupIntoRows(blocks);
 
@@ -141,7 +150,7 @@ export function paginate(
           placements.push({
             block,
             page,
-            xPt: marginPt + block.xPx * scale,
+            xPt: marginPt + contentOffsetPt + block.xPx * scale,
             yPt: pageTopPt(page) + (sliceTopPx - rowSrcYPx) * scale,
             wPt: block.widthPx * scale,
             hPt: srcHeightPx * scale,
@@ -168,7 +177,7 @@ export function paginate(
       placements.push({
         block,
         page,
-        xPt: marginPt + block.xPx * scale,
+        xPt: marginPt + contentOffsetPt + block.xPx * scale,
         yPt: cursorYPt + (block.yPx - rowTopPx) * scale,
         wPt: block.widthPx * scale,
         hPt: block.heightPx * scale,

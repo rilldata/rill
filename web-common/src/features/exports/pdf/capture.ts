@@ -47,19 +47,103 @@ const PIXEL_RATIO = 2;
 // crisp for dashboard charts/text. JPEG has no alpha, so we supply a background.
 const JPEG_QUALITY = 0.85;
 
-// Rasterizes a single element to a JPEG data URL.
+// Side length of the probe canvas: the blank-first-capture bug reproduces at any
+// size, so keep it as cheap as possible.
+const PROBE_SIZE_PX = 8;
+
+// html-to-image clones a <canvas> into an <img> nested inside the <foreignObject>
+// it serializes, and WebKit paints that SVG before the nested image is ready, so
+// the first capture of a node containing a canvas comes out blank (Safari 26 on
+// macOS and iOS; Chrome and Firefox are unaffected). A second pass over the same
+// node is correct. The behaviour is known upstream and still unfixed, so the
+// workaround lives here until a html-to-image release carries one.
+//
+// Rather than pay the extra pass everywhere, or key it off the user agent,
+// capture a tiny canvas once and see whether it survives.
+let canvasWarmupProbe: Promise<boolean> | undefined;
+
+function needsCanvasWarmup(): Promise<boolean> {
+  canvasWarmupProbe ??= probeCanvasWarmup();
+  return canvasWarmupProbe;
+}
+
+async function probeCanvasWarmup(): Promise<boolean> {
+  const host = document.createElement("div");
+  host.setAttribute("aria-hidden", "true");
+  host.style.cssText = "position:fixed;left:-99999px;top:0;pointer-events:none";
+
+  const canvas = document.createElement("canvas");
+  canvas.width = PROBE_SIZE_PX;
+  canvas.height = PROBE_SIZE_PX;
+  canvas.style.display = "block";
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return true;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, PROBE_SIZE_PX, PROBE_SIZE_PX);
+
+  host.appendChild(canvas);
+  document.body.appendChild(host);
+  try {
+    // White on black: any bright pixel means the canvas reached the raster.
+    return await isBlank(
+      await toJpeg(host, { pixelRatio: 1, backgroundColor: "#000" }),
+    );
+  } catch {
+    // Assume the warm-up is needed: guessing "no" ships blank charts, guessing
+    // "yes" only costs a second pass.
+    return true;
+  } finally {
+    host.remove();
+  }
+}
+
+async function isBlank(dataUrl: string): Promise<boolean> {
+  const img = new Image();
+  img.src = dataUrl;
+  await img.decode();
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return true;
+  ctx.drawImage(img, 0, 0);
+
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i] > 128) return false;
+  }
+  return true;
+}
+
+export interface RasterizeOptions {
+  backgroundColor: string;
+  // Comes from needsCanvasWarmup(). Both fields are required: a caller that
+  // forgot the warm-up would ship blank charts on WebKit with nothing to show
+  // for it, no error and no failed capture.
+  warmUpCanvas: boolean;
+}
+
+// Rasterizes a single element to a JPEG data URL. On browsers that need it, a
+// node holding a <canvas> is captured twice and the first result discarded; the
+// warm-up has to run at the real pixel ratio, as a smaller one does not prime
+// the second pass.
 export async function rasterizeNode(
   node: HTMLElement,
-  backgroundColor: string,
+  { backgroundColor, warmUpCanvas }: RasterizeOptions,
 ): Promise<string> {
   const restoreSvgStyles = inlineSvgStyles(node);
+  const options = {
+    cacheBust: true,
+    pixelRatio: PIXEL_RATIO,
+    quality: JPEG_QUALITY,
+    backgroundColor,
+  };
   try {
-    return await toJpeg(node, {
-      cacheBust: true,
-      pixelRatio: PIXEL_RATIO,
-      quality: JPEG_QUALITY,
-      backgroundColor,
-    });
+    if (warmUpCanvas && node.querySelector("canvas")) {
+      await toJpeg(node, options);
+    }
+    return await toJpeg(node, options);
   } finally {
     restoreSvgStyles();
   }
@@ -111,6 +195,10 @@ export async function captureCanvasBlocks(
 
   const targets = captureTargetsIn(rowContainer);
 
+  // Probed once per capture rather than per block: the answer is a property of
+  // the browser, and the probe itself rasterizes.
+  const warmUpCanvas = await needsCanvasWarmup();
+
   const blocks: CapturedBlock[] = [];
   const total = targets.length + (opts.includeFilters ? 1 : 0);
   let done = 0;
@@ -129,7 +217,10 @@ export async function captureCanvasBlocks(
       header.style.width = `${contentWidthPx}px`;
       if (header.scrollHeight > 0) {
         try {
-          const dataUrl = await rasterizeNode(header, backgroundColor);
+          const dataUrl = await rasterizeNode(header, {
+            backgroundColor,
+            warmUpCanvas,
+          });
           blocks.push({
             id: FILTER_BAR_ID,
             dataUrl,
@@ -151,7 +242,10 @@ export async function captureCanvasBlocks(
   for (const target of targets) {
     const rect = target.getBoundingClientRect();
     try {
-      const dataUrl = await rasterizeNode(target, backgroundColor);
+      const dataUrl = await rasterizeNode(target, {
+        backgroundColor,
+        warmUpCanvas,
+      });
       blocks.push({
         id: target.id,
         dataUrl,

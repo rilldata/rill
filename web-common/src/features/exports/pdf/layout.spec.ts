@@ -50,6 +50,50 @@ describe("paginate", () => {
     expect(p.yPt).toBeCloseTo(result.marginPt, 1);
   });
 
+  // A phone-width capture used to be stretched to the page, which inflated every
+  // row past the page height and sliced whole charts across pages.
+  it("does not magnify a capture narrower than the page", () => {
+    const result = paginate([block({ id: "a", widthPx: 390, heightPx: 300 })], {
+      ...A4,
+      contentWidthPx: 390,
+    });
+
+    expect(result.pageCount).toBe(1);
+    const p = result.placements[0];
+    expect(p.wPt).toBeCloseTo(390, 1);
+    expect(p.hPt).toBeCloseTo(300, 1);
+  });
+
+  it("centres a capture that is narrower than the page", () => {
+    const result = paginate([block({ id: "a", widthPx: 390, heightPx: 300 })], {
+      ...A4,
+      contentWidthPx: 390,
+    });
+
+    const p = result.placements[0];
+    const contentWidthPt = result.pageWidthPt - 2 * result.marginPt;
+    expect(p.xPt).toBeCloseTo(result.marginPt + (contentWidthPt - 390) / 2, 1);
+    // Equal gutters either side.
+    expect(result.pageWidthPt - (p.xPt + p.wPt)).toBeCloseTo(p.xPt, 1);
+  });
+
+  // Three phone-width charts fit one page at 1:1; magnified they would not.
+  it("fits several narrow rows on one page instead of slicing them", () => {
+    const result = paginate(
+      [
+        block({ id: "a", yPx: 0, widthPx: 390, heightPx: 240, rowIndex: 0 }),
+        block({ id: "b", yPx: 250, widthPx: 390, heightPx: 240, rowIndex: 1 }),
+        block({ id: "c", yPx: 500, widthPx: 390, heightPx: 240, rowIndex: 2 }),
+      ],
+      { ...A4, contentWidthPx: 390 },
+    );
+
+    expect(result.pageCount).toBe(1);
+    expect(result.placements.every((p) => p.srcHeightPx === undefined)).toBe(
+      true,
+    );
+  });
+
   it("keeps two columns of one row on the same page side by side", () => {
     const result = paginate(
       [
