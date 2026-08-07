@@ -1,9 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListOrganizationMemberUsergroups,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/CreateUserGroupDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
   import OrgGroupsTable from "@rilldata/web-admin/features/organizations/user-management/table/groups/OrgGroupsTable.svelte";
@@ -11,40 +8,34 @@
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
-
-  const PAGE_SIZE = 50;
+  import { getOrgUsergroupsInfinite } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
 
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let searchText = "";
-  let pageToken = "";
 
   $: organization = $page.params.organization;
-  $: listOrganizationMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(organization, {
-      pageSize: PAGE_SIZE,
-      pageToken,
-      includeCounts: true,
-    });
+  $: listOrganizationMemberUsergroups = getOrgUsergroupsInfinite(organization);
   const currentUser = createAdminServiceGetCurrentUser();
 
+  $: allGroups = $listOrganizationMemberUsergroups.data?.pages.flatMap(
+    (page) => page.members ?? [],
+  );
   $: filteredGroups =
-    $listOrganizationMemberUsergroups.data?.members.filter(
+    allGroups?.filter(
       (group) =>
         !group.groupManaged &&
         group.groupName.toLowerCase().includes(searchText.toLowerCase()),
     ) ?? [];
 
-  $: hasNextPage = Boolean(
-    $listOrganizationMemberUsergroups.data?.nextPageToken,
-  );
+  $: hasNextPage = Boolean($listOrganizationMemberUsergroups.hasNextPage);
 
-  $: isFetchingNextPage = $listOrganizationMemberUsergroups.isFetching;
+  $: isFetchingNextPage = $listOrganizationMemberUsergroups.isFetchingNextPage;
 
   function handleLoadMore() {
-    if (hasNextPage) {
-      pageToken = $listOrganizationMemberUsergroups.data?.nextPageToken ?? "";
+    if ($listOrganizationMemberUsergroups.hasNextPage) {
+      $listOrganizationMemberUsergroups.fetchNextPage();
     }
   }
 
