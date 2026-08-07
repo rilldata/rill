@@ -21,9 +21,8 @@ describe("format-measure-value with d3_locale", () => {
     // Test with a number that should have thousand separators
     const result = formatter(123456);
 
-    // The big number formatter will abbreviate to "123k" but should preserve locale settings
-    // For big numbers, we humanize so we get "123k" with space separators
-    expect(result).toContain("123");
+    // Big numbers honor the explicit d3 format, including its locale settings
+    expect(result).toBe("123 456");
   });
 
   it("should apply custom currency symbols from d3_locale for big numbers", () => {
@@ -43,10 +42,8 @@ describe("format-measure-value with d3_locale", () => {
 
     const result = formatter(1234567);
 
-    // Should have the rupee symbol
-    expect(result).toContain("₹");
-    // Should be humanized to something like "₹1.23M" or "₹1M"
-    expect(result).toMatch(/₹\d/);
+    // Should use the rupee symbol and the Indian grouping from the locale
+    expect(result).toBe("₹12,34,567");
   });
 
   it("should apply custom decimal separators in tooltips", () => {
@@ -88,9 +85,8 @@ describe("format-measure-value with d3_locale", () => {
 
     const result = formatter(1234567);
 
-    // For big numbers with plain d3 format, it should be humanized and use custom separators
-    // Since there's no currency or percent, it should abbreviate the number
-    expect(result).toBe("1.23M");
+    // Big numbers honor the plain d3 format with the custom separators
+    expect(result).toBe("1'234'567");
   });
 
   it("should handle different grouping patterns", () => {
@@ -111,9 +107,8 @@ describe("format-measure-value with d3_locale", () => {
     // Test with 10 million
     const result = formatter(10000000);
 
-    // Should be humanized to something like "10M"
-    expect(result).toContain("10");
-    expect(result).toMatch(/M/);
+    // Should use the Indian grouping pattern from the locale
+    expect(result).toBe("1,00,00,000");
   });
 
   it("should work with currency suffix instead of prefix", () => {
@@ -133,9 +128,48 @@ describe("format-measure-value with d3_locale", () => {
 
     const result = formatter(5000);
 
-    // Should have Euro as suffix
-    expect(result).toContain("€");
-    expect(result).toMatch(/\d+k?€/);
+    // Should have Euro as suffix and the space thousand separator
+    expect(result).toBe("5 000€");
+  });
+});
+
+describe("format-measure-value with an explicit formatD3", () => {
+  // Sub-cent measure, e.g. cost per click: an explicit d3 format must be
+  // honored in tooltips and big numbers, otherwise values like $0.0002 get
+  // humanized/rounded into invisibility (see the 2-decimal currency default).
+  const subCentMeasure: MetricsViewSpecMeasure = {
+    name: "cost_per_click",
+    expression: "SUM(cost) / SUM(clicks)",
+    formatD3: "$,.4f",
+  };
+
+  it("honors formatD3 precision in the tooltip context", () => {
+    const formatter = createMeasureValueFormatter(subCentMeasure, "tooltip");
+    expect(formatter(0.0002)).toBe("$0.0002");
+    expect(formatter(0.00023456)).toBe("$0.0002");
+    expect(formatter(1234.5678)).toBe("$1,234.5678");
+  });
+
+  it("honors formatD3 precision in the big-number context", () => {
+    const formatter = createMeasureValueFormatter(subCentMeasure, "big-number");
+    expect(formatter(0.0002)).toBe("$0.0002");
+    expect(formatter(1234567.8901)).toBe("$1,234,567.8901");
+  });
+
+  it("keeps humanized values in the axis context so tick labels stay compact", () => {
+    const formatter = createMeasureValueFormatter(subCentMeasure, "axis");
+    expect(formatter(0.0002)).toBe("$2e-4");
+    expect(formatter(1234567.8901)).toBe("$1M");
+  });
+
+  it("still humanizes preset-formatted measures in the big-number context", () => {
+    const presetMeasure: MetricsViewSpecMeasure = {
+      name: "total_cost",
+      expression: "SUM(cost)",
+      formatPreset: "currency_usd",
+    };
+    const formatter = createMeasureValueFormatter(presetMeasure, "big-number");
+    expect(formatter(1234567.8901)).toBe("$1.23M");
   });
 });
 

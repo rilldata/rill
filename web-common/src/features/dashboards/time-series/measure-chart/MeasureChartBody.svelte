@@ -212,7 +212,10 @@
   $: cursorStyle = scrubController?.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
-  $: measureFormatter = createMeasureValueFormatter(measure);
+  // Hover readouts use the tooltip context: it honors an explicit d3 format
+  // and shows more precision than the table default, so small-but-meaningful
+  // values (e.g. sub-cent costs) don't round away to ~$0.00.
+  $: measureFormatter = createMeasureValueFormatter(measure, "tooltip");
   $: valueFormatter = (value: number | null): string => {
     if (value === null) return "no data";
     return measureFormatter(value);
