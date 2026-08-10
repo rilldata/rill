@@ -38,11 +38,10 @@
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import {
-    CanvasConfigProvider,
-    YAMLConfigProvider,
-  } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+    CanvasDashboardConfigProvider,
+    ExploreDashboardConfigProvider,
+  } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   let {
     organization,
@@ -52,7 +51,6 @@
     bookmark,
     defaultUrlParams,
     showFiltersOnly,
-    metricsViewNames,
     onClose,
   }: {
     organization: string;
@@ -62,21 +60,21 @@
     bookmark: BookmarkEntry | null;
     defaultUrlParams: URLSearchParams | undefined;
     showFiltersOnly: boolean;
-    metricsViewNames: string[];
     onClose: () => void;
   } = $props();
 
   const runtimeClient = useRuntimeClient();
 
   let { name: resourceName, kind: resourceKind } = $derived(resource);
-  const metricsViewsProvider = new MetricsViewsProvider(runtimeClient, []);
-  $effect(() => metricsViewsProvider.setMetricsViewNames(metricsViewNames));
+  let dashboardConfigProvider = $derived(
+    resourceKind === ResourceKind.Canvas
+      ? new CanvasDashboardConfigProvider(runtimeClient, resourceName)
+      : new ExploreDashboardConfigProvider(runtimeClient, resourceName),
+  );
   let expressionFilterManager = $derived(
     new ExpressionFilterManager(
-      metricsViewsProvider,
-      resourceKind === ResourceKind.Canvas
-        ? new CanvasConfigProvider(runtimeClient, resourceName)
-        : new YAMLConfigProvider(),
+      dashboardConfigProvider.metricsViewsProvider,
+      dashboardConfigProvider.yamlConfigProvider,
     ),
   );
   let { setUrlParams } = $derived(expressionFilterManager);
@@ -108,14 +106,16 @@
       searchParamsObj.get(ExploreStateURLParams.TimeZone) || "UTC";
 
     try {
-      const promises = metricsViewNames.map((mvName) =>
-        deriveInterval(
-          timeRange.expression || "",
-          runtimeClient,
-          mvName,
-          timeZone,
-        ),
-      );
+      const promises =
+        dashboardConfigProvider.metricsViewsProvider.metricsViewNames.map(
+          (mvName) =>
+            deriveInterval(
+              timeRange.expression || "",
+              runtimeClient,
+              mvName,
+              timeZone,
+            ),
+        );
 
       const intervals = await Promise.all(promises);
       let intervalWithLatestEndPoint:

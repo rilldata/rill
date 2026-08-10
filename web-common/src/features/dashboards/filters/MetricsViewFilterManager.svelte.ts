@@ -19,15 +19,22 @@ export type DimensionOrMeasureManager =
   | DimensionFilterManager
   | MeasureFilterManager;
 export type AnyManager = DimensionOrMeasureManager | MetricsViewFilterManager;
+export type AllManagers = {
+  dimensionManagers: DimensionFilterManager[];
+  measureManagers: MeasureFilterManager[];
+  joinerManagers: MetricsViewFilterManager[];
+};
 
 /**
  * Manager for an AND/OR expression for a metrics view.
  */
 export class MetricsViewFilterManager {
   public expr: V1Expression | undefined;
+  public dimensionOnlyExpr: V1Expression | undefined;
   // String representation of the filter expression. Used to check duplicate expressions across metrics views.
   public param: string;
 
+  public managers: AllManagers;
   public managerLookup: Record<
     string,
     (DimensionFilterManager | MeasureFilterManager)[]
@@ -37,17 +44,17 @@ export class MetricsViewFilterManager {
 
   public constructor(
     public readonly metricsViewName: string,
+    private readonly metricsViewsProvider: MetricsViewsProvider,
     public type:
       | typeof V1Operation.OPERATION_AND
       | typeof V1Operation.OPERATION_OR,
-    public readonly managers: {
-      dimensionManagers: DimensionFilterManager[];
-      measureManagers: MeasureFilterManager[];
-      joinerManagers: MetricsViewFilterManager[];
-    },
-    private readonly inList: string[],
+    managers: AllManagers,
+    public readonly inList: string[],
   ) {
-    this.expr = $derived(this.buildExpressionsByMetricsView());
+    this.managers = $state(managers);
+
+    this.expr = $derived(this.buildExpression());
+    this.dimensionOnlyExpr = $derived(this.buildDimensionOnlyExpression());
     this.param = $derived(
       this.expr ? convertExpressionToFilterParam(this.expr, this.inList) : "",
     );
@@ -108,6 +115,7 @@ export class MetricsViewFilterManager {
 
       return new MetricsViewFilterManager(
         metricsViewName,
+        metricsViewsProvider,
         op,
         {
           dimensionManagers,
@@ -155,7 +163,28 @@ export class MetricsViewFilterManager {
     }
   }
 
-  private buildExpressionsByMetricsView() {
+  public maybeAddDimensionFilter(
+    dimensionFilterManager: DimensionFilterManager,
+  ) {
+    const dimensionName = dimensionFilterManager.name;
+    const alreadyAdded = !!this.managerLookup[dimensionName];
+    const dimensionNotInMV =
+      !this.metricsViewsProvider.dimensionSpecs[dimensionName]?.[
+        this.metricsViewName
+      ];
+    if (!dimensionFilterManager.expr || alreadyAdded || dimensionNotInMV)
+      return;
+
+    this.managers = {
+      ...this.managers,
+      dimensionManagers: [
+        ...this.managers.dimensionManagers,
+        dimensionFilterManager,
+      ],
+    };
+  }
+
+  private buildExpression() {
     const dimensionExprs = this.managers.dimensionManagers
       .map((dfm) => dfm.expr)
       .filter(Boolean) as V1Expression[];
@@ -172,6 +201,19 @@ export class MetricsViewFilterManager {
       return createAndExpression(exprs);
     } else {
       return createOrExpression(exprs);
+    }
+  }
+
+  private buildDimensionOnlyExpression() {
+    const dimensionExprs = this.managers.dimensionManagers
+      .map((dfm) => dfm.expr)
+      .filter(Boolean) as V1Expression[];
+    if (dimensionExprs.length === 0) return undefined;
+
+    if (this.type === V1Operation.OPERATION_AND) {
+      return createAndExpression(dimensionExprs);
+    } else {
+      return createOrExpression(dimensionExprs);
     }
   }
 

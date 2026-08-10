@@ -25,7 +25,7 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
+import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   DashboardState_LeaderboardSortDirection,

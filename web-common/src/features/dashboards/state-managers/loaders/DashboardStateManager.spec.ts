@@ -25,7 +25,7 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
+import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import {

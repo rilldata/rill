@@ -342,10 +342,8 @@
         }),
       ],
     );
-    updatedAggregationRequest.where = sanitiseExpression(
-      filters?.exprByMetricsView[metricsViewName],
-      undefined,
-    );
+    updatedAggregationRequest.where =
+      filters?.managerByMetricsView[metricsViewName]?.expr;
     return {
       ...commonOptions,
       explore: exploreName,

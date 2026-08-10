@@ -21,7 +21,6 @@ import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -84,20 +83,10 @@ export class DashboardStateSync {
       void this.handleExploreInit(initExploreState.data);
     });
 
-    const fullStateStore = derived(
-      [this.exploreStore, this.expressionFilterManager.exprByMetricsViewStore],
-      (s) => s,
-    );
-    this.unsubExploreState = fullStateStore.subscribe(
-      ([exploreState, exprByMetricsViewStore]) => {
-        if (!exploreState || !this.initialized) return;
-        void this.gotoNewState({
-          ...exploreState,
-          whereFilter:
-            Object.values(exprByMetricsViewStore)[0] ?? createAndExpression([]),
-        });
-      },
-    );
+    this.unsubExploreState = this.exploreStore.subscribe((exploreState) => {
+      if (!exploreState || !this.initialized) return;
+      void this.gotoNewState(exploreState);
+    });
 
     setContext(DASHBOARD_STATE_SYNC_KEY, this);
   }
@@ -368,6 +357,7 @@ export class DashboardStateSync {
       }
 
       log("GOTO", newUrl);
+      this.expressionFilterManager.setUrlParams(newUrl.searchParams);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {

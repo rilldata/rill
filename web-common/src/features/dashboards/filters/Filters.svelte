@@ -17,7 +17,6 @@
   import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Duration, Interval } from "luxon";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { applyDimensionInListMode as applyDimensionInListModeDirectly } from "../state-managers/actions/dimension-filters";
   import {
     metricsExplorerStore,
     useExploreState,
@@ -40,6 +39,8 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ExpressionFilters from "./ExpressionFilters.svelte";
+  import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+  import { recordsMatch } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
   const { rillTime } = featureFlags;
 
@@ -65,6 +66,7 @@
     dashboardStore,
     expressionFilterManager,
   } = StateManagers;
+  expressionFilterManager.createListener();
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -364,13 +366,17 @@
   ) {
     if (!dashboardStateSync) return false;
 
-    const exploreState = structuredClone($dashboardStore);
-    applyDimensionInListModeDirectly(
-      { dashboard: exploreState },
-      dimensionName,
-      values,
+    const tempFilterManger = expressionFilterManager.clone();
+    tempFilterManger.dimensionFilterAction(dimensionName, (m) =>
+      m.setInList(values, m.exclude),
     );
-    const url = dashboardStateSync.getUrlForExploreState(exploreState);
+
+    const exploreState = structuredClone($dashboardStore);
+    exploreState.whereFilter =
+      Object.values(tempFilterManger.managerByMetricsView)[0]?.expr ??
+      createAndExpression([]);
+
+    const url = dashboardStateSync.getUrlForExploreState($dashboardStore);
     return isUrlTooLong(url);
   }
 </script>

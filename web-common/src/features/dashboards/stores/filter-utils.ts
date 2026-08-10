@@ -315,9 +315,13 @@ export const matchExpressionByName = (e: V1Expression, name: string) => {
   return e.cond?.exprs?.[0].ident === name;
 };
 
+export function isSubqueryExpression(e: V1Expression): boolean {
+  return !!e.cond?.exprs?.[0]?.subquery;
+}
+
 export const sanitiseExpression = (
   where: V1Expression | undefined,
-  having: V1Expression | undefined,
+  having: V1Expression | undefined = undefined,
 ) => {
   if (!having) {
     if (!where?.cond?.exprs?.length) return undefined;

@@ -373,7 +373,7 @@ describe("setExprForMetricsView / setParamForMetricsView", () => {
     filterManager.setExprForMetricsView(AD_BIDS_METRICS_NAME, undefined);
 
     expect(
-      filterManager.managerByMetricsView[AD_BIDS_METRICS_NAME],
+      filterManager.managerByMetricsView[AD_BIDS_METRICS_NAME].expr,
     ).toBeUndefined();
     expect(
       names(dimensionManagersOf(filterManager, AD_BIDS_MIRROR_METRICS_NAME)),
@@ -602,6 +602,34 @@ describe("dimensionFilterAction", () => {
     ).toBeUndefined();
     expect(callback).not.toHaveBeenCalled();
   });
+
+  it("set => unset => set filters should add filter", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.dimensionFilterAction(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      (manager) => manager.toggleValue("Google", false),
+    );
+    expect(filterManager.filterManagers.dimensions[0]).not.toBeUndefined();
+    expect(filterManager.filterManagers.dimensions[0].selectedValues).toEqual([
+      "Google",
+    ]);
+
+    filterManager.dimensionFilterAction(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      (manager) => manager.toggleValue("Google", false),
+    );
+    expect(filterManager.filterManagers.dimensions[0]).toBeUndefined();
+
+    filterManager.dimensionFilterAction(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      (manager) => manager.toggleValue("Google", false),
+    );
+    expect(filterManager.filterManagers.dimensions[0]).not.toBeUndefined();
+    expect(filterManager.filterManagers.dimensions[0].selectedValues).toEqual([
+      "Google",
+    ]);
+  });
 });
 
 describe("clear", () => {
@@ -619,7 +647,9 @@ describe("clear", () => {
     filterManager.clear();
 
     expect(filterManager.temporaryFilterName).toBeUndefined();
-    expect(filterManager.managerByMetricsView).toEqual({});
+    expect(
+      Object.values(filterManager.managerByMetricsView).map((m) => m.expr),
+    ).toEqual([undefined, undefined]);
     expect(filterManager.filterManagers.dimensions).toEqual([]);
     expect(filterManager.filterManagers.measures).toEqual([]);
   });
@@ -894,7 +924,7 @@ describe("exprByMetricsView", () => {
     expect(filterManager.hasSomeFilter).toBe(false);
   });
 
-  it("picks up a filter added outside the params", () => {
+  it("picks up a filter added outside the params", async () => {
     const filterManager = createFilterManager();
 
     filterManager.dimensionFilterAction(

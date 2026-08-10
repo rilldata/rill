@@ -1,8 +1,4 @@
-import {
-  createQueryServiceResolveCanvas,
-  type V1Expression,
-} from "@rilldata/web-common/runtime-client";
-import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { type V1Expression } from "@rilldata/web-common/runtime-client";
 
 /**
  * A provider for YAML only configuration. These are only mutable during yaml editing.
@@ -13,10 +9,29 @@ export class YAMLConfigProvider {
   public specPinnedFilters = $state<Record<string, boolean>>({});
   public requiredFilters = $state<Record<string, boolean>>({});
   public specRequiredFilters = $state<Record<string, boolean>>({});
+  public editable: boolean = false;
 
   public cleanup: (() => void) | undefined = undefined;
 
-  public constructor(public editable: boolean = false) {}
+  public update(
+    defaultFilters: Record<string, V1Expression | undefined>,
+    pinnedFilters: string[],
+    requiredFilters: string[],
+  ) {
+    this.defaultFilters = defaultFilters;
+
+    const pinnedFiltersRec = Object.fromEntries(
+      pinnedFilters.map((filter) => [filter, true]),
+    );
+    this.pinnedFilters = { ...pinnedFiltersRec };
+    this.specPinnedFilters = { ...pinnedFiltersRec };
+
+    const requiredFiltersRec = Object.fromEntries(
+      requiredFilters.map((filter) => [filter, true]),
+    );
+    this.requiredFilters = { ...requiredFiltersRec };
+    this.specRequiredFilters = { ...requiredFiltersRec };
+  }
 
   public setEditable(newEditable: boolean) {
     this.editable = newEditable;
@@ -28,45 +43,5 @@ export class YAMLConfigProvider {
 
   public toggleRequiredFilter(filter: string) {
     this.requiredFilters[filter] = !this.requiredFilters[filter];
-  }
-}
-
-export class CanvasConfigProvider extends YAMLConfigProvider {
-  public constructor(
-    runtimeClient: RuntimeClient,
-    canvasName: string,
-    editable: boolean = false,
-  ) {
-    super(editable);
-
-    const resolveCanvasQuery = createQueryServiceResolveCanvas(runtimeClient, {
-      canvas: canvasName,
-    });
-    this.cleanup = resolveCanvasQuery.subscribe((resolveCanvasResp) => {
-      const canvasSpec =
-        resolveCanvasResp.data?.canvas?.canvas?.state?.validSpec ?? {};
-
-      this.defaultFilters = Object.fromEntries(
-        Object.entries(canvasSpec.defaultPreset?.filterExpr ?? {}).map(
-          ([mv, sqlFilter]) => [mv, sqlFilter.expression],
-        ),
-      );
-
-      const pinnedFilters = canvasSpec.pinnedFilters
-        ? Object.fromEntries(
-            canvasSpec.pinnedFilters.map((filter) => [filter, true]),
-          )
-        : {};
-      this.pinnedFilters = { ...pinnedFilters };
-      this.specPinnedFilters = { ...pinnedFilters };
-
-      const requiredFilters = canvasSpec.requiredFilters
-        ? Object.fromEntries(
-            canvasSpec.requiredFilters.map((filter) => [filter, true]),
-          )
-        : {};
-      this.requiredFilters = { ...requiredFilters };
-      this.specRequiredFilters = { ...requiredFilters };
-    });
   }
 }

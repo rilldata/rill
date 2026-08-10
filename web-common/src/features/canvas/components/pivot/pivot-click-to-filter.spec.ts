@@ -82,7 +82,7 @@ function selectedValues(
   fm: ExpressionFilterManager,
   dimensionName: string,
 ): (string | null)[] {
-  const expr = fm.exprByMetricsView[PIVOT_TEST_METRICS_NAME];
+  const expr = fm.managerByMetricsView[PIVOT_TEST_METRICS_NAME]?.expr;
   const dimensionExpr = expr?.cond?.exprs?.find(
     (e) => e.cond?.exprs?.[0]?.ident === dimensionName,
   );

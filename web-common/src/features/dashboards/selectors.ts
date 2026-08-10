@@ -1,6 +1,7 @@
 import {
   createAndExpression,
   forEachExpression,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
@@ -210,14 +211,14 @@ export function getFiltersForOtherDimensions(
 ) {
   if (!whereFilter) return undefined;
 
-  const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
-    matchExpressionByName(e, dimName),
+  const exprIdx = whereFilter?.cond?.exprs?.findIndex(
+    (e) => matchExpressionByName(e, dimName) && !isSubqueryExpression(e),
   );
   if (exprIdx === undefined || exprIdx === -1) return whereFilter;
 
   return createAndExpression(
     whereFilter.cond?.exprs?.filter(
-      (e) => !matchExpressionByName(e, dimName),
+      (e) => !matchExpressionByName(e, dimName) || isSubqueryExpression(e),
     ) ?? [],
   );
 }

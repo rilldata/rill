@@ -29,16 +29,15 @@
   } from "./form-utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import {
-    CanvasConfigProvider,
-    YAMLConfigProvider,
-  } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { getDashboardResourceFromPage } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
   import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
+  import {
+    CanvasDashboardConfigProvider,
+    ExploreDashboardConfigProvider,
+  } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
@@ -55,12 +54,21 @@
   let dashboardResource = $derived(getDashboardResourceFromPage(page));
   let isExplore = $derived(dashboardResource?.kind === ResourceKind.Explore);
 
+  let dashboardConfigProvider = $derived(
+    isExplore
+      ? new ExploreDashboardConfigProvider(
+          runtimeClient,
+          dashboardResource?.name,
+        )
+      : new CanvasDashboardConfigProvider(
+          runtimeClient,
+          dashboardResource?.name,
+        ),
+  );
   let expressionFilterManager = $derived(
     new ExpressionFilterManager(
-      new MetricsViewsProvider(runtimeClient, []),
-      isExplore
-        ? new YAMLConfigProvider()
-        : new CanvasConfigProvider(runtimeClient, dashboard),
+      dashboardConfigProvider.metricsViewsProvider,
+      dashboardConfigProvider.yamlConfigProvider,
     ),
   );
   let { setUrlParams } = $derived(expressionFilterManager);
@@ -71,7 +79,10 @@
   let hasSomeFilter = $derived(Object.keys(exprByMetricsView).length > 0);
 
   let sanitisedFilterState = $derived(
-    createFieldsAndStateForKind(dashboardResource?.kind),
+    createFieldsAndStateForKind(
+      dashboardResource?.kind,
+      expressionFilterManager,
+    ),
   );
   let { fields, sanitizedState, queryTimeStart, queryTimeEnd } = $derived(
     $sanitisedFilterState,

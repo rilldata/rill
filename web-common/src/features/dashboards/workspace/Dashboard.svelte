@@ -38,7 +38,6 @@
     exploreTimeseriesWidth,
     tddChartHeight,
   } from "./dashboard-layout-store";
-  import { createAndExpression } from "../stores/filter-utils";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -70,10 +69,8 @@
   const client = useRuntimeClient();
 
   $: ({ selectedTimeDimension } = $dashboardStore);
-  $: whereFilter = derived(
-    expressionFilterManager.exprByMetricsViewStore,
-    (exprByMetricsViewStore) => Object.values(exprByMetricsViewStore)[0],
-  );
+  const filterStore =
+    expressionFilterManager.getExprStoreForMetricsView(metricsViewName);
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -211,6 +208,8 @@
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
+                dimensionOnlyFilter={$filterStore.dimensionOnlyExpr}
+                whereFilter={$filterStore.expr}
                 hideStartPivotButton={hidePivot}
                 tddChartHeight={$tddChartHeight}
               />
@@ -262,7 +261,8 @@
               <DimensionDisplay
                 dimension={selectedDimension}
                 {metricsViewName}
-                whereFilter={$whereFilter}
+                dimensionOnlyFilter={$filterStore.dimensionOnlyExpr}
+                whereFilter={$filterStore.expr}
                 {timeRange}
                 {comparisonTimeRange}
                 {timeControlsReady}
@@ -272,7 +272,8 @@
             {:else}
               <LeaderboardDisplay
                 {metricsViewName}
-                whereFilter={$whereFilter}
+                dimensionOnlyFilter={$filterStore.dimensionOnlyExpr}
+                whereFilter={$filterStore.expr}
                 {timeRange}
                 {comparisonTimeRange}
                 {timeControlsReady}

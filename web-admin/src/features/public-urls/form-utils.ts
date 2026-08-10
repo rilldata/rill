@@ -7,6 +7,7 @@ import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
   V1ExploreSpec,
+  V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { derived } from "svelte/store";
@@ -14,6 +15,7 @@ import { page } from "$app/stores";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers.ts";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export function convertDateToMinutes(date: string) {
   const now = new Date();
@@ -29,6 +31,7 @@ export function convertDateToMinutes(date: string) {
  */
 export function createFieldsAndStateForKind(
   resourceKind: ResourceKind | undefined,
+  expressionFilterManager: ExpressionFilterManager,
 ) {
   if (!resourceKind || resourceKind === ResourceKind.Canvas) {
     return derived(page, (pageState) => {
@@ -54,6 +57,7 @@ export function createFieldsAndStateForKind(
   return derived(
     [
       dashboardStore,
+      expressionFilterManager.getExprStoreForFirstMetricsView(),
       visibleMeasures,
       visibleDimensions,
       validSpecStore,
@@ -61,13 +65,18 @@ export function createFieldsAndStateForKind(
     ],
     ([
       dashboardState,
+      { expr },
       $visibleMeasures,
       $visibleDimensions,
       validSpecState,
       timeControlState,
     ]) => {
+      const metricsView = validSpecState.data?.metricsView ?? {};
+
       const exploreFields = getExploreFields(
         dashboardState,
+        expr,
+        metricsView.dimensions ?? [],
         $visibleDimensions,
         $visibleMeasures,
       );
@@ -89,12 +98,12 @@ export function createFieldsAndStateForKind(
 
 function getExploreFields(
   exploreState: ExploreState,
+  expr: V1Expression | undefined,
+  allDimensions: MetricsViewSpecDimension[],
   visibleDimensions: MetricsViewSpecDimension[],
   visibleMeasures: MetricsViewSpecMeasure[],
 ): string[] | undefined {
-  const hasFilter =
-    hasDashboardWhereFilter(exploreState) ||
-    hasDashboardDimensionThresholdFilter(exploreState);
+  const hasFilter = !!expr?.cond?.exprs?.length;
 
   const everythingIsVisible =
     exploreState.allDimensionsVisible &&
@@ -104,11 +113,8 @@ function getExploreFields(
   if (everythingIsVisible) return undefined; // Not specifying any fields means all fields are visible
 
   // Check both where and threshold filters for dimensions
-  const dimensionsWithThresholdFilters = exploreState.dimensionThresholdFilters
-    .filter((dt) => dt.filters.length > 0)
-    .map((dt) => dt.name);
-  const filteredDimensions = getAllIdentifiers(exploreState.whereFilter).concat(
-    dimensionsWithThresholdFilters,
+  const filteredDimensions = getAllIdentifiers(expr).filter((i) =>
+    allDimensions?.find((d) => d.name === i),
   );
 
   return [
@@ -121,14 +127,6 @@ function getExploreFields(
       ),
     ...visibleMeasures.map((measure) => measure.name),
   ] as string[];
-}
-
-function hasDashboardWhereFilter(exploreState: ExploreState) {
-  return exploreState.whereFilter?.cond?.exprs?.length;
-}
-
-function hasDashboardDimensionThresholdFilter(exploreState: ExploreState) {
-  return exploreState.dimensionThresholdFilters?.length;
 }
 
 /**
@@ -162,9 +160,6 @@ function getSanitizedExploreStateParam(
     sortDirection: exploreState.sortDirection,
 
     // Remove the filters
-    // whereFilter: dashboard.whereFilter,
-    // dimensionThresholdFilters: exploreState.dimensionThresholdFilters,
-    // dimensionFilterExcludeMode: exploreState.dimensionFilterExcludeMode,
 
     // There's no need to share filters-in-progress
     // temporaryFilterName: dashboard.temporaryFilterName,

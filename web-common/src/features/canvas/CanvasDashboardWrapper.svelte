@@ -42,16 +42,18 @@
       theme,
       exportMode,
       expressionFilterManager,
-      metricsViewsProvider,
-      yamlConfigProvider,
+      dashboardProvider,
     },
   } = $derived(getCanvasStore(canvasName, instanceId));
   $effect(() => {
-    yamlConfigProvider.setEditable(builder);
+    dashboardProvider.yamlConfigProvider.setEditable(builder);
   });
 
   let missingRequiredFilters = $derived(
-    getMissingRequiredFilters(expressionFilterManager, yamlConfigProvider),
+    getMissingRequiredFilters(
+      expressionFilterManager,
+      dashboardProvider.yamlConfigProvider,
+    ),
   );
   let hasMissingRequired = $derived(missingRequiredFilters.length > 0);
 
@@ -112,7 +114,7 @@
       {#if hasMissingRequired}
         <MissingRequiredFiltersMessage
           {missingRequiredFilters}
-          {metricsViewsProvider}
+          metricsViewsProvider={dashboardProvider.metricsViewsProvider}
         />
       {:else}
         <div

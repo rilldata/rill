@@ -26,7 +26,7 @@
       _rows,
       saveDefaultFilters,
       defaultUrlParamsStore,
-      yamlConfigProvider,
+      dashboardProvider,
     },
   } = $derived(getCanvasStore(canvasName, instanceId));
 
@@ -36,16 +36,16 @@
   let viewingDefaults = $derived.by(() => {
     if (
       !arrayUnorderedEquals(
-        Object.keys(yamlConfigProvider.specPinnedFilters),
-        Object.keys(yamlConfigProvider.pinnedFilters),
+        Object.keys(dashboardProvider.yamlConfigProvider.specPinnedFilters),
+        Object.keys(dashboardProvider.yamlConfigProvider.pinnedFilters),
       )
     ) {
       return false;
     }
     if (
       !arrayUnorderedEquals(
-        Object.keys(yamlConfigProvider.specRequiredFilters),
-        Object.keys(yamlConfigProvider.requiredFilters),
+        Object.keys(dashboardProvider.yamlConfigProvider.specRequiredFilters),
+        Object.keys(dashboardProvider.yamlConfigProvider.requiredFilters),
       )
     ) {
       return false;

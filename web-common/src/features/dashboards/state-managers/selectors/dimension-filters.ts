@@ -96,23 +96,6 @@ export const useSelectedValuesForCompareDimension = (ctx: StateManagers) => {
   ) as ReturnType<typeof selectedDimensionValues>;
 };
 
-export const dimensionHasFilter = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  return (dimName: string) => {
-    return getWhereFilterExpression(dashData)(dimName) !== undefined;
-  };
-};
-
-export const getWhereFilterExpression = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-): ((name: string) => V1Expression | undefined) => {
-  return (name: string) =>
-    dashData.dashboard.whereFilter.cond?.exprs?.find((e) =>
-      matchExpressionByName(e, name),
-    );
-};
-
 export const getWhereFilterExpressionIndex = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((name: string) => number | undefined) => {
@@ -209,9 +192,4 @@ export function getDimensionFilters(
   );
 }
 
-export const dimensionFilterSelectors = {
-  /**
-   * Check if a dimension has any filter
-   */
-  dimensionHasFilter,
-};
+export const dimensionFilterSelectors = {};

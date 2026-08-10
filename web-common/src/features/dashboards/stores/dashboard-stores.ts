@@ -125,12 +125,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   const dimensionsSet = new Set(explore.dimensions ?? []);
   const measuresSet = new Set(explore.measures ?? []);
 
-  exploreState.whereFilter =
-    filterExpressions(exploreState.whereFilter, (e) => {
-      if (!e.cond?.exprs?.length) return true;
-      return dimensionsSet.has(e.cond.exprs[0].ident!);
-    }) ?? createAndExpression([]);
-
   if (
     exploreState.selectedDimensionName &&
     !dimensionsSet.has(exploreState.selectedDimensionName)
@@ -165,10 +159,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
 const metricsViewReducers = {
   init(name: string, initState: ExploreState) {
     update((state) => {
-      // TODO: revisit this during the url state / restore user refactor
-      initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        initState.whereFilter,
-      );
       state.entities[name] = structuredClone(initState);
       state.entities[name].name = name;
 
@@ -197,9 +187,6 @@ const metricsViewReducers = {
       if (!partial.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        partial.whereFilter,
-      );
       correctExploreState(metricsView, exploreState);
     });
   },
@@ -220,7 +207,7 @@ const metricsViewReducers = {
         expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
       if (mvName) {
         exploreState.whereFilter =
-          expressionFilterManager.exprByMetricsView[mvName] ??
+          expressionFilterManager.managerByMetricsView[mvName].expr ??
           createAndExpression([]);
         exploreState.dimensionsWithInlistFilter =
           expressionFilterManager.inList;
@@ -231,9 +218,6 @@ const metricsViewReducers = {
       if (!partialExploreState.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        partialExploreState.whereFilter,
-      );
       // Partial comes from getMergedExploreState and is already corrected
     });
   },

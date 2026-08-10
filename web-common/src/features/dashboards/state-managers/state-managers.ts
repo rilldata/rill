@@ -34,8 +34,7 @@ import {
   type ContextColWidths,
 } from "../leaderboard-context-column";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import { ExploreDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
 export type StateManagers = {
   runtimeClient: RuntimeClient;
@@ -168,13 +167,22 @@ export function createStateManagers({
     },
   );
 
-  const metricsViewProvider = new MetricsViewsProvider(runtimeClient, [
-    metricsViewName,
-  ]);
-  const expressionFilterManager = new ExpressionFilterManager(
-    metricsViewProvider,
-    new YAMLConfigProvider(),
+  const dashboardProvider = new ExploreDashboardConfigProvider(
+    runtimeClient,
+    exploreName,
   );
+  const expressionFilterManager = new ExpressionFilterManager(
+    dashboardProvider.metricsViewsProvider,
+    dashboardProvider.yamlConfigProvider,
+  );
+
+  const stateChangeUnsub = expressionFilterManager.on("state-changed", () => {
+    metricsExplorerStore.mergePartialExplorerEntity(
+      exploreName,
+      {},
+      expressionFilterManager,
+    );
+  });
 
   return {
     runtimeClient,
@@ -206,7 +214,9 @@ export function createStateManagers({
     defaultExploreState,
     expressionFilterManager,
     cleanup: () => {
-      metricsViewProvider.cleanup();
+      dashboardProvider.cleanup?.();
+      dashboardProvider.metricsViewsProvider.cleanup();
+      stateChangeUnsub();
     },
   };
 }

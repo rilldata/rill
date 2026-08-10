@@ -12,6 +12,8 @@ import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboard
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import { page } from "$app/stores";
+import { get } from "svelte/store";
 
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
@@ -71,11 +73,7 @@ export function getNewAlertInitialFiltersFormValues(
     new MetricsViewsProvider(client, [metricsViewName]),
     new YAMLConfigProvider(),
   );
-  const fullExpr = mergeDimensionAndMeasureFilters(
-    exploreState.whereFilter,
-    exploreState.dimensionThresholdFilters ?? [],
-  );
-  filters.setExprForMetricsView(metricsViewName, fullExpr);
+  filters.setUrlParams(get(page).url.searchParams);
 
   const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange: exploreState.selectedTimeRange,

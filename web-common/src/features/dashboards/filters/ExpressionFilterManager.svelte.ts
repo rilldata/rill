@@ -1,15 +1,11 @@
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters-v2/DimensionFilterManager.svelte.ts";
-import {
-  type V1Expression,
-  V1Operation,
-} from "@rilldata/web-common/runtime-client";
+import { type V1Expression } from "@rilldata/web-common/runtime-client";
 import {
   convertExpressionToFilterParam,
   convertFilterParamToExpression,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import {
   createAndExpression,
-  isExpressionUnsupported,
   maybeWrapAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
@@ -23,18 +19,18 @@ import {
 } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import { writable, type Writable } from "svelte/store";
+import { toStore, writable, type Writable } from "svelte/store";
 import {
   type AnyManager,
   type DimensionOrMeasureManager,
   MetricsViewFilterManager,
 } from "@rilldata/web-common/features/dashboards/filters/MetricsViewFilterManager.svelte.ts";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
-type ParsedUrlParamsByMV = Record<
-  MetricsViewName,
-  ReturnType<typeof convertFilterParamToExpression>
->;
+type ExpressionFilterManagerEvents = {
+  "state-changed": void;
+};
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -56,7 +52,11 @@ export class ExpressionFilterManager {
 
   // Name of the filter added from the filter menu. Its chip opens as soon as it is rendered.
   public temporaryFilterName: string | undefined = $state(undefined);
-  public managerByMetricsView: Record<string, MetricsViewFilterManager>;
+  // Filter manager per metrics view. Will contain parsed and validated expression.
+  public managerByMetricsView: Record<
+    MetricsViewName,
+    MetricsViewFilterManager
+  >;
   public filterManagers: {
     measures: MeasureFilterManager[];
     dimensions: DimensionFilterManager[];
@@ -66,9 +66,15 @@ export class ExpressionFilterManager {
     DimensionOrMeasureManager[]
   >;
 
-  // Raw parsed expression from url params. Validated expression is stored in exprByMetricsView.
-  private prevUrlParams = $state("");
-  private parsedUrlParams = $state<ParsedUrlParamsByMV>({});
+  private events = new EventEmitter<ExpressionFilterManagerEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+
+  // Raw filter param per metrics view.
+  private paramByMetricsView = $state<Record<MetricsViewName, string>>({});
+  // Filter param based on managers.
+  private paramByManager: Record<MetricsViewName, string>;
 
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
@@ -77,23 +83,38 @@ export class ExpressionFilterManager {
     this.managerByMetricsView = $derived.by(() => {
       const existingManagers = new Map<string, AnyManager>();
       return Object.fromEntries(
-        Object.entries(this.parsedUrlParams)
-          .map(([mvName, { expr, dimensionsWithInlistFilter }]) => [
-            mvName,
-            MetricsViewFilterManager.parse(
-              this.metricsViewsProvider,
+        Object.entries(this.paramByMetricsView)
+          .map(([mvName, param]) => {
+            const { expr, dimensionsWithInlistFilter } =
+              parseFilterParam(param);
+            return [
               mvName,
-              maybeWrapAndExpression(expr),
-              dimensionsWithInlistFilter,
-              existingManagers,
-            ),
-          ])
+              MetricsViewFilterManager.parse(
+                this.metricsViewsProvider,
+                mvName,
+                maybeWrapAndExpression(expr) ?? createAndExpression([]),
+                dimensionsWithInlistFilter,
+                existingManagers,
+              ),
+            ];
+          })
           .filter(([, manager]) => !!manager) as [
           string,
           MetricsViewFilterManager,
         ][],
       );
     });
+    this.paramByManager = $derived(
+      Object.fromEntries(
+        Object.entries(this.managerByMetricsView).map(([mvName, manager]) => [
+          mvName,
+          manager.param,
+        ]),
+      ),
+    );
+    this.isComplexFilter = $derived(
+      Object.values(this.managerByMetricsView).some((m) => m.isComplexFilter),
+    );
 
     this.filterManagers = $derived.by(() =>
       this.buildFilterManagers(this.buildParamFilterManagers()),
@@ -114,67 +135,100 @@ export class ExpressionFilterManager {
       ]),
     );
 
-    this.exprByMetricsView = $derived.by(() =>
-      this.buildExpressionsByMetricsView(),
+    this.exprByMetricsView = $derived(
+      Object.fromEntries(
+        Object.entries(this.managerByMetricsView)
+          .map(([mvName, manager]) => [mvName, manager.expr])
+          .filter(([, manager]) => !!manager) as [string, V1Expression][],
+      ),
     );
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
     );
 
+    // Init with empty url params
+    this.setUrlParams(new URLSearchParams(), true);
+  }
+
+  public createListener() {
     $effect(() => {
       this.exprByMetricsViewStore.set(this.exprByMetricsView);
     });
+
+    $effect(() => {
+      const paramsAreEqual = recordsMatch(
+        this.paramByManager,
+        this.paramByMetricsView,
+        this.metricsViewsProvider.metricsViewNames,
+      );
+      if (!paramsAreEqual) {
+        this.events.emit("state-changed");
+      }
+    });
   }
 
-  public setUrlParams = (searchParams: URLSearchParams) => {
-    const newParsedUrlParams = {} as ParsedUrlParamsByMV;
-    const newParams = [] as string[];
-    let isSomeComplexFilter = false;
+  public clone() {
+    const cloned = new ExpressionFilterManager(
+      this.metricsViewsProvider,
+      this.yamlConfigProvider,
+    );
+
+    const newUrlSearch = new URLSearchParams();
+    this.applyFilterToParams(newUrlSearch);
+    cloned.setUrlParams(newUrlSearch);
+
+    return cloned;
+  }
+
+  public setUrlParams = (searchParams: URLSearchParams, force = false) => {
+    const newParamByMetricsView = {} as Record<MetricsViewName, string>;
 
     const singularFilter = searchParams.get(ExploreStateURLParams.Filters);
     this.metricsViewsProvider.metricsViewNames.forEach((name: string) => {
       const paramKey = `${ExploreStateURLParams.Filters}.${name}`;
-      const filterString = searchParams.get(paramKey) ?? singularFilter ?? "";
-      newParams.push(`${paramKey}=${filterString}`);
-
-      const { expr, dimensionsWithInlistFilter } =
-        convertFilterParamToExpression(filterString);
-      const wrappedExpr = maybeWrapAndExpression(expr);
-      isSomeComplexFilter ||= expr
-        ? isExpressionUnsupported(wrappedExpr!)
-        : false;
-      newParsedUrlParams[name] = {
-        expr: wrappedExpr,
-        dimensionsWithInlistFilter,
-      };
+      newParamByMetricsView[name] =
+        searchParams.get(paramKey) ?? singularFilter ?? "";
     });
 
-    const newParam = newParams.join("&");
-    console.log("setUrlParams", newParam);
-    if (this.prevUrlParams === newParam) return;
-    this.prevUrlParams = newParam;
-    this.parsedUrlParams = newParsedUrlParams;
-    this.isComplexFilter = isSomeComplexFilter;
+    const unchanged = recordsMatch(
+      this.paramByMetricsView,
+      newParamByMetricsView,
+      this.metricsViewsProvider.metricsViewNames,
+    );
+    if (unchanged && !force) return;
+
+    this.paramByMetricsView = newParamByMetricsView;
     this.temporaryFilterName = undefined;
   };
 
   public setExprForMetricsView(mvName: string, expr: V1Expression | undefined) {
-    const prevURLSearch = new URLSearchParams(this.prevUrlParams);
-
-    const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
-    const filterParam = expr ? convertExpressionToFilterParam(expr) : "";
-    prevURLSearch.set(paramKey, filterParam);
-
-    this.setUrlParams(prevURLSearch);
+    this.setParamForMetricsView(
+      mvName,
+      expr ? convertExpressionToFilterParam(expr) : "",
+    );
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
-    const prevURLSearch = new URLSearchParams(this.prevUrlParams);
+    if (this.paramByMetricsView[mvName] === param) return;
 
-    const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
-    prevURLSearch.set(paramKey, param);
+    this.paramByMetricsView = { ...this.paramByMetricsView, [mvName]: param };
+    this.temporaryFilterName = undefined;
+  }
 
-    this.setUrlParams(prevURLSearch);
+  public applyFilterToParams(
+    searchParams: URLSearchParams,
+    singleParam: boolean = false,
+  ) {
+    Object.entries(this.paramByManager).forEach(([key, value]) => {
+      const paramKey = singleParam
+        ? ExploreStateURLParams.Filters
+        : `${ExploreStateURLParams.Filters}.${key}`;
+      if (value) {
+        searchParams.set(paramKey, value);
+      } else {
+        searchParams.delete(paramKey);
+      }
+    });
   }
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
@@ -198,12 +252,9 @@ export class ExpressionFilterManager {
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 
     const ret = callback(dimensionFilterManager);
-    if (dimensionFilterManager.expr && !(name in this.filterManagersMap)) {
-      this.filterManagers = {
-        ...this.filterManagers,
-        dimensions: [...this.filterManagers.dimensions, dimensionFilterManager],
-      };
-    }
+    Object.values(this.managerByMetricsView).forEach((m) =>
+      m.maybeAddDimensionFilter(dimensionFilterManager),
+    );
     return ret;
   }
 
@@ -271,6 +322,23 @@ export class ExpressionFilterManager {
         dimensionsWithInlistFilter.includes(ident),
       );
     }
+  }
+
+  public getExprStoreForFirstMetricsView() {
+    return toStore(() => {
+      const exprs = Object.values(this.managerByMetricsView)[0];
+      return {
+        expr: exprs?.expr,
+        dimensionOnlyExpr: exprs?.dimensionOnlyExpr,
+      };
+    });
+  }
+
+  public getExprStoreForMetricsView(mvName: string) {
+    return toStore(() => ({
+      expr: this.managerByMetricsView[mvName]?.expr,
+      dimensionOnlyExpr: this.managerByMetricsView[mvName]?.dimensionOnlyExpr,
+    }));
   }
 
   /** Managers for the filters in the param, keyed by name and in param order. */
@@ -356,57 +424,6 @@ export class ExpressionFilterManager {
     return { measures, dimensions };
   }
 
-  /**
-   * The filter to send with queries for each metrics view.
-   *
-   * The param contributes a whole expression per metrics view, so any nesting it has survives.
-   * Chips the param does not cover yet, the ones from the filter menu or a chart interaction,
-   * are added to every metrics view that defines them.
-   */
-  private buildExpressionsByMetricsView() {
-    const exprsByMetricsView = {} as Record<string, V1Expression[]>;
-    const addExpr = (metricsViewName: string, expr: V1Expression) => {
-      exprsByMetricsView[metricsViewName] ??= [];
-      // Flattening a top level AND keeps the result a single flat AND in the common case.
-      if (expr.cond?.op === V1Operation.OPERATION_AND) {
-        exprsByMetricsView[metricsViewName].push(...(expr.cond.exprs ?? []));
-      } else {
-        exprsByMetricsView[metricsViewName].push(expr);
-      }
-    };
-
-    const managersInParam = new Set<DimensionOrMeasureManager>();
-    Object.entries(this.managerByMetricsView).forEach(
-      ([metricsViewName, mvManager]) => {
-        Object.values(mvManager.managerLookup)
-          .flat()
-          .forEach((manager) => managersInParam.add(manager));
-        if (mvManager.expr) addExpr(metricsViewName, mvManager.expr);
-      },
-    );
-
-    [...this.filterManagers.dimensions, ...this.filterManagers.measures]
-      .filter((manager) => !!manager.expr && !managersInParam.has(manager))
-      .forEach((manager) => {
-        const specs =
-          this.metricsViewsProvider.dimensionSpecs[manager.name] ??
-          this.metricsViewsProvider.measureSpecs[manager.name] ??
-          {};
-        Object.keys(specs).forEach((metricsViewName) =>
-          addExpr(metricsViewName, manager.expr!),
-        );
-      });
-
-    return Object.fromEntries(
-      Object.entries(exprsByMetricsView)
-        .filter(([, exprs]) => exprs.length > 0)
-        .map(([metricsViewName, exprs]) => [
-          metricsViewName,
-          createAndExpression(exprs),
-        ]),
-    );
-  }
-
   private createMeasureFilterManager(name: string, initExpr?: V1Expression) {
     const measureSpecs = this.metricsViewsProvider.measureSpecs[name];
     if (!measureSpecs) return undefined;
@@ -435,8 +452,32 @@ export class ExpressionFilterManager {
   }
 }
 
+/**
+ * The parser throws on a malformed param.
+ * Converting the url to explore state reports it as an error, so drop it here instead of throwing.
+ */
+function parseFilterParam(param: string) {
+  try {
+    return convertFilterParamToExpression(param);
+  } catch {
+    return { expr: undefined, dimensionsWithInlistFilter: [] };
+  }
+}
+
 function sortFilterIterator(arr: string[], tempName: string | undefined) {
   const newArr = [...arr];
   if (tempName) newArr.push(tempName);
   return newArr.sort((a, b) => (a > b ? 1 : -1));
+}
+
+export function recordsMatch(
+  rec1: Record<string, string>,
+  rec2: Record<string, string>,
+  keys: string[],
+) {
+  const keysMatch =
+    keys.length === Object.keys(rec1).length &&
+    keys.length === Object.keys(rec2).length;
+  if (!keysMatch) return false;
+  return keys.every((key) => rec1[key] === rec2[key]);
 }

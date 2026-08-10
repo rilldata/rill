@@ -1,20 +1,22 @@
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import {
+  mapMeasureFilterToExpr,
+  type MeasureFilterEntry,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   MeasureFilterOperation,
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
-import {
-  applyDimensionContainsMode,
-  applyDimensionInListMode,
-  removeDimensionFilter,
-  toggleDimensionValueSelection,
-} from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
 import { handleDimensionMeasureColumnHeaderClick } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-table.ts";
 import {
   setPrimaryDimension,
   toggleDimensionVisibility,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimensions";
-import { clearAllFilters } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
+import {
+  clearAllFilters,
+  setFilter,
+} from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import {
   removeMeasureFilter,
   setMeasureFilter,
@@ -32,6 +34,7 @@ import {
 import {
   createAndExpression,
   createInExpression,
+  createSubQueryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
@@ -48,6 +51,7 @@ import {
   RandomPublishers,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import {
   type DashboardTimeControls,
   type TimeRange,
@@ -65,35 +69,64 @@ import {
   toggleLeaderboardShowContextForAllMeasures,
 } from "../../state-managers/actions/leaderboard";
 
-export type TestDashboardMutation = (mut: DashboardMutables) => void;
-export const AD_BIDS_APPLY_PUB_DIMENSION_FILTER: TestDashboardMutation = (
-  mut,
-) => toggleDimensionValueSelection(mut, AD_BIDS_PUBLISHER_DIMENSION, "Google");
-export const AD_BIDS_REMOVE_PUB_DIMENSION_FILTER: TestDashboardMutation = (
-  mut,
-) => removeDimensionFilter(mut, AD_BIDS_PUBLISHER_DIMENSION);
-export const AD_BIDS_APPLY_DOM_DIMENSION_FILTER: TestDashboardMutation = (
-  mut,
-) => toggleDimensionValueSelection(mut, AD_BIDS_DOMAIN_DIMENSION, "google.com");
+/**
+ * Mutables handed to a test mutation.
+ *
+ * `filterManager` is only set when the test passes one to {@link applyMutationsToDashboard},
+ * so only reach for it from a filter mutation.
+ */
+export type TestDashboardMutables = DashboardMutables & {
+  filterManager: ExpressionFilterManager;
+};
+export type TestDashboardMutation = (mut: TestDashboardMutables) => void;
+export const AD_BIDS_APPLY_PUB_DIMENSION_FILTER: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (manager) =>
+    manager.toggleValue("Google", false),
+  );
+};
+export const AD_BIDS_REMOVE_PUB_DIMENSION_FILTER: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (manager) =>
+    manager.clear(),
+  );
+};
+export const AD_BIDS_APPLY_DOM_DIMENSION_FILTER: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  filterManager.dimensionFilterAction(AD_BIDS_DOMAIN_DIMENSION, (manager) =>
+    manager.toggleValue("google.com", false),
+  );
+};
 export const AD_BIDS_LARGE_FILTER = createAndExpression([
   createInExpression(AD_BIDS_PUBLISHER_DIMENSION, RandomPublishers),
   createInExpression(AD_BIDS_DOMAIN_DIMENSION, RandomDomains),
 ]);
-export const AD_BIDS_APPLY_LARGE_FILTERS: TestDashboardMutation = (mut) => {
-  mut.dashboard.whereFilter = AD_BIDS_LARGE_FILTER;
+export const AD_BIDS_APPLY_LARGE_FILTERS: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  filterManager.setExprForMetricsView(
+    filterManager.metricsViewsProvider.metricsViewNames[0],
+    AD_BIDS_LARGE_FILTER,
+  );
 };
-export const AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER: TestDashboardMutation = (
-  mut,
-) => {
-  applyDimensionInListMode(mut, AD_BIDS_PUBLISHER_DIMENSION, [
-    "Facebook",
-    "Google",
-  ]);
+export const AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  filterManager.dimensionFilterAction(AD_BIDS_PUBLISHER_DIMENSION, (manager) =>
+    manager.setInList(["Facebook", "Google"], false),
+  );
 };
-export const AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER: TestDashboardMutation = (
-  mut,
-) => {
-  applyDimensionContainsMode(mut, AD_BIDS_DOMAIN_DIMENSION, "%oo%");
+export const AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  // setContainsText wraps the text in `%`, so the extra pair here keeps the `%%oo%%` of the
+  // equivalent dashboard action.
+  filterManager.dimensionFilterAction(AD_BIDS_DOMAIN_DIMENSION, (manager) =>
+    manager.setContainsText("%oo%", false),
+  );
 };
 
 export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
@@ -106,7 +139,7 @@ export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
   });
 export const AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER: TestDashboardMutation =
   (mut) =>
-    setMeasureFilter(mut, AD_BIDS_COUNTRY_DIMENSION, {
+    appendMeasureFilterToParam(mut, AD_BIDS_COUNTRY_DIMENSION, {
       measure: AD_BIDS_BID_PRICE_MEASURE,
       type: MeasureFilterType.Value,
       operation: MeasureFilterOperation.Between,
@@ -115,7 +148,7 @@ export const AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER: TestDashboardMuta
     });
 export const AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER: TestDashboardMutation =
   (mut) =>
-    setMeasureFilter(mut, AD_BIDS_COUNTRY_DIMENSION, {
+    appendMeasureFilterToParam(mut, AD_BIDS_COUNTRY_DIMENSION, {
       measure: AD_BIDS_BID_PRICE_MEASURE,
       type: MeasureFilterType.Value,
       operation: MeasureFilterOperation.NotBetween,
@@ -523,17 +556,60 @@ export const AD_BIDS_SET_TIME_DIMENSION_PRIMARY: TestDashboardMutation = (
   mut.dashboard.selectedTimeDimension = undefined;
 };
 
+/**
+ * Adds a measure filter to the filter param of the 1st metrics view, preserving the filters
+ * already in it.
+ *
+ * TODO: ExpressionFilterManager has no measure equivalent of `dimensionFilterAction`. A measure
+ *       filter only ever reaches the manager through the filter param, so seed it the same way.
+ */
+function appendMeasureFilterToParam(
+  { filterManager }: TestDashboardMutables,
+  dimension: string,
+  measureFilter: MeasureFilterEntry,
+) {
+  const havingExpr = mapMeasureFilterToExpr(measureFilter);
+  if (!havingExpr) return;
+
+  const mvName = filterManager.metricsViewsProvider.metricsViewNames[0];
+  const exprs =
+    filterManager.managerByMetricsView[mvName]?.expr?.cond?.exprs ?? [];
+  const expr = createAndExpression([
+    ...exprs,
+    createSubQueryExpression(dimension, [measureFilter.measure], havingExpr),
+  ]);
+
+  filterManager.setParamForMetricsView(
+    mvName,
+    convertExpressionToFilterParam(expr, filterManager.inList),
+  );
+}
+
 export async function applyMutationsToDashboard(
   name: string,
   mutations: TestDashboardMutation[],
+  filterManager?: ExpressionFilterManager,
 ) {
   for (const mutation of mutations) {
     updateMetricsExplorerByName(name, (dashboard) => {
       const dashboardMutables = {
         dashboard,
-      } as DashboardMutables;
+        filterManager,
+      } as TestDashboardMutables;
       mutation(dashboardMutables);
     });
+    if (filterManager) {
+      // Explore state does not own the filters anymore, so mirror them back into it the way
+      // DashboardStateSync does for the app.
+      updateMetricsExplorerByName(name, (dashboard) => {
+        const mvName = filterManager.metricsViewsProvider.metricsViewNames[0];
+        setFilter(
+          { dashboard } as DashboardMutables,
+          filterManager.managerByMetricsView[mvName]?.expr,
+          filterManager.inList,
+        );
+      });
+    }
     // DashboardStateSync.gotoNewState that listens to changes to the dashboard store is an async function.
     // So go through the mutations individually and wait for 1ms for that to finish.
     // Without this the lock in gotoNewState will stop the very quick successive changes to dashboard.

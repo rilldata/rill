@@ -20,8 +20,7 @@
         defaultTimeRangeStore,
         defaultComparisonRangeStore,
       },
-      metricsViewsProvider,
-      yamlConfigProvider,
+      dashboardProvider,
     },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
 
@@ -40,7 +39,10 @@
       : undefined;
 
   let defaultFiltersManager = $derived(
-    new ExpressionFilterManager(metricsViewsProvider, yamlConfigProvider),
+    new ExpressionFilterManager(
+      dashboardProvider.metricsViewsProvider,
+      dashboardProvider.yamlConfigProvider,
+    ),
   );
   $effect(() => {
     if (!$specStore.data?.canvas?.defaultPreset?.filterExpr) return;

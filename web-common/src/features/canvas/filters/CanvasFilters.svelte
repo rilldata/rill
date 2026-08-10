@@ -8,6 +8,8 @@
   import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import ExpressionFilters from "../../dashboards/filters/ExpressionFilters.svelte";
+  import { page } from "$app/state";
+  import { goto } from "$app/navigation";
 
   let {
     maxWidth,
@@ -48,6 +50,20 @@
       expressionFilterManager,
     },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
+  // svelte-ignore state_referenced_locally
+  expressionFilterManager.createListener();
+
+  function updateUrlParams(params: URLSearchParams) {
+    expressionFilterManager.setUrlParams(params);
+  }
+  $effect(() => updateUrlParams(page.url.searchParams));
+  // svelte-ignore state_referenced_locally
+  expressionFilterManager.on("state-changed", () => {
+    const newUrl = new URL(page.url);
+    expressionFilterManager.applyFilterToParams(newUrl.searchParams);
+    if (newUrl.search === page.url.search) return;
+    void goto(newUrl);
+  });
 
   let selectedRange = $derived($rangeStore);
   let interval = $derived($intervalStore);

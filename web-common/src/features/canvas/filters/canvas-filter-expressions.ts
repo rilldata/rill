@@ -8,11 +8,12 @@ import type { V1Expression } from "@rilldata/web-common/runtime-client";
 export function getCanvasFilters(
   canvasEntity: CanvasEntity,
 ): Record<string, V1Expression> | undefined {
-  const filtersMap = canvasEntity.expressionFilterManager.exprByMetricsView;
-
   // Check if there are any non-empty filters
-  const hasFilters = Object.values(filtersMap).some(
-    (expr) => expr?.cond?.exprs && expr.cond.exprs.length > 0,
+  const hasFilters = Object.values(
+    canvasEntity.expressionFilterManager.managerByMetricsView,
+  ).some(
+    (manager) =>
+      manager.expr?.cond?.exprs && manager.expr.cond.exprs.length > 0,
   );
 
   if (!hasFilters) {
@@ -21,9 +22,11 @@ export function getCanvasFilters(
 
   // Convert Map to plain object for API
   const metricsViewFilters: Record<string, V1Expression> = {};
-  Object.entries(filtersMap).forEach(([metricsViewName, expr]) => {
-    if (expr?.cond?.exprs && expr.cond.exprs.length > 0) {
-      metricsViewFilters[metricsViewName] = expr;
+  Object.entries(
+    canvasEntity.expressionFilterManager.managerByMetricsView,
+  ).forEach(([metricsViewName, manager]) => {
+    if (manager.expr?.cond?.exprs && manager.expr?.cond.exprs.length > 0) {
+      metricsViewFilters[metricsViewName] = manager.expr;
     }
   });
 

@@ -9,6 +9,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
@@ -16,10 +17,17 @@ import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboard
 import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
-} from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
+  useTestFilterManager,
+} from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { beforeEach, describe, expect, it } from "vitest";
+
+// The filter manager validates the filter param against the metrics view specs, so an invalid
+// filter has to be invalid for it as well.
+const getFilterManager = useTestFilterManager({
+  [AD_BIDS_METRICS_NAME]: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+});
 
 const TestCases: {
   title: string;
@@ -157,6 +165,7 @@ describe("Invalid Human readable URL State", () => {
         new URL(url),
         AD_BIDS_EXPLORE_INIT,
         defaultExplorePreset,
+        getFilterManager(),
       );
       expect(errorsFromUrl.map((e) => e.message)).toEqual(errors);
       const currentState = getCleanMetricsExploreForAssertion();

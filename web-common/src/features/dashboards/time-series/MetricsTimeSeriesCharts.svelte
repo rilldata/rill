@@ -3,7 +3,6 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
-  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -15,7 +14,6 @@
     metricsExplorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -31,7 +29,10 @@
     type AvailableTimeGrain,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import {
+    type MetricsViewSpecMeasure,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime, Interval } from "luxon";
   import { Button } from "../../../components/button";
@@ -54,6 +55,8 @@
   const scrubController = new ScrubController();
 
   export let exploreName: string;
+  export let dimensionOnlyFilter: V1Expression | undefined;
+  export let whereFilter: V1Expression | undefined;
   export let hideStartPivotButton = false;
   // Height of the expanded chart in the Time Dimension Detail view, controlled
   // by the resizable divider between the timeseries and the detail table.
@@ -95,8 +98,7 @@
     aggregationOptions,
   } = $timeControlsStore);
 
-  $: ({ whereFilter, dimensionThresholdFilters, selectedTimezone } =
-    $dashboardStore);
+  $: ({ selectedTimezone } = $dashboardStore);
 
   // Use the full selected time range for chart data fetching (not modified by scrub)
   $: chartInterval =
@@ -175,10 +177,6 @@
   }
 
   $: chartMetricsViewName = $metricsViewName;
-  $: chartWhere = sanitiseExpression(
-    mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilters),
-    undefined,
-  );
 
   $: chartReady = !!ready;
 
@@ -400,7 +398,7 @@
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
           metricsViewName={chartMetricsViewName}
-          where={chartWhere}
+          where={whereFilter}
           {timeDimension}
           {timeStart}
           {timeEnd}
@@ -417,7 +415,7 @@
               {connectNulls}
               tddChartType={tddChartType ?? TDDChart.DEFAULT}
               metricsViewName={chartMetricsViewName}
-              where={chartWhere}
+              where={whereFilter}
               {timeDimension}
               interval={chartInterval}
               comparisonInterval={chartComparisonInterval}
@@ -484,7 +482,7 @@
     metricsViewName={chartMetricsViewName}
     tddChartType={tddChartType ?? TDDChart.DEFAULT}
     {expressionFilterManager}
-    where={chartWhere}
+    where={whereFilter}
     {timeDimension}
     {timeStart}
     {timeEnd}
@@ -496,7 +494,7 @@
     timeGranularity={activeTimeGrain}
     timeZone={selectedTimezone}
     dimensionValues={chartDimensionValues}
-    dimensionWhere={whereFilter}
+    dimensionWhere={dimensionOnlyFilter}
     {showComparison}
     {showTimeDimensionDetail}
     dynamicYAxis={dynamicYAxisScale}

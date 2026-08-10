@@ -49,15 +49,10 @@ import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
-import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-import {
-  CanvasConfigProvider,
-  YAMLConfigProvider,
-} from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { ExpressionFilterURLSync } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterURLSync.svelte.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -100,8 +95,7 @@ export class CanvasEntity {
 
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
-  metricsViewsProvider: MetricsViewsProvider;
-  yamlConfigProvider: YAMLConfigProvider;
+  dashboardProvider: CanvasDashboardConfigProvider;
 
   // Expression filter manager
   expressionFilterManager: ExpressionFilterManager;
@@ -216,15 +210,15 @@ export class CanvasEntity {
       this.client,
       this._metricsViews,
     );
-    this.metricsViewsProvider = new MetricsViewsProvider(this.client, []);
-    this.yamlConfigProvider = new CanvasConfigProvider(this.client, name);
+    this.dashboardProvider = new CanvasDashboardConfigProvider(
+      this.client,
+      name,
+    );
 
     this.expressionFilterManager = new ExpressionFilterManager(
-      this.metricsViewsProvider,
-      this.yamlConfigProvider,
+      this.dashboardProvider.metricsViewsProvider,
+      this.dashboardProvider.yamlConfigProvider,
     );
-    // Create the URL sync component
-    new ExpressionFilterURLSync(this.expressionFilterManager);
 
     this.processSpec(this.spec);
   }
@@ -299,7 +293,6 @@ export class CanvasEntity {
     if (!validSpec) return;
 
     if (metricsViews) this._metricsViews.set(metricsViews);
-    this.metricsViewsProvider.setMetricsViewNames(Object.keys(metricsViews));
 
     this.checkAndSetFilterEnabled(validSpec);
     this.checkAndSetFileArtifact(filePath);
@@ -325,9 +318,11 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const pinnedFilters = Object.keys(this.yamlConfigProvider.pinnedFilters);
+    const pinnedFilters = Object.keys(
+      this.dashboardProvider.yamlConfigProvider.pinnedFilters,
+    );
     const requiredFilters = Object.keys(
-      this.yamlConfigProvider.requiredFilters,
+      this.dashboardProvider.yamlConfigProvider.requiredFilters,
     );
 
     // Persist pinned and required independently. Render-time treats a filter as
@@ -342,10 +337,13 @@ export class CanvasEntity {
     const timeRange = get(this.timeManager.state.rangeStore);
     const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
 
-    const metricsViewFilters = this.expressionFilterManager.exprByMetricsView;
-    const filterNames = Object.keys(metricsViewFilters);
-    const promises = Object.values(metricsViewFilters).map((expr) => {
-      const protoExpr = expr as any; // TODO: expand toProto.ts::toExpressionProto to support subquery and convert.
+    const filterNames = Object.keys(
+      this.expressionFilterManager.managerByMetricsView,
+    );
+    const promises = Object.values(
+      this.expressionFilterManager.managerByMetricsView,
+    ).map((manager) => {
+      const protoExpr = manager.expr as any; // TODO: expand toProto.ts::toExpressionProto to support subquery and convert.
       return queryClient.fetchQuery({
         queryKey: getQueryServiceConvertExpressionToMetricsSQLQueryKey(
           this.instanceId,
