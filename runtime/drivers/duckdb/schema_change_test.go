@@ -72,12 +72,13 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 			assertRows: assertOriginalSchemaChangeRows,
 		},
 		{
-			name:       "fail type change",
-			mode:       OnSchemaChangeFail,
-			sourceSQL:  `SELECT 1 AS id, 1 AS partition_id, 123::INTEGER AS old_value`,
-			wantErr:    "type changes",
-			wantCols:   []string{"id", "partition_id", "old_value"},
-			assertRows: assertOriginalSchemaChangeRows,
+			name:      "fail retains target type",
+			mode:      OnSchemaChangeFail,
+			sourceSQL: `SELECT 1 AS id, 1 AS partition_id, 123::INTEGER AS old_value`,
+			wantCols:  []string{"id", "partition_id", "old_value"},
+			assertRows: func(t *testing.T, c *connection, table string) {
+				requireQueryStrings(t, c, fmt.Sprintf(`SELECT typeof(old_value), old_value FROM %s ORDER BY id`, safeSQLName(table)), [][]string{{"VARCHAR", "123"}, {"VARCHAR", "old-2"}})
+			},
 		},
 		{
 			name:      "append added and retain removed columns",

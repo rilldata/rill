@@ -31,11 +31,6 @@ type duckDBColumn struct {
 	Type string `db:"data_type"`
 }
 
-type duckDBTypeChange struct {
-	column duckDBColumn
-	toType string
-}
-
 type schemaChangePlan struct {
 	add              []duckDBColumn
 	targetInsertCols []string
@@ -62,15 +57,9 @@ func reconcileTableSchema(ctx context.Context, conn *sqlx.Conn, target, source s
 	}
 
 	var added, removed []duckDBColumn
-	var changed []duckDBTypeChange
 	for _, sourceColumn := range sourceColumns {
-		targetColumn, ok := targetByName[strings.ToLower(sourceColumn.Name)]
-		if !ok {
+		if _, ok := targetByName[strings.ToLower(sourceColumn.Name)]; !ok {
 			added = append(added, sourceColumn)
-			continue
-		}
-		if targetColumn.Type != sourceColumn.Type {
-			changed = append(changed, duckDBTypeChange{column: targetColumn, toType: sourceColumn.Type})
 		}
 	}
 	for _, targetColumn := range targetColumns {
@@ -86,13 +75,12 @@ func reconcileTableSchema(ctx context.Context, conn *sqlx.Conn, target, source s
 			return nil, fmt.Errorf("schema change mode %q does not allow target columns to be absent from the source: %s", mode, formatDuckDBColumns(removed))
 		}
 	case OnSchemaChangeFail:
-		if len(added) > 0 || len(removed) > 0 || len(changed) > 0 {
+		if len(added) > 0 || len(removed) > 0 {
 			return nil, fmt.Errorf(
-				"schema change mode %q detected schema differences (added: %s; removed: %s; type changes: %s)",
+				"schema change mode %q detected schema differences (added: %s; removed: %s)",
 				mode,
 				formatDuckDBColumns(added),
 				formatDuckDBColumns(removed),
-				formatDuckDBTypeChanges(changed),
 			)
 		}
 	case OnSchemaChangeAppendNewColumns:
@@ -152,17 +140,6 @@ func formatDuckDBColumns(columns []duckDBColumn) string {
 	formatted := make([]string, len(columns))
 	for i, column := range columns {
 		formatted[i] = fmt.Sprintf("%q", column.Name)
-	}
-	return strings.Join(formatted, ", ")
-}
-
-func formatDuckDBTypeChanges(changes []duckDBTypeChange) string {
-	if len(changes) == 0 {
-		return "none"
-	}
-	formatted := make([]string, len(changes))
-	for i, change := range changes {
-		formatted[i] = fmt.Sprintf("%q (%s to %s)", change.column.Name, change.column.Type, change.toType)
 	}
 	return strings.Join(formatted, ", ")
 }
