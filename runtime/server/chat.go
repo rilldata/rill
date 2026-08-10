@@ -285,6 +285,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 			Sentiment:       req.FeedbackAgentContext.Sentiment,
 			Categories:      req.FeedbackAgentContext.Categories,
 			Comment:         req.FeedbackAgentContext.Comment,
+			RequestReview:   req.FeedbackAgentContext.RequestReview,
 		}
 	}
 
@@ -440,6 +441,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 			Sentiment:       req.FeedbackAgentContext.Sentiment,
 			Categories:      req.FeedbackAgentContext.Categories,
 			Comment:         req.FeedbackAgentContext.Comment,
+			RequestReview:   req.FeedbackAgentContext.RequestReview,
 		}
 	}
 

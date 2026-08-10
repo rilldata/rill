@@ -6,6 +6,7 @@
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
   import type { ConversationManager } from "../../core/conversation-manager";
+  import { isUserChatConversation } from "../../core/utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let conversationManager: ConversationManager;
@@ -22,7 +23,7 @@
   $: listConversationsQuery = conversationManager.listConversationsQuery();
 
   $: conversations = ($listConversationsQuery.data?.conversations ?? []).filter(
-    (c) => c.userAgent !== "rill/report",
+    isUserChatConversation,
   );
   $: isLoading = $listConversationsQuery.isLoading;
   $: isError = $listConversationsQuery.isError;

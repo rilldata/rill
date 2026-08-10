@@ -33,6 +33,7 @@ export enum ResourceKind {
   API = "rill.runtime.v1.API",
   RefreshTrigger = "rill.runtime.v1.RefreshTrigger",
   Migration = "rill.runtime.v1.Migration",
+  AIEval = "rill.runtime.v1.AIEval",
 }
 
 export function displayResourceKind(kind: ResourceKind | undefined) {
@@ -63,6 +64,8 @@ export function displayResourceKind(kind: ResourceKind | undefined) {
       return "API";
     case ResourceKind.RefreshTrigger:
       return "refresh trigger";
+    case ResourceKind.AIEval:
+      return "eval";
     default:
       return undefined;
   }
@@ -91,6 +94,8 @@ export function resourceKindStyleName(kind: ResourceKind | undefined) {
     case ResourceKind.Canvas:
       return "bg-Canvas/15 text-Canvas";
     case ResourceKind.API:
+      return "bg-API/15 text-API";
+    case ResourceKind.AIEval:
       return "bg-API/15 text-API";
     default:
       return undefined;

@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -557,4 +558,173 @@ func (c *catalogStore) InsertAIMessage(ctx context.Context, m *drivers.AIMessage
 		return err
 	}
 	return nil
+}
+
+// aiFeedbackColumns are the ai_feedback columns selected by find queries, joined with the session title.
+const aiFeedbackColumns = `
+	f.id, f.instance_id, f.session_id, f.target_message_id, f.kind, f.sentiment, f.categories, f.comment,
+	f.predicted_attribution, f.suggested_action, f.status, f.owner_id, f.owner_email,
+	f.resolved_by, f.resolved_on, f.created_on, f.updated_on, COALESCE(s.title, '')
+`
+
+func (c *catalogStore) FindAIFeedback(ctx context.Context, opts *drivers.FindAIFeedbackOptions) ([]*drivers.AIFeedback, error) {
+	query := `
+		SELECT ` + aiFeedbackColumns + `
+		FROM ai_feedback f
+		LEFT JOIN ai_sessions s ON s.id = f.session_id
+		WHERE f.instance_id = ?
+	`
+	args := []interface{}{c.instanceID}
+
+	if opts.Status != "" {
+		query += " AND f.status = ?"
+		args = append(args, opts.Status)
+	}
+	if opts.Kind != "" {
+		query += " AND f.kind = ?"
+		args = append(args, opts.Kind)
+	}
+	if !opts.AfterCreatedOn.IsZero() {
+		query += " AND (f.created_on < ? OR (f.created_on = ? AND f.id < ?))"
+		args = append(args, opts.AfterCreatedOn, opts.AfterCreatedOn, opts.AfterID)
+	}
+
+	query += " ORDER BY f.created_on DESC, f.id DESC"
+
+	if opts.Limit > 0 {
+		query += " LIMIT ?"
+		args = append(args, opts.Limit)
+	}
+
+	rows, err := c.db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*drivers.AIFeedback
+	for rows.Next() {
+		f, err := scanAIFeedback(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (c *catalogStore) FindAIFeedbackByID(ctx context.Context, id string) (*drivers.AIFeedback, error) {
+	row := c.db.QueryRowxContext(ctx, `
+		SELECT `+aiFeedbackColumns+`
+		FROM ai_feedback f
+		LEFT JOIN ai_sessions s ON s.id = f.session_id
+		WHERE f.instance_id = ? AND f.id = ?
+	`, c.instanceID, id)
+
+	f, err := scanAIFeedback(row.Scan)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, drivers.ErrNotFound
+		}
+		return nil, err
+	}
+	return f, nil
+}
+
+func (c *catalogStore) FindAIFeedbackForSession(ctx context.Context, sessionID string) ([]*drivers.AIFeedback, error) {
+	rows, err := c.db.QueryxContext(ctx, `
+		SELECT `+aiFeedbackColumns+`
+		FROM ai_feedback f
+		LEFT JOIN ai_sessions s ON s.id = f.session_id
+		WHERE f.instance_id = ? AND f.session_id = ?
+		ORDER BY f.created_on ASC, f.id ASC
+	`, c.instanceID, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*drivers.AIFeedback
+	for rows.Next() {
+		f, err := scanAIFeedback(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (c *catalogStore) InsertAIFeedback(ctx context.Context, f *drivers.AIFeedback) error {
+	categories, err := marshalAIFeedbackCategories(f.Categories)
+	if err != nil {
+		return err
+	}
+	_, err = c.db.ExecContext(ctx, `
+		INSERT INTO ai_feedback (
+			id, instance_id, session_id, target_message_id, kind, sentiment, categories, comment,
+			predicted_attribution, suggested_action, status, owner_id, owner_email,
+			resolved_by, resolved_on, created_on, updated_on
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, f.ID, f.InstanceID, f.SessionID, f.TargetMessageID, f.Kind, f.Sentiment, categories, f.Comment,
+		f.PredictedAttribution, f.SuggestedAction, f.Status, f.OwnerID, f.OwnerEmail,
+		f.ResolvedBy, f.ResolvedOn, f.CreatedOn, f.UpdatedOn)
+	return err
+}
+
+func (c *catalogStore) UpdateAIFeedback(ctx context.Context, f *drivers.AIFeedback) error {
+	categories, err := marshalAIFeedbackCategories(f.Categories)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	_, err = c.db.ExecContext(ctx, `
+		UPDATE ai_feedback SET
+			target_message_id = ?, kind = ?, sentiment = ?, categories = ?, comment = ?,
+			predicted_attribution = ?, suggested_action = ?, status = ?,
+			resolved_by = ?, resolved_on = ?, updated_on = ?
+		WHERE id = ?
+	`, f.TargetMessageID, f.Kind, f.Sentiment, categories, f.Comment,
+		f.PredictedAttribution, f.SuggestedAction, f.Status,
+		f.ResolvedBy, f.ResolvedOn, now, f.ID)
+	if err != nil {
+		return err
+	}
+	f.UpdatedOn = now
+	return nil
+}
+
+// scanAIFeedback scans one row produced by a query selecting aiFeedbackColumns.
+func scanAIFeedback(scan func(dest ...any) error) (*drivers.AIFeedback, error) {
+	var f drivers.AIFeedback
+	var categories string
+	err := scan(&f.ID, &f.InstanceID, &f.SessionID, &f.TargetMessageID, &f.Kind, &f.Sentiment, &categories, &f.Comment,
+		&f.PredictedAttribution, &f.SuggestedAction, &f.Status, &f.OwnerID, &f.OwnerEmail,
+		&f.ResolvedBy, &f.ResolvedOn, &f.CreatedOn, &f.UpdatedOn, &f.SessionTitle)
+	if err != nil {
+		return nil, err
+	}
+	if categories != "" {
+		if err := json.Unmarshal([]byte(categories), &f.Categories); err != nil {
+			return nil, err
+		}
+	}
+	return &f, nil
+}
+
+func marshalAIFeedbackCategories(categories []string) (string, error) {
+	if len(categories) == 0 {
+		return "[]", nil
+	}
+	res, err := json.Marshal(categories)
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
 }

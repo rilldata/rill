@@ -110,6 +110,7 @@
   "dependencies": {
     "@internationalized/date": "^3.10.1",
     "@tiptap/suggestion": "^3.20.1",
+    "diff": "^8.0.4",
     "picomatch": "^4.0.3",
     "vega-embed": "^7.1.0"
   }

@@ -7,10 +7,13 @@ import {
   GetCurrentProjectRequest,
   GetCurrentUserRequest,
   GetMetadataRequest,
+  GetProjectAIFeedbackRequest,
   ListOrganizationsAndBillingMetadataRequest,
   GetVersionRequest,
+  ListProjectAIFeedbackRequest,
   PushToGithubRequest,
   RedeployProjectRequest,
+  ResolveProjectAIFeedbackRequest,
   CreateOrganizationRequest,
   ListMatchingProjectsRequest,
   ListProjectsForOrgRequest,
@@ -427,6 +430,56 @@ export function createLocalServiceGithubRepoStatus<
     options,
   );
   return createQuery(queryOptions);
+}
+
+export function localServiceListProjectAIFeedback(
+  args: PartialMessage<ListProjectAIFeedbackRequest>,
+) {
+  return getClient().listProjectAIFeedback(
+    new ListProjectAIFeedbackRequest(args),
+  );
+}
+export const getLocalServiceListProjectAIFeedbackQueryKey = (
+  args: PartialMessage<ListProjectAIFeedbackRequest>,
+) => [`/v1/local/ai-feedback`, args];
+export function createLocalServiceListProjectAIFeedback<
+  TData = Awaited<ReturnType<typeof localServiceListProjectAIFeedback>>,
+  TError = ConnectError,
+>(
+  args: PartialMessage<ListProjectAIFeedbackRequest>,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof localServiceListProjectAIFeedback>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ??
+      getLocalServiceListProjectAIFeedbackQueryKey(args),
+    queryFn:
+      queryOptions?.queryFn ?? (() => localServiceListProjectAIFeedback(args)),
+  });
+}
+
+export function localServiceGetProjectAIFeedback(feedbackId: string) {
+  return getClient().getProjectAIFeedback(
+    new GetProjectAIFeedbackRequest({ feedbackId }),
+  );
+}
+
+export function localServiceResolveProjectAIFeedback(
+  args: PartialMessage<ResolveProjectAIFeedbackRequest>,
+) {
+  return getClient().resolveProjectAIFeedback(
+    new ResolveProjectAIFeedbackRequest(args),
+  );
 }
 
 export function localServiceGetProjectRequest(

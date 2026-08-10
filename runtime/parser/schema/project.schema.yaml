@@ -32,6 +32,7 @@ oneOf:
   - $ref: '#/definitions/apis'
   - $ref: '#/definitions/themes'
   - $ref: '#/definitions/components'
+  - $ref: '#/definitions/ai-evals'
   # - $ref: '#/definitions/rillyaml' separated due to parsing YAML issues
 
 definitions:
@@ -3022,6 +3023,119 @@ definitions:
       # - $ref: '#/definitions/common_properties'
 
   # Themes
+  ai-evals:
+    title: AI Eval YAML
+    id: ai-evals
+    type: object
+    description: |
+      AI evals define business questions with expected answers that test the project's AI assistant.
+      Create a `<eval_name>.yaml` file with `type: eval` (files under an `evals/` directory are inferred automatically).
+      Evals never run automatically; trigger them manually from Rill Developer to get pass/fail results per case.
+      Use them to verify that changes to `ai_instructions` fix problems without regressing answers that already work.
+    examples:
+      - # Example: Revenue questions with judge and structural expectations
+        type: eval
+        display_name: Revenue questions
+        notes: Revenue always means net_revenue, never gross_bookings.
+        cases:
+          - name: monthly_revenue_2024
+            question: What was our total revenue per month in 2024?
+            expect:
+              answer: Monthly totals of net_revenue for all 12 months of 2024.
+              metrics_view: sales
+              measures:
+                - net_revenue
+    allOf:
+      - title: Properties
+        type: object
+        required:
+          - type
+          - cases
+        properties:
+          type:
+            type: string
+            enum:
+              - eval
+              - ai_eval
+            description: Refers to the resource type and must be `eval`
+          display_name:
+            type: string
+            description: Display name shown in the UI
+          notes:
+            type: string
+            description: Suite-level guidance for the LLM judge, applied to every case
+          defaults:
+            type: object
+            description: Defaults applied to every case
+            properties:
+              agent:
+                type: string
+                enum:
+                  - analyst_agent
+                description: Agent that answers the questions. Currently only `analyst_agent`.
+              explore:
+                type: string
+                description: Explore dashboard used as context for all cases
+            additionalProperties: false
+          concurrency:
+            type: integer
+            minimum: 1
+            maximum: 8
+            description: Number of cases to run concurrently (default 2)
+          timeout:
+            type: string
+            description: Timeout for a whole run (default 30m)
+          case_timeout:
+            type: string
+            description: Timeout for a single case (default 5m)
+          cases:
+            type: array
+            minItems: 1
+            maxItems: 100
+            description: The test cases in this eval suite
+            items:
+              type: object
+              required:
+                - name
+                - question
+                - expect
+              properties:
+                name:
+                  type: string
+                  pattern: "^[a-zA-Z0-9_-]+$"
+                  description: Unique name of the case within this file
+                question:
+                  type: string
+                  description: The question to ask the AI
+                notes:
+                  type: string
+                  description: Case-level guidance for the LLM judge
+                explore:
+                  type: string
+                  description: Explore dashboard used as context for this case
+                expect:
+                  type: object
+                  minProperties: 1
+                  description: Expected outcomes; every present key is asserted
+                  properties:
+                    answer:
+                      type: string
+                      description: Expected answer in natural language, graded by an LLM judge
+                    metrics_view:
+                      type: string
+                      description: Metrics view the AI must query
+                    measures:
+                      type: array
+                      items:
+                        type: string
+                      description: Measures the AI's queries must include
+                    dimensions:
+                      type: array
+                      items:
+                        type: string
+                      description: Dimensions the AI's queries must include
+                  additionalProperties: false
+              additionalProperties: false
   themes:
     title: Theme YAML
     id: themes

@@ -6,6 +6,62 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 import { BillingIssue, Organization, Project, ProjectPermissions, User } from "../../admin/v1/api_pb.js";
+import { AIFeedback, Conversation, Message as Message$1 } from "../../runtime/v1/api_pb.js";
+
+/**
+ * CloudFeedbackState describes whether the cloud deployment's feedback store is reachable,
+ * and if not, why. It lets the UI render precise empty states while local feedback still works.
+ *
+ * @generated from enum rill.local.v1.CloudFeedbackState
+ */
+export enum CloudFeedbackState {
+  /**
+   * @generated from enum value: CLOUD_FEEDBACK_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CLOUD_FEEDBACK_STATE_OK = 1;
+   */
+  OK = 1,
+
+  /**
+   * The user is not logged in to Rill Cloud.
+   *
+   * @generated from enum value: CLOUD_FEEDBACK_STATE_NOT_LOGGED_IN = 2;
+   */
+  NOT_LOGGED_IN = 2,
+
+  /**
+   * The local project has no matching cloud project or no running deployment.
+   *
+   * @generated from enum value: CLOUD_FEEDBACK_STATE_NOT_DEPLOYED = 3;
+   */
+  NOT_DEPLOYED = 3,
+
+  /**
+   * The user lacks admin permissions on the cloud project.
+   *
+   * @generated from enum value: CLOUD_FEEDBACK_STATE_NO_PERMISSION = 4;
+   */
+  NO_PERMISSION = 4,
+
+  /**
+   * The cloud runtime could not be reached or does not support feedback review.
+   *
+   * @generated from enum value: CLOUD_FEEDBACK_STATE_ERROR = 5;
+   */
+  ERROR = 5,
+}
+// Retrieve enum metadata with: proto3.getEnumType(CloudFeedbackState)
+proto3.util.setEnumType(CloudFeedbackState, "rill.local.v1.CloudFeedbackState", [
+  { no: 0, name: "CLOUD_FEEDBACK_STATE_UNSPECIFIED" },
+  { no: 1, name: "CLOUD_FEEDBACK_STATE_OK" },
+  { no: 2, name: "CLOUD_FEEDBACK_STATE_NOT_LOGGED_IN" },
+  { no: 3, name: "CLOUD_FEEDBACK_STATE_NOT_DEPLOYED" },
+  { no: 4, name: "CLOUD_FEEDBACK_STATE_NO_PERMISSION" },
+  { no: 5, name: "CLOUD_FEEDBACK_STATE_ERROR" },
+]);
 
 /**
  * @generated from message rill.local.v1.PingRequest
@@ -1739,6 +1795,306 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
 
   static equals(a: GetProjectResponse | PlainMessage<GetProjectResponse> | undefined, b: GetProjectResponse | PlainMessage<GetProjectResponse> | undefined): boolean {
     return proto3.util.equals(GetProjectResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.ListProjectAIFeedbackRequest
+ */
+export class ListProjectAIFeedbackRequest extends Message<ListProjectAIFeedbackRequest> {
+  /**
+   * Optional status filter: "open", "addressed" or "dismissed". Defaults to "open".
+   *
+   * @generated from field: string status = 1;
+   */
+  status = "";
+
+  /**
+   * Optional kind filter: "rating" or "review_request".
+   *
+   * @generated from field: string kind = 2;
+   */
+  kind = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListProjectAIFeedbackRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.ListProjectAIFeedbackRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectAIFeedbackRequest {
+    return new ListProjectAIFeedbackRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectAIFeedbackRequest {
+    return new ListProjectAIFeedbackRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectAIFeedbackRequest {
+    return new ListProjectAIFeedbackRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectAIFeedbackRequest | PlainMessage<ListProjectAIFeedbackRequest> | undefined, b: ListProjectAIFeedbackRequest | PlainMessage<ListProjectAIFeedbackRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectAIFeedbackRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.ListProjectAIFeedbackResponse
+ */
+export class ListProjectAIFeedbackResponse extends Message<ListProjectAIFeedbackResponse> {
+  /**
+   * @generated from field: rill.local.v1.CloudFeedbackState cloud_state = 1;
+   */
+  cloudState = CloudFeedbackState.UNSPECIFIED;
+
+  /**
+   * Human-readable detail for non-OK states.
+   *
+   * @generated from field: string cloud_state_message = 2;
+   */
+  cloudStateMessage = "";
+
+  /**
+   * The matched cloud org and project (set when a project was matched, even on later failures).
+   *
+   * @generated from field: string org = 3;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 4;
+   */
+  project = "";
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.AIFeedback feedback = 5;
+   */
+  feedback: AIFeedback[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 6;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListProjectAIFeedbackResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.ListProjectAIFeedbackResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "cloud_state", kind: "enum", T: proto3.getEnumType(CloudFeedbackState) },
+    { no: 2, name: "cloud_state_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "feedback", kind: "message", T: AIFeedback, repeated: true },
+    { no: 6, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectAIFeedbackResponse {
+    return new ListProjectAIFeedbackResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectAIFeedbackResponse {
+    return new ListProjectAIFeedbackResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectAIFeedbackResponse {
+    return new ListProjectAIFeedbackResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectAIFeedbackResponse | PlainMessage<ListProjectAIFeedbackResponse> | undefined, b: ListProjectAIFeedbackResponse | PlainMessage<ListProjectAIFeedbackResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectAIFeedbackResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GetProjectAIFeedbackRequest
+ */
+export class GetProjectAIFeedbackRequest extends Message<GetProjectAIFeedbackRequest> {
+  /**
+   * @generated from field: string feedback_id = 1;
+   */
+  feedbackId = "";
+
+  constructor(data?: PartialMessage<GetProjectAIFeedbackRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GetProjectAIFeedbackRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "feedback_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectAIFeedbackRequest {
+    return new GetProjectAIFeedbackRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectAIFeedbackRequest {
+    return new GetProjectAIFeedbackRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectAIFeedbackRequest {
+    return new GetProjectAIFeedbackRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectAIFeedbackRequest | PlainMessage<GetProjectAIFeedbackRequest> | undefined, b: GetProjectAIFeedbackRequest | PlainMessage<GetProjectAIFeedbackRequest> | undefined): boolean {
+    return proto3.util.equals(GetProjectAIFeedbackRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.GetProjectAIFeedbackResponse
+ */
+export class GetProjectAIFeedbackResponse extends Message<GetProjectAIFeedbackResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.AIFeedback feedback = 1;
+   */
+  feedback?: AIFeedback;
+
+  /**
+   * Null if the conversation has been deleted.
+   *
+   * @generated from field: rill.runtime.v1.Conversation conversation = 2;
+   */
+  conversation?: Conversation;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.Message messages = 3;
+   */
+  messages: Message$1[] = [];
+
+  constructor(data?: PartialMessage<GetProjectAIFeedbackResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.GetProjectAIFeedbackResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "feedback", kind: "message", T: AIFeedback },
+    { no: 2, name: "conversation", kind: "message", T: Conversation },
+    { no: 3, name: "messages", kind: "message", T: Message$1, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectAIFeedbackResponse {
+    return new GetProjectAIFeedbackResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectAIFeedbackResponse {
+    return new GetProjectAIFeedbackResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectAIFeedbackResponse {
+    return new GetProjectAIFeedbackResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectAIFeedbackResponse | PlainMessage<GetProjectAIFeedbackResponse> | undefined, b: GetProjectAIFeedbackResponse | PlainMessage<GetProjectAIFeedbackResponse> | undefined): boolean {
+    return proto3.util.equals(GetProjectAIFeedbackResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.ResolveProjectAIFeedbackRequest
+ */
+export class ResolveProjectAIFeedbackRequest extends Message<ResolveProjectAIFeedbackRequest> {
+  /**
+   * @generated from field: string feedback_id = 1;
+   */
+  feedbackId = "";
+
+  /**
+   * New status: "open", "addressed" or "dismissed".
+   *
+   * @generated from field: string status = 2;
+   */
+  status = "";
+
+  constructor(data?: PartialMessage<ResolveProjectAIFeedbackRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.ResolveProjectAIFeedbackRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "feedback_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveProjectAIFeedbackRequest {
+    return new ResolveProjectAIFeedbackRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveProjectAIFeedbackRequest {
+    return new ResolveProjectAIFeedbackRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveProjectAIFeedbackRequest {
+    return new ResolveProjectAIFeedbackRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveProjectAIFeedbackRequest | PlainMessage<ResolveProjectAIFeedbackRequest> | undefined, b: ResolveProjectAIFeedbackRequest | PlainMessage<ResolveProjectAIFeedbackRequest> | undefined): boolean {
+    return proto3.util.equals(ResolveProjectAIFeedbackRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.ResolveProjectAIFeedbackResponse
+ */
+export class ResolveProjectAIFeedbackResponse extends Message<ResolveProjectAIFeedbackResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.AIFeedback feedback = 1;
+   */
+  feedback?: AIFeedback;
+
+  constructor(data?: PartialMessage<ResolveProjectAIFeedbackResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.ResolveProjectAIFeedbackResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "feedback", kind: "message", T: AIFeedback },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveProjectAIFeedbackResponse {
+    return new ResolveProjectAIFeedbackResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveProjectAIFeedbackResponse {
+    return new ResolveProjectAIFeedbackResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveProjectAIFeedbackResponse {
+    return new ResolveProjectAIFeedbackResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveProjectAIFeedbackResponse | PlainMessage<ResolveProjectAIFeedbackResponse> | undefined, b: ResolveProjectAIFeedbackResponse | PlainMessage<ResolveProjectAIFeedbackResponse> | undefined): boolean {
+    return proto3.util.equals(ResolveProjectAIFeedbackResponse, a, b);
   }
 }
 

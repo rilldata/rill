@@ -4350,6 +4350,888 @@ var _ interface {
 	ErrorName() string
 } = GetProjectResponseValidationError{}
 
+// Validate checks the field values on ListProjectAIFeedbackRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListProjectAIFeedbackRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectAIFeedbackRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListProjectAIFeedbackRequestMultiError, or nil if none found.
+func (m *ListProjectAIFeedbackRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectAIFeedbackRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.GetStatus() != "" {
+
+		if _, ok := _ListProjectAIFeedbackRequest_Status_InLookup[m.GetStatus()]; !ok {
+			err := ListProjectAIFeedbackRequestValidationError{
+				field:  "Status",
+				reason: "value must be in list [open addressed dismissed]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.GetKind() != "" {
+
+		if _, ok := _ListProjectAIFeedbackRequest_Kind_InLookup[m.GetKind()]; !ok {
+			err := ListProjectAIFeedbackRequestValidationError{
+				field:  "Kind",
+				reason: "value must be in list [rating review_request]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 1000 {
+			err := ListProjectAIFeedbackRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 1000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListProjectAIFeedbackRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectAIFeedbackRequestMultiError is an error wrapping multiple
+// validation errors returned by ListProjectAIFeedbackRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ListProjectAIFeedbackRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectAIFeedbackRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectAIFeedbackRequestMultiError) AllErrors() []error { return m }
+
+// ListProjectAIFeedbackRequestValidationError is the validation error returned
+// by ListProjectAIFeedbackRequest.Validate if the designated constraints
+// aren't met.
+type ListProjectAIFeedbackRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectAIFeedbackRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectAIFeedbackRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectAIFeedbackRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectAIFeedbackRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectAIFeedbackRequestValidationError) ErrorName() string {
+	return "ListProjectAIFeedbackRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectAIFeedbackRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectAIFeedbackRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectAIFeedbackRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectAIFeedbackRequestValidationError{}
+
+var _ListProjectAIFeedbackRequest_Status_InLookup = map[string]struct{}{
+	"open":      {},
+	"addressed": {},
+	"dismissed": {},
+}
+
+var _ListProjectAIFeedbackRequest_Kind_InLookup = map[string]struct{}{
+	"rating":         {},
+	"review_request": {},
+}
+
+// Validate checks the field values on ListProjectAIFeedbackResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListProjectAIFeedbackResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectAIFeedbackResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListProjectAIFeedbackResponseMultiError, or nil if none found.
+func (m *ListProjectAIFeedbackResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectAIFeedbackResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for CloudState
+
+	// no validation rules for CloudStateMessage
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	for idx, item := range m.GetFeedback() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListProjectAIFeedbackResponseValidationError{
+						field:  fmt.Sprintf("Feedback[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListProjectAIFeedbackResponseValidationError{
+						field:  fmt.Sprintf("Feedback[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListProjectAIFeedbackResponseValidationError{
+					field:  fmt.Sprintf("Feedback[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return ListProjectAIFeedbackResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectAIFeedbackResponseMultiError is an error wrapping multiple
+// validation errors returned by ListProjectAIFeedbackResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ListProjectAIFeedbackResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectAIFeedbackResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectAIFeedbackResponseMultiError) AllErrors() []error { return m }
+
+// ListProjectAIFeedbackResponseValidationError is the validation error
+// returned by ListProjectAIFeedbackResponse.Validate if the designated
+// constraints aren't met.
+type ListProjectAIFeedbackResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectAIFeedbackResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectAIFeedbackResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectAIFeedbackResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectAIFeedbackResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectAIFeedbackResponseValidationError) ErrorName() string {
+	return "ListProjectAIFeedbackResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectAIFeedbackResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectAIFeedbackResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectAIFeedbackResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectAIFeedbackResponseValidationError{}
+
+// Validate checks the field values on GetProjectAIFeedbackRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetProjectAIFeedbackRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetProjectAIFeedbackRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetProjectAIFeedbackRequestMultiError, or nil if none found.
+func (m *GetProjectAIFeedbackRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetProjectAIFeedbackRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetFeedbackId()) < 1 {
+		err := GetProjectAIFeedbackRequestValidationError{
+			field:  "FeedbackId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetProjectAIFeedbackRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetProjectAIFeedbackRequestMultiError is an error wrapping multiple
+// validation errors returned by GetProjectAIFeedbackRequest.ValidateAll() if
+// the designated constraints aren't met.
+type GetProjectAIFeedbackRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetProjectAIFeedbackRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetProjectAIFeedbackRequestMultiError) AllErrors() []error { return m }
+
+// GetProjectAIFeedbackRequestValidationError is the validation error returned
+// by GetProjectAIFeedbackRequest.Validate if the designated constraints
+// aren't met.
+type GetProjectAIFeedbackRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetProjectAIFeedbackRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetProjectAIFeedbackRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetProjectAIFeedbackRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetProjectAIFeedbackRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetProjectAIFeedbackRequestValidationError) ErrorName() string {
+	return "GetProjectAIFeedbackRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetProjectAIFeedbackRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetProjectAIFeedbackRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetProjectAIFeedbackRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetProjectAIFeedbackRequestValidationError{}
+
+// Validate checks the field values on GetProjectAIFeedbackResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetProjectAIFeedbackResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetProjectAIFeedbackResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetProjectAIFeedbackResponseMultiError, or nil if none found.
+func (m *GetProjectAIFeedbackResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetProjectAIFeedbackResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFeedback()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetProjectAIFeedbackResponseValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetProjectAIFeedbackResponseValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFeedback()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetProjectAIFeedbackResponseValidationError{
+				field:  "Feedback",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetConversation()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetProjectAIFeedbackResponseValidationError{
+					field:  "Conversation",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetProjectAIFeedbackResponseValidationError{
+					field:  "Conversation",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetConversation()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetProjectAIFeedbackResponseValidationError{
+				field:  "Conversation",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetMessages() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetProjectAIFeedbackResponseValidationError{
+						field:  fmt.Sprintf("Messages[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetProjectAIFeedbackResponseValidationError{
+						field:  fmt.Sprintf("Messages[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetProjectAIFeedbackResponseValidationError{
+					field:  fmt.Sprintf("Messages[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GetProjectAIFeedbackResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetProjectAIFeedbackResponseMultiError is an error wrapping multiple
+// validation errors returned by GetProjectAIFeedbackResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetProjectAIFeedbackResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetProjectAIFeedbackResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetProjectAIFeedbackResponseMultiError) AllErrors() []error { return m }
+
+// GetProjectAIFeedbackResponseValidationError is the validation error returned
+// by GetProjectAIFeedbackResponse.Validate if the designated constraints
+// aren't met.
+type GetProjectAIFeedbackResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetProjectAIFeedbackResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetProjectAIFeedbackResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetProjectAIFeedbackResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetProjectAIFeedbackResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetProjectAIFeedbackResponseValidationError) ErrorName() string {
+	return "GetProjectAIFeedbackResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetProjectAIFeedbackResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetProjectAIFeedbackResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetProjectAIFeedbackResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetProjectAIFeedbackResponseValidationError{}
+
+// Validate checks the field values on ResolveProjectAIFeedbackRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResolveProjectAIFeedbackRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolveProjectAIFeedbackRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ResolveProjectAIFeedbackRequestMultiError, or nil if none found.
+func (m *ResolveProjectAIFeedbackRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveProjectAIFeedbackRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetFeedbackId()) < 1 {
+		err := ResolveProjectAIFeedbackRequestValidationError{
+			field:  "FeedbackId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, ok := _ResolveProjectAIFeedbackRequest_Status_InLookup[m.GetStatus()]; !ok {
+		err := ResolveProjectAIFeedbackRequestValidationError{
+			field:  "Status",
+			reason: "value must be in list [open addressed dismissed]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ResolveProjectAIFeedbackRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveProjectAIFeedbackRequestMultiError is an error wrapping multiple
+// validation errors returned by ResolveProjectAIFeedbackRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ResolveProjectAIFeedbackRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveProjectAIFeedbackRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveProjectAIFeedbackRequestMultiError) AllErrors() []error { return m }
+
+// ResolveProjectAIFeedbackRequestValidationError is the validation error
+// returned by ResolveProjectAIFeedbackRequest.Validate if the designated
+// constraints aren't met.
+type ResolveProjectAIFeedbackRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveProjectAIFeedbackRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveProjectAIFeedbackRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveProjectAIFeedbackRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveProjectAIFeedbackRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveProjectAIFeedbackRequestValidationError) ErrorName() string {
+	return "ResolveProjectAIFeedbackRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveProjectAIFeedbackRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveProjectAIFeedbackRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveProjectAIFeedbackRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveProjectAIFeedbackRequestValidationError{}
+
+var _ResolveProjectAIFeedbackRequest_Status_InLookup = map[string]struct{}{
+	"open":      {},
+	"addressed": {},
+	"dismissed": {},
+}
+
+// Validate checks the field values on ResolveProjectAIFeedbackResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ResolveProjectAIFeedbackResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolveProjectAIFeedbackResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ResolveProjectAIFeedbackResponseMultiError, or nil if none found.
+func (m *ResolveProjectAIFeedbackResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveProjectAIFeedbackResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFeedback()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolveProjectAIFeedbackResponseValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolveProjectAIFeedbackResponseValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFeedback()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolveProjectAIFeedbackResponseValidationError{
+				field:  "Feedback",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ResolveProjectAIFeedbackResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveProjectAIFeedbackResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// ResolveProjectAIFeedbackResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ResolveProjectAIFeedbackResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveProjectAIFeedbackResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveProjectAIFeedbackResponseMultiError) AllErrors() []error { return m }
+
+// ResolveProjectAIFeedbackResponseValidationError is the validation error
+// returned by ResolveProjectAIFeedbackResponse.Validate if the designated
+// constraints aren't met.
+type ResolveProjectAIFeedbackResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveProjectAIFeedbackResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveProjectAIFeedbackResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveProjectAIFeedbackResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveProjectAIFeedbackResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveProjectAIFeedbackResponseValidationError) ErrorName() string {
+	return "ResolveProjectAIFeedbackResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveProjectAIFeedbackResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveProjectAIFeedbackResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveProjectAIFeedbackResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveProjectAIFeedbackResponseValidationError{}
+
 // Validate checks the field values on
 // ListOrganizationsAndBillingMetadataResponse_OrgMetadata with the rules
 // defined in the proto definition for this message. If any rules are

@@ -25,8 +25,14 @@ import {
   CreateTriggerRequest,
   DeleteFileRequest,
   ForkConversationRequest,
+  GenerateAIEvalFixRequest,
+  GenerateAIEvalFixResponse,
+  GenerateAIFeedbackFixRequest,
+  GenerateAIFeedbackFixResponse,
   GenerateCanvasFileRequest,
   GenerateMetricsViewFileRequest,
+  GetAIFeedbackRequest,
+  GetAIFeedbackResponse,
   GetAIMessageRequest,
   GetConversationRequest,
   GetExploreRequest,
@@ -48,6 +54,8 @@ import {
   HealthRequest,
   InstanceHealthRequest,
   IssueDevJWTRequest,
+  ListAIFeedbackRequest,
+  ListAIFeedbackResponse,
   ListConnectorDriversRequest,
   ListConversationsRequest,
   ListExamplesRequest,
@@ -71,6 +79,8 @@ import {
   SkipModelPartitionsResponse,
   UnpackEmptyRequest,
   UnpackExampleRequest,
+  UpdateAIFeedbackStatusRequest,
+  UpdateAIFeedbackStatusResponse,
 } from "../../../proto/gen/rill/runtime/v1/api_pb";
 import type {
   V1AnalyzeConnectorsResponse,
@@ -1736,6 +1746,198 @@ export function createRuntimeServiceGetAIMessage<
 }
 
 /**
+ * Raw RPC call: RuntimeService.ListAIFeedback
+ */
+export async function runtimeServiceListAIFeedback(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ListAIFeedbackRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<ListAIFeedbackResponse>> {
+  const r = await client.runtimeService.listAIFeedback(
+    ListAIFeedbackRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<ListAIFeedbackResponse>;
+}
+
+export function getRuntimeServiceListAIFeedbackQueryKey(
+  instanceId: string,
+  request?: Omit<PartialMessage<ListAIFeedbackRequest>, "instanceId">,
+): QueryKey {
+  return [
+    "RuntimeService",
+    "listAIFeedback",
+    instanceId,
+    request ?? {},
+  ] as const;
+}
+
+export function getRuntimeServiceListAIFeedbackQueryOptions<
+  TData = PartialMessage<ListAIFeedbackResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ListAIFeedbackRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<ListAIFeedbackResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+): CreateQueryOptions<
+  PartialMessage<ListAIFeedbackResponse>,
+  ConnectError,
+  TData
+> & { queryKey: QueryKey } {
+  const queryKey = getRuntimeServiceListAIFeedbackQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<PartialMessage<ListAIFeedbackResponse>> = ({
+    signal,
+  }) => runtimeServiceListAIFeedback(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<
+    PartialMessage<ListAIFeedbackResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
+}
+
+export function createRuntimeServiceListAIFeedback<
+  TData = PartialMessage<ListAIFeedbackResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ListAIFeedbackRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<ListAIFeedbackResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceListAIFeedbackQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.GetAIFeedback
+ */
+export async function runtimeServiceGetAIFeedback(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetAIFeedbackRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<GetAIFeedbackResponse>> {
+  const r = await client.runtimeService.getAIFeedback(
+    GetAIFeedbackRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GetAIFeedbackResponse>;
+}
+
+export function getRuntimeServiceGetAIFeedbackQueryKey(
+  instanceId: string,
+  request?: Omit<PartialMessage<GetAIFeedbackRequest>, "instanceId">,
+): QueryKey {
+  return [
+    "RuntimeService",
+    "getAIFeedback",
+    instanceId,
+    request ?? {},
+  ] as const;
+}
+
+export function getRuntimeServiceGetAIFeedbackQueryOptions<
+  TData = PartialMessage<GetAIFeedbackResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetAIFeedbackRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<GetAIFeedbackResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+): CreateQueryOptions<
+  PartialMessage<GetAIFeedbackResponse>,
+  ConnectError,
+  TData
+> & { queryKey: QueryKey } {
+  const queryKey = getRuntimeServiceGetAIFeedbackQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<PartialMessage<GetAIFeedbackResponse>> = ({
+    signal,
+  }) => runtimeServiceGetAIFeedback(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<
+    PartialMessage<GetAIFeedbackResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
+}
+
+export function createRuntimeServiceGetAIFeedback<
+  TData = PartialMessage<GetAIFeedbackResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetAIFeedbackRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<GetAIFeedbackResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceGetAIFeedbackQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
  * Raw RPC call: RuntimeService.IssueDevJWT
  */
 export async function runtimeServiceIssueDevJWT(
@@ -2468,6 +2670,96 @@ export function createRuntimeServiceGetModelPartitionsInfinite<
   queryClient?: QueryClient,
 ): CreateInfiniteQueryResult<TData, ConnectError> {
   const queryOptions = getRuntimeServiceGetModelPartitionsInfiniteQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createInfiniteQuery(queryOptions, queryClient);
+}
+
+export function getRuntimeServiceListAIFeedbackInfiniteQueryOptions<
+  TData = InfiniteData<PartialMessage<ListAIFeedbackResponse>>,
+>(
+  client: RuntimeClient,
+  request: Omit<
+    PartialMessage<ListAIFeedbackRequest>,
+    "instanceId" | "pageToken"
+  >,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        PartialMessage<ListAIFeedbackResponse>,
+        ConnectError,
+        TData,
+        PartialMessage<ListAIFeedbackResponse>,
+        QueryKey,
+        string | undefined
+      >
+    >;
+  },
+): CreateInfiniteQueryOptions<
+  PartialMessage<ListAIFeedbackResponse>,
+  ConnectError,
+  TData,
+  PartialMessage<ListAIFeedbackResponse>,
+  QueryKey,
+  string | undefined
+> & { queryKey: QueryKey } {
+  const queryKey = [
+    ...getRuntimeServiceListAIFeedbackQueryKey(client.instanceId, request),
+    "infinite",
+  ] as QueryKey;
+  return {
+    queryKey,
+    queryFn: ({ pageParam, signal }) =>
+      runtimeServiceListAIFeedback(
+        client,
+        { ...request, pageToken: pageParam } as Omit<
+          PartialMessage<ListAIFeedbackRequest>,
+          "instanceId"
+        >,
+        { signal },
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      ((lastPage as Record<string, unknown>)?.nextPageToken as
+        | string
+        | undefined) || undefined,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateInfiniteQueryOptions<
+    PartialMessage<ListAIFeedbackResponse>,
+    ConnectError,
+    TData,
+    PartialMessage<ListAIFeedbackResponse>,
+    QueryKey,
+    string | undefined
+  > & { queryKey: QueryKey };
+}
+
+export function createRuntimeServiceListAIFeedbackInfinite<
+  TData = InfiniteData<PartialMessage<ListAIFeedbackResponse>>,
+>(
+  client: RuntimeClient,
+  request: Omit<
+    PartialMessage<ListAIFeedbackRequest>,
+    "instanceId" | "pageToken"
+  >,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        PartialMessage<ListAIFeedbackResponse>,
+        ConnectError,
+        TData,
+        PartialMessage<ListAIFeedbackResponse>,
+        QueryKey,
+        string | undefined
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceListAIFeedbackInfiniteQueryOptions(
     client,
     request,
     options,
@@ -3450,6 +3742,198 @@ export function createRuntimeServiceCompleteMutation(
   Omit<PartialMessage<CompleteRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCompleteMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.UpdateAIFeedbackStatus
+ */
+export async function runtimeServiceUpdateAIFeedbackStatus(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<UpdateAIFeedbackStatusRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<UpdateAIFeedbackStatusResponse>> {
+  const r = await client.runtimeService.updateAIFeedbackStatus(
+    UpdateAIFeedbackStatusRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<UpdateAIFeedbackStatusResponse>;
+}
+
+export function getRuntimeServiceUpdateAIFeedbackStatusMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<UpdateAIFeedbackStatusResponse>,
+      unknown,
+      Omit<PartialMessage<UpdateAIFeedbackStatusRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<UpdateAIFeedbackStatusResponse>,
+  unknown,
+  Omit<PartialMessage<UpdateAIFeedbackStatusRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) =>
+      runtimeServiceUpdateAIFeedbackStatus(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceUpdateAIFeedbackStatusMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<UpdateAIFeedbackStatusResponse>,
+      unknown,
+      Omit<PartialMessage<UpdateAIFeedbackStatusRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<UpdateAIFeedbackStatusResponse>,
+  unknown,
+  Omit<PartialMessage<UpdateAIFeedbackStatusRequest>, "instanceId">
+> {
+  const mutationOptions =
+    getRuntimeServiceUpdateAIFeedbackStatusMutationOptions(client, options);
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.GenerateAIFeedbackFix
+ */
+export async function runtimeServiceGenerateAIFeedbackFix(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GenerateAIFeedbackFixRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<GenerateAIFeedbackFixResponse>> {
+  const r = await client.runtimeService.generateAIFeedbackFix(
+    GenerateAIFeedbackFixRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GenerateAIFeedbackFixResponse>;
+}
+
+export function getRuntimeServiceGenerateAIFeedbackFixMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<GenerateAIFeedbackFixResponse>,
+      unknown,
+      Omit<PartialMessage<GenerateAIFeedbackFixRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<GenerateAIFeedbackFixResponse>,
+  unknown,
+  Omit<PartialMessage<GenerateAIFeedbackFixRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) =>
+      runtimeServiceGenerateAIFeedbackFix(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceGenerateAIFeedbackFixMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<GenerateAIFeedbackFixResponse>,
+      unknown,
+      Omit<PartialMessage<GenerateAIFeedbackFixRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<GenerateAIFeedbackFixResponse>,
+  unknown,
+  Omit<PartialMessage<GenerateAIFeedbackFixRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceGenerateAIFeedbackFixMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.GenerateAIEvalFix
+ */
+export async function runtimeServiceGenerateAIEvalFix(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GenerateAIEvalFixRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<GenerateAIEvalFixResponse>> {
+  const r = await client.runtimeService.generateAIEvalFix(
+    GenerateAIEvalFixRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GenerateAIEvalFixResponse>;
+}
+
+export function getRuntimeServiceGenerateAIEvalFixMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<GenerateAIEvalFixResponse>,
+      unknown,
+      Omit<PartialMessage<GenerateAIEvalFixRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<GenerateAIEvalFixResponse>,
+  unknown,
+  Omit<PartialMessage<GenerateAIEvalFixRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceGenerateAIEvalFix(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceGenerateAIEvalFixMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<GenerateAIEvalFixResponse>,
+      unknown,
+      Omit<PartialMessage<GenerateAIEvalFixRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<GenerateAIEvalFixResponse>,
+  unknown,
+  Omit<PartialMessage<GenerateAIEvalFixRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceGenerateAIEvalFixMutationOptions(
     client,
     options,
   );

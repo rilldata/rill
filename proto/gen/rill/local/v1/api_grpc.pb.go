@@ -38,6 +38,9 @@ const (
 	LocalService_ListMatchingProjects_FullMethodName                = "/rill.local.v1.LocalService/ListMatchingProjects"
 	LocalService_ListProjectsForOrg_FullMethodName                  = "/rill.local.v1.LocalService/ListProjectsForOrg"
 	LocalService_GetProject_FullMethodName                          = "/rill.local.v1.LocalService/GetProject"
+	LocalService_ListProjectAIFeedback_FullMethodName               = "/rill.local.v1.LocalService/ListProjectAIFeedback"
+	LocalService_GetProjectAIFeedback_FullMethodName                = "/rill.local.v1.LocalService/GetProjectAIFeedback"
+	LocalService_ResolveProjectAIFeedback_FullMethodName            = "/rill.local.v1.LocalService/ResolveProjectAIFeedback"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -87,6 +90,14 @@ type LocalServiceClient interface {
 	ListProjectsForOrg(ctx context.Context, in *ListProjectsForOrgRequest, opts ...grpc.CallOption) (*ListProjectsForOrgResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// ListProjectAIFeedback lists AI feedback for the cloud deployment of the current project.
+	// Cloud connectivity problems are reported as a state in the response rather than an error,
+	// so the UI can render a helpful empty state.
+	ListProjectAIFeedback(ctx context.Context, in *ListProjectAIFeedbackRequest, opts ...grpc.CallOption) (*ListProjectAIFeedbackResponse, error)
+	// GetProjectAIFeedback returns a feedback item and its conversation transcript from the cloud deployment.
+	GetProjectAIFeedback(ctx context.Context, in *GetProjectAIFeedbackRequest, opts ...grpc.CallOption) (*GetProjectAIFeedbackResponse, error)
+	// ResolveProjectAIFeedback updates the review status of a feedback item in the cloud deployment.
+	ResolveProjectAIFeedback(ctx context.Context, in *ResolveProjectAIFeedbackRequest, opts ...grpc.CallOption) (*ResolveProjectAIFeedbackResponse, error)
 }
 
 type localServiceClient struct {
@@ -287,6 +298,36 @@ func (c *localServiceClient) GetProject(ctx context.Context, in *GetProjectReque
 	return out, nil
 }
 
+func (c *localServiceClient) ListProjectAIFeedback(ctx context.Context, in *ListProjectAIFeedbackRequest, opts ...grpc.CallOption) (*ListProjectAIFeedbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectAIFeedbackResponse)
+	err := c.cc.Invoke(ctx, LocalService_ListProjectAIFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GetProjectAIFeedback(ctx context.Context, in *GetProjectAIFeedbackRequest, opts ...grpc.CallOption) (*GetProjectAIFeedbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectAIFeedbackResponse)
+	err := c.cc.Invoke(ctx, LocalService_GetProjectAIFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) ResolveProjectAIFeedback(ctx context.Context, in *ResolveProjectAIFeedbackRequest, opts ...grpc.CallOption) (*ResolveProjectAIFeedbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveProjectAIFeedbackResponse)
+	err := c.cc.Invoke(ctx, LocalService_ResolveProjectAIFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalServiceServer is the server API for LocalService service.
 // All implementations must embed UnimplementedLocalServiceServer
 // for forward compatibility.
@@ -334,6 +375,14 @@ type LocalServiceServer interface {
 	ListProjectsForOrg(context.Context, *ListProjectsForOrgRequest) (*ListProjectsForOrgResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// ListProjectAIFeedback lists AI feedback for the cloud deployment of the current project.
+	// Cloud connectivity problems are reported as a state in the response rather than an error,
+	// so the UI can render a helpful empty state.
+	ListProjectAIFeedback(context.Context, *ListProjectAIFeedbackRequest) (*ListProjectAIFeedbackResponse, error)
+	// GetProjectAIFeedback returns a feedback item and its conversation transcript from the cloud deployment.
+	GetProjectAIFeedback(context.Context, *GetProjectAIFeedbackRequest) (*GetProjectAIFeedbackResponse, error)
+	// ResolveProjectAIFeedback updates the review status of a feedback item in the cloud deployment.
+	ResolveProjectAIFeedback(context.Context, *ResolveProjectAIFeedbackRequest) (*ResolveProjectAIFeedbackResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -400,6 +449,15 @@ func (UnimplementedLocalServiceServer) ListProjectsForOrg(context.Context, *List
 }
 func (UnimplementedLocalServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedLocalServiceServer) ListProjectAIFeedback(context.Context, *ListProjectAIFeedbackRequest) (*ListProjectAIFeedbackResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectAIFeedback not implemented")
+}
+func (UnimplementedLocalServiceServer) GetProjectAIFeedback(context.Context, *GetProjectAIFeedbackRequest) (*GetProjectAIFeedbackResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectAIFeedback not implemented")
+}
+func (UnimplementedLocalServiceServer) ResolveProjectAIFeedback(context.Context, *ResolveProjectAIFeedbackRequest) (*ResolveProjectAIFeedbackResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveProjectAIFeedback not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 func (UnimplementedLocalServiceServer) testEmbeddedByValue()                      {}
@@ -764,6 +822,60 @@ func _LocalService_GetProject_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalService_ListProjectAIFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectAIFeedbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).ListProjectAIFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_ListProjectAIFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).ListProjectAIFeedback(ctx, req.(*ListProjectAIFeedbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GetProjectAIFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectAIFeedbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GetProjectAIFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GetProjectAIFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GetProjectAIFeedback(ctx, req.(*GetProjectAIFeedbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_ResolveProjectAIFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveProjectAIFeedbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).ResolveProjectAIFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_ResolveProjectAIFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).ResolveProjectAIFeedback(ctx, req.(*ResolveProjectAIFeedbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalService_ServiceDesc is the grpc.ServiceDesc for LocalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -846,6 +958,18 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProject",
 			Handler:    _LocalService_GetProject_Handler,
+		},
+		{
+			MethodName: "ListProjectAIFeedback",
+			Handler:    _LocalService_ListProjectAIFeedback_Handler,
+		},
+		{
+			MethodName: "GetProjectAIFeedback",
+			Handler:    _LocalService_GetProjectAIFeedback_Handler,
+		},
+		{
+			MethodName: "ResolveProjectAIFeedback",
+			Handler:    _LocalService_ResolveProjectAIFeedback_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

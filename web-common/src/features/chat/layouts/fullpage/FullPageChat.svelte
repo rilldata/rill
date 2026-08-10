@@ -81,18 +81,18 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
-    {#if $adminServer}
-      <div class="chat-header">
+    <div class="chat-header">
+      {#if $adminServer}
         <ConnectClientPopover />
-        {#if currentConversation?.id}
-          <ShareChatPopover
-            conversationId={currentConversation.id}
-            {organization}
-            {project}
-          />
-        {/if}
-      </div>
-    {/if}
+      {/if}
+      {#if $adminServer && currentConversation?.id}
+        <ShareChatPopover
+          conversationId={currentConversation.id}
+          {organization}
+          {project}
+        />
+      {/if}
+    </div>
     <div class="chat-content">
       <div class="chat-messages-wrapper">
         <Messages

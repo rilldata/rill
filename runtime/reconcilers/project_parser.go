@@ -735,6 +735,14 @@ func newResourceIfModified(def *parserpkg.Resource, existing *runtimev1.Resource
 		if existing == nil || !proto.Equal(existing.GetConnector().Spec, def.ConnectorSpec) {
 			return &runtimev1.Resource{Resource: &runtimev1.Resource_Connector{Connector: &runtimev1.ConnectorV2{Spec: def.ConnectorSpec}}}
 		}
+	case parserpkg.ResourceKindAIEval:
+		if existing != nil { // Copy over the ephemeral trigger properties from the existing resource.
+			def.AIEvalSpec.Trigger = existing.GetAiEval().Spec.Trigger
+			def.AIEvalSpec.TriggerCases = existing.GetAiEval().Spec.TriggerCases
+		}
+		if existing == nil || !proto.Equal(existing.GetAiEval().Spec, def.AIEvalSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_AiEval{AiEval: &runtimev1.AIEval{Spec: def.AIEvalSpec}}}
+		}
 	default:
 		panic(fmt.Errorf("unknown resource type %q", def.Name.Kind))
 	}

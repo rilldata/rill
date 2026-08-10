@@ -453,6 +453,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	spec := &runtimev1.RefreshTriggerSpec{
 		Resources: req.Resources,
 		Models:    req.Models,
+		AiEvals:   req.AiEvals,
 	}
 
 	// Handle the convenience flag for the project parser.

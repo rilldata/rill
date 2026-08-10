@@ -140,6 +140,11 @@ export const ResourceKindMap: Record<
     baseName: "alert",
     extension: ".yaml",
   },
+  [ResourceKind.AIEval]: {
+    folderName: "evals",
+    baseName: "eval",
+    extension: ".yaml",
+  },
 };
 
 export function getBaseNameForNewResourceFile(
@@ -165,6 +170,22 @@ export function generateBlobForNewResourceFile(
       return ""; // This is constructed in the `features/connectors` directory
     case ResourceKind.Source:
       return ""; // This is constructed in the `features/sources/modal` directory
+    case ResourceKind.AIEval:
+      return `# AI Eval YAML
+# Business questions with expected answers that test the project's AI assistant.
+# Run them from Rill Developer to verify changes to ai_instructions don't regress answers.
+
+type: eval
+
+cases:
+  - name: example_case
+    question: # The question to ask the AI, e.g. "What was our total revenue last month?"
+    expect:
+      answer: # The expected answer in natural language, graded by an LLM judge
+      # metrics_view: # Optional: the metrics view the AI must query
+      # measures: [] # Optional: measures the AI's queries must include
+      # dimensions: [] # Optional: dimensions the AI's queries must include
+`;
     case ResourceKind.Model:
       return `-- Model SQL
 -- Reference documentation: https://docs.rilldata.com/developers/build/models

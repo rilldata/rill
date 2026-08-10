@@ -66,7 +66,10 @@
 
   {#if isPending}
     <div class="feedback-loading" in:slide={{ duration: 200 }}>
-      {m.chat_feedback_analyzing()}
+      <!-- Negative feedback is always a review request: confirm submission right away. -->
+      {hasNegativeFeedback
+        ? m.chat_feedback_submitted_review()
+        : m.chat_feedback_analyzing()}
     </div>
   {:else if feedbackResponse}
     <p class="feedback-response" in:slide={{ duration: 200 }}>

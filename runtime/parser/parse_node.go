@@ -59,6 +59,8 @@ func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 		return p.parseAPI(node)
 	case ResourceKindConnector:
 		return p.parseConnector(node)
+	case ResourceKindAIEval:
+		return p.parseAIEval(node)
 	default:
 		panic(fmt.Errorf("unexpected resource type: %s", node.Kind.String()))
 	}
@@ -305,6 +307,8 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			res.Kind = ResourceKindMetricsView
 		} else if strings.HasPrefix(paths[0], "/connectors") {
 			res.Kind = ResourceKindConnector
+		} else if strings.HasPrefix(paths[0], "/evals") {
+			res.Kind = ResourceKindAIEval
 		} else if strings.HasPrefix(paths[0], "/init.sql") {
 			res.Kind = ResourceKindMigration
 		} else if sqlPath != "" {

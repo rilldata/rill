@@ -207,7 +207,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 			)
 		}
 		if canManage {
-			instancePermissions = append(instancePermissions, runtime.EditTrigger)
+			instancePermissions = append(instancePermissions, runtime.EditTrigger, runtime.ManageAIFeedback)
 			if opts.deployment.Editable {
 				instancePermissions = append(
 					instancePermissions,
