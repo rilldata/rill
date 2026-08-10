@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -69,6 +70,8 @@ type InsertTableOptions struct {
 	UniqueKey    []string
 	// PartitionBy is a SQL expression to use for dropping/replacing partitions with the partition_overwrite incremental strategy.
 	PartitionBy string
+	// OnSchemaChange controls how schema differences are handled for merge and partition_overwrite inserts.
+	OnSchemaChange OnSchemaChange
 }
 
 func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
@@ -111,7 +114,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		}, nil
 	}
 
-	if opts.Strategy == drivers.IncrementalStrategyMerge {
+	if opts.Strategy == drivers.IncrementalStrategyMerge || opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
 		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
 			// Execute the pre SQL and defer execute the post SQL
 			if opts.BeforeInsert != "" {
@@ -142,9 +145,8 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}
 			}()
 
-			// check the count of the new data
-			// skip if the count is 0
-			// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
+			// Check the count of the new data.
+			// Skip schema handling and insertion if the count is 0 because empty files can have an incorrectly detected schema.
 			var empty bool
 			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
 			if err != nil {
@@ -154,88 +156,58 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return nil
 			}
 
-			// Drop the rows from the target table where the unique key is present in the temporary table
-			where := ""
-			for i, key := range opts.UniqueKey {
-				key = safeSQLName(key)
-				if i != 0 {
-					where += " AND "
-				}
-				where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
+			onSchemaChange := opts.OnSchemaChange
+			if onSchemaChange == "" {
+				onSchemaChange = OnSchemaChangeFail
 			}
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
+			plan, err := reconcileTableSchema(ctx, conn, name, tmp, onSchemaChange)
 			if err != nil {
 				return err
 			}
 
-			// Insert the new data into the target table
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
-			return err
-		})
-		if err != nil {
-			return nil, c.checkErr(err)
-		}
-		return &tableWriteMetrics{
-			duration: res.Duration,
-		}, nil
-	}
-
-	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
-		res, err := db.MutateTable(ctx, name, opts.InitQueries, func(ctx context.Context, conn *sqlx.Conn) (retErr error) {
-			// Execute the pre SQL and defer execute the post SQL
-			if opts.BeforeInsert != "" {
-				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
+			switch opts.Strategy {
+			case drivers.IncrementalStrategyMerge:
+				// Drop the rows from the target table where the unique key is present in the temporary table.
+				where := ""
+				for i, key := range opts.UniqueKey {
+					key = safeSQLName(key)
+					if i != 0 {
+						where += " AND "
+					}
+					where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
+				}
+				_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
 				if err != nil {
 					return err
 				}
-			}
-			if opts.AfterInsert != "" {
-				defer func() {
-					_, afterInsertErr := conn.ExecContext(ctx, opts.AfterInsert)
-					retErr = errors.Join(retErr, afterInsertErr)
-				}()
-			}
-
-			// Create a temporary table with the new data
-			tmp := fmt.Sprintf("__rill_temp_%s", name)
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
-			if err != nil {
-				return err
-			}
-			defer func() {
-				bgctx, cancel := graceful.WithMinimumDuration(ctx, time.Second*10)
-				defer cancel()
-				_, err := conn.ExecContext(bgctx, fmt.Sprintf("DROP TABLE %s", safeSQLName(tmp)))
+			case drivers.IncrementalStrategyPartitionOverwrite:
+				// Drop the rows from the target table where the partition expression overlaps with the temporary table.
+				_, err = conn.ExecContext(ctx, fmt.Sprintf(
+					"DELETE FROM %s WHERE %s IN (SELECT DISTINCT %s FROM %s)",
+					safeSQLName(name),
+					opts.PartitionBy,
+					opts.PartitionBy,
+					safeSQLName(tmp),
+				))
 				if err != nil {
-					c.logger.Warn("failed to drop temporary table", zap.Error(err))
+					return fmt.Errorf("failed to delete old partitions: %w", err)
 				}
-			}()
-
-			// Check the count of the new data
-			// Skip if the count is 0
-			var empty bool
-			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
-			if err != nil {
-				return err
-			}
-			if empty {
-				return nil
 			}
 
-			// Drop the rows from the target table where the partition expression overlaps with the temporary table
+			// Use explicit, quoted column lists so column order and schema differences do not affect insertion.
+			targetColumns := make([]string, len(plan.targetInsertCols))
+			sourceColumns := make([]string, len(plan.sourceSelectCols))
+			for i := range plan.targetInsertCols {
+				targetColumns[i] = safeSQLName(plan.targetInsertCols[i])
+				sourceColumns[i] = safeSQLName(plan.sourceSelectCols[i])
+			}
 			_, err = conn.ExecContext(ctx, fmt.Sprintf(
-				"DELETE FROM %s WHERE %s IN (SELECT DISTINCT %s FROM %s)",
+				"INSERT INTO %s (%s) SELECT %s FROM %s",
 				safeSQLName(name),
-				opts.PartitionBy,
-				opts.PartitionBy,
+				strings.Join(targetColumns, ", "),
+				strings.Join(sourceColumns, ", "),
 				safeSQLName(tmp),
 			))
-			if err != nil {
-				return fmt.Errorf("failed to delete old partitions: %w", err)
-			}
-
-			// Insert the new data into the target table
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
 			return err
 		})
 		if err != nil {

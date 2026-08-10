@@ -368,6 +368,9 @@ func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts 
 		UniqueKey:    outputProps.UniqueKey,
 		PartitionBy:  outputProps.PartitionBy,
 	}
+	if outputProps.OnSchemaChange != nil {
+		insertTableOpts.OnSchemaChange = *outputProps.OnSchemaChange
+	}
 	if inputProps.InitQueries != "" {
 		insertTableOpts.InitQueries = []string{inputProps.InitQueries}
 	}

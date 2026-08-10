@@ -39,6 +39,7 @@ type ModelOutputProperties struct {
 	UniqueKey           []string                    `mapstructure:"unique_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
 	PartitionBy         string                      `mapstructure:"partition_by"`
+	OnSchemaChange      *OnSchemaChange             `mapstructure:"on_schema_change"`
 	// PreExec is a SQL query to run on the output engine before the main query. Ensure pre_exec queries are idempotent.
 	PreExec string `mapstructure:"pre_exec"`
 	// PostExec is a SQL query to run on the output engine after the main query. Ensure post_exec queries are idempotent.
@@ -91,6 +92,21 @@ func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExec
 	// If we failed to apply a better incremental strategy, fall back to append.
 	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
 		op.IncrementalStrategy = drivers.IncrementalStrategyAppend
+	}
+
+	if op.OnSchemaChange != nil {
+		if !op.OnSchemaChange.Valid() {
+			return fmt.Errorf("invalid on_schema_change mode %q", *op.OnSchemaChange)
+		}
+		if !opts.Incremental || !opts.PartitionRun {
+			return fmt.Errorf(`"on_schema_change" is only supported for incremental models with partitions`)
+		}
+		if op.IncrementalStrategy != drivers.IncrementalStrategyMerge && op.IncrementalStrategy != drivers.IncrementalStrategyPartitionOverwrite {
+			return fmt.Errorf(`"on_schema_change" is only supported for the "merge" and "partition_overwrite" incremental strategies`)
+		}
+	} else if opts.Incremental && opts.PartitionRun && (op.IncrementalStrategy == drivers.IncrementalStrategyMerge || op.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite) {
+		mode := OnSchemaChangeFail
+		op.OnSchemaChange = &mode
 	}
 
 	return nil

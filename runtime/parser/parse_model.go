@@ -212,6 +212,10 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
+	if err := validateModelOnSchemaChange(tmp, outputProps); err != nil {
+		return err
+	}
+
 	// Parse the model tests
 	var modelTests []*runtimev1.ModelTest
 	for i := range tmp.Tests {
@@ -279,6 +283,45 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	r.ModelSpec.Tests = modelTests
 
+	return nil
+}
+
+func validateModelOnSchemaChange(model *ModelYAML, outputProps map[string]any) error {
+	rawMode, configured := outputProps["on_schema_change"]
+	if !configured {
+		return nil
+	}
+
+	mode, ok := rawMode.(string)
+	if !ok {
+		return fmt.Errorf(`"output.on_schema_change" must be a string`)
+	}
+	if !strings.Contains(mode, "{{") {
+		switch mode {
+		case "ignore", "fail", "append_new_columns":
+		default:
+			return fmt.Errorf(`invalid "output.on_schema_change" value %q`, mode)
+		}
+	}
+
+	if !model.Incremental || model.Partitions == nil {
+		return fmt.Errorf(`"output.on_schema_change" is only supported for models with "incremental: true" and partitions`)
+	}
+
+	rawStrategy, configured := outputProps["incremental_strategy"]
+	if !configured {
+		return nil // Partitioned DuckDB models default to partition_overwrite.
+	}
+	strategy, ok := rawStrategy.(string)
+	if !ok {
+		return fmt.Errorf(`"output.incremental_strategy" must be a string when "output.on_schema_change" is configured`)
+	}
+	if strings.Contains(strategy, "{{") {
+		return nil
+	}
+	if strategy != "merge" && strategy != "partition_overwrite" {
+		return fmt.Errorf(`"output.on_schema_change" is only supported for the "merge" and "partition_overwrite" incremental strategies`)
+	}
 	return nil
 }
 
