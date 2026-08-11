@@ -49,6 +49,24 @@ export class SvelteLocalStorage<Val, DefaultVal>
     return store;
   }
 
+  /**
+   * Drops the cache so that the next `getInstance` re-reads localStorage.
+   * Instances already handed out keep the store they were given.
+   */
+  public static clearInstanceCache() {
+    this.stores.clear();
+  }
+
+  /** For values that round-trip through JSON, such as objects and records. */
+  public static createJsonStore<Val>(key: string, defaultVal: Val) {
+    return SvelteLocalStorage.getInstance<Val, Val>(
+      key,
+      (value: Val) => JSON.stringify(value),
+      (value) => (value ? (JSON.parse(value) as Val) : defaultVal),
+      defaultVal,
+    );
+  }
+
   public static createStringArrayStore(key: string) {
     return new ArrayRuneStore<string>(
       SvelteLocalStorage.getInstance(

@@ -74,7 +74,6 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
 	github.com/mazznoer/csscolorparser v0.1.3
-	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/openai/openai-go/v3 v3.17.0
@@ -163,6 +162,7 @@ require (
 	github.com/go-openapi/swag/typeutils v0.26.0 // indirect
 	github.com/go-openapi/swag/yamlutils v0.26.0 // indirect
 	github.com/in-toto/attestation v1.2.0 // indirect
+	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/moby/moby/api v1.54.1 // indirect
 	github.com/moby/moby/client v0.4.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
@@ -170,7 +170,7 @@ require (
 	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/sigstore/sigstore v1.10.8 // indirect
-	github.com/sigstore/sigstore-go v1.2.0 // indirect
+	github.com/sigstore/sigstore-go v1.2.1 // indirect
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect

@@ -12,7 +12,7 @@
 <script lang="ts">
   import { beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import type { Snippet } from "svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
@@ -289,6 +289,11 @@
       ),
     );
   });
+
+  // Navigating out of the project within the throttle window destroys this layout with a callback
+  // still pending. Left alone it would fire from the page the user has already left, and the event's
+  // `page_url` is read when it fires, so it would pair this page's resource with the next page's URL.
+  onDestroy(() => pageViewThrottler.cancel());
 </script>
 
 {#if error}
