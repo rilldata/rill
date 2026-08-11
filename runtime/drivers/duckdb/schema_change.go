@@ -2,10 +2,12 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 // OnSchemaChange controls how an incremental insert handles differences between the target and source schemas.
@@ -31,20 +33,24 @@ type duckDBColumn struct {
 	Type string `db:"data_type"`
 }
 
-type schemaChangePlan struct {
-	add              []duckDBColumn
-	targetInsertCols []string
-	sourceSelectCols []string
+// insertColumns holds the column lists to insert with, paired by position.
+// The names are unquoted and must be escaped before being interpolated into SQL.
+type insertColumns struct {
+	target []string
+	source []string
 }
 
-func reconcileTableSchema(ctx context.Context, conn *sqlx.Conn, target, source string, mode OnSchemaChange) (*schemaChangePlan, error) {
+// reconcileTableSchema compares the target and source schemas, applies the schema change indicated by mode,
+// and returns the columns to insert with.
+// Note that the ALTER TABLE statements it may issue are only rolled back on failure by rduckdb backends that mutate a copy of the table.
+func reconcileTableSchema(ctx context.Context, conn *sqlx.Conn, target, source string, mode OnSchemaChange, logger *zap.Logger) (*insertColumns, error) {
 	targetColumns, err := readDuckDBColumns(ctx, conn, target)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read target schema: %w", err)
+		return nil, fmt.Errorf("failed to read schema of %q: %w", target, err)
 	}
 	sourceColumns, err := readDuckDBColumns(ctx, conn, source)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read source schema: %w", err)
+		return nil, fmt.Errorf("failed to read schema of %q: %w", source, err)
 	}
 
 	targetByName := make(map[string]duckDBColumn, len(targetColumns))
@@ -68,48 +74,61 @@ func reconcileTableSchema(ctx context.Context, conn *sqlx.Conn, target, source s
 		}
 	}
 
-	plan := &schemaChangePlan{}
 	switch mode {
 	case OnSchemaChangeIgnore:
-		if len(removed) > 0 {
-			return nil, fmt.Errorf("schema change mode %q does not allow target columns to be absent from the source: %s", mode, formatDuckDBColumns(removed))
+		if len(added) > 0 {
+			logger.Warn("Discarding new columns not present in the model table",
+				zap.String("table", target), zap.String("columns", formatDuckDBColumns(added)))
 		}
 	case OnSchemaChangeFail:
 		if len(added) > 0 || len(removed) > 0 {
 			return nil, fmt.Errorf(
-				"schema change mode %q detected schema differences (added: %s; removed: %s)",
-				mode,
+				`the new data does not match the schema of table %q (new columns: %s; missing columns: %s). Set "on_schema_change" to allow schema changes`,
+				target,
 				formatDuckDBColumns(added),
 				formatDuckDBColumns(removed),
 			)
 		}
 	case OnSchemaChangeAppendNewColumns:
-		plan.add = added
+		for _, column := range added {
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(target), safeSQLName(column.Name), column.Type))
+			if err != nil {
+				return nil, fmt.Errorf("failed to add column %q: %w", column.Name, err)
+			}
+			targetByName[strings.ToLower(column.Name)] = column
+		}
+		if len(added) > 0 {
+			logger.Info("Added new columns to the model table",
+				zap.String("table", target), zap.String("columns", formatDuckDBColumns(added)))
+		}
 	default:
 		return nil, fmt.Errorf("invalid on_schema_change mode %q", mode)
 	}
 
-	for _, sourceColumn := range sourceColumns {
-		targetColumn, ok := targetByName[strings.ToLower(sourceColumn.Name)]
-		if ok {
-			plan.targetInsertCols = append(plan.targetInsertCols, targetColumn.Name)
-			plan.sourceSelectCols = append(plan.sourceSelectCols, sourceColumn.Name)
-			continue
-		}
-		if mode != OnSchemaChangeIgnore {
-			plan.targetInsertCols = append(plan.targetInsertCols, sourceColumn.Name)
-			plan.sourceSelectCols = append(plan.sourceSelectCols, sourceColumn.Name)
-		}
+	if len(removed) > 0 && mode != OnSchemaChangeFail {
+		logger.Warn("Inserting NULL for columns missing from the new data",
+			zap.String("table", target), zap.String("columns", formatDuckDBColumns(removed)))
 	}
 
-	for _, column := range plan.add {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(target), safeSQLName(column.Name), column.Type))
-		if err != nil {
-			return nil, fmt.Errorf("failed to add column %q: %w", column.Name, err)
+	// Insert by name so that column order and any tolerated schema differences do not affect the insert.
+	// Source-only columns that were not added to the target are skipped, and target-only columns are left NULL.
+	cols := &insertColumns{}
+	for _, sourceColumn := range sourceColumns {
+		targetColumn, ok := targetByName[strings.ToLower(sourceColumn.Name)]
+		if !ok {
+			continue
 		}
+		cols.target = append(cols.target, targetColumn.Name)
+		cols.source = append(cols.source, sourceColumn.Name)
 	}
-	return plan, nil
+	if len(cols.target) == 0 {
+		return nil, fmt.Errorf("the new data has no columns in common with table %q", target)
+	}
+	return cols, nil
 }
+
+// errTableNotFound is returned when a table does not exist on the mutation connection.
+var errTableNotFound = errors.New("table not found")
 
 // readDuckDBColumns must use the active mutation connection because rduckdb's MutateTable operates on an unpublished database copy.
 // The public InformationSchema abstraction opens a separate read connection against the published table version,
@@ -128,7 +147,7 @@ func readDuckDBColumns(ctx context.Context, conn *sqlx.Conn, table string) ([]du
 		return nil, err
 	}
 	if len(columns) == 0 {
-		return nil, fmt.Errorf("table %q has no columns", table)
+		return nil, errTableNotFound
 	}
 	return columns, nil
 }

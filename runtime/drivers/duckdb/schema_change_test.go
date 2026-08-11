@@ -32,10 +32,19 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 			},
 		},
 		{
-			name:       "ignore removed column",
+			name:      "ignore removed column",
+			mode:      OnSchemaChangeIgnore,
+			sourceSQL: `SELECT 1 AS id, 1 AS partition_id`,
+			wantCols:  []string{"id", "partition_id", "old_value"},
+			assertRows: func(t *testing.T, c *connection, table string) {
+				requireQueryStrings(t, c, fmt.Sprintf(`SELECT coalesce(old_value, 'NULL') FROM %s ORDER BY id`, safeSQLName(table)), [][]string{{"NULL"}, {"old-2"}})
+			},
+		},
+		{
+			name:       "ignore disjoint schema",
 			mode:       OnSchemaChangeIgnore,
-			sourceSQL:  `SELECT 1 AS id, 1 AS partition_id`,
-			wantErr:    "target columns to be absent from the source",
+			sourceSQL:  `SELECT 1 AS other_id, 1 AS other_partition`,
+			wantErr:    "no columns in common",
 			wantCols:   []string{"id", "partition_id", "old_value"},
 			assertRows: assertOriginalSchemaChangeRows,
 		},
@@ -52,14 +61,14 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 			name:       "fail added column",
 			mode:       OnSchemaChangeFail,
 			sourceSQL:  `SELECT 1 AS id, 1 AS partition_id, 'new-1' AS old_value, 42 AS new_value`,
-			wantErr:    "detected schema differences",
+			wantErr:    "does not match the schema of table",
 			wantCols:   []string{"id", "partition_id", "old_value"},
 			assertRows: assertOriginalSchemaChangeRows,
 		},
 		{
 			name:       "omitted mode defaults to fail",
 			sourceSQL:  `SELECT 1 AS id, 1 AS partition_id, 'new-1' AS old_value, 42 AS new_value`,
-			wantErr:    "detected schema differences",
+			wantErr:    "does not match the schema of table",
 			wantCols:   []string{"id", "partition_id", "old_value"},
 			assertRows: assertOriginalSchemaChangeRows,
 		},
@@ -67,7 +76,7 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 			name:       "fail removed column",
 			mode:       OnSchemaChangeFail,
 			sourceSQL:  `SELECT 1 AS id, 1 AS partition_id`,
-			wantErr:    "detected schema differences",
+			wantErr:    "does not match the schema of table",
 			wantCols:   []string{"id", "partition_id", "old_value"},
 			assertRows: assertOriginalSchemaChangeRows,
 		},
@@ -143,6 +152,56 @@ func TestInsertTableAsSelectHandlesReorderedQuotedColumns(t *testing.T) {
 	}
 }
 
+// TestInsertTableAsSelectAppendNewColumnsAcrossInserts covers the steady state after a column has been appended:
+// a later insert must write into the appended column instead of adding it again, and an insert that stops
+// producing it must leave it NULL.
+func TestInsertTableAsSelectAppendNewColumnsAcrossInserts(t *testing.T) {
+	for _, strategy := range []drivers.IncrementalStrategy{drivers.IncrementalStrategyMerge, drivers.IncrementalStrategyPartitionOverwrite} {
+		t.Run(string(strategy), func(t *testing.T) {
+			c := newSchemaChangeTestConnection(t)
+			table := "successive_" + string(strategy)
+			_, err := c.createTableAsSelect(context.Background(), table, `SELECT 1 AS id, 1 AS partition_id`, &createTableOptions{})
+			require.NoError(t, err)
+
+			opts := schemaChangeInsertOptions(strategy, OnSchemaChangeAppendNewColumns)
+			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 2 AS id, 2 AS partition_id, 'two' AS new_value`, opts)
+			require.NoError(t, err)
+			require.Equal(t, []string{"id", "partition_id", "new_value"}, schemaChangeColumnNames(t, c, table))
+
+			// The column now exists, so this insert populates it rather than appending a duplicate.
+			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 3 AS id, 3 AS partition_id, 'three' AS new_value`, opts)
+			require.NoError(t, err)
+			require.Equal(t, []string{"id", "partition_id", "new_value"}, schemaChangeColumnNames(t, c, table))
+
+			// The column is no longer produced, so it is retained and left NULL for the new row.
+			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 4 AS id, 4 AS partition_id`, opts)
+			require.NoError(t, err)
+			require.Equal(t, []string{"id", "partition_id", "new_value"}, schemaChangeColumnNames(t, c, table))
+
+			requireQueryStrings(t, c, fmt.Sprintf(`SELECT id::VARCHAR, coalesce(new_value, 'NULL') FROM %s ORDER BY id`, safeSQLName(table)),
+				[][]string{{"1", "NULL"}, {"2", "two"}, {"3", "three"}, {"4", "NULL"}})
+		})
+	}
+}
+
+// TestInsertTableAsSelectUncastableValue documents that the target's column types are retained,
+// so DuckDB fails the insert when it cannot convert an incoming value.
+func TestInsertTableAsSelectUncastableValue(t *testing.T) {
+	for _, mode := range []OnSchemaChange{OnSchemaChangeFail, OnSchemaChangeIgnore, OnSchemaChangeAppendNewColumns} {
+		t.Run(string(mode), func(t *testing.T) {
+			c := newSchemaChangeTestConnection(t)
+			table := "uncastable_" + string(mode)
+			_, err := c.createTableAsSelect(context.Background(), table, `SELECT 1 AS id, 1 AS partition_id, 10 AS value`, &createTableOptions{})
+			require.NoError(t, err)
+
+			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 2 AS id, 2 AS partition_id, 'abc' AS value`, schemaChangeInsertOptions(drivers.IncrementalStrategyMerge, mode))
+			require.ErrorContains(t, err, "Conversion Error")
+			require.Equal(t, []string{"id", "partition_id", "value"}, schemaChangeColumnNames(t, c, table))
+			requireQueryStrings(t, c, fmt.Sprintf(`SELECT id::VARCHAR, value::VARCHAR FROM %s`, safeSQLName(table)), [][]string{{"1", "10"}})
+		})
+	}
+}
+
 func TestInsertTableAsSelectEmptyPartitionSkipsSchemaHandling(t *testing.T) {
 	for _, strategy := range []drivers.IncrementalStrategy{drivers.IncrementalStrategyMerge, drivers.IncrementalStrategyPartitionOverwrite} {
 		t.Run(string(strategy), func(t *testing.T) {
@@ -212,4 +271,71 @@ func requireQueryStrings(t *testing.T, c *connection, query string, want [][]str
 func assertOriginalSchemaChangeRows(t *testing.T, c *connection, table string) {
 	t.Helper()
 	requireQueryStrings(t, c, fmt.Sprintf(`SELECT old_value FROM %s ORDER BY id`, safeSQLName(table)), [][]string{{"old-1"}, {"old-2"}})
+}
+
+func TestOnSchemaChangeValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		props   ModelOutputProperties
+		opts    drivers.ModelExecuteOptions
+		wantErr string
+		want    OnSchemaChange
+	}{
+		{
+			name:  "unset stays unset",
+			props: ModelOutputProperties{UniqueKey: []string{"id"}},
+			opts:  drivers.ModelExecuteOptions{Incremental: true},
+		},
+		{
+			name:  "merge without partitions",
+			props: ModelOutputProperties{UniqueKey: []string{"id"}, OnSchemaChange: OnSchemaChangeAppendNewColumns},
+			opts:  drivers.ModelExecuteOptions{Incremental: true},
+			want:  OnSchemaChangeAppendNewColumns,
+		},
+		{
+			name:  "partition_overwrite without partitions",
+			props: ModelOutputProperties{PartitionBy: "day", IncrementalStrategy: drivers.IncrementalStrategyPartitionOverwrite, OnSchemaChange: OnSchemaChangeIgnore},
+			opts:  drivers.ModelExecuteOptions{Incremental: true},
+			want:  OnSchemaChangeIgnore,
+		},
+		{
+			name:  "partitioned run",
+			props: ModelOutputProperties{OnSchemaChange: OnSchemaChangeFail},
+			opts:  drivers.ModelExecuteOptions{Incremental: true, PartitionRun: true, PartitionKey: "p1"},
+			want:  OnSchemaChangeFail,
+		},
+		{
+			name:    "invalid mode",
+			props:   ModelOutputProperties{UniqueKey: []string{"id"}, OnSchemaChange: "replace"},
+			opts:    drivers.ModelExecuteOptions{Incremental: true},
+			wantErr: `invalid on_schema_change mode "replace"`,
+		},
+		{
+			name:    "append strategy",
+			props:   ModelOutputProperties{IncrementalStrategy: drivers.IncrementalStrategyAppend, OnSchemaChange: OnSchemaChangeIgnore},
+			opts:    drivers.ModelExecuteOptions{Incremental: true},
+			wantErr: `only supported for the "merge" and "partition_overwrite" incremental strategies`,
+		},
+		{
+			name:    "non incremental model",
+			props:   ModelOutputProperties{OnSchemaChange: OnSchemaChangeIgnore},
+			opts:    drivers.ModelExecuteOptions{},
+			wantErr: `only supported for the "merge" and "partition_overwrite" incremental strategies`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			props := tt.props
+			opts := tt.opts
+			opts.ModelExecutorOptions = &drivers.ModelExecutorOptions{InputConnector: "duckdb", OutputConnector: "duckdb"}
+			err := props.validateAndApplyDefaults(&opts, &ModelInputProperties{SQL: "SELECT 1"})
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, props.OnSchemaChange)
+		})
+	}
 }

@@ -42,7 +42,7 @@ type ModelOutputProperties struct {
 	UniqueKey           []string                    `mapstructure:"unique_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
 	PartitionBy         string                      `mapstructure:"partition_by"`
-	OnSchemaChange      *OnSchemaChange             `mapstructure:"on_schema_change"`
+	OnSchemaChange      OnSchemaChange              `mapstructure:"on_schema_change"`
 	// PreExec is a SQL query to run on the output engine before the main query. Ensure pre_exec queries are idempotent.
 	PreExec string `mapstructure:"pre_exec"`
 	// PostExec is a SQL query to run on the output engine after the main query. Ensure post_exec queries are idempotent.
@@ -97,19 +97,15 @@ func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExec
 		p.IncrementalStrategy = drivers.IncrementalStrategyAppend
 	}
 
-	if p.OnSchemaChange != nil {
+	// The schema of an incremental insert is only reconciled for the merge and partition_overwrite strategies,
+	// which are the only ones that stage the new data in a temporary table before inserting it.
+	if p.OnSchemaChange != "" {
 		if !p.OnSchemaChange.Valid() {
-			return fmt.Errorf("invalid on_schema_change mode %q", *p.OnSchemaChange)
-		}
-		if !opts.Incremental || !opts.PartitionRun {
-			return fmt.Errorf(`"on_schema_change" is only supported for incremental models with partitions`)
+			return fmt.Errorf("invalid on_schema_change mode %q", p.OnSchemaChange)
 		}
 		if p.IncrementalStrategy != drivers.IncrementalStrategyMerge && p.IncrementalStrategy != drivers.IncrementalStrategyPartitionOverwrite {
 			return fmt.Errorf(`"on_schema_change" is only supported for the "merge" and "partition_overwrite" incremental strategies`)
 		}
-	} else if opts.Incremental && opts.PartitionRun && (p.IncrementalStrategy == drivers.IncrementalStrategyMerge || p.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite) {
-		mode := OnSchemaChangeFail
-		p.OnSchemaChange = &mode
 	}
 
 	p.PreExec = strings.TrimSpace(p.PreExec)

@@ -702,3 +702,64 @@ post_exec: DETACH extdb
 	testruntime.ReconcileParserAndWait(t, rt, instanceID)
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 }
+
+func TestPartitionedIncrementalOnSchemaChange(t *testing.T) {
+	// The first partition to run is the one with the highest index (partitions are loaded idx DESC),
+	// so the values are ordered descending to ensure 'base' creates the table and 'extra' then adds a column to it.
+	const model = `
+type: model
+incremental: true
+partitions:
+  sql: SELECT v FROM (VALUES ('base'), ('extra')) t(v) ORDER BY v DESC
+sql: SELECT '{{ .partition.v }}' AS v {{ if eq .partition.v "extra" }}, 42 AS extra_col {{ end }}
+`
+
+	t.Run("append_new_columns", func(t *testing.T) {
+		rt, instanceID := testruntime.NewInstance(t)
+		testruntime.PutFiles(t, rt, instanceID, map[string]string{
+			"rill.yaml": ``,
+			"models/partitioned.yaml": model + `output:
+  on_schema_change: append_new_columns
+`,
+		})
+		testruntime.ReconcileParserAndWait(t, rt, instanceID)
+		testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+		require.False(t, testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel().State.PartitionsHaveErrors)
+		testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+			Resolver:   "sql",
+			Properties: map[string]any{"sql": `SELECT v, coalesce(extra_col::VARCHAR, 'NULL') AS extra_col FROM partitioned ORDER BY v`},
+			Result:     []map[string]any{{"v": "base", "extra_col": "NULL"}, {"v": "extra", "extra_col": "42"}},
+		})
+	})
+
+	t.Run("default fails the partition", func(t *testing.T) {
+		rt, instanceID := testruntime.NewInstance(t)
+		testruntime.PutFiles(t, rt, instanceID, map[string]string{
+			"rill.yaml":               ``,
+			"models/partitioned.yaml": model,
+		})
+		testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+		// The 'extra' partition adds a column, which the default "fail" mode rejects.
+		model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "partitioned").GetModel()
+		require.True(t, model.State.PartitionsHaveErrors)
+
+		catalog, release, err := rt.Catalog(t.Context(), instanceID)
+		require.NoError(t, err)
+		defer release()
+		partitions, err := catalog.FindModelPartitions(t.Context(), &drivers.FindModelPartitionsOptions{
+			ModelID:      model.State.PartitionsModelId,
+			WhereErrored: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, partitions, 1)
+		require.Contains(t, partitions[0].Error, `does not match the schema of table "partitioned" (new columns: "extra_col"; missing columns: none)`)
+
+		testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+			Resolver:   "sql",
+			Properties: map[string]any{"sql": `SELECT v FROM partitioned`},
+			Result:     []map[string]any{{"v": "base"}},
+		})
+	})
+}

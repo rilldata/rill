@@ -391,7 +391,7 @@ _[object]_ - Defines the output properties.
 
   - **`partition_by`** - _[string]_ - Column or expression to partition the table by
 
-  - **`on_schema_change`** - _[string]_ - Controls schema changes for incremental, partitioned DuckDB models using the `merge` or `partition_overwrite` strategy. `ignore` ignores new source columns but fails when a target column is absent from the source; `fail` (default) rejects added or removed columns; and `append_new_columns` adds source-only columns and retains target-only columns. Existing target datatypes are retained, and DuckDB determines whether incoming values can be converted during insertion.
+  - **`on_schema_change`** - _[string]_ - Controls what happens when an incremental run, such as a new partition, produces columns that do not match the model's existing table. With `fail` (the default), the run fails and reports which columns are new and which are missing. With `ignore`, the existing table keeps the columns it already has, so new columns are discarded and columns missing from the new data are left empty for the incoming rows. With `append_new_columns`, new columns are added to the table and left empty for the rows already in it, while columns missing from the new data are kept and left empty for the incoming rows. Column types of the existing table are always preserved, so DuckDB converts the incoming values to fit and fails the run if a value cannot be converted. Only applies to incremental models using the `merge` or `partition_overwrite` strategy.
 
   - **`pre_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
 

@@ -361,15 +361,13 @@ func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts 
 	}
 	// Insert into the table
 	insertTableOpts := &InsertTableOptions{
-		BeforeInsert: inputProps.PreExec,
-		AfterInsert:  inputProps.PostExec,
-		ByName:       false,
-		Strategy:     outputProps.IncrementalStrategy,
-		UniqueKey:    outputProps.UniqueKey,
-		PartitionBy:  outputProps.PartitionBy,
-	}
-	if outputProps.OnSchemaChange != nil {
-		insertTableOpts.OnSchemaChange = *outputProps.OnSchemaChange
+		BeforeInsert:   inputProps.PreExec,
+		AfterInsert:    inputProps.PostExec,
+		ByName:         false,
+		Strategy:       outputProps.IncrementalStrategy,
+		UniqueKey:      outputProps.UniqueKey,
+		PartitionBy:    outputProps.PartitionBy,
+		OnSchemaChange: outputProps.OnSchemaChange,
 	}
 	if inputProps.InitQueries != "" {
 		insertTableOpts.InitQueries = []string{inputProps.InitQueries}

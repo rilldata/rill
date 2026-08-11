@@ -660,19 +660,6 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		i = j
 	}
 
-	// Validate output connector restrictions after all files have been parsed so named connectors can be resolved regardless of path order.
-	for _, r := range slices.Clone(p.insertedResources) {
-		if r.ModelSpec == nil || r.ModelSpec.OutputProperties == nil {
-			continue
-		}
-		if _, configured := r.ModelSpec.OutputProperties.Fields["on_schema_change"]; !configured {
-			continue
-		}
-		if p.connectorDriverName(r.ModelSpec.OutputConnector) != "duckdb" {
-			p.replaceResourceWithError(r.Name.Normalized(), fmt.Errorf(`"output.on_schema_change" is only supported for DuckDB outputs`), false)
-		}
-	}
-
 	// If we didn't encounter rill.yaml (in this run or a previous run), that's a breaking error
 	if !sawRillYAML && p.RillYAML == nil {
 		p.addParseError("/rill.yaml", errors.New("rill.yaml not found"), false)
@@ -785,24 +772,6 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	}
 
 	return nil
-}
-
-// connectorDriverName resolves a connector's declared driver without requiring the driver implementation to be registered.
-// It is used for static validation that should not depend on which driver packages are linked into the current binary.
-func (p *Parser) connectorDriverName(name string) string {
-	if p.RillYAML != nil {
-		for _, connector := range p.RillYAML.Connectors {
-			if connector.Name == name {
-				return connector.Type
-			}
-		}
-	}
-	for _, resource := range p.Resources {
-		if resource.ConnectorSpec != nil && resource.Name.Name == name {
-			return resource.ConnectorSpec.Driver
-		}
-	}
-	return name
 }
 
 // inferAmbiguousRefs populates r.Refs with

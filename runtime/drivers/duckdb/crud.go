@@ -65,9 +65,11 @@ type InsertTableOptions struct {
 	InitQueries  []string
 	BeforeInsert string
 	AfterInsert  string
-	ByName       bool
-	Strategy     drivers.IncrementalStrategy
-	UniqueKey    []string
+	// ByName only applies to the append strategy.
+	// The merge and partition_overwrite strategies always insert by name since they reconcile the schema first.
+	ByName    bool
+	Strategy  drivers.IncrementalStrategy
+	UniqueKey []string
 	// PartitionBy is a SQL expression to use for dropping/replacing partitions with the partition_overwrite incremental strategy.
 	PartitionBy string
 	// OnSchemaChange controls how schema differences are handled for merge and partition_overwrite inserts.
@@ -160,7 +162,7 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			if onSchemaChange == "" {
 				onSchemaChange = OnSchemaChangeFail
 			}
-			plan, err := reconcileTableSchema(ctx, conn, name, tmp, onSchemaChange)
+			cols, err := reconcileTableSchema(ctx, conn, name, tmp, onSchemaChange, c.logger)
 			if err != nil {
 				return err
 			}
@@ -194,12 +196,11 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}
 			}
 
-			// Use explicit, quoted column lists so column order and schema differences do not affect insertion.
-			targetColumns := make([]string, len(plan.targetInsertCols))
-			sourceColumns := make([]string, len(plan.sourceSelectCols))
-			for i := range plan.targetInsertCols {
-				targetColumns[i] = safeSQLName(plan.targetInsertCols[i])
-				sourceColumns[i] = safeSQLName(plan.sourceSelectCols[i])
+			targetColumns := make([]string, len(cols.target))
+			sourceColumns := make([]string, len(cols.source))
+			for i := range cols.target {
+				targetColumns[i] = safeSQLName(cols.target[i])
+				sourceColumns[i] = safeSQLName(cols.source[i])
 			}
 			_, err = conn.ExecContext(ctx, fmt.Sprintf(
 				"INSERT INTO %s (%s) SELECT %s FROM %s",
