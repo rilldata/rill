@@ -3,12 +3,14 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceAddProjectMemberUser,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1Project,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { getOrgRolesOptions } from "@rilldata/web-admin/features/organizations/constants";
+  import {
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -182,14 +184,8 @@
         if (failed.length > 0) failedInvites = failed;
 
         // Invalidate lists
-        await queryClient.invalidateQueries({
-          queryKey:
-            getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-        });
-        await queryClient.invalidateQueries({
-          queryKey:
-            getAdminServiceListOrganizationInvitesQueryKey(organization),
-        });
+        await invalidateOrgMemberUsers(queryClient, organization);
+        await invalidateOrgInvites(queryClient, organization);
 
         if (failedInvites.length === 0) {
           open = false;

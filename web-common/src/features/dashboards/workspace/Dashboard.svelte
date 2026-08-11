@@ -12,8 +12,9 @@
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { onDestroy } from "svelte";
-  import { readable, type Readable } from "svelte/store";
+  import { githubStarNudge } from "@rilldata/web-common/features/github-star/github-star.svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { get, readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { useRuntimeClient } from "../../../runtime-client/v2";
@@ -57,9 +58,15 @@
     dashboardStore,
   } = StateManagers;
 
-  const { cloudDataViewer, readOnly } = featureFlags;
+  const { adminServer, cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
+
+  onMount(() => {
+    // Github star nudge is Rill developer only.
+    // Nudge on dashboard render.
+    if (!isEmbedded && !get(adminServer)) githubStarNudge.armPayoff();
+  });
 
   let exploreContainerWidth: number;
   let exploreContainerHeight: number;

@@ -1,11 +1,11 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
+  import { createAdminServiceAddOrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
-    createAdminServiceAddOrganizationMemberUser,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
-  } from "@rilldata/web-admin/client";
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -74,14 +74,9 @@
       },
     });
 
-    await queryClient.invalidateQueries({
-      queryKey:
-        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-    });
+    await invalidateOrgMemberUsers(queryClient, organization);
 
-    await queryClient.invalidateQueries({
-      queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-    });
+    await invalidateOrgInvites(queryClient, organization);
 
     email = "";
     role = "";
