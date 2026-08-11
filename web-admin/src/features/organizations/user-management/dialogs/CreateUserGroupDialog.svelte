@@ -6,10 +6,12 @@
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
     createAdminServiceListOrganizationMemberUsersInfinite,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
+  import {
+    invalidateOrgMemberUsers,
+    invalidateOrgUsergroups,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -114,14 +116,7 @@
       // Apply pending user changes after group creation
       await applyPendingChanges(newName);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       groupName = "";
       selectedUsers = [];
@@ -152,10 +147,7 @@
         });
       }
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
 
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
