@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters-v2/DimensionFilterManager.svelte.ts";
+  import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
   import { Chip } from "@rilldata/web-common/components/chip";
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
@@ -8,7 +8,7 @@
   import {
     createDimensionSearchCountQuery,
     createDimensionSearchQuery,
-  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters-v2/queries.svelte.ts";
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/queries.svelte.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   let {

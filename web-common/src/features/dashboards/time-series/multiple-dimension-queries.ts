@@ -43,6 +43,7 @@ import {
   prepareTimeSeries,
   transformAggregateDimensionData,
 } from "./utils";
+import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 
 const MAX_TDD_VALUES_LENGTH = 250;
 const BATCH_SIZE = 50;
@@ -203,10 +204,11 @@ export function getDimensionValuesForComparison(
               totals: totalValues,
               values: topListValues?.slice(0, MAX_TDD_VALUES_LENGTH),
               uris: uriValues?.slice(0, MAX_TDD_VALUES_LENGTH),
-              filter: getFilterForComparedDimension(
-                dimensionName,
-                dashboardStore?.whereFilter,
-              ),
+              filter:
+                getFiltersForOtherDimensions(
+                  dashboardStore?.whereFilter,
+                  dimensionName,
+                ) ?? createAndExpression([]),
             };
           },
         ).subscribe(set);

@@ -6,6 +6,7 @@ import {
   forEachIdentifier,
   getValuesInExpression,
   isExpressionUnsupported,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
@@ -37,8 +38,8 @@ export const selectedDimensionValues = (
       data: [],
     });
 
-  const dimExpr = whereFilter.cond?.exprs?.find((e) =>
-    matchExpressionByName(e, dimensionName),
+  const dimExpr = whereFilter.cond?.exprs?.find(
+    (e) => matchExpressionByName(e, dimensionName) && !isSubqueryExpression(e),
   );
   if (!dimExpr?.cond?.op)
     return readable({
@@ -100,8 +101,8 @@ export const getWhereFilterExpressionIndex = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((name: string) => number | undefined) => {
   return (name: string) =>
-    dashData.dashboard.whereFilter?.cond?.exprs?.findIndex((e) =>
-      matchExpressionByName(e, name),
+    dashData.dashboard.whereFilter?.cond?.exprs?.findIndex(
+      (e) => matchExpressionByName(e, name) && !isSubqueryExpression(e),
     );
 };
 

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { MeasureFilterEntry } from "web-common/src/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
   import { Chip } from "../../../../components/chip";
-  import MeasureFilterBody from "../measure-filters/MeasureFilterBody.svelte";
-  import type { MeasureFilterManager } from "web-common/src/features/dashboards/filters/measure-filters-v2/MeasureFilterManager.svelte.ts";
-  import type { YAMLConfigProvider } from "web-common/src/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import MeasureFilterBody from "./MeasureFilterBody.svelte";
+  import type { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterManager.svelte.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
   let {
     measureManager,

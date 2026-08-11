@@ -1,8 +1,8 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import DimensionFilter from "./dimension-filters-v2/DimensionFilter.svelte";
+  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
   import { Button } from "web-common/src/components/button";
-  import MeasureFilter from "./measure-filters-v2/MeasureFilter.svelte";
+  import MeasureFilter from "./measure-filters/MeasureFilter.svelte";
   import { fly } from "svelte/transition";
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
   import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";

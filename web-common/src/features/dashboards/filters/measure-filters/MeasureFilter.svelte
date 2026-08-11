@@ -1,17 +1,17 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import { Chip } from "web-common/src/components/chip";
-  import * as Popover from "web-common/src/components/popover";
-  import Tooltip from "web-common/src/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "web-common/src/components/tooltip/TooltipContent.svelte";
-  import TooltipTitle from "web-common/src/components/tooltip/TooltipTitle.svelte";
-  import type { MeasureFilterEntry } from "web-common/src/features/dashboards/filters/measure-filters/measure-filter-entry";
-  import MeasureFilterBody from "web-common/src/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
-  import type { MetricsViewSpecDimension } from "web-common/src/runtime-client";
-  import MeasureFilterForm from "web-common/src/features/dashboards/filters/measure-filters/MeasureFilterForm.svelte";
+  import { Chip } from "@rilldata/web-common/components/chip";
+  import * as Popover from "@rilldata/web-common/components/popover";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
+  import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
+  import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
+  import MeasureFilterForm from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterForm.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { MeasureFilterManager } from "./MeasureFilterManager.svelte.ts";
-  import type { YAMLConfigProvider } from "web-common/src/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
   let {
     measureManager,

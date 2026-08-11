@@ -11,6 +11,7 @@ import {
   createInExpression,
   createLikeExpression,
   createOrExpression,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { type V1MetricsViewAggregationResponseDataItem } from "../../../runtime-client";
@@ -65,8 +66,8 @@ export function updateFilterOnSearch(
   }
 
   filterForDimension = copyFilterExpression(filterForDimension);
-  const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
-    matchExpressionByName(e, dimensionName),
+  const filterIdx = filterForDimension.cond?.exprs?.findIndex(
+    (e) => matchExpressionByName(e, dimensionName) && !isSubqueryExpression(e),
   );
   if (filterIdx === undefined || filterIdx === -1) {
     filterForDimension.cond?.exprs?.push(cond);

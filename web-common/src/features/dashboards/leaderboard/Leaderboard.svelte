@@ -49,7 +49,6 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
-  export let dimensionOnlyFilter: V1Expression | undefined;
   export let whereFilter: V1Expression | undefined;
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasures: MetricsViewSpecMeasure[];
@@ -136,10 +135,10 @@
 
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
-  $: isComplexFilter = isExpressionUnsupported(dimensionOnlyFilter);
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
   $: where = isComplexFilter
-    ? dimensionOnlyFilter
-    : getFiltersForOtherDimensions(dimensionOnlyFilter, dimensionName);
+    ? whereFilter
+    : getFiltersForOtherDimensions(whereFilter, dimensionName);
 
   $: measures = [
     ...getMeasuresForDimensionOrLeaderboardDisplay(

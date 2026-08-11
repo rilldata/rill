@@ -274,7 +274,6 @@
               <DimensionDisplay
                 dimension={selectedDimension}
                 {metricsViewName}
-                {dimensionOnlyFilter}
                 {whereFilter}
                 {timeRange}
                 {comparisonTimeRange}
@@ -285,7 +284,6 @@
             {:else}
               <LeaderboardDisplay
                 {metricsViewName}
-                {dimensionOnlyFilter}
                 {whereFilter}
                 {timeRange}
                 {comparisonTimeRange}

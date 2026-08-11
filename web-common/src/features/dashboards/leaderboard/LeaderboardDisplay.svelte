@@ -19,7 +19,6 @@
   } from "./leaderboard-widths";
 
   export let metricsViewName: string;
-  export let dimensionOnlyFilter: V1Expression | undefined;
   export let whereFilter: V1Expression | undefined;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -101,7 +100,6 @@
               leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               leaderboardMeasures={$leaderboardMeasures}
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
-              {dimensionOnlyFilter}
               {whereFilter}
               {tableWidth}
               {timeRange}

@@ -3,8 +3,8 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";
-  import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters-v2/DimensionFilter.svelte";
-  import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters-v2/MeasureFilter.svelte";
+  import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
+  import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import Button from "../../../components/button/Button.svelte";
 
   let {

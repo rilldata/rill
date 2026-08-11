@@ -58,7 +58,6 @@
   let timeRange = $derived($timeAndFilterStore.timeRange);
 
   let whereFilter = $derived($timeAndFilterStore.where);
-  let dimensionOnlyFilter = $derived($timeAndFilterStore.dimensionOnlyWhere);
 
   let allDimensions = $derived(
     metricsViewSelectors.getDimensionsForMetricView(metricsViewName),
@@ -181,7 +180,6 @@
               leaderboardSortByMeasureName={leaderboardSortByMeasureName ??
                 leaderboardMeasureNames[0]}
               leaderboardMeasures={visibleMeasures}
-              {dimensionOnlyFilter}
               {whereFilter}
               tableWidth={dimensionColumnWidth + totalContextWidth}
               {dimensionColumnWidth}

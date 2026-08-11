@@ -312,7 +312,7 @@ export const matchExpressionByName = (e: V1Expression, name: string) => {
 };
 
 export function isSubqueryExpression(e: V1Expression): boolean {
-  return !!e.cond?.exprs?.[0]?.subquery;
+  return !!e.cond?.exprs?.[1]?.subquery;
 }
 
 export const sanitiseExpression = (

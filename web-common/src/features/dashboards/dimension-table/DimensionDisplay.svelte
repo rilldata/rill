@@ -29,14 +29,12 @@
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
-  import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters.ts";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
   const queryLimit = 250;
 
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
-  export let dimensionOnlyFilter: V1Expression | undefined;
   export let whereFilter: V1Expression | undefined;
   export let metricsViewName: string;
   export let visibleMeasureNames: string[];
@@ -67,14 +65,14 @@
   $: selectedValues = selectedDimensionValues(
     client,
     [metricsViewName],
-    dimensionOnlyFilter,
+    whereFilter,
     dimensionName,
     timeRange.start,
     timeRange.end,
   );
 
   $: filterSet = getDimensionFilterWithSearch(
-    dimensionOnlyFilter,
+    whereFilter,
     $dimensionSearchText,
     dimensionName,
   );
@@ -118,10 +116,7 @@
         (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
       ),
       where: sanitiseExpression(
-        mergeFilters(
-          getFiltersForOtherDimensions(dimensionOnlyFilter, dimensionName),
-          whereFilter,
-        ),
+        getFiltersForOtherDimensions(whereFilter, dimensionName),
       ),
       timeRange,
     },
@@ -162,7 +157,7 @@
       timeRange,
       comparisonTimeRange,
       sort,
-      where: sanitiseExpression(mergeFilters(filterSet, whereFilter)),
+      where: sanitiseExpression(filterSet),
       limit: queryLimit.toString(),
       offset: "0",
     },

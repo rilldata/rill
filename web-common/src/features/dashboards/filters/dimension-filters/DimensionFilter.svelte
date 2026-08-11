@@ -1,27 +1,27 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import { Chip } from "web-common/src/components/chip";
-  import * as DropdownMenu from "web-common/src/components/dropdown-menu";
-  import LoadingSpinner from "web-common/src/components/icons/LoadingSpinner.svelte";
-  import { Search } from "web-common/src/components/search";
-  import Tooltip from "web-common/src/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "web-common/src/components/tooltip/TooltipContent.svelte";
-  import TooltipTitle from "web-common/src/components/tooltip/TooltipTitle.svelte";
-  import { DimensionFilterMode } from "web-common/src/features/dashboards/filters/dimension-filters/constants";
+  import { Chip } from "@rilldata/web-common/components/chip";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import { Search } from "@rilldata/web-common/components/search";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
   import {
     getEffectiveSelectedValues,
     getItemLists,
     getSearchPlaceholder,
     shouldDisableApplyButton,
-  } from "web-common/src/features/dashboards/filters/dimension-filters/helpers";
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/helpers.ts";
   import {
     mergeDimensionSearchValues,
     splitDimensionSearchText,
-  } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
-  import DimensionFilterChipBody from "web-common/src/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
-  import DimensionFilterFooter from "web-common/src/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
-  import DimensionFilterModeSelector from "web-common/src/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
-  import { useRuntimeClient } from "web-common/src/runtime-client/v2";
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils.ts";
+  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
+  import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
+  import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import PinButton from "../PinButton.svelte";
   import RequiredButton from "../RequiredButton.svelte";
   import { DimensionFilterManager } from "./DimensionFilterManager.svelte.ts";
@@ -31,7 +31,7 @@
   } from "./queries.svelte.ts";
   import type { ExpressionFilterManager } from "../ExpressionFilterManager.svelte.ts";
   import { onMount } from "svelte";
-  import type { YAMLConfigProvider } from "web-common/src/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
   let {
     manager,

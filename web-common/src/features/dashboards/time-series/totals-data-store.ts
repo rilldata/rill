@@ -1,15 +1,11 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import {
-  createAndExpression,
-  filterExpressions,
-  matchExpressionByName,
-  sanitiseExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { V1MetricsViewAggregationResponse } from "@rilldata/web-common/runtime-client";
 import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
+import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 
 export function createTotalsForMeasure(
   ctx: StateManagers,
@@ -56,10 +52,7 @@ export function createUnfilteredTotalsForMeasure(
     ([metricsViewName, timeControls, dashboard], set) => {
       const filter = sanitiseExpression(dashboard.whereFilter, undefined);
 
-      const updatedFilter = filterExpressions(
-        filter || createAndExpression([]),
-        (e) => !matchExpressionByName(e, dimensionName),
-      );
+      const updatedFilter = getFiltersForOtherDimensions(filter, dimensionName);
 
       createQueryServiceMetricsViewAggregation(
         ctx.runtimeClient,

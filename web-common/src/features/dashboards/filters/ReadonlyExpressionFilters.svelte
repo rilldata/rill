@@ -3,8 +3,8 @@
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
-  import ReadonlyDimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters-v2/ReadonlyDimensionFilter.svelte";
-  import ReadonlyMeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters-v2/ReadonlyMeasureFilter.svelte";
+  import ReadonlyDimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/ReadonlyDimensionFilter.svelte";
+  import ReadonlyMeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/ReadonlyMeasureFilter.svelte";
   import { flip } from "svelte/animate";
 
   let {
