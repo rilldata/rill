@@ -3,6 +3,7 @@
   import { page } from "$app/stores";
   import { createAdminServiceAddOrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
+    buildInviteAttributes,
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
   } from "@rilldata/web-admin/features/organizations/user-management/utils";
@@ -46,22 +47,11 @@
 
   let failedInvites: string[] = [];
   let showAttributes = false;
-  let attributeRows: Array<{ key: string; value: string }> = [];
-
-  // Builds the attributes object from the key/value rows, skipping rows with an empty key.
-  // The same attributes apply to every invited email.
-  function buildAttributes(): Record<string, string> | undefined {
-    const attrs: Record<string, string> = {};
-    for (const { key, value } of attributeRows) {
-      const trimmedKey = key.trim();
-      if (trimmedKey) attrs[trimmedKey] = value;
-    }
-    return Object.keys(attrs).length > 0 ? attrs : undefined;
-  }
 
   async function handleCreate(
     newEmail: string,
     newRole: string,
+    attributes: Record<string, string> | undefined,
     isSuperUser: boolean = false,
   ) {
     await $addOrganizationMemberUser.mutateAsync({
@@ -69,7 +59,7 @@
       data: {
         email: newEmail,
         role: newRole,
-        attributes: buildAttributes(),
+        attributes,
         superuserForceAccess: isSuperUser,
       },
     });
@@ -88,9 +78,11 @@
   const initialValues: {
     emails: string[];
     role: string;
+    attributes: Array<{ key: string; value: string }>;
   } = {
     emails: [""],
     role: OrgUserRoles.Viewer,
+    attributes: [],
   };
   const schema = yup(
     object({
@@ -101,6 +93,12 @@
         }),
       ), // yup's email regex is too simple
       role: string().required(),
+      attributes: array(
+        object({
+          key: string().defined(),
+          value: string().defined(),
+        }),
+      ),
     }),
   );
 
@@ -119,10 +117,13 @@
         const emails = values.emails.map((e) => e.trim()).filter(Boolean);
         if (emails.length === 0) return;
 
+        // The same attributes apply to every invited email
+        const attributes = buildInviteAttributes(values.attributes);
+
         const results = await Promise.all(
           emails.map(async (email, index) => {
             try {
-              await handleCreate(email, values.role, isSuperUser);
+              await handleCreate(email, values.role, attributes, isSuperUser);
               return { index, email, success: true };
             } catch (error) {
               console.error("Error adding user to organization", error);
@@ -182,8 +183,8 @@
       isSuperUser = false;
       failedInvites = [];
       $form.emails = [""];
+      $form.attributes = [];
       showAttributes = false;
-      attributeRows = [];
     }
   }}
 >
@@ -202,8 +203,8 @@
       isSuperUser = false;
       failedInvites = [];
       $form.emails = [""];
+      $form.attributes = [];
       showAttributes = false;
-      attributeRows = [];
     }}
   >
     <DialogHeader>
@@ -295,7 +296,7 @@
           </div>
           <KeyValueInput
             id="invite-attributes"
-            bind:value={attributeRows}
+            bind:value={$form.attributes}
             keyPlaceholder={m.users_attribute_key_placeholder()}
             valuePlaceholder={m.users_attribute_value_placeholder()}
             itemLabel={m.users_custom_attributes()}

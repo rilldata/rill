@@ -8,6 +8,7 @@
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { getOrgRolesOptions } from "@rilldata/web-admin/features/organizations/constants";
   import {
+    buildInviteAttributes,
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
   } from "@rilldata/web-admin/features/organizations/user-management/utils";
@@ -50,7 +51,6 @@
   let roleDropdownOpen = false;
   let hasAutoSelectedProject = false;
   let showAttributes = false;
-  let attributeRows: Array<{ key: string; value: string }> = [];
 
   function resetDialogState() {
     failedInvites = [];
@@ -60,18 +60,7 @@
     projectDropdownOpen = false;
     roleDropdownOpen = false;
     showAttributes = false;
-    attributeRows = [];
-  }
-
-  // Builds the attributes object from the key/value rows, skipping rows with an empty key.
-  // The same attributes apply to every invited email.
-  function buildAttributes(): Record<string, string> | undefined {
-    const attrs: Record<string, string> = {};
-    for (const { key, value } of attributeRows) {
-      const trimmedKey = key.trim();
-      if (trimmedKey) attrs[trimmedKey] = value;
-    }
-    return Object.keys(attrs).length > 0 ? attrs : undefined;
+    $form.attributes = [];
   }
 
   // Projects list
@@ -113,27 +102,39 @@
     projectDropdownOpen = true;
   }
 
-  async function handleCreate(email: string) {
+  async function handleCreate(
+    email: string,
+    attributes: Record<string, string> | undefined,
+  ) {
     // Loop selected projects and add as selectedRole
     await Promise.all(
       selectedProjects.map((projectName) =>
         $addProjectMemberUser.mutateAsync({
           org: organization,
           project: projectName,
-          data: { email, role: selectedRole, attributes: buildAttributes() },
+          data: { email, role: selectedRole, attributes },
         }),
       ),
     );
   }
 
   const formId = "create-guests-form";
-  const initialValues: { emails: string[] } = { emails: [""] };
+  const initialValues: {
+    emails: string[];
+    attributes: Array<{ key: string; value: string }>;
+  } = { emails: [""], attributes: [] };
   const schema = yup(
     object({
       emails: array(
         string().matches(RFC5322EmailRegex, {
           excludeEmptyString: true,
           message: m.users_invalid_email(),
+        }),
+      ),
+      attributes: array(
+        object({
+          key: string().defined(),
+          value: string().defined(),
         }),
       ),
     }),
@@ -152,10 +153,13 @@
         if (emails.length === 0) return;
         if (selectedProjects.length === 0) return;
 
+        // The same attributes apply to every invited email
+        const attributes = buildInviteAttributes(form.data.attributes);
+
         const results = await Promise.all(
           emails.map(async (email, index) => {
             try {
-              await handleCreate(email);
+              await handleCreate(email, attributes);
               return { index, email, success: true };
             } catch {
               return { index, email, success: false };
@@ -348,7 +352,7 @@
           </div>
           <KeyValueInput
             id="invite-guest-attributes"
-            bind:value={attributeRows}
+            bind:value={$form.attributes}
             keyPlaceholder={m.users_attribute_key_placeholder()}
             valuePlaceholder={m.users_attribute_value_placeholder()}
             itemLabel={m.users_custom_attributes()}
