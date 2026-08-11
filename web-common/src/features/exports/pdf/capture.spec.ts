@@ -26,6 +26,7 @@ describe("rasterizeNode", () => {
   it("captures a canvas-backed node twice when the warm-up is required", async () => {
     await rasterizeNode(cardWith("<canvas></canvas>"), {
       backgroundColor: "#fff",
+      fontEmbedCSS: "",
       warmUpCanvas: true,
     });
     expect(vi.mocked(toJpeg)).toHaveBeenCalledTimes(2);
@@ -34,6 +35,7 @@ describe("rasterizeNode", () => {
   it("captures once when the browser does not need the warm-up", async () => {
     await rasterizeNode(cardWith("<canvas></canvas>"), {
       backgroundColor: "#fff",
+      fontEmbedCSS: "",
       warmUpCanvas: false,
     });
     expect(vi.mocked(toJpeg)).toHaveBeenCalledTimes(1);
@@ -43,6 +45,7 @@ describe("rasterizeNode", () => {
   it("captures a node without a canvas once even on affected browsers", async () => {
     await rasterizeNode(cardWith("<svg></svg>"), {
       backgroundColor: "#fff",
+      fontEmbedCSS: "",
       warmUpCanvas: true,
     });
     expect(vi.mocked(toJpeg)).toHaveBeenCalledTimes(1);
@@ -51,10 +54,23 @@ describe("rasterizeNode", () => {
   it("captures both passes with identical options", async () => {
     await rasterizeNode(cardWith("<canvas></canvas>"), {
       backgroundColor: "#fff",
+      fontEmbedCSS: "",
       warmUpCanvas: true,
     });
     const [first, second] = vi.mocked(toJpeg).mock.calls;
     expect(first[1]).toStrictEqual(second[1]);
+  });
+
+  it("hands the caller's font CSS to every pass", async () => {
+    const fontEmbedCSS = "@font-face{src:url(data:font/woff2;base64,AA)}";
+    await rasterizeNode(cardWith("<canvas></canvas>"), {
+      backgroundColor: "#fff",
+      fontEmbedCSS,
+      warmUpCanvas: true,
+    });
+    for (const [, options] of vi.mocked(toJpeg).mock.calls) {
+      expect(options).toMatchObject({ fontEmbedCSS });
+    }
   });
 });
 

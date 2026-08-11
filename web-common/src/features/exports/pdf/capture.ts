@@ -1,4 +1,4 @@
-import { toJpeg } from "html-to-image";
+import { getFontEmbedCSS, toJpeg } from "html-to-image";
 import {
   FILTER_BAR_ID,
   FILTER_BAR_ROW_INDEX,
@@ -118,6 +118,11 @@ async function isBlank(dataUrl: string): Promise<boolean> {
 
 export interface RasterizeOptions {
   backgroundColor: string;
+  // Web fonts, already resolved to data URIs, shared by every capture. Letting
+  // html-to-image re-resolve them per capture pushes the two passes below far
+  // enough apart that WebKit drops the decoded canvas between them, and the
+  // warm-up stops working.
+  fontEmbedCSS: string;
   // Comes from needsCanvasWarmup(). Both fields are required: a caller that
   // forgot the warm-up would ship blank charts on WebKit with nothing to show
   // for it, no error and no failed capture.
@@ -130,7 +135,7 @@ export interface RasterizeOptions {
 // the second pass.
 export async function rasterizeNode(
   node: HTMLElement,
-  { backgroundColor, warmUpCanvas }: RasterizeOptions,
+  { backgroundColor, fontEmbedCSS, warmUpCanvas }: RasterizeOptions,
 ): Promise<string> {
   const restoreSvgStyles = inlineSvgStyles(node);
   const options = {
@@ -138,6 +143,7 @@ export async function rasterizeNode(
     pixelRatio: PIXEL_RATIO,
     quality: JPEG_QUALITY,
     backgroundColor,
+    fontEmbedCSS,
   };
   try {
     if (warmUpCanvas && node.querySelector("canvas")) {
@@ -198,6 +204,7 @@ export async function captureCanvasBlocks(
   // Probed once per capture rather than per block: the answer is a property of
   // the browser, and the probe itself rasterizes.
   const warmUpCanvas = await needsCanvasWarmup();
+  const fontEmbedCSS = await getFontEmbedCSS(rowContainer);
 
   const blocks: CapturedBlock[] = [];
   const total = targets.length + (opts.includeFilters ? 1 : 0);
@@ -219,6 +226,7 @@ export async function captureCanvasBlocks(
         try {
           const dataUrl = await rasterizeNode(header, {
             backgroundColor,
+            fontEmbedCSS,
             warmUpCanvas,
           });
           blocks.push({
@@ -244,6 +252,7 @@ export async function captureCanvasBlocks(
     try {
       const dataUrl = await rasterizeNode(target, {
         backgroundColor,
+        fontEmbedCSS,
         warmUpCanvas,
       });
       blocks.push({
