@@ -202,6 +202,63 @@ func TestInsertTableAsSelectUncastableValue(t *testing.T) {
 	}
 }
 
+// TestInsertTableAsSelectKeyColumnDropped covers new data that no longer contains the unique_key or partition_by
+// column. The partition_overwrite DELETE references the partition expression unqualified in a subquery, so without
+// an explicit check it binds to the target table as a correlated reference and deletes every row.
+func TestInsertTableAsSelectKeyColumnDropped(t *testing.T) {
+	tests := []struct {
+		strategy drivers.IncrementalStrategy
+		wantErr  string
+	}{
+		{drivers.IncrementalStrategyMerge, `the new data does not contain the "id" column from "unique_key"`},
+		{drivers.IncrementalStrategyPartitionOverwrite, `failed to resolve the "partition_by" expression "partition_id" against the new data`},
+	}
+	for _, tt := range tests {
+		for _, mode := range []OnSchemaChange{OnSchemaChangeIgnore, OnSchemaChangeAppendNewColumns} {
+			t.Run(fmt.Sprintf("%s/%s", tt.strategy, mode), func(t *testing.T) {
+				c := newSchemaChangeTestConnection(t)
+				table := fmt.Sprintf("keydrop_%s_%s", tt.strategy, mode)
+				_, err := c.createTableAsSelect(context.Background(), table, `
+					SELECT 1 AS id, 1 AS partition_id, 'a' AS value
+					UNION ALL SELECT 2 AS id, 2 AS partition_id, 'b' AS value
+				`, &createTableOptions{})
+				require.NoError(t, err)
+
+				_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 'new' AS value`, schemaChangeInsertOptions(tt.strategy, mode))
+				require.ErrorContains(t, err, tt.wantErr)
+
+				// The target table must be left untouched.
+				require.Equal(t, []string{"id", "partition_id", "value"}, schemaChangeColumnNames(t, c, table))
+				requireQueryStrings(t, c, fmt.Sprintf(`SELECT id::VARCHAR, partition_id::VARCHAR, value FROM %s ORDER BY id`, safeSQLName(table)),
+					[][]string{{"1", "1", "a"}, {"2", "2", "b"}})
+			})
+		}
+	}
+}
+
+// TestInsertTableAsSelectPartitionByExpression checks that a partition_by SQL expression, rather than a plain
+// column reference, still resolves against the new data.
+func TestInsertTableAsSelectPartitionByExpression(t *testing.T) {
+	c := newSchemaChangeTestConnection(t)
+	table := "partition_expr"
+	_, err := c.createTableAsSelect(context.Background(), table, `
+		SELECT 1 AS id, '2024-01-01 05:00:00'::TIMESTAMP AS ts, 'a' AS value
+		UNION ALL SELECT 2 AS id, '2024-01-02 05:00:00'::TIMESTAMP AS ts, 'b' AS value
+	`, &createTableOptions{})
+	require.NoError(t, err)
+
+	opts := schemaChangeInsertOptions(drivers.IncrementalStrategyPartitionOverwrite, OnSchemaChangeAppendNewColumns)
+	opts.PartitionBy = "date_trunc('day', ts)"
+	_, err = c.insertTableAsSelect(context.Background(), table, `
+		SELECT 3 AS id, '2024-01-01 09:00:00'::TIMESTAMP AS ts, 'replaced' AS value, 42 AS extra
+	`, opts)
+	require.NoError(t, err)
+
+	// Only the 2024-01-01 partition was overwritten.
+	requireQueryStrings(t, c, fmt.Sprintf(`SELECT id::VARCHAR, value, coalesce(extra::VARCHAR, 'NULL') FROM %s ORDER BY id`, safeSQLName(table)),
+		[][]string{{"2", "b", "NULL"}, {"3", "replaced", "42"}})
+}
+
 func TestInsertTableAsSelectEmptyPartitionSkipsSchemaHandling(t *testing.T) {
 	for _, strategy := range []drivers.IncrementalStrategy{drivers.IncrementalStrategyMerge, drivers.IncrementalStrategyPartitionOverwrite} {
 		t.Run(string(strategy), func(t *testing.T) {

@@ -40,6 +40,17 @@ type insertColumns struct {
 	source []string
 }
 
+// hasSource reports whether name is one of the source columns being inserted.
+// The comparison is case-insensitive because DuckDB identifiers are, even when quoted.
+func (c *insertColumns) hasSource(name string) bool {
+	for _, column := range c.source {
+		if strings.EqualFold(column, name) {
+			return true
+		}
+	}
+	return false
+}
+
 // reconcileTableSchema compares the target and source schemas, applies the schema change indicated by mode,
 // and returns the columns to insert with.
 // Note that the ALTER TABLE statements it may issue are only rolled back on failure by rduckdb backends that mutate a copy of the table.

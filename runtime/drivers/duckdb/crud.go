@@ -169,6 +169,12 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 			switch opts.Strategy {
 			case drivers.IncrementalStrategyMerge:
+				for _, key := range opts.UniqueKey {
+					if !cols.hasSource(key) {
+						return fmt.Errorf("the new data does not contain the %q column from %q", key, "unique_key")
+					}
+				}
+
 				// Drop the rows from the target table where the unique key is present in the temporary table.
 				where := ""
 				for i, key := range opts.UniqueKey {
@@ -183,6 +189,14 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 					return err
 				}
 			case drivers.IncrementalStrategyPartitionOverwrite:
+				// Check that the partition expression resolves against the new data on its own.
+				// The DELETE below references it unqualified in a subquery, so a column that is missing from the new data
+				// would instead bind to the target table as a correlated reference and match every row.
+				_, err = conn.ExecContext(ctx, fmt.Sprintf("SELECT %s FROM %s LIMIT 0", opts.PartitionBy, safeSQLName(tmp)))
+				if err != nil {
+					return fmt.Errorf("failed to resolve the %q expression %q against the new data: %w", "partition_by", opts.PartitionBy, err)
+				}
+
 				// Drop the rows from the target table where the partition expression overlaps with the temporary table.
 				_, err = conn.ExecContext(ctx, fmt.Sprintf(
 					"DELETE FROM %s WHERE %s IN (SELECT DISTINCT %s FROM %s)",
