@@ -180,6 +180,14 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		ip.SQL = ip.SQL + " SETTINGS " + op.QuerySettings
 	}
 
+	if ip != nil {
+		ip.PostExec = strings.TrimSpace(ip.PostExec)
+		ip.PreExec = strings.TrimSpace(ip.PreExec)
+	}
+	if op != nil {
+		op.PostExec = strings.TrimSpace(op.PostExec)
+		op.PreExec = strings.TrimSpace(op.PreExec)
+	}
 	return nil
 }
 

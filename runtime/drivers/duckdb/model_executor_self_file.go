@@ -46,7 +46,7 @@ func (e *selfToFileExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
-	if err := inputProps.Validate(); err != nil {
+	if err := inputProps.ValidateAndApplyDefaults(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
