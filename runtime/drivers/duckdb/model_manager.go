@@ -26,7 +26,10 @@ type ModelInputProperties struct {
 	InternalDropSecretSQL   string `mapstructure:"internal_drop_secret_sql"`
 }
 
-func (p *ModelInputProperties) Validate() error {
+func (p *ModelInputProperties) ValidateAndApplyDefaults() error {
+	p.SQL = strings.TrimSpace(p.SQL)
+	p.PreExec = strings.TrimSpace(p.PreExec)
+	p.PostExec = strings.TrimSpace(p.PostExec)
 	if p.SQL == "" {
 		return fmt.Errorf("missing property 'sql'")
 	}
@@ -48,7 +51,7 @@ type ModelOutputProperties struct {
 	CreateSecretsFromConnectors []string `mapstructure:"create_secrets_from_connectors"`
 }
 
-func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions, ip *ModelInputProperties, op *ModelOutputProperties) error {
+func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions, ip *ModelInputProperties) error {
 	if opts.Incremental || opts.PartitionRun {
 		if p.Materialize != nil && !*p.Materialize {
 			return fmt.Errorf("incremental or partitioned models must be materialized")
@@ -79,36 +82,38 @@ func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExec
 
 	// We want to use partition_overwrite as the default incremental strategy for models with partitions.
 	// This requires us to inject the partition key into the SQL query, so this only works for SQL models.
-	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
-		if len(op.UniqueKey) > 0 {
-			op.IncrementalStrategy = drivers.IncrementalStrategyMerge
+	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
+		if len(p.UniqueKey) > 0 {
+			p.IncrementalStrategy = drivers.IncrementalStrategyMerge
 		} else if opts.PartitionRun && ip != nil && ip.SQL != "" {
 			ip.SQL = fmt.Sprintf("SELECT %s AS __rill_partition, * FROM (%s\n)", safeSQLString(opts.PartitionKey), ip.SQL)
-			op.IncrementalStrategy = drivers.IncrementalStrategyPartitionOverwrite
-			op.PartitionBy = "__rill_partition"
+			p.IncrementalStrategy = drivers.IncrementalStrategyPartitionOverwrite
+			p.PartitionBy = "__rill_partition"
 		}
 	}
 
 	// If we failed to apply a better incremental strategy, fall back to append.
-	if op.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
-		op.IncrementalStrategy = drivers.IncrementalStrategyAppend
+	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
+		p.IncrementalStrategy = drivers.IncrementalStrategyAppend
 	}
 
-	if op.OnSchemaChange != nil {
-		if !op.OnSchemaChange.Valid() {
-			return fmt.Errorf("invalid on_schema_change mode %q", *op.OnSchemaChange)
+	if p.OnSchemaChange != nil {
+		if !p.OnSchemaChange.Valid() {
+			return fmt.Errorf("invalid on_schema_change mode %q", *p.OnSchemaChange)
 		}
 		if !opts.Incremental || !opts.PartitionRun {
 			return fmt.Errorf(`"on_schema_change" is only supported for incremental models with partitions`)
 		}
-		if op.IncrementalStrategy != drivers.IncrementalStrategyMerge && op.IncrementalStrategy != drivers.IncrementalStrategyPartitionOverwrite {
+		if p.IncrementalStrategy != drivers.IncrementalStrategyMerge && p.IncrementalStrategy != drivers.IncrementalStrategyPartitionOverwrite {
 			return fmt.Errorf(`"on_schema_change" is only supported for the "merge" and "partition_overwrite" incremental strategies`)
 		}
-	} else if opts.Incremental && opts.PartitionRun && (op.IncrementalStrategy == drivers.IncrementalStrategyMerge || op.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite) {
+	} else if opts.Incremental && opts.PartitionRun && (p.IncrementalStrategy == drivers.IncrementalStrategyMerge || p.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite) {
 		mode := OnSchemaChangeFail
-		op.OnSchemaChange = &mode
+		p.OnSchemaChange = &mode
 	}
 
+	p.PreExec = strings.TrimSpace(p.PreExec)
+	p.PostExec = strings.TrimSpace(p.PostExec)
 	return nil
 }
 

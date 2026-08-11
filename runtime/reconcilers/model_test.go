@@ -151,7 +151,7 @@ sql: SELECT 1 AS num
 }
 
 func TestPartitionedIncrementalPostExecSeesIncrementalFlag(t *testing.T) {
-	rt, instanceID := testruntime.NewInstance(t)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{StageChanges: true})
 
 	testruntime.PutFiles(t, rt, instanceID, map[string]string{
 		"rill.yaml": ``,
