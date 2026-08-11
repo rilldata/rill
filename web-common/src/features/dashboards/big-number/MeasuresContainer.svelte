@@ -1,15 +1,15 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
-  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
   export let metricsViewName: string;
   export let exploreContainerWidth: number;
+  export let whereFilter: V1Expression | undefined;
 
   const MEASURE_HEIGHT = 60;
   const MEASURE_HEIGHT_MULTILINE = 80;
@@ -128,13 +128,6 @@
   $: numColumns = 3;
 
   // Query-context props for MeasureBigNumber
-  $: chartWhere = sanitiseExpression(
-    mergeDimensionAndMeasureFilters(
-      $dashboardStore?.whereFilter,
-      $dashboardStore?.dimensionThresholdFilters,
-    ),
-    undefined,
-  );
   $: chartReady = !!$timeControlsStore.ready;
 
   $: if (metricsContainerHeight && measureNodes.length) {
@@ -183,7 +176,7 @@
           {measure}
           withTimeseries={false}
           {metricsViewName}
-          where={chartWhere}
+          where={whereFilter}
           ready={chartReady}
         />
       </div>

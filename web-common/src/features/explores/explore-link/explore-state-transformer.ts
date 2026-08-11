@@ -1,4 +1,3 @@
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
@@ -12,11 +11,7 @@ export function transformTimeAndFiltersToExploreState(
   const exploreState: Partial<ExploreState> = {};
 
   if (timeAndFilterStore.where) {
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      timeAndFilterStore.where,
-    );
-    exploreState.whereFilter = dimensionFilters;
-    exploreState.dimensionThresholdFilters = dimensionThresholdFilters;
+    exploreState.whereFilter = timeAndFilterStore.where;
   }
 
   if (timeAndFilterStore.timeRangeState) {

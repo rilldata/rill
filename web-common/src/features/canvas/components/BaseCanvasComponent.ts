@@ -201,7 +201,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.localTimeControls.grainStore,
         this.localTimeControls.comparisonRangeStore,
         this.localTimeControls.rangeStore,
-        this.parent.expressionFilterManager.exprByMetricsViewStore,
+        this.parent.expressionFilterManager.getExprStoreForMetricsView(
+          this.metricsViewName,
+        ),
         this.parent.timeManager.hasTimeSeriesMap,
         this.specStore,
       ],
@@ -224,8 +226,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         componentSpec,
       ]) => {
         const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
-
-        const mvFilters = metricsViewFilters[this.metricsViewName];
 
         let timeGrain = globalGrainStore;
 
@@ -267,7 +267,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             },
           };
 
-        if (!mvFilters) {
+        if (!metricsViewFilters) {
           return {
             timeRange: timeRange,
             where: undefined,
@@ -326,23 +326,29 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         }
 
         // Dimension Filters
-        const globalWhere =
-          sanitiseExpression(mvFilters, undefined) ?? createAndExpression([]);
+        const globalDimensionOnlyWhere =
+          sanitiseExpression(metricsViewFilters.dimensionOnlyExpr, undefined) ??
+          createAndExpression([]);
 
-        let where: V1Expression | undefined = globalWhere;
+        let dimensionOnlyWhere: V1Expression | undefined =
+          globalDimensionOnlyWhere;
 
         if (componentSpec?.["dimension_filters"]) {
           const { expr: componentWhere } = getFiltersFromText(
             componentSpec?.["dimension_filters"] as string,
           );
-          where = mergeFilters(globalWhere, componentWhere);
+          dimensionOnlyWhere = mergeFilters(
+            globalDimensionOnlyWhere,
+            componentWhere,
+          );
         }
 
         return {
           timeRange,
           showTimeComparison,
           comparisonTimeRange,
-          where,
+          dimensionOnlyWhere,
+          where: metricsViewFilters.expr,
           timeGrain,
           timeRangeState,
           comparisonTimeRangeState,

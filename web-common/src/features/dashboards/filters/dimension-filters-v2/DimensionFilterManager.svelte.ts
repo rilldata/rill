@@ -190,6 +190,7 @@ export class DimensionFilterManager {
           this.mode === DimensionFilterMode.InList ? [this.name] : [],
         )
       : "";
+    console.log("committing", this.param);
   }
 }
 

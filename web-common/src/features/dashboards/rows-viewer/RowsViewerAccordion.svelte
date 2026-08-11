@@ -12,7 +12,6 @@
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
-  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import type { PivotFilter } from "../pivot/types";
   import RowsViewer from "./RowsViewer.svelte";
 
@@ -45,7 +44,7 @@
   const client = useRuntimeClient();
 
   $: exploreState = useExploreState(exploreName);
-  $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
+  $: whereFilter = $exploreState.whereFilter;
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: ({ activeCellFilters } = $pivotDataStore);
   $: showPivot = $showPivotStore;
@@ -65,10 +64,7 @@
 
   $: filters = isPivotCellSelected
     ? sanitiseExpression((activeCellFilters as PivotFilter).filters, undefined)
-    : sanitiseExpression(
-        mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilters),
-        undefined,
-      );
+    : sanitiseExpression(whereFilter, undefined);
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -136,13 +132,7 @@
         timeStart: timeRange.start,
         timeEnd: timeRange.end,
         timeDimension: $exploreState?.selectedTimeDimension,
-        where: sanitiseExpression(
-          mergeDimensionAndMeasureFilters(
-            $exploreState.whereFilter,
-            $exploreState.dimensionThresholdFilters,
-          ),
-          undefined,
-        ),
+        where: sanitiseExpression($exploreState.whereFilter, undefined),
       },
     };
   }

@@ -19,7 +19,7 @@ import {
 } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import { toStore, writable, type Writable } from "svelte/store";
+import { toStore, type Readable } from "svelte/store";
 import {
   type AnyManager,
   type DimensionOrMeasureManager,
@@ -45,8 +45,7 @@ export class ExpressionFilterManager {
   public isComplexFilter: boolean;
   public exprByMetricsView: Record<string, V1Expression>;
   // Temporary svelte4 store for legacy components
-  public exprByMetricsViewStore: Writable<Record<string, V1Expression>> =
-    writable({});
+  public exprByMetricsViewStore: Readable<Record<string, V1Expression>>;
   public inList: string[];
   public hasSomeFilter: boolean;
 
@@ -81,6 +80,7 @@ export class ExpressionFilterManager {
     public readonly yamlConfigProvider: YAMLConfigProvider,
   ) {
     this.managerByMetricsView = $derived.by(() => {
+      console.log("managerByMetricsView calc");
       const existingManagers = new Map<string, AnyManager>();
       return Object.fromEntries(
         Object.entries(this.paramByMetricsView)
@@ -142,6 +142,7 @@ export class ExpressionFilterManager {
           .filter(([, manager]) => !!manager) as [string, V1Expression][],
       ),
     );
+    this.exprByMetricsViewStore = toStore(() => this.exprByMetricsView);
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
     );
@@ -151,10 +152,6 @@ export class ExpressionFilterManager {
   }
 
   public createListener() {
-    $effect(() => {
-      this.exprByMetricsViewStore.set(this.exprByMetricsView);
-    });
-
     $effect(() => {
       const paramsAreEqual = recordsMatch(
         this.paramByManager,
@@ -190,21 +187,35 @@ export class ExpressionFilterManager {
         searchParams.get(paramKey) ?? singularFilter ?? "";
     });
 
-    const unchanged = recordsMatch(
-      this.paramByMetricsView,
-      newParamByMetricsView,
-      this.metricsViewsProvider.metricsViewNames,
-    );
+    // Managers can be mutated in place without going through the param, so the new param also has
+    // to match what the managers hold. Otherwise a param that reverts such a mutation is a no-op.
+    const unchanged =
+      recordsMatch(
+        this.paramByMetricsView,
+        newParamByMetricsView,
+        this.metricsViewsProvider.metricsViewNames,
+      ) &&
+      recordsMatch(
+        this.paramByManager,
+        newParamByMetricsView,
+        this.metricsViewsProvider.metricsViewNames,
+      );
     if (unchanged && !force) return;
 
     this.paramByMetricsView = newParamByMetricsView;
     this.temporaryFilterName = undefined;
   };
 
-  public setExprForMetricsView(mvName: string, expr: V1Expression | undefined) {
+  public setExprForMetricsView(
+    mvName: string,
+    expr: V1Expression | undefined,
+    dimensionsWithInlistFilter?: string[],
+  ) {
     this.setParamForMetricsView(
       mvName,
-      expr ? convertExpressionToFilterParam(expr) : "",
+      expr
+        ? convertExpressionToFilterParam(expr, dimensionsWithInlistFilter)
+        : "",
     );
   }
 
@@ -233,14 +244,25 @@ export class ExpressionFilterManager {
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
   public addNewFilter(name: string) {
-    if (
-      !this.metricsViewsProvider.dimensionSpecs[name] &&
-      !this.metricsViewsProvider.measureSpecs[name]
-    ) {
-      return;
-    }
+    if (this.filterManagersMap[name]) return;
 
-    this.temporaryFilterName = name;
+    if (this.metricsViewsProvider.dimensionSpecs[name]) {
+      const dfm = this.createDimensionFilterManager(name);
+      console.log("Adding dimension filter for", name);
+      if (!dfm) return;
+      Object.keys(this.metricsViewsProvider.dimensionSpecs[name]).forEach(
+        (mv) => this.managerByMetricsView[mv]?.maybeAddDimensionFilter(dfm),
+      );
+      this.temporaryFilterName = name;
+    } else if (this.metricsViewsProvider.measureSpecs[name]) {
+      const mfm = this.createMeasureFilterManager(name);
+      console.log("Adding measure filter for", name);
+      if (!mfm) return;
+      Object.keys(this.metricsViewsProvider.measureSpecs[name]).forEach((mv) =>
+        this.managerByMetricsView[mv]?.maybeAddMeasureFilter(mfm),
+      );
+      this.temporaryFilterName = name;
+    }
   }
 
   public dimensionFilterAction(
@@ -252,9 +274,30 @@ export class ExpressionFilterManager {
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 
     const ret = callback(dimensionFilterManager);
-    Object.values(this.managerByMetricsView).forEach((m) =>
-      m.maybeAddDimensionFilter(dimensionFilterManager),
-    );
+    // Only add dimension filter if the action resulted in a valid expression
+    if (dimensionFilterManager.expr) {
+      Object.values(this.managerByMetricsView).forEach((m) =>
+        m.maybeAddDimensionFilter(dimensionFilterManager),
+      );
+    }
+    return ret;
+  }
+
+  public measureFilterAction(
+    name: string,
+    callback: (measureFilterManager: MeasureFilterManager) => any,
+  ) {
+    const measureFilterManager =
+      this.filterManagersMap[name] ?? this.createMeasureFilterManager(name);
+    if (!(measureFilterManager instanceof MeasureFilterManager)) return;
+
+    const ret = callback(measureFilterManager);
+    // Only add measure filter if the action resulted in a valid expression
+    if (measureFilterManager.expr) {
+      Object.values(this.managerByMetricsView).forEach((m) =>
+        m.maybeAddMeasureFilter(measureFilterManager),
+      );
+    }
     return ret;
   }
 
@@ -335,10 +378,14 @@ export class ExpressionFilterManager {
   }
 
   public getExprStoreForMetricsView(mvName: string) {
-    return toStore(() => ({
-      expr: this.managerByMetricsView[mvName]?.expr,
-      dimensionOnlyExpr: this.managerByMetricsView[mvName]?.dimensionOnlyExpr,
-    }));
+    return toStore(() => {
+      const mvManager = this.managerByMetricsView[mvName];
+      if (!mvManager) return undefined;
+      return {
+        expr: mvManager.expr,
+        dimensionOnlyExpr: mvManager.dimensionOnlyExpr,
+      };
+    });
   }
 
   /** Managers for the filters in the param, keyed by name and in param order. */
@@ -348,8 +395,6 @@ export class ExpressionFilterManager {
 
     // Go through exprs of parsed url params for each metrics views.
     Object.entries(this.managerByMetricsView).forEach(([, mvManager]) => {
-      if (!mvManager.expr) return;
-
       mvManager.managers.dimensionManagers.forEach((manager) => {
         dimensionsMap[manager.name] ??= [];
         dimensionsMap[manager.name].push(manager);
@@ -401,38 +446,12 @@ export class ExpressionFilterManager {
     Object.keys(pinnedFilters).forEach((name) => add(name));
 
     // Next comes dimensions from params
-    const shouldAddTempDimension = Boolean(
-      this.temporaryFilterName &&
-        !(this.temporaryFilterName in dimensionsMap) &&
-        this.temporaryFilterName in this.metricsViewsProvider.dimensionSpecs,
-    );
-    sortFilterIterator(
-      Object.keys(dimensionsMap),
-      shouldAddTempDimension ? this.temporaryFilterName : undefined,
-    ).forEach((name) => add(name));
+    sortFilterIterator(Object.keys(dimensionsMap)).forEach((name) => add(name));
 
     // Next comes measures from params
-    const shouldAddTempMeasure =
-      this.temporaryFilterName &&
-      !(this.temporaryFilterName in measuresMap) &&
-      this.temporaryFilterName in this.metricsViewsProvider.measureSpecs;
-    sortFilterIterator(
-      Object.keys(measuresMap),
-      shouldAddTempMeasure ? this.temporaryFilterName : undefined,
-    ).forEach((name) => add(name));
+    sortFilterIterator(Object.keys(measuresMap)).forEach((name) => add(name));
 
-    return { measures, dimensions };
-  }
-
-  private createMeasureFilterManager(name: string, initExpr?: V1Expression) {
-    const measureSpecs = this.metricsViewsProvider.measureSpecs[name];
-    if (!measureSpecs) return undefined;
-
-    return new MeasureFilterManager(
-      name,
-      getMeasureDisplayName(Object.values(measureSpecs)[0]),
-      initExpr,
-    );
+    return { dimensions, measures };
   }
 
   private createDimensionFilterManager(
@@ -450,6 +469,17 @@ export class ExpressionFilterManager {
       isInList,
     );
   }
+
+  private createMeasureFilterManager(name: string, initExpr?: V1Expression) {
+    const measureSpecs = this.metricsViewsProvider.measureSpecs[name];
+    if (!measureSpecs) return undefined;
+
+    return new MeasureFilterManager(
+      name,
+      getMeasureDisplayName(Object.values(measureSpecs)[0]),
+      initExpr,
+    );
+  }
 }
 
 /**
@@ -464,10 +494,8 @@ function parseFilterParam(param: string) {
   }
 }
 
-function sortFilterIterator(arr: string[], tempName: string | undefined) {
-  const newArr = [...arr];
-  if (tempName) newArr.push(tempName);
-  return newArr.sort((a, b) => (a > b ? 1 : -1));
+function sortFilterIterator(arr: string[]) {
+  return [...arr].sort((a, b) => (a > b ? 1 : -1));
 }
 
 export function recordsMatch(

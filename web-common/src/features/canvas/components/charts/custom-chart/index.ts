@@ -10,7 +10,6 @@ import type {
   CanvasEntity,
   ComponentPath,
 } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   PivotChipType,
   type PivotChipData,
@@ -115,10 +114,6 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     const fields = get(this.queryFieldsMeta);
     const timeAndFilter = get(this.timeAndFilterStore);
 
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      timeAndFilter?.where,
-    );
-
     const columns: PivotChipData[] = [];
     const rows: PivotChipData[] = [];
 
@@ -153,8 +148,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     };
 
     return {
-      whereFilter: dimensionFilters,
-      dimensionThresholdFilters,
+      whereFilter: timeAndFilter?.where,
       showTimeComparison: false,
       activePage: DashboardState_ActivePage.PIVOT,
       pivot,

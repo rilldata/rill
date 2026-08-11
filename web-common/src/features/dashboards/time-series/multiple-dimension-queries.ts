@@ -2,7 +2,6 @@ import {
   getURIRequestMeasure,
   URI_DIMENSION_SUFFIX,
 } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
@@ -149,13 +148,10 @@ export function getDimensionValuesForComparison(
               measures: tddMeasures,
               dimensions: [{ name: dimensionName }],
               where: sanitiseExpression(
-                mergeDimensionAndMeasureFilters(
-                  getDimensionFilterWithSearch(
-                    dashboardStore?.whereFilter,
-                    searchText,
-                    dimensionName,
-                  ),
-                  dashboardStore.dimensionThresholdFilters,
+                getDimensionFilterWithSearch(
+                  dashboardStore?.whereFilter,
+                  searchText,
+                  dimensionName,
                 ),
                 undefined,
               ),

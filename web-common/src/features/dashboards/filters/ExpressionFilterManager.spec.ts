@@ -619,7 +619,10 @@ describe("dimensionFilterAction", () => {
       AD_BIDS_PUBLISHER_DIMENSION,
       (manager) => manager.toggleValue("Google", false),
     );
-    expect(filterManager.filterManagers.dimensions[0]).toBeUndefined();
+    expect(filterManager.filterManagers.dimensions[0]).not.toBeUndefined();
+    expect(filterManager.filterManagers.dimensions[0].selectedValues).toEqual(
+      [],
+    );
 
     filterManager.dimensionFilterAction(
       AD_BIDS_PUBLISHER_DIMENSION,

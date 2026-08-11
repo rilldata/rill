@@ -1,9 +1,5 @@
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import {
-  mapMeasureFilterToExpr,
-  type MeasureFilterEntry,
-} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import {
   MeasureFilterOperation,
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
@@ -13,14 +9,6 @@ import {
   setPrimaryDimension,
   toggleDimensionVisibility,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimensions";
-import {
-  clearAllFilters,
-  setFilter,
-} from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
-import {
-  removeMeasureFilter,
-  setMeasureFilter,
-} from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
 import { toggleMeasureVisibility } from "@rilldata/web-common/features/dashboards/state-managers/actions/measures";
 import {
   setSortDescending,
@@ -34,7 +22,6 @@ import {
 import {
   createAndExpression,
   createInExpression,
-  createSubQueryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
@@ -51,7 +38,6 @@ import {
   RandomPublishers,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import {
   type DashboardTimeControls,
   type TimeRange,
@@ -129,49 +115,63 @@ export const AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER: TestDashboardMutation = ({
   );
 };
 
-export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
-  setMeasureFilter(mut, AD_BIDS_PUBLISHER_DIMENSION, {
-    measure: AD_BIDS_IMPRESSIONS_MEASURE,
-    type: MeasureFilterType.Value,
-    operation: MeasureFilterOperation.GreaterThan,
-    value1: "10",
-    value2: "",
-  });
-export const AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER: TestDashboardMutation =
-  (mut) =>
-    appendMeasureFilterToParam(mut, AD_BIDS_COUNTRY_DIMENSION, {
-      measure: AD_BIDS_BID_PRICE_MEASURE,
+export const AD_BIDS_APPLY_IMP_MEASURE_FILTER: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  filterManager.measureFilterAction(AD_BIDS_IMPRESSIONS_MEASURE, (manager) =>
+    manager.setMeasureFilter(AD_BIDS_PUBLISHER_DIMENSION, {
+      measure: AD_BIDS_IMPRESSIONS_MEASURE,
       type: MeasureFilterType.Value,
-      operation: MeasureFilterOperation.Between,
+      operation: MeasureFilterOperation.GreaterThan,
       value1: "10",
-      value2: "20",
-    });
-export const AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER: TestDashboardMutation =
-  (mut) =>
-    appendMeasureFilterToParam(mut, AD_BIDS_COUNTRY_DIMENSION, {
-      measure: AD_BIDS_BID_PRICE_MEASURE,
-      type: MeasureFilterType.Value,
-      operation: MeasureFilterOperation.NotBetween,
-      value1: "10",
-      value2: "20",
-    });
-export const AD_BIDS_REMOVE_IMP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
-  removeMeasureFilter(
-    mut,
-    AD_BIDS_PUBLISHER_DIMENSION,
-    AD_BIDS_IMPRESSIONS_MEASURE,
+      value2: "",
+    }),
   );
-export const AD_BIDS_APPLY_BP_MEASURE_FILTER: TestDashboardMutation = (mut) =>
-  setMeasureFilter(mut, AD_BIDS_DOMAIN_DIMENSION, {
-    measure: AD_BIDS_BID_PRICE_MEASURE,
-    type: MeasureFilterType.Value,
-    operation: MeasureFilterOperation.GreaterThan,
-    value1: "10",
-    value2: "",
-  });
-
-export const AD_BIDS_CLEAR_FILTERS: TestDashboardMutation = (mut) =>
-  clearAllFilters(mut);
+};
+export const AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER: TestDashboardMutation =
+  ({ filterManager }) => {
+    filterManager.measureFilterAction(AD_BIDS_BID_PRICE_MEASURE, (manager) =>
+      manager.setMeasureFilter(AD_BIDS_COUNTRY_DIMENSION, {
+        measure: AD_BIDS_BID_PRICE_MEASURE,
+        type: MeasureFilterType.Value,
+        operation: MeasureFilterOperation.Between,
+        value1: "10",
+        value2: "20",
+      }),
+    );
+  };
+export const AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER: TestDashboardMutation =
+  ({ filterManager }) => {
+    filterManager.measureFilterAction(AD_BIDS_BID_PRICE_MEASURE, (manager) =>
+      manager.setMeasureFilter(AD_BIDS_COUNTRY_DIMENSION, {
+        measure: AD_BIDS_BID_PRICE_MEASURE,
+        type: MeasureFilterType.Value,
+        operation: MeasureFilterOperation.NotBetween,
+        value1: "10",
+        value2: "20",
+      }),
+    );
+  };
+export const AD_BIDS_REMOVE_IMP_MEASURE_FILTER: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  filterManager.measureFilterAction(AD_BIDS_IMPRESSIONS_MEASURE, (manager) =>
+    manager.clear(),
+  );
+};
+export const AD_BIDS_APPLY_BP_MEASURE_FILTER: TestDashboardMutation = ({
+  filterManager,
+}) => {
+  filterManager.measureFilterAction(AD_BIDS_BID_PRICE_MEASURE, (manager) =>
+    manager.setMeasureFilter(AD_BIDS_DOMAIN_DIMENSION, {
+      measure: AD_BIDS_BID_PRICE_MEASURE,
+      type: MeasureFilterType.Value,
+      operation: MeasureFilterOperation.GreaterThan,
+      value1: "10",
+      value2: "",
+    }),
+  );
+};
 
 export const AD_BIDS_SET_P7D_TIME_RANGE_FILTER: TestDashboardMutation = () =>
   metricsExplorerStore.selectTimeRange(
@@ -556,35 +556,6 @@ export const AD_BIDS_SET_TIME_DIMENSION_PRIMARY: TestDashboardMutation = (
   mut.dashboard.selectedTimeDimension = undefined;
 };
 
-/**
- * Adds a measure filter to the filter param of the 1st metrics view, preserving the filters
- * already in it.
- *
- * TODO: ExpressionFilterManager has no measure equivalent of `dimensionFilterAction`. A measure
- *       filter only ever reaches the manager through the filter param, so seed it the same way.
- */
-function appendMeasureFilterToParam(
-  { filterManager }: TestDashboardMutables,
-  dimension: string,
-  measureFilter: MeasureFilterEntry,
-) {
-  const havingExpr = mapMeasureFilterToExpr(measureFilter);
-  if (!havingExpr) return;
-
-  const mvName = filterManager.metricsViewsProvider.metricsViewNames[0];
-  const exprs =
-    filterManager.managerByMetricsView[mvName]?.expr?.cond?.exprs ?? [];
-  const expr = createAndExpression([
-    ...exprs,
-    createSubQueryExpression(dimension, [measureFilter.measure], havingExpr),
-  ]);
-
-  filterManager.setParamForMetricsView(
-    mvName,
-    convertExpressionToFilterParam(expr, filterManager.inList),
-  );
-}
-
 export async function applyMutationsToDashboard(
   name: string,
   mutations: TestDashboardMutation[],
@@ -603,11 +574,11 @@ export async function applyMutationsToDashboard(
       // DashboardStateSync does for the app.
       updateMetricsExplorerByName(name, (dashboard) => {
         const mvName = filterManager.metricsViewsProvider.metricsViewNames[0];
-        setFilter(
-          { dashboard } as DashboardMutables,
-          filterManager.managerByMetricsView[mvName]?.expr,
-          filterManager.inList,
-        );
+        dashboard.whereFilter =
+          filterManager.managerByMetricsView[mvName]?.expr ??
+          createAndExpression([]);
+        dashboard.dimensionThresholdFilters = [];
+        dashboard.dimensionsWithInlistFilter = filterManager.inList;
       });
     }
     // DashboardStateSync.gotoNewState that listens to changes to the dashboard store is an async function.

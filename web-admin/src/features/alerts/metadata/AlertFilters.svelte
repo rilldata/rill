@@ -1,109 +1,62 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
-  import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
-  import DimensionFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterReadOnlyChip.svelte";
-  import MeasureFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterReadOnlyChip.svelte";
-  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getDimensionFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-  import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
-  import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { flip } from "svelte/animate";
-  import { fly } from "svelte/transition";
+  import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
 
-  export let metricsViewName: string;
-  export let filters: V1Expression | undefined;
-  export let dimensionsWithInlistFilter: string[];
-  export let timeRange: V1TimeRange | undefined;
-  export let comparisonTimeRange: V1TimeRange | undefined;
+  let {
+    metricsViewName,
+    filters,
+    dimensionsWithInlistFilter,
+    timeRange,
+    comparisonTimeRange,
+  }: {
+    metricsViewName: string;
+    filters: V1Expression | undefined;
+    dimensionsWithInlistFilter: string[];
+    timeRange: V1TimeRange | undefined;
+    comparisonTimeRange: V1TimeRange | undefined;
+  } = $props();
 
-  // time range could be an empty object sometimes
-  $: hasTimeRange = timeRange && Object.keys(timeRange).length > 0;
-  $: filtersLength =
-    (filters?.cond?.exprs?.length ?? 0) + (hasTimeRange ? 1 : 0);
-
-  let whereFilter: V1Expression;
-  let havingFilter: DimensionThresholdFilter[];
-  $: {
-    const { dimensionFilters, dimensionThresholdFilters } =
-      splitWhereFilter(filters);
-    whereFilter = dimensionFilters;
-    havingFilter = dimensionThresholdFilters;
-  }
   const runtimeClient = useRuntimeClient();
 
-  $: metricsView = useMetricsView(runtimeClient, metricsViewName);
-  $: dimensionIdMap = getMapFromArray(
-    $metricsView.data?.metricsView?.state?.validSpec?.dimensions ?? [],
-    (dimension) => dimension.name,
+  const metricsViewProvider = new MetricsViewsProvider(runtimeClient, []);
+  $effect(() => metricsViewProvider.setMetricsViewNames([metricsViewName]));
+  const expressionFilterManager = new ExpressionFilterManager(
+    metricsViewProvider,
+    new YAMLConfigProvider(),
   );
-  $: measureIdMap = getMapFromArray(
-    $metricsView.data?.metricsView?.state?.validSpec?.measures ?? [],
-    (measure) => measure.name,
+  $effect(() =>
+    expressionFilterManager.setExprForMetricsView(
+      metricsViewName,
+      filters,
+      dimensionsWithInlistFilter,
+    ),
   );
 
-  $: currentDimensionFilters = getDimensionFilters(
-    dimensionIdMap,
-    whereFilter,
-    dimensionsWithInlistFilter,
-    metricsViewName,
+  // time range could be an empty object sometimes
+  let hasTimeRange = $derived(timeRange && Object.keys(timeRange).length > 0);
+  let filtersLength = $derived(
+    (filters?.cond?.exprs?.length ?? 0) + (hasTimeRange ? 1 : 0),
   );
-  $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label={m.alert_metadata_filters_aria()}>
-  <MetadataLabel
-    >{m.alert_filters_label({ count: String(filtersLength) })}</MetadataLabel
-  >
-  <div class="flex flex-wrap gap-2">
-    {#if filtersLength}
-      {#if hasTimeRange}
-        <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
-      {/if}
-      {#each currentDimensionFilters as { name, label, mode, selectedValues, inputText, isInclude } (name)}
-        {@const dimension = dimensionIdMap.get(name)}
-        <div animate:flip={{ duration: 200 }}>
-          {#if dimension?.column}
-            <DimensionFilterReadOnlyChip
-              {name}
-              metricsViewNames={[metricsViewName]}
-              {mode}
-              label={label || name}
-              values={selectedValues}
-              {inputText}
-              {isInclude}
-              timeStart={timeRange?.start}
-              timeEnd={timeRange?.end}
-            />
-          {/if}
-        </div>
-      {/each}
-      {#if currentMeasureFilters.length > 0}
-        {#each currentMeasureFilters as { name, label, dimensionName, filter } (name)}
-          <div animate:flip={{ duration: 200 }}>
-            <MeasureFilterReadOnlyChip
-              label={label || name}
-              {dimensionName}
-              {filter}
-            />
-          </div>
-        {/each}
-      {/if}
-    {:else}
-      <div
-        in:fly|local={{ duration: 200, x: 8 }}
-        class="text-fg-muted grid items-center"
-        style:min-height="26px"
-      >
-        {m.alert_no_filters_heading()}
-      </div>
-    {/if}
-  </div>
+  <MetadataLabel>
+    {m.alert_filters_label({ count: String(filtersLength) })}
+  </MetadataLabel>
+  <ReadonlyExpressionFilters
+    {expressionFilterManager}
+    displayTimeRange={timeRange}
+    displayComparisonTimeRange={comparisonTimeRange}
+    queryTimeStart={timeRange?.start}
+    queryTimeEnd={timeRange?.end}
+  />
 </div>

@@ -1,8 +1,4 @@
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
-  type MetricsViewSpecDimension,
-  type MetricsViewSpecMeasure,
   type V1Condition,
   type V1Expression,
   V1Operation,
@@ -455,37 +451,6 @@ export function isSubqueryExpressionUnsupported(subquery: V1Subquery) {
     unwrappedHavingFilter &&
     isAndOrExpression(unwrappedHavingFilter) &&
     !isBetweenExpression(unwrappedHavingFilter)
-  );
-}
-
-export function buildValidMetricsViewFilter(
-  filter: V1Expression,
-  dtf: DimensionThresholdFilter[],
-  dimensions: MetricsViewSpecDimension[],
-  measures: MetricsViewSpecMeasure[],
-) {
-  const whereFilter =
-    filterIdentifiers(filter, (e, ident) => {
-      const dim = dimensions?.find((d) => d.name === ident);
-      // ignore if dimension is not present anymore
-      if (!dim) return false;
-      return true;
-    }) ?? createAndExpression([]);
-
-  const dimensionThresholdFilter = dtf.filter((f) => {
-    const dim = dimensions?.find((d) => d.name === f.name);
-    if (!dim) return false;
-
-    const hasValidMeasures = f.filters.every((filter) => {
-      const measure = measures?.find((m) => m.name === filter.measure);
-      return !!measure;
-    });
-    return hasValidMeasures;
-  });
-
-  return sanitiseExpression(
-    mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilter),
-    undefined,
   );
 }
 

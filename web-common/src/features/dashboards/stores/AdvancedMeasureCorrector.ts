@@ -55,17 +55,18 @@ export class AdvancedMeasureCorrector {
   }
 
   private correctFilters() {
-    this.exploreState.dimensionThresholdFilters.forEach(
-      (dimensionThreshold) => {
-        dimensionThreshold.filters = dimensionThreshold.filters.filter(
-          (dtf) => !this.measureIsValidForComponent(dtf.measure, false, false),
-        );
-      },
-    );
-    this.exploreState.dimensionThresholdFilters =
-      this.exploreState.dimensionThresholdFilters.filter(
-        (dt) => dt.filters.length,
-      );
+    // TODO: correct whereFilter
+    // this.exploreState.dimensionThresholdFilters.forEach(
+    //   (dimensionThreshold) => {
+    //     dimensionThreshold.filters = dimensionThreshold.filters.filter(
+    //       (dtf) => !this.measureIsValidForComponent(dtf.measure, false, false),
+    //     );
+    //   },
+    // );
+    // this.exploreState.dimensionThresholdFilters =
+    //   this.exploreState.dimensionThresholdFilters.filter(
+    //     (dt) => dt.filters.length,
+    //   );
   }
 
   private correctLeaderboards() {

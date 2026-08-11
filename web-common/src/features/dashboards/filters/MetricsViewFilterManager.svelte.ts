@@ -53,7 +53,7 @@ export class MetricsViewFilterManager {
   ) {
     this.managers = $state(managers);
 
-    this.expr = $derived(this.buildExpression());
+    this.expr = $derived(this.buildExpression(this.managers));
     this.dimensionOnlyExpr = $derived(this.buildDimensionOnlyExpression());
     this.param = $derived(
       this.expr ? convertExpressionToFilterParam(this.expr, this.inList) : "",
@@ -172,9 +172,13 @@ export class MetricsViewFilterManager {
       !this.metricsViewsProvider.dimensionSpecs[dimensionName]?.[
         this.metricsViewName
       ];
-    if (!dimensionFilterManager.expr || alreadyAdded || dimensionNotInMV)
-      return;
+    if (alreadyAdded || dimensionNotInMV) return;
 
+    console.log(
+      "maybeAddDimensionFilter:added",
+      this.metricsViewName,
+      dimensionName,
+    );
     this.managers = {
       ...this.managers,
       dimensionManagers: [
@@ -184,14 +188,29 @@ export class MetricsViewFilterManager {
     };
   }
 
-  private buildExpression() {
-    const dimensionExprs = this.managers.dimensionManagers
+  public maybeAddMeasureFilter(measureFilterManager: MeasureFilterManager) {
+    const measureName = measureFilterManager.name;
+    const alreadyAdded = !!this.managerLookup[measureName];
+    const measureNotInMV =
+      !this.metricsViewsProvider.measureSpecs[measureName]?.[
+        this.metricsViewName
+      ];
+    if (alreadyAdded || measureNotInMV) return;
+
+    this.managers = {
+      ...this.managers,
+      measureManagers: [...this.managers.measureManagers, measureFilterManager],
+    };
+  }
+
+  private buildExpression(managers: AllManagers) {
+    const dimensionExprs = managers.dimensionManagers
       .map((dfm) => dfm.expr)
       .filter(Boolean) as V1Expression[];
-    const measureExprs = this.managers.measureManagers
+    const measureExprs = managers.measureManagers
       .map((mfm) => mfm.expr)
       .filter(Boolean) as V1Expression[];
-    const joinerExprs = this.managers.joinerManagers
+    const joinerExprs = managers.joinerManagers
       .map((jm) => jm.expr)
       .filter(Boolean) as V1Expression[];
     const exprs = dimensionExprs.concat(measureExprs).concat(joinerExprs);

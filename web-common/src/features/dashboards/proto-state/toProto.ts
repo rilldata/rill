@@ -5,7 +5,6 @@ import {
   Timestamp,
   Value,
 } from "@bufbuild/protobuf";
-import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
@@ -19,7 +18,6 @@ import {
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import type {
@@ -33,9 +31,9 @@ import {
 import {
   Condition,
   Expression,
+  Subquery,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import {
-  DashboardDimensionFilter,
   DashboardState,
   DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
@@ -83,21 +81,6 @@ export function getProtoFromDashboardState(
   }
   if (exploreState.dimensionsWithInlistFilter) {
     state.dimensionsWithInlistFilter = exploreState.dimensionsWithInlistFilter;
-  }
-  if (exploreState.dimensionThresholdFilters?.length) {
-    state.having = exploreState.dimensionThresholdFilters.map(
-      ({ name, filters }) =>
-        new DashboardDimensionFilter({
-          name,
-          filter: toExpressionProto(
-            createAndExpression(
-              filters
-                .map(mapMeasureFilterToExpr)
-                .filter(Boolean) as V1Expression[],
-            ),
-          ),
-        }),
-    );
   }
   if (exploreState.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(exploreState.selectedTimeRange);
@@ -247,6 +230,24 @@ function toExpressionProto(expression: V1Expression): Expression {
             expression.cond.op ?? V1Operation.OPERATION_UNSPECIFIED
           ],
           exprs: expression.cond.exprs?.map((e) => toExpressionProto(e)) ?? [],
+        }),
+      },
+    });
+  }
+  // Measure filters are stored in the where filter as subqueries.
+  if (expression.subquery) {
+    return new Expression({
+      expression: {
+        case: "subquery",
+        value: new Subquery({
+          dimension: expression.subquery.dimension,
+          measures: expression.subquery.measures,
+          where:
+            expression.subquery.where &&
+            toExpressionProto(expression.subquery.where),
+          having:
+            expression.subquery.having &&
+            toExpressionProto(expression.subquery.having),
         }),
       },
     });

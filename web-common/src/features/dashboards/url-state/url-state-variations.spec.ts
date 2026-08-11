@@ -123,13 +123,13 @@ const TestCases: {
       AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
     ],
     expectedSearch:
-      "f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27+AND+country+having+%28%28bid_price+GT+10+AND+bid_price+LT+20%29%29",
+      "f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27+AND+country+having+%28bid_price+GT+10+AND+bid_price+LT+20%29",
   },
   {
     title: "Not-between measure filter",
     mutations: [AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER],
     expectedSearch:
-      "f=country+having+%28%28bid_price+LTE+10+OR+bid_price+GTE+20%29%29",
+      "f=country+having+%28bid_price+LTE+10+OR+bid_price+GTE+20%29",
   },
 
   {

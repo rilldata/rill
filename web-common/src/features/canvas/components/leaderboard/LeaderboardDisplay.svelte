@@ -3,7 +3,6 @@
   import { validateLeaderboardSchema } from "@rilldata/web-common/features/canvas/components/leaderboard/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
-  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
     valueColumn,
@@ -58,11 +57,8 @@
   let comparisonTimeRange = $derived($timeAndFilterStore.comparisonTimeRange);
   let timeRange = $derived($timeAndFilterStore.timeRange);
 
-  let splitFilters = $derived(splitWhereFilter($timeAndFilterStore.where));
-  let whereFilter = $derived(splitFilters.dimensionFilters);
-  let dimensionThresholdFilters = $derived(
-    splitFilters.dimensionThresholdFilters,
-  );
+  let whereFilter = $derived($timeAndFilterStore.where);
+  let dimensionOnlyFilter = $derived($timeAndFilterStore.dimensionOnlyWhere);
 
   let allDimensions = $derived(
     metricsViewSelectors.getDimensionsForMetricView(metricsViewName),
@@ -185,8 +181,8 @@
               leaderboardSortByMeasureName={leaderboardSortByMeasureName ??
                 leaderboardMeasureNames[0]}
               leaderboardMeasures={visibleMeasures}
+              {dimensionOnlyFilter}
               {whereFilter}
-              {dimensionThresholdFilters}
               tableWidth={dimensionColumnWidth + totalContextWidth}
               {dimensionColumnWidth}
               sortedAscending={sortDirection === SortDirection.ASCENDING}
