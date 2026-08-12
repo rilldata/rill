@@ -160,16 +160,12 @@
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
+  // svelte-ignore state_referenced_locally
   const initialValues = {
-    // eslint-disable-next-line svelte/valid-compile
     displayName: bookmark?.resource.displayName || m.bookmark_default_label(),
-    // eslint-disable-next-line svelte/valid-compile
     description: bookmark?.resource.description ?? "",
-    // eslint-disable-next-line svelte/valid-compile
     shared: bookmark?.resource.shared ? "true" : "false",
-    // eslint-disable-next-line svelte/valid-compile
     filtersOnly: bookmark?.filtersOnly ?? false,
-    // eslint-disable-next-line svelte/valid-compile
     absoluteTimeRange: bookmark?.absoluteTimeRange ?? false,
   };
 

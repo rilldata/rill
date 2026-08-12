@@ -31,7 +31,6 @@
 
   const ctx = getStateManagers();
   const {
-    dashboardStore,
     selectors: {
       measures: { allMeasures, visibleMeasures },
     },

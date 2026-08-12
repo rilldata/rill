@@ -69,7 +69,6 @@
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 
   export let open: boolean;
   export let props:

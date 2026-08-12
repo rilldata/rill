@@ -71,19 +71,20 @@ export function createFieldsAndStateForKind(
       validSpecState,
       timeControlState,
     ]) => {
-      const metricsView = validSpecState.data?.metricsView ?? {};
+      const metricsViewSpec = validSpecState.data?.metricsView ?? {};
+      const exploreSpec = validSpecState.data?.explore ?? {};
 
       const exploreFields = getExploreFields(
         dashboardState,
         expr,
-        metricsView.dimensions ?? [],
+        metricsViewSpec.dimensions ?? [],
         $visibleDimensions,
         $visibleMeasures,
       );
       const sanitizedState = getSanitizedExploreStateParam(
         dashboardState,
         exploreFields,
-        validSpecState.data?.explore,
+        exploreSpec,
       );
 
       return {

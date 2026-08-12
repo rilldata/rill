@@ -5,7 +5,6 @@ import { correctExploreState } from "@rilldata/web-common/features/dashboards/st
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
-  filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";

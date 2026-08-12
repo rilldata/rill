@@ -1,7 +1,3 @@
-import {
-  MeasureFilterOperation,
-  MeasureFilterType,
-} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
@@ -20,7 +16,6 @@ import {
   AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
   AD_BIDS_IMPRESSIONS_MEASURE_WINDOW,
   AD_BIDS_METRICS_INIT,
-  AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "./test-data/data";
 
@@ -75,26 +70,11 @@ describe("AdvancedMeasureCorrector", () => {
       getInitExploreStateForTest(MetricsView, Explore),
     );
     dashboard.leaderboardSortByMeasureName = AD_BIDS_IMPRESSIONS_MEASURE;
-    dashboard.dimensionThresholdFilters = [
-      {
-        name: AD_BIDS_PUBLISHER_DIMENSION,
-        filters: [
-          {
-            measure: AD_BIDS_IMPRESSIONS_MEASURE,
-            operation: MeasureFilterOperation.GreaterThan,
-            type: MeasureFilterType.Value,
-            value1: "10",
-            value2: "",
-          },
-        ],
-      },
-    ];
 
     AdvancedMeasureCorrector.correct(dashboard, MetricsView);
     expect(dashboard.leaderboardSortByMeasureName).toEqual(
       AD_BIDS_IMPRESSIONS_MEASURE,
     );
-    expect(dashboard.dimensionThresholdFilters[0]?.filters.length).toEqual(1);
 
     // metrics view spec updated to make AD_BIDS_IMPRESSIONS_MEASURE an advanced measure
     AdvancedMeasureCorrector.correct(dashboard, {
@@ -136,6 +116,5 @@ describe("AdvancedMeasureCorrector", () => {
     expect(dashboard.leaderboardSortByMeasureName).toEqual(
       AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
     );
-    expect(dashboard.dimensionThresholdFilters.length).toEqual(0);
   });
 });

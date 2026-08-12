@@ -38,11 +38,7 @@ import {
 } from "@tanstack/svelte-query";
 import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
 import { dimensionSearchText } from "../stores/dashboard-stores";
-import {
-  getFilterForComparedDimension,
-  prepareTimeSeries,
-  transformAggregateDimensionData,
-} from "./utils";
+import { prepareTimeSeries, transformAggregateDimensionData } from "./utils";
 import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 
 const MAX_TDD_VALUES_LENGTH = 250;

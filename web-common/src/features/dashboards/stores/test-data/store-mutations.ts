@@ -579,6 +579,7 @@ export async function applyMutationsToDashboard(
           createAndExpression([]);
         dashboard.dimensionThresholdFilters = [];
         dashboard.dimensionsWithInlistFilter = filterManager.inList;
+        dashboard.dimensionFilterExcludeMode = new Map();
       });
     }
     // DashboardStateSync.gotoNewState that listens to changes to the dashboard store is an async function.
