@@ -38,10 +38,18 @@ export class YAMLConfigProvider {
   }
 
   public togglePinnedFilter(filter: string) {
-    this.pinnedFilters[filter] = !this.pinnedFilters[filter];
+    if (!this.pinnedFilters[filter]) {
+      this.pinnedFilters[filter] = true;
+    } else {
+      delete this.pinnedFilters[filter];
+    }
   }
 
   public toggleRequiredFilter(filter: string) {
-    this.requiredFilters[filter] = !this.requiredFilters[filter];
+    if (!this.requiredFilters[filter]) {
+      this.requiredFilters[filter] = true;
+    } else {
+      delete this.requiredFilters[filter];
+    }
   }
 }

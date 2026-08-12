@@ -7,7 +7,7 @@ export function getMissingRequiredFilters(
 ) {
   return Object.keys(yamlConfigProvider.requiredFilters).filter(
     (filterName) => {
-      return !expressionFilterManager.filterManagersMap[filterName]?.[0]?.expr;
+      return !expressionFilterManager.filterManagersMap[filterName]?.expr;
     },
   );
 }

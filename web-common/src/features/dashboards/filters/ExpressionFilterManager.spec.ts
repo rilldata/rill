@@ -6,9 +6,7 @@ import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import {
   createAndExpression,
-  createBinaryExpression,
   createInExpression,
-  createSubQueryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
@@ -29,7 +27,6 @@ import {
   useMetricsViewMocks,
   waitForMetricsViewSpecs,
 } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
-import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { flushSync } from "svelte";
 import { get } from "svelte/store";
 import {
@@ -732,101 +729,6 @@ describe("getOtherDimensionsFilter", () => {
       filterManager.getOtherDimensionsFilter(
         AD_BIDS_PUBLISHER_DIMENSION,
         AD_BIDS_METRICS_NAME,
-      ),
-    ).toBeUndefined();
-  });
-});
-
-describe("manager factories", () => {
-  it("creates a dimension manager for a dimension name", () => {
-    const filterManager = createFilterManager();
-
-    const manager = filterManager.createDimensionOrMeasureManagerForName(
-      AD_BIDS_PUBLISHER_DIMENSION,
-    );
-
-    expect(manager).toBeInstanceOf(DimensionFilterManager);
-    expect(manager?.name).toBe(AD_BIDS_PUBLISHER_DIMENSION);
-    expect(manager?.label).toBe(AD_BIDS_PUBLISHER_DIMENSION);
-    expect(manager?.expr).toBeUndefined();
-  });
-
-  it("creates a measure manager for a measure name", () => {
-    const filterManager = createFilterManager();
-
-    const manager = filterManager.createDimensionOrMeasureManagerForName(
-      AD_BIDS_BID_PRICE_MEASURE,
-    );
-
-    expect(manager).toBeInstanceOf(MeasureFilterManager);
-    expect(manager?.name).toBe(AD_BIDS_BID_PRICE_MEASURE);
-  });
-
-  it("returns undefined for a name no metrics view defines", () => {
-    const filterManager = createFilterManager();
-
-    expect(
-      filterManager.createDimensionOrMeasureManagerForName("not_a_field"),
-    ).toBeUndefined();
-  });
-
-  it("creates a dimension manager from an in expression", () => {
-    const filterManager = createFilterManager();
-
-    const manager = filterManager.createDimensionOrMeasureManagerForExpr(
-      createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
-    );
-
-    expect(manager).toBeInstanceOf(DimensionFilterManager);
-    expect((manager as DimensionFilterManager).selectedValues).toEqual([
-      "Google",
-    ]);
-    expect((manager as DimensionFilterManager).mode).toBe(
-      DimensionFilterMode.Select,
-    );
-  });
-
-  it("honours the in-list dimensions when creating from an expression", () => {
-    const filterManager = createFilterManager();
-
-    const manager = filterManager.createDimensionOrMeasureManagerForExpr(
-      createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
-      [AD_BIDS_PUBLISHER_DIMENSION],
-    );
-
-    expect((manager as DimensionFilterManager).mode).toBe(
-      DimensionFilterMode.InList,
-    );
-  });
-
-  it("creates a measure manager from a subquery expression", () => {
-    const filterManager = createFilterManager();
-
-    const manager = filterManager.createDimensionOrMeasureManagerForExpr(
-      createSubQueryExpression(
-        AD_BIDS_PUBLISHER_DIMENSION,
-        [AD_BIDS_IMPRESSIONS_MEASURE],
-        createBinaryExpression(
-          AD_BIDS_IMPRESSIONS_MEASURE,
-          V1Operation.OPERATION_GT,
-          10,
-        ),
-      ),
-    );
-
-    expect(manager).toBeInstanceOf(MeasureFilterManager);
-    expect((manager as MeasureFilterManager).dimension).toBe(
-      AD_BIDS_PUBLISHER_DIMENSION,
-    );
-    expect((manager as MeasureFilterManager).value1).toBe("10");
-  });
-
-  it("returns undefined when the expression is keyed off an unknown dimension", () => {
-    const filterManager = createFilterManager();
-
-    expect(
-      filterManager.createDimensionOrMeasureManagerForExpr(
-        createInExpression("not_a_dimension", ["Google"]),
       ),
     ).toBeUndefined();
   });

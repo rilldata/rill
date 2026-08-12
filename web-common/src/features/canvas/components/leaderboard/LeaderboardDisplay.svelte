@@ -58,6 +58,7 @@
   let timeRange = $derived($timeAndFilterStore.timeRange);
 
   let whereFilter = $derived($timeAndFilterStore.where);
+  $effect(() => console.log("leaderboard", whereFilter));
 
   let allDimensions = $derived(
     metricsViewSelectors.getDimensionsForMetricView(metricsViewName),

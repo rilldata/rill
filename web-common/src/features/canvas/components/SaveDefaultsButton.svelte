@@ -36,16 +36,16 @@
   let viewingDefaults = $derived.by(() => {
     if (
       !arrayUnorderedEquals(
-        Object.keys(dashboardProvider.yamlConfigProvider.specPinnedFilters),
-        Object.keys(dashboardProvider.yamlConfigProvider.pinnedFilters),
+        Object.keys(dashboardProvider.yamlConfigProvider.specRequiredFilters),
+        Object.keys(dashboardProvider.yamlConfigProvider.requiredFilters),
       )
     ) {
       return false;
     }
     if (
       !arrayUnorderedEquals(
-        Object.keys(dashboardProvider.yamlConfigProvider.specRequiredFilters),
-        Object.keys(dashboardProvider.yamlConfigProvider.requiredFilters),
+        Object.keys(dashboardProvider.yamlConfigProvider.specPinnedFilters),
+        Object.keys(dashboardProvider.yamlConfigProvider.pinnedFilters),
       )
     ) {
       return false;

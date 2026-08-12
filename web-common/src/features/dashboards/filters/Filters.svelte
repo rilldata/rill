@@ -40,7 +40,6 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ExpressionFilters from "./ExpressionFilters.svelte";
   import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-  import { recordsMatch } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
   const { rillTime } = featureFlags;
 

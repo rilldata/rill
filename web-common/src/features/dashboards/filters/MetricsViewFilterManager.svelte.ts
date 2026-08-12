@@ -6,14 +6,11 @@ import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards
 import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterManager.svelte.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
-  getDimensionDisplayName,
-  getMeasureDisplayName,
-} from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import {
   createAndExpression,
   createOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
 export type DimensionOrMeasureManager =
   | DimensionFilterManager
@@ -78,12 +75,46 @@ export class MetricsViewFilterManager {
     expr: V1Expression | undefined,
     dimensionsWithInlistFilter: string[],
     existingManagers: Map<string, AnyManager>,
+    yamlConfigProvider: YAMLConfigProvider | undefined,
   ): AnyManager | undefined {
     const op = expr?.cond?.op;
     if (op === V1Operation.OPERATION_AND || op === V1Operation.OPERATION_OR) {
       const dimensionManagers: DimensionFilterManager[] = [];
       const measureManagers: MeasureFilterManager[] = [];
       const joinerManagers: MetricsViewFilterManager[] = [];
+      const added = new Set<string>();
+
+      const add = (manager: AnyManager, force: boolean) => {
+        if (manager.param && !existingManagers.has(manager.param)) {
+          manager = existingManagers.get(manager.param) ?? manager;
+          existingManagers.set(manager.param, manager);
+        } else if (
+          !manager.param &&
+          !(manager instanceof MetricsViewFilterManager)
+        ) {
+          manager = existingManagers.get(manager.name) ?? manager;
+          existingManagers.set(
+            (manager as DimensionOrMeasureManager).name,
+            manager,
+          );
+        }
+
+        if (
+          manager instanceof DimensionFilterManager &&
+          (!added.has(manager.name) || force)
+        ) {
+          added.add(manager.name);
+          dimensionManagers.push(manager);
+        } else if (
+          manager instanceof MeasureFilterManager &&
+          (!added.has(manager.name) || force)
+        ) {
+          added.add(manager.name);
+          measureManagers.push(manager);
+        } else if (manager instanceof MetricsViewFilterManager) {
+          joinerManagers.push(manager);
+        }
+      };
 
       expr?.cond?.exprs?.forEach((e) => {
         let manager = MetricsViewFilterManager.parse(
@@ -92,26 +123,38 @@ export class MetricsViewFilterManager {
           e,
           dimensionsWithInlistFilter,
           existingManagers,
+          undefined,
         );
         if (!manager) return;
-
         // Prefer to share class for similar expressions.
         // This is a hack to make a single filter across the metrics view work.
         // TODO: find a better solution to share
-        if (existingManagers.has(manager.param)) {
-          manager = existingManagers.get(manager.param)!;
-        } else {
-          existingManagers.set(manager.param, manager);
-        }
+        manager = existingManagers.get(manager.param) ?? manager;
 
-        if (manager instanceof DimensionFilterManager) {
-          dimensionManagers.push(manager);
-        } else if (manager instanceof MeasureFilterManager) {
-          measureManagers.push(manager);
-        } else if (manager instanceof MetricsViewFilterManager) {
-          joinerManagers.push(manager);
-        }
+        add(manager, true);
       });
+
+      // Add required and pinned filters when yamlConfigProvider is provided.
+      // yamlConfigProvider is only provided for the top level manager.
+      // TODO: handle advanced filters
+      if (yamlConfigProvider) {
+        Object.keys(yamlConfigProvider.requiredFilters)
+          .concat(Object.keys(yamlConfigProvider.pinnedFilters))
+          .forEach((requiredFilter) => {
+            const manager =
+              DimensionFilterManager.createForMetricsViews(
+                metricsViewsProvider,
+                requiredFilter,
+                metricsViewName,
+              ) ??
+              MeasureFilterManager.createForMetricsViews(
+                metricsViewsProvider,
+                requiredFilter,
+                metricsViewName,
+              );
+            if (manager) add(manager, false);
+          });
+      }
 
       return new MetricsViewFilterManager(
         metricsViewName,
@@ -138,24 +181,18 @@ export class MetricsViewFilterManager {
         // Having a subquery means this is a measure filter.
         const measureName = firstValueExpr.subquery.measures?.[0];
         if (!measureName) return undefined;
-        const measureSpec =
-          metricsViewsProvider.measureSpecs[measureName]?.[metricsViewName];
-        if (!measureSpec) return undefined;
-
-        return new MeasureFilterManager(
+        return MeasureFilterManager.createForMetricsViews(
+          metricsViewsProvider,
           measureName,
-          getMeasureDisplayName(measureSpec),
+          metricsViewName,
           firstValueExpr,
         );
       } else {
         // Everything else is a dimension filter for now.
-        const dimensionSpec =
-          metricsViewsProvider.dimensionSpecs[ident]?.[metricsViewName];
-        if (!dimensionSpec) return undefined;
-
-        return new DimensionFilterManager(
+        return DimensionFilterManager.createForMetricsViews(
+          metricsViewsProvider,
           ident,
-          getDimensionDisplayName(dimensionSpec),
+          metricsViewName,
           expr,
           dimensionsWithInlistFilter.includes(ident),
         );
@@ -174,11 +211,6 @@ export class MetricsViewFilterManager {
       ];
     if (alreadyAdded || dimensionNotInMV) return;
 
-    console.log(
-      "maybeAddDimensionFilter:added",
-      this.metricsViewName,
-      dimensionName,
-    );
     this.managers = {
       ...this.managers,
       dimensionManagers: [

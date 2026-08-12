@@ -6,6 +6,7 @@
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import Button from "../../../components/button/Button.svelte";
+  import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
 
   let {
     id = "expression-filter",
@@ -32,42 +33,48 @@
   );
 </script>
 
-<div class="flex justify-between gap-x-2">
-  <InputLabel small label={m.canvas_filters()} {id} />
+{#if !expressionFilterManager.isComplexFilter}
+  <div class="flex justify-between gap-x-2">
+    <InputLabel small label={m.canvas_filters()} {id} />
 
-  <AddExpressionFilterButton
-    {expressionFilterManager}
-    {excludedDimensions}
-    {excludedMeasures}
-  />
-</div>
-
-<!-- TODO: complex filters -->
+    <AddExpressionFilterButton
+      {expressionFilterManager}
+      {excludedDimensions}
+      {excludedMeasures}
+    />
+  </div>
+{/if}
 
 <div class="relative flex flex-col gap-x-2 gap-y-2 items-start">
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
-    {#each expressionFilterManager.filterManagers.dimensions as dimensionManager (dimensionManager.name)}
-      <DimensionFilter
-        manager={expressionFilterManager}
-        {dimensionManager}
-        {yamlConfigProvider}
-        timeStart={new Date(0).toISOString()}
-        timeEnd={new Date().toISOString()}
-        timeControlsReady
-        openOnMount={expressionFilterManager.temporaryFilterName ===
-          dimensionManager.name}
-      />
-    {/each}
+    {#if expressionFilterManager.isComplexFilter}
+      {#each Object.entries(expressionFilterManager.exprByMetricsView) as [mv, expr] (mv)}
+        <AdvancedFilter advancedFilter={expr} />
+      {/each}
+    {:else}
+      {#each expressionFilterManager.filterManagers.dimensions as dimensionManager (dimensionManager.name)}
+        <DimensionFilter
+          manager={expressionFilterManager}
+          {dimensionManager}
+          {yamlConfigProvider}
+          timeStart={new Date(0).toISOString()}
+          timeEnd={new Date().toISOString()}
+          timeControlsReady
+          openOnMount={expressionFilterManager.temporaryFilterName ===
+            dimensionManager.name}
+        />
+      {/each}
 
-    {#each expressionFilterManager.filterManagers.measures as measureManager (measureManager.name)}
-      <MeasureFilter
-        {measureManager}
-        {yamlConfigProvider}
-        {allDimensions}
-        openOnMount={expressionFilterManager.temporaryFilterName ===
-          measureManager.name}
-      />
-    {/each}
+      {#each expressionFilterManager.filterManagers.measures as measureManager (measureManager.name)}
+        <MeasureFilter
+          {measureManager}
+          {yamlConfigProvider}
+          {allDimensions}
+          openOnMount={expressionFilterManager.temporaryFilterName ===
+            measureManager.name}
+        />
+      {/each}
+    {/if}
   </div>
 
   <div class="ml-auto">

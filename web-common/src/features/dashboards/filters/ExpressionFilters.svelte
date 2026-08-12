@@ -6,6 +6,7 @@
   import { fly } from "svelte/transition";
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
   import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";
+  import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
 
   let {
     expressionFilterManager,
@@ -84,56 +85,62 @@
 
 <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
-    {#if !hasFilters}
-      <div
-        in:fly={{ duration: 200, x: 8 }}
-        class="text-fg-muted grid ml-1 items-center"
-        style:min-height={ROW_HEIGHT}
-      >
-        {m.dashboard_no_filters_selected()}
-      </div>
+    {#if expressionFilterManager.isComplexFilter}
+      {#each Object.entries(expressionFilterManager.exprByMetricsView) as [mv, expr] (mv)}
+        <AdvancedFilter advancedFilter={expr} />
+      {/each}
     {:else}
-      {#each expressionFilterManager.filterManagers.dimensions as dimensionManager (dimensionManager.name)}
-        <DimensionFilter
-          manager={expressionFilterManager}
-          {dimensionManager}
-          {yamlConfigProvider}
-          {timeStart}
-          {timeEnd}
-          {timeControlsReady}
-          {timeDimension}
-          openOnMount={expressionFilterManager.temporaryFilterName ===
-            dimensionManager.name}
-          isUrlTooLongAfterInListFilter={isUrlTooLongAfterInListFilter
-            ? (values) =>
-                isUrlTooLongAfterInListFilter(dimensionManager.name, values)
-            : undefined}
-        />
-      {/each}
+      {#if !hasFilters}
+        <div
+          in:fly={{ duration: 200, x: 8 }}
+          class="text-fg-muted grid ml-1 items-center"
+          style:min-height={ROW_HEIGHT}
+        >
+          {m.dashboard_no_filters_selected()}
+        </div>
+      {:else}
+        {#each expressionFilterManager.filterManagers.dimensions as dimensionManager (dimensionManager.name)}
+          <DimensionFilter
+            manager={expressionFilterManager}
+            {dimensionManager}
+            {yamlConfigProvider}
+            {timeStart}
+            {timeEnd}
+            {timeControlsReady}
+            {timeDimension}
+            openOnMount={expressionFilterManager.temporaryFilterName ===
+              dimensionManager.name}
+            isUrlTooLongAfterInListFilter={isUrlTooLongAfterInListFilter
+              ? (values) =>
+                  isUrlTooLongAfterInListFilter(dimensionManager.name, values)
+              : undefined}
+          />
+        {/each}
 
-      {#each expressionFilterManager.filterManagers.measures as measureManager (measureManager.name)}
-        <MeasureFilter
-          {measureManager}
-          {yamlConfigProvider}
-          {allDimensions}
-          openOnMount={expressionFilterManager.temporaryFilterName ===
-            measureManager.name}
-        />
-      {/each}
-    {/if}
+        {#each expressionFilterManager.filterManagers.measures as measureManager (measureManager.name)}
+          <MeasureFilter
+            {measureManager}
+            {yamlConfigProvider}
+            {allDimensions}
+            openOnMount={expressionFilterManager.temporaryFilterName ===
+              measureManager.name}
+          />
+        {/each}
+      {/if}
 
-    <AddExpressionFilterButton
-      {expressionFilterManager}
-      {excludedDimensions}
-      {excludedMeasures}
-    />
+      <AddExpressionFilterButton
+        {expressionFilterManager}
+        {excludedDimensions}
+        {excludedMeasures}
+      />
 
-    <!-- if filters are present, place a chip at the end of the flex container
-    that enables clearing all filters -->
-    {#if hasClearableFilters}
-      <Button type="text" onClick={() => expressionFilterManager.clear()}>
-        {m.dashboard_clear_filters()}
-      </Button>
+      <!-- if filters are present, place a chip at the end of the flex container
+      that enables clearing all filters -->
+      {#if hasClearableFilters}
+        <Button type="text" onClick={() => expressionFilterManager.clear()}>
+          {m.dashboard_clear_filters()}
+        </Button>
+      {/if}
     {/if}
   </div>
 </div>

@@ -51,19 +51,10 @@
     },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
   // svelte-ignore state_referenced_locally
-  expressionFilterManager.createListener();
-
-  function updateUrlParams(params: URLSearchParams) {
-    expressionFilterManager.setUrlParams(params);
-  }
-  $effect(() => updateUrlParams(page.url.searchParams));
-  // svelte-ignore state_referenced_locally
-  expressionFilterManager.on("state-changed", () => {
-    const newUrl = new URL(page.url);
-    expressionFilterManager.applyFilterToParams(newUrl.searchParams);
-    if (newUrl.search === page.url.search) return;
-    void goto(newUrl);
-  });
+  expressionFilterManager.syncWithUrl(
+    () => page.url,
+    (url) => void goto(url),
+  );
 
   let selectedRange = $derived($rangeStore);
   let interval = $derived($intervalStore);

@@ -12,6 +12,8 @@ import {
   getValuesInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 
 export class DimensionFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
@@ -35,6 +37,28 @@ export class DimensionFilterManager {
     private readonly ephemeral: boolean = false,
   ) {
     this.reconcile(initExpr, isInList ? [name] : []);
+  }
+
+  public static createForMetricsViews(
+    metricsViewsProvider: MetricsViewsProvider,
+    name: string,
+    mvName?: string,
+    initExpr?: V1Expression,
+    isInList?: boolean,
+  ) {
+    const dimensionSpecs = metricsViewsProvider.dimensionSpecs[name];
+    if (!dimensionSpecs) return undefined;
+    const dimensionSpec = mvName
+      ? dimensionSpecs[mvName]
+      : Object.values(dimensionSpecs)[0];
+    if (!dimensionSpec) return undefined;
+
+    return new DimensionFilterManager(
+      name,
+      getDimensionDisplayName(dimensionSpec),
+      initExpr,
+      isInList,
+    );
   }
 
   public reconcile(expr: V1Expression, inList: string[]) {
@@ -190,7 +214,6 @@ export class DimensionFilterManager {
           this.mode === DimensionFilterMode.InList ? [this.name] : [],
         )
       : "";
-    console.log("committing", this.param);
   }
 }
 

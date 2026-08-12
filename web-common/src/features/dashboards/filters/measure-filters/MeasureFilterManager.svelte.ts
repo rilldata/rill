@@ -13,6 +13,8 @@ import {
   removeWrapperAndOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 
 export class MeasureFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
@@ -31,6 +33,26 @@ export class MeasureFilterManager {
     initExpr: V1Expression | undefined = undefined,
   ) {
     this.reconcile(initExpr);
+  }
+
+  public static createForMetricsViews(
+    metricsViewsProvider: MetricsViewsProvider,
+    name: string,
+    mvName?: string,
+    initExpr?: V1Expression,
+  ) {
+    const measureSpecs = metricsViewsProvider.measureSpecs[name];
+    if (!measureSpecs) return undefined;
+    const measureSpec = mvName
+      ? measureSpecs[mvName]
+      : Object.values(measureSpecs)[0];
+    if (!measureSpec) return undefined;
+
+    return new MeasureFilterManager(
+      name,
+      getMeasureDisplayName(measureSpec),
+      initExpr,
+    );
   }
 
   public reconcile(expr: V1Expression | undefined) {
