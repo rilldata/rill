@@ -42,7 +42,11 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import {
+    COMPARISON_COLUMN_WIDTH,
+    deltaColumn,
+    valueColumn,
+  } from "./leaderboard-widths";
 
   const runtimeClient = useRuntimeClient();
   const gutterWidth = 24;
@@ -346,10 +350,7 @@
           />
         {/if}
         {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
-          <col
-            data-absolute-change-column
-            style:width="{COMPARISON_COLUMN_WIDTH}px"
-          />
+          <col data-absolute-change-column style:width="{$deltaColumn}px" />
           <col
             data-percent-change-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"

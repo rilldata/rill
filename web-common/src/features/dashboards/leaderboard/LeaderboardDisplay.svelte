@@ -13,6 +13,7 @@
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
     COMPARISON_COLUMN_WIDTH,
+    deltaColumn,
     dimensionColumn,
     MAX_DIMENSION_COLUMN_WIDTH,
     MIN_DIMENSION_COLUMN_WIDTH,
@@ -63,6 +64,7 @@
   // Reset column widths when the measure changes
   $: if ($leaderboardSortByMeasureName) {
     valueColumn.reset();
+    deltaColumn.reset();
   }
 
   $: dimensionColumnWidth = clamp(
@@ -80,7 +82,7 @@
     dimensionColumnWidth +
     $valueColumn +
     (comparisonTimeRange
-      ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
+      ? $deltaColumn + (showDeltaPercent ? COMPARISON_COLUMN_WIDTH : 0)
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
