@@ -65,9 +65,9 @@ export class ExpressionFilterManager {
   ) as typeof this.events.on;
 
   // Raw filter param per metrics view.
-  private paramByMetricsView = $state<Record<MetricsViewName, string>>({});
+  public paramByMetricsView = $state<Record<MetricsViewName, string>>({});
   // Filter param based on managers.
-  private paramByManager: Record<MetricsViewName, string>;
+  public paramByManager: Record<MetricsViewName, string>;
 
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,

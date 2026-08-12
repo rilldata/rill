@@ -11,6 +11,7 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { isSimpleMeasure } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
 import { Duration } from "luxon";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
@@ -173,9 +174,12 @@ export class MetricsViewsProvider {
     const dimensions: MetricsViewSpecDimension[] = [];
 
     for (const metricsViewName of this.metricsViewNames) {
-      const spec = this.resources.find(
-        (resource) => resource.meta?.name?.name === metricsViewName,
-      )?.metricsView?.state?.validSpec;
+      const res = this.resources.find(
+        (resource) =>
+          resource.meta?.name?.name === metricsViewName &&
+          resource.meta?.name?.kind === ResourceKind.MetricsView,
+      );
+      const spec = res?.metricsView?.state?.validSpec;
       if (!spec) continue;
       specs[metricsViewName] = spec;
 

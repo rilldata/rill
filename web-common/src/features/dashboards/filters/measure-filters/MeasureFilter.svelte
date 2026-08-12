@@ -132,6 +132,7 @@
             {#if missingRequired}
               {m.dashboard_filter_required_set_value()}
             {:else}
+              <!-- svelte-ignore slot_element_deprecated -->
               <slot name="body-tooltip-content">
                 {m.dashboard_click_to_edit_values()}
               </slot>

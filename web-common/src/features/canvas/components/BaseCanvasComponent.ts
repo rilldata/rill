@@ -330,6 +330,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           sanitiseExpression(metricsViewFilters.dimensionOnlyExpr, undefined) ??
           createAndExpression([]);
 
+        let fullWhere: V1Expression | undefined = metricsViewFilters.expr;
         let dimensionOnlyWhere: V1Expression | undefined =
           globalDimensionOnlyWhere;
 
@@ -337,6 +338,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           const { expr: componentWhere } = getFiltersFromText(
             componentSpec?.["dimension_filters"] as string,
           );
+          fullWhere = mergeFilters(fullWhere, componentWhere);
           dimensionOnlyWhere = mergeFilters(
             globalDimensionOnlyWhere,
             componentWhere,
@@ -348,7 +350,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           showTimeComparison,
           comparisonTimeRange,
           dimensionOnlyWhere,
-          where: metricsViewFilters.expr,
+          where: fullWhere,
           timeGrain,
           timeRangeState,
           comparisonTimeRangeState,

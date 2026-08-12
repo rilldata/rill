@@ -4,6 +4,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import VerticalExpressionFilters from "@rilldata/web-common/features/dashboards/filters/VerticalExpressionFilters.svelte";
+  import { onDestroy } from "svelte";
 
   let {
     id,
@@ -16,12 +17,22 @@
     excludedDimensions: Record<string, boolean>;
     updateLocalFilterString: (newFilterString: string) => void;
   } = $props();
+  // svelte-ignore state_referenced_locally
+  localExpressionFilters.createListener();
+  // svelte-ignore state_referenced_locally
+  const stateChangeUnsub = localExpressionFilters.on("state-changed", () => {
+    updateLocalFilterString(
+      Object.values(localExpressionFilters.paramByManager)[0] ?? "",
+    );
+  });
 
   let localFiltersEnabledOverride = $state(false);
 
   let localFiltersEnabled = $derived(
     localExpressionFilters.hasSomeFilter || localFiltersEnabledOverride,
   );
+
+  onDestroy(() => stateChangeUnsub());
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">
@@ -35,7 +46,7 @@
     />
     <Switch
       checked={localFiltersEnabled}
-      onclick={() => {
+      onCheckedChange={() => {
         if (localFiltersEnabled) {
           localFiltersEnabledOverride = false;
           updateLocalFilterString("");
