@@ -38,6 +38,7 @@ export function createTDDCartesianSpec(
   selectedValues?: (string | null)[],
   dimensionData?: DimensionSeriesData[],
   showTimeDimensionDetail = true,
+  dynamicYAxis = false,
 ): CartesianChartSpec & Pick<ChartSpec, "vl_config"> {
   const spec: CartesianChartSpec & Pick<ChartSpec, "vl_config"> = {
     metrics_view: metricsViewName,
@@ -50,6 +51,8 @@ export function createTDDCartesianSpec(
       field: measureName,
       type: "quantitative",
       axisOrient: "right",
+      // The "Dynamic Y-axis scale" toggle: off means the axis is anchored at zero.
+      zeroBasedOrigin: !dynamicYAxis,
     },
     isInteractive: true,
     // Fix vertical alignment across stacked TDD charts: force a fixed axis

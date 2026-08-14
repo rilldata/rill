@@ -11,7 +11,7 @@
   } from "svelte-vega";
   import type { Config } from "vega-lite";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
-  import { createEmbedOptions } from "./vega-embed-options";
+  import { createBaseEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
   import "./vega.css";
 
@@ -84,10 +84,10 @@
     stableHasComparison = hasComparison;
   }
 
-  $: options = createEmbedOptions({
+  // Deliberately excludes width/height so a resize leaves this object's identity untouched
+  // and svelte-vega resizes the existing view rather than re-embedding it.
+  $: baseOptions = createBaseEmbedOptions({
     client: runtimeClient,
-    width,
-    height,
     config,
     renderer,
     themeMode: theme,
@@ -95,6 +95,8 @@
     colorMapping: stableColorMapping,
     hasComparison: stableHasComparison,
   });
+
+  $: options = { ...baseOptions, width, height };
 
   const onError = (e: Error) => {
     error = e.message;
