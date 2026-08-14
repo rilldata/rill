@@ -73,19 +73,26 @@
     MAX_DIMENSION_COLUMN_WIDTH,
   );
 
-  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
-    $leaderboardSortByMeasureName,
+  $: measuresWithContext = new Set(
+    $leaderboardShowContextForAllMeasures
+      ? $leaderboardMeasures.map((measure) => measure.name!)
+      : [$leaderboardSortByMeasureName],
   );
-  $: showDeltaPercent = !!comparisonTimeRange;
 
-  $: tableWidth =
-    dimensionColumnWidth +
-    $valueColumn +
-    (comparisonTimeRange
-      ? $deltaColumn + (showDeltaPercent ? COMPARISON_COLUMN_WIDTH : 0)
-      : showPercentOfTotal
+  // Mirrors the columns rendered in Leaderboard.svelte's colgroup.
+  $: tableWidth = $leaderboardMeasures.reduce((width, measure) => {
+    const showContext = measuresWithContext.has(measure.name!);
+    return (
+      width +
+      $valueColumn +
+      (showContext && $isMeasureValidPercentOfTotal(measure.name!)
         ? COMPARISON_COLUMN_WIDTH
-        : 0);
+        : 0) +
+      (showContext && comparisonTimeRange
+        ? $deltaColumn + COMPARISON_COLUMN_WIDTH
+        : 0)
+    );
+  }, dimensionColumnWidth);
 </script>
 
 <div
