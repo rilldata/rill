@@ -1291,8 +1291,19 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		}, nil
 	}
 
+	// Attributes are set on the guest org membership created below, so they can only be applied to users who are not org members yet.
+	// Reject the request instead of silently dropping them; an existing member's attributes are changed via UpdateOrganizationMemberUserAttributes.
+	if req.Attributes != nil {
+		_, err := s.admin.DB.FindOrganizationMemberUser(ctx, proj.OrganizationID, user.ID)
+		if err == nil {
+			return nil, status.Error(codes.FailedPrecondition, "user is already a member of the organization: update their attributes on the organization instead")
+		}
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+	}
+
 	// Add or update the user to the project with the requested role and resource scope.
-	// The attributes only apply if the user is not already an org member (they are set on the newly created guest org membership).
 	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, attrs, restrictResources, resources)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {

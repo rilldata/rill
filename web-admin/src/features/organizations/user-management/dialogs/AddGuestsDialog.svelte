@@ -11,6 +11,7 @@
     buildInviteAttributes,
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
+    type AttributeRow,
   } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { Button } from "@rilldata/web-common/components/button";
@@ -35,7 +36,7 @@
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
+  import { array, mixed, object, string } from "yup";
 
   export let open = false;
 
@@ -90,6 +91,13 @@
     }
   }
 
+  // Collapsing the section reads as discarding what was typed there, so drop the rows
+  // rather than silently applying them to every invite.
+  function toggleAttributes() {
+    showAttributes = !showAttributes;
+    if (!showAttributes) $form.attributes = [];
+  }
+
   function toggleProjectSelection(projectName: string) {
     const idx = selectedProjects.indexOf(projectName);
     if (idx >= 0) {
@@ -121,7 +129,7 @@
   const formId = "create-guests-form";
   const initialValues: {
     emails: string[];
-    attributes: Array<{ key: string; value: string }>;
+    attributes: AttributeRow[];
   } = { emails: [""], attributes: [] };
   const schema = yup(
     object({
@@ -131,12 +139,9 @@
           message: m.users_invalid_email(),
         }),
       ),
-      attributes: array(
-        object({
-          key: string().defined(),
-          value: string().defined(),
-        }),
-      ),
+      // Modelled as mixed() rather than array(object(...)):
+      // yup infers object fields as optional, which does not match KeyValueInput's row type.
+      attributes: mixed<AttributeRow[]>().defined(),
     }),
   );
 
@@ -338,7 +343,7 @@
         <button
           type="button"
           class="flex items-center gap-x-1 text-xs font-medium text-fg-secondary hover:text-fg-primary w-fit"
-          onclick={() => (showAttributes = !showAttributes)}
+          onclick={toggleAttributes}
         >
           <CaretDownIcon
             size="12px"

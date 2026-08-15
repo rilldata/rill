@@ -1761,6 +1761,17 @@ func TestRBAC(t *testing.T) {
 		require.Error(t, err)
 		require.ErrorContains(t, err, "not allowed to set user attributes")
 
+		// u2 is already an org member, so the attributes have nowhere to go: the request must fail instead of dropping them
+		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:        org.Organization.Name,
+			Project:    proj.Project.Name,
+			Email:      u2.Email,
+			Role:       database.ProjectRoleNameViewer,
+			Attributes: attrStruct,
+		})
+		require.Error(t, err)
+		require.ErrorContains(t, err, "already a member of the organization")
+
 		// An org admin can invite a new user to a project with attributes; they are stored on the guest org invite
 		inviteEmail := randomName() + "@example.com"
 		res, err := c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
