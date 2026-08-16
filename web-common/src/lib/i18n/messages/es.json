@@ -2157,6 +2157,7 @@
   "users_access_changed_everyone": "El acceso al proyecto cambió a todos",
   "users_access_changed_invite_only": "El acceso al proyecto cambió a solo por invitación",
   "users_access_level": "Nivel de acceso",
+  "users_add_attribute": "Agregar atributo",
   "users_add_guest": "Agregar invitado",
   "users_add_guests_button": "Agregar invitados",
   "users_add_guests_description": "Los invitados solo pueden acceder a proyectos provisionados con roles asignados. No tienen acceso a toda la organización.",
@@ -2191,6 +2192,18 @@
     }
   ],
   "users_and_more": "y {count} más",
+  "users_attribute_key_placeholder": "Clave",
+  "users_attribute_value_placeholder": "Valor",
+  "users_attributes_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} atributo",
+        "countPlural=other": "{count} atributos"
+      }
+    }
+  ],
   "users_billing_change_role_desc": "Este usuario es actualmente el contacto de facturación. Para cambiar su rol, asigne otro administrador como contacto de facturación primero.",
   "users_billing_change_role_title": "Asigne un nuevo contacto de facturación primero para cambiar el rol de este usuario",
   "users_billing_remove_desc": "Este usuario es el contacto de facturación actual y no puede ser eliminado. Para continuar, asigne otro administrador como contacto de facturación.",
@@ -2202,6 +2215,8 @@
   "users_convert_user_to_role": "Convertir {user} a {role}",
   "users_copy_url": "Copiar URL",
   "users_create": "Crear",
+  "users_custom_attributes": "Atributos personalizados",
+  "users_custom_attributes_hint": "Se aplican a la membresía de la organización de cada usuario invitado. Se pueden usar en políticas de seguridad.",
   "users_email_or_group_placeholder": "Correo o grupo, separados por comas",
   "users_email_placeholder": "Agregar correos, separados por comas",
   "users_error": "Error",

@@ -13131,6 +13131,35 @@ func (m *AddOrganizationMemberUserRequest) validate(all bool) error {
 
 	// no validation rules for Role
 
+	if all {
+		switch v := interface{}(m.GetAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AddOrganizationMemberUserRequestValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AddOrganizationMemberUserRequestValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AddOrganizationMemberUserRequestValidationError{
+				field:  "Attributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for SuperuserForceAccess
 
 	if len(errors) > 0 {
@@ -20237,6 +20266,35 @@ func (m *AddProjectMemberUserRequest) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AddProjectMemberUserRequestValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AddProjectMemberUserRequestValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AddProjectMemberUserRequestValidationError{
+				field:  "Attributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if m.RestrictResources != nil {
@@ -47132,6 +47190,35 @@ func (m *OrganizationInvite) validate(all bool) error {
 	// no validation rules for RoleName
 
 	// no validation rules for InvitedBy
+
+	if all {
+		switch v := interface{}(m.GetAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrganizationInviteValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrganizationInviteValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrganizationInviteValidationError{
+				field:  "Attributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return OrganizationInviteMultiError(errors)

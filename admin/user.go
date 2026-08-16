@@ -199,7 +199,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID, nil, false)
+		err = s.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID, invite.Attributes, false)
 		if err != nil {
 			return nil, err
 		}

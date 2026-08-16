@@ -452,6 +452,11 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		}
 	}
 
+	var attrs map[string]any
+	if req.Attributes != nil {
+		attrs = req.Attributes.AsMap()
+	}
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -460,10 +465,11 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 
 		// Invite user to join org
 		err := s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-			Email:     req.Email,
-			InviterID: invitedByUserID,
-			OrgID:     org.ID,
-			RoleID:    role.ID,
+			Email:      req.Email,
+			InviterID:  invitedByUserID,
+			OrgID:      org.ID,
+			RoleID:     role.ID,
+			Attributes: attrs,
 		})
 		if err != nil {
 			if !errors.Is(err, database.ErrNotUnique) {
@@ -478,6 +484,13 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
 			if err != nil {
 				return nil, err
+			}
+			// Update the invite's attributes only when explicitly provided, to avoid clearing them on a plain re-invite.
+			if req.Attributes != nil {
+				err = s.admin.DB.UpdateOrganizationInviteAttributes(ctx, invite.ID, attrs)
+				if err != nil {
+					return nil, err
+				}
 			}
 			// Fallthrough so we send the email again.
 		}
@@ -510,7 +523,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	}
 
 	// Insert the user in the org and its managed usergroups transactionally.
-	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
+	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, attrs, false)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -716,15 +729,27 @@ func (s *Server) UpdateOrganizationMemberUserAttributes(ctx context.Context, req
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org member attributes")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, err
-	}
-
 	// Convert protobuf Struct to map[string]any
 	var attributes map[string]any
 	if req.Attributes != nil {
 		attributes = req.Attributes.AsMap()
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		// Check if there is a pending invite for this user
+		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+		if err != nil {
+			return nil, err
+		}
+		err = s.admin.DB.UpdateOrganizationInviteAttributes(ctx, invite.ID, attributes)
+		if err != nil {
+			return nil, err
+		}
+		return &adminv1.UpdateOrganizationMemberUserAttributesResponse{}, nil
 	}
 
 	// Update the attributes

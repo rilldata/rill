@@ -11,6 +11,22 @@ import {
 import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
 import type { QueryClient } from "@tanstack/query-core";
 
+// A single row of the custom attributes editor, as bound to KeyValueInput.
+export type AttributeRow = { key: string; value: string };
+
+// Builds the attributes object for an invite from key/value form rows, skipping rows with an empty key.
+// Returns undefined when no attributes are set, so the request field is omitted entirely.
+export function buildInviteAttributes(
+  rows: AttributeRow[] | undefined,
+): Record<string, string> | undefined {
+  const attrs: Record<string, string> = {};
+  for (const { key, value } of rows ?? []) {
+    const trimmedKey = key.trim();
+    if (trimmedKey) attrs[trimmedKey] = value;
+  }
+  return Object.keys(attrs).length > 0 ? attrs : undefined;
+}
+
 export function canManageOrgUser(
   organizationPermissions: V1OrganizationPermissions,
   role: string,
