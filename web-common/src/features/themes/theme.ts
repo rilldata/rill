@@ -60,10 +60,10 @@ export class Theme {
    * below mirror app.css exactly, so only the hue source changes, not the design.
    *
    * `light` is the shade :root uses, `dark` the shade :root.dark uses. Both read from the
-   * theme's light palette, because :root.dark also picks light-palette shades
-   * (--color-primary-light-*) -- they stay legible against dark surfaces. A token with no
-   * `dark` shade is not palette-derived in dark mode (dark surfaces are neutral grays) and
-   * is left to app.css.
+   * un-darkened palette of the mode's own primary, because :root.dark also picks
+   * light-palette shades (--color-primary-light-*) -- they stay legible against dark
+   * surfaces. A token with no `dark` shade is not palette-derived in dark mode (dark
+   * surfaces are neutral grays) and is left to app.css.
    */
   private static PALETTE_DERIVED_TOKENS: {
     token: keyof Colors;
@@ -143,9 +143,15 @@ export class Theme {
     const lightColors = this.colors.light;
 
     for (const [k] of Object.entries(lightColors)) {
-      if (!(k in darkColors)) {
-        darkColors[k] = undefined;
-      }
+      if (k in darkColors) continue;
+
+      // A light-only token is reset to `unset` in dark mode, so the boundary inherits
+      // :root.dark instead of keeping the light value. The fg-* hierarchy is the exception:
+      // stringifyVars only fills a slot that isn't already a key, so an `unset` placeholder
+      // would suppress the value dark's own fg-primary should produce.
+      if (darkColors["fg-primary"] && k in Theme.FG_OPACITY_HIERARCHY) continue;
+
+      darkColors[k] = undefined;
     }
 
     const css = `

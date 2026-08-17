@@ -127,6 +127,22 @@ describe("Theme", () => {
 
       expect(light["fg-accent"]).toBe(light["fg-primary"]);
     });
+
+    it("let fg-primary keep ownership of fg-accent in dark mode too", () => {
+      // The light block derives fg-accent from the palette. Resetting it to `unset` in the
+      // dark block would both discard dark's own fg-primary and fall back to Rill's indigo.
+      const { dark } = parseCSS(
+        new Theme({
+          light: { primary: PRIMARY },
+          dark: {
+            primary: PRIMARY,
+            variables: { "fg-primary": "#eeeeee" },
+          },
+        }).css,
+      );
+
+      expect(dark["fg-accent"]).toBe(dark["fg-primary"]);
+    });
   });
 
   describe("palette aliasing", () => {
