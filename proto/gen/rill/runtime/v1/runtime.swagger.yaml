@@ -6310,6 +6310,11 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+      servingTable:
+        type: string
+        description: |-
+          Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+          Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
@@ -6473,6 +6478,11 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonRow'
         title: Not optional, not null
+      servingTable:
+        type: string
+        description: |-
+          Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+          Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.
@@ -6815,6 +6825,13 @@ definitions:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
         title: Not optional, not null
+      rollupTimeRanges:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1TimeRangeSummary'
+        description: |-
+          Time range summaries for the metrics view's rollups, keyed by rollup table name.
+          Only populated when the metrics view has rollups.
       maxQueryTimeRangeMillis:
         type: string
         format: int64
@@ -6830,6 +6847,13 @@ definitions:
       fullTimeRange:
         $ref: '#/definitions/v1TimeRangeSummary'
         description: The full time range summary for the requested time dimension.
+      rollupTimeRanges:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1TimeRangeSummary'
+        description: |-
+          Time range summaries for the metrics view's rollups, keyed by rollup table name.
+          Only populated when the metrics view has rollups.
       resolvedTimeRanges:
         type: array
         items:
@@ -6917,6 +6941,11 @@ definitions:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
         title: Not optional, not null
+      servingTable:
+        type: string
+        description: |-
+          Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+          Matches the keys of rollup_time_ranges in MetricsViewTimeRangeResponse and MetricsViewTimeRangesResponse.
       trace:
         $ref: '#/definitions/v1Trace'
         description: Traces of spans captured during request execution. Only populated if trace was set to true in the request.

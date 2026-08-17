@@ -3031,6 +3031,8 @@ func (m *MetricsViewAggregationResponse) validate(all bool) error {
 
 	}
 
+	// no validation rules for ServingTable
+
 	if all {
 		switch v := interface{}(m.GetTrace()).(type) {
 		case interface{ ValidateAll() error }:
@@ -5817,6 +5819,8 @@ func (m *MetricsViewComparisonResponse) validate(all bool) error {
 
 	}
 
+	// no validation rules for ServingTable
+
 	if all {
 		switch v := interface{}(m.GetTrace()).(type) {
 		case interface{ ValidateAll() error }:
@@ -7099,6 +7103,8 @@ func (m *MetricsViewTimeSeriesResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for ServingTable
 
 	if all {
 		switch v := interface{}(m.GetTrace()).(type) {
@@ -8836,6 +8842,52 @@ func (m *MetricsViewTimeRangeResponse) validate(all bool) error {
 		}
 	}
 
+	{
+		sorted_keys := make([]string, len(m.GetRollupTimeRanges()))
+		i := 0
+		for key := range m.GetRollupTimeRanges() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetRollupTimeRanges()[key]
+			_ = val
+
+			// no validation rules for RollupTimeRanges[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, MetricsViewTimeRangeResponseValidationError{
+							field:  fmt.Sprintf("RollupTimeRanges[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, MetricsViewTimeRangeResponseValidationError{
+							field:  fmt.Sprintf("RollupTimeRanges[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return MetricsViewTimeRangeResponseValidationError{
+						field:  fmt.Sprintf("RollupTimeRanges[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
 	// no validation rules for MaxQueryTimeRangeMillis
 
 	if all {
@@ -9816,6 +9868,52 @@ func (m *MetricsViewTimeRangesResponse) validate(all bool) error {
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
+		}
+	}
+
+	{
+		sorted_keys := make([]string, len(m.GetRollupTimeRanges()))
+		i := 0
+		for key := range m.GetRollupTimeRanges() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetRollupTimeRanges()[key]
+			_ = val
+
+			// no validation rules for RollupTimeRanges[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+							field:  fmt.Sprintf("RollupTimeRanges[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+							field:  fmt.Sprintf("RollupTimeRanges[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return MetricsViewTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("RollupTimeRanges[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		}
 	}
 

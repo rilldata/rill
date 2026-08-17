@@ -11,6 +11,8 @@
   import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
   import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
   import { SortType } from "../proto-state/derived-types";
+  import type { CoverageWarning } from "../rollup-coverage/rollup-coverage";
+  import RollupCoverageWarning from "../rollup-coverage/RollupCoverageWarning.svelte";
   import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
   import {
     DEFAULT_DIMENSION_COLUMN_WIDTH,
@@ -44,6 +46,7 @@
   // Height of the whole leaderboard table, so the resize handle can span all
   // rows instead of just the header cell.
   export let tableHeight = 0;
+  export let coverageWarning: CoverageWarning | undefined = undefined;
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (
@@ -79,6 +82,7 @@
           class="text-fg-muted text-left {allowExpandTable
             ? 'hover:text-theme-700'
             : ''}"
+          class:pr-6={!!coverageWarning}
           aria-label={m.dashboard_open_dimension_details_aria()}
           onclick={() => setPrimaryDimension(dimensionName)}
         >
@@ -108,6 +112,12 @@
           {/if}
         </TooltipContent>
       </Tooltip>
+
+      {#if coverageWarning}
+        <div class="coverage-warning">
+          <RollupCoverageWarning warning={coverageWarning} />
+        </div>
+      {/if}
 
       {#if onDimensionColumnResize}
         <div class="resizer-container" style:height="{tableHeight}px">
@@ -277,6 +287,10 @@
 
   .resizer-container {
     @apply absolute top-0 right-0 w-0 z-50;
+  }
+
+  .coverage-warning {
+    @apply absolute right-1 top-1/2 -translate-y-1/2 z-10 flex items-center;
   }
 
   .resize-bar {

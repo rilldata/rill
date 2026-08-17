@@ -23,6 +23,7 @@ import {
   updateMetricsExplorerByName,
   useExploreState,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
+import { RollupCoverageStore } from "../rollup-coverage/rollup-coverage-store";
 import { type StateManagerActions, createStateManagerActions } from "./actions";
 import type { DashboardCallbackExecutor } from "./actions/types";
 import {
@@ -44,6 +45,11 @@ export type StateManagers = {
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
+  /**
+   * Tracks which physical table (base or rollup) served each widget's query,
+   * so widgets can warn when they show less data than the rest of the dashboard.
+   */
+  rollupCoverage: RollupCoverageStore;
   validSpecStore: Readable<
     QueryObserverResult<ExploreValidSpecResponse, Error>
   >;
@@ -138,6 +144,11 @@ export function createStateManagers({
       ).subscribe(set),
   );
 
+  const rollupCoverage = new RollupCoverageStore(
+    timeRangeSummaryStore,
+    validSpecStore,
+  );
+
   const updateDashboard = (callback: (exploreState: ExploreState) => void) => {
     const name = get(dashboardStore).name;
 
@@ -169,6 +180,7 @@ export function createStateManagers({
     exploreName: exploreNameStore,
     metricsStore: metricsExplorerStore,
     timeRangeSummaryStore,
+    rollupCoverage,
     validSpecStore,
     queryClient,
     dashboardStore,

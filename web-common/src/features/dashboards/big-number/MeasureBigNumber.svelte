@@ -15,17 +15,29 @@
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import {
     createQueryServiceMetricsViewAggregation,
+    V1TimeGrain,
     type MetricsViewSpecMeasure,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { keepPreviousData } from "@tanstack/svelte-query";
+  import { readable } from "svelte/store";
   import {
     crossfade,
     fly,
     type CrossfadeParams,
     type FlyParams,
   } from "svelte/transition";
+  import {
+    computeCoverageWarning,
+    requestedStartMs,
+  } from "../rollup-coverage/rollup-coverage";
+  import {
+    registerWidgetServingTable,
+    servingTableOf,
+    type RollupCoverageStore,
+  } from "../rollup-coverage/rollup-coverage-store";
+  import RollupCoverageWarning from "../rollup-coverage/RollupCoverageWarning.svelte";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
@@ -42,8 +54,23 @@
   export let showComparison = false;
   export let ready: boolean = true;
   export let skipLink: boolean = false;
+  // When set, the big number reports which table served its queries and warns when it
+  // shows less history than the rest of the dashboard (see rollup-coverage.ts).
+  export let rollupCoverage: RollupCoverageStore | undefined = undefined;
 
   const client = useRuntimeClient();
+
+  const updatePrimaryServingTable = rollupCoverage
+    ? registerWidgetServingTable(rollupCoverage)
+    : undefined;
+  const updateComparisonServingTable = rollupCoverage
+    ? registerWidgetServingTable(rollupCoverage)
+    : undefined;
+  const coverageStore = rollupCoverage?.coverage ?? readable(undefined);
+  const tablesInUseStore =
+    rollupCoverage?.tablesInUse ?? readable(new Set<string>());
+  const rollupGrainsStore =
+    rollupCoverage?.rollupGrains ?? readable(new Map<string, V1TimeGrain>());
 
   $: measureName = measure.name ?? "";
 
@@ -91,6 +118,41 @@
       },
     },
   );
+
+  $: primaryServingTable = servingTableOf($primaryQuery.data);
+  $: comparisonServingTable =
+    showComparison && comparisonTimeStart
+      ? servingTableOf($comparisonQuery.data)
+      : undefined;
+  $: updatePrimaryServingTable?.(
+    `big-number:${measureName}`,
+    primaryServingTable,
+  );
+  $: updateComparisonServingTable?.(
+    `big-number-comparison:${measureName}`,
+    comparisonServingTable,
+  );
+  // The primary and comparison ranges are queried separately here, so each query's
+  // serving table is checked against its own range; the first warning wins.
+  $: coverageWarning =
+    (primaryServingTable !== undefined
+      ? computeCoverageWarning(
+          primaryServingTable,
+          $coverageStore,
+          $tablesInUseStore,
+          $rollupGrainsStore,
+          requestedStartMs(timeStart),
+        )
+      : undefined) ??
+    (comparisonServingTable !== undefined
+      ? computeCoverageWarning(
+          comparisonServingTable,
+          $coverageStore,
+          $tablesInUseStore,
+          $rollupGrainsStore,
+          requestedStartMs(comparisonTimeStart),
+        )
+      : undefined);
 
   // Derive value, comparisonValue, status, errorMessage from queries
   $: value =
@@ -238,6 +300,9 @@
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       {name}
+      {#if coverageWarning}
+        <RollupCoverageWarning warning={coverageWarning} />
+      {/if}
     </h2>
     <div
       role="button"

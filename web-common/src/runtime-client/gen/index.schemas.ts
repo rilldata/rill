@@ -1515,6 +1515,9 @@ export type V1MetricsViewAggregationResponseDataItem = {
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+  /** Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+Matches the keys of rollupTimeRanges in V1MetricsViewTimeRangeResponse and V1MetricsViewTimeRangesResponse. */
+  servingTable?: string;
   trace?: V1Trace;
 }
 
@@ -1606,6 +1609,9 @@ export interface V1MetricsViewComparisonRequest {
 
 export interface V1MetricsViewComparisonResponse {
   rows?: V1MetricsViewComparisonRow[];
+  /** Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+Matches the keys of rollupTimeRanges in V1MetricsViewTimeRangeResponse and V1MetricsViewTimeRangesResponse. */
+  servingTable?: string;
   trace?: V1Trace;
 }
 
@@ -1736,6 +1742,24 @@ Keys and values are stored as templates and will be resolved at query time. */
    * granularity (e.g. "P90D", "P3M", "P1Y"). Sub-day durations are not supported. Applies to queries that take a time
    * range, including the comparison time range. Time-range introspection RPCs are exempt. If unset, no limit is enforced. */
   maxQueryTimeRange?: string;
+  /** Pre-aggregated rollups that queries are automatically routed to when they can be satisfied from the rollup. */
+  rollups?: V1MetricsViewSpecRollup[];
+}
+
+export interface V1MetricsViewSpecRollup {
+  database?: string;
+  databaseSchema?: string;
+  /** Physical table of the rollup, resolved from the model. Matches the keys of rollupTimeRanges in
+V1MetricsViewTimeRangeResponse and the servingTable field on query responses. */
+  table?: string;
+  /** Name of the model the rollup is based on. */
+  model?: string;
+  /** Time grain of the rollup's pre-aggregation. */
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+  dimensions?: string[];
+  measures?: string[];
+  dataTimeRange?: string;
 }
 
 /**
@@ -1773,6 +1797,9 @@ This may be empty if the metrics view is based on an externally managed table. *
 
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
+  /** Time range summaries for the metrics view's rollups, keyed by rollup table name.
+Only populated when the metrics view has rollups. */
+  rollupTimeRanges?: { [key: string]: V1TimeRangeSummary };
   /** The metrics view's max_query_time_range property resolved into milliseconds against the current time.
    * Zero (or absent) if the metrics view does not configure max_query_time_range. */
   maxQueryTimeRangeMillis?: string;
@@ -1781,6 +1808,9 @@ export interface V1MetricsViewTimeRangeResponse {
 
 export interface V1MetricsViewTimeRangesResponse {
   fullTimeRange?: V1TimeRangeSummary;
+  /** Time range summaries for the metrics view's rollups, keyed by rollup table name.
+Only populated when the metrics view has rollups. */
+  rollupTimeRanges?: { [key: string]: V1TimeRangeSummary };
   /** The resolved time ranges for the requested rilltime expressions. */
   resolvedTimeRanges?: V1ResolvedTimeRange[];
   /** The same values as resolved_time_ranges for backwards compatibility.
@@ -1816,6 +1846,9 @@ export interface V1MetricsViewTimeSeriesRequest {
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
+  /** Rollup table the query was routed to. Empty when the query was served from the metrics view's base table.
+Matches the keys of rollupTimeRanges in V1MetricsViewTimeRangeResponse and V1MetricsViewTimeRangesResponse. */
+  servingTable?: string;
   trace?: V1Trace;
 }
 
