@@ -1353,6 +1353,8 @@
   "kpi_data_aria": "{measure} KPI data",
   "kpi_no_change": "no change",
   "kpi_no_data": "no data",
+  "kpi_no_total": "no total",
+  "kpi_no_total_note": "This measure produces one value per time period (for example, a rolling average), so a single total isn't available for the selected range. Use the chart to view its values.",
   "kpi_not_available": "n/a",
   "kpi_vs_comparison": "vs {comparison}",
   "language_en": "English",

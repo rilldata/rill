@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -50,6 +51,11 @@
   $: measureStore = getMeasureForMetricView(measureName, metricsViewName);
   $: measure = $measureStore;
 
+  // Measures with required dimensions (e.g. a rolling window ordered by the time
+  // dimension) produce one value per dimension value and have no single total,
+  // so we skip the totals queries; the KPI shows an explanatory hint instead.
+  $: supportsTotal = !measure || measureSupportsTotalsQuery(measure);
+
   $: showSparkline = sparkline !== "none" && hasTimeSeries;
 
   $: showComparison = !!comparisonOptions?.length && showTimeComparison;
@@ -76,7 +82,11 @@
     },
     {
       query: {
-        enabled: isValid && visible && (!hasTimeSeries || (!!start && !!end)),
+        enabled:
+          isValid &&
+          supportsTotal &&
+          visible &&
+          (!hasTimeSeries || (!!start && !!end)),
       },
     },
   );
@@ -96,6 +106,7 @@
           comparisonTimeRange &&
           showComparison &&
           isValid &&
+          supportsTotal &&
           !!start &&
           !!end &&
           visible,

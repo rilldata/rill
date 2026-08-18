@@ -4,6 +4,7 @@
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
+  import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -47,6 +48,11 @@
 
   $: measureName = measure.name ?? "";
 
+  // Measures with required dimensions (e.g. a rolling window ordered by the time
+  // dimension) produce one value per dimension value and have no single total,
+  // so we skip the totals queries and show an explanatory hint instead.
+  $: supportsTotal = measureSupportsTotalsQuery(measure);
+
   // Primary totals query
   $: primaryQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -62,7 +68,11 @@
     },
     {
       query: {
-        enabled: ready && (!!timeStart || !timeDimension) && !!measureName,
+        enabled:
+          ready &&
+          supportsTotal &&
+          (!!timeStart || !timeDimension) &&
+          !!measureName,
         placeholderData: keepPreviousData,
         refetchOnMount: false,
       },
@@ -85,7 +95,11 @@
     {
       query: {
         enabled:
-          ready && showComparison && !!comparisonTimeStart && !!measureName,
+          ready &&
+          supportsTotal &&
+          showComparison &&
+          !!comparisonTimeStart &&
+          !!measureName,
         placeholderData: keepPreviousData,
         refetchOnMount: false,
       },
@@ -173,8 +187,12 @@
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: copyValue = measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
-  $: tooltipValue = measureValueFormatterTooltip(value) ?? m.kpi_no_data();
+  $: copyValue = supportsTotal
+    ? (measureValueFormatterUnabridged(value) ?? m.kpi_no_data())
+    : m.kpi_no_total();
+  $: tooltipValue = supportsTotal
+    ? (measureValueFormatterTooltip(value) ?? m.kpi_no_data())
+    : m.kpi_no_total();
 
   $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
@@ -212,6 +230,7 @@
     slot="tooltip-content"
     {measure}
     value={tooltipValue}
+    note={supportsTotal ? undefined : m.kpi_no_total_note()}
   />
 
   <svelte:element
@@ -248,7 +267,9 @@
       onfocus={handleFocus}
       tabindex="0"
     >
-      {#if value !== null && value !== undefined && status === EntityStatus.Idle}
+      {#if !supportsTotal}
+        <span class="text-fg-muted italic text-sm">{m.kpi_no_total()}</span>
+      {:else if value !== null && value !== undefined && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
           {measureValueFormatter(output)}
         </WithTween>
