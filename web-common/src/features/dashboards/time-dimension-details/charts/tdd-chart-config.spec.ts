@@ -101,7 +101,9 @@ describe("dynamic y-axis", () => {
     );
     const vlSpec = generateSpec("bar_chart", config, data);
     const compiled = compile({ ...vlSpec, data: { values: rows } } as never)
-      .spec as { scales?: { name: string; zero?: boolean; domain?: unknown }[] };
+      .spec as {
+      scales?: { name: string; zero?: boolean; domain?: unknown }[];
+    };
     return compiled.scales?.find((scale) => scale.name === "y");
   }
 
