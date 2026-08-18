@@ -31,8 +31,14 @@
     measure: measureName,
     sparkline,
     comparison: comparisonOptions,
+    comparison_measure: comparisonMeasureName,
     hide_time_range: hideTimeRange,
   } = spec);
+
+  // Compare against another measure over the primary time range, instead of
+  // against the same measure over the comparison range.
+  $: comparisonMeasureKey = comparisonMeasureName ?? "";
+  $: measureComparison = comparisonMeasureKey !== "";
 
   $: ({
     timeGrain,
@@ -50,14 +56,25 @@
   $: measureStore = getMeasureForMetricView(measureName, metricsViewName);
   $: measure = $measureStore;
 
+  $: comparisonMeasureStore = getMeasureForMetricView(
+    comparisonMeasureKey,
+    metricsViewName,
+  );
+  $: comparisonMeasure = $comparisonMeasureStore;
+
   $: showSparkline = sparkline !== "none" && hasTimeSeries;
 
-  $: showComparison = !!comparisonOptions?.length && showTimeComparison;
+  $: showComparison =
+    !!comparisonOptions?.length && (showTimeComparison || measureComparison);
 
-  $: comparisonLabel =
-    comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
-    (TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
-      ?.label as string | undefined);
+  $: comparisonLabel = measureComparison
+    ? (comparisonMeasure?.displayName ?? comparisonMeasureKey)
+    : comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
+      (
+        TIME_COMPARISON[
+          comparisonTimeRangeState?.selectedComparisonTimeRange.name
+        ]?.label as string | undefined
+      )?.toLowerCase();
 
   $: queryMeasures = [{ name: measureName }];
 
@@ -85,23 +102,49 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: queryMeasures,
-      timeRange: comparisonTimeRange,
+      measures: measureComparison
+        ? [{ name: comparisonMeasureKey }]
+        : queryMeasures,
+      timeRange: measureComparison
+        ? { start, end, timeZone }
+        : comparisonTimeRange,
       where,
       priority: 50,
     },
     {
       query: {
-        enabled:
-          comparisonTimeRange &&
-          showComparison &&
-          isValid &&
-          !!start &&
-          !!end &&
-          visible,
+        enabled: measureComparison
+          ? showComparison &&
+            isValid &&
+            visible &&
+            (!hasTimeSeries || (!!start && !!end))
+          : comparisonTimeRange &&
+            showComparison &&
+            isValid &&
+            !!start &&
+            !!end &&
+            visible,
       },
     },
   );
+
+  // KPI.svelte reads comparison values keyed by the primary measure name.
+  // Only rewritten once the data is in: spreading the result while loading or
+  // in error breaks TanStack Query's discriminated union.
+  $: comparisonTotalResult = !measureComparison
+    ? $comparisonTotalQuery
+    : !$comparisonTotalQuery.data
+      ? $comparisonTotalQuery
+      : {
+          ...$comparisonTotalQuery,
+          data: {
+            ...$comparisonTotalQuery.data,
+            data: $comparisonTotalQuery.data.data?.map((row) => ({
+              ...row,
+              [measureName]: row[comparisonMeasureKey],
+            })),
+          },
+        };
 
   $: primarySparklineQuery = createQueryServiceMetricsViewTimeSeries(
     client,
@@ -126,9 +169,9 @@
     client,
     {
       metricsViewName,
-      measureNames: [measureName],
-      timeStart: comparisonTimeRange?.start,
-      timeEnd: comparisonTimeRange?.end,
+      measureNames: measureComparison ? [comparisonMeasureKey] : [measureName],
+      timeStart: measureComparison ? start : comparisonTimeRange?.start,
+      timeEnd: measureComparison ? end : comparisonTimeRange?.end,
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
       timeZone,
       where,
@@ -136,15 +179,41 @@
     },
     {
       query: {
-        enabled:
-          comparisonTimeRange &&
-          isValid &&
-          showSparkline &&
-          showComparison &&
-          visible,
+        enabled: measureComparison
+          ? isValid &&
+            showSparkline &&
+            showComparison &&
+            visible &&
+            !!start &&
+            !!end
+          : comparisonTimeRange &&
+            isValid &&
+            showSparkline &&
+            showComparison &&
+            visible,
       },
     },
   );
+
+  $: comparisonSparklineResult = !measureComparison
+    ? $comparisonSparklineQuery
+    : !$comparisonSparklineQuery.data
+      ? $comparisonSparklineQuery
+      : {
+          ...$comparisonSparklineQuery,
+          data: {
+            ...$comparisonSparklineQuery.data,
+            data: $comparisonSparklineQuery.data.data?.map((point) => ({
+              ...point,
+              records: point.records && {
+                ...point.records,
+                [measureName]: (point.records as Record<string, unknown>)[
+                  comparisonMeasureKey
+                ],
+              },
+            })),
+          },
+        };
 
   $: interval = Interval.fromDateTimes(
     DateTime.fromISO(start ?? "").setZone(timeZone),
@@ -156,7 +225,7 @@
   {measure}
   {timeGrain}
   {timeZone}
-  {showTimeComparison}
+  showTimeComparison={showTimeComparison || measureComparison}
   {hasTimeSeries}
   {comparisonLabel}
   {interval}
@@ -164,7 +233,7 @@
   {hideTimeRange}
   comparisonOptions={spec.comparison}
   primaryTotalResult={$totalQuery}
-  comparisonTotalResult={$comparisonTotalQuery}
+  {comparisonTotalResult}
   primarySparklineResult={$primarySparklineQuery}
-  comparisonSparklineResult={$comparisonSparklineQuery}
+  {comparisonSparklineResult}
 />

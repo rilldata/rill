@@ -98,5 +98,8 @@ export interface KPISpec
   sparkline?: "none" | "bottom" | "right";
   // Defaults to "delta" and "percent_change"
   comparison?: ComponentComparisonOptions[];
+  // Measure to compare against over the primary time range (e.g. a target),
+  // instead of the time comparison. Takes precedence over it when set.
+  comparison_measure?: string;
   hide_time_range?: boolean;
 }
