@@ -183,7 +183,7 @@
         </ResizableSidebar>
       {/if}
 
-      <div class="flex flex-col flex-grow">
+      <div class="flex flex-col flex-grow min-w-0">
         <ResourceList
           kind="dashboard"
           data={displayData}
