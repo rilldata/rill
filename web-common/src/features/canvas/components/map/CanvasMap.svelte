@@ -119,7 +119,10 @@
       if (spec.size_measure) measures.push({ name: spec.size_measure });
 
       const enabled =
-        $visible && !!mv && !!gd && canQueryWithTimeRange(hasTimeSeries, timeRange);
+        $visible &&
+        !!mv &&
+        !!gd &&
+        canQueryWithTimeRange(hasTimeSeries, timeRange);
 
       return getQueryServiceMetricsViewAggregationQueryOptions(
         runtimeClient,
