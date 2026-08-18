@@ -49,6 +49,7 @@
   export let showComparison: boolean = false;
   export let showTimeDimensionDetail: boolean = true;
   export let chartType: TDDChart;
+  export let dynamicYAxis: boolean = false;
   export let onChartHover: (
     dimension: undefined | string | null,
     ts: Date | undefined,
@@ -78,6 +79,7 @@
     dimensionValues,
     dimensionData,
     showTimeDimensionDetail,
+    dynamicYAxis,
   );
 
   $: componentChartType = TDD_TO_COMPONENT_CHART_TYPE[chartType];
