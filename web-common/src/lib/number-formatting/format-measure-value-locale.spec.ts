@@ -159,7 +159,17 @@ describe("format-measure-value with an explicit formatD3", () => {
   it("keeps humanized values in the axis context so tick labels stay compact", () => {
     const formatter = createMeasureValueFormatter(subCentMeasure, "axis");
     expect(formatter(0.0002)).toBe("$2e-4");
-    expect(formatter(1234567.8901)).toBe("$1M");
+    expect(formatter(1234567.8901)).toBe("$1.2M");
+  });
+
+  it("keeps one decimal on axis ticks so half-unit values are not rounded away", () => {
+    const formatter = createMeasureValueFormatter(subCentMeasure, "axis");
+    // 1,500,000 previously rounded up to "$2M", making a tick sitting on 1.5M
+    // read as 2M on the axis.
+    expect(formatter(1_500_000)).toBe("$1.5M");
+    expect(formatter(1_000_000)).toBe("$1M");
+    expect(formatter(500_000)).toBe("$500k");
+    expect(formatter(1_500_000_000)).toBe("$1.5B");
   });
 
   it("still humanizes preset-formatted measures in the big-number context", () => {
