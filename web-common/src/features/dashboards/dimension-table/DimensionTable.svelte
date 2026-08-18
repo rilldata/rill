@@ -178,7 +178,7 @@ TableCells – the cell contents.
     const options = {
       count: measureColumns.length,
       overscan: columnOverscanAmount,
-      getItemKey: (index: number) => measureColumns[index].name,
+      getItemKey: (index: number) => measureColumns[index]?.name,
       estimateSize: (index: number) => estimateColumnSize[index + 1],
       paddingStart: (estimateColumnSize[0] ?? 0) + FILTER_COLUMN_WIDTH,
     };
@@ -194,7 +194,9 @@ TableCells – the cell contents.
   let virtualRows = $derived($rowVirtualizer.getVirtualItems());
   let virtualHeight = $derived($rowVirtualizer.getTotalSize());
 
-  let virtualColumns = $derived($columnVirtualizer.getVirtualItems());
+  let virtualColumns = $derived(
+    $columnVirtualizer.getVirtualItems()?.filter((c) => !!c.key),
+  );
   let virtualWidth = $derived($columnVirtualizer.getTotalSize());
 
   let activeIndex: number = $state(-1);

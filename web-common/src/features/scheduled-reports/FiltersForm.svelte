@@ -26,7 +26,7 @@
   const runtimeClient = useRuntimeClient();
 
   export let filters: ExpressionFilterManager;
-  // TODO: make this support canvas
+  // TODO: make this support canvas. Unifying time controls should allow for this.
   export let metricsViewName: string;
   export let exploreName: string;
   export let timeControls: TimeControls;
@@ -277,5 +277,6 @@
     {timeEnd}
     {timeDimension}
     timeControlsReady
+    selfSync
   />
 </div>

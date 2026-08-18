@@ -18,6 +18,8 @@
     timeControlsReady,
     timeDimension,
 
+    selfSync = false,
+
     isUrlTooLongAfterInListFilter,
   }: {
     expressionFilterManager: ExpressionFilterManager;
@@ -31,8 +33,21 @@
     timeControlsReady: boolean | undefined;
     timeDimension?: string | undefined;
 
+    selfSync?: boolean;
+
     isUrlTooLongAfterInListFilter?: (name: string, values: string[]) => boolean;
   } = $props();
+
+  // svelte-ignore state_referenced_locally
+  if (selfSync) {
+    // Sync back url params
+    expressionFilterManager.createListener();
+    expressionFilterManager.on("state-changed", () => {
+      const searchParams = new URLSearchParams();
+      expressionFilterManager.applyFilterToParams(searchParams);
+      expressionFilterManager.setUrlParams(searchParams);
+    });
+  }
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -83,7 +98,9 @@
   );
 </script>
 
-<div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
+<div
+  class="relative flex flex-row gap-x-2 gap-y-2 items-start pointer-events-auto"
+>
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
     {#if expressionFilterManager.isComplexFilter}
       {#each Object.entries(expressionFilterManager.exprByMetricsView) as [mv, expr] (mv)}

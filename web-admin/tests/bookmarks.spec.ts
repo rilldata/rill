@@ -229,8 +229,7 @@ test.describe("Bookmarks", () => {
 
     // Home bookmark interferes with other bookmark creation since we are adding some filters.
     // So adding it to the end.
-    // Skipping for now since this is unstable
-    test.describe.skip("Home explore bookmarks", () => {
+    test.describe.serial("Home explore bookmarks", () => {
       test("Should create a home bookmark", async ({ adminPage }) => {
         // This would ideally be done in a beforeAll hook. But adminPage fixture is not supported in that hook.
         await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
@@ -536,7 +535,7 @@ test.describe("Bookmarks", () => {
         ).toBeVisible();
       });
 
-      test.skip("Visiting home should restore home bookmark", async ({
+      test("Visiting home should restore home bookmark", async ({
         adminPage,
       }) => {
         // Navigate to the canvas

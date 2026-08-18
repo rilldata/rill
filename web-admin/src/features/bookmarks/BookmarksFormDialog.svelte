@@ -50,7 +50,7 @@
     resource,
     bookmark,
     defaultUrlParams,
-    showFiltersOnly,
+    showFiltersOnly = true,
     onClose,
   }: {
     organization: string;
@@ -59,7 +59,7 @@
     resource: { name: string; kind: ResourceKind };
     bookmark: BookmarkEntry | null;
     defaultUrlParams: URLSearchParams | undefined;
-    showFiltersOnly: boolean;
+    showFiltersOnly?: boolean;
     onClose: () => void;
   } = $props();
 

@@ -187,8 +187,8 @@ export class DashboardStateSync {
       );
     }
 
-    log("INIT", redirectUrl);
     this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+    log("INIT", redirectUrl);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -242,6 +242,7 @@ export class DashboardStateSync {
     // Take the lock only once the guards have passed;
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
+    this.expressionFilterManager.updating = true;
     let redirectUrl: URL;
     try {
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
@@ -299,19 +300,21 @@ export class DashboardStateSync {
       this.updating = false;
     }
 
-    log("URL", redirectUrl);
     this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+    log("URL", redirectUrl);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
+      this.expressionFilterManager.updating = false;
       return;
     }
 
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    return goto(redirectUrl, {
+    await goto(redirectUrl, {
       replaceState: true,
       state: pageState.state,
     });
+    this.expressionFilterManager.updating = false;
   }
 
   /**
@@ -325,6 +328,7 @@ export class DashboardStateSync {
     // Those methods need to replace the current URL while this does a direct navigation.
     if (this.updating) return;
     this.updating = true;
+    this.expressionFilterManager.updating = true;
 
     try {
       const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
@@ -356,8 +360,8 @@ export class DashboardStateSync {
         );
       }
 
-      log("GOTO", newUrl);
       this.expressionFilterManager.setUrlParams(newUrl.searchParams);
+      log("GOTO", newUrl);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -368,6 +372,7 @@ export class DashboardStateSync {
       await goto(newUrl);
     } finally {
       this.updating = false;
+      this.expressionFilterManager.updating = false;
     }
   }
 }

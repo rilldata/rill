@@ -12,6 +12,7 @@ import { isSimpleMeasure } from "@rilldata/web-common/features/dashboards/state-
 import { Duration } from "luxon";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
@@ -153,6 +154,7 @@ export class MetricsViewsProvider {
   }
 
   public setMetricsViewNames(metricsViewNames: string[]) {
+    if (arrayUnorderedEquals(this.metricsViewNames, metricsViewNames)) return;
     this.metricsViewNames = metricsViewNames;
     this.processResources();
   }

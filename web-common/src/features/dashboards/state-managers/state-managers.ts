@@ -177,6 +177,7 @@ export function createStateManagers({
   );
 
   const stateChangeUnsub = expressionFilterManager.on("state-changed", () => {
+    if (expressionFilterManager.updating) return;
     metricsExplorerStore.mergePartialExplorerEntity(
       exploreName,
       {},

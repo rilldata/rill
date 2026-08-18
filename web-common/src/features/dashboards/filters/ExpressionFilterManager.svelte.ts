@@ -69,6 +69,9 @@ export class ExpressionFilterManager {
   // Filter param based on managers.
   public paramByManager: Record<MetricsViewName, string>;
 
+  // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
+  public updating = false;
+
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
@@ -162,6 +165,7 @@ export class ExpressionFilterManager {
       const unchanged =
         !emittedParam || recordsMatch(emittedParam, param, metricsViewNames);
       emittedParam = param;
+      console.log("state-changed", emittedParam, unchanged);
       if (unchanged) return;
 
       this.events.emit("state-changed");
@@ -236,6 +240,7 @@ export class ExpressionFilterManager {
           metricsViewNames,
         ),
     );
+    console.log(newParamByMetricsView, unchanged);
     if (unchanged && !force) return;
 
     this.paramByMetricsView = newParamByMetricsView;
