@@ -724,6 +724,54 @@ kpi_grid:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a measure")
+
+	// Valid: a measure compared against another measure.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures:
+  - y
+  measure_comparisons:
+  - measure: y
+    compare_to: z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: compare_to isn't a measure of the metrics view.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures:
+  - y
+  measure_comparisons:
+  - measure: y
+    compare_to: nonexistent
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "compare_to")
+
+	// Valid: an entry for a measure the grid no longer shows is inert, not an
+	// error. Removing a measure from the visual editor leaves one behind, and
+	// failing the resource for it would be a state the editor cannot undo.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures:
+  - y
+  measure_comparisons:
+  - measure: z
+    compare_to: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 }
 
 func TestValidateTable(t *testing.T) {
