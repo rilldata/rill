@@ -11,6 +11,13 @@ export const ColorWithComparisonField = "color_with_comparison";
 export const SortOrderField = "sortOrder";
 
 /**
+ * Opacity for previous-period marks in comparison mode.
+ * Shared with the custom time series chart so both renderers
+ * fade comparison data the same way.
+ */
+export const ComparisonMarkOpacity = 0.4;
+
+/**
  * Creates Vega-Lite transforms for period-over-period comparison.
  * This function generates the fold and calculate transforms needed to
  * display current and comparison data side-by-side.
@@ -84,7 +91,7 @@ export function createComparisonOpacityEncoding(
     condition: [
       {
         test: `datum['${MeasureKeyField}'] === '${previousLiteral}'`,
-        value: 0.4,
+        value: ComparisonMarkOpacity,
       },
     ],
     value: 1,

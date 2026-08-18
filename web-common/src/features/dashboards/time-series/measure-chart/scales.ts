@@ -123,6 +123,14 @@ export function computeYExtent(
       if (d.value !== null && Number.isFinite(d.value)) {
         values.push(d.value);
       }
+      if (
+        showComparison &&
+        d.comparisonValue !== null &&
+        d.comparisonValue !== undefined &&
+        Number.isFinite(d.comparisonValue)
+      ) {
+        values.push(d.comparisonValue);
+      }
     }
   }
 
