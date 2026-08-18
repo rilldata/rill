@@ -212,7 +212,10 @@
   $: cursorStyle = scrubController?.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
-  $: measureFormatter = createMeasureValueFormatter(measure);
+  // Hover readouts use the tooltip context: it honors an explicit d3 format
+  // and shows more precision than the table default, so small-but-meaningful
+  // values (e.g. sub-cent costs) don't round away to ~$0.00.
+  $: measureFormatter = createMeasureValueFormatter(measure, "tooltip");
   $: valueFormatter = (value: number | null): string => {
     if (value === null) return "no data";
     return measureFormatter(value);
@@ -532,7 +535,9 @@
       <g class="data-readout">
         <text
           class="fill-fg-muted text-outline text-[11px]"
-          aria-label="{measureName} primary time label"
+          aria-label={m.dashboard_measure_chart_primary_time_label_aria({
+            name: measureName,
+          })}
           x={pb.left + 6}
           y={pb.top + 10}
         >

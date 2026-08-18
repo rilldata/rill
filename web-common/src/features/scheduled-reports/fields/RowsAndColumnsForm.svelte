@@ -67,7 +67,7 @@
       slot="empty-fields"
       class={hasColumnErrors ? "text-red-600" : "text-fg-secondary"}
     >
-      Must select one column
+      {m.report_form_must_select_one_column()}
     </div>
   </FieldList>
 {/if}

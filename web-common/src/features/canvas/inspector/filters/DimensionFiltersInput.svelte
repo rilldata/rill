@@ -107,9 +107,9 @@
   </div>
   <div class="text-fg-secondary">
     {#if localFiltersEnabled}
-      Overriding inherited filters from canvas.
+      {m.canvas_overriding_inherited_filters()}
     {:else}
-      Overrides inherited filters from canvas when ON.
+      {m.canvas_override_inherited_filters_hint()}
     {/if}
   </div>
   {#if localFiltersEnabled}
@@ -210,7 +210,7 @@
               updateLocalFilterString(newParam);
             }}
           >
-            Clear filters
+            {m.canvas_clear_filters()}
           </Button>
         {/if}
       </div>

@@ -9,6 +9,7 @@ import {
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
+  createStackOverride,
 } from "@rilldata/web-common/features/components/charts/builder";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/types_unstable/channeldef.js";
@@ -50,7 +51,11 @@ export function generateVLAreaChartSpec(
   const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
     {
       encoding: {
-        y: { ...createPositionEncoding(config.y, data), stack: "zero" },
+        y: {
+          ...createPositionEncoding(config.y, data),
+          stack: "zero",
+          ...createStackOverride(config.y, colorField),
+        },
         color: createColorEncoding(config.color, data),
       },
       layer: inner,

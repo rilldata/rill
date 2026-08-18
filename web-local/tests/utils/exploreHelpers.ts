@@ -17,6 +17,8 @@ export async function clickPreviewButton(page: Page, timeout = 10_000) {
   await previewButton.click();
 }
 
+// Generated metrics views define their explore dashboard inline, so generating
+// metrics is enough to get an explore; these helpers optionally open its preview.
 export async function createExploreFromSource(
   page: Page,
   sourcePath = "/models/AdBids.yaml",
@@ -25,7 +27,7 @@ export async function createExploreFromSource(
   await openFileNavEntryContextMenu(page, sourcePath);
   await clickMenuButton(page, "Generate metrics");
   await waitForFileNavEntry(page, metricsViewPath, true);
-  await page.getByText("Generate Explore Dashboard").click();
+  await clickPreviewButton(page);
 }
 
 export async function createExploreFromModel(
@@ -37,7 +39,6 @@ export async function createExploreFromModel(
   await openFileNavEntryContextMenu(page, modelPath);
   await clickMenuButton(page, "Generate metrics");
   await waitForFileNavEntry(page, metricsViewPath, true);
-  await page.getByText("Generate Explore Dashboard").click();
 
   if (navigateToPreview) {
     await clickPreviewButton(page);

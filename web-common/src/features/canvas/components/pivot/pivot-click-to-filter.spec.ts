@@ -3,7 +3,10 @@ import type {
   PivotDataStore,
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable } from "svelte/store";
 import { describe, expect, it, vi } from "vitest";
@@ -109,6 +112,7 @@ function setup(
   config: PivotDataStoreConfig,
   data: PivotDataRow[],
   columnDimensionAxes: Record<string, string[]> = {},
+  whereFilter?: V1Expression,
 ) {
   const selfFilteredDimensions = writable<Set<string>>(new Set());
   const { fm, filterClass } = stubFilterManagerWithClass("mv1");
@@ -120,6 +124,7 @@ function setup(
       filterManager: fm,
       activeComponent: writable<string | null>("pivot-1"),
       selfFilteredDimensions,
+      whereFilterStore: writable<V1Expression | undefined>(whereFilter),
     }),
   );
 
@@ -630,6 +635,229 @@ describe("deselect retains shared column filters", () => {
     );
     expectNoToggle(filterClass, "status");
     expectNoToggle(filterClass, "type");
+
+    result.destroy();
+  });
+});
+
+// A dashboard can already carry filters the pivot knows nothing about. The
+// filter expressions produced for a clicked cell/header must describe only that
+// element, otherwise toggling the pivot selection off also toggles off those
+// unrelated filters.
+describe("unrelated global filters are left alone", () => {
+  const globalFilter = createAndExpression([
+    createInExpression("domain", ["google.com"]),
+    createInExpression("device", ["mobile"]),
+  ]);
+
+  /** Assert a dimension was neither added to nor removed from the filter set. */
+  function expectUntouched(
+    filterClass: ReturnType<typeof stubFilterManagerWithClass>["filterClass"],
+    dimensionName: string,
+  ) {
+    expectNoToggle(filterClass, dimensionName);
+    const addCalls = filterClass.addDimensionValueSelections.mock.calls.filter(
+      (call: unknown[]) => call[0] === dimensionName,
+    );
+    expect(addCalls).toHaveLength(0);
+  }
+
+  const flatConfig = makeConfig({
+    rowDimensionNames: ["country"],
+    measureNames: ["revenue"],
+    isFlat: true,
+    whereFilter: globalFilter,
+  });
+  const flatData: PivotDataRow[] = [{ country: "US", revenue: 100 }];
+
+  it("does not re-add global filter values when selecting a cell", () => {
+    const { result, filterClass } = setup(
+      flatConfig,
+      flatData,
+      {},
+      globalFilter,
+    );
+
+    result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
+
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
+      "country",
+      ["US"],
+    );
+    expectUntouched(filterClass, "domain");
+    expectUntouched(filterClass, "device");
+
+    result.destroy();
+  });
+
+  it("marks only the pivot's own dimension as self-filtered", () => {
+    const { result, selfFilteredDimensions } = setup(
+      flatConfig,
+      flatData,
+      {},
+      globalFilter,
+    );
+
+    result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
+
+    expect([...get(selfFilteredDimensions)]).toEqual(["country"]);
+
+    result.destroy();
+  });
+
+  it("keeps global filters when deselecting a cell", () => {
+    const { result, filterClass } = setup(
+      flatConfig,
+      flatData,
+      {},
+      globalFilter,
+    );
+
+    result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
+    filterClass.toggleDimensionValueSelections.mockClear();
+    filterClass.addDimensionValueSelections.mockClear();
+    result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
+
+    expect(sel(result).cellSelections.size).toBe(0);
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "country",
+      ["US"],
+      false,
+      false,
+    );
+    expectUntouched(filterClass, "domain");
+    expectUntouched(filterClass, "device");
+
+    result.destroy();
+  });
+
+  it("keeps global filters when deselecting a row header", () => {
+    const nestedConfig = makeConfig({
+      rowDimensionNames: ["country"],
+      measureNames: ["revenue"],
+      whereFilter: globalFilter,
+    });
+    const nestedData: PivotDataRow[] = [{ country: "US", revenue: 100 }];
+
+    const { result, filterClass } = setup(
+      nestedConfig,
+      nestedData,
+      {},
+      globalFilter,
+    );
+
+    result.handleCellClickToFilter("1", "country", true, nestedData[0]);
+    expect(sel(result).rowHeaderSelections.size).toBe(1);
+
+    filterClass.toggleDimensionValueSelections.mockClear();
+    filterClass.addDimensionValueSelections.mockClear();
+    result.handleCellClickToFilter("1", "country", true, nestedData[0]);
+
+    expect(sel(result).rowHeaderSelections.size).toBe(0);
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "country",
+      ["US"],
+      false,
+      false,
+    );
+    expectUntouched(filterClass, "domain");
+    expectUntouched(filterClass, "device");
+
+    result.destroy();
+  });
+
+  it("keeps global filters when deselecting a column header", () => {
+    const colConfig = makeConfig({
+      rowDimensionNames: ["country"],
+      colDimensionNames: ["region"],
+      measureNames: ["revenue"],
+      whereFilter: globalFilter,
+    });
+
+    const { result, filterClass } = setup(colConfig, [], {}, globalFilter);
+
+    result.handleColumnHeaderClick({ region: "NA" });
+    filterClass.toggleDimensionValueSelections.mockClear();
+    filterClass.addDimensionValueSelections.mockClear();
+    result.handleColumnHeaderClick({ region: "NA" });
+
+    expect(sel(result).columnHeaderSelections.size).toBe(0);
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "region",
+      ["NA"],
+      false,
+      false,
+    );
+    expectUntouched(filterClass, "domain");
+    expectUntouched(filterClass, "device");
+
+    result.destroy();
+  });
+
+  it("keeps global filters when a column header level switch replaces selections", () => {
+    const colConfig = makeConfig({
+      rowDimensionNames: ["country"],
+      colDimensionNames: ["region", "category"],
+      measureNames: ["revenue"],
+      whereFilter: globalFilter,
+    });
+
+    const { result, filterClass } = setup(colConfig, [], {}, globalFilter);
+
+    result.handleColumnHeaderClick({ region: "NA" });
+    filterClass.toggleDimensionValueSelections.mockClear();
+    filterClass.addDimensionValueSelections.mockClear();
+    result.handleColumnHeaderClick({ region: "NA", category: "Electronics" });
+
+    expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
+      "category",
+      ["Electronics"],
+    );
+    expectUntouched(filterClass, "domain");
+    expectUntouched(filterClass, "device");
+
+    result.destroy();
+  });
+
+  it("keeps global filters when a row-header click evicts a child cell", () => {
+    const nestedConfig = makeConfig({
+      rowDimensionNames: ["outer", "inner"],
+      measureNames: ["revenue"],
+      whereFilter: globalFilter,
+    });
+    const nestedData: PivotDataRow[] = [
+      {
+        outer: "Zoom",
+        revenue: 100,
+        subRows: [{ outer: "US-East", inner: "US-East", revenue: 50 }],
+      },
+    ];
+
+    const { result, filterClass } = setup(
+      nestedConfig,
+      nestedData,
+      {},
+      globalFilter,
+    );
+
+    result.handleCellClickToFilter(
+      "1.0",
+      "revenue",
+      false,
+      nestedData[0].subRows![0],
+    );
+    filterClass.toggleDimensionValueSelections.mockClear();
+    filterClass.addDimensionValueSelections.mockClear();
+    result.handleCellClickToFilter("1", "outer", true, nestedData[0]);
+
+    expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
+      "inner",
+      ["US-East"],
+      false,
+      false,
+    );
+    expectUntouched(filterClass, "domain");
+    expectUntouched(filterClass, "device");
 
     result.destroy();
   });

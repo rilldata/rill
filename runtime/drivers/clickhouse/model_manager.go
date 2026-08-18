@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -179,6 +180,14 @@ func (c *Connection) validateAndApplyDefaults(opts *drivers.ModelExecuteOptions,
 		ip.SQL = ip.SQL + " SETTINGS " + op.QuerySettings
 	}
 
+	if ip != nil {
+		ip.PostExec = strings.TrimSpace(ip.PostExec)
+		ip.PreExec = strings.TrimSpace(ip.PreExec)
+	}
+	if op != nil {
+		op.PostExec = strings.TrimSpace(op.PostExec)
+		op.PreExec = strings.TrimSpace(op.PreExec)
+	}
 	return nil
 }
 
@@ -282,7 +291,13 @@ func (c *Connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 	}
 
 	_, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
-	return err == nil, nil
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error {

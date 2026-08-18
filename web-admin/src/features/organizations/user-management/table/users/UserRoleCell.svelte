@@ -3,6 +3,8 @@
   import {
     canManageOrgUser,
     invalidateAfterUserDelete,
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
   } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -10,8 +12,6 @@
   import {
     createAdminServiceRemoveOrganizationMemberUser,
     createAdminServiceSetOrganizationMemberUserRole,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import { page } from "$app/stores";
@@ -68,14 +68,9 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+      await invalidateOrgInvites(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.users_role_updated(),
@@ -99,14 +94,9 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
+      await invalidateOrgInvites(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.users_guest_upgraded_to({ role }),

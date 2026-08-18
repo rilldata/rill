@@ -478,7 +478,10 @@
       [type]: itemsCopy.filter((i) => i && i instanceof YAMLMap),
     });
 
-    eventBus.emit("notification", { message: "Item moved", type: "success" });
+    eventBus.emit("notification", {
+      message: m.visual_metrics_item_moved(),
+      type: "success",
+    });
   }
 
   function triggerDelete(index?: number, type?: ItemType) {
@@ -503,7 +506,7 @@
 
       if (!(sequence instanceof YAMLSeq)) {
         eventBus.emit("notification", {
-          message: "Error deleting items",
+          message: m.visual_metrics_items_delete_error(),
           type: "error",
         });
         return;
@@ -533,7 +536,10 @@
       resetEditing();
     }
 
-    eventBus.emit("notification", { message: "Item deleted", type: "success" });
+    eventBus.emit("notification", {
+      message: m.visual_metrics_item_deleted(),
+      type: "success",
+    });
   }
 
   function duplicateItem(index: number, type: ItemType) {
@@ -575,7 +581,7 @@
     updateProperties({ [type]: items });
 
     eventBus.emit("notification", {
-      message: "Item duplicated",
+      message: m.visual_metrics_item_duplicated(),
       type: "success",
     });
   }
@@ -601,14 +607,14 @@
     <div class="flex gap-x-4 border-b pb-4">
       {#if showConnectorExplorer}
         <div class="flex flex-col gap-y-1 w-full">
-          <InputLabel label="Table" id="table">
+          <InputLabel label={m.visual_metrics_table_label()} id="table">
             <svelte:fragment slot="mode-switch">
               {#if isModelingSupported && !yamlConnector}
                 <button
                   onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
-                  Select model
+                  {m.visual_metrics_select_model()}
                 </button>
               {/if}
             </svelte:fragment>
@@ -623,7 +629,9 @@
                  "
                 >
                   {#if !hasValidOLAPTableSelected}
-                    <span class="text-fg-muted truncate">Select table</span>
+                    <span class="text-fg-muted truncate">
+                      {m.visual_metrics_select_table()}
+                    </span>
                   {:else}
                     {#if analyzedConnector}
                       <span class="flex-none">
@@ -669,8 +677,8 @@
             truncate
             value={noTableProperties ? modelOrSourceOrTableName : undefined}
             options={modelAndSourceOptions}
-            placeholder="Select a model"
-            label="Model"
+            placeholder={m.visual_metrics_select_model_placeholder()}
+            label={m.visual_metrics_model_label()}
             leadingIcon={analyzedConnector
               ? connectorIconMapping[getConnectorIconKey(analyzedConnector)]
               : undefined}
@@ -697,7 +705,7 @@
                   onclick={switchTableMode}
                   class="ml-auto text-primary-600 font-medium text-xs"
                 >
-                  Select table
+                  {m.visual_metrics_select_table()}
                 </button>
               {/if}
             </svelte:fragment>
@@ -712,8 +720,8 @@
         truncate
         value={timeDimension}
         options={timeOptions}
-        placeholder="Select time column"
-        label="Time column"
+        placeholder={m.visual_metrics_select_time_column()}
+        label={m.visual_metrics_time_column_label()}
         disabledMessage={!hasValidModelOrSourceSelection
           ? "No model selected"
           : "No timestamp columns in model"}
@@ -729,8 +737,8 @@
         truncate
         value={smallestTimeGrain}
         options={availableGrainOptions}
-        placeholder="Select time grain"
-        label="Smallest time grain"
+        placeholder={m.visual_metrics_select_time_grain()}
+        label={m.visual_metrics_smallest_time_grain_label()}
         hint="The smallest time unit by which your charts and tables can be bucketed"
         onChange={async (value) => {
           await updateProperties({ smallest_time_grain: value });
@@ -758,8 +766,7 @@
           class="bg-surface-subtle rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
-            {totalSelected}
-            {totalSelected > 1 ? "items" : "item"} selected:
+            {m.visual_metrics_items_selected({ count: totalSelected })}
           </div>
           <button
             onclick={() => {
@@ -768,7 +775,7 @@
             class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
           >
             <Trash size="16px" />
-            Delete
+            {m.common_delete()}
           </button>
 
           <button
@@ -817,7 +824,9 @@
               type="ghost"
               square
               noStroke
-              label="Add new {type.slice(0, -1)}"
+              label={type === "measures"
+                ? m.visual_metrics_add_new_measure()
+                : m.visual_metrics_add_new_dimension()}
               onClick={() => {
                 editingItemData.set({
                   type,

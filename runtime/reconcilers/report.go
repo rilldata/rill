@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -19,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -249,7 +251,30 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	}
 	if canvas != "" {
 		c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
-		conditionRes = append(conditionRes, c)
+
+		// Also allow access to the canvas's components and the resources their renderers reference (e.g. metrics views).
+		// This enables report recipients to render the canvas in the browser (e.g. for PDF exports).
+		canvasRes, err := r.C.Get(ctx, c, false)
+		if err == nil {
+			canvasResources, err := canvasTransitiveConditionResources(ctx, r.C, claims, canvasRes)
+			if err != nil {
+				return nil, err
+			}
+			conditionRes = append(conditionRes, canvasResources...)
+		} else if errors.Is(err, drivers.ErrResourceNotFound) {
+			// Canvas not found: still allow access to the name so requests fail with a clear error on the canvas itself.
+			conditionRes = append(conditionRes, c)
+		} else {
+			return nil, err
+		}
+
+		// Restrict recipients to the data selected by the filters that were captured when the report was created (if any).
+		filterRules, err := canvasFilterSecurityRules(spec.Annotations["metrics_view_filters"])
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, filterRules...)
+
 		for _, r := range rules {
 			if rfa := r.GetFieldAccess(); rfa != nil {
 				rfa.ConditionResources = append(rfa.ConditionResources, c)
@@ -689,6 +714,44 @@ func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *ru
 	return true, nil
 }
 
+// canvasFilterSecurityRules builds row filter security rules from a report's "metrics_view_filters" annotation,
+// which contains a JSON object of metrics view name to filter expression (in protojson format).
+// The annotation is set for canvas reports and captures the filters that were selected when the report was created;
+// baking them in as row filters ensures magic-token recipients cannot query data beyond the report's filters.
+func canvasFilterSecurityRules(annotation string) ([]*runtimev1.SecurityRule, error) {
+	if annotation == "" {
+		return nil, nil
+	}
+
+	var filters map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(annotation), &filters); err != nil {
+		return nil, fmt.Errorf(`failed to parse "metrics_view_filters" annotation: %w`, err)
+	}
+
+	var rules []*runtimev1.SecurityRule
+	for mv, data := range filters {
+		if mv == "" {
+			return nil, errors.New(`empty metrics view name in "metrics_view_filters" annotation`)
+		}
+		expr := &runtimev1.Expression{}
+		if err := protojson.Unmarshal(data, expr); err != nil {
+			return nil, fmt.Errorf("failed to parse filter for metrics view %q: %w", mv, err)
+		}
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					ConditionResources: []*runtimev1.ResourceName{{
+						Kind: runtime.ResourceKindMetricsView,
+						Name: mv,
+					}},
+					Expression: expr,
+				},
+			},
+		})
+	}
+	return rules, nil
+}
+
 // common notification data used for reports
 type notificationData struct {
 	openLink        string
@@ -812,6 +875,8 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 		return "Excel"
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
 		return "Parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PDF:
+		return "PDF"
 	default:
 		return f.String()
 	}

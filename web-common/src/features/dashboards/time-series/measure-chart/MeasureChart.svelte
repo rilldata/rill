@@ -343,6 +343,7 @@
         {dimensionData}
         {showComparison}
         {showTimeDimensionDetail}
+        {dynamicYAxis}
         onChartHover={handleTddHover}
         onChartBrushEnd={handleTddBrushEnd}
         onChartBrushClear={handleTddBrushClear}

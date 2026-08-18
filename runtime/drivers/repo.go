@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -144,6 +145,18 @@ func IsIgnored(path string, additionalIgnoredPaths []string) bool {
 		}
 	}
 	return false
+}
+
+// ResolveRepoPath resolves a repo-relative path against the given root directory and returns the resulting file system path.
+// It returns an error if the resolved path falls outside the root, which prevents path traversal using ".." segments.
+// Repo drivers must use it instead of joining untrusted paths onto the root directly.
+func ResolveRepoPath(root, path string) (string, error) {
+	root = filepath.Clean(root)
+	fp := filepath.Join(root, path)
+	if fp != root && !strings.HasPrefix(fp, root+string(filepath.Separator)) {
+		return "", fmt.Errorf("path %q is outside the repo root", path)
+	}
+	return fp, nil
 }
 
 type RepoStatus struct {

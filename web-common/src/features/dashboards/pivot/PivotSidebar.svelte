@@ -13,7 +13,10 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { onMount } from "svelte";
-  import type { PivotState } from "web-common/src/features/dashboards/pivot/types.ts";
+  import type {
+    PivotSidebarSection,
+    PivotState,
+  } from "web-common/src/features/dashboards/pivot/types.ts";
   import PivotDrag from "./PivotDrag.svelte";
   import PivotTagRow from "./PivotTagRow.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";
@@ -44,8 +47,15 @@
   // user drags it to an explicit width.
   let tagsColMeasured: number = TAG_COLUMN.pivot.MIN;
 
+  // i18n-ignore: stable drag-zone identifiers compared by DragList
+  const TIME_ZONE: PivotSidebarSection = "Time";
+  // i18n-ignore: stable drag-zone identifiers compared by DragList
+  const MEASURES_ZONE: PivotSidebarSection = "Measures";
+  // i18n-ignore: stable drag-zone identifiers compared by DragList
+  const DIMENSIONS_ZONE: PivotSidebarSection = "Dimensions";
+
   onMount(() => {
-    timePillActions.initTimeDimension("time", "Time");
+    timePillActions.initTimeDimension("time", m.dashboard_time());
   });
 
   $: if (
@@ -69,7 +79,7 @@
     ? [
         {
           id: "time",
-          title: "Time",
+          title: m.dashboard_time(),
           type: PivotChipType.Time,
         },
       ]
@@ -194,18 +204,18 @@
       {/if}
 
       <PivotDrag
-        title="Time"
+        title={TIME_ZONE}
         label={m.dashboard_time()}
         items={timeGrainOptions}
         {tableMode}
       />
       <PivotDrag
-        title="Measures"
+        title={MEASURES_ZONE}
         label={m.dashboard_measures()}
         items={filteredMeasures}
       />
       <PivotDrag
-        title="Dimensions"
+        title={DIMENSIONS_ZONE}
         label={m.dashboard_dimensions()}
         items={filteredDimensions}
         {tableMode}

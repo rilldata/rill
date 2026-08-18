@@ -1,14 +1,35 @@
 import { V1TimeGrain } from "../../../runtime-client/gen/index.schemas";
-import { TIME_GRAIN } from "../config";
+import { overwriteGetLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
+import { DEFAULT_TIME_RANGES, TIME_COMPARISON, TIME_GRAIN } from "../config";
 import {
   durationToMillis,
   getAllowedTimeGrains,
   getDefaultTimeGrain,
   getValidatedTimeGrain,
+  unitToTimeGrain,
 } from "../grains";
+import { TimeComparisonOption, TimeRangePreset } from "../types";
 import { Interval, DateTime } from "luxon";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect } from "vitest";
+
+afterEach(() => overwriteGetLocale(() => "en"));
+
+describe("localized time configuration", () => {
+  it("keeps Luxon units locale-independent while localizing display copy", () => {
+    overwriteGetLocale(() => "es");
+
+    expect(TIME_GRAIN.TIME_GRAIN_DAY.unit).toBe("day");
+    expect(TIME_GRAIN.TIME_GRAIN_DAY.label).toBe("día");
+    expect(unitToTimeGrain("day")).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+    expect(DEFAULT_TIME_RANGES[TimeRangePreset.LAST_SIX_HOURS]?.label).toBe(
+      "Últimas 6 horas",
+    );
+    expect(TIME_COMPARISON[TimeComparisonOption.DAY].description).toBe(
+      "Compara el rango de tiempo actual con el mismo rango del día anterior",
+    );
+  });
+});
 
 const allowedGrainTests = [
   {

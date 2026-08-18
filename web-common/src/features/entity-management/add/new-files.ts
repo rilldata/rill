@@ -178,10 +178,13 @@ version: 1
 type: metrics_view
 
 model: # Choose a model to underpin your metrics view
-timeseries: # Choose a timestamp column (if any) from your model 
+timeseries: # Choose a timestamp column (if any) from your model
 
 dimensions:
 measures:
+
+explore:
+  display_name: # Optional: display name for this metrics view's explore dashboard
 `;
     case ResourceKind.Explore:
       if (baseResource) {
