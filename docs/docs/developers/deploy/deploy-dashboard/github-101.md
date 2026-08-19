@@ -8,7 +8,7 @@ sidebar_position: 20
 ## Overview
 
 :::info New to Git?
-This page makes the deploy process easier for those who are less familiar with GitHub by walking you through the steps to use the UI rather than the GitHub command line interface. Much simpler for those who prefer a graphic interface!
+This page makes the deployment process easier for those who are less familiar with GitHub by walking you through the steps to use the UI rather than the GitHub command line interface. It is much simpler for those who prefer a graphical interface!
 :::
 
 To share dashboards with other users, Rill utilizes GitHub as a means of version control - effectively creating BI-as-code. There are several advantages to Git as the backend for dashboards: develop locally, integrate into existing development workflows, and manage versions + change control. While many users are familiar with Git and basic commands, there are other Rill users who are relatively new to Git. 
@@ -25,7 +25,7 @@ In this section, we will outline:
 
 ## Installing Git
 
--To download the GitHub app for a UI driven workflow, visit the [install site here](https://docs.github.com/en/desktop/installing-and-authenticating-to-github-desktop/installing-github-desktop).
+- To download the GitHub app for a UI-driven workflow, visit the [GitHub Desktop installation page](https://docs.github.com/en/desktop/installing-and-authenticating-to-github-desktop/installing-github-desktop).
 - In your computer's Downloads folder, double-click the GitHub Desktop zip file.
 - After the file has been unzipped, double-click the GitHub Desktop application file.
 - GitHub Desktop will launch after installation is complete.

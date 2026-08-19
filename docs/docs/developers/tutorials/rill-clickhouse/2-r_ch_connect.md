@@ -13,7 +13,7 @@ import TabItem from '@theme/TabItem';
 
 ## Default OLAP connection and Connect to ClickHouse
 
-Within Rill you can set the default OLAP connection on the [project level](https://docs.rilldata.com/reference/project-files/rill-yaml) or the [dashboard level](https://docs.rilldata.com/reference/project-files/explore-dashboards). 
+Within Rill, you can set the default OLAP connection on the [project level](https://docs.rilldata.com/reference/project-files/rill-yaml) or the [dashboard level](https://docs.rilldata.com/reference/project-files/explore-dashboards).
 For this course, we will set it up on the project level so all of our dashboards will be based on our ClickHouse table.
 
 :::tip
@@ -21,7 +21,7 @@ You have two options for your ClickHouse server:
 1. Use a [local running ClickHouse server](https://clickhouse.com/docs/en/install)
 2. Use [ClickHouse Cloud](https://clickhouse.com/docs/en/cloud/overview)
 
-Depending what you choose, the contents of your connection will change and I recommend looking through [our ClickHouse documentation](https://docs.rilldata.com/developers/build/connectors/olap/clickhouse) for further information.
+Depending on what you choose, the contents of your connection will change, and we recommend looking through [our ClickHouse documentation](https://docs.rilldata.com/developers/build/connectors/olap/clickhouse) for further information.
 
 :::
 
@@ -64,7 +64,7 @@ dsn: "clickhouse://localhost:9000"
 Please see our documentation to find the DSN for [your ClickHouse Cloud instance](https://docs.rilldata.com/developers/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud). 
 
 ### How to pass the credentials to Rill
-There are a few way to define the credentials within Rill.
+There are a few ways to define credentials within Rill.
 
 <Tabs>
 <TabItem value="yaml" label="via yaml" default>
@@ -94,7 +94,7 @@ Navigate back to the Terminal and stop the Rill process. You can run the followi
 rill start --env host='localhost' --env  port='9000'
 ```
 
-Afterwards, create a file called clickhouse.yaml and add the following contents:
+Afterward, create a file called clickhouse.yaml and add the following contents:
 
 ```yaml
 type: connector
@@ -110,7 +110,7 @@ port: "{{ .env.port }}"
 
 
   <TabItem value="env" label="via .env">
-There's a few way to generate the .env file. Making a source that requires credentials will automatically generate it. Else, you can create it using `touch .env` in the rill directory.
+There are a few ways to generate the .env file. Creating a source that requires credentials will automatically generate it. Otherwise, you can create it using `touch .env` in the Rill directory.
 
 ```
 CLICKHOUSE_HOST="localhost"

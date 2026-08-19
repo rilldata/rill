@@ -23,7 +23,7 @@ This dataset is modeled after a similar dashboard we use internally at Rill to b
 The Cost Monitoring Analytics demo analyzes operational costs and revenue data, providing insights into:
 - **Margin trends** – Daily, weekly, and monthly profitability patterns
 - **Customer profitability** – Which customers are driving the highest margins
-- **Cost efficiency** – Understanding operational cost effectiveness across services
+- **Cost efficiency** – Understanding operational cost-effectiveness across services
 - **Revenue optimization** – Monitoring revenue performance against operational costs
 - **Business intelligence** – Identifying opportunities for improved profitability
 
@@ -206,4 +206,3 @@ measures:
 - **Region filter** – Analyze specific regions
 - **Component filter** – Focus on specific system components
 - **Margin threshold filter** – Focus on high/low margin segments
-

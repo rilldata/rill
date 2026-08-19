@@ -16,7 +16,7 @@ Rill Cloud provides the ability to embed dashboards as components in your own ap
 - Embedding individual dashboards with the ability to navigate to other dashboards (that exist in the _same_ project)
 - Embedding the dashboard list page present in a Rill project (with the ability to select and navigate between dashboards)
 
-When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill API. Afterwards, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
+When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill API. Afterward, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
 
 ```mermaid
 sequenceDiagram
