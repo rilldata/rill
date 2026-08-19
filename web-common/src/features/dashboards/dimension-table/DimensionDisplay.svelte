@@ -207,11 +207,13 @@
         dimensionName,
         (dimensionManager) => dimensionManager.appendSelectedValues(labels),
       );
-      eventBus.emit("notification", {
-        message: m.dashboard_added_items_filter({
-          count: newValuesSelected.length.toString(),
-        }),
-      });
+      if (newValuesSelected?.length) {
+        eventBus.emit("notification", {
+          message: m.dashboard_added_items_filter({
+            count: newValuesSelected?.length.toString(),
+          }),
+        });
+      }
     }
   }
 

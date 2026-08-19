@@ -26,17 +26,20 @@
 
   let interval = $derived($_interval);
 
-  let defaultTimeRange: V1TimeRange | undefined = $defaultTimeRangeStore
-    ? {
-        expression: $defaultTimeRangeStore,
-      }
-    : undefined;
-  let defaultComparisonRange: V1TimeRange | undefined =
+  let defaultTimeRange: V1TimeRange | undefined = $derived(
+    $defaultTimeRangeStore
+      ? {
+          expression: $defaultTimeRangeStore,
+        }
+      : undefined,
+  );
+  let defaultComparisonRange: V1TimeRange | undefined = $derived(
     $defaultComparisonRangeStore
       ? {
           expression: $defaultComparisonRangeStore,
         }
-      : undefined;
+      : undefined,
+  );
 
   let defaultFiltersManager = $derived(
     new ExpressionFilterManager(

@@ -79,6 +79,8 @@
   );
   let { setUrlParams } = $derived(expressionFilterManager);
 
+  // Always load from current state. This is the only route to overwrite bookmark state.
+  // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
   let curUrlParams = $derived(page.url.searchParams);
   $effect(() => setUrlParams(curUrlParams));
 
@@ -136,8 +138,8 @@
         }
       });
 
-      const start = intervalWithLatestEndPoint.interval.start.toISO();
-      const end = intervalWithLatestEndPoint.interval.end.toISO();
+      const start = intervalWithLatestEndPoint?.interval?.start?.toISO();
+      const end = intervalWithLatestEndPoint?.interval?.end?.toISO();
 
       const grain =
         (searchParamsObj.get(ExploreStateURLParams.TimeGrain) as V1TimeGrain) ||
@@ -152,7 +154,8 @@
         displayTimeRange: timeRange,
         selectedTimeRange,
       };
-    } catch {
+    } catch (e) {
+      console.log(e);
       timeFilterState = undefined;
     }
   }

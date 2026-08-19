@@ -297,12 +297,14 @@ export class DashboardStateSync {
       // Release before the goto below: state changes made while the navigation is in flight
       // must still be picked up by gotoNewState.
       this.updating = false;
+      this.expressionFilterManager.updating = false;
     }
+    // Try-finally without a catch. Rest of the code is not run if the above try body throws.
 
     this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+    this.expressionFilterManager.updating = false;
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
-      this.expressionFilterManager.updating = false;
       return;
     }
 
@@ -312,7 +314,6 @@ export class DashboardStateSync {
       replaceState: true,
       state: pageState.state,
     });
-    this.expressionFilterManager.updating = false;
   }
 
   /**

@@ -51,42 +51,32 @@
   let copied = $state(false);
 
   // Get expression filter manager for the resource.
-  let dashboardResource = $derived(getDashboardResourceFromPage(page));
-  let isExplore = $derived(dashboardResource?.kind === ResourceKind.Explore);
+  const dashboardResource = getDashboardResourceFromPage(page);
+  const isExplore = dashboardResource?.kind === ResourceKind.Explore;
 
-  let dashboardConfigProvider = $derived(
-    isExplore
-      ? new ExploreDashboardConfigProvider(
-          runtimeClient,
-          dashboardResource?.name,
-        )
-      : new CanvasDashboardConfigProvider(
-          runtimeClient,
-          dashboardResource?.name,
-        ),
+  const dashboardConfigProvider = isExplore
+    ? new ExploreDashboardConfigProvider(runtimeClient, dashboardResource?.name)
+    : new CanvasDashboardConfigProvider(runtimeClient, dashboardResource?.name);
+  const expressionFilterManager = new ExpressionFilterManager(
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
   );
-  let expressionFilterManager = $derived(
-    new ExpressionFilterManager(
-      dashboardConfigProvider.metricsViewsProvider,
-      dashboardConfigProvider.yamlConfigProvider,
-    ),
-  );
-  let { setUrlParams } = $derived(expressionFilterManager);
+  const { setUrlParams } = expressionFilterManager;
+
   let curUrlParams = $derived(page.url.searchParams);
   $effect(() => setUrlParams(curUrlParams));
 
-  let exprByMetricsView = $derived(expressionFilterManager.exprByMetricsView);
-  let hasSomeFilter = $derived(Object.keys(exprByMetricsView).length > 0);
+  const exprByMetricsView = $derived(expressionFilterManager.exprByMetricsView);
+  const hasSomeFilter = $derived(Object.keys(exprByMetricsView).length > 0);
 
-  let sanitisedFilterState = $derived(
-    createFieldsAndStateForKind(
-      dashboardResource?.kind,
-      expressionFilterManager,
-    ),
+  const sanitisedFilterState = createFieldsAndStateForKind(
+    dashboardResource?.kind,
+    expressionFilterManager,
   );
   let { fields, sanitizedState, queryTimeStart, queryTimeEnd } = $derived(
     $sanitisedFilterState,
   );
+  $effect(() => console.log($sanitisedFilterState));
 
   const formId = "create-public-url-form";
 

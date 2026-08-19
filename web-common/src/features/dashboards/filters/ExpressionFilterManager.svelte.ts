@@ -176,11 +176,11 @@ export class ExpressionFilterManager {
   }
 
   /**
-   * Two way sync between the url and the filter managers, with the url as the source of truth.
+   * Two-way sync between the url and the filter managers, with the url as the source of truth.
    *
-   * The url seeds the managers, and anything the managers hold that the url does not is written
-   * back to it. The write back is diffed against the url rather than against the seed, so changes
-   * that bypass the chips, `clear()` for example, reach the url as well.
+   * The url seeds the managers, and anything the managers hold that the url does not is written back to it.
+   * The write back is diffed against the url rather than against the seed,
+   * so changes that bypass the chips, `clear()` for example, reach the url as well.
    */
   public syncWithUrl(getUrl: () => URL, navigate: (url: URL) => void) {
     // Url to managers.
@@ -216,8 +216,8 @@ export class ExpressionFilterManager {
     const newParamByMetricsView = {} as Record<MetricsViewName, string>;
 
     const singularFilter = searchParams.get(ExploreStateURLParams.Filters);
-    // Tracked on purpose: the params are keyed by metrics view, so they have to be re-applied once
-    // the names arrive.
+    // Tracked on purpose: the params are keyed by metrics view,
+    // so they have to be re-applied once the names arrive.
     const metricsViewNames = this.metricsViewsProvider.metricsViewNames;
     metricsViewNames.forEach((name: string) => {
       const paramKey = `${ExploreStateURLParams.Filters}.${name}`;
@@ -225,11 +225,12 @@ export class ExpressionFilterManager {
         searchParams.get(paramKey) ?? singularFilter ?? "";
     });
 
-    // Managers can be mutated in place without going through the param, so the new param also has
-    // to match what the managers hold. Otherwise a param that reverts such a mutation is a no-op.
+    // Managers can be mutated in place without going through the param,
+    // so the new param also has to match what the managers hold.
+    // Otherwise, a param that reverts such a mutation is a no-op.
     //
-    // Read untracked: an effect feeding the url into this method must not depend on the state the
-    // method writes, or every manager edit re-runs it and reverts itself back to the url.
+    // Read untracked: an effect feeding the url into this method must not depend on the state the method writes,
+    // or every manager edit re-runs it and reverts itself back to the url.
     const unchanged = untrack(
       () =>
         recordsMatch(
@@ -283,7 +284,24 @@ export class ExpressionFilterManager {
         searchParams.delete(paramKey);
       }
     });
-    if (!singleParam) searchParams.delete(ExploreStateURLParams.Filters);
+
+    // For non-singleParam, a singular `f=...` is needed to support legacy filters in canvas.
+    // So copy it to all metrics views, overriding any existing value. Note that there shouldn't be existing values at all.
+    const metricsViewsLoaded =
+      this.metricsViewsProvider.metricsViewNames.length > 0 &&
+      this.metricsViewsProvider.ready;
+    if (
+      singleParam ||
+      !searchParams.has(ExploreStateURLParams.Filters) ||
+      !metricsViewsLoaded
+    )
+      return;
+
+    const param = searchParams.get(ExploreStateURLParams.Filters)!;
+    this.metricsViewsProvider.metricsViewNames.forEach((mv) =>
+      searchParams.set(`${ExploreStateURLParams.Filters}.${mv}`, param),
+    );
+    searchParams.delete(ExploreStateURLParams.Filters);
   }
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
@@ -315,6 +333,7 @@ export class ExpressionFilterManager {
     }
   }
 
+  // TODO: add return type based on callback type?
   public dimensionFilterAction(
     name: string,
     callback: (dimensionFilterManager: DimensionFilterManager) => any,

@@ -140,9 +140,11 @@
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
-  $: where = isComplexFilter
-    ? whereFilter
-    : getFiltersForOtherDimensions(whereFilter, dimensionName);
+  $: where = sanitiseExpression(
+    isComplexFilter
+      ? whereFilter
+      : getFiltersForOtherDimensions(whereFilter, dimensionName),
+  );
 
   $: measures = [
     ...getMeasuresForDimensionOrLeaderboardDisplay(

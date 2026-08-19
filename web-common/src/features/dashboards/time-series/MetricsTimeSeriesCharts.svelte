@@ -165,14 +165,16 @@
     const [start, end] = a <= b ? [a, b] : [b, a];
     return Interval.fromDateTimes(start, end) as Interval<true>;
   });
-  let managerForCompareDimension = $derived(
-    comparisonDimension
+  let managerForCompareDimension = $derived.by(() => {
+    const manager = comparisonDimension
       ? expressionFilterManager.filterManagersMap[comparisonDimension]
-      : undefined,
-  );
+      : undefined;
+    return manager && manager instanceof DimensionFilterManager
+      ? manager
+      : undefined;
+  });
   let includedValuesForDimension = $derived(
-    managerForCompareDimension &&
-      managerForCompareDimension instanceof DimensionFilterManager
+    managerForCompareDimension && !managerForCompareDimension.exclude
       ? managerForCompareDimension.selectedValues
       : [],
   );

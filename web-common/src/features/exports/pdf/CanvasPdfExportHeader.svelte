@@ -59,7 +59,6 @@
   {#if expressionFilterManager.hasSomeFilter}
     <ReadonlyExpressionFilters
       {expressionFilterManager}
-      chipLayout="col"
       ariaLabel={undefined}
     />
   {/if}
