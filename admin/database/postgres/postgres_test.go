@@ -45,6 +45,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
+	t.Run("TestOrganizationInviteAttributes", func(t *testing.T) { testOrganizationInviteAttributes(t, db) })
 	t.Run("TestAttributeValidation", func(t *testing.T) { testAttributeValidation(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
@@ -744,6 +745,84 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	// Cleanup
 	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
 	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
+func testOrganizationInviteAttributes(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-invite-attrs-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	email := "invitee-attrs@rilldata.com"
+	attributes := map[string]any{"attr1": "value1", "attr2": "value2"}
+
+	t.Run("InsertOrganizationInvite with attributes", func(t *testing.T) {
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:      email,
+			OrgID:      org.ID,
+			RoleID:     role.ID,
+			Attributes: attributes,
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, attributes, invite.Attributes)
+
+		invites, err := db.FindOrganizationInvitesByEmail(ctx, email)
+		require.NoError(t, err)
+		require.Len(t, invites, 1)
+		require.Equal(t, attributes, invites[0].Attributes)
+
+		invitesWithRole, err := db.FindOrganizationInvites(ctx, org.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, invitesWithRole, 1)
+		require.Equal(t, attributes, invitesWithRole[0].Attributes)
+	})
+
+	t.Run("UpdateOrganizationInviteAttributes", func(t *testing.T) {
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+
+		updated := map[string]any{"attr1": "new-value1"}
+		require.NoError(t, db.UpdateOrganizationInviteAttributes(ctx, invite.ID, updated))
+
+		invite, err = db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, updated, invite.Attributes)
+	})
+
+	t.Run("InsertOrganizationInvite without attributes normalizes to empty map", func(t *testing.T) {
+		email2 := "invitee-no-attrs@rilldata.com"
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:  email2,
+			OrgID:  org.ID,
+			RoleID: role.ID,
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email2)
+		require.NoError(t, err)
+		require.NotNil(t, invite.Attributes)
+		require.Empty(t, invite.Attributes)
+	})
+
+	t.Run("InsertOrganizationInvite rejects invalid attributes", func(t *testing.T) {
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:      "invitee-invalid-attrs@rilldata.com",
+			OrgID:      org.ID,
+			RoleID:     role.ID,
+			Attributes: map[string]any{"invalid-key": "value"},
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid attribute key")
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
 }
 
 func testAttributeValidation(t *testing.T, db database.DB) {

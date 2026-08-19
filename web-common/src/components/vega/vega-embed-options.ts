@@ -8,10 +8,8 @@ import type { ExpressionFunction } from "./types";
 import { sanitizeTitleForVegaTooltip } from "./util";
 import { getRillTheme } from "./vega-config";
 
-export interface CreateEmbedOptionsParams {
+export interface CreateBaseEmbedOptionsParams {
   client: RuntimeClient;
-  width: number;
-  height: number;
   config?: Config;
   renderer?: "canvas" | "svg";
   themeMode?: "light" | "dark";
@@ -21,10 +19,17 @@ export interface CreateEmbedOptionsParams {
   hasComparison?: boolean;
 }
 
-export function createEmbedOptions({
+/**
+ * Builds the size-independent half of the vega-embed options.
+ *
+ * Callers spread `width` and `height` on top of the result, and must keep this object's
+ * identity stable while only the dimensions change: svelte-vega compares options key by key
+ * with `===` (ignoring width and height), and a single fresh nested object makes it tear
+ * down and re-embed the whole view instead of calling `view.width()`. That loses brush state
+ * and, while a resize divider is being dragged, re-embeds on every frame.
+ */
+export function createBaseEmbedOptions({
   client,
-  width,
-  height,
   config,
   renderer = "canvas",
   themeMode = "light",
@@ -32,7 +37,7 @@ export function createEmbedOptions({
   useExpressionInterpreter = true,
   colorMapping,
   hasComparison,
-}: CreateEmbedOptionsParams): EmbedOptions {
+}: CreateBaseEmbedOptionsParams): EmbedOptions {
   const jwt = client.getJwt();
 
   return {
@@ -46,8 +51,6 @@ export function createEmbedOptions({
     },
     actions: false,
     logLevel: 0, // only show errors
-    width,
-    height,
     ...(useExpressionInterpreter && {
       // Add interpreter so that vega expressions are CSP compliant
       ast: true,

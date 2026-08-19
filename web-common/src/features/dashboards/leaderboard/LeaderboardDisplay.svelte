@@ -12,6 +12,7 @@
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
     COMPARISON_COLUMN_WIDTH,
+    deltaColumn,
     dimensionColumn,
     MAX_DIMENSION_COLUMN_WIDTH,
     MIN_DIMENSION_COLUMN_WIDTH,
@@ -59,6 +60,7 @@
   // Reset column widths when the measure changes
   $: if ($leaderboardSortByMeasureName) {
     valueColumn.reset();
+    deltaColumn.reset();
   }
 
   $: dimensionColumnWidth = clamp(
@@ -67,19 +69,26 @@
     MAX_DIMENSION_COLUMN_WIDTH,
   );
 
-  $: showPercentOfTotal = $isMeasureValidPercentOfTotal(
-    $leaderboardSortByMeasureName,
+  $: measuresWithContext = new Set(
+    $leaderboardShowContextForAllMeasures
+      ? $leaderboardMeasures.map((measure) => measure.name!)
+      : [$leaderboardSortByMeasureName],
   );
-  $: showDeltaPercent = !!comparisonTimeRange;
 
-  $: tableWidth =
-    dimensionColumnWidth +
-    $valueColumn +
-    (comparisonTimeRange
-      ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
-      : showPercentOfTotal
+  // Mirrors the columns rendered in Leaderboard.svelte's colgroup.
+  $: tableWidth = $leaderboardMeasures.reduce((width, measure) => {
+    const showContext = measuresWithContext.has(measure.name!);
+    return (
+      width +
+      $valueColumn +
+      (showContext && $isMeasureValidPercentOfTotal(measure.name!)
         ? COMPARISON_COLUMN_WIDTH
-        : 0);
+        : 0) +
+      (showContext && comparisonTimeRange
+        ? $deltaColumn + COMPARISON_COLUMN_WIDTH
+        : 0)
+    );
+  }, dimensionColumnWidth);
 </script>
 
 <div

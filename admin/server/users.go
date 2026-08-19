@@ -702,10 +702,18 @@ func usergroupMemberUserToPB(m *database.UsergroupMemberUser) *adminv1.Usergroup
 }
 
 func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.OrganizationInvite {
+	var attributes *structpb.Struct
+	if len(i.Attributes) > 0 {
+		if s, err := structpb.NewStruct(i.Attributes); err == nil {
+			attributes = s
+		}
+	}
+
 	return &adminv1.OrganizationInvite{
-		Email:     i.Email,
-		RoleName:  i.RoleName,
-		InvitedBy: safeStr(i.InvitedBy),
+		Email:      i.Email,
+		RoleName:   i.RoleName,
+		InvitedBy:  safeStr(i.InvitedBy),
+		Attributes: attributes,
 	}
 }
 

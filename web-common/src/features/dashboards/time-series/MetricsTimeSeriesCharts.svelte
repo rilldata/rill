@@ -405,7 +405,9 @@
           class="sticky top-0 z-10 bg-surface-background col-span-2 grid grid-cols-subgrid"
         >
           <div></div>
-          <div class="relative">
+          <!-- min-w-0 lets the 1fr track follow the resizable panel width instead of
+               being propped open by the chart's intrinsic size (see the chart cell below) -->
+          <div class="relative min-w-0">
             <MeasureChartXAxis
               interval={chartInterval}
               timeGranularity={activeTimeGrain}
@@ -435,7 +437,10 @@
         />
 
         {#if activeTimeGrain}
-          <div class="relative">
+          <!-- min-w-0 is required for the Vega-rendered chart types: their canvas has an
+               intrinsic pixel width, which would otherwise become the 1fr track's minimum
+               size and stop the column from shrinking when the divider is dragged in. -->
+          <div class="relative min-w-0">
             <MeasureChart
               {measure}
               {scrubController}

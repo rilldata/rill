@@ -5,6 +5,7 @@
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import {
     COMPARISON_COLUMN_WIDTH,
+    deltaColumn,
     valueColumn,
   } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-widths";
   import Leaderboard from "@rilldata/web-common/features/dashboards/leaderboard/Leaderboard.svelte";
@@ -103,7 +104,7 @@
       (sum, measureName) =>
         sum +
         $valueColumn +
-        (showTimeComparison ? COMPARISON_COLUMN_WIDTH * 2 : 0) +
+        (showTimeComparison ? $deltaColumn + COMPARISON_COLUMN_WIDTH : 0) +
         (isValidPercentOfTotal(measureName) ? COMPARISON_COLUMN_WIDTH : 0),
       0,
     ),
@@ -132,7 +133,10 @@
   // lands before the DOM update, keeping the width derivations above in sync for
   // the same render rather than one frame later.
   $effect.pre(() => {
-    if (leaderboardMeasureNames) valueColumn.reset();
+    if (leaderboardMeasureNames) {
+      valueColumn.reset();
+      deltaColumn.reset();
+    }
   });
 
   function isValidPercentOfTotal(measureName: string) {

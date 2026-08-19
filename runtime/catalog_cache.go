@@ -218,6 +218,7 @@ func (c *catalogCache) list(kind, path string, withDeleted, clone bool) []*runti
 // If a soft-deleted resource exists with the same name, it will be overwritten (no longer deleted).
 // The passed resource should only have its spec populated. The meta and state fields will be populated by this function.
 func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, hidden bool, r *runtimev1.Resource) error {
+	r = c.clone(r) // The passed resource is cached as-is, so we must ensure future mutations to r don't affect the cached resource.
 	existing, _ := c.get(name, true, false)
 	if existing != nil {
 		if existing.Meta.DeletedOn == nil {
@@ -322,6 +323,7 @@ func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.
 	if err != nil {
 		return err
 	}
+	from = c.clone(from) // AssignSpec assigns by reference, so we must ensure future mutations to from don't affect the cached resource.
 	c.unlink(r)
 	err = c.ctrl.reconciler(name.Kind).AssignSpec(from, r)
 	if err != nil {
@@ -343,6 +345,7 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 	if err != nil {
 		return err
 	}
+	from = c.clone(from) // AssignState assigns by reference, so we must ensure future mutations to from don't affect the cached resource.
 	c.unlink(r)
 	err = c.ctrl.reconciler(name.Kind).AssignState(from, r)
 	if err != nil {

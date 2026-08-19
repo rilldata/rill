@@ -2602,9 +2602,9 @@ func (c *connection) DeleteProjectMemberService(ctx context.Context, serviceID, 
 }
 
 func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.OrganizationInviteWithRole, error) {
-	var res []*database.OrganizationInviteWithRole
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT uoi.id, uoi.email, ur.name as role_name, u.email as invited_by
+	var dtos []*organizationInviteWithRoleDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT uoi.id, uoi.email, ur.name as role_name, uoi.attributes, u.email as invited_by
 		FROM org_invites uoi
 		JOIN org_roles ur ON uoi.org_role_id = ur.id
 		LEFT JOIN users u ON uoi.invited_by_user_id = u.id
@@ -2613,6 +2613,14 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 	`, orgID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("org invites", err)
+	}
+	res := make([]*database.OrganizationInviteWithRole, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsModel()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
@@ -2657,12 +2665,17 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return err
 	}
 
+	attrs, err := c.validateAttributes(opts.Attributes)
+	if err != nil {
+		return err
+	}
+
 	var inviterID any
 	if opts.InviterID != "" {
 		inviterID = opts.InviterID
 	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, inviterID, opts.OrgID, opts.RoleID)
+	_, err = c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4, $5)", opts.Email, inviterID, opts.OrgID, opts.RoleID, attrs)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
@@ -2692,6 +2705,16 @@ func (c *connection) CountInvitesForOrganization(ctx context.Context, orgID stri
 
 func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET org_role_id = $1 WHERE id = $2`, roleID, id)
+	return checkUpdateRow("org invite", res, err)
+}
+
+func (c *connection) UpdateOrganizationInviteAttributes(ctx context.Context, id string, attributes map[string]any) error {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET attributes = $1 WHERE id = $2`, attrs, id)
 	return checkUpdateRow("org invite", res, err)
 }
 
@@ -3713,6 +3736,7 @@ func (c *connection) notificationTokenWithSecretFromDTO(dto *notificationTokenWi
 type organizationInviteDTO struct {
 	*database.OrganizationInvite
 	UsergroupIDs pgtype.TextArray `db:"usergroup_ids"`
+	Attributes   pgtype.JSON      `db:"attributes"`
 }
 
 func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) {
@@ -3721,7 +3745,36 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 		return nil, err
 	}
 
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := o.Attributes.AssignTo(&attrs); err != nil {
+		return nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+	o.OrganizationInvite.Attributes = attrs
+
 	return o.OrganizationInvite, nil
+}
+
+type organizationInviteWithRoleDTO struct {
+	*database.OrganizationInviteWithRole
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (o *organizationInviteWithRoleDTO) AsModel() (*database.OrganizationInviteWithRole, error) {
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := o.Attributes.AssignTo(&attrs); err != nil {
+		return nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+	o.OrganizationInviteWithRole.Attributes = attrs
+
+	return o.OrganizationInviteWithRole, nil
 }
 
 type authClientDTO struct {

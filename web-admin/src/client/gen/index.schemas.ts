@@ -1040,10 +1040,13 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export type V1OrganizationInviteAttributes = { [key: string]: unknown };
+
 export interface V1OrganizationInvite {
   email?: string;
   roleName?: string;
   invitedBy?: string;
+  attributes?: V1OrganizationInviteAttributes;
 }
 
 export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
@@ -1958,9 +1961,20 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   searchPattern?: string;
 };
 
+/**
+ * Custom attributes to set on the new membership.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+ */
+export type AdminServiceAddOrganizationMemberUserBodyAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
   role?: string;
+  /** Custom attributes to set on the new membership.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted. */
+  attributes?: AdminServiceAddOrganizationMemberUserBodyAttributes;
   superuserForceAccess?: boolean;
 };
 
@@ -2173,11 +2187,24 @@ export type AdminServiceListProjectMemberUsersParams = {
   superuserForceAccess?: boolean;
 };
 
+/**
+ * Custom attributes to set on the user's org membership (attributes are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting attributes requires permission to manage org members.
+ */
+export type AdminServiceAddProjectMemberUserBodyAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+  /** Custom attributes to set on the user's org membership (attributes are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting attributes requires permission to manage org members. */
+  attributes?: AdminServiceAddProjectMemberUserBodyAttributes;
 };
 
 export type AdminServiceCreatePersonalFileBody = {

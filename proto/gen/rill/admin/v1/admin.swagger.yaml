@@ -851,6 +851,11 @@ paths:
                 type: string
               role:
                 type: string
+              attributes:
+                type: object
+                description: |-
+                  Custom attributes to set on the new membership.
+                  If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
               superuserForceAccess:
                 type: boolean
       x-visibility: public
@@ -1889,6 +1894,12 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+              attributes:
+                type: object
+                description: |-
+                  Custom attributes to set on the user's org membership (attributes are org-scoped).
+                  If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                  Setting attributes requires permission to manage org members.
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}:
     get:
@@ -6246,6 +6257,8 @@ definitions:
         type: string
       invitedBy:
         type: string
+      attributes:
+        type: object
   v1OrganizationMemberService:
     type: object
     properties:
