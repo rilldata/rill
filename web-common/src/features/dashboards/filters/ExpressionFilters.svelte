@@ -7,6 +7,7 @@
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
   import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
+  import { onDestroy } from "svelte";
 
   let {
     expressionFilterManager,
@@ -38,11 +39,12 @@
     isUrlTooLongAfterInListFilter?: (name: string, values: string[]) => boolean;
   } = $props();
 
+  let stateChangeUnsub: () => void = () => {};
   // svelte-ignore state_referenced_locally
   if (selfSync) {
     // Sync back url params
     expressionFilterManager.createListener();
-    expressionFilterManager.on("state-changed", () => {
+    stateChangeUnsub = expressionFilterManager.on("state-changed", () => {
       const searchParams = new URLSearchParams();
       expressionFilterManager.applyFilterToParams(searchParams);
       expressionFilterManager.setUrlParams(searchParams);
@@ -69,8 +71,8 @@
     expressionFilterManager.filterManagers.dimensions.length > 0 ||
       expressionFilterManager.filterManagers.measures.length > 0,
   );
-  // Required and pinned filters have a chip even without a value, so there is nothing to clear
-  // unless a chip actually holds a filter.
+  // Required and pinned filters have a chip even without a value,
+  // so there is nothing to clear unless a chip actually holds a filter.
   let hasClearableFilters = $derived(
     expressionFilterManager.filterManagers.dimensions.some(
       (dfm) => !!dfm.expr,
@@ -96,6 +98,10 @@
         : [],
     ),
   );
+
+  onDestroy(() => {
+    stateChangeUnsub();
+  });
 </script>
 
 <div

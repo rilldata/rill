@@ -104,7 +104,6 @@ export class MetricsViewFilterManager {
 
       const add = (manager: AnyManager, force: boolean) => {
         if (manager.param && !existingManagers.has(manager.param)) {
-          manager = existingManagers.get(manager.param) ?? manager;
           existingManagers.set(manager.param, manager);
         } else if (
           !manager.param &&

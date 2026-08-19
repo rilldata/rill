@@ -100,7 +100,7 @@ export class PageMockForExploreTests {
     // without this their errors never reach the form.
     hoistedPage.applyAction = (result: ActionResult) => {
       update((page) => {
-        page.status = "status" in result ? result.status : 200;
+        page.status = "status" in result ? (result.status ?? 200) : 200;
         page.form = "data" in result ? result.data : undefined;
         return page;
       });

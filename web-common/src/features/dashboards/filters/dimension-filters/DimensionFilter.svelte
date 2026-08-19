@@ -32,6 +32,10 @@
   import type { ExpressionFilterManager } from "../ExpressionFilterManager.svelte.ts";
   import { onMount } from "svelte";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import {
+    dedupe,
+    getMissingValues,
+  } from "@rilldata/web-common/lib/arrayUtils.ts";
 
   let {
     manager,
@@ -282,13 +286,23 @@
   }
 
   function onToggleSelectAll() {
-    proxyDimensionManager.setSelectedValues(
-      [
-        ...proxyDimensionManager.selectedValues,
-        ...(correctedSearchResults ?? []),
-      ],
-      proxyDimensionManager.exclude,
-    );
+    if (allSelected) {
+      proxyDimensionManager.setSelectedValues(
+        getMissingValues(
+          correctedSearchResults ?? [],
+          proxyDimensionManager.selectedValues,
+        ),
+        proxyDimensionManager.exclude,
+      );
+    } else {
+      proxyDimensionManager.setSelectedValues(
+        dedupe([
+          ...proxyDimensionManager.selectedValues,
+          ...(correctedSearchResults ?? []),
+        ]),
+        proxyDimensionManager.exclude,
+      );
+    }
   }
 
   function onApply(close = true) {

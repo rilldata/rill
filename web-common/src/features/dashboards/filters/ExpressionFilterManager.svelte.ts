@@ -158,14 +158,17 @@ export class ExpressionFilterManager {
       const param = { ...this.paramByManager };
       const metricsViewNames = this.metricsViewsProvider.metricsViewNames;
 
-      // The managers only cover the metrics views once the specs have loaded and a param has been
-      // applied. Reporting the empty state before that would clear the filter the url holds.
-      if (Object.keys(param).length !== metricsViewNames.length) return;
+      // The managers only cover the metrics views once the specs have loaded and a param has been applied.
+      // Reporting the empty state before that would clear the filter the url holds.
+      if (
+        Object.keys(param).length !== metricsViewNames.length ||
+        !this.metricsViewsProvider.ready
+      )
+        return;
 
       const unchanged =
         !emittedParam || recordsMatch(emittedParam, param, metricsViewNames);
       emittedParam = param;
-      console.log("state-changed", emittedParam, unchanged);
       if (unchanged) return;
 
       this.events.emit("state-changed");
@@ -240,7 +243,6 @@ export class ExpressionFilterManager {
           metricsViewNames,
         ),
     );
-    console.log(newParamByMetricsView, unchanged);
     if (unchanged && !force) return;
 
     this.paramByMetricsView = newParamByMetricsView;
@@ -281,6 +283,7 @@ export class ExpressionFilterManager {
         searchParams.delete(paramKey);
       }
     });
+    if (!singleParam) searchParams.delete(ExploreStateURLParams.Filters);
   }
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
@@ -447,6 +450,8 @@ export class ExpressionFilterManager {
     const add = (name: string) => {
       if (added.has(name)) return;
 
+      // We dont really support multiple filters per dimension/measure so always select the first one.
+      // TODO: redesign filter pill to support this?
       const filterManager = dimensionsMap[name]?.[0] ?? measuresMap[name]?.[0];
       if (!filterManager) return;
 

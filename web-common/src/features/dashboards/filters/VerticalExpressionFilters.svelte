@@ -20,6 +20,9 @@
     excludedMeasures?: Record<string, boolean>;
   } = $props();
 
+  const timeStart = new Date(0).toISOString();
+  const timeEnd = new Date().toISOString();
+
   let metricsViewsProvider = $derived(
     expressionFilterManager.metricsViewsProvider,
   );
@@ -57,8 +60,8 @@
           manager={expressionFilterManager}
           {dimensionManager}
           {yamlConfigProvider}
-          timeStart={new Date(0).toISOString()}
-          timeEnd={new Date().toISOString()}
+          {timeStart}
+          {timeEnd}
           timeControlsReady
           openOnMount={expressionFilterManager.temporaryFilterName ===
             dimensionManager.name}

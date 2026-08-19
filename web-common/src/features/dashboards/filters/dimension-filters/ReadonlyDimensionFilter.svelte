@@ -92,7 +92,7 @@
   } = $derived(allSearchResultsCountQuery.current);
 
   let isFetching = $derived(
-    isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount,
+    isFetchingFromSearchResults || isFetchingFromAllSearchResultsCount,
   );
   let effectiveSelectedValues = $derived(
     dimensionManager.mode !== DimensionFilterMode.InList

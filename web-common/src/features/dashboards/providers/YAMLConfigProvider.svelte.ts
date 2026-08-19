@@ -9,7 +9,7 @@ export class YAMLConfigProvider {
   public specPinnedFilters = $state<Record<string, boolean>>({});
   public requiredFilters = $state<Record<string, boolean>>({});
   public specRequiredFilters = $state<Record<string, boolean>>({});
-  public editable: boolean = false;
+  public editable = $state<boolean>(false);
 
   public cleanup: (() => void) | undefined = undefined;
 
