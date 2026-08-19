@@ -10,6 +10,7 @@
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
   import MeasureFilterForm from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterForm.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
   import type { MeasureFilterManager } from "./MeasureFilterManager.svelte.ts";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
@@ -45,6 +46,12 @@
   let curPinned = $state(pinned);
   // svelte-ignore state_referenced_locally
   let curRequired = $state(required);
+
+  let dimensionDisplayName = $derived(
+    getDimensionDisplayName(
+      allDimensions.find((d) => d.name === measureManager.dimension),
+    ),
+  );
 
   let filter = $derived(
     measureManager.expr
@@ -108,9 +115,7 @@
           })}
         >
           <MeasureFilterBody
-            dimensionName={allDimensions.find((d) => {
-              return d.name === measureManager.dimension;
-            })?.displayName ?? ""}
+            dimensionName={dimensionDisplayName}
             {filter}
             label={measureManager.label}
             slot="body"

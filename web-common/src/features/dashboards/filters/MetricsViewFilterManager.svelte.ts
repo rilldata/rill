@@ -3,6 +3,7 @@ import {
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterManager.svelte.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
@@ -36,6 +37,8 @@ export class MetricsViewFilterManager {
     string,
     (DimensionFilterManager | MeasureFilterManager)[]
   >;
+  // Dimensions currently filtered in "In List" mode, which have their own param syntax.
+  public inListDimensions: string[];
   public hasSomeFilter: boolean;
   public isComplexFilter: boolean;
 
@@ -52,11 +55,26 @@ export class MetricsViewFilterManager {
 
     this.expr = $derived(this.buildExpression(this.managers));
     this.dimensionOnlyExpr = $derived(this.buildDimensionOnlyExpression());
-    this.param = $derived(
-      this.expr ? convertExpressionToFilterParam(this.expr, this.inList) : "",
-    );
 
     this.managerLookup = $derived(this.buildManagerLookup());
+    // `inList` is what the param was parsed with. The chips can change the mode afterwards without
+    // changing the expression, so the param follows the modes the managers hold right now.
+    this.inListDimensions = $derived(
+      Object.values(this.managerLookup)
+        .flat()
+        .filter(
+          (manager) =>
+            manager instanceof DimensionFilterManager &&
+            manager.mode === DimensionFilterMode.InList,
+        )
+        .map((manager) => manager.name),
+    );
+    this.param = $derived(
+      this.expr
+        ? convertExpressionToFilterParam(this.expr, this.inListDimensions)
+        : "",
+    );
+
     this.hasSomeFilter = $derived(Object.values(this.managerLookup).length > 0);
     // Currently only single level AND joiner is supported where each dimension/measure has a single filter.
     // Anything else is considered complex filter, and we only show an editable text box.

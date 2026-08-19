@@ -40,6 +40,8 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import ExpressionFilters from "./ExpressionFilters.svelte";
   import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+  import { untrack } from "svelte";
+  import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 
   const { rillTime } = featureFlags;
 
@@ -365,18 +367,27 @@
   ) {
     if (!dashboardStateSync) return false;
 
-    const tempFilterManger = expressionFilterManager.clone();
-    tempFilterManger.dimensionFilterAction(dimensionName, (m) =>
-      m.setInList(values, m.exclude),
-    );
+    // The chip calls this from a `$derived`, and the clone below mutates its own state while it
+    // applies the filter, so the whole computation has to be untracked.
+    return untrack(() => {
+      const tempFilterManger = expressionFilterManager.clone();
+      tempFilterManger.dimensionFilterAction(dimensionName, (m) =>
+        m.setInList(values, m.exclude),
+      );
 
-    const exploreState = structuredClone($dashboardStore);
-    exploreState.whereFilter =
-      Object.values(tempFilterManger.managerByMetricsView)[0]?.expr ??
-      createAndExpression([]);
+      // Only the filter differs from the current state, and getUrlForExploreState only reads,
+      // so a shallow copy is enough.
+      const exploreState: ExploreState = {
+        ...$dashboardStore,
+        whereFilter:
+          Object.values(tempFilterManger.managerByMetricsView)[0]?.expr ??
+          createAndExpression([]),
+        dimensionsWithInlistFilter: tempFilterManger.inList,
+      };
 
-    const url = dashboardStateSync.getUrlForExploreState($dashboardStore);
-    return isUrlTooLong(url);
+      const url = dashboardStateSync.getUrlForExploreState(exploreState);
+      return isUrlTooLong(url);
+    });
   }
 </script>
 
