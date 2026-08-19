@@ -98,6 +98,16 @@ export const isSimpleMeasure = (measure: MetricsViewSpecMeasure) =>
   measure.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON;
 
 /**
+ * A totals query aggregates a measure to a single value with no dimensions,
+ * so it cannot satisfy a measure's required dimensions. E.g. a rolling window
+ * measure ordered by the time dimension produces one value per time bucket and
+ * has no meaningful single total; the backend rejects a totals query for it
+ * with "missing required dimension".
+ */
+export const measureSupportsTotalsQuery = (measure: MetricsViewSpecMeasure) =>
+  !measure.requiredDimensions?.length;
+
+/**
  * Selects measure valid for current dashboard selections. We filter out advanced measures that are,
  * 1. Of type MEASURE_TYPE_TIME_COMPARISON.
  * 2. Dependent on a time dimension with a defined grain and not equal to the current selected grain.
