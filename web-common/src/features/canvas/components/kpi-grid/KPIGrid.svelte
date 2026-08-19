@@ -26,6 +26,9 @@
     sparkline: kpiGridProperties.sparkline,
     hide_time_range: kpiGridProperties.hide_time_range,
     comparison: kpiGridProperties.comparison,
+    comparison_measure: kpiGridProperties.measure_comparisons?.find(
+      (comparison) => comparison?.measure === measure,
+    )?.compare_to,
     dimension_filters: kpiGridProperties.dimension_filters,
     time_filters: kpiGridProperties.time_filters,
   }));

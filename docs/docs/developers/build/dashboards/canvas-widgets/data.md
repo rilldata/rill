@@ -25,6 +25,23 @@ KPI grids display key performance indicators in a compact grid format with compa
   codeLanguage="yaml"
 />
 
+To compare a measure against a target instead of against an earlier period, add
+`measure_comparisons`. Both measures must belong to the same metrics view, and
+the comparison is made over the selected time range:
+
+```yaml
+- kpi_grid:
+    metrics_view: auction_metrics
+    measures:
+      - requests
+    measure_comparisons:
+      - measure: requests
+        compare_to: target_requests
+    comparison:
+      - previous
+      - percent_change
+```
+
 ## Leaderboard
 
 Leaderboards show ranked data with the top performers highlighted.

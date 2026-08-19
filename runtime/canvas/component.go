@@ -283,6 +283,27 @@ func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.Me
 		}
 	}
 
+	comparisons, ok := props["measure_comparisons"].([]any)
+	if !ok && props["measure_comparisons"] != nil {
+		return errors.New("renderer properties for kpi_grid must have 'measure_comparisons' as an array")
+	}
+	for _, c := range comparisons {
+		entry, ok := c.(map[string]any)
+		if !ok {
+			return errors.New("each entry in 'measure_comparisons' must be an object with 'measure' and 'compare_to'")
+		}
+		if _, ok := pathutil.GetPathString(entry, "measure"); !ok {
+			return errors.New("each entry in 'measure_comparisons' must include a 'measure' string")
+		}
+		compareTo, ok := pathutil.GetPathString(entry, "compare_to")
+		if !ok {
+			return errors.New("each entry in 'measure_comparisons' must include a 'compare_to' string")
+		}
+		if !metricsViewHasMeasure(mv, compareTo) {
+			return fmt.Errorf("referenced compare_to value %q is not a measure in metrics view %q", compareTo, mvn)
+		}
+	}
+
 	return nil
 }
 

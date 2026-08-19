@@ -276,6 +276,33 @@ kpi_grid:
   hide_time_range: true
 ```
 
+**Against a target instead of the past:**
+
+Use `measure_comparisons` when the thing to compare against is another measure
+of the same metrics view, such as a budget or a forecast. The comparison is
+then made over the selected time range rather than an earlier one, and the
+time comparison toggle no longer applies to that measure.
+
+```yaml
+kpi_grid:
+  metrics_view: sales_metrics
+  measures:
+    - total_revenue
+    - gross_margin_pct
+  measure_comparisons:
+    - measure: total_revenue
+      compare_to: target_revenue
+    - measure: gross_margin_pct
+      compare_to: target_margin_pct
+  comparison:
+    - previous        # here, the target's value
+    - percent_change
+```
+
+Both measures must live in the same metrics view. For a percentage measure use
+`delta` rather than `percent_change`: the relative change of a percentage is
+misleading, and Rill omits it, so `delta` gives the difference in points.
+
 ### Leaderboard
 
 Display ranked dimension values by measures:
