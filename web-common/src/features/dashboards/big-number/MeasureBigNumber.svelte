@@ -187,12 +187,18 @@
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: copyValue = supportsTotal
+  // Base values for the primary total, also used to reset the tooltip/copy
+  // values when the pointer leaves a comparison value.
+  // When the measure has no total, copying is disabled by leaving the copy value undefined.
+  $: baseCopyValue = supportsTotal
     ? (measureValueFormatterUnabridged(value) ?? m.kpi_no_data())
-    : m.kpi_no_total();
-  $: tooltipValue = supportsTotal
+    : undefined;
+  $: baseTooltipValue = supportsTotal
     ? (measureValueFormatterTooltip(value) ?? m.kpi_no_data())
     : m.kpi_no_total();
+
+  $: copyValue = baseCopyValue;
+  $: tooltipValue = baseTooltipValue;
 
   $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
@@ -289,10 +295,8 @@
                     measureValueFormatterUnabridged(diff) ?? m.kpi_no_data();
                 }}
                 onmouseleave={() => {
-                  tooltipValue =
-                    measureValueFormatterTooltip(value) ?? m.kpi_no_data();
-                  copyValue =
-                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
+                  tooltipValue = baseTooltipValue;
+                  copyValue = baseCopyValue;
                 }}
               >
                 {#if !noChange}
@@ -318,10 +322,8 @@
                     "no data";
                 }}
                 onmouseleave={() => {
-                  tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
-                  copyValue =
-                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
+                  tooltipValue = baseTooltipValue;
+                  copyValue = baseCopyValue;
                 }}
                 class="w-fit {comparisonDeltaColorClass}"
                 class:font-semibold={lowerIsBetter

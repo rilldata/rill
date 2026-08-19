@@ -245,7 +245,7 @@
               </span>
             {:else if primaryTotalResult.isError}
               <AlertTriangleIcon class=" text-red-300" size="34px" />
-            {:else if primaryTotalResult.isLoading}
+            {:else if primaryTotalResult.isLoading || !measure}
               <div class="loading h-6 w-16"></div>
             {:else if primaryTotalResult.data}
               <span class:opacity-50={primaryTotalResult.isFetching}>

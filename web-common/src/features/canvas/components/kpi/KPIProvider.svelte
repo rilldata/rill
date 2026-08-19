@@ -54,7 +54,9 @@
   // Measures with required dimensions (e.g. a rolling window ordered by the time
   // dimension) produce one value per dimension value and have no single total,
   // so we skip the totals queries; the KPI shows an explanatory hint instead.
-  $: supportsTotal = !measure || measureSupportsTotalsQuery(measure);
+  // The measure metadata must have loaded before we can tell, so the queries
+  // also wait for it.
+  $: supportsTotal = !!measure && measureSupportsTotalsQuery(measure);
 
   $: showSparkline = sparkline !== "none" && hasTimeSeries;
 
