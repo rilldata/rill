@@ -89,31 +89,24 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	// This works around a serialization bug in some MCP clients (see https://github.com/anthropics/claude-code/issues/25865).
 	// The coercion runs only as a fallback: if a tool call fails the SDK's input schema validation,
 	// the arguments are coerced and the call is retried once; calls that validate as-is are never rewritten.
-	// It can be disabled with the rill.ai.mcp_tolerant_args instance config option (enabled by default).
 	// The internal LLM tool-call path (CallToolWithOptions) receives tool inputs as real JSON objects from the provider API,
 	// so it does not need this; if that ever changes, the coercion should be applied there too.
-	cfg, err := s.runner.Runtime.InstanceConfig(ctx, s.instanceID)
-	if err != nil && !errors.Is(err, ctx.Err()) {
-		s.logger.Warn("failed to resolve instance config; enabling tolerant MCP argument decoding by default", zap.Error(err))
-	}
-	if err != nil || cfg.AIMCPTolerantArgs {
-		srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
-			return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
-				res, err := next(ctx, method, req)
-				if method != "tools/call" || err == nil {
-					return res, err
-				}
-				var jsonrpcErr *jsonrpc.Error
-				if !errors.As(err, &jsonrpcErr) || jsonrpcErr.Code != jsonrpc.CodeInvalidParams {
-					return res, err
-				}
-				if !s.coerceMCPToolArgs(req) {
-					return res, err
-				}
-				return next(ctx, method, req)
+	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			res, err := next(ctx, method, req)
+			if method != "tools/call" || err == nil {
+				return res, err
 			}
-		})
-	}
+			var jsonrpcErr *jsonrpc.Error
+			if !errors.As(err, &jsonrpcErr) || jsonrpcErr.Code != jsonrpc.CodeInvalidParams {
+				return res, err
+			}
+			if !s.coerceMCPToolArgs(req) {
+				return res, err
+			}
+			return next(ctx, method, req)
+		}
+	})
 
 	// Add only the tools that the user has access to
 	ctx = WithSession(ctx, s)
