@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { toJpeg } from "html-to-image";
+import { getFontEmbedCSS, toJpeg } from "html-to-image";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  captureCanvasBlocks,
   captureTargetsIn,
   inlineSvgStyles,
   rasterizeNode,
@@ -10,6 +11,7 @@ import {
 
 vi.mock("html-to-image", () => ({
   toJpeg: vi.fn(() => Promise.resolve("data:image/jpeg;base64,")),
+  getFontEmbedCSS: vi.fn(() => Promise.resolve("")),
 }));
 
 describe("rasterizeNode", () => {
@@ -59,6 +61,25 @@ describe("rasterizeNode", () => {
     });
     const [first, second] = vi.mocked(toJpeg).mock.calls;
     expect(first[1]).toStrictEqual(second[1]);
+  });
+
+  // The warm-up's result is discarded, so a failure in it must not cost the
+  // block the real pass would have captured.
+  it("captures for real even when the warm-up pass throws", async () => {
+    vi.mocked(toJpeg)
+      .mockRejectedValueOnce(new Error("warm-up failed"))
+      .mockResolvedValueOnce("data:image/jpeg;base64,real");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const dataUrl = await rasterizeNode(cardWith("<canvas></canvas>"), {
+      backgroundColor: "#fff",
+      fontEmbedCSS: "",
+      warmUpCanvas: true,
+    });
+
+    expect(dataUrl).toBe("data:image/jpeg;base64,real");
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("hands the caller's font CSS to every pass", async () => {
@@ -178,5 +199,40 @@ describe("captureTargetsIn", () => {
     expect(indexOf("#pdf-tab-label-overview-empty")).toBe(0);
     expect(indexOf("#pdf-tab-label-overview-second")).toBe(2);
     expect(indexOf("#tab-a")).toBe(2);
+  });
+});
+
+describe("captureCanvasBlocks", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    vi.mocked(getFontEmbedCSS).mockClear();
+    // jsdom cannot rasterize, so let the warm-up probe take its no-context
+    // path instead of logging a "not implemented" error per run.
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  });
+
+  // The export header is a sibling of the row container, and getFontEmbedCSS
+  // keeps only the @font-face rules used inside the node it is handed, so
+  // collecting from the rows alone drops any face only the header uses.
+  it("collects the font CSS from a node that covers the header too", async () => {
+    const view = document.createElement("div");
+    view.id = "canvas-pdf-export-view";
+    view.dataset.instanceId = "inst";
+    view.dataset.canvasName = "canvas";
+    const header = document.createElement("div");
+    header.id = "canvas-pdf-export-header";
+    const rows = document.createElement("div");
+    rows.className = "row-container";
+    view.append(header, rows);
+    document.body.appendChild(view);
+
+    await captureCanvasBlocks({
+      instanceId: "inst",
+      canvasName: "canvas",
+      includeFilters: true,
+    });
+
+    const [node] = vi.mocked(getFontEmbedCSS).mock.calls[0];
+    expect(node.contains(header)).toBe(true);
   });
 });

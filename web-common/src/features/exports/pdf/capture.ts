@@ -147,7 +147,13 @@ export async function rasterizeNode(
   };
   try {
     if (warmUpCanvas && node.querySelector("canvas")) {
-      await toJpeg(node, options);
+      try {
+        await toJpeg(node, options);
+      } catch (e) {
+        // The warm-up's own result is thrown away, so a failure here is no
+        // reason to lose the block: fall through and capture for real.
+        console.warn("Canvas warm-up pass failed", e);
+      }
     }
     return await toJpeg(node, options);
   } finally {
@@ -204,7 +210,10 @@ export async function captureCanvasBlocks(
   // Probed once per capture rather than per block: the answer is a property of
   // the browser, and the probe itself rasterizes.
   const warmUpCanvas = await needsCanvasWarmup();
-  const fontEmbedCSS = await getFontEmbedCSS(rowContainer);
+  // Collected from the whole export view rather than the rows: the header is a
+  // sibling of the row container, and getFontEmbedCSS keeps only the @font-face
+  // rules whose family is used inside the node it is handed.
+  const fontEmbedCSS = await getFontEmbedCSS(exportView);
 
   const blocks: CapturedBlock[] = [];
   const total = targets.length + (opts.includeFilters ? 1 : 0);
