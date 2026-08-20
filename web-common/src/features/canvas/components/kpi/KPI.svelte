@@ -5,6 +5,7 @@
   import type { ChartDataPoint } from "@rilldata/web-common/components/time-series-chart/types";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import BigNumberTooltipContent from "@rilldata/web-common/features/dashboards/big-number/BigNumberTooltipContent.svelte";
+  import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -49,6 +50,11 @@
     null;
 
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
+
+  // Measures with required dimensions (e.g. a rolling window ordered by the time
+  // dimension) have no single total; the provider skips the totals queries and
+  // we show an explanatory hint instead.
+  $: supportsTotal = !measure || measureSupportsTotalsQuery(measure);
 
   $: measureValueFormatter = measure
     ? createMeasureValueFormatter<null>(measure, "big-number")
@@ -163,6 +169,9 @@
   $: activeValue = getValueForType(hoveredValue);
 
   $: tooltipValue = (() => {
+    if (!supportsTotal) {
+      return m.kpi_no_total();
+    }
     if (hoveredValue === "percent" && computedValues.percent !== null) {
       return numberPartsToString(
         formatMeasurePercentageDifference(computedValues.percent),
@@ -230,9 +239,13 @@
             onfocus={() => handleHoverOrFocus("primary")}
             onblur={handleLeaveOrBlur}
           >
-            {#if primaryTotalResult.isError}
+            {#if !supportsTotal}
+              <span class="text-fg-muted italic text-sm font-normal">
+                {m.kpi_no_total()}
+              </span>
+            {:else if primaryTotalResult.isError}
               <AlertTriangleIcon class=" text-red-300" size="34px" />
-            {:else if primaryTotalResult.isLoading}
+            {:else if primaryTotalResult.isLoading || !measure}
               <div class="loading h-6 w-16"></div>
             {:else if primaryTotalResult.data}
               <span class:opacity-50={primaryTotalResult.isFetching}>
@@ -241,7 +254,7 @@
             {/if}
           </div>
 
-          {#if showComparison}
+          {#if showComparison && supportsTotal}
             <div class="comparison-value-wrapper">
               {#if comparisonTotalResult.isError}
                 <div class="text-red-400">
@@ -337,7 +350,11 @@
 
     {#if measure}
       <Tooltip.Content side="top" sideOffset={8}>
-        <BigNumberTooltipContent {measure} value={tooltipValue ?? "no data"} />
+        <BigNumberTooltipContent
+          {measure}
+          value={tooltipValue ?? "no data"}
+          note={supportsTotal ? undefined : m.kpi_no_total_note()}
+        />
       </Tooltip.Content>
     {/if}
   </Tooltip.Root>

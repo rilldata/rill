@@ -1373,6 +1373,8 @@
   "kpi_data_aria": "Datos de KPI de {measure}",
   "kpi_no_change": "sin cambio",
   "kpi_no_data": "sin datos",
+  "kpi_no_total": "sin total",
+  "kpi_no_total_note": "Esta medida se calcula por valor de dimensión (por ejemplo, un promedio móvil produce un valor por día), por lo que no puede mostrarse como un total único para el rango seleccionado.",
   "kpi_not_available": "n/d",
   "kpi_vs_comparison": "vs {comparison}",
   "language_en": "English",

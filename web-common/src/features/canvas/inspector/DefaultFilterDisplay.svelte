@@ -68,8 +68,8 @@
       expressionFilterManager={defaultFiltersManager}
       displayTimeRange={defaultTimeRange}
       displayComparisonTimeRange={defaultComparisonRange}
-      queryTimeStart={interval?.start?.toISO()}
-      queryTimeEnd={interval?.end?.toISO()}
+      queryTimeStart={interval?.start?.toUTC().toISO()}
+      queryTimeEnd={interval?.end?.toUTC().toISO()}
     />
   </div>
 

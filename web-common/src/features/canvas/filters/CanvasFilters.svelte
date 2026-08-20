@@ -67,8 +67,8 @@
   let interval = $derived($intervalStore);
   let minTimeGrain = $derived($largestMinTimeGrain);
 
-  let timeStart = $derived(interval?.start.toISO());
-  let timeEnd = $derived(interval?.end.toISO());
+  let timeStart = $derived(interval?.start.toUTC().toISO());
+  let timeEnd = $derived(interval?.end.toUTC().toISO());
 
   let minMax = $derived($minMaxTimeStamps);
 
