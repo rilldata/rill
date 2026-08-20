@@ -15,7 +15,7 @@
   export let pathname: string;
   export let branchPrefix: string = "";
 
-  const { chat, reports, alerts } = featureFlags;
+  const { chat, reports, alerts, sqlConsole } = featureFlags;
 
   $: tabs = [
     {
@@ -34,11 +34,6 @@
       hasPermission: true,
     },
     {
-      route: `/${organization}/${project}${branchPrefix}/-/query`,
-      label: m.nav_tab_query(),
-      hasPermission: false,
-    },
-    {
       route: `/${organization}/${project}${branchPrefix}/-/reports`,
       label: m.nav_tab_reports(),
       hasPermission: $reports,
@@ -52,6 +47,11 @@
       route: `/${organization}/${project}${branchPrefix}/-/status`,
       label: m.nav_tab_status(),
       hasPermission: projectPermissions.manageProject,
+    },
+    {
+      route: `/${organization}/${project}${branchPrefix}/-/query`,
+      label: m.nav_tab_query(),
+      hasPermission: $sqlConsole && projectPermissions.manageProject,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/settings`,
