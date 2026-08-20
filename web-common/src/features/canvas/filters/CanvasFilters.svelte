@@ -79,8 +79,8 @@
   $: interval = $intervalStore;
   $: minTimeGrain = $largestMinTimeGrain;
 
-  $: timeStart = interval?.start.toISO();
-  $: timeEnd = interval?.end.toISO();
+  $: timeStart = interval?.start.toUTC().toISO();
+  $: timeEnd = interval?.end.toUTC().toISO();
 
   $: minMax = $minMaxTimeStamps;
 
