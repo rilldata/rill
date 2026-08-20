@@ -1,20 +1,24 @@
 package project
 
 import (
+	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, branch string
 	var local bool
 	var models, modelPartitions, sources, metricViews, alerts, reports, connectors []string
-	var all, full, erroredPartitions, skippedPartitions, parser bool
+	var all, full, erroredPartitions, skippedPartitions, parser, force bool
+	var partitionKey, partitionStart, partitionEnd string
 
 	refreshCmd := &cobra.Command{
 		Use:               "refresh [<project-name>]",
@@ -79,11 +83,30 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Merge sources into models since sources have been deprecated and are no longer created on the backend.
 			models = append(models, sources...)
 
+			// Validate partition-range flags. All three must be set together. The range can be
+			// narrowed by --errored-partitions or --skipped-partitions (but not both), and cannot
+			// be combined with an explicit --partition list.
+			rangeMode := partitionKey != "" || partitionStart != "" || partitionEnd != ""
+			if rangeMode {
+				if partitionKey == "" || partitionStart == "" || partitionEnd == "" {
+					return fmt.Errorf("--partition-key, --partition-start, and --partition-end must all be set together")
+				}
+				if len(modelPartitions) > 0 {
+					return fmt.Errorf("--partition-key cannot be combined with --partition")
+				}
+				if erroredPartitions && skippedPartitions {
+					return fmt.Errorf("--errored-partitions and --skipped-partitions cannot be combined")
+				}
+				if partitionStart > partitionEnd {
+					return fmt.Errorf("--partition-start (%q) must be <= --partition-end (%q)", partitionStart, partitionEnd)
+				}
+			}
+
 			// Build model triggers
-			if len(modelPartitions) > 0 || erroredPartitions || skippedPartitions {
+			if len(modelPartitions) > 0 || erroredPartitions || skippedPartitions || rangeMode {
 				// If partitions are specified, ensure exactly one model is specified.
 				if len(models) != 1 {
-					return fmt.Errorf("must specify exactly one --model when using --partition, --errored-partitions, or --skipped-partitions")
+					return fmt.Errorf("must specify exactly one --model when using --partition, --errored-partitions, --skipped-partitions, or --partition-key")
 				}
 
 				// Since it's a common error, do an early check to ensure the model is incremental.
@@ -100,6 +123,36 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				if !m.Spec.Incremental {
 					return fmt.Errorf("can't refresh partitions on model %q because it is not incremental", mn)
 				}
+			}
+
+			// Resolve partition range to concrete partition keys. When --errored-partitions or
+			// --skipped-partitions is also set, the range is narrowed to partitions in that state.
+			if rangeMode {
+				matched, err := resolvePartitionRange(cmd.Context(), rt, instanceID, models[0], partitionKey, partitionStart, partitionEnd, false, erroredPartitions, skippedPartitions)
+				if err != nil {
+					return err
+				}
+				if len(matched) == 0 {
+					ch.Printf("No partitions match %s in [%s, %s] on model %q.\n", partitionKey, partitionStart, partitionEnd, models[0])
+					return nil
+				}
+
+				ch.PrintModelPartitions(matched)
+
+				if !force && ch.Interactive {
+					if err := cmdutil.ConfirmPrompt(fmt.Sprintf("Refresh %d partition(s)?", len(matched)), true); err != nil {
+						return err
+					}
+				}
+
+				modelPartitions = make([]string, 0, len(matched))
+				for _, p := range matched {
+					modelPartitions = append(modelPartitions, p.Key)
+				}
+				// The resolved key list is authoritative; clear the model-wide flags so the trigger
+				// refreshes only the matched partitions rather than all errored/skipped ones.
+				erroredPartitions = false
+				skippedPartitions = false
 			}
 			var modelTriggers []*runtimev1.RefreshModelTrigger
 			for _, m := range models {
@@ -152,6 +205,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringSliceVar(&modelPartitions, "partition", nil, "Refresh a model partition (must set --model)")
 	refreshCmd.Flags().BoolVar(&erroredPartitions, "errored-partitions", false, "Refresh all model partitions with errors (must set --model)")
 	refreshCmd.Flags().BoolVar(&skippedPartitions, "skipped-partitions", false, "Refresh all skipped model partitions (must set --model)")
+	refreshCmd.Flags().StringVar(&partitionKey, "partition-key", "", "Name of the field in the partition data to range-filter on (must set --model)")
+	refreshCmd.Flags().StringVar(&partitionStart, "partition-start", "", "Inclusive lower bound for --partition-key (lexicographic string compare)")
+	refreshCmd.Flags().StringVar(&partitionEnd, "partition-end", "", "Inclusive upper bound for --partition-key (lexicographic string compare)")
+	refreshCmd.Flags().BoolVar(&force, "force", false, "Skip the partition-range refresh confirmation prompt")
 	refreshCmd.Flags().StringSliceVar(&sources, "source", nil, "Refresh a source")
 	refreshCmd.Flags().StringSliceVar(&metricViews, "metrics-view", nil, "Refresh a metrics view")
 	refreshCmd.Flags().StringSliceVar(&alerts, "alert", nil, "Refresh an alert")
@@ -160,4 +217,71 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().BoolVar(&parser, "parser", false, "Refresh the parser (forces a pull from Github)")
 
 	return refreshCmd
+}
+
+// resolvePartitionRange lists partitions of the given model and returns those whose data field
+// `key` falls within [start, end] (inclusive, lexicographic string compare). The pending, errored,
+// and skipped flags narrow the listing to partitions in the corresponding state (server-side).
+func resolvePartitionRange(ctx context.Context, rt runtimev1.RuntimeServiceClient, instanceID, model, key, start, end string, pending, errored, skipped bool) ([]*runtimev1.ModelPartition, error) {
+	var matched []*runtimev1.ModelPartition
+	var pageToken string
+	var sawAnyPartition bool
+	for {
+		res, err := rt.GetModelPartitions(ctx, &runtimev1.GetModelPartitionsRequest{
+			InstanceId: instanceID,
+			Model:      model,
+			Pending:    pending,
+			Errored:    errored,
+			Skipped:    skipped,
+			PageSize:   100,
+			PageToken:  pageToken,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list partitions for model %q: %w", model, err)
+		}
+
+		for _, p := range res.Partitions {
+			sawAnyPartition = true
+			if p.Data == nil {
+				continue
+			}
+			fields := p.Data.GetFields()
+			v, ok := fields[key]
+			if !ok {
+				available := make([]string, 0, len(fields))
+				for f := range fields {
+					available = append(available, f)
+				}
+				return nil, fmt.Errorf("partition field %q not found on partition %q; available fields: %v", key, p.Key, available)
+			}
+
+			var s string
+			switch k := v.Kind.(type) {
+			case *structpb.Value_StringValue:
+				s = k.StringValue
+			case *structpb.Value_NumberValue:
+				s = strconv.FormatFloat(k.NumberValue, 'f', -1, 64)
+			case *structpb.Value_BoolValue:
+				s = strconv.FormatBool(k.BoolValue)
+			default:
+				return nil, fmt.Errorf("partition %q: unsupported type %T for field %q", p.Key, v.Kind, key)
+			}
+			if s >= start && s <= end {
+				matched = append(matched, p)
+			}
+		}
+
+		if res.NextPageToken == "" {
+			break
+		}
+		pageToken = res.NextPageToken
+	}
+
+	// When no state filter is applied, an empty listing means the model genuinely has no
+	// partitions, which is a usage error. With a state filter, an empty listing just means no
+	// partitions are in that state, so let the caller report the friendly "no match" message.
+	if !sawAnyPartition && !pending && !errored && !skipped {
+		return nil, fmt.Errorf("model %q has no partitions to filter", model)
+	}
+	return matched, nil
 }
