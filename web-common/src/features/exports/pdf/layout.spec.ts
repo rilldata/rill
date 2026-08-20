@@ -285,6 +285,33 @@ describe("paginate", () => {
     expect(labels[0].yPt).toBeLessThan(slices[0].yPt);
   });
 
+  // The title and the footer are drawn from this, so it has to be the gutter
+  // the blocks actually start after.
+  it("exposes the gutter it centred the content with", () => {
+    const result = paginate([block({ id: "a", widthPx: 390, heightPx: 300 })], {
+      ...A4,
+      contentWidthPx: 390,
+    });
+
+    expect(result.contentOffsetPt).toBeGreaterThan(0);
+    expect(result.marginPt + result.contentOffsetPt).toBeCloseTo(
+      result.placements[0].xPt,
+      1,
+    );
+  });
+
+  // Centring against a width of zero used to shift every block half a content
+  // width to the right, off the page.
+  it("does not offset the content when its width is unknown", () => {
+    const result = paginate([block({ id: "a", widthPx: 390, heightPx: 300 })], {
+      ...A4,
+      contentWidthPx: 0,
+    });
+
+    expect(result.contentOffsetPt).toBe(0);
+    expect(result.placements[0].xPt).toBeCloseTo(result.marginPt, 1);
+  });
+
   it("places the filter bar (rowIndex -1) before content rows", () => {
     const result = paginate(
       [

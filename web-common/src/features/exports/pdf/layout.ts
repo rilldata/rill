@@ -47,6 +47,10 @@ export interface PaginationResult {
   pageWidthPt: number;
   pageHeightPt: number;
   marginPt: number;
+  // Horizontal inset applied to every placement: a capture narrower than the
+  // page is centred in the content box. Exposed so the page chrome can line up
+  // with the blocks rather than with the margin.
+  contentOffsetPt: number;
   pageCount: number;
   orientation: ResolvedOrientation;
   placements: Placement[];
@@ -88,7 +92,12 @@ export function paginate(
     opts.contentWidthPx > 0
       ? Math.min(contentWidthPt / opts.contentWidthPx, 1)
       : 1;
-  const contentOffsetPt = (contentWidthPt - opts.contentWidthPx * scale) / 2;
+  // A capture that never laid out has no width to centre, and offsetting against
+  // it would push every block half a content width towards the right edge.
+  const contentOffsetPt =
+    opts.contentWidthPx > 0
+      ? (contentWidthPt - opts.contentWidthPx * scale) / 2
+      : 0;
 
   const rows = groupIntoRows(blocks);
 
@@ -191,6 +200,7 @@ export function paginate(
     pageWidthPt,
     pageHeightPt,
     marginPt,
+    contentOffsetPt,
     pageCount: placements.length
       ? Math.max(...placements.map((p) => p.page)) + 1
       : 0,
