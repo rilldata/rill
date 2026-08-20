@@ -3,6 +3,8 @@ package jsonschemautil
 import (
 	"encoding/json"
 	"maps"
+	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -100,6 +102,12 @@ func resolveSchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema) (*j
 		}
 		if s.Ref == "" {
 			return s, defs
+		}
+		// A $ref composes with its sibling keywords rather than replacing them.
+		// Following the ref discards the siblings, so if the node itself permits strings,
+		// coercion could rewrite a string the schema accepts as-is; fail open instead.
+		if s.Type == "string" || slices.Contains(s.Types, "string") {
+			return nil, defs
 		}
 		name, ok := strings.CutPrefix(s.Ref, "#/$defs/")
 		if !ok {
@@ -219,6 +227,13 @@ func propertySchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, ke
 	if sub, ok := s.Properties[key]; ok {
 		return sub, defs
 	}
+	// additionalProperties does not govern keys matched by patternProperties; fail open for those keys.
+	// On an invalid pattern, also fail open and leave the error to schema validation.
+	for pattern := range s.PatternProperties {
+		if matched, err := regexp.MatchString(pattern, key); err != nil || matched {
+			return nil, nil
+		}
+	}
 	if s.AdditionalProperties != nil {
 		return s.AdditionalProperties, defs
 	}
@@ -250,6 +265,11 @@ func propertySchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, ke
 // depth guards against cyclic combinator branches; see propertySchema.
 func itemsSchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, depth int) (*jsonschema.Schema, map[string]*jsonschema.Schema) {
 	if depth > maxRefHops {
+		return nil, nil
+	}
+	// prefixItems changes which elements `items` governs (only those after the prefix);
+	// fail open rather than coercing tuple elements with the wrong schema.
+	if len(s.PrefixItems) > 0 {
 		return nil, nil
 	}
 	if s.Items != nil {

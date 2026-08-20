@@ -68,8 +68,6 @@ var defaultFeatureFlags = map[string]string{
 	"custom_charts": "false",
 	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
 	"personal_canvases": "false",
-	// Controls whether MCP tool-call arguments with object/array fields JSON-encoded as strings are tolerantly decoded
-	"mcp_tolerant_args": "true",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

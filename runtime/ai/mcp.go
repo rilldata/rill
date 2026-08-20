@@ -87,20 +87,23 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	// Tolerantly decode tool arguments where object/array-typed fields arrive as JSON-encoded strings.
 	// This works around a serialization bug in some MCP clients (see https://github.com/anthropics/claude-code/issues/25865).
 	// It runs before the SDK validates the arguments against the tool's input schema.
-	// It can be disabled with the mcp_tolerant_args feature flag (enabled by default).
+	// It can be disabled with the rill.ai.mcp_tolerant_args instance config option (enabled by default).
 	// The internal LLM tool-call path (CallToolWithOptions) receives tool inputs as real JSON objects from the provider API,
 	// so it does not need this; if that ever changes, the coercion should be applied there too.
-	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
-		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
-			if method == "tools/call" {
-				ff, err := s.runner.Runtime.FeatureFlags(ctx, s.instanceID, s.claims)
-				if err != nil || ff["mcp_tolerant_args"] { // On flag resolution errors, fall back to the default (enabled)
+	cfg, err := s.runner.Runtime.InstanceConfig(ctx, s.instanceID)
+	if err != nil && !errors.Is(err, ctx.Err()) {
+		s.logger.Warn("failed to resolve instance config; enabling tolerant MCP argument decoding by default", zap.Error(err))
+	}
+	if err != nil || cfg.AIMCPTolerantArgs {
+		srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
+			return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+				if method == "tools/call" {
 					s.coerceMCPToolArgs(req)
 				}
+				return next(ctx, method, req)
 			}
-			return next(ctx, method, req)
-		}
-	})
+		})
+	}
 
 	// Add only the tools that the user has access to
 	ctx = WithSession(ctx, s)

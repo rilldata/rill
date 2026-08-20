@@ -163,11 +163,9 @@ explore:
 
 func TestMCPTolerantArgsDisabled(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Variables: map[string]string{"rill.ai.mcp_tolerant_args": "false"},
 		Files: map[string]string{
-			"rill.yaml": `
-features:
-  mcp_tolerant_args: false
-`,
+			"rill.yaml": "",
 			"m.sql": `
 SELECT 'US' AS country, TIMESTAMP '2024-01-15 00:00:00' AS event_time
 `,

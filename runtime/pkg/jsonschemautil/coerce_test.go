@@ -356,6 +356,56 @@ func TestCoerceStringifiedJSON(t *testing.T) {
 			wantChanged: false,
 		},
 		{
+			name: "ref with a string-permitting sibling type is untouched",
+			schema: `{
+				"type": "object",
+				"properties": {
+					"time_range": {"$ref": "#/$defs/TimeRange", "type": "string"}
+				},
+				"$defs": {
+					"TimeRange": {
+						"type": "object",
+						"properties": {"start": {"type": "string"}}
+					}
+				}
+			}`,
+			args:        `{"time_range": "{\"start\": \"2024-01-01T00:00:00Z\"}"}`,
+			want:        `{"time_range": "{\"start\": \"2024-01-01T00:00:00Z\"}"}`,
+			wantChanged: false,
+		},
+		{
+			name: "patternProperties-matched key is not coerced via additionalProperties",
+			schema: `{
+				"type": "object",
+				"properties": {
+					"where_per_metrics_view": {
+						"type": "object",
+						"patternProperties": {"^x_": {"type": "string"}},
+						"additionalProperties": {"type": "object", "properties": {"name": {"type": "string"}}}
+					}
+				}
+			}`,
+			args:        `{"where_per_metrics_view": {"x_note": "{\"name\": \"country\"}", "mv1": "{\"name\": \"country\"}"}}`,
+			want:        `{"where_per_metrics_view": {"x_note": "{\"name\": \"country\"}", "mv1": {"name": "country"}}}`,
+			wantChanged: true,
+		},
+		{
+			name: "array with prefixItems is untouched",
+			schema: `{
+				"type": "object",
+				"properties": {
+					"dimensions": {
+						"type": "array",
+						"prefixItems": [{"type": "string"}],
+						"items": {"type": "object", "properties": {"name": {"type": "string"}}}
+					}
+				}
+			}`,
+			args:        `{"dimensions": ["{\"name\": \"country\"}", "{\"name\": \"state\"}"]}`,
+			want:        `{"dimensions": ["{\"name\": \"country\"}", "{\"name\": \"state\"}"]}`,
+			wantChanged: false,
+		},
+		{
 			name: "unresolvable ref is untouched",
 			schema: `{
 				"type": "object",

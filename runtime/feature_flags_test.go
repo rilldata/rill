@@ -47,7 +47,6 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"customCharts":                    false,
 				"personalCanvases":                false,
 				"disablePersistentDashboardState": false,
-				"mcpTolerantArgs":                 true,
 			},
 		},
 		{
@@ -76,7 +75,6 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"customCharts":                    false,
 				"personalCanvases":                false,
 				"disablePersistentDashboardState": false,
-				"mcpTolerantArgs":                 true,
 			},
 		},
 		{
@@ -105,7 +103,6 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"customCharts":                    false,
 				"personalCanvases":                false,
 				"disablePersistentDashboardState": false,
-				"mcpTolerantArgs":                 true,
 			},
 		},
 		{
@@ -134,7 +131,6 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"customCharts":                    false,
 				"personalCanvases":                false,
 				"disablePersistentDashboardState": false,
-				"mcpTolerantArgs":                 true,
 			},
 		},
 	}
