@@ -20,16 +20,18 @@ func TestMCP(t *testing.T) {
 		Files: map[string]string{
 			"rill.yaml": "",
 			"m.sql": `
-SELECT 'US' AS country
+SELECT 'US' AS country, TIMESTAMP '2024-01-15 00:00:00' AS event_time
 `,
 			// Metrics view
 			"mv1.yaml": `
 type: metrics_view
 model: m
+timeseries: event_time
 dimensions:
 - column: country
 measures:
-- expression: COUNT(*)
+- name: row_count
+  expression: COUNT(*)
 explore:
   skip: true
 `,
@@ -103,4 +105,119 @@ explore:
 	// Test that it handles missing parameters
 	_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.GetMetricsViewName})
 	require.ErrorContains(t, err, "missing properties")
+
+	// Test a query with object/array-typed arguments sent as JSON-encoded strings.
+	// Some MCP clients stringify nested arguments (see https://github.com/anthropics/claude-code/issues/25865);
+	// the server should tolerantly decode them.
+	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{
+		Name: ai.QueryMetricsViewName,
+		Arguments: map[string]any{
+			"metrics_view": "mv1",
+			"dimensions":   `[{"name": "country"}]`,
+			"measures":     []any{map[string]any{"name": "row_count"}},
+			"time_range":   `{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"}`,
+			"where":        `{"cond": {"op": "eq", "exprs": [{"name": "country"}, {"val": "US"}]}}`,
+			"limit":        10,
+		},
+	})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	resText := res.Content[0].(*mcp.TextContent).Text
+	require.Contains(t, resText, "US")
+	require.Contains(t, resText, "row_count")
+
+	// Test a query where comparison_time_range, having, sort and a nested measure compute are also stringified
+	res, err = conn.CallTool(t.Context(), &mcp.CallToolParams{
+		Name: ai.QueryMetricsViewName,
+		Arguments: map[string]any{
+			"metrics_view": "mv1",
+			"dimensions":   `[{"name": "country"}]`,
+			"measures": []any{
+				map[string]any{"name": "row_count"},
+				map[string]any{"name": "row_count_prev", "compute": `{"comparison_value": {"measure": "row_count"}}`},
+			},
+			"time_range":            `{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"}`,
+			"comparison_time_range": `{"start": "2023-12-01T00:00:00Z", "end": "2024-01-01T00:00:00Z"}`,
+			"having":                `{"cond": {"op": "gt", "exprs": [{"name": "row_count"}, {"val": 0}]}}`,
+			"sort":                  `[{"name": "row_count", "desc": true}]`,
+			"limit":                 10,
+		},
+	})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	resText = res.Content[0].(*mcp.TextContent).Text
+	require.Contains(t, resText, "US")
+	require.Contains(t, resText, "row_count_prev")
+
+	// Test that a string that is not valid JSON still fails schema validation
+	_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{
+		Name: ai.QueryMetricsViewName,
+		Arguments: map[string]any{
+			"metrics_view": "mv1",
+			"measures":     []any{map[string]any{"name": "row_count"}},
+			"time_range":   "last 7 days",
+		},
+	})
+	require.ErrorContains(t, err, `want "object"`)
+}
+
+func TestMCPTolerantArgsDisabled(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Variables: map[string]string{"rill.ai.mcp_tolerant_args": "false"},
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m.sql": `
+SELECT 'US' AS country, TIMESTAMP '2024-01-15 00:00:00' AS event_time
+`,
+			"mv1.yaml": `
+type: metrics_view
+model: m
+timeseries: event_time
+dimensions:
+- column: country
+measures:
+- name: row_count
+  expression: COUNT(*)
+explore:
+  skip: true
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "mcp/test", Version: "1.0.0"}, nil)
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, nil)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// With the flag disabled, stringified object arguments should fail schema validation instead of being decoded
+	_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{
+		Name: ai.QueryMetricsViewName,
+		Arguments: map[string]any{
+			"metrics_view": "mv1",
+			"measures":     []any{map[string]any{"name": "row_count"}},
+			"time_range":   `{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"}`,
+		},
+	})
+	require.ErrorContains(t, err, `want "object"`)
+
+	// Properly-typed arguments still work
+	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{
+		Name: ai.QueryMetricsViewName,
+		Arguments: map[string]any{
+			"metrics_view": "mv1",
+			"measures":     []any{map[string]any{"name": "row_count"}},
+			"time_range":   map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"},
+			"limit":        10,
+		},
+	})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "row_count")
 }
