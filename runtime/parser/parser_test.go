@@ -2857,6 +2857,85 @@ tests:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestCustomFields(t *testing.T) {
+	// Unknown fields prefixed with "custom_" are reserved for user-defined metadata,
+	// and should be exempt from strict validation at any nesting depth.
+	// Other unknown fields should still produce a parse error.
+	files := map[string]string{
+		`rill.yaml`: `
+custom_project_tag: hello
+`,
+		`models/m1.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+custom_owner: team-a
+dimensions:
+- name: foo
+  expression: id
+  custom_tag: bar
+measures:
+- name: count
+  expression: COUNT(*)
+  custom_format: usd
+`,
+		`metrics_views/mv2.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+custom_owner: team-a
+not_a_real_field: oops
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			Paths: []string{"/metrics_views/mv1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:   "duckdb",
+				Model:       "m1",
+				DisplayName: "Mv1",
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+					{Name: "foo", DisplayName: "Foo", Expression: "id"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
+					{Name: "count", DisplayName: "Count", Expression: "COUNT(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+			},
+		},
+	}
+
+	parseErrors := []*runtimev1.ParseError{
+		{
+			FilePath: "/metrics_views/mv2.yaml",
+			Message:  "field not_a_real_field not found in type",
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, parseErrors)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
