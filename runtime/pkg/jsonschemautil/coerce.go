@@ -190,24 +190,25 @@ func propertySchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, ke
 	if s.AdditionalProperties != nil {
 		return s.AdditionalProperties, defs
 	}
-	// Search combinator branches; only trust the result if exactly one branch defines the key.
+	// Search allOf branches; only trust the result if exactly one branch defines the key.
+	// allOf is a conjunction, so a property schema found in one branch is binding.
+	// anyOf/oneOf are deliberately not searched: a disjunctive branch that omits the key
+	// still accepts it by default, so a definition found in one branch is not unambiguous.
 	var found *jsonschema.Schema
 	var foundDefs map[string]*jsonschema.Schema
-	for _, branches := range [][]*jsonschema.Schema{s.AllOf, s.AnyOf, s.OneOf} {
-		for _, b := range branches {
-			b, branchDefs := resolveSchema(b, defs)
-			if b == nil {
-				continue
-			}
-			sub, subDefs := propertySchema(b, branchDefs, key)
-			if sub == nil {
-				continue
-			}
-			if found != nil {
-				return nil, nil
-			}
-			found, foundDefs = sub, subDefs
+	for _, b := range s.AllOf {
+		b, branchDefs := resolveSchema(b, defs)
+		if b == nil {
+			continue
 		}
+		sub, subDefs := propertySchema(b, branchDefs, key)
+		if sub == nil {
+			continue
+		}
+		if found != nil {
+			return nil, nil
+		}
+		found, foundDefs = sub, subDefs
 	}
 	return found, foundDefs
 }
@@ -218,23 +219,22 @@ func itemsSchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema) (*jso
 	if s.Items != nil {
 		return s.Items, defs
 	}
+	// Search allOf branches only; see propertySchema for why anyOf/oneOf are excluded.
 	var found *jsonschema.Schema
 	var foundDefs map[string]*jsonschema.Schema
-	for _, branches := range [][]*jsonschema.Schema{s.AllOf, s.AnyOf, s.OneOf} {
-		for _, b := range branches {
-			b, branchDefs := resolveSchema(b, defs)
-			if b == nil {
-				continue
-			}
-			sub, subDefs := itemsSchema(b, branchDefs)
-			if sub == nil {
-				continue
-			}
-			if found != nil {
-				return nil, nil
-			}
-			found, foundDefs = sub, subDefs
+	for _, b := range s.AllOf {
+		b, branchDefs := resolveSchema(b, defs)
+		if b == nil {
+			continue
 		}
+		sub, subDefs := itemsSchema(b, branchDefs)
+		if sub == nil {
+			continue
+		}
+		if found != nil {
+			return nil, nil
+		}
+		found, foundDefs = sub, subDefs
 	}
 	return found, foundDefs
 }

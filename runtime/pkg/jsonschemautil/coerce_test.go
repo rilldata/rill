@@ -254,6 +254,50 @@ func TestCoerceStringifiedJSON(t *testing.T) {
 			wantChanged: true,
 		},
 		{
+			name: "property defined in an allOf branch is coerced",
+			schema: `{
+				"type": "object",
+				"allOf": [
+					{"properties": {"where": {"type": "object", "properties": {"name": {"type": "string"}}}}},
+					{"properties": {"mode": {"type": "string"}}}
+				]
+			}`,
+			args:        `{"where": "{\"name\": \"country\"}"}`,
+			want:        `{"where": {"name": "country"}}`,
+			wantChanged: true,
+		},
+		{
+			name: "property defined in an anyOf branch is untouched",
+			schema: `{
+				"type": "object",
+				"anyOf": [
+					{"properties": {"where": {"type": "object", "properties": {"name": {"type": "string"}}}}},
+					{"properties": {"mode": {"type": "string"}}}
+				]
+			}`,
+			args:        `{"where": "{\"name\": \"country\"}"}`,
+			want:        `{"where": "{\"name\": \"country\"}"}`,
+			wantChanged: false,
+		},
+		{
+			name: "items defined in a oneOf branch are untouched",
+			schema: `{
+				"type": "object",
+				"properties": {
+					"dimensions": {
+						"type": "array",
+						"oneOf": [
+							{"items": {"type": "object", "properties": {"name": {"type": "string"}}}},
+							{"maxItems": 10}
+						]
+					}
+				}
+			}`,
+			args:        `{"dimensions": ["{\"name\": \"country\"}"]}`,
+			want:        `{"dimensions": ["{\"name\": \"country\"}"]}`,
+			wantChanged: false,
+		},
+		{
 			name: "unresolvable ref is untouched",
 			schema: `{
 				"type": "object",
