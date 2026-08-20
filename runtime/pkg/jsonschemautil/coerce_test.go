@@ -148,6 +148,27 @@ func TestCoerceStringifiedJSON(t *testing.T) {
 			wantChanged: false,
 		},
 		{
+			name:        "JSON string with trailing garbage is untouched",
+			schema:      coerceTestSchema,
+			args:        `{"time_range": "{\"start\": \"2024-01-01T00:00:00Z\"} trailing"}`,
+			want:        `{"time_range": "{\"start\": \"2024-01-01T00:00:00Z\"} trailing"}`,
+			wantChanged: false,
+		},
+		{
+			name:        "JSON string with trailing close brace is untouched",
+			schema:      coerceTestSchema,
+			args:        `{"time_range": "{\"start\": \"2024-01-01T00:00:00Z\"}}"}`,
+			want:        `{"time_range": "{\"start\": \"2024-01-01T00:00:00Z\"}}"}`,
+			wantChanged: false,
+		},
+		{
+			name:        "JSON string with trailing close bracket is untouched",
+			schema:      coerceTestSchema,
+			args:        `{"dimensions": "[{\"name\": \"country\"}]]"}`,
+			want:        `{"dimensions": "[{\"name\": \"country\"}]]"}`,
+			wantChanged: false,
+		},
+		{
 			name:        "well-formed args are unchanged",
 			schema:      coerceTestSchema,
 			args:        `{"metrics_view": "mv", "time_range": {"start": "2024-01-01T00:00:00Z"}, "dimensions": [{"name": "country"}], "limit": 100}`,

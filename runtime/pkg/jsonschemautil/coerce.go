@@ -174,7 +174,8 @@ func decodeJSONString(s, delim string) (any, bool) {
 	if err := dec.Decode(&v); err != nil {
 		return nil, false
 	}
-	if dec.More() {
+	// Reject trailing content after the decoded value (dec.More() misses trailing "}" or "]").
+	if strings.TrimSpace(trimmed[dec.InputOffset():]) != "" {
 		return nil, false
 	}
 	return v, true
