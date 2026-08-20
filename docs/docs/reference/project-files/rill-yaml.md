@@ -176,6 +176,8 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
 
   - **`rill.ai.max_time_range_days`** - _[integer]_ - Maximum time range allowed for AI tool queries, in days. Set to 0 for no limit. Default: 0.
 
+  - **`rill.ai.mcp_tolerant_args`** - _[boolean]_ - Tolerantly decode MCP tool-call arguments where object/array-typed fields arrive as JSON-encoded strings, to work around a serialization bug in some MCP clients. Default: true.
+
   - **`rill.strict_resolver_properties`** - _[boolean]_ - Return an error when a resolver contains properties not recognized by its implementation. Default: false.
 
   - **`rill.strict_model_properties`** - _[boolean]_ - Return an error when a model contains unmapped properties. Default: false.
