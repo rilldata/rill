@@ -132,6 +132,33 @@ func effectiveTypes(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, de
 		}
 		return types, true
 	}
+	// allOf is a conjunction: the value must satisfy every branch,
+	// so the allowed types are the intersection of the branches' known type sets.
+	// Branches without a type constraint don't restrict the conjunction.
+	if len(s.AllOf) > 0 {
+		var types map[string]bool
+		known := false
+		for _, b := range s.AllOf {
+			branchTypes, ok := effectiveTypes(b, defs, depth+1)
+			if !ok {
+				continue
+			}
+			if !known {
+				types, known = branchTypes, true
+				continue
+			}
+			for t := range types {
+				if !branchTypes[t] {
+					delete(types, t)
+				}
+			}
+		}
+		if known {
+			return types, true
+		}
+	}
+	// anyOf/oneOf is a disjunction: the allowed types are the union of the branches' type sets,
+	// which is only known if every branch's type set is known.
 	if len(s.AnyOf) > 0 || len(s.OneOf) > 0 {
 		types := make(map[string]bool)
 		for _, branches := range [][]*jsonschema.Schema{s.AnyOf, s.OneOf} {

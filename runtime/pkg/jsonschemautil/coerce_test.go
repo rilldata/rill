@@ -298,6 +298,48 @@ func TestCoerceStringifiedJSON(t *testing.T) {
 			wantChanged: false,
 		},
 		{
+			name: "allOf-wrapped ref is coerced",
+			schema: `{
+				"type": "object",
+				"properties": {
+					"time_range": {"allOf": [{"$ref": "#/$defs/TimeRange"}]}
+				},
+				"$defs": {
+					"TimeRange": {
+						"type": "object",
+						"properties": {"start": {"type": "string"}}
+					}
+				}
+			}`,
+			args:        `{"time_range": "{\"start\": \"2024-01-01T00:00:00Z\"}"}`,
+			want:        `{"time_range": {"start": "2024-01-01T00:00:00Z"}}`,
+			wantChanged: true,
+		},
+		{
+			name: "allOf branches intersecting to object are coerced",
+			schema: `{
+				"type": "object",
+				"properties": {
+					"where": {"allOf": [{"type": ["object", "string"]}, {"type": "object"}]}
+				}
+			}`,
+			args:        `{"where": "{\"name\": \"country\"}"}`,
+			want:        `{"where": {"name": "country"}}`,
+			wantChanged: true,
+		},
+		{
+			name: "allOf branch allowing string is untouched",
+			schema: `{
+				"type": "object",
+				"properties": {
+					"where": {"allOf": [{"type": ["object", "string"]}]}
+				}
+			}`,
+			args:        `{"where": "{\"name\": \"country\"}"}`,
+			want:        `{"where": "{\"name\": \"country\"}"}`,
+			wantChanged: false,
+		},
+		{
 			name: "unresolvable ref is untouched",
 			schema: `{
 				"type": "object",
