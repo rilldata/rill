@@ -219,6 +219,15 @@ export class CanvasEntity {
       this.dashboardProvider.metricsViewsProvider,
       this.dashboardProvider.yamlConfigProvider,
     );
+    // A component that filters through its own interactions, a pivot click to filter for example,
+    // keeps its active state. Any other filter change, the filter bar or another component,
+    // releases it so the component drops its click selections.
+    // Not unsubscribed: the emitter belongs to a manager this entity owns, so the two are
+    // discarded together, and `dispose` can be followed by another `acquire`.
+    this.expressionFilterManager.on("filter-changed", ({ source }) => {
+      if (source && source === get(this.activeComponent)) return;
+      this.clearActiveComponent();
+    });
 
     this.processSpec(this.spec);
   }
@@ -304,8 +313,6 @@ export class CanvasEntity {
     this.timeManager.onSpecChange(response);
 
     this.titleStore.set(validSpec.displayName ?? "");
-
-    // TODO: onFilterChange for non-pivot-click-to-filter and call this.clearActiveComponent.
 
     this.processRows({ canvas, components, metricsViews, filePath });
   };

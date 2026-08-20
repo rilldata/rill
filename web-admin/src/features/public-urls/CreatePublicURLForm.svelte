@@ -30,7 +30,6 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { getDashboardResourceFromPage } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
   import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
@@ -38,6 +37,11 @@
     CanvasDashboardConfigProvider,
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import { onDestroy } from "svelte";
+
+  let {
+    dashboardResource,
+  }: { dashboardResource: { kind: ResourceKind; name: string } } = $props();
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
@@ -50,13 +54,13 @@
   let popoverOpen = $state(false);
   let copied = $state(false);
 
-  // Get expression filter manager for the resource.
-  const dashboardResource = getDashboardResourceFromPage(page);
-  const isExplore = dashboardResource?.kind === ResourceKind.Explore;
+  // svelte-ignore state_referenced_locally
+  const { kind: dashboardKind, name: dashboardName } = dashboardResource;
+  const isExplore = dashboardKind === ResourceKind.Explore;
 
   const dashboardConfigProvider = isExplore
-    ? new ExploreDashboardConfigProvider(runtimeClient, dashboardResource?.name)
-    : new CanvasDashboardConfigProvider(runtimeClient, dashboardResource?.name);
+    ? new ExploreDashboardConfigProvider(runtimeClient, dashboardName)
+    : new CanvasDashboardConfigProvider(runtimeClient, dashboardName);
   const expressionFilterManager = new ExpressionFilterManager(
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
@@ -70,13 +74,12 @@
   const hasSomeFilter = $derived(Object.keys(exprByMetricsView).length > 0);
 
   const sanitisedFilterState = createFieldsAndStateForKind(
-    dashboardResource?.kind,
+    dashboardKind,
     expressionFilterManager,
   );
   let { fields, sanitizedState, queryTimeStart, queryTimeEnd } = $derived(
     $sanitisedFilterState,
   );
-  $effect(() => console.log($sanitisedFilterState));
 
   const formId = "create-public-url-form";
 
@@ -160,6 +163,10 @@
       copied = false;
     }, 2_000);
   }
+
+  onDestroy(() => {
+    dashboardConfigProvider.cleanup?.();
+  });
 </script>
 
 {#if !url}

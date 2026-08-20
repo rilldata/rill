@@ -216,7 +216,6 @@ export function createStateManagers({
     expressionFilterManager,
     cleanup: () => {
       dashboardProvider.cleanup?.();
-      dashboardProvider.metricsViewsProvider.cleanup();
       stateChangeUnsub();
     },
   };

@@ -284,8 +284,10 @@ export function createPivotClickToFilter(
           ? values.filter((v) => !stillNeeded.has(v))
           : values;
         if (orphanedValues.length > 0) {
-          filterManager.dimensionFilterAction(dimensionName, (dfm) =>
-            dfm.removeSelectedValues(orphanedValues as string[]),
+          filterManager.dimensionFilterAction(
+            dimensionName,
+            (dfm) => dfm.removeSelectedValues(orphanedValues as string[]),
+            componentId,
           );
         }
       }
@@ -293,8 +295,10 @@ export function createPivotClickToFilter(
 
     // Add new values
     for (const { dimensionName, values } of additions) {
-      filterManager.dimensionFilterAction(dimensionName, (dfm) =>
-        dfm.appendSelectedValues(values as string[]),
+      filterManager.dimensionFilterAction(
+        dimensionName,
+        (dfm) => dfm.appendSelectedValues(values as string[]),
+        componentId,
       );
     }
 

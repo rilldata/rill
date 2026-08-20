@@ -194,9 +194,13 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
     metricsViewName,
     exploreName,
   );
+  const metricsViewProvider = new MetricsViewsProvider(client, [
+    metricsViewName,
+  ]);
+  const yamlConfigProvider = new YAMLConfigProvider();
   const filters = new ExpressionFilterManager(
-    new MetricsViewsProvider(client, [metricsViewName]),
-    new YAMLConfigProvider(),
+    metricsViewProvider,
+    yamlConfigProvider,
   );
   filters.setExprForMetricsView(metricsViewName, aggregationRequest.where);
 
@@ -206,7 +210,14 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
     showTimeComparison: !!selectedComparisonTimeRange,
     selectedTimezone: timeRange?.timeZone ?? "UTC",
   });
-  return { filters, timeControls };
+  return {
+    filters,
+    timeControls,
+    cleanup: () => {
+      metricsViewProvider.cleanup();
+      yamlConfigProvider.cleanup?.();
+    },
+  };
 }
 
 export function extractRowsAndColumns(

@@ -259,17 +259,28 @@
       resetSearchText();
       curPinned = pinned;
       curRequired = required;
-    } else {
-      persistPinnedAndRequired();
+      return;
+    }
 
-      // Select mode applies when the dropdown closes. The other modes only apply through the Apply
-      // button, so drop whatever they staged.
-      if (proxyDimensionManager.mode === DimensionFilterMode.Select) {
-        dimensionManager.apply(proxyDimensionManager);
-      } else {
-        proxyDimensionManager.apply(dimensionManager);
-        resetSearchText();
-      }
+    persistPinnedAndRequired();
+
+    // Switching the mode to Select carries no values over from Contains, so a proxy with no values
+    // and an applied filter with no values means the user staged nothing. Committing that would
+    // clear the applied Contains filter, which there is no Apply button in Select mode to undo.
+    const stagedNothing =
+      proxyDimensionManager.selectedValues.length === 0 &&
+      dimensionManager.selectedValues.length === 0;
+
+    // Select mode applies when the dropdown closes. The other modes only apply through the Apply
+    // button, so drop whatever they staged.
+    if (
+      proxyDimensionManager.mode === DimensionFilterMode.Select &&
+      !stagedNothing
+    ) {
+      dimensionManager.apply(proxyDimensionManager);
+    } else {
+      proxyDimensionManager.apply(dimensionManager);
+      resetSearchText();
     }
   }
 

@@ -52,9 +52,12 @@
   let missingRequiredFilters = $derived(
     getMissingRequiredFilters(
       expressionFilterManager,
+      dashboardProvider.metricsViewsProvider,
       dashboardProvider.yamlConfigProvider,
     ),
   );
+  // Note that this can be false when metricsViewsProvider is resolving.
+  // TODO: make sure parent waits for metricsViewsProvider.ready
   let hasMissingRequired = $derived(missingRequiredFilters.length > 0);
 
   $effect(() => {

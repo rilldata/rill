@@ -64,7 +64,7 @@ export class MetricsViewsProvider {
   public ready: boolean;
   public metricsViewNames = $state<string[]>([]);
 
-  public cleanup: () => void; // TODO: ensure this is called by creators
+  public cleanup: () => void;
 
   private resources: V1Resource[] = [];
   private readonly timeRangeUnsubs = new Map<string, () => void>();

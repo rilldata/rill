@@ -23,10 +23,15 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/MetricsViewFilterManager.svelte.ts";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import type {
+  FilterChangeSource,
+  FilterEvents,
+} from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 import { untrack } from "svelte";
 
-type ExpressionFilterManagerEvents = {
-  "state-changed": void;
+type ParamFilterManagers = {
+  dimensionsMap: Record<string, DimensionFilterManager[]>;
+  measuresMap: Record<string, MeasureFilterManager[]>;
 };
 
 /**
@@ -59,7 +64,12 @@ export class ExpressionFilterManager {
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
 
-  private events = new EventEmitter<ExpressionFilterManagerEvents>();
+  // Managers for the filters in the param, grouped by dimension or measure name.
+  private paramFilterManagers: ParamFilterManagers;
+
+  // Shared with every manager below this one, so a chip edit reports itself
+  // without the managers in between having to forward it. See `filter-events.ts`.
+  private events = new EventEmitter<FilterEvents>();
   public readonly on = this.events.on.bind(
     this.events,
   ) as typeof this.events.on;
@@ -92,6 +102,7 @@ export class ExpressionFilterManager {
                 dimensionsWithInlistFilter,
                 existingManagers,
                 this.yamlConfigProvider,
+                this.events,
               ),
             ];
           })
@@ -109,12 +120,16 @@ export class ExpressionFilterManager {
         ]),
       ),
     );
+    this.paramFilterManagers = $derived.by(() =>
+      this.buildParamFilterManagers(),
+    );
     this.isComplexFilter = $derived(
-      Object.values(this.managerByMetricsView).some((m) => m.isComplexFilter),
+      Object.values(this.managerByMetricsView).some((m) => m.isComplexFilter) ||
+        hasDivergentFilters(this.paramFilterManagers),
     );
 
     this.filterManagers = $derived.by(() =>
-      this.buildFilterManagers(this.buildParamFilterManagers()),
+      this.buildFilterManagers(this.paramFilterManagers),
     );
     this.inList = $derived(
       this.filterManagers.dimensions
@@ -191,6 +206,10 @@ export class ExpressionFilterManager {
 
     // Managers to url.
     $effect(() => {
+      // Every leaf expression is dropped until the specs land, so writing back before that would
+      // strip the filter the url holds and lose it for good.
+      if (!this.metricsViewsProvider.ready) return;
+
       const newUrl = new URL(getUrl());
       this.applyFilterToParams(newUrl.searchParams);
       if (newUrl.search === getUrl().search) return;
@@ -285,23 +304,15 @@ export class ExpressionFilterManager {
       }
     });
 
-    // For non-singleParam, a singular `f=...` is needed to support legacy filters in canvas.
-    // So copy it to all metrics views, overriding any existing value. Note that there shouldn't be existing values at all.
+    // A singular `f=...` is a legacy canvas filter. `setUrlParams` folds it into every metrics view,
+    // so the per metrics view params written above already carry it and it can be dropped.
+    // Until the names arrive there is nothing to fold it into, so it has to stay.
     const metricsViewsLoaded =
       this.metricsViewsProvider.metricsViewNames.length > 0 &&
       this.metricsViewsProvider.ready;
-    if (
-      singleParam ||
-      !searchParams.has(ExploreStateURLParams.Filters) ||
-      !metricsViewsLoaded
-    )
-      return;
-
-    const param = searchParams.get(ExploreStateURLParams.Filters)!;
-    this.metricsViewsProvider.metricsViewNames.forEach((mv) =>
-      searchParams.set(`${ExploreStateURLParams.Filters}.${mv}`, param),
-    );
-    searchParams.delete(ExploreStateURLParams.Filters);
+    if (!singleParam && metricsViewsLoaded) {
+      searchParams.delete(ExploreStateURLParams.Filters);
+    }
   }
 
   /** Adds a chip for a filter that has no value yet. The chip opens as soon as it is rendered. */
@@ -312,6 +323,7 @@ export class ExpressionFilterManager {
       const dfm = DimensionFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
+        { events: this.events },
       );
       if (!dfm) return;
 
@@ -323,6 +335,7 @@ export class ExpressionFilterManager {
       const mfm = MeasureFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
+        { events: this.events },
       );
       if (!mfm) return;
 
@@ -337,16 +350,22 @@ export class ExpressionFilterManager {
   public dimensionFilterAction(
     name: string,
     callback: (dimensionFilterManager: DimensionFilterManager) => any,
+    // Anything other than the filter bar reaches the managers through here,
+    // so this is where a caller names itself as the cause of the change.
+    source?: FilterChangeSource,
   ) {
     const dimensionFilterManager =
       this.filterManagersMap[name] ??
       DimensionFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
+        { events: this.events },
       );
     if (!(dimensionFilterManager instanceof DimensionFilterManager)) return;
 
-    const ret = callback(dimensionFilterManager);
+    const ret = dimensionFilterManager.runWithSource(source, () =>
+      callback(dimensionFilterManager),
+    );
     // Only add dimension filter if the action resulted in a valid expression
     if (dimensionFilterManager.expr) {
       Object.values(this.managerByMetricsView).forEach((m) =>
@@ -359,16 +378,20 @@ export class ExpressionFilterManager {
   public measureFilterAction(
     name: string,
     callback: (measureFilterManager: MeasureFilterManager) => any,
+    source?: FilterChangeSource,
   ) {
     const measureFilterManager =
       this.filterManagersMap[name] ??
       MeasureFilterManager.createForMetricsViews(
         this.metricsViewsProvider,
         name,
+        { events: this.events },
       );
     if (!(measureFilterManager instanceof MeasureFilterManager)) return;
 
-    const ret = callback(measureFilterManager);
+    const ret = measureFilterManager.runWithSource(source, () =>
+      callback(measureFilterManager),
+    );
     // Only add measure filter if the action resulted in a valid expression
     if (measureFilterManager.expr) {
       Object.values(this.managerByMetricsView).forEach((m) =>
@@ -381,6 +404,8 @@ export class ExpressionFilterManager {
   public clear() {
     this.temporaryFilterName = undefined;
     this.setUrlParams(new URLSearchParams());
+    // Clearing goes through the param rather than the managers, so it has to report itself.
+    this.events.emit("filter-changed", { source: undefined });
   }
 
   /**
@@ -432,7 +457,7 @@ export class ExpressionFilterManager {
   }
 
   /** Managers for the filters in the param, keyed by name and in param order. */
-  private buildParamFilterManagers() {
+  private buildParamFilterManagers(): ParamFilterManagers {
     const dimensionsMap = {} as Record<string, DimensionFilterManager[]>;
     const measuresMap = {} as Record<string, MeasureFilterManager[]>;
 
@@ -458,10 +483,7 @@ export class ExpressionFilterManager {
   private buildFilterManagers({
     dimensionsMap,
     measuresMap,
-  }: {
-    dimensionsMap: Record<string, DimensionFilterManager[]>;
-    measuresMap: Record<string, MeasureFilterManager[]>;
-  }) {
+  }: ParamFilterManagers) {
     const dimensions: DimensionFilterManager[] = [];
     const measures: MeasureFilterManager[] = [];
     const added = new Set<string>();
@@ -497,6 +519,23 @@ export class ExpressionFilterManager {
 
     return { dimensions, measures };
   }
+}
+
+/**
+ * True when a dimension or measure is filtered differently in different metrics views.
+ * Only one of those filters gets a chip, and editing it leaves the others in place,
+ * so the filter bar falls back to the read only advanced filter instead.
+ */
+function hasDivergentFilters({
+  dimensionsMap,
+  measuresMap,
+}: ParamFilterManagers) {
+  const diverges = (managers: DimensionOrMeasureManager[]) =>
+    new Set(managers.map((manager) => manager.param).filter(Boolean)).size > 1;
+  return (
+    Object.values(dimensionsMap).some(diverges) ||
+    Object.values(measuresMap).some(diverges)
+  );
 }
 
 /**

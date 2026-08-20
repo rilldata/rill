@@ -80,6 +80,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     if (!match) return;
 
     this.metricsViewName = match[1];
+    // TODO: find a way to cleanup
     this.localExpressionFilters =
       this.parent.expressionFilterManager.createLocalFilterStore(
         this.metricsViewName,

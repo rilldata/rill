@@ -53,7 +53,14 @@
   // svelte-ignore state_referenced_locally
   expressionFilterManager.syncWithUrl(
     () => page.url,
-    (url) => void goto(url),
+    (url) => {
+      // `handleCanvasRedirect` treats an empty search as a fresh visit and restores the last
+      // visited state, the home bookmark or the yaml defaults, which would bring back the filters
+      // that were just cleared. `clear` keeps the search non-empty; nothing else reads it.
+      url.searchParams.delete("clear");
+      if (!url.search) url.searchParams.set("clear", "true");
+      void goto(url);
+    },
   );
 
   let selectedRange = $derived($rangeStore);

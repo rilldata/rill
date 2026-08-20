@@ -5,6 +5,7 @@
     getDimensionDisplayName,
     getMeasureDisplayName,
   } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     missingRequiredFilters,
@@ -50,13 +51,12 @@
   >
     <WarningIcon size="32px" className="text-amber-500" />
     <h2 class="text-lg font-semibold text-fg-primary">
-      Select a value to continue
+      {m.filter_required_missing_title()}
     </h2>
     <p class="text-sm text-fg-secondary">
-      This dashboard requires values for the following filter{missingRequiredFilters.length >
-      1
-        ? "s"
-        : ""}:
+      {m.filter_required_missing_description({
+        count: missingRequiredFilters.length,
+      })}
     </p>
     <ul
       class="text-sm text-fg-primary flex flex-wrap justify-center gap-x-2 gap-y-1"

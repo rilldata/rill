@@ -25,6 +25,8 @@
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { readable } from "svelte/store";
+  import { getDashboardResourceFromPage } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
+  import { page } from "$app/stores";
 
   export let createMagicAuthTokens: boolean;
   // Provide canvas identifiers to enable the "PDF" tab (canvas dashboards only).
@@ -58,6 +60,8 @@
     emptyLayout;
   // Gates the all-tabs/active-tab option in the PDF export form.
   $: hasTabGroups = $layoutStore.some((block) => block.kind === "tab-group");
+
+  $: dashboardResource = getDashboardResourceFromPage($page);
 
   function onCopy() {
     navigator.clipboard.writeText(window.location.href).catch(console.error);
@@ -115,8 +119,12 @@
         </div>
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
-        {#if createMagicAuthTokens && !$hidePublicUrl}
-          <CreatePublicURLForm />
+        {#if createMagicAuthTokens && !$hidePublicUrl && dashboardResource}
+          <!-- Make sure to create a fresh component for different dashboard.
+               This ensures lifecycle management in CreatePublicURLForm is simple. -->
+          {#key `${dashboardResource.kind}:${dashboardResource.name}`}
+            <CreatePublicURLForm {dashboardResource} />
+          {/key}
         {/if}
       </TabsContent>
       {#if runPdfExport}

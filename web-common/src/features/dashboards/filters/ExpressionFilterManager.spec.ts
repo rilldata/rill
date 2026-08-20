@@ -2,7 +2,10 @@ import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboard
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterManager.svelte.ts";
-import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options.ts";
+import {
+  MeasureFilterOperation,
+  MeasureFilterType,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import {
   createAndExpression,
@@ -306,6 +309,41 @@ describe("setUrlParams", () => {
     ).toBe(true);
   });
 
+  it("flags a dimension filtered differently in each metrics view as complex", () => {
+    const filterManager = createFilterManager();
+
+    // A single chip can only show one of the two, and editing it would leave the mirror on
+    // `Facebook`, so the whole filter falls back to the read only advanced filter.
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+      }),
+    );
+
+    expect(filterManager.isComplexFilter).toBe(true);
+    // Neither metrics view is complex on its own; each holds a single plain filter.
+    expect(
+      Object.values(filterManager.managerByMetricsView).some(
+        (manager) => manager.isComplexFilter,
+      ),
+    ).toBe(false);
+  });
+
+  it("does not flag the same filter in every metrics view as complex", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(filterManager.filterManagers.dimensions).toHaveLength(1);
+  });
+
   it("clears the temporary filter name", () => {
     const filterManager = createFilterManager();
 
@@ -322,6 +360,58 @@ describe("setUrlParams", () => {
     expect(names(filterManager.filterManagers.dimensions)).toEqual([
       AD_BIDS_PUBLISHER_DIMENSION,
     ]);
+  });
+});
+
+describe("applyFilterToParams", () => {
+  it("writes a param per metrics view and drops the legacy singular one", () => {
+    const filterManager = createFilterManager();
+    filterManager.setUrlParams(
+      sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
+    );
+
+    // The singular param seeded every metrics view, so keeping it would be a second source of
+    // truth: removing the chip could not delete it, and the next read would restore the filter.
+    const searchParams = sharedParam(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+    filterManager.applyFilterToParams(searchParams);
+
+    expect(searchParams.toString()).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }).toString(),
+    );
+  });
+
+  it("leaves nothing behind once the filter is removed", () => {
+    const filterManager = createFilterManager();
+    filterManager.setUrlParams(
+      sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
+    );
+    filterManager.filterManagers.dimensions[0].clear();
+
+    const searchParams = sharedParam(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+    filterManager.applyFilterToParams(searchParams);
+
+    expect(searchParams.toString()).toEqual("");
+  });
+
+  it("keeps every filter under the singular param when asked for one", () => {
+    const filterManager = createFilterManager();
+    filterManager.setUrlParams(
+      sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
+    );
+
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams, true);
+
+    expect(searchParams.toString()).toEqual(
+      sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`).toString(),
+    );
   });
 });
 
@@ -861,5 +951,106 @@ describe("exprByMetricsView", () => {
     expect(get(filterManager.exprByMetricsViewStore)).toEqual(
       filterManager.exprByMetricsView,
     );
+  });
+});
+
+describe("filter-changed", () => {
+  /** Records the source of every `filter-changed` the manager reports. */
+  function recordSources(filterManager: ExpressionFilterManager) {
+    const sources: (string | undefined)[] = [];
+    cleanups.push(
+      filterManager.on("filter-changed", ({ source }) => {
+        sources.push(source);
+      }),
+    );
+    return sources;
+  }
+
+  it("reports a chip edit with no source", () => {
+    const filterManager = createFilterManager();
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+    const sources = recordSources(filterManager);
+
+    // The chips hold the managers and mutate them directly, without going through the root.
+    filterManager.filterManagers.dimensions[0].toggleValue("Facebook", false);
+
+    expect(sources).toEqual([undefined]);
+  });
+
+  it("reports the source an action was applied with", () => {
+    const filterManager = createFilterManager();
+    const sources = recordSources(filterManager);
+
+    filterManager.dimensionFilterAction(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      (manager) => manager.setSelectedValues(["Google"], false),
+      "component-1",
+    );
+    filterManager.measureFilterAction(
+      AD_BIDS_IMPRESSIONS_MEASURE,
+      (manager) =>
+        manager.setMeasureFilter(AD_BIDS_PUBLISHER_DIMENSION, {
+          measure: AD_BIDS_IMPRESSIONS_MEASURE,
+          type: MeasureFilterType.Value,
+          operation: MeasureFilterOperation.GreaterThan,
+          value1: "10",
+          value2: "",
+        }),
+      "component-2",
+    );
+
+    expect(sources).toEqual(["component-1", "component-2"]);
+  });
+
+  it("does not carry the source past the action it was given to", () => {
+    const filterManager = createFilterManager();
+    const sources = recordSources(filterManager);
+
+    filterManager.dimensionFilterAction(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      (manager) => manager.setSelectedValues(["Google"], false),
+      "component-1",
+    );
+    // Same manager, edited from the chip this time.
+    filterManager.filterManagersMap[AD_BIDS_PUBLISHER_DIMENSION].clear();
+
+    expect(sources).toEqual(["component-1", undefined]);
+  });
+
+  it("reports clear with no source", () => {
+    const filterManager = createFilterManager();
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+    const sources = recordSources(filterManager);
+
+    filterManager.clear();
+
+    expect(sources).toEqual([undefined]);
+  });
+
+  it("stays quiet while the param is parsed into managers", () => {
+    const filterManager = createFilterManager();
+    const sources = recordSources(filterManager);
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_PUBLISHER_DIMENSION} having (${AD_BIDS_IMPRESSIONS_MEASURE} gt 10)`,
+      }),
+    );
+    // Reading the chips rebuilds every manager from the param.
+    expect(filterManager.filterManagers.dimensions).toHaveLength(1);
+    expect(filterManager.filterManagers.measures).toHaveLength(1);
+    flushSync();
+
+    // A component that filters writes its change back to the url, which lands here.
+    // Reporting the reparse would look like a second, sourceless change.
+    expect(sources).toEqual([]);
   });
 });

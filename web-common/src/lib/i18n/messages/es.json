@@ -1251,6 +1251,17 @@
   "filter_paste_list_hint": "Pegar una lista separada por comas o \\n",
   "filter_pin": "Fijar filtro",
   "filter_pin_tooltip": "Haz clic para fijar o desfijar: mantener este filtro visible en la parte superior para que otros usuarios no puedan eliminarlo.",
+  "filter_required_missing_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Este dashboard requiere un valor para el siguiente filtro:",
+        "countPlural=other": "Este dashboard requiere valores para los siguientes filtros:"
+      }
+    }
+  ],
+  "filter_required_missing_title": "Selecciona un valor para continuar",
   "filter_required_tooltip": "Haz clic para marcar este filtro como obligatorio. Los visualizadores deben establecer un valor para que el dashboard se cargue.",
   "filter_unpin": "Desfijar filtro",
   "footer_report_issue": "Reportar un problema",

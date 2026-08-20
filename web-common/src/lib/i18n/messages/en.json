@@ -1242,6 +1242,17 @@
   "filter_paste_list_hint": "Paste a list separated by commas or \\n",
   "filter_pin": "Pin filter",
   "filter_pin_tooltip": "Click to pin or unpin : Keep this filter visible at the top so it can't be removed by other users.",
+  "filter_required_missing_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "This dashboard requires a value for the following filter:",
+        "countPlural=other": "This dashboard requires values for the following filters:"
+      }
+    }
+  ],
+  "filter_required_missing_title": "Select a value to continue",
   "filter_required_tooltip": "Click to mark this filter as required. Viewers must set a value for the dashboard to load.",
   "filter_unpin": "Unpin filter",
   "footer_report_issue": "Report an issue",

@@ -14,6 +14,10 @@ import {
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
+import type {
+  FilterChangeSource,
+  FilterEventEmitter,
+} from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 
 export class DimensionFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
@@ -26,6 +30,8 @@ export class DimensionFilterManager {
   public exclude = $state(false);
 
   private oldMode: DimensionFilterMode;
+  // Cause of the change currently being applied. See `runWithSource`.
+  private activeSource: FilterChangeSource;
 
   public constructor(
     public readonly name: string,
@@ -35,6 +41,9 @@ export class DimensionFilterManager {
     // Filter dropdown doesnt immediately apply changes.
     // This marks this manager as ephemeral, it will not notify about mode changes.
     private readonly ephemeral: boolean = false,
+    // Emitter shared by every manager under an `ExpressionFilterManager`.
+    // A manager built outside one, the ephemeral clone for the dropdown for example, has none.
+    private readonly events: FilterEventEmitter | undefined = undefined,
   ) {
     this.reconcile(initExpr, isInList ? [name] : []);
   }
@@ -42,14 +51,22 @@ export class DimensionFilterManager {
   public static createForMetricsViews(
     metricsViewsProvider: MetricsViewsProvider,
     name: string,
-    mvName?: string,
-    initExpr?: V1Expression,
-    isInList?: boolean,
+    {
+      metricsViewName,
+      initExpr,
+      isInList,
+      events,
+    }: {
+      metricsViewName?: string;
+      initExpr?: V1Expression;
+      isInList?: boolean;
+      events?: FilterEventEmitter;
+    } = {},
   ) {
     const dimensionSpecs = metricsViewsProvider.dimensionSpecs[name];
     if (!dimensionSpecs) return undefined;
-    const dimensionSpec = mvName
-      ? dimensionSpecs[mvName]
+    const dimensionSpec = metricsViewName
+      ? dimensionSpecs[metricsViewName]
       : Object.values(dimensionSpecs)[0];
     if (!dimensionSpec) return undefined;
 
@@ -58,6 +75,8 @@ export class DimensionFilterManager {
       getDimensionDisplayName(dimensionSpec),
       initExpr,
       isInList,
+      false, // not ephemeral
+      events,
     );
   }
 
@@ -177,6 +196,20 @@ export class DimensionFilterManager {
     this.commit();
   }
 
+  /**
+   * Runs `fn` with `source` recorded as the cause of whatever it changes.
+   * The filter bar mutates the managers directly, so only the callers that are not
+   * the filter bar, a chart click to filter for example, have a source to record.
+   */
+  public runWithSource<T>(source: FilterChangeSource, fn: () => T): T {
+    this.activeSource = source;
+    try {
+      return fn();
+    } finally {
+      this.activeSource = undefined;
+    }
+  }
+
   public commit(notify: boolean = true) {
     switch (this.mode) {
       case DimensionFilterMode.Select:
@@ -214,6 +247,12 @@ export class DimensionFilterManager {
           this.mode === DimensionFilterMode.InList ? [this.name] : [],
         )
       : "";
+
+    // `notify` is false while the filter param is being parsed, which rebuilds every manager.
+    // Reporting those would make the filter that is already applied look like a fresh change.
+    if (notify) {
+      this.events?.emit("filter-changed", { source: this.activeSource });
+    }
   }
 }
 

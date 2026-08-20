@@ -171,6 +171,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
   destroy() {
     this.unsubscribeSpec?.();
+    this.localExpressionFilters.metricsViewsProvider.cleanup();
+    this.localExpressionFilters.yamlConfigProvider.cleanup?.();
   }
 
   update(resource: V1Resource, path: ComponentPath) {

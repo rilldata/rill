@@ -42,6 +42,7 @@
     CanvasDashboardConfigProvider,
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import { onDestroy } from "svelte";
 
   let {
     organization,
@@ -65,24 +66,21 @@
 
   const runtimeClient = useRuntimeClient();
 
-  let { name: resourceName, kind: resourceKind } = $derived(resource);
-  let dashboardConfigProvider = $derived(
+  // svelte-ignore state_referenced_locally
+  const { name: resourceName, kind: resourceKind } = resource;
+  const dashboardConfigProvider =
     resourceKind === ResourceKind.Canvas
       ? new CanvasDashboardConfigProvider(runtimeClient, resourceName)
-      : new ExploreDashboardConfigProvider(runtimeClient, resourceName),
+      : new ExploreDashboardConfigProvider(runtimeClient, resourceName);
+  const expressionFilterManager = new ExpressionFilterManager(
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
   );
-  let expressionFilterManager = $derived(
-    new ExpressionFilterManager(
-      dashboardConfigProvider.metricsViewsProvider,
-      dashboardConfigProvider.yamlConfigProvider,
-    ),
-  );
-  let { setUrlParams } = $derived(expressionFilterManager);
 
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
   let curUrlParams = $derived(page.url.searchParams);
-  $effect(() => setUrlParams(curUrlParams));
+  $effect(() => expressionFilterManager.setUrlParams(curUrlParams));
 
   let timeFilterState = $state<
     | {
@@ -154,8 +152,7 @@
         displayTimeRange: timeRange,
         selectedTimeRange,
       };
-    } catch (e) {
-      console.log(e);
+    } catch {
       timeFilterState = undefined;
     }
   }
@@ -243,6 +240,10 @@
   let error = $derived(
     getRpcErrorMessage($bookmarkCreator.error ?? $bookmarkUpdater.error),
   );
+
+  onDestroy(() => {
+    dashboardConfigProvider.cleanup?.();
+  });
 </script>
 
 <Dialog.Root

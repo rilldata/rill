@@ -13,7 +13,6 @@ export class DashboardConfigProvider {
   public readonly metricsViewsProvider: MetricsViewsProvider;
   public readonly yamlConfigProvider: YAMLConfigProvider;
 
-  // TODO: ensure cleanup is called
   public cleanup: (() => void) | undefined = undefined;
 
   public constructor(runtimeClient: RuntimeClient) {
@@ -29,7 +28,7 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
     const getExploreQuery = createRuntimeServiceGetExplore(runtimeClient, {
       name: exploreName,
     });
-    this.cleanup = getExploreQuery.subscribe((getExploreResp) => {
+    const getExploreUnsub = getExploreQuery.subscribe((getExploreResp) => {
       const exploreSpec =
         getExploreResp.data?.explore?.explore?.state?.validSpec ?? {};
 
@@ -39,6 +38,12 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
 
       // this.yamlConfigProvider.update() // TODO: once we have this support for explore
     });
+
+    this.cleanup = () => {
+      getExploreUnsub();
+      this.metricsViewsProvider.cleanup();
+      this.yamlConfigProvider.cleanup?.();
+    };
   }
 }
 
@@ -49,24 +54,32 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
     const resolveCanvasQuery = createQueryServiceResolveCanvas(runtimeClient, {
       canvas: canvasName,
     });
-    this.cleanup = resolveCanvasQuery.subscribe((resolveCanvasResp) => {
-      const canvasSpec =
-        resolveCanvasResp.data?.canvas?.canvas?.state?.validSpec ?? {};
+    const resolveCanvasUnsub = resolveCanvasQuery.subscribe(
+      (resolveCanvasResp) => {
+        const canvasSpec =
+          resolveCanvasResp.data?.canvas?.canvas?.state?.validSpec ?? {};
 
-      this.metricsViewsProvider.setMetricsViewNames(
-        Object.keys(resolveCanvasResp.data?.referencedMetricsViews ?? {}),
-      );
+        this.metricsViewsProvider.setMetricsViewNames(
+          Object.keys(resolveCanvasResp.data?.referencedMetricsViews ?? {}),
+        );
 
-      const defaultFilters = Object.fromEntries(
-        Object.entries(canvasSpec.defaultPreset?.filterExpr ?? {}).map(
-          ([mv, sqlFilter]) => [mv, sqlFilter.expression],
-        ),
-      );
-      this.yamlConfigProvider.update(
-        defaultFilters,
-        canvasSpec.pinnedFilters ?? [],
-        canvasSpec.requiredFilters ?? [],
-      );
-    });
+        const defaultFilters = Object.fromEntries(
+          Object.entries(canvasSpec.defaultPreset?.filterExpr ?? {}).map(
+            ([mv, sqlFilter]) => [mv, sqlFilter.expression],
+          ),
+        );
+        this.yamlConfigProvider.update(
+          defaultFilters,
+          canvasSpec.pinnedFilters ?? [],
+          canvasSpec.requiredFilters ?? [],
+        );
+      },
+    );
+
+    this.cleanup = () => {
+      resolveCanvasUnsub();
+      this.metricsViewsProvider.cleanup();
+      this.yamlConfigProvider.cleanup?.();
+    };
   }
 }

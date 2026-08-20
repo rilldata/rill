@@ -9,12 +9,14 @@ import {
   getDimensionFilterResults,
   getFilterChip,
   getMeasureFilterChip,
+  getSelectAllButton,
   isMeasureFilterFormOpen,
   removeMeasureFilter,
   mockPointerEventsForComponentTesting,
   selectDimensionFilterMode,
   toggleFilter,
   toggleMeasureFilter,
+  toggleSelectAll,
   typeInDimensionFilterSearch,
   useDashboardFetchMocksForComponentTests,
   waitForBodyScrollCleanup,
@@ -358,6 +360,129 @@ describe("ExpressionFilters", () => {
     );
   });
 
+  it("Should select and deselect all search results in Select mode", async () => {
+    await renderExpressionFilters();
+
+    await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    await typeInDimensionFilterSearch(AD_BIDS_PUBLISHER_DIMENSION, "oo");
+    await waitForDimensionFilterResults(["Facebook", "Google", "Yahoo"]);
+
+    // Select all covers the values matching the search, not every value in the dimension.
+    expect(getSelectAllButton()).toHaveTextContent("Select all");
+    await toggleSelectAll();
+    await waitFor(() =>
+      expect(getSelectAllButton()).toHaveTextContent("Deselect all"),
+    );
+    // Select mode applies once the dropdown closes.
+    await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
+
+    assertWhereFilter(
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+          "Facebook",
+          "Google",
+          "Yahoo",
+        ]),
+      ]),
+    );
+    const filterUrlSearch = urlSearchWithFilter(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook','Google','Yahoo')`,
+    );
+    pageMock.assertSearchParams(filterUrlSearch);
+    expect(getFilterChip(AD_BIDS_PUBLISHER_DIMENSION)).toHaveTextContent(
+      "publisher Facebook +2 others",
+    );
+
+    // Reopening with the same search shows every match selected, so the button deselects instead.
+    await toggleFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    await typeInDimensionFilterSearch(AD_BIDS_PUBLISHER_DIMENSION, "oo");
+    await waitForDimensionFilterResults(["Facebook", "Google", "Yahoo"]);
+
+    expect(getSelectAllButton()).toHaveTextContent("Deselect all");
+    await toggleSelectAll();
+    await waitFor(() =>
+      expect(getSelectAllButton()).toHaveTextContent("Select all"),
+    );
+    await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
+
+    // Deselecting every value leaves an empty filter, so the url goes back to the initial state.
+    assertWhereFilter(createAndExpression([]));
+    pageMock.assertSearchParams(PageURLForInitialState);
+    expect(pageMock.urlSearchHistory).toEqual([
+      PageURLForInitialState,
+      filterUrlSearch,
+      PageURLForInitialState,
+    ]);
+  });
+
+  it("Should deselect all applied values when searching after a select all", async () => {
+    await renderExpressionFilters();
+
+    await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    await waitForDimensionFilterResults([
+      "null",
+      "Facebook",
+      "Google",
+      "Yahoo",
+      "Microsoft",
+    ]);
+
+    // Without a search, Select all takes every value of the dimension, including the null one.
+    expect(getSelectAllButton()).toHaveTextContent("Select all");
+    await toggleSelectAll();
+    await waitFor(() =>
+      expect(getSelectAllButton()).toHaveTextContent("Deselect all"),
+    );
+    await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
+
+    assertWhereFilter(
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+          null,
+          "Facebook",
+          "Google",
+          "Yahoo",
+          "Microsoft",
+        ]),
+      ]),
+    );
+    const filterUrlSearch = urlSearchWithFilter(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN (null,'Facebook','Google','Yahoo','Microsoft')`,
+    );
+    pageMock.assertSearchParams(filterUrlSearch);
+    expect(getFilterChip(AD_BIDS_PUBLISHER_DIMENSION)).toHaveTextContent(
+      "publisher +4 others",
+    );
+
+    // The applied values stay in the result list even when the search does not match them, so the
+    // search that follows a select all does not narrow what Deselect all clears.
+    await toggleFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    await typeInDimensionFilterSearch(AD_BIDS_PUBLISHER_DIMENSION, "oo");
+    await waitForDimensionFilterResults([
+      "Facebook",
+      "Google",
+      "Yahoo",
+      "null",
+      "Microsoft",
+    ]);
+
+    expect(getSelectAllButton()).toHaveTextContent("Deselect all");
+    await toggleSelectAll();
+    await waitFor(() =>
+      expect(getSelectAllButton()).toHaveTextContent("Select all"),
+    );
+    await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
+
+    // Microsoft and the null value do not match "oo", but they are cleared along with the matches.
+    assertWhereFilter(createAndExpression([]));
+    pageMock.assertSearchParams(PageURLForInitialState);
+    expect(pageMock.urlSearchHistory).toEqual([
+      PageURLForInitialState,
+      filterUrlSearch,
+      PageURLForInitialState,
+    ]);
+  });
+
   it("Should apply the exclude toggle when the dropdown closes", async () => {
     await renderExpressionFilters();
 
@@ -446,6 +571,42 @@ describe("ExpressionFilters", () => {
     pageMock.assertSearchParams(
       urlSearchWithFilter(
         `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook','Google')`,
+      ),
+    );
+  });
+
+  it("Should keep an applied Contains filter when Select is picked and dismissed", async () => {
+    await renderExpressionFilters();
+
+    await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    await selectDimensionFilterMode(/Contains/);
+    await typeInDimensionFilterSearch(AD_BIDS_PUBLISHER_DIMENSION, "oo");
+    await waitForDimensionFilterResultCount(
+      AD_BIDS_PUBLISHER_DIMENSION,
+      "3 results",
+    );
+    await apply();
+
+    // Contains carries no values over to Select, so the dropdown has nothing staged. Select mode
+    // has no Apply button, so committing that on dismiss would drop the filter with no way back.
+    await toggleFilter(AD_BIDS_PUBLISHER_DIMENSION);
+    await selectDimensionFilterMode(/Select/);
+    await waitFor(() =>
+      expect(getDimensionFilterModeText()).toContain("Select"),
+    );
+    await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
+
+    assertWhereFilter(
+      createAndExpression([
+        createLikeExpression(AD_BIDS_PUBLISHER_DIMENSION, "%oo%"),
+      ]),
+    );
+    pageMock.assertSearchParams(
+      urlSearchWithFilter(`${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`),
+    );
+    await waitFor(() =>
+      expect(getFilterChip(AD_BIDS_PUBLISHER_DIMENSION)).toHaveTextContent(
+        "publisher Contains oo (3)",
       ),
     );
   });
@@ -750,6 +911,18 @@ async function selectValues(values: string[]) {
   for (const value of values) {
     await act(() => screen.getByText(value).click());
   }
+}
+
+/**
+ * Waits for the results of the open dimension filter dropdown to be `values`.
+ * Select mode has no result count to wait on, unlike the other two modes.
+ */
+async function waitForDimensionFilterResults(values: string[]) {
+  await waitFor(() =>
+    expect(getDimensionFilterResults(AD_BIDS_PUBLISHER_DIMENSION)).toEqual(
+      values,
+    ),
+  );
 }
 
 async function toggleExclude() {

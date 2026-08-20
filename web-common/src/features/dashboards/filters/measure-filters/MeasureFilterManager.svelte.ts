@@ -15,6 +15,10 @@ import {
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
+import type {
+  FilterChangeSource,
+  FilterEventEmitter,
+} from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 
 export class MeasureFilterManager {
   public expr: V1Expression | undefined = $state(undefined);
@@ -27,10 +31,16 @@ export class MeasureFilterManager {
   public value1 = $state("");
   public value2 = $state("");
 
+  // Cause of the change currently being applied. See `runWithSource`.
+  private activeSource: FilterChangeSource;
+
   public constructor(
     public readonly name: string,
     public readonly label: string,
     initExpr: V1Expression | undefined = undefined,
+    // Emitter shared by every manager under an `ExpressionFilterManager`.
+    // A manager built outside one has none.
+    private readonly events: FilterEventEmitter | undefined = undefined,
   ) {
     this.reconcile(initExpr);
   }
@@ -38,13 +48,20 @@ export class MeasureFilterManager {
   public static createForMetricsViews(
     metricsViewsProvider: MetricsViewsProvider,
     name: string,
-    mvName?: string,
-    initExpr?: V1Expression,
+    {
+      metricsViewName,
+      initExpr,
+      events,
+    }: {
+      metricsViewName?: string;
+      initExpr?: V1Expression;
+      events?: FilterEventEmitter;
+    } = {},
   ) {
     const measureSpecs = metricsViewsProvider.measureSpecs[name];
     if (!measureSpecs) return undefined;
-    const measureSpec = mvName
-      ? measureSpecs[mvName]
+    const measureSpec = metricsViewName
+      ? measureSpecs[metricsViewName]
       : Object.values(measureSpecs)[0];
     if (!measureSpec) return undefined;
 
@@ -52,6 +69,7 @@ export class MeasureFilterManager {
       name,
       getMeasureDisplayName(measureSpec),
       initExpr,
+      events,
     );
   }
 
@@ -69,7 +87,7 @@ export class MeasureFilterManager {
     this.type = mappedMeasureFilter?.type ?? MeasureFilterType.Value;
     this.value1 = mappedMeasureFilter?.value1 ?? "";
     this.value2 = mappedMeasureFilter?.value2 ?? "";
-    this.commit();
+    this.commit(false);
   }
 
   public setMeasureFilter(dimension: string, newFilter: MeasureFilterEntry) {
@@ -88,7 +106,21 @@ export class MeasureFilterManager {
     this.commit();
   }
 
-  public commit() {
+  /**
+   * Runs `fn` with `source` recorded as the cause of whatever it changes.
+   * The filter bar mutates the managers directly, so only the callers that are not
+   * the filter bar have a source to record.
+   */
+  public runWithSource<T>(source: FilterChangeSource, fn: () => T): T {
+    this.activeSource = source;
+    try {
+      return fn();
+    } finally {
+      this.activeSource = undefined;
+    }
+  }
+
+  public commit(notify: boolean = true) {
     const measureFilterExpr = mapMeasureFilterToExpr({
       measure: this.name,
       operation: this.operation,
@@ -101,5 +133,11 @@ export class MeasureFilterManager {
       ? createSubQueryExpression(this.dimension, [this.name], measureFilterExpr)
       : undefined;
     this.param = this.expr ? convertExpressionToFilterParam(this.expr, []) : "";
+
+    // `notify` is false while the filter param is being parsed, which rebuilds every manager.
+    // Reporting those would make the filter that is already applied look like a fresh change.
+    if (notify) {
+      this.events?.emit("filter-changed", { source: this.activeSource });
+    }
   }
 }

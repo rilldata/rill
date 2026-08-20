@@ -62,6 +62,9 @@
   import { X } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { onDestroy } from "svelte";
 
   export let onClose: () => void;
   export let onCancel: () => void;
@@ -104,27 +107,33 @@
       ? createAdminServiceCreateAlert()
       : createAdminServiceEditAlert();
 
-  $: ({ filters, timeControls } =
-    props.mode === "create"
-      ? getNewAlertInitialFiltersFormValues(
-          runtimeClient,
-          metricsViewName,
-          exploreName,
-          $exploreState!,
-        )
-      : getFiltersAndTimeControlsFromAggregationRequest(
-          runtimeClient,
-          metricsViewName,
-          exploreName,
-          JSON.parse(
-            props.alertSpec.queryArgsJson ||
-              (props.alertSpec.resolverProperties?.query_args_json as
-                | string
-                | undefined) ||
-              "{}",
-          ),
-          $allTimeRangeResp.data?.timeRangeSummary,
-        ));
+  let filters: ExpressionFilterManager;
+  let timeControls: TimeControls;
+  let cleanup: (() => void) | undefined = undefined;
+  $: {
+    cleanup?.();
+    ({ filters, timeControls, cleanup } =
+      props.mode === "create"
+        ? getNewAlertInitialFiltersFormValues(
+            runtimeClient,
+            metricsViewName,
+            exploreName,
+            $exploreState!,
+          )
+        : getFiltersAndTimeControlsFromAggregationRequest(
+            runtimeClient,
+            metricsViewName,
+            exploreName,
+            JSON.parse(
+              props.alertSpec.queryArgsJson ||
+                (props.alertSpec.resolverProperties?.query_args_json as
+                  | string
+                  | undefined) ||
+                "{}",
+            ),
+            $allTimeRangeResp.data?.timeRangeSummary,
+          ));
+  }
   $: ({ selectedComparisonTimeRange } = timeControls);
 
   const superFormInstance = superForm(
@@ -280,6 +289,10 @@
     if (!name) return;
     $form.name = name;
   }
+
+  onDestroy(() => {
+    cleanup?.();
+  });
 </script>
 
 <form

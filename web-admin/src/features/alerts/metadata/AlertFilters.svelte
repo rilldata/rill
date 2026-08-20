@@ -10,6 +10,7 @@
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import { onDestroy } from "svelte";
 
   let {
     metricsViewName,
@@ -29,9 +30,10 @@
 
   const metricsViewProvider = new MetricsViewsProvider(runtimeClient, []);
   $effect(() => metricsViewProvider.setMetricsViewNames([metricsViewName]));
+  const yamlConfigProvider = new YAMLConfigProvider();
   const expressionFilterManager = new ExpressionFilterManager(
     metricsViewProvider,
-    new YAMLConfigProvider(),
+    yamlConfigProvider,
   );
   $effect(() =>
     expressionFilterManager.setExprForMetricsView(
@@ -46,6 +48,11 @@
   let filtersLength = $derived(
     (filters?.cond?.exprs?.length ?? 0) + (hasTimeRange ? 1 : 0),
   );
+
+  onDestroy(() => {
+    metricsViewProvider.cleanup();
+    yamlConfigProvider.cleanup?.();
+  });
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label={m.alert_metadata_filters_aria()}>

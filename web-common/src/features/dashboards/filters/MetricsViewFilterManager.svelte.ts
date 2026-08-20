@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import type { FilterEventEmitter } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 
 export type DimensionOrMeasureManager =
   | DimensionFilterManager
@@ -94,6 +95,7 @@ export class MetricsViewFilterManager {
     dimensionsWithInlistFilter: string[],
     existingManagers: Map<string, AnyManager>,
     yamlConfigProvider: YAMLConfigProvider | undefined,
+    events: FilterEventEmitter | undefined,
   ): AnyManager | undefined {
     const op = expr?.cond?.op;
     if (op === V1Operation.OPERATION_AND || op === V1Operation.OPERATION_OR) {
@@ -141,6 +143,7 @@ export class MetricsViewFilterManager {
           dimensionsWithInlistFilter,
           existingManagers,
           undefined,
+          events,
         );
         if (!manager) return;
         // Prefer to share class for similar expressions.
@@ -162,12 +165,12 @@ export class MetricsViewFilterManager {
               DimensionFilterManager.createForMetricsViews(
                 metricsViewsProvider,
                 requiredFilter,
-                metricsViewName,
+                { metricsViewName, events },
               ) ??
               MeasureFilterManager.createForMetricsViews(
                 metricsViewsProvider,
                 requiredFilter,
-                metricsViewName,
+                { metricsViewName, events },
               );
             if (manager) add(manager, false);
           });
@@ -201,17 +204,19 @@ export class MetricsViewFilterManager {
         return MeasureFilterManager.createForMetricsViews(
           metricsViewsProvider,
           measureName,
-          metricsViewName,
-          firstValueExpr,
+          { metricsViewName, initExpr: firstValueExpr, events },
         );
       } else {
         // Everything else is a dimension filter for now.
         return DimensionFilterManager.createForMetricsViews(
           metricsViewsProvider,
           ident,
-          metricsViewName,
-          expr,
-          dimensionsWithInlistFilter.includes(ident),
+          {
+            metricsViewName,
+            initExpr: expr,
+            isInList: dimensionsWithInlistFilter.includes(ident),
+            events,
+          },
         );
       }
     }

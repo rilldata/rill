@@ -68,9 +68,13 @@ export function getNewAlertInitialFiltersFormValues(
     exploreName,
   );
 
+  const metricsViewProvider = new MetricsViewsProvider(client, [
+    metricsViewName,
+  ]);
+  const yamlConfigProvider = new YAMLConfigProvider();
   const filters = new ExpressionFilterManager(
-    new MetricsViewsProvider(client, [metricsViewName]),
-    new YAMLConfigProvider(),
+    metricsViewProvider,
+    yamlConfigProvider,
   );
   filters.setUrlParams(get(page).url.searchParams);
 
@@ -80,5 +84,12 @@ export function getNewAlertInitialFiltersFormValues(
     showTimeComparison: exploreState.showTimeComparison ?? false,
     selectedTimezone: exploreState.selectedTimezone ?? "UTC",
   });
-  return { filters, timeControls };
+  return {
+    filters,
+    timeControls,
+    cleanup: () => {
+      metricsViewProvider.cleanup();
+      yamlConfigProvider.cleanup?.();
+    },
+  };
 }

@@ -202,6 +202,20 @@ export async function waitForDimensionFilterResultCount(
 }
 
 /**
+ * The footer button of the open dimension filter dropdown that selects or deselects every value in
+ * the result list. Only Select mode has it; the other modes have an Apply button in its place. Its
+ * label is the action it performs, so it reads "Deselect all" once everything is selected.
+ */
+export function getSelectAllButton() {
+  return screen.getByRole("button", { name: /^(Select|Deselect) all$/ });
+}
+
+/** Selects or deselects every value in the results of the open dimension filter dropdown. */
+export async function toggleSelectAll() {
+  await act(() => getSelectAllButton().click());
+}
+
+/**
  * The chip for the measure filter with `label`, whose text content is the filter as the user sees
  * it. Measure chips are labelled by the measure's display name, without the `filter` suffix the
  * dimension chips have.

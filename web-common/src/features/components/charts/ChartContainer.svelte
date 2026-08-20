@@ -12,7 +12,7 @@
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/themes/theme-boundary";
-  import { getContext, hasContext } from "svelte";
+  import { getContext, hasContext, onDestroy } from "svelte";
   import type { View } from "svelte-vega";
   import type { Readable, Writable } from "svelte/store";
   import { readable } from "svelte/store";
@@ -77,9 +77,10 @@
       $spec.metrics_view ? [$spec.metrics_view] : [],
     ),
   );
+  const yamlConfigProvider = new YAMLConfigProvider();
   const expressionFilterManager = new ExpressionFilterManager(
     metricsViewProvider,
-    new YAMLConfigProvider(),
+    yamlConfigProvider,
   );
   $effect(() =>
     expressionFilterManager.setExprForMetricsView(
@@ -141,6 +142,11 @@
       pivot: pivotState,
       showTimeComparison: false,
     };
+  });
+
+  onDestroy(() => {
+    metricsViewProvider.cleanup();
+    yamlConfigProvider.cleanup?.();
   });
 </script>
 
