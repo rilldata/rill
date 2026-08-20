@@ -61,7 +61,7 @@ func coerceValue(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, value
 	switch v := value.(type) {
 	case map[string]any:
 		for key, val := range v {
-			sub, subDefs := propertySchema(s, defs, key)
+			sub, subDefs := propertySchema(s, defs, key, 0)
 			if sub == nil {
 				continue
 			}
@@ -71,7 +71,7 @@ func coerceValue(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, value
 			}
 		}
 	case []any:
-		items, itemDefs := itemsSchema(s, defs)
+		items, itemDefs := itemsSchema(s, defs, 0)
 		if items != nil {
 			for i, item := range v {
 				if nv, ch := coerceValue(items, itemDefs, item); ch {
@@ -210,7 +210,12 @@ func decodeJSONString(s, delim string) (any, bool) {
 
 // propertySchema returns the subschema for a map key, along with the `$defs` scope it should be evaluated in,
 // or nil if the schema does not unambiguously define one.
-func propertySchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, key string) (*jsonschema.Schema, map[string]*jsonschema.Schema) {
+// depth guards against cyclic combinator branches (e.g. an allOf branch that refs back to its parent),
+// whose recursion is driven purely by the schema and would otherwise overflow the stack.
+func propertySchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, key string, depth int) (*jsonschema.Schema, map[string]*jsonschema.Schema) {
+	if depth > maxRefHops {
+		return nil, nil
+	}
 	if sub, ok := s.Properties[key]; ok {
 		return sub, defs
 	}
@@ -228,7 +233,7 @@ func propertySchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, ke
 		if b == nil {
 			continue
 		}
-		sub, subDefs := propertySchema(b, branchDefs, key)
+		sub, subDefs := propertySchema(b, branchDefs, key, depth+1)
 		if sub == nil {
 			continue
 		}
@@ -242,7 +247,11 @@ func propertySchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, ke
 
 // itemsSchema returns the subschema for array elements, along with the `$defs` scope it should be evaluated in,
 // or nil if the schema does not unambiguously define one.
-func itemsSchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema) (*jsonschema.Schema, map[string]*jsonschema.Schema) {
+// depth guards against cyclic combinator branches; see propertySchema.
+func itemsSchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema, depth int) (*jsonschema.Schema, map[string]*jsonschema.Schema) {
+	if depth > maxRefHops {
+		return nil, nil
+	}
 	if s.Items != nil {
 		return s.Items, defs
 	}
@@ -254,7 +263,7 @@ func itemsSchema(s *jsonschema.Schema, defs map[string]*jsonschema.Schema) (*jso
 		if b == nil {
 			continue
 		}
-		sub, subDefs := itemsSchema(b, branchDefs)
+		sub, subDefs := itemsSchema(b, branchDefs, depth+1)
 		if sub == nil {
 			continue
 		}

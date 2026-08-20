@@ -340,6 +340,22 @@ func TestCoerceStringifiedJSON(t *testing.T) {
 			wantChanged: false,
 		},
 		{
+			name: "cyclic allOf ref is untouched instead of overflowing the stack",
+			schema: `{
+				"type": "object",
+				"properties": {
+					"where": {"$ref": "#/$defs/A"},
+					"dimensions": {"$ref": "#/$defs/A"}
+				},
+				"$defs": {
+					"A": {"allOf": [{"$ref": "#/$defs/A"}]}
+				}
+			}`,
+			args:        `{"where": {"cond": "{\"op\": \"and\"}"}, "dimensions": ["{\"name\": \"country\"}"]}`,
+			want:        `{"where": {"cond": "{\"op\": \"and\"}"}, "dimensions": ["{\"name\": \"country\"}"]}`,
+			wantChanged: false,
+		},
+		{
 			name: "unresolvable ref is untouched",
 			schema: `{
 				"type": "object",
