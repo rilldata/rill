@@ -104,6 +104,9 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 			if !s.coerceMCPToolArgs(req) {
 				return res, err
 			}
+			if params, ok := req.GetParams().(*mcp.CallToolParamsRaw); ok {
+				s.logger.Info("tolerantly decoded stringified MCP tool call arguments; retrying the call", zap.String("tool", params.Name))
+			}
 			return next(ctx, method, req)
 		}
 	})
