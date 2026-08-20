@@ -1,0 +1,154 @@
+{
+  "name": "databricks",
+  "display_name": "Databricks",
+  "description": "Connect to a Databricks SQL warehouse as your OLAP engine",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/olap/databricks",
+  "driver": "databricks",
+  "icon": "Databricks",
+  "small_icon": "DatabricksIcon",
+  "tags": [
+    "databricks",
+    "warehouse",
+    "lakehouse",
+    "olap",
+    "connector"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "olap",
+    "properties": {
+      "auth_method": {
+        "type": "string",
+        "title": "Authentication method",
+        "enum": [
+          "parameters",
+          "dsn"
+        ],
+        "default": "parameters",
+        "x-display": "tabs",
+        "x-enum-labels": [
+          "Workspace details",
+          "Connection String"
+        ],
+        "x-ui-only": true,
+        "x-tab-group": {
+          "parameters": [
+            "host",
+            "http_path",
+            "token",
+            "catalog",
+            "schema"
+          ],
+          "dsn": [
+            "dsn"
+          ]
+        },
+        "x-step": "connector"
+      },
+      "host": {
+        "type": "string",
+        "title": "Host",
+        "description": "Databricks SQL warehouse hostname",
+        "x-placeholder": "dbc-xxxxxxxx-xxxx.cloud.databricks.com",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "http_path": {
+        "type": "string",
+        "title": "HTTP path",
+        "description": "HTTP path for the SQL warehouse",
+        "x-placeholder": "/sql/1.0/warehouses/xxxxxxxxxxxxxxxx",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "token": {
+        "type": "string",
+        "title": "Access token",
+        "description": "Databricks personal access token",
+        "x-placeholder": "dapi...",
+        "x-secret": true,
+        "x-env-var": "DATABRICKS_TOKEN",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "catalog": {
+        "type": "string",
+        "title": "Catalog",
+        "description": "Unity Catalog name (optional; defaults to the workspace default)",
+        "x-placeholder": "main",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "schema": {
+        "type": "string",
+        "title": "Schema",
+        "description": "Schema within the catalog (optional; defaults to the workspace default)",
+        "x-placeholder": "default",
+        "x-visible-if": {
+          "auth_method": "parameters"
+        },
+        "x-step": "connector"
+      },
+      "dsn": {
+        "type": "string",
+        "title": "Connection string",
+        "description": "Full Databricks DSN.",
+        "x-placeholder": "token:<token>@<host>:443/<http_path>?catalog=<catalog>&schema=<schema>",
+        "x-secret": true,
+        "x-env-var": "DATABRICKS_DSN",
+        "x-visible-if": {
+          "auth_method": "dsn"
+        },
+        "x-step": "connector"
+      }
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "parameters"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "host",
+            "http_path",
+            "token"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "dsn"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "dsn"
+          ]
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "name": "connector",
+      "path_template": "connectors/[[ .connector_name ]].yaml",
+      "code_template": "# Connector YAML\n# Reference documentation: [[ .docs_url ]]\ntype: connector\ndriver: databricks\n[[ renderProps .props ]]\n"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "name": "hudi-clickhouse",
+  "display_name": "Hudi",
+  "description": "Query Apache Hudi tables in ClickHouse using hudi table function",
+  "docs_url": "https://clickhouse.com/docs/en/sql-reference/table-functions/hudi",
+  "driver": "hudi",
+  "olap": "clickhouse",
+  "icon": "ApacheHudi",
+  "small_icon": "ApacheHudiIcon",
+  "tags": [
+    "hudi",
+    "table-format",
+    "clickhouse",
+    "source"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "sourceOnly",
+    "properties": {
+      "aws_access_key_id": {
+        "type": "string",
+        "title": "AWS Access Key ID",
+        "description": "Access key for the S3 bucket containing your Hudi table",
+        "x-placeholder": "Enter AWS access key ID",
+        "x-secret": true,
+        "x-env-var": "AWS_ACCESS_KEY_ID"
+      },
+      "aws_secret_access_key": {
+        "type": "string",
+        "title": "AWS Secret Access Key",
+        "description": "Secret key for the S3 bucket containing your Hudi table",
+        "x-placeholder": "Enter AWS secret access key",
+        "x-secret": true,
+        "x-env-var": "AWS_SECRET_ACCESS_KEY"
+      },
+      "path": {
+        "type": "string",
+        "title": "Hudi Table Path",
+        "description": "S3 path to your Hudi table",
+        "pattern": "^s3://.*",
+        "errorMessage": {
+          "pattern": "Must be an S3 URI (e.g. s3://bucket/hudi_table)"
+        },
+        "x-placeholder": "s3://bucket/hudi_table"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_hudi_table"
+      }
+    },
+    "required": [
+      "aws_access_key_id",
+      "aws_secret_access_key",
+      "path",
+      "name"
+    ]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  SELECT * FROM hudi(\n      '[[ s3ToHTTPS .path ]]',\n      '[[ propVal .props \"aws_access_key_id\" ]]',\n      '[[ propVal .props \"aws_secret_access_key\" ]]'\n  )\n"
+    }
+  ]
+}
