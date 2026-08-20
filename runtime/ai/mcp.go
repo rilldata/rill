@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
+	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime/pkg/jsonschemautil"
 	"go.uber.org/zap"
@@ -86,7 +87,8 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 
 	// Tolerantly decode tool arguments where object/array-typed fields arrive as JSON-encoded strings.
 	// This works around a serialization bug in some MCP clients (see https://github.com/anthropics/claude-code/issues/25865).
-	// It runs before the SDK validates the arguments against the tool's input schema.
+	// The coercion runs only as a fallback: if a tool call fails the SDK's input schema validation,
+	// the arguments are coerced and the call is retried once; calls that validate as-is are never rewritten.
 	// It can be disabled with the rill.ai.mcp_tolerant_args instance config option (enabled by default).
 	// The internal LLM tool-call path (CallToolWithOptions) receives tool inputs as real JSON objects from the provider API,
 	// so it does not need this; if that ever changes, the coercion should be applied there too.
@@ -97,8 +99,16 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	if err != nil || cfg.AIMCPTolerantArgs {
 		srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
 			return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
-				if method == "tools/call" {
-					s.coerceMCPToolArgs(req)
+				res, err := next(ctx, method, req)
+				if method != "tools/call" || err == nil {
+					return res, err
+				}
+				var jsonrpcErr *jsonrpc.Error
+				if !errors.As(err, &jsonrpcErr) || jsonrpcErr.Code != jsonrpc.CodeInvalidParams {
+					return res, err
+				}
+				if !s.coerceMCPToolArgs(req) {
+					return res, err
 				}
 				return next(ctx, method, req)
 			}
@@ -126,38 +136,40 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 
 // coerceMCPToolArgs rewrites a tool call's raw arguments,
 // JSON-decoding any string values in positions where the tool's input schema expects an object or array.
+// It returns whether the arguments were rewritten.
 // It fails open: on any lookup or decode failure it leaves the arguments untouched,
 // so the SDK's schema validation produces its normal error.
-func (s *Session) coerceMCPToolArgs(req mcp.Request) {
+func (s *Session) coerceMCPToolArgs(req mcp.Request) bool {
 	params, ok := req.GetParams().(*mcp.CallToolParamsRaw)
 	if !ok || len(params.Arguments) == 0 {
-		return
+		return false
 	}
 	t, ok := s.runner.Tools[params.Name]
 	if !ok || t.Spec == nil {
-		return
+		return false
 	}
 	schema, ok := t.Spec.InputSchema.(*jsonschema.Schema)
 	if !ok || schema == nil {
-		return
+		return false
 	}
 
 	var args any
 	dec := json.NewDecoder(bytes.NewReader(params.Arguments))
 	dec.UseNumber() // preserve integer fidelity across the re-marshal
 	if err := dec.Decode(&args); err != nil {
-		return
+		return false
 	}
 
 	coerced, changed := jsonschemautil.CoerceStringifiedJSON(schema, args)
 	if !changed {
-		return
+		return false
 	}
 	data, err := json.Marshal(coerced)
 	if err != nil {
-		return
+		return false
 	}
 	params.Arguments = data
+	return true
 }
 
 // InternalError represents an internal error in a tool call.
