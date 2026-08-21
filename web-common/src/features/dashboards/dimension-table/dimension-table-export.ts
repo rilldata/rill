@@ -124,7 +124,6 @@ export function getDimensionTableAggregationRequestForTime({
 
   const where = buildWhereParamForDimensionTableAndTDDExports(
     exploreState.whereFilter,
-    exploreState.dimensionThresholdFilters,
     exploreState.selectedDimensionName!, // must exist when viewing a dimension table
     dimensionSearchText,
   );

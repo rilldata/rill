@@ -1,12 +1,12 @@
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import { useDimensionSearch } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   forEachIdentifier,
   getValuesInExpression,
   isExpressionUnsupported,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
@@ -38,8 +38,8 @@ export const selectedDimensionValues = (
       data: [],
     });
 
-  const dimExpr = whereFilter.cond?.exprs?.find((e) =>
-    matchExpressionByName(e, dimensionName),
+  const dimExpr = whereFilter.cond?.exprs?.find(
+    (e) => matchExpressionByName(e, dimensionName) && !isSubqueryExpression(e),
   );
   if (!dimExpr?.cond?.op)
     return readable({
@@ -97,36 +97,12 @@ export const useSelectedValuesForCompareDimension = (ctx: StateManagers) => {
   ) as ReturnType<typeof selectedDimensionValues>;
 };
 
-export const isFilterExcludeMode = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-): ((dimName: string) => boolean) => {
-  return (dimName: string) =>
-    dashData.dashboard.dimensionFilterExcludeMode.get(dimName) ?? false;
-};
-
-export const dimensionHasFilter = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  return (dimName: string) => {
-    return getWhereFilterExpression(dashData)(dimName) !== undefined;
-  };
-};
-
-export const getWhereFilterExpression = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-): ((name: string) => V1Expression | undefined) => {
-  return (name: string) =>
-    dashData.dashboard.whereFilter.cond?.exprs?.find((e) =>
-      matchExpressionByName(e, name),
-    );
-};
-
 export const getWhereFilterExpressionIndex = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((name: string) => number | undefined) => {
   return (name: string) =>
-    dashData.dashboard.whereFilter?.cond?.exprs?.findIndex((e) =>
-      matchExpressionByName(e, name),
+    dashData.dashboard.whereFilter?.cond?.exprs?.findIndex(
+      (e) => matchExpressionByName(e, name) && !isSubqueryExpression(e),
     );
 };
 
@@ -143,19 +119,6 @@ export type DimensionFilterItem = {
   required?: boolean;
   missingRequired?: boolean;
 };
-
-export function getDimensionFilterItems(
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) {
-  return (dimensionIdMap: Map<string, MetricsViewSpecDimension>) => {
-    return getDimensionFilters(
-      dimensionIdMap,
-      dashData.dashboard.whereFilter,
-      dashData.dashboard.dimensionsWithInlistFilter,
-      dashData.validExplore?.metricsView,
-    );
-  };
-}
 
 export function getDimensionFiltersMap(
   dimensionIdMap: Map<string, MetricsViewSpecDimension>,
@@ -230,102 +193,4 @@ export function getDimensionFilters(
   );
 }
 
-export const getAllDimensionFilterItems = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  return (
-    dimensionFilterItem: DimensionFilterItem[],
-    dimensionIdMap: Map<string, MetricsViewSpecDimension>,
-  ) => {
-    const allDimensionFilterItem = [...dimensionFilterItem];
-
-    // if the temporary filter is a dimension filter add it
-    if (
-      dashData.dashboard.temporaryFilterName &&
-      dimensionIdMap.has(dashData.dashboard.temporaryFilterName) &&
-      dashData.validExplore?.metricsView
-    ) {
-      allDimensionFilterItem.push({
-        name: dashData.dashboard.temporaryFilterName,
-        label: getDimensionDisplayName(
-          dimensionIdMap.get(dashData.dashboard.temporaryFilterName),
-        ),
-        mode: DimensionFilterMode.Select,
-        selectedValues: [],
-        isInclude: true,
-        dimensions: new Map<string, MetricsViewSpecDimension>([
-          [
-            dashData.validExplore?.metricsView,
-            dimensionIdMap.get(dashData.dashboard.temporaryFilterName)!,
-          ],
-        ]),
-        pinned: false,
-      });
-    }
-
-    // sort based on name to make sure toggling include/exclude is not jarring
-    return allDimensionFilterItem.sort(filterItemsSortFunction);
-  };
-};
-
-export const unselectedDimensionValues = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  return (dimensionName: string, values: unknown[]): unknown[] => {
-    const expr = getWhereFilterExpression(dashData)(dimensionName);
-    if (expr === undefined) {
-      return values;
-    }
-
-    return values.filter(
-      (v) => expr.cond?.exprs?.findIndex((e) => e.val === v) === -1,
-    );
-  };
-};
-
-export const includedDimensionValues = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  return (dimensionName: string): unknown[] => {
-    const expr = getWhereFilterExpression(dashData)(dimensionName);
-    if (expr === undefined || expr.cond?.op !== V1Operation.OPERATION_IN) {
-      return [];
-    }
-
-    return getValuesInExpression(expr);
-  };
-};
-
-export const hasAtLeastOneDimensionFilter = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  const whereFilter = dashData.dashboard.whereFilter;
-  return whereFilter.cond?.exprs?.length && whereFilter.cond.exprs.length > 0;
-};
-
-export const dimensionFilterSelectors = {
-  /**
-   * Returns a function that can be used to get whether the specified
-   * dimension is in exclude mode.
-   */
-  isFilterExcludeMode,
-
-  /**
-   * Check if a dimension has any filter
-   */
-  dimensionHasFilter,
-
-  /**
-   * Get filter items based on currently selected values for a dimension
-   */
-  getDimensionFilterItems,
-
-  /**
-   * Get filter items on dimension along with an empty entry for temporary filter if it is a dimension
-   */
-  getAllDimensionFilterItems,
-
-  unselectedDimensionValues,
-  includedDimensionValues,
-  hasAtLeastOneDimensionFilter,
-};
+export const dimensionFilterSelectors = {};

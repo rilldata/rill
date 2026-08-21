@@ -33,6 +33,8 @@ import {
   contextColWidthDefaults,
   type ContextColWidths,
 } from "../leaderboard-context-column";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import { ExploreDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
 export type StateManagers = {
   runtimeClient: RuntimeClient;
@@ -65,6 +67,8 @@ export type StateManagers = {
    */
   contextColumnWidths: Writable<ContextColWidths>;
   defaultExploreState: Readable<V1ExplorePreset>;
+  expressionFilterManager: ExpressionFilterManager;
+  cleanup: () => void;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -163,6 +167,24 @@ export function createStateManagers({
     },
   );
 
+  const dashboardProvider = new ExploreDashboardConfigProvider(
+    runtimeClient,
+    exploreName,
+  );
+  const expressionFilterManager = new ExpressionFilterManager(
+    dashboardProvider.metricsViewsProvider,
+    dashboardProvider.yamlConfigProvider,
+  );
+
+  const stateChangeUnsub = expressionFilterManager.on("state-changed", () => {
+    if (expressionFilterManager.updating) return;
+    metricsExplorerStore.mergePartialExplorerEntity(
+      exploreName,
+      {},
+      expressionFilterManager,
+    );
+  });
+
   return {
     runtimeClient,
     metricsViewName: metricsViewNameStore,
@@ -191,5 +213,10 @@ export function createStateManagers({
     }),
     contextColumnWidths,
     defaultExploreState,
+    expressionFilterManager,
+    cleanup: () => {
+      dashboardProvider.cleanup?.();
+      stateChangeUnsub();
+    },
   };
 }

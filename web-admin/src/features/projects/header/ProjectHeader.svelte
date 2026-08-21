@@ -271,7 +271,6 @@
               <ExploreBookmarks
                 {organization}
                 {project}
-                metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
               {#if $alertsFlag}

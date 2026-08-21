@@ -23,84 +23,105 @@
   import type { TDDComparison, TableData } from "./types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  export let exploreName: string;
-  export let expandedMeasureName: string;
-  export let hideStartPivotButton = false;
+  interface Props {
+    exploreName: string;
+    expandedMeasureName: string;
+    hideStartPivotButton?: boolean;
+  }
 
-  $: isEmbedded = EmbedStore.isEmbedded();
+  let {
+    exploreName,
+    expandedMeasureName,
+    hideStartPivotButton = false,
+  }: Props = $props();
+
+  const isEmbedded = $derived(EmbedStore.isEmbedded());
 
   const stateManagers = getStateManagers();
   const {
     dashboardStore,
     selectors: {
       dimensions: { allDimensions },
-      dimensionFilters: { unselectedDimensionValues },
       measures: { allMeasures },
     },
     actions: {
-      dimensionsFilter: {
-        toggleDimensionValueSelection,
-        selectItemsInFilter,
-        deselectItemsInFilter,
-      },
       sorting: { toggleSort },
     },
+    expressionFilterManager,
   } = getStateManagers();
 
   const timeDimensionDataStore = useTimeDimensionDataStore(stateManagers);
   const timeControlStore = useTimeControlStore(stateManagers);
 
-  $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
-  $: comparing = $timeDimensionDataStore?.comparing;
+  const dimensionName = $derived(
+    $dashboardStore?.selectedComparisonDimension ?? "",
+  );
+  const comparing = $derived($timeDimensionDataStore?.comparing);
 
-  $: pinIndex = $dashboardStore?.tdd.pinIndex;
+  const pinIndex = $derived($dashboardStore?.tdd.pinIndex);
 
-  $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
+  const timeGrain = $derived($timeControlStore.selectedTimeRange?.interval);
 
-  $: measure = $allMeasures.find((m) => m.name === expandedMeasureName);
-
-  $: measureLabel = measure?.displayName ?? "";
-
-  let dimensionLabel = "";
-  $: if (comparing === "dimension") {
-    dimensionLabel =
-      $allDimensions.find((d) => d.name === dimensionName)?.displayName ?? "";
-  } else if (comparing === "time") {
-    dimensionLabel = m.dashboard_tdd_time();
-  } else if (comparing === "none") {
-    dimensionLabel = m.dashboard_tdd_no_comparison();
-  }
-
-  // Create a copy of the data to avoid flashing of table in transient states
-  let timeDimensionDataCopy: TableData;
-  let comparisonCopy: TDDComparison | undefined;
-  $: if (
-    $timeDimensionDataStore?.data &&
-    $timeDimensionDataStore?.data?.columnHeaderData
-  ) {
-    comparisonCopy = comparing;
-    timeDimensionDataCopy = $timeDimensionDataStore.data;
-  }
-  $: formattedData = timeDimensionDataCopy;
-  $: excludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
-
-  $: rowHeaderLabels =
-    formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [];
-
-  $: areAllTableRowsSelected = rowHeaderLabels?.every(
-    (val) => val !== undefined && formattedData?.selectedValues?.includes(val),
+  const measure = $derived(
+    $allMeasures.find((m) => m.name === expandedMeasureName),
   );
 
-  $: columnHeaders = formattedData?.columnHeaderData?.flat();
+  const measureLabel = $derived(measure?.displayName ?? "");
 
-  $: highlightedColStart = $hoverIndex?.start;
-  $: highlightedColEnd = $hoverIndex?.end;
+  const dimensionLabel = $derived.by(() => {
+    if (comparing === "dimension") {
+      return (
+        $allDimensions.find((d) => d.name === dimensionName)?.displayName ?? ""
+      );
+    } else if (comparing === "time") {
+      return m.dashboard_tdd_time();
+    } else if (comparing === "none") {
+      return m.dashboard_tdd_no_comparison();
+    }
+    return "";
+  });
+
+  // Create a copy of the data to avoid flashing of table in transient states
+  let timeDimensionDataCopy = $state<TableData>();
+  let comparisonCopy = $state<TDDComparison | undefined>();
+  $effect(() => {
+    if (
+      $timeDimensionDataStore?.data &&
+      $timeDimensionDataStore?.data?.columnHeaderData
+    ) {
+      comparisonCopy = comparing;
+      timeDimensionDataCopy = $timeDimensionDataStore.data;
+    }
+  });
+  const formattedData = $derived(timeDimensionDataCopy);
+  const excludeMode = $derived(
+    expressionFilterManager.filterManagers.dimensions.find(
+      (dfm) => dfm.name === dimensionName,
+    )?.exclude ?? false,
+  );
+
+  const rowHeaderLabels = $derived(
+    formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [],
+  );
+
+  const areAllTableRowsSelected = $derived(
+    rowHeaderLabels?.every(
+      (val) =>
+        val !== undefined && formattedData?.selectedValues?.includes(val),
+    ),
+  );
+
+  const columnHeaders = $derived(formattedData?.columnHeaderData?.flat());
+
+  const highlightedColStart = $derived($hoverIndex?.start);
+  const highlightedColEnd = $derived($hoverIndex?.end);
 
   // Create a time formatter for the column headers
-  $: timeFormatter = timeFormat(
-    timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
-  ) as (d: Date) => string;
+  const timeFormatter = $derived(
+    timeFormat(timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M") as (
+      d: Date,
+    ) => string,
+  );
 
   function highlightCell(x: number | undefined, y: number | undefined) {
     if (x === undefined || y === undefined) {
@@ -127,8 +148,11 @@
 
   const debounceHighlightCell = debounce(highlightCell, 50);
 
-  function toggleFilter(label: string | null) {
-    toggleDimensionValueSelection(dimensionName, label);
+  function toggleFilter(label: string) {
+    expressionFilterManager.dimensionFilterAction(
+      dimensionName,
+      (dimensionManager) => dimensionManager.toggleValue(label, false),
+    );
   }
 
   function toggleAllSearchItems() {
@@ -139,9 +163,10 @@
     if (headerHasUndefined) return;
 
     if (areAllTableRowsSelected) {
-      deselectItemsInFilter(
+      expressionFilterManager.dimensionFilterAction(
         dimensionName,
-        rowHeaderLabels as (string | null)[],
+        (dimensionManager) =>
+          dimensionManager.removeSelectedValues(rowHeaderLabels as string[]),
       );
 
       eventBus.emit("notification", {
@@ -151,38 +176,41 @@
       });
       return;
     } else {
-      const newValuesSelected = $unselectedDimensionValues(
+      const newValuesSelected = expressionFilterManager.dimensionFilterAction(
         dimensionName,
-        rowHeaderLabels,
+        (dimensionManager) =>
+          dimensionManager.appendSelectedValues(rowHeaderLabels as string[]),
       );
-      selectItemsInFilter(dimensionName, rowHeaderLabels as (string | null)[]);
-      eventBus.emit("notification", {
-        message: m.dashboard_added_items_filter({
-          count: newValuesSelected.length.toString(),
-        }),
-      });
+      if (newValuesSelected?.length) {
+        eventBus.emit("notification", {
+          message: m.dashboard_added_items_filter({
+            count: newValuesSelected.length.toString(),
+          }),
+        });
+      }
     }
   }
 
   function togglePin() {
     let newPinIndex = -1;
+    const selectedCount = formattedData?.selectedValues?.length ?? 0;
 
     // Pin if some selected items are not pinned yet
-    if (pinIndex > -1 && pinIndex < formattedData?.selectedValues?.length - 1) {
-      newPinIndex = formattedData?.selectedValues?.length - 1;
+    if (pinIndex > -1 && pinIndex < selectedCount - 1) {
+      newPinIndex = selectedCount - 1;
     }
     // Pin if no items are pinned yet
     else if (pinIndex === -1) {
-      newPinIndex = formattedData?.selectedValues?.length - 1;
+      newPinIndex = selectedCount - 1;
     }
     metricsExplorerStore.setPinIndex(exploreName, newPinIndex);
   }
 
-  function handleKeyDown(e) {
+  function handleKeyDown(e: KeyboardEvent) {
     if (comparisonCopy !== "dimension") return;
     // Select all items on Meta+A
     if ((e.ctrlKey || e.metaKey) && e.key === "a") {
-      if (e.target.tagName === "INPUT") return;
+      if ((e.target as HTMLElement)?.tagName === "INPUT") return;
       e.preventDefault();
       if (areAllTableRowsSelected) return;
       toggleAllSearchItems();

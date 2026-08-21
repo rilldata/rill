@@ -1,6 +1,6 @@
 import type { afterNavigate } from "$app/navigation";
 import { AD_BIDS_EXPLORE_NAME } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import type { AfterNavigate, Page } from "@sveltejs/kit";
+import type { ActionResult, AfterNavigate, Page } from "@sveltejs/kit";
 import { writable, get, type Readable, type Updater } from "svelte/store";
 import { expect } from "vitest";
 
@@ -13,6 +13,7 @@ export type HoistedPageForExploreTests = Readable<Page> & {
   // If we ever need it elsewhere then we need to handle string arguments as well.
   goto: (url: URL, opts?: { replaceState?: boolean }) => void;
   afterNavigate: typeof afterNavigate;
+  applyAction: (result: ActionResult) => void;
 };
 
 /**
@@ -31,6 +32,16 @@ export type HoistedPageForExploreTests = Readable<Page> & {
  * vi.mock("$app/stores", () => {
  *   return {
  *     page: hoistedPage,
+ *   };
+ * });
+ * // Only needed for components with a `sveltekit-superforms` form.
+ * vi.mock("$app/forms", async (importOriginal) => {
+ *   return {
+ *     ...(await importOriginal<typeof import("$app/forms")>()),
+ *     applyAction: (result: ActionResult) => {
+ *       hoistedPage.applyAction(result);
+ *       return Promise.resolve();
+ *     },
  *   };
  * });
  *
@@ -82,6 +93,17 @@ export class PageMockForExploreTests {
       callback: (navigation: AfterNavigate) => void,
     ) => {
       this.afterNavigateCallback = callback;
+    };
+
+    // Stand in for SvelteKit's `applyAction`, which puts the result of a form action on the page.
+    // Forms built with `sveltekit-superforms` read their validation result back from there, so
+    // without this their errors never reach the form.
+    hoistedPage.applyAction = (result: ActionResult) => {
+      update((page) => {
+        page.status = "status" in result ? (result.status ?? 200) : 200;
+        page.form = "data" in result ? result.data : undefined;
+        return page;
+      });
     };
   }
 

@@ -16,6 +16,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
   type V1ThemeSpec,
+  getQueryServiceConvertExpressionToMetricsSQLQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import {
   derived,
@@ -37,8 +38,6 @@ import {
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import { FilterManager, flattenExpression } from "./filter-manager";
-import { getFilterParam } from "./filter-state";
 import { Grid } from "./grid";
 import { TabGroup, type LayoutBlock } from "./tab-group";
 import { getComparisonTypeFromRangeString } from "./time-state";
@@ -50,6 +49,11 @@ import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import { toExpressionProto } from "../../dashboards/proto-state/toProto";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -90,11 +94,14 @@ export class CanvasEntity {
   // Time state controls
   timeManager: TimeManager;
 
-  // Dimension and measure filter state
-  filterManager: FilterManager;
-
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
+  dashboardProvider: CanvasDashboardConfigProvider;
+
+  // Expression filter manager
+  expressionFilterManager: ExpressionFilterManager;
+  // Tears down the filter managers' url seed; see `acquire`.
+  private disposeFilterSeed: (() => void) | undefined;
 
   fileArtifact: FileArtifact | undefined;
 
@@ -114,7 +121,6 @@ export class CanvasEntity {
   // This may sometimes be false due to discrepancy between two different ways
   // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
   defaultUrlParamsStore = writable<URLSearchParams>(new URLSearchParams());
-  viewingDefaultsStore: Readable<boolean>;
   filtersEnabledStore = writable<boolean>(true);
   _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
   _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
@@ -203,65 +209,30 @@ export class CanvasEntity {
     // override is applied.
     this.themeName.set(undefined);
 
-    this.processSpec(this.spec);
-
     this.metricsView = new MetricsViewSelectors(
       this.client,
       this._metricsViews,
     );
-
-    this.viewingDefaultsStore = derived(
-      [
-        this.searchParams,
-        this.defaultUrlParamsStore,
-        this.filterManager.pinnedFilterKeysStore,
-        this.filterManager.defaultPinnedFilterKeysStore,
-        this.filterManager.requiredFilterKeysStore,
-        this.filterManager.defaultRequiredFilterKeysStore,
-      ],
-      ([
-        $searchParams,
-        $defaultUrlParams,
-        pinnedFilters,
-        defaultPinnedFilterKeys,
-        requiredFilters,
-        defaultRequiredFilterKeys,
-      ]) => {
-        if (
-          defaultPinnedFilterKeys.symmetricDifference(pinnedFilters).size > 0
-        ) {
-          return false;
-        }
-        if (
-          defaultRequiredFilterKeys.symmetricDifference(requiredFilters).size >
-          0
-        ) {
-          return false;
-        }
-        if ($defaultUrlParams.size === 0) {
-          return false;
-        }
-
-        for (const [key, value] of $defaultUrlParams.entries()) {
-          if ($searchParams.get(key) !== value) {
-            // Ignore time range if not set
-            if (
-              $searchParams.get(key) === null &&
-              key === ExploreStateURLParams.TimeRange
-            ) {
-              continue;
-            }
-            return false;
-          }
-        }
-        for (const [key, value] of $searchParams.entries()) {
-          if ($defaultUrlParams.get(key) !== value) {
-            return false;
-          }
-        }
-        return true;
-      },
+    this.dashboardProvider = new CanvasDashboardConfigProvider(
+      this.client,
+      name,
     );
+
+    this.expressionFilterManager = new ExpressionFilterManager(
+      this.dashboardProvider.metricsViewsProvider,
+      this.dashboardProvider.yamlConfigProvider,
+    );
+    // A component that filters through its own interactions, a pivot click to filter for example,
+    // keeps its active state. Any other filter change, the filter bar or another component,
+    // releases it so the component drops its click selections.
+    // Not unsubscribed: the emitter belongs to a manager this entity owns, so the two are
+    // discarded together, and `dispose` can be followed by another `acquire`.
+    this.expressionFilterManager.on("filter-changed", ({ source }) => {
+      if (source && source === get(this.activeComponent)) return;
+      this.clearActiveComponent();
+    });
+
+    this.processSpec(this.spec);
   }
 
   checkAndSetMaxWidth = ({ maxWidth }: V1CanvasSpec) => {
@@ -346,39 +317,6 @@ export class CanvasEntity {
 
     this.titleStore.set(validSpec.displayName ?? "");
 
-    const defaultPreset = validSpec?.defaultPreset ?? {};
-    const filterExpressions = defaultPreset.filterExpr ?? {};
-    const pinnedFilters = validSpec?.pinnedFilters ?? [];
-    const requiredFilters = validSpec?.requiredFilters ?? [];
-
-    if (metricsViews) {
-      if (this.filterManager) {
-        this.filterManager.updateConfig(
-          metricsViews,
-          pinnedFilters,
-          filterExpressions,
-          requiredFilters,
-        );
-      } else {
-        this.filterManager = new FilterManager(
-          metricsViews,
-          this.instanceId,
-          pinnedFilters,
-          filterExpressions,
-          requiredFilters,
-        );
-        // Clears the active component when a global filter changes through
-        // FilterManager.actions.* (user-driven filter UI). Pivot click-to-filter
-        // bypasses actions and mutates FilterState directly, so it does NOT
-        // trigger this callback; see pivot-click-to-filter.ts for details.
-        this.filterManager.onFilterChange = () => this.clearActiveComponent();
-      }
-    } else {
-      // need to find a better way to initialize this in certain contextx - bgh
-      this.filterManager = new FilterManager({}, "", [], {});
-      this.filterManager.onFilterChange = () => this.clearActiveComponent();
-    }
-
     this.processRows({ canvas, components, metricsViews, filePath });
   };
 
@@ -390,32 +328,40 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const pinnedFilters = get(this.filterManager.pinnedFilterKeysStore);
-    const requiredFilters = get(this.filterManager.requiredFilterKeysStore);
+    const pinnedFilters = Object.keys(
+      this.dashboardProvider.yamlConfigProvider.pinnedFilters,
+    );
+    const requiredFilters = Object.keys(
+      this.dashboardProvider.yamlConfigProvider.requiredFilters,
+    );
 
     // Persist pinned and required independently. Render-time treats a filter as
     // visible whenever it's in either set, so we don't dedupe here: doing so
     // would silently drop the pin flag if a user later toggled required off.
-    const pinnedNames = Array.from(pinnedFilters).map((f) => f.split("::")[1]);
-    const requiredNames = Array.from(requiredFilters).map(
-      (f) => f.split("::")[1],
-    );
+    const pinnedNames = pinnedFilters
+      .map((f) => f.split("::").pop())
+      .filter(Boolean) as string[];
+    const requiredNames = requiredFilters
+      .map((f) => f.split("::").pop())
+      .filter(Boolean) as string[];
     const timeRange = get(this.timeManager.state.rangeStore);
     const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
 
-    const metricsViewFilters = get(this.filterManager.metricsViewFilters);
-    const filterNames = Array.from(metricsViewFilters.keys());
-    const promises = Array.from(metricsViewFilters.values()).map((filters) => {
-      const parsed = get(filters.parsed);
+    const filterNames = Object.keys(
+      this.expressionFilterManager.topLevelJoiner.expr,
+    );
+    const promises = Object.values(
+      this.expressionFilterManager.topLevelJoiner.expr,
+    ).map((expr) => {
+      const protoExpr = toExpressionProto(expr);
       return queryClient.fetchQuery({
-        queryKey: [
-          "resolve-metrics-view-filter-expression",
+        queryKey: getQueryServiceConvertExpressionToMetricsSQLQueryKey(
           this.instanceId,
-          parsed.where,
-        ],
+          { expression: protoExpr },
+        ),
         queryFn: () =>
           queryServiceConvertExpressionToMetricsSQL(this.client, {
-            expression: parsed.where as any,
+            expression: protoExpr,
           }),
       });
     });
@@ -543,7 +489,6 @@ export class CanvasEntity {
       if (redirected) return;
     }
 
-    this.filterManager.onUrlChange(searchParams);
     this.searchParams.set(searchParams);
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
@@ -560,6 +505,12 @@ export class CanvasEntity {
   // entity that was previously disposed is not left in an error state.
   acquire = () => {
     this.subscribers++;
+    // Seeded here rather than by the filter bar: everything that reads a filter, a canvas component
+    // for example, has to see the url's filters on a canvas with `filters_enabled: false` as well.
+    // `searchParams` holds the url the consumer applied, so an isolated consumer that renders stored
+    // state (see `onUrlChange`) seeds from that state instead of from the page url.
+    this.disposeFilterSeed ??=
+      this.expressionFilterManager.seedFromSearchParams(this.searchParams);
     if (this.unsubscriber) return; // already subscribed
     this.unsubscriber = this.specStore.subscribe(({ data }) => {
       if (this.firstTimeLoad) {
@@ -591,6 +542,8 @@ export class CanvasEntity {
     this.subscribers = 0;
     this.unsubscriber?.();
     this.unsubscriber = undefined; // so a later acquire re-subscribes
+    this.disposeFilterSeed?.();
+    this.disposeFilterSeed = undefined; // so a later acquire re-seeds
     this.componentsStore.read().forEach((component) => component.destroy());
     this.componentsStore.reset();
   };
@@ -621,6 +574,7 @@ export class CanvasEntity {
       const deployed = projectId;
 
       if (deployed) {
+        // TODO: bookmark specific code should only be in web-admin
         let homeBookmarkUrlSearch: string | undefined = undefined;
         try {
           // Only gets imported in admin context
@@ -1088,7 +1042,7 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
     ([metricsViewName, { expression }]) => {
       if (expression) {
         const flattened = flattenExpression(expression);
-        const urlFormat = getFilterParam(flattened, [], []);
+        const urlFormat = convertExpressionToFilterParam(flattened, []);
 
         if (urlFormat) {
           defaultSearchParams.set(

@@ -5,7 +5,6 @@ import { correctExploreState } from "@rilldata/web-common/features/dashboards/st
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
-  filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -33,6 +32,7 @@ import {
   type PivotMeasureFormatting,
   type PivotTableMode,
 } from "../pivot/types";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -124,12 +124,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   const dimensionsSet = new Set(explore.dimensions ?? []);
   const measuresSet = new Set(explore.measures ?? []);
 
-  exploreState.whereFilter =
-    filterExpressions(exploreState.whereFilter, (e) => {
-      if (!e.cond?.exprs?.length) return true;
-      return dimensionsSet.has(e.cond.exprs[0].ident!);
-    }) ?? createAndExpression([]);
-
   if (
     exploreState.selectedDimensionName &&
     !dimensionsSet.has(exploreState.selectedDimensionName)
@@ -164,10 +158,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
 const metricsViewReducers = {
   init(name: string, initState: ExploreState) {
     update((state) => {
-      // TODO: revisit this during the url state / restore user refactor
-      initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        initState.whereFilter,
-      );
       state.entities[name] = structuredClone(initState);
       state.entities[name].name = name;
 
@@ -196,9 +186,6 @@ const metricsViewReducers = {
       if (!partial.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        partial.whereFilter,
-      );
       correctExploreState(metricsView, exploreState);
     });
   },
@@ -206,6 +193,7 @@ const metricsViewReducers = {
   mergePartialExplorerEntity(
     name: string,
     partialExploreState: Partial<ExploreState>,
+    expressionFilterManager: ExpressionFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -213,14 +201,22 @@ const metricsViewReducers = {
       for (const key in partialExploreState) {
         exploreState[key] = partialExploreState[key];
       }
+
+      const mvName =
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+      if (mvName) {
+        exploreState.whereFilter =
+          expressionFilterManager.topLevelJoiner.expr[mvName] ??
+          createAndExpression([]);
+        exploreState.dimensionsWithInlistFilter =
+          expressionFilterManager.inList;
+      }
+
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
       if (!partialExploreState.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        partialExploreState.whereFilter,
-      );
       // Partial comes from getMergedExploreState and is already corrected
     });
   },

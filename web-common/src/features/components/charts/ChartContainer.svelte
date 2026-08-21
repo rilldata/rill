@@ -1,129 +1,153 @@
 <script lang="ts">
   import Chart from "@rilldata/web-common/features/components/charts/Chart.svelte";
   import { transformChartSpecToPivotState } from "@rilldata/web-common/features/components/charts/explore-transformer";
-  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { useExploreAvailability } from "@rilldata/web-common/features/explore-mappers/explore-validation";
+  import type { ExploreAvailabilityResult } from "@rilldata/web-common/features/explore-mappers/types";
   import { transformTimeAndFiltersToExploreState } from "@rilldata/web-common/features/explores/explore-link/explore-state-transformer";
   import ExploreLink from "@rilldata/web-common/features/explores/explore-link/ExploreLink.svelte";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
   import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/themes/theme-boundary";
-  import { getContext, hasContext } from "svelte";
+  import { getContext, hasContext, onDestroy } from "svelte";
   import type { View } from "svelte-vega";
   import type { Readable, Writable } from "svelte/store";
-  import { derived, readable } from "svelte/store";
+  import { readable } from "svelte/store";
   import { Theme } from "../../themes/theme";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
-  import type { ChartProvider, ChartSpec, ChartType } from "./types";
+  import type { ChartSpec, ChartType } from "./types";
+  import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 
   const hasParentTheme = hasContext(THEME_STORE_CONTEXT_KEY);
   const parentThemeStore = getContext<Writable<Theme | undefined>>(
     THEME_STORE_CONTEXT_KEY,
   );
 
-  export let chartType: ChartType;
-  export let spec: Readable<ChartSpec>;
-  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
-  export let themeMode: "light" | "dark" = "light";
-  export let theme: Theme = new Theme(undefined);
-  export let showExploreLink: boolean = false;
-  export let organization: string | undefined = undefined;
-  export let project: string | undefined = undefined;
+  let {
+    chartType,
+    spec,
+    timeAndFilterStore,
+    themeMode = "light",
+    theme = new Theme(undefined),
+    showExploreLink = false,
+    organization = undefined,
+    project = undefined,
+  }: {
+    chartType: ChartType;
+    spec: Readable<ChartSpec>;
+    timeAndFilterStore: Readable<TimeAndFilterStore>;
+    themeMode?: "light" | "dark";
+    theme?: Theme;
+    showExploreLink?: boolean;
+    organization?: string | undefined;
+    project?: string | undefined;
+  } = $props();
 
   const client = useRuntimeClient();
-  let view: View;
+  let view = $state() as View;
 
-  let chartProvider: ChartProvider;
-  $: {
+  let chartProvider = $derived.by(() => {
     const chartConfig = CHART_CONFIG[chartType];
-    chartProvider = new chartConfig.provider(spec, {});
-  }
+    return new chartConfig.provider(spec, {});
+  });
 
   // Use parent theme from context if available, otherwise use the prop
-  $: effectiveTheme = hasParentTheme ? $parentThemeStore : theme;
+  let effectiveTheme = $derived(hasParentTheme ? $parentThemeStore : theme);
 
   /**
    * Full theme object with all CSS variables for current mode
    * If not provided, chart will fall back to defaults
    */
-  $: currentTheme =
+  let currentTheme = $derived(
     effectiveTheme?.resolvedThemeObject?.[
       themeMode === "dark" ? "dark" : "light"
-    ];
-
-  $: metricsViewSelectors = new MetricsViewSelectors(client);
-
-  $: measures = metricsViewSelectors.getMeasuresForMetricView(
-    $spec.metrics_view,
+    ],
   );
 
-  $: dimensions = metricsViewSelectors.getDimensionsForMetricView(
-    $spec.metrics_view,
+  const metricsViewProvider = new MetricsViewsProvider(client, []);
+  $effect(() =>
+    metricsViewProvider.setMetricsViewNames(
+      $spec.metrics_view ? [$spec.metrics_view] : [],
+    ),
+  );
+  const yamlConfigProvider = new YAMLConfigProvider();
+  const expressionFilterManager = new ExpressionFilterManager(
+    metricsViewProvider,
+    yamlConfigProvider,
+  );
+  $effect(() =>
+    expressionFilterManager.setExprForMetricsView(
+      $spec.metrics_view,
+      $timeAndFilterStore.where,
+    ),
   );
 
-  $: chartDataQuery = chartProvider.createChartDataQuery(
-    client,
-    timeAndFilterStore,
+  let metricsViewSelectors = $derived(new MetricsViewSelectors(client));
+
+  let chartDataQuery = $derived(
+    chartProvider.createChartDataQuery(client, timeAndFilterStore),
   );
 
-  $: ({ dimensionFilters: whereFilter, dimensionThresholdFilters } =
-    splitWhereFilter($timeAndFilterStore.where));
+  let chartData = $derived(
+    getChartData({
+      config: $spec,
+      chartDataQuery,
+      metricsView: metricsViewSelectors,
+      themeStore: readable(effectiveTheme),
+      timeAndFilterStore,
+      getDomainValues: () =>
+        chartProvider.getChartDomainValues(metricsViewProvider.measures),
+      isThemeModeDark: themeMode === "dark",
+    }),
+  );
 
-  $: chartData = getChartData({
-    config: $spec,
-    chartDataQuery,
-    metricsView: metricsViewSelectors,
-    themeStore: readable(effectiveTheme),
-    timeAndFilterStore,
-    getDomainValues: () => chartProvider.getChartDomainValues($measures),
-    isThemeModeDark: themeMode === "dark",
+  let chartTitle = $derived(
+    chartProvider?.chartTitle?.($chartData.fields) ?? "",
+  );
+
+  let exploreAvailabilityStore = $derived(
+    showExploreLink
+      ? useExploreAvailability(client, $spec?.metrics_view)
+      : readable<ExploreAvailabilityResult>({ isAvailable: false }),
+  );
+  let exploreAvailability = $derived($exploreAvailabilityStore);
+
+  let exploreName = $derived(
+    exploreAvailability?.exploreName ?? $spec?.metrics_view,
+  );
+
+  let combinedWhere = $derived(chartProvider.combinedWhere);
+
+  let exploreState = $derived.by(() => {
+    if (!showExploreLink || !exploreName) return undefined;
+
+    const baseState =
+      transformTimeAndFiltersToExploreState($timeAndFilterStore);
+    const pivotState = transformChartSpecToPivotState(
+      $spec,
+      $timeAndFilterStore.timeGrain,
+    );
+
+    return {
+      ...baseState,
+      whereFilter: $combinedWhere,
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: pivotState,
+      showTimeComparison: false,
+    };
   });
 
-  $: chartTitle = chartProvider?.chartTitle?.($chartData.fields) ?? "";
-
-  $: exploreAvailability = showExploreLink
-    ? useExploreAvailability(client, $spec?.metrics_view)
-    : readable({
-        isAvailable: false,
-        exploreName: null,
-        displayName: undefined,
-      });
-
-  $: exploreName = derived(
-    exploreAvailability,
-    (availability) => availability?.exploreName ?? $spec?.metrics_view,
-  );
-
-  $: exploreState = derived(
-    [timeAndFilterStore, chartProvider.combinedWhere, exploreName],
-    ([timeAndFilter, filterState, expName]) => {
-      if (!showExploreLink || !expName) return undefined;
-
-      const { dimensionFilters, dimensionThresholdFilters } =
-        splitWhereFilter(filterState);
-      const baseState = transformTimeAndFiltersToExploreState(timeAndFilter);
-      const pivotState = transformChartSpecToPivotState(
-        $spec,
-        timeAndFilter.timeGrain,
-      );
-
-      return {
-        ...baseState,
-        whereFilter: dimensionFilters,
-        dimensionThresholdFilters,
-        activePage: DashboardState_ActivePage.PIVOT,
-        pivot: pivotState,
-        showTimeComparison: false,
-      };
-    },
-  );
+  onDestroy(() => {
+    metricsViewProvider.cleanup();
+    yamlConfigProvider.cleanup?.();
+  });
 </script>
 
 {#if $spec}
@@ -137,13 +161,8 @@
             <h4 class="title">{chartTitle}</h4>
             {#if "metrics_view" in $spec}
               <Filter size="16px" className="text-fg-secondary flex-shrink-0" />
-              <FilterChipsReadOnly
-                metricsViewNames={[$spec.metrics_view]}
-                dimensions={$dimensions}
-                measures={$measures}
-                {dimensionThresholdFilters}
-                dimensionsWithInlistFilter={[]}
-                filters={whereFilter}
+              <ReadonlyExpressionFilters
+                {expressionFilterManager}
                 displayTimeRange={$timeAndFilterStore.timeRange}
                 displayComparisonTimeRange={$timeAndFilterStore.showTimeComparison
                   ? $timeAndFilterStore.comparisonTimeRange
@@ -155,13 +174,13 @@
               />
             {/if}
           </div>
-          {#if showExploreLink && $exploreAvailability.isAvailable}
+          {#if showExploreLink && exploreAvailability.isAvailable}
             <ExploreLink
-              exploreName={$exploreName}
-              displayName={$exploreAvailability.displayName}
+              {exploreName}
+              displayName={exploreAvailability.displayName}
               {organization}
               {project}
-              exploreState={$exploreState}
+              {exploreState}
               mode="icon-button"
             />
           {/if}
@@ -172,7 +191,7 @@
           {chartType}
           chartSpec={$spec}
           {chartData}
-          measures={$measures}
+          measures={metricsViewProvider.measures}
           {themeMode}
           theme={currentTheme}
           isCanvas={true}

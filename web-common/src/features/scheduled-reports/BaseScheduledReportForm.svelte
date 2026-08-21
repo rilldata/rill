@@ -5,7 +5,6 @@
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
-  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
@@ -24,6 +23,7 @@
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
     ResourceKind,
@@ -39,13 +39,13 @@
   export let errors: SuperFormErrors<ReportValues>;
   export let submit: () => void;
   export let enhance;
-  // Exactly one of exploreName and canvasName is non-empty; canvasName selects the canvas PDF variant of the form.
+  export let metricsViewName: string;
   export let exploreName: string;
   export let canvasName: string = "";
   // Canvas state (URL search string) to display instead of the page URL; set when
   // editing a report so the filter bar shows the report's captured state.
   export let canvasStateOverride: string | undefined = undefined;
-  export let filters: Filters | undefined = undefined;
+  export let filters: ExpressionFilterManager | undefined = undefined;
   export let timeControls: TimeControls | undefined = undefined;
 
   const RUN_AS_OPTIONS = [
@@ -245,7 +245,13 @@
             id="filters"
             capitalize={false}
           />
-          <FiltersForm {filters} {timeControls} side="top" />
+          <FiltersForm
+            {filters}
+            {metricsViewName}
+            {exploreName}
+            {timeControls}
+            side="top"
+          />
         </div>
       {/if}
 

@@ -1220,9 +1220,17 @@
   "filter_advanced_beta": "Avanzado (BETA)",
   "filter_advanced_warning": "Los filtros avanzados son una funcionalidad experimental. Puede haber errores.",
   "filter_converted_to_select": "Tipo de filtro convertido a Seleccionar",
+  "filter_dimension": "dimensión",
+  "filter_dimension_chip_aria": "filtro {name}",
+  "filter_dimension_chip_tooltip": "Haz clic para editar los filtros de esta dimensión",
+  "filter_dimension_result_count_aria": "recuento de resultados de {name}",
+  "filter_dimension_results_aria": "resultados de {name}",
+  "filter_dimension_search_list_aria": "lista de búsqueda de {name}",
   "filter_dimensions": "DIMENSIONES",
   "filter_enter_search_term": "Ingresa un término de búsqueda",
   "filter_enter_search_term_select": "Ingresa un término de búsqueda",
+  "filter_exclude_label": "Excluir {label}",
+  "filter_in_list_too_long": "La lista es demasiado larga. Elimina algunos valores.",
   "filter_make_optional": "Hacer filtro opcional",
   "filter_make_required": "Hacer filtro obligatorio",
   "filter_measure_for_dimension": "para {dimension}",
@@ -1248,10 +1256,45 @@
   "filter_mode_in_list_description": "Crear un filtro basado en una lista de valores",
   "filter_mode_select": "Seleccionar",
   "filter_mode_select_description": "Seleccionar valores manualmente para este filtro",
+  "filter_no_results": "sin resultados",
   "filter_paste_list_hint": "Pegar una lista separada por comas o \\n",
   "filter_pin": "Fijar filtro",
   "filter_pin_tooltip": "Haz clic para fijar o desfijar: mantener este filtro visible en la parte superior para que otros usuarios no puedan eliminarlo.",
+  "filter_remove_values": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "eliminar {count} valor",
+        "countPlural=other": "eliminar {count} valores"
+      }
+    }
+  ],
+  "filter_required_dimension": "dimensión obligatoria",
+  "filter_required_missing_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Este dashboard requiere un valor para el siguiente filtro:",
+        "countPlural=other": "Este dashboard requiere valores para los siguientes filtros:"
+      }
+    }
+  ],
+  "filter_required_missing_title": "Selecciona un valor para continuar",
   "filter_required_tooltip": "Haz clic para marcar este filtro como obligatorio. Los visualizadores deben establecer un valor para que el dashboard se cargue.",
+  "filter_search_error": "error",
+  "filter_search_matched_count": "{count} de {total} coincidencias",
+  "filter_search_result_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} resultado",
+        "countPlural=other": "{count} resultados"
+      }
+    }
+  ],
   "filter_unpin": "Desfijar filtro",
   "footer_report_issue": "Reportar un problema",
   "footer_rill_developer": "Rill Developer",

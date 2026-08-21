@@ -56,17 +56,12 @@
       pivot: { showPivot },
     },
     dashboardStore,
+    expressionFilterManager,
   } = StateManagers;
 
   const { adminServer, cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
-
-  onMount(() => {
-    // Github star nudge is Rill developer only.
-    // Nudge on dashboard render.
-    if (!isEmbedded && !get(adminServer)) githubStarNudge.armPayoff();
-  });
 
   let exploreContainerWidth: number;
   let exploreContainerHeight: number;
@@ -74,8 +69,11 @@
 
   const client = useRuntimeClient();
 
-  $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
-    $dashboardStore);
+  $: ({ selectedTimeDimension } = $dashboardStore);
+  const filterStore =
+    expressionFilterManager.getExprStoreForMetricsView(metricsViewName);
+  $: dimensionOnlyFilter = $filterStore?.dimensionOnlyExpr;
+  $: whereFilter = $filterStore?.expr;
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -152,6 +150,12 @@
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);
 
+  onMount(() => {
+    // Github star nudge is Rill developer only.
+    // Nudge on dashboard render.
+    if (!isEmbedded && !get(adminServer)) githubStarNudge.armPayoff();
+  });
+
   // Clear the active theme when this dashboard is destroyed
   onDestroy(() => activeDashboardTheme.set(undefined));
 </script>
@@ -213,11 +217,17 @@
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
+                {dimensionOnlyFilter}
+                {whereFilter}
                 hideStartPivotButton={hidePivot}
                 tddChartHeight={$tddChartHeight}
               />
             {:else}
-              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+              <MeasuresContainer
+                {exploreContainerWidth}
+                {metricsViewName}
+                {whereFilter}
+              />
             {/if}
           {/key}
         </div>
@@ -265,7 +275,6 @@
                 dimension={selectedDimension}
                 {metricsViewName}
                 {whereFilter}
-                {dimensionThresholdFilters}
                 {timeRange}
                 {comparisonTimeRange}
                 {timeControlsReady}
@@ -276,7 +285,6 @@
               <LeaderboardDisplay
                 {metricsViewName}
                 {whereFilter}
-                {dimensionThresholdFilters}
                 {timeRange}
                 {comparisonTimeRange}
                 {timeControlsReady}

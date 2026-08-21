@@ -42,7 +42,6 @@
   export let organization: string;
   export let project: string;
   export let resource: { name: string; kind: ResourceKind };
-  export let metricsViewNames: string[];
   export let bookmarkData: {
     bookmarks: V1Bookmark[];
     categorizedBookmarks: Bookmarks;
@@ -251,19 +250,20 @@
   </DropdownMenuContent>
 </DropdownMenu>
 
-{#if showDialog}
-  <BookmarksFormDialog
-    {organization}
-    {project}
-    {projectId}
-    {bookmark}
-    {resource}
-    {defaultUrlParams}
-    {showFiltersOnly}
-    {metricsViewNames}
-    onClose={() => {
-      showDialog = false;
-      bookmark = null;
-    }}
-  />
+{#if showDialog && resource}
+  {#key `${resource.kind}:${resource.name}`}
+    <BookmarksFormDialog
+      {organization}
+      {project}
+      {projectId}
+      {bookmark}
+      {resource}
+      {defaultUrlParams}
+      {showFiltersOnly}
+      onClose={() => {
+        showDialog = false;
+        bookmark = null;
+      }}
+    />
+  {/key}
 {/if}
