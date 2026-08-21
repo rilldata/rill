@@ -119,7 +119,7 @@
         <div
           class="w-full h-fit flex flex-col items-center row-container relative"
           style:max-width="{maxWidth}px"
-          style:min-width="420px"
+          style:min-width="min(420px, 100%)"
           bind:contentRect
         >
           <slot />

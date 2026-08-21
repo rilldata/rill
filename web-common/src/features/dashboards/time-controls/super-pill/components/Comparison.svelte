@@ -130,9 +130,18 @@
     {/snippet}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
-    <div class="flex">
-      <div class="flex flex-col border-r w-48 p-1">
+  <DropdownMenu.Content
+    align="start"
+    {side}
+    class="p-0 overflow-hidden max-w-[calc(100vw-2rem)]"
+  >
+    <!-- Side-by-side panels overflow phones; they stack and scroll instead. -->
+    <div
+      class="flex flex-col sm:flex-row max-h-[70vh] sm:max-h-none overflow-y-auto sm:overflow-y-visible"
+    >
+      <div
+        class="flex flex-col border-b sm:border-b-0 sm:border-r w-full sm:w-48 p-1"
+      >
         {#each timeComparisonOptionsState as option (option.name)}
           {@const preset = TIME_COMPARISON[option.name]}
           {@const selected = selectedLabel === option.name}
@@ -173,7 +182,7 @@
         {/if}
       </div>
       {#if showSelector}
-        <div class="bg-surface-background flex flex-col w-60 p-3">
+        <div class="bg-surface-background flex flex-col w-full sm:w-60 p-3">
           {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
               minTimeGrain={V1TimeGrainToDateTimeUnit[

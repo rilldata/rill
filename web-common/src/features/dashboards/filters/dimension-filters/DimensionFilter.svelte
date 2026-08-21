@@ -506,7 +506,7 @@
   <DropdownMenu.Content
     align="start"
     {side}
-    class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
+    class="flex flex-col max-h-96 w-[min(400px,calc(100vw-2rem))] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
       {#if toggleFilterPin || toggleFilterRequired}
