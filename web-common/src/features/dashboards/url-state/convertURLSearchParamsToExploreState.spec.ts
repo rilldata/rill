@@ -76,6 +76,28 @@ Unexpected " ".`,
   },
 
   {
+    title: "Time range only with default grain",
+    url: "http://localhost/explore/AdBids_explore?tr=7D",
+    errors: [],
+    entity: {
+      selectedTimeRange: {
+        interval: "TIME_GRAIN_DAY",
+        name: "7D",
+      } as DashboardTimeControls,
+    },
+  },
+  {
+    title: "Time range only with no default grain",
+    url: "http://localhost/explore/AdBids_explore?tr=inf",
+    errors: [],
+    entity: {
+      selectedTimeRange: {
+        interval: "TIME_GRAIN_HOUR",
+        name: "inf",
+      } as DashboardTimeControls,
+    },
+  },
+  {
     title: "Invalid time ranges",
     url: "http://localhost/explore/AdBids_explore?tr=abc&grain=xyz",
     errors: [
@@ -131,7 +153,12 @@ Unexpected " ".`,
   },
 ];
 
-describe("Invalid Human readable URL State", () => {
+/**
+ * Has tests that call convertURLSearchParamsToExploreState directly.
+ * Unlike url-state-variations that tests actions on explore state.
+ * TODO: find a good unification of test cases so that a single set of cases run all variations.
+ */
+describe("direct convertURLSearchParamsToExploreState variations", () => {
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
