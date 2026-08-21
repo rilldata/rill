@@ -661,6 +661,47 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
+	case *Resource_AiEval:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetAiEval()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "AiEval",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "AiEval",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetAiEval()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "AiEval",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -8255,6 +8296,962 @@ var _ interface {
 	ErrorName() string
 } = AssertionResultValidationError{}
 
+// Validate checks the field values on AIEval with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIEval) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIEval with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in AIEvalMultiError, or nil if none found.
+func (m *AIEval) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIEval) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIEvalValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIEvalValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIEvalValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIEvalValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIEvalValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIEvalValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return AIEvalMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIEvalMultiError is an error wrapping multiple validation errors returned by
+// AIEval.ValidateAll() if the designated constraints aren't met.
+type AIEvalMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIEvalMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIEvalMultiError) AllErrors() []error { return m }
+
+// AIEvalValidationError is the validation error returned by AIEval.Validate if
+// the designated constraints aren't met.
+type AIEvalValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIEvalValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIEvalValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIEvalValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIEvalValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIEvalValidationError) ErrorName() string { return "AIEvalValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIEvalValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIEval.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIEvalValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIEvalValidationError{}
+
+// Validate checks the field values on AIEvalSpec with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIEvalSpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIEvalSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AIEvalSpecMultiError, or
+// nil if none found.
+func (m *AIEvalSpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIEvalSpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Agent
+
+	// no validation rules for Notes
+
+	// no validation rules for Explore
+
+	// no validation rules for TimeoutSeconds
+
+	// no validation rules for CaseTimeoutSeconds
+
+	// no validation rules for Concurrency
+
+	for idx, item := range m.GetCases() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AIEvalSpecValidationError{
+						field:  fmt.Sprintf("Cases[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AIEvalSpecValidationError{
+						field:  fmt.Sprintf("Cases[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AIEvalSpecValidationError{
+					field:  fmt.Sprintf("Cases[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Trigger
+
+	if len(errors) > 0 {
+		return AIEvalSpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIEvalSpecMultiError is an error wrapping multiple validation errors
+// returned by AIEvalSpec.ValidateAll() if the designated constraints aren't met.
+type AIEvalSpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIEvalSpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIEvalSpecMultiError) AllErrors() []error { return m }
+
+// AIEvalSpecValidationError is the validation error returned by
+// AIEvalSpec.Validate if the designated constraints aren't met.
+type AIEvalSpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIEvalSpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIEvalSpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIEvalSpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIEvalSpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIEvalSpecValidationError) ErrorName() string { return "AIEvalSpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIEvalSpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIEvalSpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIEvalSpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIEvalSpecValidationError{}
+
+// Validate checks the field values on AIEvalCase with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIEvalCase) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIEvalCase with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AIEvalCaseMultiError, or
+// nil if none found.
+func (m *AIEvalCase) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIEvalCase) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Question
+
+	// no validation rules for Notes
+
+	// no validation rules for Explore
+
+	// no validation rules for ExpectAnswer
+
+	// no validation rules for ExpectMetricsView
+
+	// no validation rules for ExpectResultSql
+
+	// no validation rules for ExpectResultOrdered
+
+	if len(errors) > 0 {
+		return AIEvalCaseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIEvalCaseMultiError is an error wrapping multiple validation errors
+// returned by AIEvalCase.ValidateAll() if the designated constraints aren't met.
+type AIEvalCaseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIEvalCaseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIEvalCaseMultiError) AllErrors() []error { return m }
+
+// AIEvalCaseValidationError is the validation error returned by
+// AIEvalCase.Validate if the designated constraints aren't met.
+type AIEvalCaseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIEvalCaseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIEvalCaseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIEvalCaseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIEvalCaseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIEvalCaseValidationError) ErrorName() string { return "AIEvalCaseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIEvalCaseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIEvalCase.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIEvalCaseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIEvalCaseValidationError{}
+
+// Validate checks the field values on AIEvalState with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIEvalState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIEvalState with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AIEvalStateMultiError, or
+// nil if none found.
+func (m *AIEvalState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIEvalState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetCurrentExecution()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIEvalStateValidationError{
+					field:  "CurrentExecution",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIEvalStateValidationError{
+					field:  "CurrentExecution",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCurrentExecution()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIEvalStateValidationError{
+				field:  "CurrentExecution",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetExecutionHistory() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AIEvalStateValidationError{
+						field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AIEvalStateValidationError{
+						field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AIEvalStateValidationError{
+					field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for ExecutionCount
+
+	if len(errors) > 0 {
+		return AIEvalStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIEvalStateMultiError is an error wrapping multiple validation errors
+// returned by AIEvalState.ValidateAll() if the designated constraints aren't met.
+type AIEvalStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIEvalStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIEvalStateMultiError) AllErrors() []error { return m }
+
+// AIEvalStateValidationError is the validation error returned by
+// AIEvalState.Validate if the designated constraints aren't met.
+type AIEvalStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIEvalStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIEvalStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIEvalStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIEvalStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIEvalStateValidationError) ErrorName() string { return "AIEvalStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIEvalStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIEvalState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIEvalStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIEvalStateValidationError{}
+
+// Validate checks the field values on AIEvalExecution with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AIEvalExecution) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIEvalExecution with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AIEvalExecutionMultiError, or nil if none found.
+func (m *AIEvalExecution) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIEvalExecution) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Adhoc
+
+	// no validation rules for ErrorMessage
+
+	// no validation rules for Canceled
+
+	if all {
+		switch v := interface{}(m.GetStartedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIEvalExecutionValidationError{
+					field:  "StartedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIEvalExecutionValidationError{
+					field:  "StartedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStartedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIEvalExecutionValidationError{
+				field:  "StartedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetFinishedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIEvalExecutionValidationError{
+					field:  "FinishedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIEvalExecutionValidationError{
+					field:  "FinishedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFinishedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIEvalExecutionValidationError{
+				field:  "FinishedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetCaseResults() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AIEvalExecutionValidationError{
+						field:  fmt.Sprintf("CaseResults[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AIEvalExecutionValidationError{
+						field:  fmt.Sprintf("CaseResults[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AIEvalExecutionValidationError{
+					field:  fmt.Sprintf("CaseResults[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for PassedCount
+
+	// no validation rules for FailedCount
+
+	// no validation rules for ErroredCount
+
+	if len(errors) > 0 {
+		return AIEvalExecutionMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIEvalExecutionMultiError is an error wrapping multiple validation errors
+// returned by AIEvalExecution.ValidateAll() if the designated constraints
+// aren't met.
+type AIEvalExecutionMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIEvalExecutionMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIEvalExecutionMultiError) AllErrors() []error { return m }
+
+// AIEvalExecutionValidationError is the validation error returned by
+// AIEvalExecution.Validate if the designated constraints aren't met.
+type AIEvalExecutionValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIEvalExecutionValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIEvalExecutionValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIEvalExecutionValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIEvalExecutionValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIEvalExecutionValidationError) ErrorName() string { return "AIEvalExecutionValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIEvalExecutionValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIEvalExecution.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIEvalExecutionValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIEvalExecutionValidationError{}
+
+// Validate checks the field values on AIEvalCaseResult with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AIEvalCaseResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIEvalCaseResult with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AIEvalCaseResultMultiError, or nil if none found.
+func (m *AIEvalCaseResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIEvalCaseResult) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for CaseName
+
+	// no validation rules for Verdict
+
+	// no validation rules for JudgeReasoning
+
+	// no validation rules for SessionId
+
+	// no validation rules for AnswerPreview
+
+	if all {
+		switch v := interface{}(m.GetStartedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIEvalCaseResultValidationError{
+					field:  "StartedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIEvalCaseResultValidationError{
+					field:  "StartedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStartedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIEvalCaseResultValidationError{
+				field:  "StartedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetFinishedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIEvalCaseResultValidationError{
+					field:  "FinishedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIEvalCaseResultValidationError{
+					field:  "FinishedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFinishedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIEvalCaseResultValidationError{
+				field:  "FinishedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return AIEvalCaseResultMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIEvalCaseResultMultiError is an error wrapping multiple validation errors
+// returned by AIEvalCaseResult.ValidateAll() if the designated constraints
+// aren't met.
+type AIEvalCaseResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIEvalCaseResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIEvalCaseResultMultiError) AllErrors() []error { return m }
+
+// AIEvalCaseResultValidationError is the validation error returned by
+// AIEvalCaseResult.Validate if the designated constraints aren't met.
+type AIEvalCaseResultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIEvalCaseResultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIEvalCaseResultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIEvalCaseResultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIEvalCaseResultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIEvalCaseResultValidationError) ErrorName() string { return "AIEvalCaseResultValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIEvalCaseResultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIEvalCaseResult.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIEvalCaseResultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIEvalCaseResultValidationError{}
+
 // Validate checks the field values on RefreshTrigger with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -8503,6 +9500,40 @@ func (m *RefreshTriggerSpec) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetAiEvals() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, RefreshTriggerSpecValidationError{
+						field:  fmt.Sprintf("AiEvals[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, RefreshTriggerSpecValidationError{
+						field:  fmt.Sprintf("AiEvals[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return RefreshTriggerSpecValidationError{
+					field:  fmt.Sprintf("AiEvals[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return RefreshTriggerSpecMultiError(errors)
 	}
@@ -8684,6 +9715,110 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RefreshTriggerStateValidationError{}
+
+// Validate checks the field values on AIEvalTrigger with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIEvalTrigger) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIEvalTrigger with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AIEvalTriggerMultiError, or
+// nil if none found.
+func (m *AIEvalTrigger) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIEvalTrigger) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for AiEval
+
+	// no validation rules for Cancel
+
+	if len(errors) > 0 {
+		return AIEvalTriggerMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIEvalTriggerMultiError is an error wrapping multiple validation errors
+// returned by AIEvalTrigger.ValidateAll() if the designated constraints
+// aren't met.
+type AIEvalTriggerMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIEvalTriggerMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIEvalTriggerMultiError) AllErrors() []error { return m }
+
+// AIEvalTriggerValidationError is the validation error returned by
+// AIEvalTrigger.Validate if the designated constraints aren't met.
+type AIEvalTriggerValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIEvalTriggerValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIEvalTriggerValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIEvalTriggerValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIEvalTriggerValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIEvalTriggerValidationError) ErrorName() string { return "AIEvalTriggerValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIEvalTriggerValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIEvalTrigger.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIEvalTriggerValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIEvalTriggerValidationError{}
 
 // Validate checks the field values on RefreshModelTrigger with the rules
 // defined in the proto definition for this message. If any rules are

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -77,7 +78,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		// Apply to all resources except those that have a dedicated Trigger property.
 		var skip bool
 		switch rn.Kind {
-		case runtime.ResourceKindSource, runtime.ResourceKindModel, runtime.ResourceKindAlert, runtime.ResourceKindReport:
+		case runtime.ResourceKindSource, runtime.ResourceKindModel, runtime.ResourceKindAlert, runtime.ResourceKindReport, runtime.ResourceKindAIEval:
 			skip = true
 		}
 		if skip {
@@ -141,6 +142,25 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		if err != nil {
 			// Not handling deletion race conditions because we hold a lock.
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to update trigger for model %q: %w", mt.Model, err)}
+		}
+	}
+
+	// Handle AI eval triggers
+	for _, et := range trigger.Spec.AiEvals {
+		er, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindAIEval, Name: et.AiEval}, true)
+		if err != nil {
+			// Skip triggers for non-existent evals
+			if !errors.Is(err, drivers.ErrResourceNotFound) {
+				return runtime.ReconcileResult{Err: err}
+			}
+			r.C.Logger.Warn("Skipped trigger for non-existent AI eval", zap.String("ai_eval", et.AiEval), observability.ZapCtx(ctx))
+			continue
+		}
+
+		err = r.UpdateAIEvalTrigger(ctx, er, et.Cases, et.Cancel)
+		if err != nil {
+			// Not handling deletion race conditions because we hold a lock.
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to update trigger for AI eval %q: %w", et.AiEval, err)}
 		}
 	}
 
@@ -208,12 +228,66 @@ func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *r
 			return nil
 		}
 		report.Spec.Trigger = true
+	case runtime.ResourceKindAIEval:
+		return r.UpdateAIEvalTrigger(ctx, res, nil, false)
 	default:
 		// Nothing to do
 		r.C.Logger.Warn("Attempted to trigger a resource type that is not triggerable", zap.String("kind", res.Meta.Name.Kind), zap.String("name", res.Meta.Name.Name), observability.ZapCtx(ctx))
 		return nil
 	}
 
+	return r.C.UpdateSpec(ctx, res.Meta.Name, res)
+}
+
+// UpdateAIEvalTrigger sets or clears the ephemeral trigger properties of an AI eval resource.
+// If cancel is true, the trigger is cleared, which cancels an in-flight run (a non-self spec update cancels the running reconcile).
+// Otherwise the trigger is set; if a run is already triggered, the case selections are merged (an empty selection means all cases and takes precedence).
+// NOTE: If you edit this logic, also update the checks in newResourceIfModified in project_parser.go accordingly (they need to incorporate triggers in their modified checks).
+func (r *RefreshTriggerReconciler) UpdateAIEvalTrigger(ctx context.Context, res *runtimev1.Resource, cases []string, cancel bool) error {
+	eval := res.GetAiEval()
+	if eval == nil {
+		return fmt.Errorf("not an AI eval resource")
+	}
+
+	if cancel {
+		if !eval.Spec.Trigger && len(eval.Spec.TriggerCases) == 0 {
+			return nil
+		}
+		eval.Spec.Trigger = false
+		eval.Spec.TriggerCases = nil
+		return r.C.UpdateSpec(ctx, res.Meta.Name, res)
+	}
+
+	if eval.Spec.Trigger {
+		if len(eval.Spec.TriggerCases) == 0 {
+			// Already triggered for all cases; nothing more to add.
+			return nil
+		}
+		if len(cases) == 0 {
+			eval.Spec.TriggerCases = nil
+			return r.C.UpdateSpec(ctx, res.Meta.Name, res)
+		}
+		seen := make(map[string]bool, len(eval.Spec.TriggerCases))
+		for _, c := range eval.Spec.TriggerCases {
+			seen[strings.ToLower(c)] = true
+		}
+		updated := false
+		for _, c := range cases {
+			if !seen[strings.ToLower(c)] {
+				eval.Spec.TriggerCases = append(eval.Spec.TriggerCases, c)
+				seen[strings.ToLower(c)] = true
+				updated = true
+			}
+		}
+		if !updated {
+			// Nothing new to run. Updating the spec anyway would cancel and restart the in-flight run.
+			return nil
+		}
+		return r.C.UpdateSpec(ctx, res.Meta.Name, res)
+	}
+
+	eval.Spec.Trigger = true
+	eval.Spec.TriggerCases = cases
 	return r.C.UpdateSpec(ctx, res.Meta.Name, res)
 }
 

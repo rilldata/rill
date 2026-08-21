@@ -222,6 +222,60 @@ proto3.util.setEnumType(AssertionStatus, "rill.runtime.v1.AssertionStatus", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.AIEvalVerdict
+ */
+export enum AIEvalVerdict {
+  /**
+   * @generated from enum value: AI_EVAL_VERDICT_UNSPECIFIED = 0;
+   */
+  AI_EVAL_VERDICT_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: AI_EVAL_VERDICT_PENDING = 1;
+   */
+  AI_EVAL_VERDICT_PENDING = 1,
+
+  /**
+   * @generated from enum value: AI_EVAL_VERDICT_RUNNING = 2;
+   */
+  AI_EVAL_VERDICT_RUNNING = 2,
+
+  /**
+   * @generated from enum value: AI_EVAL_VERDICT_PASS = 3;
+   */
+  AI_EVAL_VERDICT_PASS = 3,
+
+  /**
+   * @generated from enum value: AI_EVAL_VERDICT_FAIL = 4;
+   */
+  AI_EVAL_VERDICT_FAIL = 4,
+
+  /**
+   * Infrastructure error or timeout, distinct from a graded failure.
+   *
+   * @generated from enum value: AI_EVAL_VERDICT_ERROR = 5;
+   */
+  AI_EVAL_VERDICT_ERROR = 5,
+
+  /**
+   * The case never ran because the run was canceled or interrupted.
+   *
+   * @generated from enum value: AI_EVAL_VERDICT_SKIPPED = 6;
+   */
+  AI_EVAL_VERDICT_SKIPPED = 6,
+}
+// Retrieve enum metadata with: proto3.getEnumType(AIEvalVerdict)
+proto3.util.setEnumType(AIEvalVerdict, "rill.runtime.v1.AIEvalVerdict", [
+  { no: 0, name: "AI_EVAL_VERDICT_UNSPECIFIED" },
+  { no: 1, name: "AI_EVAL_VERDICT_PENDING" },
+  { no: 2, name: "AI_EVAL_VERDICT_RUNNING" },
+  { no: 3, name: "AI_EVAL_VERDICT_PASS" },
+  { no: 4, name: "AI_EVAL_VERDICT_FAIL" },
+  { no: 5, name: "AI_EVAL_VERDICT_ERROR" },
+  { no: 6, name: "AI_EVAL_VERDICT_SKIPPED" },
+]);
+
+/**
  * @generated from message rill.runtime.v1.Resource
  */
 export class Resource extends Message<Resource> {
@@ -319,6 +373,12 @@ export class Resource extends Message<Resource> {
      */
     value: ConnectorV2;
     case: "connector";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.AIEval ai_eval = 18;
+     */
+    value: AIEval;
+    case: "aiEval";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Resource>) {
@@ -344,6 +404,7 @@ export class Resource extends Message<Resource> {
     { no: 14, name: "canvas", kind: "message", T: Canvas, oneof: "resource" },
     { no: 15, name: "api", kind: "message", T: API, oneof: "resource" },
     { no: 16, name: "connector", kind: "message", T: ConnectorV2, oneof: "resource" },
+    { no: 18, name: "ai_eval", kind: "message", T: AIEval, oneof: "resource" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Resource {
@@ -4336,6 +4397,492 @@ export class AssertionResult extends Message<AssertionResult> {
 }
 
 /**
+ * AIEval is a suite of test cases for the project's AI: business questions with expected answers.
+ * Evals only run when explicitly triggered (there is no schedule); reconciles are validate-only.
+ *
+ * @generated from message rill.runtime.v1.AIEval
+ */
+export class AIEval extends Message<AIEval> {
+  /**
+   * @generated from field: rill.runtime.v1.AIEvalSpec spec = 1;
+   */
+  spec?: AIEvalSpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.AIEvalState state = 2;
+   */
+  state?: AIEvalState;
+
+  constructor(data?: PartialMessage<AIEval>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIEval";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: AIEvalSpec },
+    { no: 2, name: "state", kind: "message", T: AIEvalState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIEval {
+    return new AIEval().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIEval {
+    return new AIEval().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIEval {
+    return new AIEval().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIEval | PlainMessage<AIEval> | undefined, b: AIEval | PlainMessage<AIEval> | undefined): boolean {
+    return proto3.util.equals(AIEval, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AIEvalSpec
+ */
+export class AIEvalSpec extends Message<AIEvalSpec> {
+  /**
+   * @generated from field: string display_name = 1;
+   */
+  displayName = "";
+
+  /**
+   * Agent that answers the questions. Currently only "analyst_agent".
+   *
+   * @generated from field: string agent = 2;
+   */
+  agent = "";
+
+  /**
+   * Suite-level guidance for the LLM judge, prepended to each case's notes.
+   *
+   * @generated from field: string notes = 3;
+   */
+  notes = "";
+
+  /**
+   * Optional explore dashboard used as context for all cases (case-level explore takes precedence).
+   *
+   * @generated from field: string explore = 4;
+   */
+  explore = "";
+
+  /**
+   * Timeout for a whole run.
+   *
+   * @generated from field: uint32 timeout_seconds = 5;
+   */
+  timeoutSeconds = 0;
+
+  /**
+   * Timeout for a single case.
+   *
+   * @generated from field: uint32 case_timeout_seconds = 6;
+   */
+  caseTimeoutSeconds = 0;
+
+  /**
+   * Number of cases to run concurrently.
+   *
+   * @generated from field: uint32 concurrency = 7;
+   */
+  concurrency = 0;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.AIEvalCase cases = 8;
+   */
+  cases: AIEvalCase[] = [];
+
+  /**
+   * Ephemeral fields used to trigger runs. Not derived from code files.
+   *
+   * @generated from field: bool trigger = 9;
+   */
+  trigger = false;
+
+  /**
+   * Names of cases to run when triggered. Empty runs all cases.
+   *
+   * @generated from field: repeated string trigger_cases = 10;
+   */
+  triggerCases: string[] = [];
+
+  constructor(data?: PartialMessage<AIEvalSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIEvalSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "notes", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "case_timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "concurrency", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 8, name: "cases", kind: "message", T: AIEvalCase, repeated: true },
+    { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "trigger_cases", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIEvalSpec {
+    return new AIEvalSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIEvalSpec {
+    return new AIEvalSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIEvalSpec {
+    return new AIEvalSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIEvalSpec | PlainMessage<AIEvalSpec> | undefined, b: AIEvalSpec | PlainMessage<AIEvalSpec> | undefined): boolean {
+    return proto3.util.equals(AIEvalSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AIEvalCase
+ */
+export class AIEvalCase extends Message<AIEvalCase> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string question = 2;
+   */
+  question = "";
+
+  /**
+   * Case-level guidance for the LLM judge.
+   *
+   * @generated from field: string notes = 3;
+   */
+  notes = "";
+
+  /**
+   * Optional explore dashboard used as context for this case.
+   *
+   * @generated from field: string explore = 4;
+   */
+  explore = "";
+
+  /**
+   * Expected answer in natural language; asserted by the LLM judge.
+   *
+   * @generated from field: string expect_answer = 5;
+   */
+  expectAnswer = "";
+
+  /**
+   * Metrics view the agent is expected to query; asserted structurally.
+   *
+   * @generated from field: string expect_metrics_view = 6;
+   */
+  expectMetricsView = "";
+
+  /**
+   * Measures the agent's queries are expected to include; asserted structurally.
+   *
+   * @generated from field: repeated string expect_measures = 7;
+   */
+  expectMeasures: string[] = [];
+
+  /**
+   * Dimensions the agent's queries are expected to include; asserted structurally.
+   *
+   * @generated from field: repeated string expect_dimensions = 8;
+   */
+  expectDimensions: string[] = [];
+
+  /**
+   * Ground-truth metrics SQL whose result the agent's query result must match.
+   * Reserved for future use; not asserted yet.
+   *
+   * @generated from field: string expect_result_sql = 9;
+   */
+  expectResultSql = "";
+
+  /**
+   * @generated from field: bool expect_result_ordered = 10;
+   */
+  expectResultOrdered = false;
+
+  constructor(data?: PartialMessage<AIEvalCase>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIEvalCase";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "question", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "notes", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "expect_answer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "expect_metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "expect_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "expect_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "expect_result_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "expect_result_ordered", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIEvalCase {
+    return new AIEvalCase().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIEvalCase {
+    return new AIEvalCase().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIEvalCase {
+    return new AIEvalCase().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIEvalCase | PlainMessage<AIEvalCase> | undefined, b: AIEvalCase | PlainMessage<AIEvalCase> | undefined): boolean {
+    return proto3.util.equals(AIEvalCase, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AIEvalState
+ */
+export class AIEvalState extends Message<AIEvalState> {
+  /**
+   * @generated from field: rill.runtime.v1.AIEvalExecution current_execution = 1;
+   */
+  currentExecution?: AIEvalExecution;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.AIEvalExecution execution_history = 2;
+   */
+  executionHistory: AIEvalExecution[] = [];
+
+  /**
+   * @generated from field: uint32 execution_count = 3;
+   */
+  executionCount = 0;
+
+  constructor(data?: PartialMessage<AIEvalState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIEvalState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "current_execution", kind: "message", T: AIEvalExecution },
+    { no: 2, name: "execution_history", kind: "message", T: AIEvalExecution, repeated: true },
+    { no: 3, name: "execution_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIEvalState {
+    return new AIEvalState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIEvalState {
+    return new AIEvalState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIEvalState {
+    return new AIEvalState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIEvalState | PlainMessage<AIEvalState> | undefined, b: AIEvalState | PlainMessage<AIEvalState> | undefined): boolean {
+    return proto3.util.equals(AIEvalState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AIEvalExecution
+ */
+export class AIEvalExecution extends Message<AIEvalExecution> {
+  /**
+   * @generated from field: bool adhoc = 1;
+   */
+  adhoc = false;
+
+  /**
+   * The case names the run was triggered with. Empty means all cases.
+   *
+   * @generated from field: repeated string trigger_cases = 2;
+   */
+  triggerCases: string[] = [];
+
+  /**
+   * @generated from field: string error_message = 3;
+   */
+  errorMessage = "";
+
+  /**
+   * @generated from field: bool canceled = 4;
+   */
+  canceled = false;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp started_on = 5;
+   */
+  startedOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp finished_on = 6;
+   */
+  finishedOn?: Timestamp;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.AIEvalCaseResult case_results = 7;
+   */
+  caseResults: AIEvalCaseResult[] = [];
+
+  /**
+   * @generated from field: uint32 passed_count = 8;
+   */
+  passedCount = 0;
+
+  /**
+   * @generated from field: uint32 failed_count = 9;
+   */
+  failedCount = 0;
+
+  /**
+   * @generated from field: uint32 errored_count = 10;
+   */
+  erroredCount = 0;
+
+  constructor(data?: PartialMessage<AIEvalExecution>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIEvalExecution";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "trigger_cases", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "canceled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "started_on", kind: "message", T: Timestamp },
+    { no: 6, name: "finished_on", kind: "message", T: Timestamp },
+    { no: 7, name: "case_results", kind: "message", T: AIEvalCaseResult, repeated: true },
+    { no: 8, name: "passed_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "failed_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 10, name: "errored_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIEvalExecution {
+    return new AIEvalExecution().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIEvalExecution {
+    return new AIEvalExecution().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIEvalExecution {
+    return new AIEvalExecution().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIEvalExecution | PlainMessage<AIEvalExecution> | undefined, b: AIEvalExecution | PlainMessage<AIEvalExecution> | undefined): boolean {
+    return proto3.util.equals(AIEvalExecution, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AIEvalCaseResult
+ */
+export class AIEvalCaseResult extends Message<AIEvalCaseResult> {
+  /**
+   * @generated from field: string case_name = 1;
+   */
+  caseName = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.AIEvalVerdict verdict = 2;
+   */
+  verdict = AIEvalVerdict.AI_EVAL_VERDICT_UNSPECIFIED;
+
+  /**
+   * Why the case failed, one entry per failed assertion.
+   *
+   * @generated from field: repeated string failure_reasons = 3;
+   */
+  failureReasons: string[] = [];
+
+  /**
+   * @generated from field: string judge_reasoning = 4;
+   */
+  judgeReasoning = "";
+
+  /**
+   * AI session holding the full transcript of the case's conversation.
+   *
+   * @generated from field: string session_id = 5;
+   */
+  sessionId = "";
+
+  /**
+   * Truncated final answer for display in result lists.
+   *
+   * @generated from field: string answer_preview = 6;
+   */
+  answerPreview = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp started_on = 7;
+   */
+  startedOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp finished_on = 8;
+   */
+  finishedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<AIEvalCaseResult>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIEvalCaseResult";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "case_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "verdict", kind: "enum", T: proto3.getEnumType(AIEvalVerdict) },
+    { no: 3, name: "failure_reasons", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "judge_reasoning", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "answer_preview", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "started_on", kind: "message", T: Timestamp },
+    { no: 8, name: "finished_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIEvalCaseResult {
+    return new AIEvalCaseResult().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIEvalCaseResult {
+    return new AIEvalCaseResult().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIEvalCaseResult {
+    return new AIEvalCaseResult().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIEvalCaseResult | PlainMessage<AIEvalCaseResult> | undefined, b: AIEvalCaseResult | PlainMessage<AIEvalCaseResult> | undefined): boolean {
+    return proto3.util.equals(AIEvalCaseResult, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.RefreshTrigger
  */
 export class RefreshTrigger extends Message<RefreshTrigger> {
@@ -4397,6 +4944,13 @@ export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
    */
   models: RefreshModelTrigger[] = [];
 
+  /**
+   * AI evals to run. These are specified separately to enable running a subset of cases and cancellation.
+   *
+   * @generated from field: repeated rill.runtime.v1.AIEvalTrigger ai_evals = 3;
+   */
+  aiEvals: AIEvalTrigger[] = [];
+
   constructor(data?: PartialMessage<RefreshTriggerSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4407,6 +4961,7 @@ export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
+    { no: 3, name: "ai_evals", kind: "message", T: AIEvalTrigger, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshTriggerSpec {
@@ -4454,6 +5009,61 @@ export class RefreshTriggerState extends Message<RefreshTriggerState> {
 
   static equals(a: RefreshTriggerState | PlainMessage<RefreshTriggerState> | undefined, b: RefreshTriggerState | PlainMessage<RefreshTriggerState> | undefined): boolean {
     return proto3.util.equals(RefreshTriggerState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AIEvalTrigger
+ */
+export class AIEvalTrigger extends Message<AIEvalTrigger> {
+  /**
+   * The AI eval resource to run.
+   *
+   * @generated from field: string ai_eval = 1;
+   */
+  aiEval = "";
+
+  /**
+   * Names of specific cases to run. Empty runs all cases.
+   *
+   * @generated from field: repeated string cases = 2;
+   */
+  cases: string[] = [];
+
+  /**
+   * If true, cancels an in-flight run instead of starting one.
+   *
+   * @generated from field: bool cancel = 3;
+   */
+  cancel = false;
+
+  constructor(data?: PartialMessage<AIEvalTrigger>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIEvalTrigger";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ai_eval", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "cases", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "cancel", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIEvalTrigger {
+    return new AIEvalTrigger().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIEvalTrigger {
+    return new AIEvalTrigger().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIEvalTrigger {
+    return new AIEvalTrigger().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIEvalTrigger | PlainMessage<AIEvalTrigger> | undefined, b: AIEvalTrigger | PlainMessage<AIEvalTrigger> | undefined): boolean {
+    return proto3.util.equals(AIEvalTrigger, a, b);
   }
 }
 

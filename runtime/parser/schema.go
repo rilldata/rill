@@ -38,6 +38,7 @@ var resourceKindToDefinitionKey = map[ResourceKind]string{
 	ResourceKindCanvas:      "canvas-dashboards",
 	ResourceKindAPI:         "apis",
 	ResourceKindConnector:   "connectors",
+	ResourceKindAIEval:      "ai-evals",
 }
 
 // JSONSchemaForRillYAML returns the JSON schema for validating rill.yaml files.

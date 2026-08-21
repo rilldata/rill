@@ -58,6 +58,12 @@ type CatalogStore interface {
 	UpdateAISession(ctx context.Context, s *AISession) error
 	FindAIMessages(ctx context.Context, sessionID string) ([]*AIMessage, error)
 	InsertAIMessage(ctx context.Context, m *AIMessage) error
+
+	FindAIFeedback(ctx context.Context, opts *FindAIFeedbackOptions) ([]*AIFeedback, error)
+	FindAIFeedbackByID(ctx context.Context, id string) (*AIFeedback, error)
+	FindAIFeedbackForSession(ctx context.Context, sessionID string) ([]*AIFeedback, error)
+	InsertAIFeedback(ctx context.Context, f *AIFeedback) error
+	UpdateAIFeedback(ctx context.Context, f *AIFeedback) error
 }
 
 // Resource is an entry in a catalog store
@@ -137,4 +143,56 @@ type AIMessage struct {
 	Tool        string    `db:"tool"`
 	ContentType string    `db:"content_type"`
 	Content     string    `db:"content"`
+}
+
+// Constants for AIFeedback.Kind.
+const (
+	AIFeedbackKindRating        = "rating"
+	AIFeedbackKindReviewRequest = "review_request"
+)
+
+// Constants for AIFeedback.Status.
+const (
+	AIFeedbackStatusOpen      = "open"
+	AIFeedbackStatusAddressed = "addressed"
+	AIFeedbackStatusDismissed = "dismissed"
+)
+
+// AIFeedback represents a user feedback item on an AISession: a rating or a review request.
+// Feedback items power the admin review inbox; items with status "open" exempt their session from TTL cleanup.
+type AIFeedback struct {
+	ID         string `db:"id"`
+	InstanceID string `db:"instance_id"`
+	SessionID  string `db:"session_id"`
+	// TargetMessageID is the rated message; empty for conversation-level feedback.
+	TargetMessageID string `db:"target_message_id"`
+	// Kind is one of the AIFeedbackKind constants.
+	Kind       string   `db:"kind"`
+	Sentiment  string   `db:"sentiment"`
+	Categories []string `db:"-"`
+	Comment    string   `db:"comment"`
+	// PredictedAttribution is the AI-predicted cause: "rill", "project", "user", or empty.
+	PredictedAttribution string `db:"predicted_attribution"`
+	SuggestedAction      string `db:"suggested_action"`
+	// Status is one of the AIFeedbackStatus constants.
+	Status string `db:"status"`
+	// OwnerID identifies the submitter, which may differ from the session owner for shared conversations.
+	OwnerID    string     `db:"owner_id"`
+	OwnerEmail string     `db:"owner_email"`
+	ResolvedBy string     `db:"resolved_by"`
+	ResolvedOn *time.Time `db:"resolved_on"`
+	CreatedOn  time.Time  `db:"created_on"`
+	UpdatedOn  time.Time  `db:"updated_on"`
+	// SessionTitle is joined from the session in find queries; it is not a column on the feedback table.
+	SessionTitle string `db:"-"`
+}
+
+// FindAIFeedbackOptions filters and paginates FindAIFeedback.
+// Results are ordered by (created_on DESC, id DESC); AfterCreatedOn/AfterID form a keyset cursor into that order.
+type FindAIFeedbackOptions struct {
+	Status         string
+	Kind           string
+	Limit          int
+	AfterCreatedOn time.Time
+	AfterID        string
 }

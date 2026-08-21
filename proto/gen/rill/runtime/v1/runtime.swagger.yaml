@@ -645,6 +645,188 @@ paths:
             title: Request message for RuntimeService.ShareConversation
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/evals/{eval}/fix:
+    post:
+      summary: |-
+        GenerateAIEvalFix proposes ai_instructions changes that fix the latest run's failing eval cases
+        without breaking the passing ones. Requires repo edit access; intended for Rill Developer.
+      operationId: RuntimeService_GenerateAIEvalFix
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateAIEvalFixResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: eval
+          description: Name of the AI eval resource.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              cases:
+                type: array
+                items:
+                  type: string
+                description: Optional failing case names to fix. Empty fixes all failing cases in the latest run.
+            title: Request message for RuntimeService.GenerateAIEvalFix
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/feedback:
+    get:
+      summary: |-
+        ListAIFeedback lists AI feedback items (ratings and review requests) for an instance.
+        Requires the ManageAIFeedback permission.
+      operationId: RuntimeService_ListAIFeedback
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListAIFeedbackResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: status
+          description: 'Optional status filter: "open", "addressed" or "dismissed".'
+          in: query
+          required: false
+          type: string
+        - name: kind
+          description: 'Optional kind filter: "rating" or "review_request".'
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/feedback/{feedbackId}:
+    get:
+      summary: |-
+        GetAIFeedback returns a feedback item along with the full transcript of the conversation it belongs to.
+        Requires the ManageAIFeedback permission, which grants read access to the referenced conversation
+        regardless of its owner.
+      operationId: RuntimeService_GetAIFeedback
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAIFeedbackResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: feedbackId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/feedback/{feedbackId}/status:
+    post:
+      summary: |-
+        UpdateAIFeedbackStatus updates the review status of a feedback item.
+        Requires the ManageAIFeedback permission.
+      operationId: RuntimeService_UpdateAIFeedbackStatus
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateAIFeedbackStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: feedbackId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                description: 'New status: "open", "addressed" or "dismissed".'
+            title: Request message for RuntimeService.UpdateAIFeedbackStatus
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/feedback/fix:
+    post:
+      summary: |-
+        GenerateAIFeedbackFix generates a proposed project change addressing a feedback item.
+        The feedback item and transcript are passed in because they may live in another deployment's store.
+        Requires repo edit access; intended for Rill Developer.
+      operationId: RuntimeService_GenerateAIFeedbackFix
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateAIFeedbackFixResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              feedback:
+                $ref: '#/definitions/v1AIFeedback'
+                description: The feedback item to fix, passed through since it may live in another deployment's store.
+              transcript:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1AIFeedbackFixTranscriptMessage'
+                description: Flattened transcript of the conversation the feedback refers to.
+            title: Request message for RuntimeService.GenerateAIFeedbackFix
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
     get:
       summary: |-
@@ -3635,6 +3817,12 @@ paths:
                   type: object
                   $ref: '#/definitions/v1RefreshModelTrigger'
                 description: Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+              aiEvals:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1AIEvalTrigger'
+                description: AI evals to run. Unlike resources, this supports running a subset of cases and cancellation.
               parser:
                 type: boolean
                 description: |-
@@ -4143,6 +4331,269 @@ definitions:
         type: string
         title: raw_type is the original database-specific type (e.g. "VARCHAR(255)")
     title: Type represents a data type in a schema
+  v1AIEval:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1AIEvalSpec'
+      state:
+        $ref: '#/definitions/v1AIEvalState'
+    description: |-
+      AIEval is a suite of test cases for the project's AI: business questions with expected answers.
+      Evals only run when explicitly triggered (there is no schedule); reconciles are validate-only.
+  v1AIEvalCase:
+    type: object
+    properties:
+      name:
+        type: string
+      question:
+        type: string
+      notes:
+        type: string
+        description: Case-level guidance for the LLM judge.
+      explore:
+        type: string
+        description: Optional explore dashboard used as context for this case.
+      expectAnswer:
+        type: string
+        description: Expected answer in natural language; asserted by the LLM judge.
+      expectMetricsView:
+        type: string
+        description: Metrics view the agent is expected to query; asserted structurally.
+      expectMeasures:
+        type: array
+        items:
+          type: string
+        description: Measures the agent's queries are expected to include; asserted structurally.
+      expectDimensions:
+        type: array
+        items:
+          type: string
+        description: Dimensions the agent's queries are expected to include; asserted structurally.
+      expectResultSql:
+        type: string
+        description: |-
+          Ground-truth metrics SQL whose result the agent's query result must match.
+          Reserved for future use; not asserted yet.
+      expectResultOrdered:
+        type: boolean
+  v1AIEvalCaseResult:
+    type: object
+    properties:
+      caseName:
+        type: string
+      verdict:
+        $ref: '#/definitions/v1AIEvalVerdict'
+      failureReasons:
+        type: array
+        items:
+          type: string
+        description: Why the case failed, one entry per failed assertion.
+      judgeReasoning:
+        type: string
+      sessionId:
+        type: string
+        description: AI session holding the full transcript of the case's conversation.
+      answerPreview:
+        type: string
+        description: Truncated final answer for display in result lists.
+      startedOn:
+        type: string
+        format: date-time
+      finishedOn:
+        type: string
+        format: date-time
+  v1AIEvalExecution:
+    type: object
+    properties:
+      adhoc:
+        type: boolean
+      triggerCases:
+        type: array
+        items:
+          type: string
+        description: The case names the run was triggered with. Empty means all cases.
+      errorMessage:
+        type: string
+      canceled:
+        type: boolean
+      startedOn:
+        type: string
+        format: date-time
+      finishedOn:
+        type: string
+        format: date-time
+      caseResults:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIEvalCaseResult'
+      passedCount:
+        type: integer
+        format: int64
+      failedCount:
+        type: integer
+        format: int64
+      erroredCount:
+        type: integer
+        format: int64
+  v1AIEvalFixProposal:
+    type: object
+    properties:
+      filePath:
+        type: string
+        description: File whose ai_instructions the rule should be appended to.
+      reason:
+        type: string
+        description: Why this rule fixes the failing case(s) without breaking the passing ones.
+      instruction:
+        type: string
+        description: The proposed ai_instructions rule. The admin can tune it before applying.
+    description: One appliable ai_instructions addition proposed by GenerateAIEvalFix.
+  v1AIEvalSpec:
+    type: object
+    properties:
+      displayName:
+        type: string
+      agent:
+        type: string
+        description: Agent that answers the questions. Currently only "analyst_agent".
+      notes:
+        type: string
+        description: Suite-level guidance for the LLM judge, prepended to each case's notes.
+      explore:
+        type: string
+        description: Optional explore dashboard used as context for all cases (case-level explore takes precedence).
+      timeoutSeconds:
+        type: integer
+        format: int64
+        description: Timeout for a whole run.
+      caseTimeoutSeconds:
+        type: integer
+        format: int64
+        description: Timeout for a single case.
+      concurrency:
+        type: integer
+        format: int64
+        description: Number of cases to run concurrently.
+      cases:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIEvalCase'
+      trigger:
+        type: boolean
+        description: Ephemeral fields used to trigger runs. Not derived from code files.
+      triggerCases:
+        type: array
+        items:
+          type: string
+        description: Names of cases to run when triggered. Empty runs all cases.
+  v1AIEvalState:
+    type: object
+    properties:
+      currentExecution:
+        $ref: '#/definitions/v1AIEvalExecution'
+      executionHistory:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIEvalExecution'
+      executionCount:
+        type: integer
+        format: int64
+  v1AIEvalTrigger:
+    type: object
+    properties:
+      aiEval:
+        type: string
+        description: The AI eval resource to run.
+      cases:
+        type: array
+        items:
+          type: string
+        description: Names of specific cases to run. Empty runs all cases.
+      cancel:
+        type: boolean
+        description: If true, cancels an in-flight run instead of starting one.
+  v1AIEvalVerdict:
+    type: string
+    enum:
+      - AI_EVAL_VERDICT_UNSPECIFIED
+      - AI_EVAL_VERDICT_PENDING
+      - AI_EVAL_VERDICT_RUNNING
+      - AI_EVAL_VERDICT_PASS
+      - AI_EVAL_VERDICT_FAIL
+      - AI_EVAL_VERDICT_ERROR
+      - AI_EVAL_VERDICT_SKIPPED
+    default: AI_EVAL_VERDICT_UNSPECIFIED
+    description: |2-
+       - AI_EVAL_VERDICT_ERROR: Infrastructure error or timeout, distinct from a graded failure.
+       - AI_EVAL_VERDICT_SKIPPED: The case never ran because the run was canceled or interrupted.
+  v1AIFeedback:
+    type: object
+    properties:
+      id:
+        type: string
+      conversationId:
+        type: string
+        description: ID of the conversation the feedback belongs to.
+      targetMessageId:
+        type: string
+        description: ID of the rated message. Empty for conversation-level feedback.
+      kind:
+        type: string
+        description: 'Kind of feedback: "rating" or "review_request".'
+      sentiment:
+        type: string
+        description: 'Sentiment: "positive" or "negative".'
+      categories:
+        type: array
+        items:
+          type: string
+        description: Categories selected by the user.
+      comment:
+        type: string
+        description: Free-text comment from the user.
+      predictedAttribution:
+        type: string
+        description: 'AI-predicted attribution of the issue: "rill", "project", "user", or empty.'
+      suggestedAction:
+        type: string
+        description: AI-suggested action derived from the attribution.
+      status:
+        type: string
+        description: 'Review status: "open", "addressed" or "dismissed".'
+      ownerId:
+        type: string
+        description: ID of the user who submitted the feedback.
+      ownerEmail:
+        type: string
+        description: Email of the user who submitted the feedback (captured from claims at submit time).
+      resolvedBy:
+        type: string
+        description: ID of the user who last changed the status to a terminal state.
+      resolvedOn:
+        type: string
+        format: date-time
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+      conversationTitle:
+        type: string
+        description: Title of the conversation (joined for list convenience).
+    description: 'AIFeedback is a user feedback item on an AI conversation: a rating or a review request.'
+  v1AIFeedbackFixTranscriptMessage:
+    type: object
+    properties:
+      role:
+        type: string
+      text:
+        type: string
+    description: One turn of a conversation transcript passed to GenerateAIFeedbackFix.
   v1API:
     type: object
     properties:
@@ -5547,7 +5998,9 @@ definitions:
     properties:
       targetMessageId:
         type: string
-        description: The ID of the message being rated.
+        description: |-
+          The ID of the message being rated.
+          Optional: if empty, the feedback applies to the conversation as a whole.
       sentiment:
         type: string
         description: 'Sentiment: "positive" or "negative".'
@@ -5559,6 +6012,9 @@ definitions:
       comment:
         type: string
         description: Optional free-text comment.
+      requestReview:
+        type: boolean
+        description: If true, flags the feedback for review by project admins.
     description: |-
       Context for prompts handled by the feedback_agent.
       When provided, the agent records feedback and, for negative sentiment, runs attribution.
@@ -5598,6 +6054,44 @@ definitions:
         type: string
         title: new conversation ID
     title: Response message for RuntimeService.ForkConversation
+  v1GenerateAIEvalFixResponse:
+    type: object
+    properties:
+      analysis:
+        type: string
+      proposals:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIEvalFixProposal'
+    title: Response message for RuntimeService.GenerateAIEvalFix
+  v1GenerateAIFeedbackFixResponse:
+    type: object
+    properties:
+      action:
+        type: string
+        description: 'Proposed action: "add_project_instruction", "add_metrics_view_instruction", "add_measure" or "none".'
+      summary:
+        type: string
+        description: Explanation of the proposal, shown to the admin.
+      metricsView:
+        type: string
+        description: Metrics view name, set for metrics-view-scoped actions.
+      filePath:
+        type: string
+        description: File the proposal edits, set for all actions except "none".
+      instruction:
+        type: string
+        description: The proposed ai_instructions rule, set for instruction actions. The admin can tune it before applying.
+      measureYaml:
+        type: string
+        description: The proposed measure definition as a YAML mapping, set for the add_measure action.
+      evalQuestion:
+        type: string
+        description: Draft eval case capturing the exchange, proposed alongside every fix.
+      evalExpectedAnswer:
+        type: string
+    title: Response message for RuntimeService.GenerateAIFeedbackFix
   v1GenerateCanvasFileResponse:
     type: object
     properties:
@@ -5612,6 +6106,21 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
+  v1GetAIFeedbackResponse:
+    type: object
+    properties:
+      feedback:
+        $ref: '#/definitions/v1AIFeedback'
+      conversation:
+        $ref: '#/definitions/v1Conversation'
+        description: The conversation the feedback belongs to. Null if the conversation has been deleted.
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Message'
+        description: Full transcript of the conversation. Empty if the conversation has been deleted.
+    title: Response message for RuntimeService.GetAIFeedback
   v1GetAIMessageResponse:
     type: object
     properties:
@@ -5923,6 +6432,17 @@ definitions:
       jwt:
         type: string
     title: Response message for RuntimeService.IssueDevJWT
+  v1ListAIFeedbackResponse:
+    type: object
+    properties:
+      feedback:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIFeedback'
+      nextPageToken:
+        type: string
+    title: Response message for RuntimeService.ListAIFeedback
   v1ListBucketsResponse:
     type: object
     properties:
@@ -7632,6 +8152,12 @@ definitions:
           type: object
           $ref: '#/definitions/v1RefreshModelTrigger'
         description: Models to refresh. These are specified separately to enable more fine-grained configuration.
+      aiEvals:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIEvalTrigger'
+        description: AI evals to run. These are specified separately to enable running a subset of cases and cancellation.
   v1RefreshTriggerState:
     type: object
   v1ReloadConfigResponse:
@@ -7826,6 +8352,8 @@ definitions:
         $ref: '#/definitions/v1API'
       connector:
         $ref: '#/definitions/v1ConnectorV2'
+      aiEval:
+        $ref: '#/definitions/v1AIEval'
   v1ResourceEvent:
     type: string
     enum:
@@ -8409,6 +8937,12 @@ definitions:
   v1UnpackExampleResponse:
     type: object
     title: Response message for RuntimeService.UnpackExample
+  v1UpdateAIFeedbackStatusResponse:
+    type: object
+    properties:
+      feedback:
+        $ref: '#/definitions/v1AIFeedback'
+    title: Response message for RuntimeService.UpdateAIFeedbackStatus
   v1WatchFilesResponse:
     type: object
     properties:

@@ -277,6 +277,7 @@ export class Conversation {
     sentiment: FeedbackSentiment,
     categories?: FeedbackCategory[],
     comment?: string,
+    options?: { requestReview?: boolean },
   ): Promise<void> {
     // Prevent concurrent operations
     if (get(this.isStreaming)) {
@@ -294,6 +295,7 @@ export class Conversation {
           sentiment,
           categories: categories ?? [],
           comment,
+          requestReview: options?.requestReview ?? false,
         },
       });
     } catch (error) {
@@ -346,6 +348,7 @@ export class Conversation {
       sentiment: FeedbackSentiment;
       categories: FeedbackCategory[];
       comment?: string;
+      requestReview?: boolean;
     };
   }): Promise<void> {
     this.ensureStream();

@@ -3,6 +3,7 @@ package rill.local.v1;
 
 import "google/protobuf/timestamp.proto";
 import "rill/admin/v1/api.proto";
+import "rill/runtime/v1/api.proto";
 import "validate/validate.proto";
 
 service LocalService {
@@ -67,6 +68,17 @@ service LocalService {
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
+
+  // ListProjectAIFeedback lists AI feedback for the cloud deployment of the current project.
+  // Cloud connectivity problems are reported as a state in the response rather than an error,
+  // so the UI can render a helpful empty state.
+  rpc ListProjectAIFeedback(ListProjectAIFeedbackRequest) returns (ListProjectAIFeedbackResponse) {}
+
+  // GetProjectAIFeedback returns a feedback item and its conversation transcript from the cloud deployment.
+  rpc GetProjectAIFeedback(GetProjectAIFeedbackRequest) returns (GetProjectAIFeedbackResponse) {}
+
+  // ResolveProjectAIFeedback updates the review status of a feedback item in the cloud deployment.
+  rpc ResolveProjectAIFeedback(ResolveProjectAIFeedbackRequest) returns (ResolveProjectAIFeedbackResponse) {}
 }
 
 message PingRequest {}
@@ -271,4 +283,60 @@ message GetProjectRequest {
 message GetProjectResponse {
   admin.v1.Project project = 1;
   admin.v1.ProjectPermissions project_permissions = 4;
+}
+
+// CloudFeedbackState describes whether the cloud deployment's feedback store is reachable,
+// and if not, why. It lets the UI render precise empty states while local feedback still works.
+enum CloudFeedbackState {
+  CLOUD_FEEDBACK_STATE_UNSPECIFIED = 0;
+  CLOUD_FEEDBACK_STATE_OK = 1;
+  // The user is not logged in to Rill Cloud.
+  CLOUD_FEEDBACK_STATE_NOT_LOGGED_IN = 2;
+  // The local project has no matching cloud project or no running deployment.
+  CLOUD_FEEDBACK_STATE_NOT_DEPLOYED = 3;
+  // The user lacks admin permissions on the cloud project.
+  CLOUD_FEEDBACK_STATE_NO_PERMISSION = 4;
+  // The cloud runtime could not be reached or does not support feedback review.
+  CLOUD_FEEDBACK_STATE_ERROR = 5;
+}
+
+message ListProjectAIFeedbackRequest {
+  // Optional status filter: "open", "addressed" or "dismissed". Defaults to "open".
+  string status = 1 [(validate.rules).string = {ignore_empty: true, in: ["open", "addressed", "dismissed"]}];
+  // Optional kind filter: "rating" or "review_request".
+  string kind = 2 [(validate.rules).string = {ignore_empty: true, in: ["rating", "review_request"]}];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message ListProjectAIFeedbackResponse {
+  CloudFeedbackState cloud_state = 1;
+  // Human-readable detail for non-OK states.
+  string cloud_state_message = 2;
+  // The matched cloud org and project (set when a project was matched, even on later failures).
+  string org = 3;
+  string project = 4;
+  repeated rill.runtime.v1.AIFeedback feedback = 5;
+  string next_page_token = 6;
+}
+
+message GetProjectAIFeedbackRequest {
+  string feedback_id = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetProjectAIFeedbackResponse {
+  rill.runtime.v1.AIFeedback feedback = 1;
+  // Null if the conversation has been deleted.
+  rill.runtime.v1.Conversation conversation = 2;
+  repeated rill.runtime.v1.Message messages = 3;
+}
+
+message ResolveProjectAIFeedbackRequest {
+  string feedback_id = 1 [(validate.rules).string.min_len = 1];
+  // New status: "open", "addressed" or "dismissed".
+  string status = 2 [(validate.rules).string = {in: ["open", "addressed", "dismissed"]}];
+}
+
+message ResolveProjectAIFeedbackResponse {
+  rill.runtime.v1.AIFeedback feedback = 1;
 }

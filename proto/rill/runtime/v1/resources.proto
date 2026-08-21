@@ -34,6 +34,7 @@ message Resource {
     Canvas canvas = 14;
     API api = 15;
     ConnectorV2 connector = 16;
+    AIEval ai_eval = 18;
   }
 }
 
@@ -765,6 +766,101 @@ enum AssertionStatus {
   ASSERTION_STATUS_ERROR = 3;
 }
 
+// AIEval is a suite of test cases for the project's AI: business questions with expected answers.
+// Evals only run when explicitly triggered (there is no schedule); reconciles are validate-only.
+message AIEval {
+  AIEvalSpec spec = 1;
+  AIEvalState state = 2;
+}
+
+message AIEvalSpec {
+  string display_name = 1;
+  // Agent that answers the questions. Currently only "analyst_agent".
+  string agent = 2;
+  // Suite-level guidance for the LLM judge, prepended to each case's notes.
+  string notes = 3;
+  // Optional explore dashboard used as context for all cases (case-level explore takes precedence).
+  string explore = 4;
+  // Timeout for a whole run.
+  uint32 timeout_seconds = 5;
+  // Timeout for a single case.
+  uint32 case_timeout_seconds = 6;
+  // Number of cases to run concurrently.
+  uint32 concurrency = 7;
+  repeated AIEvalCase cases = 8;
+  // Ephemeral fields used to trigger runs. Not derived from code files.
+  bool trigger = 9;
+  // Names of cases to run when triggered. Empty runs all cases.
+  repeated string trigger_cases = 10;
+}
+
+message AIEvalCase {
+  string name = 1;
+  string question = 2;
+  // Case-level guidance for the LLM judge.
+  string notes = 3;
+  // Optional explore dashboard used as context for this case.
+  string explore = 4;
+  // Expected answer in natural language; asserted by the LLM judge.
+  string expect_answer = 5;
+  // Metrics view the agent is expected to query; asserted structurally.
+  string expect_metrics_view = 6;
+  // Measures the agent's queries are expected to include; asserted structurally.
+  repeated string expect_measures = 7;
+  // Dimensions the agent's queries are expected to include; asserted structurally.
+  repeated string expect_dimensions = 8;
+  // Ground-truth metrics SQL whose result the agent's query result must match.
+  // Reserved for future use; not asserted yet.
+  string expect_result_sql = 9;
+  bool expect_result_ordered = 10;
+}
+
+message AIEvalState {
+  AIEvalExecution current_execution = 1;
+  repeated AIEvalExecution execution_history = 2;
+  uint32 execution_count = 3;
+}
+
+message AIEvalExecution {
+  bool adhoc = 1;
+  // The case names the run was triggered with. Empty means all cases.
+  repeated string trigger_cases = 2;
+  string error_message = 3;
+  bool canceled = 4;
+  google.protobuf.Timestamp started_on = 5;
+  google.protobuf.Timestamp finished_on = 6;
+  repeated AIEvalCaseResult case_results = 7;
+  uint32 passed_count = 8;
+  uint32 failed_count = 9;
+  uint32 errored_count = 10;
+}
+
+message AIEvalCaseResult {
+  string case_name = 1;
+  AIEvalVerdict verdict = 2;
+  // Why the case failed, one entry per failed assertion.
+  repeated string failure_reasons = 3;
+  string judge_reasoning = 4;
+  // AI session holding the full transcript of the case's conversation.
+  string session_id = 5;
+  // Truncated final answer for display in result lists.
+  string answer_preview = 6;
+  google.protobuf.Timestamp started_on = 7;
+  google.protobuf.Timestamp finished_on = 8;
+}
+
+enum AIEvalVerdict {
+  AI_EVAL_VERDICT_UNSPECIFIED = 0;
+  AI_EVAL_VERDICT_PENDING = 1;
+  AI_EVAL_VERDICT_RUNNING = 2;
+  AI_EVAL_VERDICT_PASS = 3;
+  AI_EVAL_VERDICT_FAIL = 4;
+  // Infrastructure error or timeout, distinct from a graded failure.
+  AI_EVAL_VERDICT_ERROR = 5;
+  // The case never ran because the run was canceled or interrupted.
+  AI_EVAL_VERDICT_SKIPPED = 6;
+}
+
 message RefreshTrigger {
   RefreshTriggerSpec spec = 1;
   RefreshTriggerState state = 2;
@@ -776,9 +872,20 @@ message RefreshTriggerSpec {
   repeated ResourceName resources = 1;
   // Models to refresh. These are specified separately to enable more fine-grained configuration.
   repeated RefreshModelTrigger models = 2;
+  // AI evals to run. These are specified separately to enable running a subset of cases and cancellation.
+  repeated AIEvalTrigger ai_evals = 3;
 }
 
 message RefreshTriggerState {}
+
+message AIEvalTrigger {
+  // The AI eval resource to run.
+  string ai_eval = 1;
+  // Names of specific cases to run. Empty runs all cases.
+  repeated string cases = 2;
+  // If true, cancels an in-flight run instead of starting one.
+  bool cancel = 3;
+}
 
 message RefreshModelTrigger {
   // The model to refresh.

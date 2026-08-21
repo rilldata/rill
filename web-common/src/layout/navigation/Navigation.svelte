@@ -10,15 +10,24 @@
 </script>
 
 <script lang="ts">
+  import { page } from "$app/stores";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { createOpenFeedbackCount } from "@rilldata/web-common/features/chat/feedback-inbox/open-feedback-count";
   import { connectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import {
+    tryUseRuntimeClient,
+    type RuntimeClient,
+  } from "@rilldata/web-common/runtime-client/v2";
+  import { Inbox } from "lucide-svelte";
   import { writable } from "svelte/store";
   import ConnectorExplorer from "../../features/connectors/explorer/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/add/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
   import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH, MAX_NAV_WIDTH, MIN_NAV_WIDTH } from "../config";
+  import { editorRoutePrefix } from "./editor-routing";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -26,6 +35,12 @@
   // When false, hides the footer (version info, links, traffic light).
   // Used in cloud editing where the footer isn't relevant.
   export let showFooterLinks = true;
+  // Extra runtime whose open feedback counts toward the AI feedback badge.
+  // Cloud editing passes the production deployment's client here.
+  export let extraFeedbackClient: RuntimeClient | null = null;
+
+  const { feedbackInbox } = featureFlags;
+  const ambientClient = tryUseRuntimeClient();
 
   const DEFAULT_PERCENTAGE = 0.4;
 
@@ -45,6 +60,21 @@
 
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
+
+  // Works in both web-local ("" prefix → /feedback) and cloud editing
+  // (prefix → /<org>/<project>/-/edit/feedback).
+  $: feedbackPath = `${$editorRoutePrefix}/feedback`;
+  $: onFeedbackPage = $page.url.pathname === feedbackPath;
+
+  // Open-feedback count for the badge. In web-local (no editor prefix) it also
+  // includes the cloud deployment reached via the LocalService bridge.
+  $: openFeedbackCountStore = $feedbackInbox
+    ? createOpenFeedbackCount(
+        [ambientClient, extraFeedbackClient],
+        $editorRoutePrefix === "",
+      )
+    : null;
+  $: openFeedbackCount = $openFeedbackCountStore ?? 0;
 
   function handleResize(
     e: UIEvent & {
@@ -167,6 +197,21 @@
         {/if}
       </div>
     </div>
+    {#if $feedbackInbox}
+      <a
+        class="feedback-link"
+        class:selected={onFeedbackPage}
+        href={feedbackPath}
+      >
+        <div class="grid place-content-center" style:width="16px">
+          <Inbox size="14px" />
+        </div>
+        {m.feedback_inbox_title()}
+        {#if openFeedbackCount > 0}
+          <span class="count-badge">{openFeedbackCount}</span>
+        {/if}
+      </a>
+    {/if}
     {#if showFooterLinks}
       <Footer />
     {/if}
@@ -229,6 +274,25 @@
 
   button:hover {
     @apply bg-gray-100;
+  }
+
+  .feedback-link {
+    @apply flex flex-none flex-row items-center gap-x-2 border-t px-4 py-2;
+    @apply text-fg-secondary font-normal no-underline;
+  }
+
+  .feedback-link:hover {
+    @apply bg-popover-accent;
+  }
+
+  .feedback-link.selected {
+    @apply text-fg-accent font-medium;
+  }
+
+  .count-badge {
+    @apply ml-auto rounded-full bg-primary-500 px-1.5 leading-4 text-white;
+    font-size: 10px;
+    font-weight: 600;
   }
 
   h3 {

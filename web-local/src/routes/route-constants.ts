@@ -6,7 +6,7 @@ export const PREVIEW_ROUTE_PREFIXES = [
 ] as const;
 
 /** Route prefixes that are exclusively developer mode */
-export const DEVELOPER_ROUTE_PREFIXES = ["/files"] as const;
+export const DEVELOPER_ROUTE_PREFIXES = ["/files", "/feedback"] as const;
 
 /**
  * All route prefixes allowed in preview mode.

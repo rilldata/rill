@@ -23,7 +23,7 @@ var _ Tool[*DevelopFileArgs, *DevelopFileResult] = (*DevelopFile)(nil)
 
 type DevelopFileArgs struct {
 	Path   string `json:"path" jsonschema:"The path of a .yaml or .sql file to create, update or delete."`
-	Type   string `json:"type,omitempty" jsonschema:"Type of Rill file to develop (optional, but recommended if known). Options: rill.yaml, .env, connector, model, metrics_view, explore, canvas, theme, api, alert, report."`
+	Type   string `json:"type,omitempty" jsonschema:"Type of Rill file to develop (optional, but recommended if known). Options: rill.yaml, .env, connector, model, metrics_view, explore, canvas, theme, api, alert, report, eval."`
 	Prompt string `json:"prompt" jsonschema:"A detailed description of how to develop the file. Include any relevant details assuming no prior context except the path's current content and status (if any)."`
 }
 
@@ -71,7 +71,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	}
 	var resourceInstructions *instructions.Instruction
 	switch args.Type {
-	case "", ".env", "api", "alert", "report":
+	case "", ".env", "api", "alert", "report", "eval":
 		// These types currently don't have additional resource-specific instructions
 	case "rill.yaml":
 		resourceInstructions, err = instructions.Load("resources/rillyaml.md", instructions.Options{})
@@ -155,7 +155,7 @@ func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (st
 	// For file types that may reference a metrics view, include the exact field names of the project's metrics views.
 	var metricsViewsInfo string
 	switch args.Type {
-	case "", "explore", "canvas", "api", "alert", "report":
+	case "", "explore", "canvas", "api", "alert", "report", "eval":
 		metricsViewsInfo, err = t.metricsViewsInfo(ctx)
 		if err != nil {
 			return "", err

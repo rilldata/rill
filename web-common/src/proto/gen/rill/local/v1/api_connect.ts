@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateGithubPullRequestRequest, CreateGithubPullRequestResponse, CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetGithubPullRequestRequest, GetGithubPullRequestResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { CreateGithubPullRequestRequest, CreateGithubPullRequestResponse, CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetGithubPullRequestRequest, GetGithubPullRequestResponse, GetMetadataRequest, GetMetadataResponse, GetProjectAIFeedbackRequest, GetProjectAIFeedbackResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectAIFeedbackRequest, ListProjectAIFeedbackResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse, ResolveProjectAIFeedbackRequest, ResolveProjectAIFeedbackResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -224,6 +224,41 @@ export const LocalService = {
       name: "GetProject",
       I: GetProjectRequest,
       O: GetProjectResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListProjectAIFeedback lists AI feedback for the cloud deployment of the current project.
+     * Cloud connectivity problems are reported as a state in the response rather than an error,
+     * so the UI can render a helpful empty state.
+     *
+     * @generated from rpc rill.local.v1.LocalService.ListProjectAIFeedback
+     */
+    listProjectAIFeedback: {
+      name: "ListProjectAIFeedback",
+      I: ListProjectAIFeedbackRequest,
+      O: ListProjectAIFeedbackResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetProjectAIFeedback returns a feedback item and its conversation transcript from the cloud deployment.
+     *
+     * @generated from rpc rill.local.v1.LocalService.GetProjectAIFeedback
+     */
+    getProjectAIFeedback: {
+      name: "GetProjectAIFeedback",
+      I: GetProjectAIFeedbackRequest,
+      O: GetProjectAIFeedbackResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ResolveProjectAIFeedback updates the review status of a feedback item in the cloud deployment.
+     *
+     * @generated from rpc rill.local.v1.LocalService.ResolveProjectAIFeedback
+     */
+    resolveProjectAIFeedback: {
+      name: "ResolveProjectAIFeedback",
+      I: ResolveProjectAIFeedbackRequest,
+      O: ResolveProjectAIFeedbackResponse,
       kind: MethodKind.Unary,
     },
   }

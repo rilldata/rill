@@ -50,6 +50,10 @@ type ConnectorAcquireFunc func(t TestingT) (vars map[string]string)
 // - Services started as ephemeral testcontainers
 // - Real external services configured for use in tests with credentials provided in the root .env file with the prefix RILL_RUNTIME_TEST_.
 var Connectors = map[string]ConnectorAcquireFunc{
+	// mock_ai is a mock AI connector that echoes prompts back. It makes no real LLM calls, so tests using it are cheap.
+	"mock_ai": func(t TestingT) map[string]string {
+		return nil
+	},
 	// clickhouse starts a ClickHouse test container with no tables initialized.
 	"clickhouse": func(t TestingT) map[string]string {
 		dsn := testclickhouse.Start(t)

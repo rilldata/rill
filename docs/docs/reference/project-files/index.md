@@ -39,4 +39,5 @@ For more information about using Git or cloning projects locally, please see our
 - [API YAML](apis.md)
 - [Theme YAML](themes.md)
 - [Component YAML](component.md)
+- [AI Eval YAML](ai-evals.md)
 - [Project YAML](rill-yaml.md)

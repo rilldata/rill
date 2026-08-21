@@ -84,6 +84,15 @@ const (
 	LocalServiceListProjectsForOrgProcedure = "/rill.local.v1.LocalService/ListProjectsForOrg"
 	// LocalServiceGetProjectProcedure is the fully-qualified name of the LocalService's GetProject RPC.
 	LocalServiceGetProjectProcedure = "/rill.local.v1.LocalService/GetProject"
+	// LocalServiceListProjectAIFeedbackProcedure is the fully-qualified name of the LocalService's
+	// ListProjectAIFeedback RPC.
+	LocalServiceListProjectAIFeedbackProcedure = "/rill.local.v1.LocalService/ListProjectAIFeedback"
+	// LocalServiceGetProjectAIFeedbackProcedure is the fully-qualified name of the LocalService's
+	// GetProjectAIFeedback RPC.
+	LocalServiceGetProjectAIFeedbackProcedure = "/rill.local.v1.LocalService/GetProjectAIFeedback"
+	// LocalServiceResolveProjectAIFeedbackProcedure is the fully-qualified name of the LocalService's
+	// ResolveProjectAIFeedback RPC.
+	LocalServiceResolveProjectAIFeedbackProcedure = "/rill.local.v1.LocalService/ResolveProjectAIFeedback"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -108,6 +117,9 @@ var (
 	localServiceListMatchingProjectsMethodDescriptor                = localServiceServiceDescriptor.Methods().ByName("ListMatchingProjects")
 	localServiceListProjectsForOrgMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("ListProjectsForOrg")
 	localServiceGetProjectMethodDescriptor                          = localServiceServiceDescriptor.Methods().ByName("GetProject")
+	localServiceListProjectAIFeedbackMethodDescriptor               = localServiceServiceDescriptor.Methods().ByName("ListProjectAIFeedback")
+	localServiceGetProjectAIFeedbackMethodDescriptor                = localServiceServiceDescriptor.Methods().ByName("GetProjectAIFeedback")
+	localServiceResolveProjectAIFeedbackMethodDescriptor            = localServiceServiceDescriptor.Methods().ByName("ResolveProjectAIFeedback")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -155,6 +167,14 @@ type LocalServiceClient interface {
 	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
+	// ListProjectAIFeedback lists AI feedback for the cloud deployment of the current project.
+	// Cloud connectivity problems are reported as a state in the response rather than an error,
+	// so the UI can render a helpful empty state.
+	ListProjectAIFeedback(context.Context, *connect.Request[v1.ListProjectAIFeedbackRequest]) (*connect.Response[v1.ListProjectAIFeedbackResponse], error)
+	// GetProjectAIFeedback returns a feedback item and its conversation transcript from the cloud deployment.
+	GetProjectAIFeedback(context.Context, *connect.Request[v1.GetProjectAIFeedbackRequest]) (*connect.Response[v1.GetProjectAIFeedbackResponse], error)
+	// ResolveProjectAIFeedback updates the review status of a feedback item in the cloud deployment.
+	ResolveProjectAIFeedback(context.Context, *connect.Request[v1.ResolveProjectAIFeedbackRequest]) (*connect.Response[v1.ResolveProjectAIFeedbackResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -281,6 +301,24 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetProjectMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listProjectAIFeedback: connect.NewClient[v1.ListProjectAIFeedbackRequest, v1.ListProjectAIFeedbackResponse](
+			httpClient,
+			baseURL+LocalServiceListProjectAIFeedbackProcedure,
+			connect.WithSchema(localServiceListProjectAIFeedbackMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getProjectAIFeedback: connect.NewClient[v1.GetProjectAIFeedbackRequest, v1.GetProjectAIFeedbackResponse](
+			httpClient,
+			baseURL+LocalServiceGetProjectAIFeedbackProcedure,
+			connect.WithSchema(localServiceGetProjectAIFeedbackMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		resolveProjectAIFeedback: connect.NewClient[v1.ResolveProjectAIFeedbackRequest, v1.ResolveProjectAIFeedbackResponse](
+			httpClient,
+			baseURL+LocalServiceResolveProjectAIFeedbackProcedure,
+			connect.WithSchema(localServiceResolveProjectAIFeedbackMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -305,6 +343,9 @@ type localServiceClient struct {
 	listMatchingProjects                *connect.Client[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse]
 	listProjectsForOrg                  *connect.Client[v1.ListProjectsForOrgRequest, v1.ListProjectsForOrgResponse]
 	getProject                          *connect.Client[v1.GetProjectRequest, v1.GetProjectResponse]
+	listProjectAIFeedback               *connect.Client[v1.ListProjectAIFeedbackRequest, v1.ListProjectAIFeedbackResponse]
+	getProjectAIFeedback                *connect.Client[v1.GetProjectAIFeedbackRequest, v1.GetProjectAIFeedbackResponse]
+	resolveProjectAIFeedback            *connect.Client[v1.ResolveProjectAIFeedbackRequest, v1.ResolveProjectAIFeedbackResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -403,6 +444,21 @@ func (c *localServiceClient) GetProject(ctx context.Context, req *connect.Reques
 	return c.getProject.CallUnary(ctx, req)
 }
 
+// ListProjectAIFeedback calls rill.local.v1.LocalService.ListProjectAIFeedback.
+func (c *localServiceClient) ListProjectAIFeedback(ctx context.Context, req *connect.Request[v1.ListProjectAIFeedbackRequest]) (*connect.Response[v1.ListProjectAIFeedbackResponse], error) {
+	return c.listProjectAIFeedback.CallUnary(ctx, req)
+}
+
+// GetProjectAIFeedback calls rill.local.v1.LocalService.GetProjectAIFeedback.
+func (c *localServiceClient) GetProjectAIFeedback(ctx context.Context, req *connect.Request[v1.GetProjectAIFeedbackRequest]) (*connect.Response[v1.GetProjectAIFeedbackResponse], error) {
+	return c.getProjectAIFeedback.CallUnary(ctx, req)
+}
+
+// ResolveProjectAIFeedback calls rill.local.v1.LocalService.ResolveProjectAIFeedback.
+func (c *localServiceClient) ResolveProjectAIFeedback(ctx context.Context, req *connect.Request[v1.ResolveProjectAIFeedbackRequest]) (*connect.Response[v1.ResolveProjectAIFeedbackResponse], error) {
+	return c.resolveProjectAIFeedback.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -448,6 +504,14 @@ type LocalServiceHandler interface {
 	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
+	// ListProjectAIFeedback lists AI feedback for the cloud deployment of the current project.
+	// Cloud connectivity problems are reported as a state in the response rather than an error,
+	// so the UI can render a helpful empty state.
+	ListProjectAIFeedback(context.Context, *connect.Request[v1.ListProjectAIFeedbackRequest]) (*connect.Response[v1.ListProjectAIFeedbackResponse], error)
+	// GetProjectAIFeedback returns a feedback item and its conversation transcript from the cloud deployment.
+	GetProjectAIFeedback(context.Context, *connect.Request[v1.GetProjectAIFeedbackRequest]) (*connect.Response[v1.GetProjectAIFeedbackResponse], error)
+	// ResolveProjectAIFeedback updates the review status of a feedback item in the cloud deployment.
+	ResolveProjectAIFeedback(context.Context, *connect.Request[v1.ResolveProjectAIFeedbackRequest]) (*connect.Response[v1.ResolveProjectAIFeedbackResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -570,6 +634,24 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetProjectMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceListProjectAIFeedbackHandler := connect.NewUnaryHandler(
+		LocalServiceListProjectAIFeedbackProcedure,
+		svc.ListProjectAIFeedback,
+		connect.WithSchema(localServiceListProjectAIFeedbackMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceGetProjectAIFeedbackHandler := connect.NewUnaryHandler(
+		LocalServiceGetProjectAIFeedbackProcedure,
+		svc.GetProjectAIFeedback,
+		connect.WithSchema(localServiceGetProjectAIFeedbackMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceResolveProjectAIFeedbackHandler := connect.NewUnaryHandler(
+		LocalServiceResolveProjectAIFeedbackProcedure,
+		svc.ResolveProjectAIFeedback,
+		connect.WithSchema(localServiceResolveProjectAIFeedbackMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -610,6 +692,12 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceListProjectsForOrgHandler.ServeHTTP(w, r)
 		case LocalServiceGetProjectProcedure:
 			localServiceGetProjectHandler.ServeHTTP(w, r)
+		case LocalServiceListProjectAIFeedbackProcedure:
+			localServiceListProjectAIFeedbackHandler.ServeHTTP(w, r)
+		case LocalServiceGetProjectAIFeedbackProcedure:
+			localServiceGetProjectAIFeedbackHandler.ServeHTTP(w, r)
+		case LocalServiceResolveProjectAIFeedbackProcedure:
+			localServiceResolveProjectAIFeedbackHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -693,4 +781,16 @@ func (UnimplementedLocalServiceHandler) ListProjectsForOrg(context.Context, *con
 
 func (UnimplementedLocalServiceHandler) GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetProject is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) ListProjectAIFeedback(context.Context, *connect.Request[v1.ListProjectAIFeedbackRequest]) (*connect.Response[v1.ListProjectAIFeedbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListProjectAIFeedback is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GetProjectAIFeedback(context.Context, *connect.Request[v1.GetProjectAIFeedbackRequest]) (*connect.Response[v1.GetProjectAIFeedbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetProjectAIFeedback is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) ResolveProjectAIFeedback(context.Context, *connect.Request[v1.ResolveProjectAIFeedbackRequest]) (*connect.Response[v1.ResolveProjectAIFeedbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ResolveProjectAIFeedback is not implemented"))
 }

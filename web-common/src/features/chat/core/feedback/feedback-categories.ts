@@ -32,6 +32,15 @@ export const FEEDBACK_CATEGORIES = [
 
 export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number]["id"];
 
+const CATEGORY_LABELS = new Map<string, string>(
+  FEEDBACK_CATEGORIES.map((c) => [c.id, c.label]),
+);
+
+/** Display label for a feedback category id; falls back to the raw id. */
+export function feedbackCategoryLabel(id: string): string {
+  return CATEGORY_LABELS.get(id) ?? id;
+}
+
 const FEEDBACK_CATEGORIES_BY_AGENT: Record<
   string,
   typeof ANALYST_CATEGORIES | typeof DEVELOPER_CATEGORIES
