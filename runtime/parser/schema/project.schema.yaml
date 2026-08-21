@@ -1562,6 +1562,14 @@ definitions:
               partition_by:
                 type: string
                 description: Column or expression to partition the table by
+              on_schema_change:
+                type: string
+                default: fail
+                enum:
+                  - ignore
+                  - fail
+                  - append_new_columns
+                description: Controls what happens when an incremental run, such as a new partition, produces columns that do not match the model's existing table. With `fail` (the default), the run fails and reports which columns are new and which are missing. With `ignore`, the existing table keeps the columns it already has, so new columns are discarded and columns missing from the new data are left empty for the incoming rows. With `append_new_columns`, new columns are added to the table and left empty for the rows already in it, while columns missing from the new data are kept and left empty for the incoming rows. Column types of the existing table are always preserved, so DuckDB converts the incoming values to fit and fails the run if a value cannot be converted. Only applies to incremental models using the `merge` or `partition_overwrite` strategy.
               pre_exec:
                 type: string
                 description: SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
@@ -1593,6 +1601,9 @@ definitions:
                   required:
                     - connector
                 then:
+                  not:
+                    required:
+                      - on_schema_change
                   properties:
                     type:
                       type: string
