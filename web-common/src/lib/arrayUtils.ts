@@ -23,7 +23,7 @@ export function arrayUnorderedEquals<T>(src: Iterable<T>, tar: Iterable<T>) {
   const tarSet = new Set<T>(tar);
   if (srcSet.size !== tarSet.size) return false;
 
-  for (const t of tar) {
+  for (const t of tarSet) {
     if (!srcSet.has(t)) return false;
   }
   return true;

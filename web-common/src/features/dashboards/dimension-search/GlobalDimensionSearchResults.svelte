@@ -49,7 +49,7 @@
     onSelect();
     expressionFilterManager.dimensionFilterAction(
       dimension,
-      (dimensionManager) => dimensionManager.toggleValue(value, false),
+      (dimensionManager) => dimensionManager.toggleValue(value, true),
     );
   }
 </script>

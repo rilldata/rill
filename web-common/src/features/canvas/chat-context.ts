@@ -62,7 +62,7 @@ function getActiveCanvasContext(
         analystAgentContext.timeEnd = selectedInterval.end.toUTC().toISO();
       }
 
-      if (filtersMap.size) {
+      if (Object.keys(filtersMap).length > 0) {
         analystAgentContext.wherePerMetricsView = {};
         Object.entries(filtersMap).forEach(([mv, expr]) => {
           if (expr.cond?.exprs?.length) {

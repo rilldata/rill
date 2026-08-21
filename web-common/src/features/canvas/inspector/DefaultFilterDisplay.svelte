@@ -48,12 +48,13 @@
     ),
   );
   $effect(() => {
-    if (!$specStore.data?.canvas?.defaultPreset?.filterExpr) return;
-    Object.entries($specStore.data?.canvas?.defaultPreset?.filterExpr).forEach(
-      ([key, value]) => {
-        defaultFiltersManager.setExprForMetricsView(key, value?.expression);
-      },
-    );
+    const filterExpr = $specStore.data?.canvas?.defaultPreset?.filterExpr ?? {};
+    dashboardProvider.metricsViewsProvider.metricsViewNames.forEach((key) => {
+      defaultFiltersManager.setExprForMetricsView(
+        key,
+        filterExpr[key]?.expression,
+      );
+    });
   });
 </script>
 

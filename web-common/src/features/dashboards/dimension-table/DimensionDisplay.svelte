@@ -183,7 +183,7 @@
     const label = tableRows[data.index][dimensionName] as string;
     expressionFilterManager.dimensionFilterAction(
       dimensionName,
-      (dimensionManager) => dimensionManager.toggleValue(label, false),
+      (dimensionManager) => dimensionManager.toggleValue(label, data.meta),
     );
   }
 

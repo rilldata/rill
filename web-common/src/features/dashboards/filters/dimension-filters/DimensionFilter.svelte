@@ -36,6 +36,7 @@
     dedupe,
     getMissingValues,
   } from "@rilldata/web-common/lib/arrayUtils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     manager,
@@ -167,9 +168,12 @@
   let searchResultCountText = $derived(
     enableSearchCountQuery
       ? proxyDimensionManager.mode === DimensionFilterMode.Contains
-        ? `${allSearchResultsCount} results`
-        : `${allSearchResultsCount} of ${inListValues.length} matched`
-      : "0 results",
+        ? m.filter_search_result_count({ count: allSearchResultsCount ?? 0 })
+        : m.filter_search_matched_count({
+            count: allSearchResultsCount ?? 0,
+            total: inListValues.length,
+          })
+      : m.filter_search_result_count({ count: 0 }),
   );
 
   let searchPlaceholder = $derived(
@@ -387,19 +391,20 @@
           error={!!missingRequired}
           active={open}
           exclude={proxyDimensionManager.exclude}
-          label={`${dimensionManager.name} filter`}
+          label={m.filter_dimension_chip_aria({
+            name: dimensionManager.name,
+          })}
           theme
           onRemove={() => dimensionManager.clear()}
           removable={removable && !pinned && !required}
-          removeTooltipText="remove {dimensionManager.selectedValues
-            .length} value{dimensionManager.selectedValues.length !== 1
-            ? 's'
-            : ''}"
+          removeTooltipText={m.filter_remove_values({
+            count: dimensionManager.selectedValues.length,
+          })}
         >
           <DimensionFilterChipBody
             slot="body"
             label={proxyDimensionManager.exclude
-              ? `Exclude ${dimensionManager.label}`
+              ? m.filter_exclude_label({ label: dimensionManager.label })
               : dimensionManager.label}
             show={1}
             {smallChip}
@@ -421,14 +426,14 @@
               >
               <svelte:fragment slot="description"
                 >{required
-                  ? "required dimension"
-                  : "dimension"}</svelte:fragment
+                  ? m.filter_required_dimension()
+                  : m.filter_dimension()}</svelte:fragment
               >
             </TooltipTitle>
             {#if missingRequired}
-              This filter is required. Select a value to load the dashboard.
+              {m.dashboard_filter_required_set_value()}
             {:else}
-              Click to edit the filters in this dimension
+              {m.filter_dimension_chip_tooltip()}
             {/if}
           </TooltipContent>
         </div>
@@ -470,7 +475,9 @@
         />
         <Search
           bind:value={curSearchText}
-          label={`${dimensionManager.name} search list`}
+          label={m.filter_dimension_search_list_aria({
+            name: dimensionManager.name,
+          })}
           showBorderOnFocus={false}
           retainValueOnMount
           placeholder={searchPlaceholder}
@@ -484,7 +491,9 @@
           {#if proxyDimensionManager.mode !== DimensionFilterMode.Select}
             <span
               class="px-2 py-1.5 pb-0 uppercase text-[10px] text-fg-secondary font-semibold"
-              aria-label={`${dimensionManager.name} result count`}
+              aria-label={m.filter_dimension_result_count_aria({
+                name: dimensionManager.name,
+              })}
             >
               {searchResultCountText}
             </span>
@@ -508,15 +517,19 @@
           <LoadingSpinner />
         </div>
       {:else if error}
-        <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
+          {m.filter_search_error()}
+        </div>
       {:else if inListTooLong}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          List is too long. Please remove some values.
+          {m.filter_in_list_too_long()}
         </div>
       {:else}
         <DropdownMenu.Group
           class="px-1"
-          aria-label={`${dimensionManager.name} results`}
+          aria-label={m.filter_dimension_results_aria({
+            name: dimensionManager.name,
+          })}
         >
           <!-- Show checked items first (only in Select mode and when not searching) -->
           {#if proxyDimensionManager.mode === DimensionFilterMode.Select && !curSearchText}
@@ -582,7 +595,7 @@
           <!-- Show "no results" only if both checked and unchecked are empty -->
           {#if uncheckedItems.length === 0 && (proxyDimensionManager.mode !== DimensionFilterMode.Select || checkedItems.length === 0)}
             <div class="text-fg-disabled text-center p-2 w-full">
-              no results
+              {m.filter_no_results()}
             </div>
           {/if}
         </DropdownMenu.Group>

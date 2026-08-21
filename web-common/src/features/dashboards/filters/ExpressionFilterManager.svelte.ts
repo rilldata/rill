@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import { fromStore, toStore, type Readable } from "svelte/store";
 import {
   type DimensionOrMeasureManager,
@@ -228,9 +229,11 @@ export class ExpressionFilterManager {
     this.applyParam(this.paramFromSearchParams(searchParams), false);
   }
 
-  private paramFromSearchParams(searchParams: URLSearchParams) {
+  private paramFromSearchParams(rawSearchParams: URLSearchParams) {
     const newParamByMetricsView = {} as Record<MetricsViewName, string>;
 
+    // Callers pass the url's params as-is, so the filter can be inside `gzipped_state`.
+    const searchParams = expandCompressedParams(rawSearchParams);
     const singularFilter = searchParams.get(ExploreStateURLParams.Filters);
     // Tracked on purpose: the params are keyed by metrics view,
     // so they have to be re-applied once the names arrive.

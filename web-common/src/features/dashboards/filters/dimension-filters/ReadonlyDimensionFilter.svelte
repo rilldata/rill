@@ -10,6 +10,7 @@
     createDimensionSearchQuery,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/queries.svelte.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     manager,
@@ -29,7 +30,7 @@
 
   let effectiveLabel = $derived(
     dimensionManager.exclude
-      ? `Exclude ${dimensionManager.label}`
+      ? m.filter_exclude_label({ label: dimensionManager.label })
       : dimensionManager.label,
   );
 

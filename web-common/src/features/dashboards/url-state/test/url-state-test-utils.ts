@@ -6,9 +6,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_VIEW,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
-import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
   createInEffectRoot,
@@ -71,9 +69,7 @@ export function applyURLToExploreState(
   defaultExplorePreset: V1ExplorePreset,
   filterManager: ExpressionFilterManager,
 ) {
-  // convertURLSearchParamsToExploreState expands the compressed params itself,
-  // but the filter manager only looks for the filter params, so expand them here as well.
-  filterManager.setUrlParams(expandCompressedParams(url.searchParams));
+  filterManager.setUrlParams(url.searchParams);
 
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLSearchParamsToExploreState(
@@ -114,13 +110,4 @@ export function getCleanMetricsExploreForAssertion() {
   delete cleanedState.leaderboardContextColumn;
 
   return cleanedState;
-}
-
-function expandCompressedParams(searchParams: URLSearchParams) {
-  const compressedParams = searchParams.get(
-    ExploreStateURLParams.GzippedParams,
-  );
-  if (!compressedParams) return searchParams;
-
-  return new URLSearchParams(decompressUrlParams(compressedParams));
 }

@@ -22,6 +22,7 @@ import {
   AD_BIDS_PUBLISHER_COUNT_MEASURE,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
@@ -268,6 +269,27 @@ describe("setUrlParams", () => {
       [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
     });
+  });
+
+  it("reads the filter out of a compressed param", () => {
+    const filterManager = createFilterManager();
+
+    // Compression replaces the whole search string, so `f.<metricsView>` is only inside `gzipped_state`.
+    const compressed = new URLSearchParams({
+      [ExploreStateURLParams.GzippedParams]: compressUrlParams(
+        perMetricsViewParams({
+          [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+        }).toString(),
+      ),
+    });
+    filterManager.setUrlParams(compressed);
+
+    expect(names(filterManager.filterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(filterManager.filterManagers.dimensions[0].selectedValues).toEqual([
+      "Google",
+    ]);
   });
 
   it("merges the per metrics view param with the singular one", () => {
