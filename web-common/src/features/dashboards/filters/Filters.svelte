@@ -380,7 +380,7 @@
       const exploreState: ExploreState = {
         ...$dashboardStore,
         whereFilter:
-          Object.values(tempFilterManger.managerByMetricsView)[0]?.expr ??
+          Object.values(tempFilterManger.topLevelJoiner.expr)[0] ??
           createAndExpression([]),
         dimensionsWithInlistFilter: tempFilterManger.inList,
       };

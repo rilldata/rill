@@ -194,7 +194,7 @@
           queryArgsJson: JSON.stringify(
             getAlertQueryArgsFromFormValues(
               values,
-              filters.managerByMetricsView[metricsViewName]?.expr,
+              filters.topLevelJoiner.expr[metricsViewName],
               timeControls.toState(),
               exploreSpec,
             ),

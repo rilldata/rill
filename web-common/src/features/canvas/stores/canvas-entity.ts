@@ -53,6 +53,7 @@ import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboard
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import { toExpressionProto } from "../../dashboards/proto-state/toProto";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -347,12 +348,12 @@ export class CanvasEntity {
     const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
 
     const filterNames = Object.keys(
-      this.expressionFilterManager.managerByMetricsView,
+      this.expressionFilterManager.topLevelJoiner.expr,
     );
     const promises = Object.values(
-      this.expressionFilterManager.managerByMetricsView,
-    ).map((manager) => {
-      const protoExpr = manager.expr as any; // TODO: expand toProto.ts::toExpressionProto to support subquery and convert.
+      this.expressionFilterManager.topLevelJoiner.expr,
+    ).map((expr) => {
+      const protoExpr = toExpressionProto(expr);
       return queryClient.fetchQuery({
         queryKey: getQueryServiceConvertExpressionToMetricsSQLQueryKey(
           this.instanceId,

@@ -1,9 +1,6 @@
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
 import { type V1Expression } from "@rilldata/web-common/runtime-client";
-import {
-  convertExpressionToFilterParam,
-  convertFilterParamToExpression,
-} from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import {
   createAndExpression,
   maybeWrapAndExpression,
@@ -17,10 +14,9 @@ import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/pro
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { fromStore, toStore, type Readable } from "svelte/store";
 import {
-  type AnyManager,
   type DimensionOrMeasureManager,
-  MetricsViewFilterManager,
-} from "@rilldata/web-common/features/dashboards/filters/MetricsViewFilterManager.svelte.ts";
+  JoinerFilterManager,
+} from "@rilldata/web-common/features/dashboards/filters/JoinerFilterManager.svelte.ts";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 import type {
@@ -28,11 +24,7 @@ import type {
   FilterEvents,
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 import { untrack } from "svelte";
-
-type ParamFilterManagers = {
-  dimensionsMap: Record<string, DimensionFilterManager[]>;
-  measuresMap: Record<string, MeasureFilterManager[]>;
-};
+import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -53,19 +45,13 @@ export class ExpressionFilterManager {
 
   // Name of the filter added from the filter menu. Its chip opens as soon as it is rendered.
   public temporaryFilterName: string | undefined = $state(undefined);
-  // Filter manager per metrics view. Will contain parsed and validated expression.
-  public managerByMetricsView: Record<
-    MetricsViewName,
-    MetricsViewFilterManager
-  >;
+  // Manager for the whole filter. Will contain parsed and validated expressions per metrics view.
+  public topLevelJoiner: JoinerFilterManager;
   public filterManagers: {
     measures: MeasureFilterManager[];
     dimensions: DimensionFilterManager[];
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
-
-  // Managers for the filters in the param, grouped by dimension or measure name.
-  private paramFilterManagers: ParamFilterManagers;
 
   // Shared with every manager below this one, so a chip edit reports itself
   // without the managers in between having to forward it. See `filter-events.ts`.
@@ -75,7 +61,8 @@ export class ExpressionFilterManager {
   ) as typeof this.events.on;
 
   // Raw filter param per metrics view.
-  public paramByMetricsView = $state<Record<MetricsViewName, string>>({});
+  private paramByMetricsView = $state<Record<MetricsViewName, string>>({});
+  private mergedExprFromParams: ReturnType<typeof mergeFilterParams>;
   // Filter param based on managers.
   public paramByManager: Record<MetricsViewName, string>;
   // The param the url last seeded the managers with. See `writeBackToUrl`.
@@ -88,50 +75,31 @@ export class ExpressionFilterManager {
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
   ) {
-    this.managerByMetricsView = $derived.by(() => {
-      const existingManagers = new Map<string, AnyManager>();
-      return Object.fromEntries(
-        Object.entries(this.paramByMetricsView)
-          .map(([mvName, param]) => {
-            const { expr, dimensionsWithInlistFilter } =
-              parseFilterParam(param);
-            return [
-              mvName,
-              MetricsViewFilterManager.parse(
-                this.metricsViewsProvider,
-                mvName,
-                maybeWrapAndExpression(expr) ?? createAndExpression([]),
-                dimensionsWithInlistFilter,
-                existingManagers,
-                this.yamlConfigProvider,
-                this.events,
-              ),
-            ];
-          })
-          .filter(([, manager]) => !!manager) as [
-          string,
-          MetricsViewFilterManager,
-        ][],
-      );
+    this.mergedExprFromParams = $derived(
+      mergeFilterParams(this.paramByMetricsView),
+    );
+    this.topLevelJoiner = $derived.by(() => {
+      return JoinerFilterManager.parse(
+        this.metricsViewsProvider,
+        maybeWrapAndExpression(this.mergedExprFromParams.expr) ??
+          createAndExpression([]),
+        this.mergedExprFromParams.inList,
+        this.yamlConfigProvider,
+        this.events,
+      ) as JoinerFilterManager;
     });
     this.paramByManager = $derived(
       Object.fromEntries(
-        Object.entries(this.managerByMetricsView).map(([mvName, manager]) => [
+        this.metricsViewsProvider.metricsViewNames.map((mvName) => [
           mvName,
-          manager.param,
+          this.topLevelJoiner.param[mvName] ?? "",
         ]),
       ),
     );
-    this.paramFilterManagers = $derived.by(() =>
-      this.buildParamFilterManagers(),
-    );
-    this.isComplexFilter = $derived(
-      Object.values(this.managerByMetricsView).some((m) => m.isComplexFilter) ||
-        hasDivergentFilters(this.paramFilterManagers),
-    );
+    this.isComplexFilter = $derived(this.mergedExprFromParams.advanced);
 
     this.filterManagers = $derived.by(() =>
-      this.buildFilterManagers(this.paramFilterManagers),
+      this.buildFilterManagers(this.topLevelJoiner),
     );
     this.inList = $derived(
       this.filterManagers.dimensions
@@ -149,13 +117,7 @@ export class ExpressionFilterManager {
       ]),
     );
 
-    this.exprByMetricsView = $derived(
-      Object.fromEntries(
-        Object.entries(this.managerByMetricsView)
-          .map(([mvName, manager]) => [mvName, manager.expr])
-          .filter(([, manager]) => !!manager) as [string, V1Expression][],
-      ),
-    );
+    this.exprByMetricsView = $derived(this.topLevelJoiner.expr);
     this.exprByMetricsViewStore = toStore(() => this.exprByMetricsView);
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
@@ -370,9 +332,7 @@ export class ExpressionFilterManager {
       );
       if (!dfm) return;
 
-      Object.keys(this.metricsViewsProvider.dimensionSpecs[name]).forEach(
-        (mv) => this.managerByMetricsView[mv]?.maybeAddDimensionFilter(dfm),
-      );
+      this.topLevelJoiner.maybeAddDimensionFilter(dfm);
       this.temporaryFilterName = name;
     } else if (this.metricsViewsProvider.measureSpecs[name]) {
       const mfm = MeasureFilterManager.createForMetricsViews(
@@ -382,9 +342,7 @@ export class ExpressionFilterManager {
       );
       if (!mfm) return;
 
-      Object.keys(this.metricsViewsProvider.measureSpecs[name]).forEach((mv) =>
-        this.managerByMetricsView[mv]?.maybeAddMeasureFilter(mfm),
-      );
+      this.topLevelJoiner.maybeAddMeasureFilter(mfm);
       this.temporaryFilterName = name;
     }
   }
@@ -411,9 +369,7 @@ export class ExpressionFilterManager {
     );
     // Only add dimension filter if the action resulted in a valid expression
     if (dimensionFilterManager.expr) {
-      Object.values(this.managerByMetricsView).forEach((m) =>
-        m.maybeAddDimensionFilter(dimensionFilterManager),
-      );
+      this.topLevelJoiner.maybeAddDimensionFilter(dimensionFilterManager);
     }
     return ret;
   }
@@ -437,9 +393,7 @@ export class ExpressionFilterManager {
     );
     // Only add measure filter if the action resulted in a valid expression
     if (measureFilterManager.expr) {
-      Object.values(this.managerByMetricsView).forEach((m) =>
-        m.maybeAddMeasureFilter(measureFilterManager),
-      );
+      this.topLevelJoiner.maybeAddMeasureFilter(measureFilterManager);
     }
     return ret;
   }
@@ -486,122 +440,48 @@ export class ExpressionFilterManager {
   }
 
   public getExprStoreForFirstMetricsView() {
+    // The name is read inside the store, since the metrics views only arrive once the specs load.
     return toStore(() => {
-      const exprs = Object.values(this.managerByMetricsView)[0];
+      const mvName = this.metricsViewsProvider.metricsViewNames[0];
       return {
-        expr: exprs?.expr,
-        dimensionOnlyExpr: exprs?.dimensionOnlyExpr,
+        expr: this.topLevelJoiner.expr[mvName],
+        dimensionOnlyExpr: this.topLevelJoiner.dimensionOnlyExpr[mvName],
       };
     });
   }
 
   public getExprStoreForMetricsView(mvName: string) {
-    return toStore(() => {
-      const mvManager = this.managerByMetricsView[mvName];
-      if (!mvManager) return undefined;
-      return {
-        expr: mvManager.expr,
-        dimensionOnlyExpr: mvManager.dimensionOnlyExpr,
-      };
-    });
-  }
-
-  /** Managers for the filters in the param, keyed by name and in param order. */
-  private buildParamFilterManagers(): ParamFilterManagers {
-    const dimensionsMap = {} as Record<string, DimensionFilterManager[]>;
-    const measuresMap = {} as Record<string, MeasureFilterManager[]>;
-
-    // Go through exprs of parsed url params for each metrics views.
-    Object.entries(this.managerByMetricsView).forEach(([, mvManager]) => {
-      mvManager.managers.dimensionManagers.forEach((manager) => {
-        dimensionsMap[manager.name] ??= [];
-        dimensionsMap[manager.name].push(manager);
-      });
-      mvManager.managers.measureManagers.forEach((manager) => {
-        measuresMap[manager.name] ??= [];
-        measuresMap[manager.name].push(manager);
-      });
-    });
-
-    return { measuresMap, dimensionsMap };
+    return toStore(() => ({
+      expr: this.topLevelJoiner.expr[mvName],
+      dimensionOnlyExpr: this.topLevelJoiner.dimensionOnlyExpr[mvName],
+    }));
   }
 
   /**
-   * Managers in chip order: required filters first, then pinned ones, then the rest of the param
-   * filters in param order, and finally the filters the param does not cover yet.
+   * Managers in chip order: required filters first, then pinned ones, then the rest,
+   * sorted by name within each of those groups.
    */
-  private buildFilterManagers({
-    dimensionsMap,
-    measuresMap,
-  }: ParamFilterManagers) {
-    const dimensions: DimensionFilterManager[] = [];
-    const measures: MeasureFilterManager[] = [];
-    const added = new Set<string>();
-
-    const add = (name: string) => {
-      if (added.has(name)) return;
-
-      // We dont really support multiple filters per dimension/measure so always select the first one.
-      // TODO: redesign filter pill to support this?
-      const filterManager = dimensionsMap[name]?.[0] ?? measuresMap[name]?.[0];
-      if (!filterManager) return;
-
-      added.add(name);
-      if (filterManager instanceof MeasureFilterManager) {
-        measures.push(filterManager);
-      } else {
-        dimensions.push(filterManager);
-      }
+  private buildFilterManagers(joinerManager: JoinerFilterManager) {
+    const rank = (manager: DimensionFilterManager | MeasureFilterManager) => {
+      if (this.yamlConfigProvider.requiredFilters[manager.name]) return 0;
+      if (this.yamlConfigProvider.pinnedFilters[manager.name]) return 1;
+      return 2;
     };
 
-    // Required and pinned filters lead the chips and have a chip even without a value.
-    const { requiredFilters, pinnedFilters } = this.yamlConfigProvider;
-    sortFilterIterator(Object.keys(requiredFilters)).forEach((name) =>
-      add(name),
+    const sortFunc = (
+      a: DimensionFilterManager | MeasureFilterManager,
+      b: DimensionFilterManager | MeasureFilterManager,
+    ) => rank(a) - rank(b) || a.name.localeCompare(b.name);
+
+    // Sorted on a copy: the managers keep param order, which is the order the expression and the
+    // param it writes back are built in.
+    const dimensions = [...joinerManager.managers.dimensionManagers].sort(
+      sortFunc,
     );
-    sortFilterIterator(Object.keys(pinnedFilters)).forEach((name) => add(name));
-
-    // Next comes dimensions from params
-    sortFilterIterator(Object.keys(dimensionsMap)).forEach((name) => add(name));
-
-    // Next comes measures from params
-    sortFilterIterator(Object.keys(measuresMap)).forEach((name) => add(name));
+    const measures = [...joinerManager.managers.measureManagers].sort(sortFunc);
 
     return { dimensions, measures };
   }
-}
-
-/**
- * True when a dimension or measure is filtered differently in different metrics views.
- * Only one of those filters gets a chip, and editing it leaves the others in place,
- * so the filter bar falls back to the read only advanced filter instead.
- */
-function hasDivergentFilters({
-  dimensionsMap,
-  measuresMap,
-}: ParamFilterManagers) {
-  const diverges = (managers: DimensionOrMeasureManager[]) =>
-    new Set(managers.map((manager) => manager.param).filter(Boolean)).size > 1;
-  return (
-    Object.values(dimensionsMap).some(diverges) ||
-    Object.values(measuresMap).some(diverges)
-  );
-}
-
-/**
- * The parser throws on a malformed param.
- * Converting the url to explore state reports it as an error, so drop it here instead of throwing.
- */
-function parseFilterParam(param: string) {
-  try {
-    return convertFilterParamToExpression(param);
-  } catch {
-    return { expr: undefined, dimensionsWithInlistFilter: [] };
-  }
-}
-
-function sortFilterIterator(arr: string[]) {
-  return [...arr].sort((a, b) => (a > b ? 1 : -1));
 }
 
 export function recordsMatch(

@@ -204,7 +204,7 @@ function toTimeProto(date: Date) {
   });
 }
 
-function toExpressionProto(expression: V1Expression): Expression {
+export function toExpressionProto(expression: V1Expression): Expression {
   if ("ident" in expression) {
     return new Expression({
       expression: {

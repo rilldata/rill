@@ -30,7 +30,7 @@
       runtimeClient,
       queryClient,
       formValues,
-      filters.managerByMetricsView[formValues.metricsViewName]?.expr,
+      filters.topLevelJoiner.expr[formValues.metricsViewName],
       timeControls,
     ),
   );

@@ -206,7 +206,7 @@ const metricsViewReducers = {
         expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
       if (mvName) {
         exploreState.whereFilter =
-          expressionFilterManager.managerByMetricsView[mvName]?.expr ??
+          expressionFilterManager.topLevelJoiner.expr[mvName] ??
           createAndExpression([]);
         exploreState.dimensionsWithInlistFilter =
           expressionFilterManager.inList;

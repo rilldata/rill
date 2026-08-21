@@ -52,12 +52,10 @@ export class DimensionFilterManager {
     metricsViewsProvider: MetricsViewsProvider,
     name: string,
     {
-      metricsViewName,
       initExpr,
       isInList,
       events,
     }: {
-      metricsViewName?: string;
       initExpr?: V1Expression;
       isInList?: boolean;
       events?: FilterEventEmitter;
@@ -65,9 +63,7 @@ export class DimensionFilterManager {
   ) {
     const dimensionSpecs = metricsViewsProvider.dimensionSpecs[name];
     if (!dimensionSpecs) return undefined;
-    const dimensionSpec = metricsViewName
-      ? dimensionSpecs[metricsViewName]
-      : Object.values(dimensionSpecs)[0];
+    const dimensionSpec = Object.values(dimensionSpecs)[0];
     if (!dimensionSpec) return undefined;
 
     return new DimensionFilterManager(

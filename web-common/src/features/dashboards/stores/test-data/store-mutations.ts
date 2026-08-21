@@ -575,8 +575,7 @@ export async function applyMutationsToDashboard(
       updateMetricsExplorerByName(name, (dashboard) => {
         const mvName = filterManager.metricsViewsProvider.metricsViewNames[0];
         dashboard.whereFilter =
-          filterManager.managerByMetricsView[mvName]?.expr ??
-          createAndExpression([]);
+          filterManager.topLevelJoiner.expr[mvName] ?? createAndExpression([]);
         dashboard.dimensionThresholdFilters = [];
         dashboard.dimensionsWithInlistFilter = filterManager.inList;
         dashboard.dimensionFilterExcludeMode = new Map();

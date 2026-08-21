@@ -49,20 +49,16 @@ export class MeasureFilterManager {
     metricsViewsProvider: MetricsViewsProvider,
     name: string,
     {
-      metricsViewName,
       initExpr,
       events,
     }: {
-      metricsViewName?: string;
       initExpr?: V1Expression;
       events?: FilterEventEmitter;
     } = {},
   ) {
     const measureSpecs = metricsViewsProvider.measureSpecs[name];
     if (!measureSpecs) return undefined;
-    const measureSpec = metricsViewName
-      ? measureSpecs[metricsViewName]
-      : Object.values(measureSpecs)[0];
+    const measureSpec = Object.values(measureSpecs)[0];
     if (!measureSpec) return undefined;
 
     return new MeasureFilterManager(

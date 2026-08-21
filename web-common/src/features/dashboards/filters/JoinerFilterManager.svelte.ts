@@ -5,7 +5,10 @@ import {
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterManager.svelte.ts";
-import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import type {
+  MetricsViewName,
+  MetricsViewsProvider,
+} from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
   createAndExpression,
   createOrExpression,
@@ -17,21 +20,21 @@ import type { FilterEventEmitter } from "@rilldata/web-common/features/dashboard
 export type DimensionOrMeasureManager =
   | DimensionFilterManager
   | MeasureFilterManager;
-export type AnyManager = DimensionOrMeasureManager | MetricsViewFilterManager;
+export type AnyManager = DimensionOrMeasureManager | JoinerFilterManager;
 export type AllManagers = {
   dimensionManagers: DimensionFilterManager[];
   measureManagers: MeasureFilterManager[];
-  joinerManagers: MetricsViewFilterManager[];
+  joinerManagers: JoinerFilterManager[];
 };
 
 /**
- * Manager for an AND/OR expression for a metrics view.
+ * Manager for an AND/OR expression.
  */
-export class MetricsViewFilterManager {
-  public expr: V1Expression | undefined;
-  public dimensionOnlyExpr: V1Expression | undefined;
+export class JoinerFilterManager {
+  public expr: Record<MetricsViewName, V1Expression>;
+  public dimensionOnlyExpr: Record<MetricsViewName, V1Expression>;
   // String representation of the filter expression. Used to check duplicate expressions across metrics views.
-  public param: string;
+  public param: Record<MetricsViewName, string>;
 
   public managers: AllManagers;
   public managerLookup: Record<
@@ -44,7 +47,6 @@ export class MetricsViewFilterManager {
   public isComplexFilter: boolean;
 
   public constructor(
-    public readonly metricsViewName: string,
     private readonly metricsViewsProvider: MetricsViewsProvider,
     public type:
       | typeof V1Operation.OPERATION_AND
@@ -54,8 +56,20 @@ export class MetricsViewFilterManager {
   ) {
     this.managers = $state(managers);
 
-    this.expr = $derived(this.buildExpression(this.managers));
-    this.dimensionOnlyExpr = $derived(this.buildDimensionOnlyExpression());
+    this.expr = $derived(
+      this.buildExpression(
+        this.managers,
+        this.metricsViewsProvider.metricsViewNames,
+        false,
+      ),
+    );
+    this.dimensionOnlyExpr = $derived(
+      this.buildExpression(
+        this.managers,
+        this.metricsViewsProvider.metricsViewNames,
+        true,
+      ),
+    );
 
     this.managerLookup = $derived(this.buildManagerLookup());
     // `inList` is what the param was parsed with. The chips can change the mode afterwards without
@@ -71,9 +85,12 @@ export class MetricsViewFilterManager {
         .map((manager) => manager.name),
     );
     this.param = $derived(
-      this.expr
-        ? convertExpressionToFilterParam(this.expr, this.inListDimensions)
-        : "",
+      Object.fromEntries(
+        Object.entries(this.expr).map(([mvName, expr]) => [
+          mvName,
+          convertExpressionToFilterParam(expr, this.inListDimensions),
+        ]),
+      ),
     );
 
     this.hasSomeFilter = $derived(Object.values(this.managerLookup).length > 0);
@@ -90,10 +107,8 @@ export class MetricsViewFilterManager {
 
   public static parse(
     metricsViewsProvider: MetricsViewsProvider,
-    metricsViewName: string,
     expr: V1Expression | undefined,
     dimensionsWithInlistFilter: string[],
-    existingManagers: Map<string, AnyManager>,
     yamlConfigProvider: YAMLConfigProvider | undefined,
     events: FilterEventEmitter | undefined,
   ): AnyManager | undefined {
@@ -101,23 +116,10 @@ export class MetricsViewFilterManager {
     if (op === V1Operation.OPERATION_AND || op === V1Operation.OPERATION_OR) {
       const dimensionManagers: DimensionFilterManager[] = [];
       const measureManagers: MeasureFilterManager[] = [];
-      const joinerManagers: MetricsViewFilterManager[] = [];
+      const joinerManagers: JoinerFilterManager[] = [];
       const added = new Set<string>();
 
       const add = (manager: AnyManager, force: boolean) => {
-        if (manager.param && !existingManagers.has(manager.param)) {
-          existingManagers.set(manager.param, manager);
-        } else if (
-          !manager.param &&
-          !(manager instanceof MetricsViewFilterManager)
-        ) {
-          manager = existingManagers.get(manager.name) ?? manager;
-          existingManagers.set(
-            (manager as DimensionOrMeasureManager).name,
-            manager,
-          );
-        }
-
         if (
           manager instanceof DimensionFilterManager &&
           (!added.has(manager.name) || force)
@@ -130,26 +132,21 @@ export class MetricsViewFilterManager {
         ) {
           added.add(manager.name);
           measureManagers.push(manager);
-        } else if (manager instanceof MetricsViewFilterManager) {
+        } else if (manager instanceof JoinerFilterManager) {
           joinerManagers.push(manager);
         }
       };
 
       expr?.cond?.exprs?.forEach((e) => {
-        let manager = MetricsViewFilterManager.parse(
+        const manager = JoinerFilterManager.parse(
           metricsViewsProvider,
-          metricsViewName,
           e,
           dimensionsWithInlistFilter,
-          existingManagers,
+          // Deeper parse should not add required/pinned filters. So pass undefined here.
           undefined,
           events,
         );
         if (!manager) return;
-        // Prefer to share class for similar expressions.
-        // This is a hack to make a single filter across the metrics view work.
-        // TODO: find a better solution to share
-        manager = existingManagers.get(manager.param) ?? manager;
 
         add(manager, true);
       });
@@ -165,19 +162,18 @@ export class MetricsViewFilterManager {
               DimensionFilterManager.createForMetricsViews(
                 metricsViewsProvider,
                 requiredFilter,
-                { metricsViewName, events },
+                { events },
               ) ??
               MeasureFilterManager.createForMetricsViews(
                 metricsViewsProvider,
                 requiredFilter,
-                { metricsViewName, events },
+                { events },
               );
             if (manager) add(manager, false);
           });
       }
 
-      return new MetricsViewFilterManager(
-        metricsViewName,
+      return new JoinerFilterManager(
         metricsViewsProvider,
         op,
         {
@@ -191,7 +187,9 @@ export class MetricsViewFilterManager {
       const ident = expr?.cond?.exprs?.[0]?.ident ?? "";
       // Both filter types are keyed off a dimension: a dimension filter by the dimension it filters
       // and a measure filter by the dimension its subquery groups by.
-      if (!metricsViewsProvider.dimensionSpecs[ident]?.[metricsViewName]) {
+      if (
+        !Object.keys(metricsViewsProvider.dimensionSpecs[ident] ?? {}).length
+      ) {
         return undefined;
       }
 
@@ -204,7 +202,7 @@ export class MetricsViewFilterManager {
         return MeasureFilterManager.createForMetricsViews(
           metricsViewsProvider,
           measureName,
-          { metricsViewName, initExpr: firstValueExpr, events },
+          { initExpr: firstValueExpr, events },
         );
       } else {
         // Everything else is a dimension filter for now.
@@ -212,7 +210,6 @@ export class MetricsViewFilterManager {
           metricsViewsProvider,
           ident,
           {
-            metricsViewName,
             initExpr: expr,
             isInList: dimensionsWithInlistFilter.includes(ident),
             events,
@@ -227,10 +224,9 @@ export class MetricsViewFilterManager {
   ) {
     const dimensionName = dimensionFilterManager.name;
     const alreadyAdded = !!this.managerLookup[dimensionName];
-    const dimensionNotInMV =
-      !this.metricsViewsProvider.dimensionSpecs[dimensionName]?.[
-        this.metricsViewName
-      ];
+    const dimensionNotInMV = !Object.keys(
+      this.metricsViewsProvider.dimensionSpecs[dimensionName] ?? {},
+    ).length;
     if (alreadyAdded || dimensionNotInMV) return;
 
     this.managers = {
@@ -245,10 +241,9 @@ export class MetricsViewFilterManager {
   public maybeAddMeasureFilter(measureFilterManager: MeasureFilterManager) {
     const measureName = measureFilterManager.name;
     const alreadyAdded = !!this.managerLookup[measureName];
-    const measureNotInMV =
-      !this.metricsViewsProvider.measureSpecs[measureName]?.[
-        this.metricsViewName
-      ];
+    const measureNotInMV = !Object.keys(
+      this.metricsViewsProvider.measureSpecs[measureName] ?? {},
+    ).length;
     if (alreadyAdded || measureNotInMV) return;
 
     this.managers = {
@@ -257,37 +252,71 @@ export class MetricsViewFilterManager {
     };
   }
 
-  private buildExpression(managers: AllManagers) {
-    const dimensionExprs = managers.dimensionManagers
-      .map((dfm) => dfm.expr)
-      .filter(Boolean) as V1Expression[];
-    const measureExprs = managers.measureManagers
-      .map((mfm) => mfm.expr)
-      .filter(Boolean) as V1Expression[];
-    const joinerExprs = managers.joinerManagers
-      .map((jm) => jm.expr)
-      .filter(Boolean) as V1Expression[];
-    const exprs = dimensionExprs.concat(measureExprs).concat(joinerExprs);
-    if (exprs.length === 0) return undefined;
+  private buildExpression(
+    managers: AllManagers,
+    metricsViewNames: string[],
+    dimensionOnly: boolean,
+  ) {
+    const exprsByMv: Record<string, V1Expression[]> = {};
 
-    if (this.type === V1Operation.OPERATION_AND) {
-      return createAndExpression(exprs);
-    } else {
-      return createOrExpression(exprs);
+    const addExprForMv = (expr: V1Expression | undefined, mvName: string) => {
+      if (!expr) return;
+      exprsByMv[mvName] ??= [];
+      exprsByMv[mvName].push(expr);
+    };
+    // A manager is shared across the metrics views, but the identifier it filters on is not:
+    // a filter only goes to the metrics views that define it, since the rest cannot resolve it.
+    const addExpr = (
+      expr: V1Expression | undefined,
+      definedBy: (mvName: string) => boolean,
+    ) => {
+      if (!expr) return;
+      metricsViewNames
+        .filter(definedBy)
+        .forEach((mvName) => addExprForMv(expr, mvName));
+    };
+
+    managers.dimensionManagers.forEach((dfm) =>
+      addExpr(
+        dfm.expr,
+        (mvName) =>
+          !!this.metricsViewsProvider.dimensionSpecs[dfm.name]?.[mvName],
+      ),
+    );
+    if (!dimensionOnly) {
+      // A measure filter is a subquery grouped by a dimension, so both have to be defined.
+      managers.measureManagers.forEach((mfm) =>
+        addExpr(
+          mfm.expr,
+          (mvName) =>
+            !!this.metricsViewsProvider.measureSpecs[mfm.name]?.[mvName] &&
+            !!this.metricsViewsProvider.dimensionSpecs[mfm.dimension]?.[mvName],
+        ),
+      );
     }
-  }
+    managers.joinerManagers.forEach((jfm) => {
+      if (dimensionOnly) {
+        Object.entries(jfm.dimensionOnlyExpr).forEach(([mvName, expr]) =>
+          addExprForMv(expr, mvName),
+        );
+      } else {
+        Object.entries(jfm.expr).forEach(([mvName, expr]) =>
+          addExprForMv(expr, mvName),
+        );
+      }
+    });
 
-  private buildDimensionOnlyExpression() {
-    const dimensionExprs = this.managers.dimensionManagers
-      .map((dfm) => dfm.expr)
-      .filter(Boolean) as V1Expression[];
-    if (dimensionExprs.length === 0) return undefined;
+    const joinerCreator =
+      this.type === V1Operation.OPERATION_AND
+        ? createAndExpression
+        : createOrExpression;
 
-    if (this.type === V1Operation.OPERATION_AND) {
-      return createAndExpression(dimensionExprs);
-    } else {
-      return createOrExpression(dimensionExprs);
-    }
+    return Object.fromEntries(
+      Object.entries(exprsByMv).map(([mvName, exprs]) => [
+        mvName,
+        joinerCreator(exprs),
+      ]),
+    );
   }
 
   private buildManagerLookup() {
