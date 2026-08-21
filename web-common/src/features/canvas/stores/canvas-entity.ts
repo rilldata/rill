@@ -99,6 +99,8 @@ export class CanvasEntity {
 
   // Expression filter manager
   expressionFilterManager: ExpressionFilterManager;
+  // Tears down the filter managers' url seed; see `acquire`.
+  private disposeFilterSeed: (() => void) | undefined;
 
   fileArtifact: FileArtifact | undefined;
 
@@ -502,6 +504,12 @@ export class CanvasEntity {
   // entity that was previously disposed is not left in an error state.
   acquire = () => {
     this.subscribers++;
+    // Seeded here rather than by the filter bar: everything that reads a filter, a canvas component
+    // for example, has to see the url's filters on a canvas with `filters_enabled: false` as well.
+    // `searchParams` holds the url the consumer applied, so an isolated consumer that renders stored
+    // state (see `onUrlChange`) seeds from that state instead of from the page url.
+    this.disposeFilterSeed ??=
+      this.expressionFilterManager.seedFromSearchParams(this.searchParams);
     if (this.unsubscriber) return; // already subscribed
     this.unsubscriber = this.specStore.subscribe(({ data }) => {
       if (this.firstTimeLoad) {
@@ -533,6 +541,8 @@ export class CanvasEntity {
     this.subscribers = 0;
     this.unsubscriber?.();
     this.unsubscriber = undefined; // so a later acquire re-subscribes
+    this.disposeFilterSeed?.();
+    this.disposeFilterSeed = undefined; // so a later acquire re-seeds
     this.componentsStore.read().forEach((component) => component.destroy());
     this.componentsStore.reset();
   };

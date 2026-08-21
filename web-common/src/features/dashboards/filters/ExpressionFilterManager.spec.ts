@@ -31,7 +31,7 @@ import {
   waitForMetricsViewSpecs,
 } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
 import { flushSync } from "svelte";
-import { get } from "svelte/store";
+import { fromStore, get, writable } from "svelte/store";
 import {
   afterAll,
   afterEach,
@@ -109,6 +109,45 @@ function createFilterManager(
   );
   cleanups.push(destroy);
   return value;
+}
+
+/**
+ * A filter manager wired the way a canvas wires one: seeded from the params its entity holds,
+ * writing back to the page url. The two sources are separate on purpose, since the seed trails the
+ * page url by the redirect handling in `CanvasEntity.onUrlChange`.
+ */
+function createUrlSyncedFilterManager() {
+  const seedParams = writable(new URLSearchParams());
+  const url = writable(new URL("http://localhost/canvas"));
+  const navigations: URL[] = [];
+  let filterManager!: ExpressionFilterManager;
+  let disposeSeed!: () => void;
+
+  const { destroy } = createInEffectRoot(() => {
+    filterManager = new ExpressionFilterManager(
+      metricsViewsProvider,
+      new YAMLConfigProvider(),
+    );
+    disposeSeed = filterManager.seedFromSearchParams(seedParams);
+    const currentUrl = fromStore(url);
+    filterManager.writeBackToUrl(
+      () => currentUrl.current,
+      (navigated) => navigations.push(navigated),
+    );
+  });
+  cleanups.push(() => {
+    disposeSeed();
+    destroy();
+  });
+
+  /** Both sources at once, as they move for a canvas that is not mid navigation. */
+  function setUrl(searchParams: URLSearchParams) {
+    url.set(new URL(`http://localhost/canvas?${searchParams.toString()}`));
+    seedParams.set(searchParams);
+    flushSync();
+  }
+
+  return { filterManager, navigations, seedParams, url, setUrl };
 }
 
 /** The `f.<metricsView>` params, one filter string per metrics view. */
@@ -1052,5 +1091,121 @@ describe("filter-changed", () => {
     // A component that filters writes its change back to the url, which lands here.
     // Reporting the reparse would look like a second, sourceless change.
     expect(sources).toEqual([]);
+  });
+});
+
+describe("seedFromSearchParams", () => {
+  it("seeds the managers without a filter bar", () => {
+    const { filterManager, seedParams } = createUrlSyncedFilterManager();
+
+    seedParams.set(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+    flushSync();
+
+    expect(filterManager.exprByMetricsView[AD_BIDS_METRICS_NAME]).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+  });
+
+  it("stops seeding once disposed", () => {
+    const { filterManager, seedParams } = createUrlSyncedFilterManager();
+    const disposed = cleanups.pop() as () => void;
+
+    disposed();
+    seedParams.set(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+    flushSync();
+
+    expect(filterManager.hasSomeFilter).toBe(false);
+  });
+});
+
+describe("writeBackToUrl", () => {
+  it("leaves the url alone while it matches the managers", () => {
+    const { navigations, setUrl } = createUrlSyncedFilterManager();
+
+    setUrl(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(navigations).toEqual([]);
+  });
+
+  it("writes a chip edit back", () => {
+    const { filterManager, navigations, setUrl } =
+      createUrlSyncedFilterManager();
+    setUrl(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    filterManager.filterManagers.dimensions[0].setSelectedValues(
+      ["Google", "Facebook"],
+      false,
+    );
+    flushSync();
+
+    expect(
+      navigations.map((url) =>
+        url.searchParams.get(
+          `${ExploreStateURLParams.Filters}.${AD_BIDS_METRICS_NAME}`,
+        ),
+      ),
+    ).toEqual([`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook')`]);
+  });
+
+  it("writes a clear back", () => {
+    const { filterManager, navigations, setUrl } =
+      createUrlSyncedFilterManager();
+    setUrl(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    filterManager.clear();
+    flushSync();
+
+    expect(navigations.map((url) => url.search)).toEqual([""]);
+  });
+
+  it("does not undo a url change the seed has not caught up with", () => {
+    const { filterManager, navigations, url, seedParams, setUrl } =
+      createUrlSyncedFilterManager();
+    setUrl(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    // A back navigation: the page url moves first, the seed follows once
+    // `CanvasEntity.onUrlChange` has resolved its redirects.
+    const previous = perMetricsViewParams({
+      [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    });
+    url.set(new URL(`http://localhost/canvas?${previous.toString()}`));
+    flushSync();
+    expect(navigations).toEqual([]);
+
+    seedParams.set(previous);
+    flushSync();
+
+    expect(navigations).toEqual([]);
+    expect(filterManager.exprByMetricsView[AD_BIDS_METRICS_NAME]).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook"]),
+      ]),
+    );
   });
 });

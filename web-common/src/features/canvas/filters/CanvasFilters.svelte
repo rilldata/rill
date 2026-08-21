@@ -8,8 +8,6 @@
   import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import ExpressionFilters from "../../dashboards/filters/ExpressionFilters.svelte";
-  import { page } from "$app/state";
-  import { goto } from "$app/navigation";
 
   let {
     maxWidth,
@@ -50,18 +48,6 @@
       expressionFilterManager,
     },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
-  // svelte-ignore state_referenced_locally
-  expressionFilterManager.syncWithUrl(
-    () => page.url,
-    (url) => {
-      // `handleCanvasRedirect` treats an empty search as a fresh visit and restores the last
-      // visited state, the home bookmark or the yaml defaults, which would bring back the filters
-      // that were just cleared. `clear` keeps the search non-empty; nothing else reads it.
-      url.searchParams.delete("clear");
-      if (!url.search) url.searchParams.set("clear", "true");
-      void goto(url);
-    },
-  );
 
   let selectedRange = $derived($rangeStore);
   let interval = $derived($intervalStore);

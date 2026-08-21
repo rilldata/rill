@@ -44,11 +44,9 @@
   if (selfSync) {
     // Sync back url params
     expressionFilterManager.createListener();
-    stateChangeUnsub = expressionFilterManager.on("state-changed", () => {
-      const searchParams = new URLSearchParams();
-      expressionFilterManager.applyFilterToParams(searchParams);
-      expressionFilterManager.setUrlParams(searchParams);
-    });
+    stateChangeUnsub = expressionFilterManager.on("state-changed", () =>
+      expressionFilterManager.foldManagersIntoParam(),
+    );
   }
 
   /** the height of a row of chips */

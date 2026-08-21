@@ -15,7 +15,7 @@ import {
 } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import { toStore, type Readable } from "svelte/store";
+import { fromStore, toStore, type Readable } from "svelte/store";
 import {
   type AnyManager,
   type DimensionOrMeasureManager,
@@ -78,6 +78,8 @@ export class ExpressionFilterManager {
   public paramByMetricsView = $state<Record<MetricsViewName, string>>({});
   // Filter param based on managers.
   public paramByManager: Record<MetricsViewName, string>;
+  // The param the url last seeded the managers with. See `writeBackToUrl`.
+  private lastUrlParam = $state<Record<MetricsViewName, string>>({});
 
   // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
   public updating = false;
@@ -191,24 +193,40 @@ export class ExpressionFilterManager {
   }
 
   /**
-   * Two-way sync between the url and the filter managers, with the url as the source of truth.
+   * Seeds the managers from a url the caller owns, and re-seeds them as the metrics view names arrive.
    *
-   * The url seeds the managers, and anything the managers hold that the url does not is written back to it.
-   * The write back is diffed against the url rather than against the seed,
-   * so changes that bypass the chips, `clear()` for example, reach the url as well.
+   * The effect root is created here because the owner is not a component:
+   * everything that reads a filter, a canvas component for example, has to see the url's filters
+   * whether or not a filter bar is mounted. The caller owns the returned disposer.
    */
-  public syncWithUrl(getUrl: () => URL, navigate: (url: URL) => void) {
-    // Url to managers.
-    // Created first so that a url change is seeded before the write back below re-runs.
-    $effect(() => {
-      this.setUrlParams(getUrl().searchParams);
+  public seedFromSearchParams(searchParams: Readable<URLSearchParams>) {
+    return $effect.root(() => {
+      // Subscribed inside the root so the disposer takes the subscription with it.
+      const params = fromStore(searchParams);
+      $effect(() => this.setUrlParams(params.current));
     });
+  }
 
-    // Managers to url.
+  /**
+   * Writes what the managers hold back to the url.
+   *
+   * Diffed against the param the url last seeded rather than against the live url: a url the seed has
+   * not caught up with yet, a back navigation for example, would otherwise read as a manager change
+   * and navigate straight back to the state the managers still hold. Changes that bypass the chips,
+   * `clear()` for example, leave the seed untouched and so are still written.
+   */
+  public writeBackToUrl(getUrl: () => URL, navigate: (url: URL) => void) {
     $effect(() => {
       // Every leaf expression is dropped until the specs land, so writing back before that would
       // strip the filter the url holds and lose it for good.
       if (!this.metricsViewsProvider.ready) return;
+
+      const seeded = recordsMatch(
+        this.lastUrlParam,
+        this.paramByManager,
+        this.metricsViewsProvider.metricsViewNames,
+      );
+      if (seeded) return;
 
       const newUrl = new URL(getUrl());
       this.applyFilterToParams(newUrl.searchParams);
@@ -232,17 +250,42 @@ export class ExpressionFilterManager {
   }
 
   public setUrlParams = (searchParams: URLSearchParams, force = false) => {
+    const newParamByMetricsView = this.paramFromSearchParams(searchParams);
+    // Recorded even when the param itself does not change, since `writeBackToUrl` diffs against it.
+    this.lastUrlParam = newParamByMetricsView;
+    this.applyParam(newParamByMetricsView, force);
+  };
+
+  /**
+   * Folds what the managers hold back into the param.
+   * For managers that are not synced with a url; the ones that are go through the url instead.
+   */
+  public foldManagersIntoParam() {
+    const searchParams = new URLSearchParams();
+    this.applyFilterToParams(searchParams);
+    this.applyParam(this.paramFromSearchParams(searchParams), false);
+  }
+
+  private paramFromSearchParams(searchParams: URLSearchParams) {
     const newParamByMetricsView = {} as Record<MetricsViewName, string>;
 
     const singularFilter = searchParams.get(ExploreStateURLParams.Filters);
     // Tracked on purpose: the params are keyed by metrics view,
     // so they have to be re-applied once the names arrive.
-    const metricsViewNames = this.metricsViewsProvider.metricsViewNames;
-    metricsViewNames.forEach((name: string) => {
+    this.metricsViewsProvider.metricsViewNames.forEach((name: string) => {
       const paramKey = `${ExploreStateURLParams.Filters}.${name}`;
       newParamByMetricsView[name] =
         searchParams.get(paramKey) ?? singularFilter ?? "";
     });
+
+    return newParamByMetricsView;
+  }
+
+  private applyParam(
+    newParamByMetricsView: Record<MetricsViewName, string>,
+    force: boolean,
+  ) {
+    const metricsViewNames = this.metricsViewsProvider.metricsViewNames;
 
     // Managers can be mutated in place without going through the param,
     // so the new param also has to match what the managers hold.
@@ -267,7 +310,7 @@ export class ExpressionFilterManager {
 
     this.paramByMetricsView = newParamByMetricsView;
     this.temporaryFilterName = undefined;
-  };
+  }
 
   public setExprForMetricsView(
     mvName: string,
@@ -403,7 +446,14 @@ export class ExpressionFilterManager {
 
   public clear() {
     this.temporaryFilterName = undefined;
-    this.setUrlParams(new URLSearchParams());
+    // Applied to the param directly rather than through `setUrlParams`: clearing does not come from
+    // the url, so recording it as the url's state would hide it from `writeBackToUrl`.
+    this.applyParam(
+      Object.fromEntries(
+        this.metricsViewsProvider.metricsViewNames.map((name) => [name, ""]),
+      ),
+      false,
+    );
     // Clearing goes through the param rather than the managers, so it has to report itself.
     this.events.emit("filter-changed", { source: undefined });
   }

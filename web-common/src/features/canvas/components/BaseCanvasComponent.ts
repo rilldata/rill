@@ -272,19 +272,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             },
           };
 
-        if (!metricsViewFilters) {
-          return {
-            timeRange: timeRange,
-            where: undefined,
-            timeGrain: timeGrain,
-            hasTimeSeries: hasTimeSeries,
-            comparisonTimeRange: comparisonTimeRange,
-            timeRangeState: timeRangeState,
-            comparisonTimeRangeState: comparisonTimeRangeState,
-            showTimeComparison: showTimeComparison,
-          };
-        }
-
         if (componentSpec?.["time_filters"]) {
           timeRange = {
             start: localInterval?.start.toUTC().toISO(),
@@ -331,11 +318,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         }
 
         // Dimension Filters
+        // The global filters are absent until the canvas' metrics views resolve, and for a component
+        // pointed at a metrics view the canvas does not reference. The component's own filters below
+        // still apply in both cases.
         const globalDimensionOnlyWhere =
-          sanitiseExpression(metricsViewFilters.dimensionOnlyExpr, undefined) ??
-          createAndExpression([]);
+          sanitiseExpression(
+            metricsViewFilters?.dimensionOnlyExpr,
+            undefined,
+          ) ?? createAndExpression([]);
 
-        let fullWhere: V1Expression | undefined = metricsViewFilters.expr;
+        let fullWhere: V1Expression | undefined = metricsViewFilters?.expr;
         let dimensionOnlyWhere: V1Expression | undefined =
           globalDimensionOnlyWhere;
 
