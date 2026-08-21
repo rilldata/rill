@@ -7,10 +7,8 @@ import {
   createQueryServiceColumnTimeSeries,
   createQueryServiceColumnTopK,
   createQueryServiceTableCardinality,
-  QueryServiceColumnNumericHistogramHistogramMethod,
   type V1ProfileColumn,
   type V1TableColumnsResponse,
-  type V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
@@ -19,6 +17,14 @@ import {
   type QueryObserverResult,
 } from "@tanstack/query-core";
 import { derived, type Readable, writable } from "svelte/store";
+import {
+  getOneofValue,
+  valueAsNumber,
+} from "@rilldata/web-common/lib/proto-utils.ts";
+import type {
+  HistogramMethod,
+  TimeSeriesValue,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb.ts";
 
 export function isFetching(...queries) {
   return queries.some((query) => query?.isFetching);
@@ -81,7 +87,11 @@ export function getSummaries(
           return {
             ...col,
             nullCount: nullValues?.data?.count,
-            cardinality: cardinality?.data?.categoricalSummary?.cardinality,
+            cardinality: getOneofValue(
+              cardinality?.data?.categoricalSummary,
+              "case",
+              "cardinality",
+            ),
             isFetching:
               profileColumnResponse.isFetching ||
               nullValues?.isFetching ||
@@ -181,7 +191,11 @@ export function getCountDistinct(
     [cardinalityQuery, totalRowsQuery],
     ([cardinality, totalRows]) => {
       return {
-        cardinality: cardinality?.data?.categoricalSummary?.cardinality,
+        cardinality: getOneofValue(
+          cardinality?.data?.categoricalSummary,
+          "case",
+          "cardinality",
+        ),
         // SAFETY: if the V1TableCardinalityResponse exists in `totalRows`,
         // then `.cardinality` should presumably always exist in the
         // cardinality query response, so we should be able to cast it to
@@ -222,15 +236,16 @@ export function getTopK(
     },
   );
   return derived(topKQuery, ($topKQuery) => {
-    return $topKQuery?.data?.categoricalSummary?.topK?.entries;
+    return getOneofValue($topKQuery?.data?.categoricalSummary, "case", "topK")
+      ?.entries;
   });
 }
 
-function convertPoint(point: V1TimeSeriesValue) {
+function convertPoint(point: TimeSeriesValue) {
   const next = {
     ...point,
-    count: point?.records?.count as number,
-    ts: point.ts ? new Date(point.ts) : new Date(0),
+    count: valueAsNumber(point?.records?.fields?.count),
+    ts: point.ts?.toDate() ?? new Date(0),
   };
   if (next.count == null || !isFinite(next.count)) {
     next.count = 0;
@@ -329,7 +344,7 @@ export function getNumericHistogram(
   databaseSchema: string,
   objectName: string,
   columnName: string,
-  histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
+  histogramMethod: HistogramMethod,
   enabled = true,
 ) {
   return createQueryServiceColumnNumericHistogram(
@@ -346,7 +361,11 @@ export function getNumericHistogram(
     {
       query: {
         select(query) {
-          return query?.numericSummary?.numericHistogramBins?.bins;
+          return getOneofValue(
+            query?.numericSummary,
+            "case",
+            "numericHistogramBins",
+          )?.bins;
         },
         enabled,
       },

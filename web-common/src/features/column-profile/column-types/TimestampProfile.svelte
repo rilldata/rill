@@ -12,6 +12,8 @@
     isFetching,
   } from "../queries";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
+  import { FromProtoTimeGrainMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps.ts";
+  import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb.ts";
 
   export let connector: string;
   export let database: string;
@@ -110,8 +112,13 @@
           height={timestampDetailHeight}
           {data}
           {spark}
-          rollupTimeGrain={$timeSeries?.estimatedRollupInterval?.interval}
-          estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
+          rollupTimeGrain={FromProtoTimeGrainMap[
+            $timeSeries?.estimatedRollupInterval?.interval ??
+              TimeGrain.UNSPECIFIED
+          ]}
+          estimatedSmallestTimeGrain={FromProtoTimeGrainMap[
+            $timeSeries?.smallestTimegrain ?? TimeGrain.UNSPECIFIED
+          ]}
         />
       {/if}
     </div>

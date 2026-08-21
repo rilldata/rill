@@ -50,6 +50,9 @@ import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
+import { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
+import type { JsonValue } from "@bufbuild/protobuf";
+import { stripUndefined } from "@rilldata/web-common/runtime-client/v2/strip-undefined.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -415,7 +418,11 @@ export class CanvasEntity {
         ],
         queryFn: () =>
           queryServiceConvertExpressionToMetricsSQL(this.client, {
-            expression: parsed.where as any,
+            expression: parsed.where
+              ? Expression.fromJson(
+                  stripUndefined(parsed.where) as unknown as JsonValue,
+                )
+              : undefined,
           }),
       });
     });

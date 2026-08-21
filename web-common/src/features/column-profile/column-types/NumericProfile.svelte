@@ -5,12 +5,11 @@
     INTERVALS,
     isFloat,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { QueryServiceColumnNumericHistogramHistogramMethod } from "@rilldata/web-common/runtime-client";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createQueryServiceColumnDescriptiveStatistics,
     createQueryServiceColumnRugHistogram,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
   import { derived } from "svelte/store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
@@ -25,6 +24,8 @@
   import NumericPlot from "./details/NumericPlot.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   import NumericSpark from "./sparks/NumericSpark.svelte";
+  import { HistogramMethod } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb.ts";
+  import { getOneofValue } from "@rilldata/web-common/lib/proto-utils.ts";
 
   export let connector: string;
   export let database: string;
@@ -61,7 +62,7 @@
     databaseSchema,
     objectName,
     columnName,
-    QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
+    HistogramMethod.DIAGNOSTIC,
     enableProfiling,
   );
   let fdHistogram;
@@ -73,7 +74,7 @@
       databaseSchema,
       objectName,
       columnName,
-      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      HistogramMethod.FD,
       enableProfiling,
     );
   }
@@ -104,7 +105,11 @@
     {
       query: {
         select($query) {
-          return $query?.numericSummary?.numericOutliers?.outliers;
+          return getOneofValue(
+            $query?.numericSummary,
+            "case",
+            "numericOutliers",
+          )?.outliers;
         },
         enabled: enableProfiling,
       },
@@ -138,7 +143,11 @@
       },
     ),
     ($query) => {
-      return $query?.data?.numericSummary?.numericStatistics;
+      return getOneofValue(
+        $query?.data?.numericSummary,
+        "case",
+        "numericStatistics",
+      );
     },
   );
 
