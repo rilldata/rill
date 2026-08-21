@@ -22,29 +22,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 )
 
-// mcpForwardedTools are the runtime tools exposed on the unified MCP server.
-// The runtime exposes more tools than these, but the rest require runtime.EditRepo,
-// which is only granted for editable deployments, and a project's primary deployment is never editable.
-var mcpForwardedTools = []string{
-	ai.ListMetricsViewsName,
-	ai.GetMetricsViewName,
-	ai.QueryMetricsViewSummaryName,
-	ai.QueryMetricsViewName,
-}
-
-const (
-	// mcpProjectArg is the tool argument the unified MCP server uses to route a tool call to a project.
-	mcpProjectArg = "project"
-	// mcpToolCallTimeout is deliberately higher than the runtime's own tool timeout,
-	// so the runtime's timeout applies first and returns a more useful message.
-	mcpToolCallTimeout   = 6 * time.Minute
-	mcpListProjectsName  = "list_projects"
-	mcpListProjectsLimit = 100
-)
-
-// mcpSessionNamespace namespaces the per-project session IDs derived from a client's MCP session ID.
-var mcpSessionNamespace = uuid.MustParse("6f4a1c94-3d1e-4f6b-9a02-1c0f6b7d5e8a")
-
+// mcpInstructions are the instructions advertised to clients of the admin service's MCP server.
+// They are a combination of the admin service's own instructions and the instructions from the runtime's AI tools that we proxy to.
 const mcpInstructions = `
 # Rill Cloud MCP Server
 This server provides access to several Rill projects.
@@ -54,43 +33,139 @@ This server provides access to several Rill projects.
 
 ` + ai.MCPInstructions
 
-// mcpHandler creates a handler for the unified MCP server.
+const (
+	// mcpProjectArg is the tool argument the MCP server uses to route a tool call to a project.
+	mcpProjectArg        = "project"
+	mcpListProjectsLimit = 100
+
+	// mcpToolCallTimeout is deliberately higher than the runtime's own tool timeout,
+	// so the runtime's timeout applies first and returns a more useful message.
+	mcpToolCallTimeout = 6 * time.Minute
+)
+
+// mcpForwardedTools are the runtime tools exposed on the MCP server.
+// The runtime exposes more tools than these, but the rest require runtime.EditRepo,
+// which is only granted for editable deployments, and a project's primary deployment is never editable.
+var mcpForwardedTools = []string{
+	ai.ListMetricsViewsName,
+	ai.GetMetricsViewName,
+	ai.QueryMetricsViewSummaryName,
+	ai.QueryMetricsViewName,
+}
+
+// mcpSessionNamespace is a UUIDv5 namespace for the per-project session IDs derived in callRuntimeTool.
+// The value is a randomly generated UUID with no meaning: UUIDv5 requires a namespace and any fixed value will do.
+// It must not be changed, since that would orphan the sessions derived using the previous value.
+var mcpSessionNamespace = uuid.MustParse("6f4a1c94-3d1e-4f6b-9a02-1c0f6b7d5e8a")
+
+// mcpHandler creates a handler for the MCP server.
 // Unlike the per-project runtime proxy, it serves a single endpoint for all the projects a caller has access to:
 // it answers the MCP protocol methods itself and forwards tool calls to the runtime of the project named in the tool arguments.
 func (s *Server) mcpHandler() (http.Handler, error) {
-	tools, err := mcpTools()
+	adminTools := s.mcpAdminTools()
+	forwardedTools, err := mcpForwardedToolSpecs()
 	if err != nil {
 		return nil, err
 	}
+	for _, at := range adminTools {
+		for _, ft := range forwardedTools {
+			if at.spec.Name == ft.Name {
+				return nil, fmt.Errorf("mcp: tool %q is both served by the admin service and forwarded to the runtime", ft.Name)
+			}
+		}
+	}
 
 	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
-		return s.newMCPServer(tools, r)
+		srv := mcp.NewServer(
+			&mcp.Implementation{
+				Name:    "rill",
+				Title:   "Rill Cloud MCP Server",
+				Version: s.admin.Version.String(),
+			},
+			&mcp.ServerOptions{
+				Instructions: mcpInstructions,
+				HasTools:     true,
+				// Issue a session ID so clients pass it back on subsequent requests, enabling us to keep one AI session per project.
+				GetSessionID: uuid.NewString,
+			},
+		)
+
+		srv.AddReceivingMiddleware(observability.MCPMiddleware())
+
+		// Separate timeout middleware is required since the SDK strips the request's deadline and cancellation before calling the tool handler.
+		srv.AddReceivingMiddleware(middleware.TimeoutMCPMiddleware(func(method, tool string) time.Duration {
+			return mcpToolCallTimeout
+		}))
+
+		client := &mcpClient{
+			sessionID:       r.Header.Get("Mcp-Session-Id"),
+			userAgent:       r.UserAgent(),
+			protocolVersion: r.Header.Get("Mcp-Protocol-Version"),
+		}
+
+		for _, t := range adminTools {
+			srv.AddTool(t.spec, t.handler)
+		}
+		for _, t := range forwardedTools {
+			srv.AddTool(t, s.mcpForwardToolCall(t.Name, client))
+		}
+
+		return srv
 	}, &mcp.StreamableHTTPOptions{
-		// Stateless is required, not just preferable: in stateful mode, the SDK reuses the session created by the
-		// first request, freezing its context, so later requests from other users would resolve the first user's claims.
-		Stateless: true,
+		Stateless: true, // Required since the server serves multiple users.
 	}), nil
 }
 
-// mcpTools returns the tool specs to advertise, using the definitions in runtime/ai as the source of truth.
-func mcpTools() ([]*mcp.Tool, error) {
+// mcpRequireAuth rejects unauthenticated requests to the MCP server.
+// It wraps the MCP handler instead of being applied inside it, so that clients receive the challenge on the initialization request and can start an OAuth flow.
+func (s *Server) mcpRequireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Unlike the per-project runtime proxy, we can't accept a runtime JWT here since it's scoped to a single deployment.
+		if auth.GetClaims(r.Context()).OwnerType() == auth.OwnerTypeAnon {
+			w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata(r)))
+			httputil.WriteError(w, httputil.Errorf(http.StatusUnauthorized, "not authenticated"))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// mcpAdminTools returns the tools served by the admin service itself.
+// These are tools for concepts the runtime is not aware of, such as organizations and projects.
+func (s *Server) mcpAdminTools() []mcpAdminTool {
+	return []mcpAdminTool{
+		{
+			spec: &mcp.Tool{
+				Name:        "list_projects",
+				Title:       "List Projects",
+				Description: `List the Rill projects you have access to. Pass a returned value as the "project" argument of other tools. The list may be incomplete; if you already know a project, you can pass it directly.`,
+				Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+				InputSchema: &jsonschema.Schema{Type: "object"},
+			},
+			handler: s.mcpListProjects,
+		},
+	}
+}
+
+// mcpAdminTool is a tool served by the admin service itself instead of being forwarded to a project's runtime.
+type mcpAdminTool struct {
+	spec    *mcp.Tool
+	handler mcp.ToolHandler
+}
+
+// mcpForwardedToolSpecs returns the specs of the tools forwarded to a project's runtime, using the tool definitions in runtime/ai as the source of truth.
+// It injects the "project" argument into the input schema of each tool, which we intercept to route calls to the correct runtime.
+func mcpForwardedToolSpecs() ([]*mcp.Tool, error) {
 	specs := ai.MCPToolSpecs()
 
-	tools := []*mcp.Tool{{
-		Name:        mcpListProjectsName,
-		Title:       "List Projects",
-		Description: "List the Rill projects you have access to. Pass a returned value as the \"project\" argument of other tools. The list may be incomplete; if you already know a project, you can pass it directly.",
-		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
-		InputSchema: &jsonschema.Schema{Type: "object"},
-	}}
-
+	res := make([]*mcp.Tool, 0, len(mcpForwardedTools))
 	for _, name := range mcpForwardedTools {
 		spec, ok := specs[name]
 		if !ok {
 			return nil, fmt.Errorf("mcp: no spec for tool %q", name)
 		}
 
-		// The runtime serves a single project, so its schemas have no project argument. Advertise one here.
+		// Inject the "project" argument into the input schema.
 		schema, ok := spec.InputSchema.(*jsonschema.Schema)
 		if !ok {
 			return nil, fmt.Errorf("mcp: tool %q does not have a JSON schema", name)
@@ -100,61 +175,21 @@ func mcpTools() ([]*mcp.Tool, error) {
 		}
 		schema.Properties[mcpProjectArg] = &jsonschema.Schema{
 			Type:        "string",
-			Description: "The project to target, as returned by \"" + mcpListProjectsName + "\".",
+			Description: `The project to target, as returned by "list_projects".`,
 		}
 		schema.Required = append(schema.Required, mcpProjectArg)
 
-		tools = append(tools, spec)
+		res = append(res, spec)
 	}
 
-	return tools, nil
+	return res, nil
 }
 
-// mcpClient describes the client making a request, for propagation to the runtime.
+// mcpClient describes a proxy client making a request from the admin service to a runtime.
 type mcpClient struct {
 	sessionID       string
 	userAgent       string
 	protocolVersion string
-}
-
-// newMCPServer creates an MCP server for a single client request.
-// A server is created per request so the tool handlers can access the request's client details.
-func (s *Server) newMCPServer(tools []*mcp.Tool, r *http.Request) *mcp.Server {
-	srv := mcp.NewServer(
-		&mcp.Implementation{
-			Name:    "rill",
-			Title:   "Rill Cloud MCP Server",
-			Version: s.admin.Version.String(),
-		},
-		&mcp.ServerOptions{
-			Instructions: mcpInstructions,
-			HasTools:     true,
-			// Issue a session ID so clients pass it back on subsequent requests, enabling us to keep one AI session per project.
-			GetSessionID: uuid.NewString,
-		},
-	)
-
-	srv.AddReceivingMiddleware(observability.MCPMiddleware())
-	// A timeout is required: the SDK strips the request's deadline and cancellation before calling the tool handler.
-	srv.AddReceivingMiddleware(middleware.TimeoutMCPMiddleware(func(method, tool string) time.Duration {
-		return mcpToolCallTimeout
-	}))
-
-	client := &mcpClient{
-		sessionID:       r.Header.Get("Mcp-Session-Id"),
-		userAgent:       r.UserAgent(),
-		protocolVersion: r.Header.Get("Mcp-Protocol-Version"),
-	}
-
-	for _, t := range tools {
-		if t.Name == mcpListProjectsName {
-			srv.AddTool(t, s.mcpListProjects)
-			continue
-		}
-		srv.AddTool(t, s.mcpForwardToolCall(t.Name, client))
-	}
-
-	return srv
 }
 
 // mcpForwardToolCall returns a handler that forwards a tool call to the runtime of the project named in its arguments.
@@ -162,25 +197,20 @@ func (s *Server) mcpForwardToolCall(name string, client *mcpClient) mcp.ToolHand
 	return func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		// Note we return tool errors instead of errors for anything the caller can act on,
 		// since an error is returned to the client as a protocol error it can't recover from.
-		slug, args, err := takeMCPProjectArg(req.Params.Arguments)
+		org, project, args, err := takeMCPProjectArg(req.Params.Arguments)
 		if err != nil {
-			return mcpToolErrorf("%s. Call %q to discover available projects.", err, mcpListProjectsName), nil
-		}
-
-		org, project, ok := strings.Cut(slug, "/")
-		if !ok || org == "" || project == "" {
-			return mcpToolErrorf("invalid project %q: expected the format \"<organization>/<project>\"", slug), nil
+			return mcpToolErrorf(`%s. Call "list_projects" to discover available projects.`, err), nil
 		}
 
 		proj, depl, err := s.resolveDeploymentForOrgAndProject(ctx, org, project, "")
 		if err != nil {
-			return mcpToolErrorf("failed to find project %q: %s", slug, err), nil
+			return mcpToolErrorf("failed to find project %q: %s", org+"/"+project, err), nil
 		}
 
 		jwt, err := s.issueEphemeralRuntimeToken(ctx, proj, depl, runtimeProxyAccessTokenTTL)
 		if err != nil {
 			if errors.Is(err, errNoProdAccess) {
-				return mcpToolErrorf("you do not have access to project %q", slug), nil
+				return mcpToolErrorf("you do not have access to project %q", org+"/"+project), nil
 			}
 			return nil, err
 		}
@@ -269,35 +299,9 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 }
 
 // mcpListProjects lists the projects the caller has access to.
-// Unlike the other tools, it is served by the admin service since the runtime is not aware of projects.
-func (s *Server) mcpListProjects(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	slugs, err := s.mcpProjectSlugs(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	res := struct {
-		Projects []string `json:"projects"`
-		Note     string   `json:"note,omitempty"`
-	}{Projects: slugs}
-	if len(slugs) == mcpListProjectsLimit {
-		res.Note = fmt.Sprintf("Only the first %d projects are shown.", mcpListProjectsLimit)
-	}
-
-	data, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-	return &mcp.CallToolResult{
-		Content:           []mcp.Content{&mcp.TextContent{Text: string(data)}},
-		StructuredContent: res,
-	}, nil
-}
-
-// mcpProjectSlugs returns "<organization>/<project>" slugs for the projects the caller has access to.
 // It is a discovery convenience, not an access check: it may return fewer projects than the caller can access
 // (for example, it does not cover public projects), and each tool call checks access for the project it targets.
-func (s *Server) mcpProjectSlugs(ctx context.Context) ([]string, error) {
+func (s *Server) mcpListProjects(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	claims := auth.GetClaims(ctx)
 
 	var projs []*database.Project
@@ -351,8 +355,12 @@ func (s *Server) mcpProjectSlugs(ctx context.Context) ([]string, error) {
 		projs = projs[:mcpListProjectsLimit]
 	}
 
+	// Build the "<organization>/<project>" slugs used for the "project" tool argument.
+	res := struct {
+		Projects []string `json:"projects"`
+		Note     string   `json:"note,omitempty"`
+	}{Projects: make([]string, 0, len(projs))}
 	orgNames := make(map[string]string)
-	slugs := make([]string, 0, len(projs))
 	for _, proj := range projs {
 		name, ok := orgNames[proj.OrganizationID]
 		if !ok {
@@ -363,54 +371,51 @@ func (s *Server) mcpProjectSlugs(ctx context.Context) ([]string, error) {
 			name = org.Name
 			orgNames[proj.OrganizationID] = name
 		}
-		slugs = append(slugs, name+"/"+proj.Name)
+		res.Projects = append(res.Projects, name+"/"+proj.Name)
 	}
-	return slugs, nil
+	if len(res.Projects) == mcpListProjectsLimit {
+		res.Note = fmt.Sprintf("Only the first %d projects are shown.", mcpListProjectsLimit)
+	}
+
+	data, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResult{
+		Content:           []mcp.Content{&mcp.TextContent{Text: string(data)}},
+		StructuredContent: res,
+	}, nil
 }
 
-// mcpRequireAuth rejects unauthenticated requests to the unified MCP server.
-// It wraps the MCP handler instead of being applied inside it, so that clients receive the challenge
-// on the initialization request and can start an OAuth flow.
-func (s *Server) mcpRequireAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Unlike the per-project runtime proxy, we can't accept a runtime JWT here since it's scoped to a single deployment.
-		if auth.GetClaims(r.Context()).OwnerType() == auth.OwnerTypeAnon {
-			w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata(r)))
-			httputil.WriteError(w, httputil.Errorf(http.StatusUnauthorized, "not authenticated"))
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-// takeMCPProjectArg removes the project argument from raw tool arguments and returns it separately.
+// takeMCPProjectArg removes the project argument from raw tool arguments and returns the organization and project it names.
 // It must be removed because the runtime's tools do not accept it.
-func takeMCPProjectArg(args json.RawMessage) (string, json.RawMessage, error) {
+func takeMCPProjectArg(args json.RawMessage) (org, project string, rest json.RawMessage, err error) {
 	var m map[string]json.RawMessage
 	if len(args) > 0 {
 		if err := json.Unmarshal(args, &m); err != nil {
-			return "", nil, fmt.Errorf("invalid arguments: %w", err)
+			return "", "", nil, fmt.Errorf("invalid arguments: %w", err)
 		}
 	}
 
 	raw, ok := m[mcpProjectArg]
 	if !ok {
-		return "", nil, fmt.Errorf("missing the %q argument", mcpProjectArg)
+		return "", "", nil, fmt.Errorf("missing the %q argument", mcpProjectArg)
 	}
-	var project string
-	if err := json.Unmarshal(raw, &project); err != nil {
-		return "", nil, fmt.Errorf("invalid %q argument: %w", mcpProjectArg, err)
+	var slug string
+	if err := json.Unmarshal(raw, &slug); err != nil {
+		return "", "", nil, fmt.Errorf("invalid %q argument: %w", mcpProjectArg, err)
 	}
-	if project == "" {
-		return "", nil, fmt.Errorf("missing the %q argument", mcpProjectArg)
+	org, project, ok = strings.Cut(slug, "/")
+	if !ok || org == "" || project == "" {
+		return "", "", nil, fmt.Errorf("invalid %q argument %q: expected the format \"<organization>/<project>\"", mcpProjectArg, slug)
 	}
 	delete(m, mcpProjectArg)
 
-	rest, err := json.Marshal(m)
+	rest, err = json.Marshal(m)
 	if err != nil {
-		return "", nil, err
+		return "", "", nil, err
 	}
-	return project, rest, nil
+	return org, project, rest, nil
 }
 
 // mcpToolErrorf returns a tool call result representing an error.

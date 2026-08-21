@@ -220,7 +220,8 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)        // Backwards compatibility
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/branch/{branch}/runtime/{path...}", proxyHandler) // Branch-specific deployment
 
-	// Add unified MCP server. Unlike the runtime proxy, it serves all the projects a caller has access to on one URL.
+	// Add MCP server.
+	// Note this is the admin service's MCP server, not a runtime MCP server (although this includes an ability to proxy certain tool calls to a project's runtime).
 	mcpHandler, err := s.mcpHandler()
 	if err != nil {
 		return nil, err
