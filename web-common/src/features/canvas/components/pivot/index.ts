@@ -95,6 +95,18 @@ export function measureFormattingToConditionalFormatSpec(
   );
 }
 
+/**
+ * Default sort applied when the table first loads. Mirrors how explore
+ * persists pivot sort: `id` is the raw TanStack sort id (measure, dimension,
+ * time grain, or nested leaf accessor), decoded at query time. `label` is
+ * stored purely for human-readable display in the inspector.
+ */
+export interface DefaultSort {
+  id: string;
+  desc: boolean;
+  label: string;
+}
+
 export interface PivotSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
@@ -104,6 +116,7 @@ export interface PivotSpec
   col_dimensions?: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  default_sort?: DefaultSort;
   conditional_format?: PivotConditionalFormatSpec[];
   row_limit?: string;
 }
@@ -115,6 +128,7 @@ export interface TableSpec
   columns: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  default_sort?: DefaultSort;
   conditional_format?: PivotConditionalFormatSpec[];
 }
 
@@ -287,6 +301,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
+          default_sort: { type: "default_sort", label: "Default sort" },
           row_limit: {
             type: "select",
             label: m.canvas_row_limit(),
@@ -334,6 +349,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
+          default_sort: { type: "default_sort", label: "Default sort" },
           ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
@@ -397,7 +413,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       ComponentFilterProperties &
       Pick<
         PivotSpec,
-        "hide_totals_row" | "hide_totals_col" | "conditional_format"
+        | "hide_totals_row"
+        | "hide_totals_col"
+        | "conditional_format"
+        | "default_sort"
       > = {
       title: currentSpec.title,
       description: currentSpec.description,
@@ -405,6 +424,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       time_filters: currentSpec.time_filters,
       hide_totals_row: currentSpec.hide_totals_row,
       hide_totals_col: currentSpec.hide_totals_col,
+      default_sort: undefined,
       conditional_format: currentSpec.conditional_format,
     };
 
