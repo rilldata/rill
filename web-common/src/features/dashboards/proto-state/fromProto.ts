@@ -426,7 +426,8 @@ function fromPivotProto(
       ...colDimensions,
       ...dashboard.pivotColumnMeasures.map(mapMeasure),
     ],
-    expanded: dashboard.pivotExpanded,
+    // Expanded rows are runtime-only, not restored from saved dashboard state.
+    expanded: {},
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,

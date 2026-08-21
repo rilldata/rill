@@ -39,17 +39,10 @@ function getRawRowValues(
   rowId: string,
   tableData: PivotDataRow[],
 ): string[] {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-  const hasTotalsRow =
-    config.pivot?.showTotalsRow !== false && measureNames.length > 0;
+  const { rowDimensionNames, isFlat } = config;
   return isFlat
-    ? getValuesForFlatTable(tableData, rowDimensionNames, rowId, hasTotalsRow)
-    : getValuesForExpandedKey(
-        tableData,
-        rowDimensionNames,
-        rowId,
-        hasTotalsRow,
-      );
+    ? getValuesForFlatTable(tableData, rowDimensionNames, rowId)
+    : getValuesForExpandedKey(tableData, rowDimensionNames, rowId);
 }
 
 /**
