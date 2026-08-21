@@ -32,13 +32,20 @@ func (s *Server) mcpHandler() http.Handler {
 		// Get session ID (will be empty if it's the first request)
 		sessionID := r.Header.Get("Mcp-Session-Id")
 
+		// It's just preliminary: for direct connections, the MCP server updates it with the actual user agent after the initialization handshake.
+		// Requests proxied by the admin service's unified MCP server don't carry that handshake, so the forwarded user agent is the only signal of the real client.
+		userAgent := r.UserAgent()
+		if userAgent == "" {
+			userAgent = "mcp/unknown"
+		}
+
 		// Create session
 		sess, err := runner.Session(r.Context(), &ai.SessionOptions{
 			InstanceID:        instanceID,
 			SessionID:         sessionID,
 			CreateIfNotExists: true,
 			Claims:            auth.GetClaims(r.Context(), instanceID),
-			UserAgent:         "mcp/unknown", // It's just preliminary: the MCP server updates it with the actual user agent after the initialization handshake.
+			UserAgent:         userAgent,
 		})
 		if err != nil {
 			s.logger.Error("failed to create AI session for MCP", zap.String("instance_id", instanceID), zap.String("session_id", sessionID), zap.Error(err))
@@ -57,6 +64,9 @@ func (s *Server) mcpHandler() http.Handler {
 		return srv
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true,
+		// Respond with application/json instead of text/event-stream.
+		// The spec allows either, and it means the admin service's unified MCP server can forward tool calls with a plain HTTP request.
+		JSONResponse: true,
 	})
 }
 
