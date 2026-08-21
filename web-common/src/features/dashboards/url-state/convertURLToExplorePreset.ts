@@ -390,8 +390,9 @@ export function fromTimeRangesParams(
 
       if (grain && grain in V1TimeGrainToDateTimeUnit) {
         preset.timeGrain = V1TimeGrainToDateTimeUnit[grain];
-      } else {
-        errors.push(getSingleFieldError("time grain", grain ?? "undefined"));
+      } else if (grain) {
+        // Only throw error if grain is defined
+        errors.push(getSingleFieldError("time grain", grain));
       }
     } catch {
       // ignore
