@@ -16,6 +16,7 @@
   import MarkSelector from "./chart/MarkSelector.svelte";
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
+  import MapColorSelector from "../components/map/MapColorSelector.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
   import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
@@ -113,8 +114,13 @@
             id={key}
             type={config.type}
             selectedItem={localParamValues[key]}
+            geoOnly={config.meta?.geoOnly ?? false}
+            isRemovable={config.meta?.isRemovable ?? false}
             onSelect={(field) => {
               component.updateProperty(key, field);
+            }}
+            onRemove={() => {
+              component.updateProperty(key, undefined);
             }}
           />
 
@@ -329,6 +335,17 @@
             {config}
             {metricsView}
             markConfig={localParamValues[key] || {}}
+            onChange={(updatedConfig) => {
+              localParamValues[key] = updatedConfig;
+              component.updateProperty(key, updatedConfig);
+            }}
+          />
+          <!-- MAP COLOR CONFIG -->
+        {:else if metricsView && config.type === "map_color"}
+          <MapColorSelector
+            {canvasName}
+            {metricsView}
+            colorConfig={localParamValues[key] || "primary"}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);
