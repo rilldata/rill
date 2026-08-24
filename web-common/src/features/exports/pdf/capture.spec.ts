@@ -205,6 +205,7 @@ describe("captureTargetsIn", () => {
 describe("captureCanvasBlocks", () => {
   // needsCanvasWarmup memoizes at module scope, so the probe runs once for the
   // whole file: take a single capture run and assert on what it did.
+  let probeFills: number[][];
   let header: HTMLElement;
   let fontNode: HTMLElement;
   let probeNode: HTMLElement;
@@ -213,9 +214,11 @@ describe("captureCanvasBlocks", () => {
   beforeAll(async () => {
     // jsdom cannot rasterize, so hand the probe a context it can paint on and
     // let the blankness check fail into its own catch.
+    const fillRect =
+      vi.fn<(x: number, y: number, w: number, h: number) => void>();
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       fillStyle: "",
-      fillRect: () => {},
+      fillRect,
     } as unknown as CanvasRenderingContext2D);
 
     const view = document.createElement("div");
@@ -237,6 +240,8 @@ describe("captureCanvasBlocks", () => {
       includeFilters: true,
     });
 
+    // Read here, not in the tests: the mocks are cleared between them.
+    probeFills = fillRect.mock.calls.map((args) => [...args] as number[]);
     fontNode = vi.mocked(getFontEmbedCSS).mock.calls[0][0];
     [probeNode, probeOptions] = vi.mocked(toJpeg).mock.calls[0] as [
       HTMLElement,
@@ -258,6 +263,12 @@ describe("captureCanvasBlocks", () => {
     expect(canvas.width).toBeGreaterThanOrEqual(300);
     expect(canvas.height).toBeGreaterThanOrEqual(200);
     expect(probeOptions.pixelRatio).toBe(2);
+  });
+
+  // WebKit's decode cache outlives the page, so a probe that serializes the same
+  // canvas twice would have its answer handed back from the cache.
+  it("signs the probe so it is never the same image twice", () => {
+    expect(probeFills.some(([, , w, h]) => w === 1 && h === 1)).toBe(true);
   });
 
   // The probe carries no text, so resolving the app's web fonts for it is pure

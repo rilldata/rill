@@ -84,6 +84,10 @@ async function probeCanvasWarmup(): Promise<boolean> {
   if (!ctx) return true;
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, PROBE_WIDTH_PX, PROBE_HEIGHT_PX);
+  // A repeated payload comes back from WebKit's decode cache, which outlives
+  // the page.
+  ctx.fillStyle = "#000";
+  ctx.fillRect(Date.now() % PROBE_WIDTH_PX, 0, 1, 1);
 
   host.appendChild(canvas);
   document.body.appendChild(host);
