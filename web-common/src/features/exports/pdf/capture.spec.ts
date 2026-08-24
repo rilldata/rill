@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { getFontEmbedCSS, toJpeg } from "html-to-image";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   captureCanvasBlocks,
   captureTargetsIn,
@@ -203,36 +203,66 @@ describe("captureTargetsIn", () => {
 });
 
 describe("captureCanvasBlocks", () => {
-  beforeEach(() => {
-    document.body.innerHTML = "";
-    vi.mocked(getFontEmbedCSS).mockClear();
-    // jsdom cannot rasterize, so let the warm-up probe take its no-context
-    // path instead of logging a "not implemented" error per run.
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
-  });
+  // needsCanvasWarmup memoizes at module scope, so the probe runs once for the
+  // whole file: take a single capture run and assert on what it did.
+  let header: HTMLElement;
+  let fontNode: HTMLElement;
+  let probeNode: HTMLElement;
+  let probeOptions: Record<string, unknown>;
 
-  // The export header is a sibling of the row container, and getFontEmbedCSS
-  // keeps only the @font-face rules used inside the node it is handed, so
-  // collecting from the rows alone drops any face only the header uses.
-  it("collects the font CSS from a node that covers the header too", async () => {
+  beforeAll(async () => {
+    // jsdom cannot rasterize, so hand the probe a context it can paint on and
+    // let the blankness check fail into its own catch.
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      fillStyle: "",
+      fillRect: () => {},
+    } as unknown as CanvasRenderingContext2D);
+
     const view = document.createElement("div");
     view.id = "canvas-pdf-export-view";
     view.dataset.instanceId = "inst";
     view.dataset.canvasName = "canvas";
-    const header = document.createElement("div");
+    header = document.createElement("div");
     header.id = "canvas-pdf-export-header";
     const rows = document.createElement("div");
     rows.className = "row-container";
     view.append(header, rows);
     document.body.appendChild(view);
 
+    vi.mocked(toJpeg).mockClear();
+    vi.mocked(getFontEmbedCSS).mockClear();
     await captureCanvasBlocks({
       instanceId: "inst",
       canvasName: "canvas",
       includeFilters: true,
     });
 
-    const [node] = vi.mocked(getFontEmbedCSS).mock.calls[0];
-    expect(node.contains(header)).toBe(true);
+    fontNode = vi.mocked(getFontEmbedCSS).mock.calls[0][0];
+    [probeNode, probeOptions] = vi.mocked(toJpeg).mock.calls[0] as [
+      HTMLElement,
+      Record<string, unknown>,
+    ];
+  });
+
+  // The export header is a sibling of the row container, and getFontEmbedCSS
+  // keeps only the @font-face rules used inside the node it is handed, so
+  // collecting from the rows alone drops any face only the header uses.
+  it("collects the font CSS from a node that covers the header too", () => {
+    expect(fontNode.contains(header)).toBe(true);
+  });
+
+  // A square small enough to decode before WebKit paints would report a browser
+  // that needs no warm-up, and the export would go quietly blank.
+  it("probes with a canvas the size of a chart card", () => {
+    const canvas = probeNode.querySelector("canvas")!;
+    expect(canvas.width).toBeGreaterThanOrEqual(300);
+    expect(canvas.height).toBeGreaterThanOrEqual(200);
+    expect(probeOptions.pixelRatio).toBe(2);
+  });
+
+  // The probe carries no text, so resolving the app's web fonts for it is pure
+  // latency on the first export in every browser, affected or not.
+  it("probes without resolving web fonts", () => {
+    expect(probeOptions.skipFonts).toBe(true);
   });
 });

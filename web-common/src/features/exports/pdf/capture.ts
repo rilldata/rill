@@ -47,9 +47,12 @@ const PIXEL_RATIO = 2;
 // crisp for dashboard charts/text. JPEG has no alpha, so we supply a background.
 const JPEG_QUALITY = 0.85;
 
-// Side length of the probe canvas: the blank-first-capture bug reproduces at any
-// size, so keep it as cheap as possible.
-const PROBE_SIZE_PX = 8;
+// Sized and captured like a real block: clear of the smallest chart block a
+// canvas can lay out, at the real pixel ratio. A probe easier to decode than
+// the blocks it stands in for wins the race below and reports a browser that
+// needs no warm-up, which ships blank charts with no error.
+const PROBE_WIDTH_PX = 400;
+const PROBE_HEIGHT_PX = 360;
 
 // html-to-image clones a <canvas> into an <img> nested inside the <foreignObject>
 // it serializes, and WebKit paints that SVG before the nested image is ready, so
@@ -59,7 +62,8 @@ const PROBE_SIZE_PX = 8;
 // workaround lives here until a html-to-image release carries one.
 //
 // Rather than pay the extra pass everywhere, or key it off the user agent,
-// capture a tiny canvas once and see whether it survives.
+// capture a canvas once and see whether it survives. Memoized at module scope:
+// the answer is a property of the browser, so it holds for the page's lifetime.
 let canvasWarmupProbe: Promise<boolean> | undefined;
 
 function needsCanvasWarmup(): Promise<boolean> {
@@ -73,20 +77,26 @@ async function probeCanvasWarmup(): Promise<boolean> {
   host.style.cssText = "position:fixed;left:-99999px;top:0;pointer-events:none";
 
   const canvas = document.createElement("canvas");
-  canvas.width = PROBE_SIZE_PX;
-  canvas.height = PROBE_SIZE_PX;
+  canvas.width = PROBE_WIDTH_PX;
+  canvas.height = PROBE_HEIGHT_PX;
   canvas.style.display = "block";
   const ctx = canvas.getContext("2d");
   if (!ctx) return true;
   ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, PROBE_SIZE_PX, PROBE_SIZE_PX);
+  ctx.fillRect(0, 0, PROBE_WIDTH_PX, PROBE_HEIGHT_PX);
 
   host.appendChild(canvas);
   document.body.appendChild(host);
   try {
     // White on black: any bright pixel means the canvas reached the raster.
     return await isBlank(
-      await toJpeg(host, { pixelRatio: 1, backgroundColor: "#000" }),
+      await toJpeg(host, {
+        pixelRatio: PIXEL_RATIO,
+        backgroundColor: "#000",
+        // The probe asks a question about the browser, so there is no reason to
+        // walk the document's stylesheets and inline the app's faces to answer it.
+        skipFonts: true,
+      }),
     );
   } catch {
     // Assume the warm-up is needed: guessing "no" ships blank charts, guessing
@@ -207,8 +217,8 @@ export async function captureCanvasBlocks(
 
   const targets = captureTargetsIn(rowContainer);
 
-  // Probed once per capture rather than per block: the answer is a property of
-  // the browser, and the probe itself rasterizes.
+  // Probed once per page load, not per block or per export: the answer is a
+  // property of the browser, and the probe itself rasterizes.
   const warmUpCanvas = await needsCanvasWarmup();
   // Collected from the whole export view rather than the rows: the header is a
   // sibling of the row container, and getFontEmbedCSS keeps only the @font-face
