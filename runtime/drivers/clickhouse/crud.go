@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -249,16 +250,22 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 			Priority: 100,
 		})
 	case "DICTIONARY":
+		// Resolve the source table up front, since the dependency that identifies it disappears with the dictionary.
+		srcTable, err := c.dictionarySourceTable(ctx, name)
+		if err != nil {
+			return err
+		}
 		// first drop the dictionary
-		err := c.Exec(ctx, &drivers.Statement{
+		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("DROP DICTIONARY IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
-		// then drop the temp table
-		_ = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
-			Priority: 100,
-		})
+		// then drop the table it sourced from, which is now unreferenced
+		if srcTable != "" {
+			if dropErr := c.dropTable(ctx, srcTable); dropErr != nil && !errors.Is(dropErr, drivers.ErrNotFound) {
+				c.logger.Warn("clickhouse: failed to drop dictionary source table", zap.String("name", srcTable), zap.Error(dropErr), observability.ZapCtx(ctx))
+			}
+		}
 		return err
 	case "TABLE":
 		// drop the main table
@@ -526,15 +533,39 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 		})
 	}
 
-	// create a temp table first
-	// NOTE :: this can only be dropped when the dictionary is dropped
-	tempTable := tempTableForDictionary(name)
-	err := c.createTable(ctx, tempTable, sql, outputProps)
+	if outputProps.PrimaryKey == "" {
+		return fmt.Errorf("clickhouse: no primary key specified for dictionary %q", name)
+	}
+
+	// Note the table the dictionary currently sources from, so it can be dropped once the dictionary is repointed.
+	oldSrcTable, err := c.dictionarySourceTable(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	// Write the new data to its own table instead of reusing oldSrcTable, which ClickHouse would not let us replace
+	// while the dictionary depends on it. It also means the dictionary keeps serving until the new data is ready.
+	srcTable := newDictionarySourceTable(name)
+	var repointed bool
+	defer func() {
+		if repointed {
+			return
+		}
+		ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
+		defer cancel()
+
+		err := c.dropTable(ctx, srcTable)
+		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
+			c.logger.Warn("clickhouse: failed to drop dictionary source table", zap.String("name", srcTable), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	}()
+
+	err = c.createTable(ctx, srcTable, sql, outputProps)
 	if err != nil {
 		return err
 	}
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempTable), sql),
+		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(srcTable), sql),
 		Priority: 100,
 	})
 	if err != nil {
@@ -543,29 +574,38 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 
 	if outputProps.Columns == "" {
 		// infer columns
-		outputProps.Columns, err = c.columnClause(ctx, tempTable)
+		outputProps.Columns, err = c.columnClause(ctx, srcTable)
 		if err != nil {
 			return err
 		}
 	}
 
-	if outputProps.PrimaryKey == "" {
-		return fmt.Errorf("clickhouse: no primary key specified for dictionary %q", name)
-	}
-
-	srcTbl := fmt.Sprintf("CLICKHOUSE(TABLE %s)", drivers.EscapeStringValue(tempTable))
+	srcTbl := fmt.Sprintf("CLICKHOUSE(TABLE %s)", drivers.EscapeStringValue(srcTable))
 	if outputProps.DictionarySourceUser != "" {
 		if outputProps.DictionarySourcePassword == "" {
 			return fmt.Errorf("clickhouse: no password specified for dictionary user")
 		}
-		srcTbl = fmt.Sprintf("CLICKHOUSE(TABLE %s USER %s PASSWORD %s)", drivers.EscapeStringValue(tempTable), safeSQLString(outputProps.DictionarySourceUser), safeSQLString(outputProps.DictionarySourcePassword))
+		srcTbl = fmt.Sprintf("CLICKHOUSE(TABLE %s USER %s PASSWORD %s)", drivers.EscapeStringValue(srcTable), safeSQLString(outputProps.DictionarySourceUser), safeSQLString(outputProps.DictionarySourcePassword))
 	}
 
 	// create dictionary
-	return c.Exec(ctx, &drivers.Statement{
+	err = c.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf(`CREATE OR REPLACE DICTIONARY %s %s %s PRIMARY KEY %s SOURCE(%s) LAYOUT(HASHED()) LIFETIME(0)`, safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.PrimaryKey, srcTbl),
 		Priority: 100,
 	})
+	if err != nil {
+		return err
+	}
+	repointed = true
+
+	// The dictionary no longer depends on its previous source table, so it can be dropped.
+	if oldSrcTable != "" {
+		err = c.dropTable(ctx, oldSrcTable)
+		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
+			c.logger.Warn("clickhouse: failed to drop previous dictionary source table", zap.String("name", oldSrcTable), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	}
+	return nil
 }
 
 func (c *Connection) columnClause(ctx context.Context, table string) (string, error) {
@@ -738,8 +778,51 @@ func isReplicatedEngine(engine string) bool {
 	return strings.Contains(strings.ToLower(engine), "replicated")
 }
 
-func tempTableForDictionary(name string) string {
-	return name + "_dict_temp_"
+const dictionarySourceTableInfix = "_dict_temp_"
+
+// newDictionarySourceTable returns a unique name for a table for the dictionary `name` to source from.
+// The name is unique per call because ClickHouse forbids dropping or renaming a table that a dictionary depends on,
+// so refreshing a dictionary has to write to a new table and repoint the dictionary at it.
+func newDictionarySourceTable(name string) string {
+	// A dictionary is staged by creating it under a temporary name and renaming it into place, but its source table
+	// is not renamed along with it. Strip the staging prefix so the source table keeps a readable, stable name.
+	name = strings.TrimPrefix(name, stagingTablePrefix)
+	return name + dictionarySourceTableInfix + strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
+// dictionarySourceTable returns the table the dictionary `name` currently sources from.
+// It returns an empty string if the dictionary does not exist or does not source from a table created by Rill.
+func (c *Connection) dictionarySourceTable(ctx context.Context, name string) (string, error) {
+	args := []any{c.config.Database, name}
+	if c.config.Database == "" {
+		args = []any{nil, name}
+	}
+	res, err := c.Query(ctx, &drivers.Statement{
+		Query:    "SELECT loading_dependencies_table FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
+		Args:     args,
+		Priority: 100,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer res.Close()
+
+	var deps []string
+	for res.Next() {
+		if err := res.Scan(&deps); err != nil {
+			return "", err
+		}
+	}
+	if err := res.Err(); err != nil {
+		return "", err
+	}
+
+	for _, dep := range deps {
+		if strings.Contains(dep, dictionarySourceTableInfix) {
+			return dep, nil
+		}
+	}
+	return "", nil
 }
 
 func safeSQLString(name string) string {
