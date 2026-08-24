@@ -13,7 +13,7 @@ import {
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
-import { fromStore, toStore, type Readable } from "svelte/store";
+import { toStore, type Readable } from "svelte/store";
 import {
   type DimensionOrMeasureManager,
   JoinerFilterManager,
@@ -26,6 +26,9 @@ import type {
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 import { untrack } from "svelte";
 import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
+import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
+import { page } from "$app/state";
+import { goto } from "$app/navigation";
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -48,7 +51,7 @@ export class ExpressionFilterManager {
   public temporaryFilterName: string | undefined = $state(undefined);
   // Manager for the whole filter. Will contain parsed and validated expressions per metrics view.
   public topLevelJoiner: JoinerFilterManager;
-  public filterManagers: {
+  public sortedFilterManagers: {
     measures: MeasureFilterManager[];
     dimensions: DimensionFilterManager[];
   };
@@ -89,30 +92,23 @@ export class ExpressionFilterManager {
         this.events,
       ) as JoinerFilterManager;
     });
-    this.paramByManager = $derived(
-      Object.fromEntries(
-        this.metricsViewsProvider.metricsViewNames.map((mvName) => [
-          mvName,
-          this.topLevelJoiner.param[mvName] ?? "",
-        ]),
-      ),
-    );
+    this.paramByManager = $derived(this.topLevelJoiner.param);
     this.isComplexFilter = $derived(this.mergedExprFromParams.advanced);
 
-    this.filterManagers = $derived.by(() =>
-      this.buildFilterManagers(this.topLevelJoiner),
+    this.sortedFilterManagers = $derived.by(() =>
+      getSortFilterManagers(this.topLevelJoiner, this.yamlConfigProvider),
     );
     this.inList = $derived(
-      this.filterManagers.dimensions
+      this.sortedFilterManagers.dimensions
         .filter((dfm) => dfm.mode === DimensionFilterMode.InList)
         .map((dfm) => dfm.name),
     );
     this.filterManagersMap = $derived.by(() =>
       Object.fromEntries([
-        ...this.filterManagers.dimensions.map(
+        ...this.sortedFilterManagers.dimensions.map(
           (dfm) => [dfm.name, dfm] as [string, DimensionFilterManager],
         ),
-        ...this.filterManagers.measures.map(
+        ...this.sortedFilterManagers.measures.map(
           (mfm) => [mfm.name, mfm] as [string, MeasureFilterManager],
         ),
       ]),
@@ -140,62 +136,39 @@ export class ExpressionFilterManager {
 
       // The managers only cover the metrics views once the specs have loaded and a param has been applied.
       // Reporting the empty state before that would clear the filter the url holds.
-      if (
-        Object.keys(param).length !== metricsViewNames.length ||
-        !this.metricsViewsProvider.ready
-      )
-        return;
+      if (!this.metricsViewsProvider.ready) return;
 
       const unchanged =
         !emittedParam || recordsMatch(emittedParam, param, metricsViewNames);
       emittedParam = param;
       if (unchanged) return;
 
-      this.events.emit("state-changed");
+      const lastParam = untrack(() => this.lastUrlParam);
+      const unchangedFromUrl = recordsMatch(
+        emittedParam,
+        lastParam,
+        metricsViewNames,
+      );
+
+      this.events.emit("state-changed", unchangedFromUrl);
     });
   }
 
-  /**
-   * Seeds the managers from a url the caller owns, and re-seeds them as the metrics view names arrive.
-   *
-   * The effect root is created here because the owner is not a component:
-   * everything that reads a filter, a canvas component for example, has to see the url's filters
-   * whether or not a filter bar is mounted. The caller owns the returned disposer.
-   */
-  public seedFromSearchParams(searchParams: Readable<URLSearchParams>) {
-    return $effect.root(() => {
-      // Subscribed inside the root so the disposer takes the subscription with it.
-      const params = fromStore(searchParams);
-      $effect(() => this.setUrlParams(params.current));
-    });
-  }
+  public syncWithUrl() {
+    this.createListener();
 
-  /**
-   * Writes what the managers hold back to the url.
-   *
-   * Diffed against the param the url last seeded rather than against the live url: a url the seed has
-   * not caught up with yet, a back navigation for example, would otherwise read as a manager change
-   * and navigate straight back to the state the managers still hold. Changes that bypass the chips,
-   * `clear()` for example, leave the seed untouched and so are still written.
-   */
-  public writeBackToUrl(getUrl: () => URL, navigate: (url: URL) => void) {
     $effect(() => {
-      // Every leaf expression is dropped until the specs land, so writing back before that would
-      // strip the filter the url holds and lose it for good.
       if (!this.metricsViewsProvider.ready) return;
 
-      const seeded = recordsMatch(
-        this.lastUrlParam,
-        this.paramByManager,
-        this.metricsViewsProvider.metricsViewNames,
-      );
-      if (seeded) return;
+      const newUrlSearch = page.url.searchParams;
+      this.setUrlParams(newUrlSearch);
+    });
 
-      const newUrl = new URL(getUrl());
+    return this.on("state-changed", () => {
+      const newUrl = new URL(page.url);
       this.applyFilterToParams(newUrl.searchParams);
-      if (newUrl.search === getUrl().search) return;
-
-      navigate(newUrl);
+      if (page.url.search === newUrl.search) return;
+      void goto(newUrl);
     });
   }
 
@@ -314,11 +287,7 @@ export class ExpressionFilterManager {
 
     // A singular `f=...` is a legacy canvas filter. `setUrlParams` folds it into every metrics view,
     // so the per metrics view params written above already carry it and it can be dropped.
-    // Until the names arrive there is nothing to fold it into, so it has to stay.
-    const metricsViewsLoaded =
-      this.metricsViewsProvider.metricsViewNames.length > 0 &&
-      this.metricsViewsProvider.ready;
-    if (!singleParam && metricsViewsLoaded) {
+    if (!singleParam && this.metricsViewsProvider.ready) {
       searchParams.delete(ExploreStateURLParams.Filters);
     }
   }
@@ -420,7 +389,7 @@ export class ExpressionFilterManager {
    * Used to narrow the values shown in a dimension filter by the rest of the filter bar.
    */
   public getOtherDimensionsFilter(name: string, metricsViewName: string) {
-    const exprs = this.filterManagers.dimensions
+    const exprs = this.sortedFilterManagers.dimensions
       .filter(
         (dfm) =>
           !!dfm.expr &&
@@ -458,32 +427,6 @@ export class ExpressionFilterManager {
       expr: this.topLevelJoiner.expr[mvName],
       dimensionOnlyExpr: this.topLevelJoiner.dimensionOnlyExpr[mvName],
     }));
-  }
-
-  /**
-   * Managers in chip order: required filters first, then pinned ones, then the rest,
-   * sorted by name within each of those groups.
-   */
-  private buildFilterManagers(joinerManager: JoinerFilterManager) {
-    const rank = (manager: DimensionFilterManager | MeasureFilterManager) => {
-      if (this.yamlConfigProvider.requiredFilters[manager.name]) return 0;
-      if (this.yamlConfigProvider.pinnedFilters[manager.name]) return 1;
-      return 2;
-    };
-
-    const sortFunc = (
-      a: DimensionFilterManager | MeasureFilterManager,
-      b: DimensionFilterManager | MeasureFilterManager,
-    ) => rank(a) - rank(b) || a.name.localeCompare(b.name);
-
-    // Sorted on a copy: the managers keep param order, which is the order the expression and the
-    // param it writes back are built in.
-    const dimensions = [...joinerManager.managers.dimensionManagers].sort(
-      sortFunc,
-    );
-    const measures = [...joinerManager.managers.measureManagers].sort(sortFunc);
-
-    return { dimensions, measures };
   }
 }
 

@@ -10,7 +10,7 @@
   import MissingRequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/MissingRequiredFiltersMessage.svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import type { Snippet } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
 
   const runtimeClient = useRuntimeClient();
   let instanceId = $derived(runtimeClient.instanceId);
@@ -47,21 +47,8 @@
       dashboardProvider,
     },
   } = $derived(getCanvasStore(canvasName, instanceId));
-  // Owned here rather than by the filter bar: a chart interaction, a pivot click to filter for example,
-  // changes the filters on a canvas with `filters_enabled: false` as well.
-  // The url seeds the managers from `CanvasEntity`, which does not depend on this component either.
   // svelte-ignore state_referenced_locally
-  expressionFilterManager.writeBackToUrl(
-    () => page.url,
-    (url) => {
-      // `handleCanvasRedirect` treats an empty search as a fresh visit and restores the last visited state,
-      // the home bookmark or the yaml defaults, which would bring back the filters that were just cleared.
-      // `clear` keeps the search non-empty; nothing else reads it.
-      url.searchParams.delete("clear");
-      if (!url.search) url.searchParams.set("clear", "true");
-      void goto(url);
-    },
-  );
+  const syncUnsub = expressionFilterManager.syncWithUrl();
 
   $effect(() => {
     dashboardProvider.yamlConfigProvider.setEditable(builder);
@@ -80,6 +67,10 @@
 
   $effect(() => {
     clientWidth = contentRect.width;
+  });
+
+  onDestroy(() => {
+    syncUnsub();
   });
 </script>
 

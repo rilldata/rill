@@ -65,17 +65,17 @@
       : metricsViewsProvider.dimensions,
   );
 
+  let { dimensions: sortedDimensionManagers, measures: sortedMeasureManagers } =
+    $derived(expressionFilterManager.sortedFilterManagers);
+
   let hasFilters = $derived(
-    expressionFilterManager.filterManagers.dimensions.length > 0 ||
-      expressionFilterManager.filterManagers.measures.length > 0,
+    sortedDimensionManagers.length > 0 || sortedMeasureManagers.length > 0,
   );
   // Required and pinned filters have a chip even without a value,
   // so there is nothing to clear unless a chip actually holds a filter.
   let hasClearableFilters = $derived(
-    expressionFilterManager.filterManagers.dimensions.some(
-      (dfm) => !!dfm.expr,
-    ) ||
-      expressionFilterManager.filterManagers.measures.some((mfm) => !!mfm.expr),
+    sortedDimensionManagers.some((dfm) => !!dfm.expr) ||
+      sortedMeasureManagers.some((mfm) => !!mfm.expr),
   );
 
   let excludedDimensions = $derived(
@@ -120,7 +120,7 @@
           {m.dashboard_no_filters_selected()}
         </div>
       {:else}
-        {#each expressionFilterManager.filterManagers.dimensions as dimensionManager (dimensionManager.name)}
+        {#each sortedDimensionManagers as dimensionManager (dimensionManager.name)}
           <DimensionFilter
             manager={expressionFilterManager}
             {dimensionManager}
@@ -138,7 +138,7 @@
           />
         {/each}
 
-        {#each expressionFilterManager.filterManagers.measures as measureManager (measureManager.name)}
+        {#each sortedMeasureManagers as measureManager (measureManager.name)}
           <MeasureFilter
             {measureManager}
             {yamlConfigProvider}

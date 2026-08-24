@@ -176,14 +176,17 @@ export function createStateManagers({
     dashboardProvider.yamlConfigProvider,
   );
 
-  const stateChangeUnsub = expressionFilterManager.on("state-changed", () => {
-    if (expressionFilterManager.updating) return;
-    metricsExplorerStore.mergePartialExplorerEntity(
-      exploreName,
-      {},
-      expressionFilterManager,
-    );
-  });
+  const stateChangeUnsub = expressionFilterManager.on(
+    "state-changed",
+    (unchangedFromUrl) => {
+      if (expressionFilterManager.updating || unchangedFromUrl) return;
+      metricsExplorerStore.mergePartialExplorerEntity(
+        exploreName,
+        {},
+        expressionFilterManager,
+      );
+    },
+  );
 
   return {
     runtimeClient,

@@ -117,7 +117,7 @@ test.describe("Bookmarks", () => {
     });
 
     test.describe.serial("Complete explore bookmarks", () => {
-      test("Create a complete bookmark.", async ({ adminPage }) => {
+      test("Create a complete explore bookmark", async ({ adminPage }) => {
         // This would ideally be done in a beforeAll hook. But adminPage fixture is not supported in that hook.
         await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
@@ -164,7 +164,7 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Bookmark created")).toBeVisible();
       });
 
-      test("Applying complete bookmark replaces every setting", async ({
+      test("Applying complete explore bookmark replaces every setting", async ({
         adminPage,
       }) => {
         await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
@@ -340,7 +340,7 @@ test.describe("Bookmarks", () => {
 
   test.describe.serial("Canvas bookmarks", () => {
     test.describe.serial("Complete canvas bookmarks", () => {
-      test("Create a complete bookmark.", async ({ adminPage }) => {
+      test("Create a complete canvas bookmark", async ({ adminPage }) => {
         // This would ideally be done in a beforeAll hook. But adminPage fixture is not supported in that hook.
         await adminPage.goto("/e2e/openrtb/canvas/bids_canvas_bookmarks");
 
@@ -390,7 +390,7 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Bookmark created")).toBeVisible();
       });
 
-      test("Applying complete bookmark replaces every setting", async ({
+      test("Applying complete canvas bookmark replaces every setting", async ({
         adminPage,
       }) => {
         await adminPage.goto("/e2e/openrtb/canvas/bids_canvas_bookmarks");

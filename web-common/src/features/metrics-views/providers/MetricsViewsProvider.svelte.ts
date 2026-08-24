@@ -73,7 +73,7 @@ export class MetricsViewsProvider {
     public readonly runtimeClient: RuntimeClient,
     initMetricsViewNames: string[],
   ) {
-    this.metricsViewNames = initMetricsViewNames;
+    this.metricsViewNames = initMetricsViewNames.filter(Boolean);
 
     const allResourcesQuery = createRuntimeServiceListResources(
       runtimeClient,
@@ -137,13 +137,14 @@ export class MetricsViewsProvider {
     });
 
     this.ready = $derived(
-      this.metricsViewNames.every((metricsViewName) => {
-        const spec = this.specs[metricsViewName];
-        if (!spec) return false;
-        return (
-          !spec.timeDimension || !!this.timeRangeSummaries[metricsViewName]
-        );
-      }),
+      this.metricsViewNames.length > 0 &&
+        this.metricsViewNames.every((metricsViewName) => {
+          const spec = this.specs[metricsViewName];
+          if (!spec) return false;
+          return (
+            !spec.timeDimension || !!this.timeRangeSummaries[metricsViewName]
+          );
+        }),
     );
 
     this.cleanup = () => {
@@ -154,6 +155,7 @@ export class MetricsViewsProvider {
   }
 
   public setMetricsViewNames(metricsViewNames: string[]) {
+    metricsViewNames = metricsViewNames.filter(Boolean);
     if (arrayUnorderedEquals(this.metricsViewNames, metricsViewNames)) return;
     this.metricsViewNames = metricsViewNames;
     this.processResources();

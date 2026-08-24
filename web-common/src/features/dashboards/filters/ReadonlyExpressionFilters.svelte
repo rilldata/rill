@@ -31,13 +31,16 @@
 
   let scrollContainer: HTMLDivElement;
 
+  let { dimensions: sortedDimensionManagers, measures: sortedMeasureManagers } =
+    $derived(expressionFilterManager.sortedFilterManagers);
+
   let nonEmptyDimensionManagers = $derived(
-    expressionFilterManager.filterManagers.dimensions.filter(
+    sortedDimensionManagers.filter(
       (dimensionManager) => showPinned || !!dimensionManager.expr,
     ),
   );
   let nonEmptyMeasureManager = $derived(
-    expressionFilterManager.filterManagers.measures.filter(
+    sortedMeasureManagers.filter(
       (measureManager) => showPinned || !!measureManager.expr,
     ),
   );

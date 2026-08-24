@@ -188,6 +188,7 @@ export class DashboardStateSync {
     }
 
     this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+    log("INIT", redirectUrl);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -242,7 +243,7 @@ export class DashboardStateSync {
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
     this.expressionFilterManager.updating = true;
-    let redirectUrl: URL;
+    let redirectUrl: URL | undefined = undefined;
     try {
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
         // Resolve start/end by making a network call.
@@ -297,12 +298,16 @@ export class DashboardStateSync {
       // Release before the goto below: state changes made while the navigation is in flight
       // must still be picked up by gotoNewState.
       this.updating = false;
+      if (redirectUrl) {
+        this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+      }
       this.expressionFilterManager.updating = false;
     }
     // Try-finally without a catch. Rest of the code is not run if the above try body throws.
 
-    this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
-    this.expressionFilterManager.updating = false;
+    if (!redirectUrl) return; // type-safety
+
+    log("URL", redirectUrl);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -360,6 +365,7 @@ export class DashboardStateSync {
       }
 
       this.expressionFilterManager.setUrlParams(newUrl.searchParams);
+      log("GOTO", newUrl);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -373,4 +379,12 @@ export class DashboardStateSync {
       this.expressionFilterManager.updating = false;
     }
   }
+}
+
+function log(label: string, toUrl: URL) {
+  const fromUrlSearch = get(page).url.search;
+  const areEqual = fromUrlSearch === toUrl.search;
+  console.log(
+    `[${label}] ${fromUrlSearch} =${areEqual ? "x" : "="}> ${toUrl.search}`,
+  );
 }

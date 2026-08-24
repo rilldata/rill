@@ -57,7 +57,7 @@
   let exploreHasTimeDimension = $derived(!!$timeRangeSummaryStore.data);
 
   let excludeMode = $derived(
-    expressionFilterManager.filterManagers.dimensions.find(
+    expressionFilterManager.sortedFilterManagers.dimensions.find(
       (dfm) => dfm.name === dimensionName,
     )?.exclude ?? false,
   );

@@ -189,7 +189,7 @@
               {dimensionColumnWidth}
               sortedAscending={sortDirection === SortDirection.ASCENDING}
               {sortType}
-              filterExcludeMode={expressionFilterManager.filterManagers.dimensions.find(
+              filterExcludeMode={expressionFilterManager.sortedFilterManagers.dimensions.find(
                 (dfm) => dfm.name === dimension.name,
               )?.exclude ?? false}
               {timeRange}

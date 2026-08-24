@@ -30,9 +30,11 @@
 
   let allDimensions = $derived(metricsViewsProvider.dimensions);
 
+  let { dimensions: sortedDimensionManagers, measures: sortedMeasureManagers } =
+    $derived(expressionFilterManager.sortedFilterManagers);
+
   let hasFilters = $derived(
-    expressionFilterManager.filterManagers.dimensions.length > 0 ||
-      expressionFilterManager.filterManagers.measures.length > 0,
+    sortedDimensionManagers.length > 0 || sortedMeasureManagers.length > 0,
   );
 </script>
 
@@ -55,7 +57,7 @@
         <AdvancedFilter advancedFilter={expr} />
       {/each}
     {:else}
-      {#each expressionFilterManager.filterManagers.dimensions as dimensionManager (dimensionManager.name)}
+      {#each sortedDimensionManagers as dimensionManager (dimensionManager.name)}
         <DimensionFilter
           manager={expressionFilterManager}
           {dimensionManager}
@@ -68,7 +70,7 @@
         />
       {/each}
 
-      {#each expressionFilterManager.filterManagers.measures as measureManager (measureManager.name)}
+      {#each sortedMeasureManagers as measureManager (measureManager.name)}
         <MeasureFilter
           {measureManager}
           {yamlConfigProvider}

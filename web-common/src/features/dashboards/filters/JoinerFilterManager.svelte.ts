@@ -84,11 +84,16 @@ export class JoinerFilterManager {
         )
         .map((manager) => manager.name),
     );
-    this.param = $derived(
+    this.param = $derived.by(() =>
       Object.fromEntries(
-        Object.entries(this.expr).map(([mvName, expr]) => [
+        this.metricsViewsProvider.metricsViewNames.map((mvName) => [
           mvName,
-          convertExpressionToFilterParam(expr, this.inListDimensions),
+          this.expr[mvName]
+            ? convertExpressionToFilterParam(
+                this.expr[mvName],
+                this.inListDimensions,
+              )
+            : "",
         ]),
       ),
     );
