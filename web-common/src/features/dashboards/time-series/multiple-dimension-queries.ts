@@ -81,11 +81,15 @@ export function getDimensionValuesForComparison(
     [
       ctx.metricsViewName,
       ctx.dashboardStore,
+      ctx.expressionFilterManager.exprByMetricsViewStore,
       useTimeControlStore(ctx),
       dimensionSearchText,
       ctx.validSpecStore,
     ],
-    ([name, dashboardStore, timeControls, searchText, validSpec], set) => {
+    (
+      [name, dashboardStore, exprByMv, timeControls, searchText, validSpec],
+      set,
+    ) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -97,13 +101,15 @@ export function getDimensionValuesForComparison(
 
       if (!isValidMeasureList || !dimensionName) return;
 
+      const filter = exprByMv[name];
+
       // Values to be compared
       let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
         return selectedDimensionValues(
           ctx.runtimeClient,
           [name],
-          dashboardStore?.whereFilter,
+          filter,
           dimensionName,
         ).subscribe((values) => {
           if (values.data?.length) {
@@ -115,7 +121,7 @@ export function getDimensionValuesForComparison(
           }
           return set({
             values: comparisonValues,
-            filter: dashboardStore?.whereFilter,
+            filter,
           });
         });
       } else if (surface === "table") {
@@ -145,11 +151,7 @@ export function getDimensionValuesForComparison(
               measures: tddMeasures,
               dimensions: [{ name: dimensionName }],
               where: sanitiseExpression(
-                getDimensionFilterWithSearch(
-                  dashboardStore?.whereFilter,
-                  searchText,
-                  dimensionName,
-                ),
+                getDimensionFilterWithSearch(filter, searchText, dimensionName),
                 undefined,
               ),
               timeRange: {
@@ -180,7 +182,7 @@ export function getDimensionValuesForComparison(
             if (topListData?.isFetching || !dimensionName)
               return {
                 values: [],
-                filter: dashboardStore?.whereFilter,
+                filter,
               };
             const columnName =
               topListData?.data?.schema?.fields?.[0]?.name || dimensionName;
@@ -201,10 +203,8 @@ export function getDimensionValuesForComparison(
               values: topListValues?.slice(0, MAX_TDD_VALUES_LENGTH),
               uris: uriValues?.slice(0, MAX_TDD_VALUES_LENGTH),
               filter:
-                getFiltersForOtherDimensions(
-                  dashboardStore?.whereFilter,
-                  dimensionName,
-                ) ?? createAndExpression([]),
+                getFiltersForOtherDimensions(filter, dimensionName) ??
+                createAndExpression([]),
             };
           },
         ).subscribe(set);

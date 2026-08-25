@@ -33,7 +33,7 @@ import {
   waitForMetricsViewSpecs,
 } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
 import { flushSync } from "svelte";
-import { fromStore, get, writable } from "svelte/store";
+import { get } from "svelte/store";
 import {
   afterAll,
   afterEach,
@@ -111,37 +111,6 @@ function createFilterManager(
   );
   cleanups.push(destroy);
   return value;
-}
-
-/**
- * A filter manager wired the way a canvas wires one: seeded from the params its entity holds,
- * writing back to the page url. The two sources are separate on purpose, since the seed trails the
- * page url by the redirect handling in `CanvasEntity.onUrlChange`.
- */
-function createUrlSyncedFilterManager() {
-  const seedParams = writable(new URLSearchParams());
-  const url = writable(new URL("http://localhost/canvas"));
-  const navigations: URL[] = [];
-  let filterManager!: ExpressionFilterManager;
-
-  const { destroy } = createInEffectRoot(() => {
-    filterManager = new ExpressionFilterManager(
-      metricsViewsProvider,
-      new YAMLConfigProvider(),
-    );
-  });
-  cleanups.push(() => {
-    destroy();
-  });
-
-  /** Both sources at once, as they move for a canvas that is not mid navigation. */
-  function setUrl(searchParams: URLSearchParams) {
-    url.set(new URL(`http://localhost/canvas?${searchParams.toString()}`));
-    seedParams.set(searchParams);
-    flushSync();
-  }
-
-  return { filterManager, navigations, seedParams, url, setUrl };
 }
 
 /** The `f.<metricsView>` params, one filter string per metrics view. */

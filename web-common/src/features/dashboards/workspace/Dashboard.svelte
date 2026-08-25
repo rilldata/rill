@@ -298,7 +298,7 @@
     <CellInspector />
 
     {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
-      <RowsViewerAccordion {metricsViewName} {exploreName} />
+      <RowsViewerAccordion {metricsViewName} {exploreName} {whereFilter} />
     {/if}
   </article>
 </ThemeProvider>

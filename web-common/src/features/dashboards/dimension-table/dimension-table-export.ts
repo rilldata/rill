@@ -13,6 +13,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
+  V1Expression,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   V1Query,
@@ -71,6 +72,7 @@ export function getDimensionTableExportQuery(
       instanceId: ctx.runtimeClient.instanceId,
       metricsViewName,
       exploreState,
+      filter: ctx.expressionFilterManager.exprByMetricsView[metricsViewName],
       timeRange,
       comparisonTimeRange,
       dimensionSearchText,
@@ -84,6 +86,7 @@ export function getDimensionTableAggregationRequestForTime({
   instanceId,
   metricsViewName,
   exploreState,
+  filter,
   timeRange,
   comparisonTimeRange,
   dimensionSearchText,
@@ -91,6 +94,7 @@ export function getDimensionTableAggregationRequestForTime({
   instanceId: string;
   metricsViewName: string;
   exploreState: ExploreState;
+  filter?: V1Expression | undefined;
   timeRange: V1TimeRange;
   comparisonTimeRange: V1TimeRange | undefined;
   dimensionSearchText: string;
@@ -123,7 +127,7 @@ export function getDimensionTableAggregationRequestForTime({
   }
 
   const where = buildWhereParamForDimensionTableAndTDDExports(
-    exploreState.whereFilter,
+    filter,
     exploreState.selectedDimensionName!, // must exist when viewing a dimension table
     dimensionSearchText,
   );

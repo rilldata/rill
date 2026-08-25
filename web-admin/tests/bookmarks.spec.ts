@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { assertUrlParams } from "@rilldata/web-common/tests/utils/assert-url-params";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { test } from "./setup/base";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 
 test.describe("Bookmarks", () => {
   // TODO: use a separate explore to isolate bookmarks to avoid conflicts.
@@ -25,6 +26,9 @@ test.describe("Bookmarks", () => {
         await adminPage
           .getByRole("row", { name: "My Little Universe 4.6k" })
           .click();
+        // There is a delay in filters syncing with session storage.
+        // TODO: once time selections have been moved out of explore-state revisit this along with session storage.
+        await asyncWait(250);
 
         // Enter dimension table "App Site Name"
         await adminPage.getByText("App Site Domain").click();
@@ -133,6 +137,8 @@ test.describe("Bookmarks", () => {
         await adminPage
           .getByRole("row", { name: "My Little Universe 4.6k" })
           .click();
+        // There is a delay in filters syncing with session storage.
+        await asyncWait(250);
 
         // Enter dimension table "App Site Name"
         await adminPage.getByText("App Site Domain").click();
@@ -249,6 +255,8 @@ test.describe("Bookmarks", () => {
         await adminPage
           .getByRole("row", { name: "Not Available 1.0M" })
           .click();
+        // There is a delay in filters syncing with session storage.
+        await asyncWait(250);
 
         // Open the bookmarks dropdown
         await adminPage.getByLabel("Home bookmark dropdown").click();
@@ -357,6 +365,8 @@ test.describe("Bookmarks", () => {
           .scrollIntoViewIfNeeded();
         await adminPage.getByRole("row", { name: "Instacart $252.33" }).click();
         await adminPage.getByRole("row", { name: "Leafly $195.89" }).click();
+        // There is a delay in filters syncing with session storage.
+        await asyncWait(250);
 
         // Open the bookmarks dropdown
         await adminPage.getByLabel("Other bookmark dropdown").click();

@@ -7,7 +7,7 @@ import { sanitiseExpression } from "../dashboards/stores/filter-utils";
  * Otherwise, use the dashboard's current where filter.
  */
 export function buildWhereParamForDimensionTableAndTDDExports(
-  whereFilter: V1Expression,
+  whereFilter: V1Expression | undefined,
   dimensionName: string,
   searchText: string,
 ) {

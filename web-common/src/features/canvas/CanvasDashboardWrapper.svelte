@@ -8,8 +8,6 @@
   import CanvasPdfExportView from "../exports/pdf/CanvasPdfExportView.svelte";
   import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
   import MissingRequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/MissingRequiredFiltersMessage.svelte";
-  import { page } from "$app/state";
-  import { goto } from "$app/navigation";
   import { onDestroy, type Snippet } from "svelte";
 
   const runtimeClient = useRuntimeClient();
