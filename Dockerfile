@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.1-experimental
 FROM ubuntu
 
-RUN apt-get update && apt-get install -y ca-certificates git
+RUN apt-get update && apt-get install -y ca-certificates git google-cloud-sdk-gke-gcloud-auth-plugin
 
 COPY rill /usr/local/bin
 RUN chmod 777 /usr/local/bin/rill
