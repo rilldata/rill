@@ -13,7 +13,7 @@ A single command generates everything your agent needs:
 rill init --agent all
 ```
 
-The skills work with Claude Code, Cursor, and any agent that supports the `AGENTS.md` convention, such as OpenAI Codex, Gemini CLI, and GitHub Copilot. See the [Installation guide](/developers/agent-skills/install) for setup instructions for each tool.
+The skills work with Claude Code and Cursor out of the box, and ship in a tool-agnostic format for `AGENTS.md`-compatible agents such as OpenAI Codex, Gemini CLI, and GitHub Copilot. Agents that also support the [Agent Skills](https://agentskills.io) convention load the detailed skills automatically; for others, the skill files are plain Markdown that you can point the agent at directly. See the [Installation guide](/developers/agent-skills/install) for setup instructions for each tool.
 
 :::note Agent skills vs. the Rill MCP Server
 Agent skills and the [Rill MCP Server](/guide/ai/mcp) are complementary. The skills teach your agent *how* to build a Rill project — resource types, YAML schemas, and best practices. The MCP server gives it *live access* to your running project — resource status, table schemas, query results, and file operations. `rill init --agent` sets up both: it generates the skill files and an MCP configuration that connects your agent to Rill Developer's local MCP server.

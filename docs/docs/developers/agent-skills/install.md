@@ -35,11 +35,17 @@ The `all` option generates the skills in every supported format, so the project 
 
 ### Existing project
 
-To add agent skills to an existing Rill project without affecting your other files, run `rill init` with only the `--agent` flag:
+To add agent skills to an existing Rill project, run `rill init` with only the `--agent` flag:
 
 ```bash
 rill init ./my-existing-project --agent all
 ```
+
+The command only writes agent instruction files and MCP configuration; the rest of your project is left untouched.
+
+:::warning Existing agent files are overwritten
+If the project already has agent instruction files at the generated paths — for example `.claude/CLAUDE.md`, `.cursor/rules/AGENTS.mdc`, or an `AGENTS.md` at the project root — the command replaces them without prompting. Back up or commit any customizations first, and keep your own instructions in separate files so they survive regeneration (see [Updating agent skills](/developers/agent-skills/update)).
+:::
 
 ### Options
 
@@ -84,6 +90,8 @@ This format works with agents that follow the [AGENTS.md](https://agents.md) con
 - **`AGENTS.md`** — entry point at the project root
 - **`.agents/skills/rill-*/SKILL.md`** — one skill per topic, in the same format as the Claude Code skills
 - **`.mcp.json`** — MCP server configuration for agents that support it
+
+The entry point instructs the agent to load the `rill-development` skill by name. Agents that support the [Agent Skills](https://agentskills.io) convention resolve it from `.agents/skills/` automatically. If your agent only reads `AGENTS.md`, the skills are plain Markdown files — point the agent at `.agents/skills/rill-development/SKILL.md` directly.
 
 ## Connect the MCP server
 
