@@ -66,11 +66,12 @@
         class="pointer-events-none absolute"
         style="left: -99999px; top: 0;"
       >
-        <CanvasPdfExportView
-          {canvasName}
-          {instanceId}
-          width={clientWidth || maxWidth}
-        />
+        <!-- Rendered at the canvas's own design width rather than the width it
+             happens to occupy on screen, so the same dashboard always exports
+             the same document. Following the viewport meant a phone produced a
+             narrow capture that the page then had to magnify, which inflated
+             every row past the page height and sliced charts across pages. -->
+        <CanvasPdfExportView {canvasName} {instanceId} width={maxWidth} />
       </div>
     {/if}
 
