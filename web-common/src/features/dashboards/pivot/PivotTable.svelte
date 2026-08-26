@@ -88,38 +88,36 @@
   export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
   export let clickSelection: PivotClickSelectionState | undefined = undefined;
 
-  const options: Readable<TableOptions<PivotDataRow>> = derived(
-    [pivotDataStore, pivotState],
-    ([pivotData, state]) => {
-      let tableData = [...pivotData.data];
-      if (pivotData.totalsRowData) {
-        tableData = [pivotData.totalsRowData, ...pivotData.data];
-      }
-      return {
-        data: tableData,
-        columns: pivotData.columnDef,
-        state: {
-          expanded: state.expanded,
-          sorting: state.sorting,
-        },
-        onExpandedChange: (updater) => {
-          const expanded =
-            typeof updater === "function" ? updater(state.expanded) : updater;
-          setPivotExpanded(expanded);
-        },
-        getSubRows: (row) => row.subRows,
-        onSortingChange: (updater) => {
-          const sorting =
-            typeof updater === "function" ? updater(state.sorting) : updater;
-          setPivotSort(sorting);
-        },
-        getExpandedRowModel: getExpandedRowModel(),
-        getCoreRowModel: getCoreRowModel(),
-        enableSortingRemoval: false,
-        enableExpanding: true,
-      };
-    },
-  );
+  let options: Readable<TableOptions<PivotDataRow>>;
+  $: options = derived([pivotDataStore, pivotState], ([pivotData, state]) => {
+    let tableData = [...pivotData.data];
+    if (pivotData.totalsRowData) {
+      tableData = [pivotData.totalsRowData, ...pivotData.data];
+    }
+    return {
+      data: tableData,
+      columns: pivotData.columnDef,
+      state: {
+        expanded: state.expanded,
+        sorting: state.sorting,
+      },
+      onExpandedChange: (updater) => {
+        const expanded =
+          typeof updater === "function" ? updater(state.expanded) : updater;
+        setPivotExpanded(expanded);
+      },
+      getSubRows: (row) => row.subRows,
+      onSortingChange: (updater) => {
+        const sorting =
+          typeof updater === "function" ? updater(state.sorting) : updater;
+        setPivotSort(sorting);
+      },
+      getExpandedRowModel: getExpandedRowModel(),
+      getCoreRowModel: getCoreRowModel(),
+      enableSortingRemoval: false,
+      enableExpanding: true,
+    };
+  });
 
   $: table = createSvelteTable(options);
 
