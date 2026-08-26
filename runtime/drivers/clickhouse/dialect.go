@@ -149,14 +149,16 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 }
 
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
-	g := timeutil.TimeGrainFromAPI(grain)
-	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
+	bins, err := timeutil.TimeRangeBins(start, end, timeutil.TimeGrainFromAPI(grain), tz, firstDay, firstMonth)
+	if err != nil {
+		return "", nil, err
+	}
 	// format: SELECT c1 AS "alias" FROM VALUES(toDateTime(...), ...)
 	var sb strings.Builder
 	var args []any
 	sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeAlias(alias)))
-	for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
-		if t != start {
+	for i, t := range bins {
+		if i > 0 {
 			sb.WriteString(", ")
 		}
 		sb.WriteString("?")
