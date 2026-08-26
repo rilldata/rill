@@ -12,6 +12,7 @@
   } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem.ts";
   import { isSimpleMeasure } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
+  import { MetricsViewSpecDimensionType } from "@rilldata/web-common/runtime-client";
 
   let {
     expressionFilterManager,
@@ -38,7 +39,9 @@
     dimensions
       .filter(
         (d) =>
-          !(d.name! in filterManagersMap) && !(d.name! in excludedDimensions),
+          !(d.name! in filterManagersMap) &&
+          !(d.name! in excludedDimensions) &&
+          d.type !== MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
       )
       .map((d) => ({
         label: getDimensionDisplayName(d),
