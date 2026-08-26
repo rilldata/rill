@@ -25,17 +25,21 @@ import {
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import { FromURLParamTimeDimensionMap } from "@rilldata/web-common/features/dashboards/url-state/mappers.ts";
+
+const DefaultTimeZone = "UTC";
 
 export class TimeRangeManager {
   public timeRange = $state<string | undefined>(undefined);
   public timeGrain = $state<V1TimeGrain | undefined>(undefined);
-  public timeZone = $state<string>("UTC");
+  public timeZone = $state<string>(DefaultTimeZone);
   public timeDimension = $state<string | undefined>(undefined);
+  public interval = $state<Interval | undefined>(undefined);
 
   public minDate: DateTime<true> | undefined;
   public maxDate: DateTime<true> | undefined;
 
-  public interval: Interval | undefined;
   public parsedTime: RillTime | undefined;
   public truncationGrain: V1TimeGrain | undefined;
   public ref: RillTimeLabel | string | undefined;
@@ -81,7 +85,56 @@ export class TimeRangeManager {
     );
   }
 
-  public onSelectRange = (range: string, ignoreSnap?: boolean) => {
+  public setUrlParams(searchParams: URLSearchParams) {
+    this.timeGrain =
+      FromURLParamTimeDimensionMap[
+        searchParams.get(ExploreStateURLParams.TimeGrain)!
+      ] ?? undefined;
+
+    this.timeZone =
+      searchParams.get(ExploreStateURLParams.TimeZone) ?? DefaultTimeZone;
+
+    this.timeDimension =
+      searchParams.get(ExploreStateURLParams.TimeDimension) ?? undefined;
+
+    if (searchParams.has(ExploreStateURLParams.TimeRange)) {
+      void this.onSelectRange(
+        searchParams.get(ExploreStateURLParams.TimeRange)!,
+        true,
+      );
+    } else {
+      this.timeRange = undefined;
+      this.interval = undefined;
+    }
+  }
+
+  public applyFilterToParams(searchParams: URLSearchParams) {
+    if (this.timeRange) {
+      searchParams.set(ExploreStateURLParams.TimeRange, this.timeRange);
+    } else {
+      searchParams.delete(ExploreStateURLParams.TimeRange);
+    }
+
+    if (this.timeGrain) {
+      searchParams.set(ExploreStateURLParams.TimeGrain, this.timeGrain);
+    } else {
+      searchParams.delete(ExploreStateURLParams.TimeGrain);
+    }
+
+    if (this.timeZone !== DefaultTimeZone) {
+      searchParams.set(ExploreStateURLParams.TimeZone, this.timeZone);
+    } else {
+      searchParams.delete(ExploreStateURLParams.TimeZone);
+    }
+
+    if (this.timeDimension) {
+      searchParams.set(ExploreStateURLParams.TimeDimension, this.timeDimension);
+    } else {
+      searchParams.delete(ExploreStateURLParams.TimeDimension);
+    }
+  }
+
+  public onSelectRange(range: string, ignoreSnap?: boolean) {
     try {
       const parsed = parseRillTime(range);
 
@@ -126,9 +179,9 @@ export class TimeRangeManager {
     } catch {
       // This function is called in a controlled manner and should not throw
     }
-  };
+  }
 
-  public onSelectGrain = (grain: V1TimeGrain | undefined) => {
+  public onSelectGrain(grain: V1TimeGrain | undefined) {
     if (!this.timeRange) return;
 
     const newString = constructNewString({
@@ -139,9 +192,9 @@ export class TimeRangeManager {
     });
 
     return this.applyTimeRange(newString);
-  };
+  }
 
-  public onSelectZone = (tz: string) => {
+  public onSelectZone(tz: string) {
     this.timeZone = tz;
     if (!this.timeRange || !this.parsedTime) return;
 
@@ -150,12 +203,12 @@ export class TimeRangeManager {
     } else {
       void this.applyTimeRange(this.timeRange, tz);
     }
-  };
+  }
 
-  public onSelectAsOfOption = (
+  public onSelectAsOfOption(
     ref: RillTimeLabel | string | undefined,
     inclusive: boolean,
-  ) => {
+  ) {
     if (!this.timeRange) return;
     const newString = constructNewString({
       currentString: this.timeRange,
@@ -165,16 +218,20 @@ export class TimeRangeManager {
     });
 
     return this.applyTimeRange(newString);
-  };
+  }
 
-  public onSelectTimeDimension = (timeDimension: string) => {
+  public onSelectTimeDimension(timeDimension: string) {
     this.timeDimension = timeDimension;
     if (this.timeRange) void this.applyTimeRange(this.timeRange);
-  };
+  }
 
   private async applyTimeRange(newTimeRange: string, tz = this.timeZone) {
+    console.log("applyTimeRange", newTimeRange);
     // If we don't have a valid time range, early return
-    if (!this.metricsViewsProvider.timeRangeSummary?.max) return;
+    if (!this.metricsViewsProvider.timeRangeSummary?.max) {
+      console.log("No summary");
+      return;
+    }
 
     // This should be returned by the API, but it is not yet implemented
     const includesTimeZoneOffset = newTimeRange.includes("tz");

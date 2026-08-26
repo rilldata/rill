@@ -10,5 +10,5 @@ export type TimeFiltersConfig = {
   showFullRange?: boolean;
   showWatermark?: boolean;
 
-  side: "top" | "right" | "bottom" | "left";
+  side?: "top" | "right" | "bottom" | "left";
 };

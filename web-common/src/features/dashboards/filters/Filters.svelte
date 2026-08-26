@@ -1,60 +1,25 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-  import {
-    TimeComparisonOption,
-    TimeRangePreset,
-    type DashboardTimeControls,
-  } from "@rilldata/web-common/lib/time/types";
-  import {
-    V1TimeGrain,
-    type V1ExploreTimeRange,
-  } from "@rilldata/web-common/runtime-client";
-  import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
-  import { DateTime, Duration, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
   import { applyDimensionInListMode as applyDimensionInListModeDirectly } from "../state-managers/actions/dimension-filters";
-  import {
-    metricsExplorerStore,
-    useExploreState,
-  } from "../stores/dashboard-stores";
-  import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
-  import {
-    CUSTOM_TIME_RANGE_ALIAS,
-    deriveInterval,
-  } from "../time-controls/new-time-controls";
-  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
-  import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import { featureFlags } from "../../feature-flags";
-  import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
-  import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
-  import { getValidComparisonOption } from "../time-controls/time-range-store";
-  import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-
-  const { rillTime } = featureFlags;
+  import TimeFilters from "@rilldata/web-common/features/dashboards/time-controls/TimeFilters.svelte";
+  import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
 
   export let readOnly = false;
-  export let timeRanges: V1ExploreTimeRange[];
   export let metricsViewName: string;
   export let hasTimeSeries: boolean;
 
@@ -63,8 +28,6 @@
 
   const StateManagers = getStateManagers();
   const {
-    exploreName,
-    validSpecStore,
     actions: {
       dimensionsFilter: {
         toggleMultipleDimensionValueSelections,
@@ -78,7 +41,7 @@
       filters: { clearAllFilters, setTemporaryFilterName },
     },
     selectors: {
-      dimensions: { allDimensions, timeDimensions },
+      dimensions: { allDimensions },
       dimensionFilters: {
         dimensionHasFilter,
         getDimensionFilterItems,
@@ -90,58 +53,19 @@
         getAllMeasureFilterItems,
         measureHasFilter,
       },
-      pivot: { showPivot },
-      charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     dashboardStore,
+    validSpecStore,
+    timeRangeSummaryStore,
+    dashboardConfigProvider,
+    timeFilterManager,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   const dashboardStateSync = DashboardStateSync.getFromContext();
 
-  let showDefaultItem = false;
-
-  const client = useRuntimeClient();
-
-  $: timeRangeQuery = useMetricsViewTimeRange(client, metricsViewName);
-
-  $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
-
-  $: watermark = timeRangeSummary?.watermark;
-
-  $: maxQueryTimeRangeMillis = Number(
-    $timeRangeQuery.data?.maxQueryTimeRangeMillis ?? 0,
-  );
-  $: maxQueryTimeRange =
-    maxQueryTimeRangeMillis > 0
-      ? Duration.fromMillis(maxQueryTimeRangeMillis)
-      : undefined;
-
-  $: ({
-    selectedTimeRange,
-    allTimeRange,
-    showTimeComparison,
-    selectedComparisonTimeRange,
-    minTimeGrain,
-    timeStart,
-    timeEnd,
-    ready: timeControlsReady,
-  } = $timeControlsStore);
-
-  $: exploreSpec = $validSpecStore.data?.explore ?? {};
-  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
-
-  $: exploreState = useExploreState($exploreName);
-  $: activeTimeZone = $exploreState?.selectedTimezone;
-
-  $: selectedRangeAlias =
-    selectedTimeRange?.name === TimeRangePreset.CUSTOM
-      ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
-      : selectedTimeRange?.name;
-
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
+  $: ({ timeStart, timeEnd, ready: timeControlsReady } = $timeControlsStore);
 
   $: dimensions = $allDimensions;
   $: dimensionIdMap = getMapFromArray(
@@ -172,49 +96,10 @@
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
 
-  $: availableTimeZones = getPinnedTimeZones(exploreSpec);
-
-  $: allTimeRangeInterval = allTimeRange
-    ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-    : Interval.invalid("Invalid interval");
-
-  $: maybeInterval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : allTimeRange
-      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : undefined;
-
-  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
-
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
-
-  $: primaryTimeDimension = metricsViewSpec.timeDimension;
-
-  $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
-    return {
-      value: timeDim.name!,
-      label: timeDim.displayName || timeDim.name!,
-      description: timeDim.description,
-    };
-  });
-
-  $: maybeMinDate = allTimeRange?.start
-    ? DateTime.fromJSDate(allTimeRange.start)
-    : undefined;
-  $: maybeMaxDate = allTimeRange?.end
-    ? DateTime.fromJSDate(allTimeRange.end)
-    : undefined;
-
-  $: minDate = maybeMinDate?.isValid ? maybeMinDate : undefined;
-  $: maxDate = maybeMaxDate?.isValid ? maybeMaxDate : undefined;
+  const defaultUrlParamsStore = createRillDefaultExploreUrlParams(
+    validSpecStore as any,
+    timeRangeSummaryStore as any,
+  );
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -226,192 +111,6 @@
       removeMeasureFilter(oldDimension, measureName);
     }
     setMeasureFilter(dimension, filter);
-  }
-
-  async function onTimeDimensionSelect(column: string) {
-    // Capture time range name before any state changes
-    const timeRangeName = selectedTimeRange?.name;
-
-    await queryClient.cancelQueries({
-      predicate: (query) =>
-        invalidationForMetricsViewData(query, metricsViewName),
-    });
-
-    metricsExplorerStore.setTimeDimension($exploreName, column);
-
-    // Re-resolve the time range with the new time dimension
-    if (!timeRangeName) return;
-
-    const { interval, grain } = await deriveInterval(
-      timeRangeName,
-      client,
-      metricsViewName,
-      activeTimeZone,
-      column,
-    );
-
-    if (interval.isValid) {
-      const validInterval = interval as Interval<true>;
-      const baseTimeRange: TimeRange = {
-        name: timeRangeName,
-        start: validInterval.start.toJSDate(),
-        end: validInterval.end.toJSDate(),
-      };
-
-      selectRange(baseTimeRange, grain);
-    }
-  }
-
-  function onPan(direction: "left" | "right") {
-    const panRange = $getNewPanRange(direction);
-    if (!panRange) return;
-    const { start, end } = panRange;
-
-    const timeRange = {
-      name: CUSTOM_TIME_RANGE_ALIAS,
-      start: start,
-      end: end,
-    };
-
-    const comparisonTimeRange = {
-      name: TimeComparisonOption.CONTIGUOUS,
-    } as DashboardTimeControls; // FIXME wrong typecasting across application
-
-    if (!activeTimeGrain) return;
-    metricsExplorerStore.selectTimeRange(
-      $exploreName,
-      timeRange as TimeRange,
-      activeTimeGrain,
-      comparisonTimeRange,
-      metricsViewSpec,
-    );
-  }
-
-  async function onSelectRange(alias: string, tz = activeTimeZone) {
-    // If we don't have a valid time range, early return
-    if (!allTimeRange?.end) return;
-
-    // This should be returned by the API, but it is not yet implemented
-    const includesTimeZoneOffset = alias.includes("tz");
-
-    if (includesTimeZoneOffset) {
-      const timeZone = alias.match(/tz (.*)/)?.[1];
-
-      if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
-    }
-
-    await queryClient.cancelQueries({
-      predicate: (query) =>
-        invalidationForMetricsViewData(query, metricsViewName),
-    });
-
-    const { interval, grain } = await deriveInterval(
-      alias,
-      client,
-      metricsViewName,
-      tz,
-      selectedTimeDimension,
-    );
-
-    const allowedGrains = allowedGrainsForInterval(
-      interval,
-      minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE,
-    );
-
-    const finalGrain =
-      activeTimeGrain && allowedGrains.includes(activeTimeGrain)
-        ? activeTimeGrain
-        : grain && allowedGrains.includes(grain)
-          ? grain
-          : allowedGrains[0];
-
-    if (interval.isValid) {
-      const validInterval = interval as Interval<true>;
-      const baseTimeRange: TimeRange = {
-        name: alias,
-        start: validInterval.start.toJSDate(),
-        end: validInterval.end.toJSDate(),
-      };
-
-      selectRange(baseTimeRange, finalGrain);
-    }
-  }
-
-  function makeTimeSeriesTimeRangeAndUpdateAppState(
-    timeRange: TimeRange,
-    timeGrain: V1TimeGrain,
-    /** we should only reset the comparison range when the user has explicitly chosen a new
-     * time range. Otherwise, the current comparison state should continue to be the
-     * source of truth.
-     */
-    comparisonTimeRange: DashboardTimeControls | undefined,
-  ) {
-    metricsExplorerStore.selectTimeRange(
-      $exploreName,
-      timeRange,
-      timeGrain,
-      comparisonTimeRange,
-      metricsViewSpec,
-    );
-  }
-
-  function selectRange(range: TimeRange, grain?: V1TimeGrain) {
-    const timeGrain =
-      grain ?? getDefaultTimeGrain(range.start, range.end).grain;
-
-    // Get valid option for the new time range
-    const validComparison =
-      allTimeRange &&
-      getValidComparisonOption(
-        exploreSpec.timeRanges,
-        range,
-        $exploreState.selectedComparisonTimeRange?.name as
-          | TimeComparisonOption
-          | undefined,
-        allTimeRange,
-
-        activeTimeZone,
-      );
-
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, timeGrain, {
-      name: validComparison,
-    } as DashboardTimeControls);
-  }
-
-  async function onSelectTimeZone(timeZone: string) {
-    if (!interval?.isValid) return;
-
-    if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
-      selectRange({
-        name: TimeRangePreset.CUSTOM,
-        start: interval.start
-          ?.setZone(timeZone, { keepLocalTime: true })
-          .toJSDate(),
-        end: interval.end
-          ?.setZone(timeZone, { keepLocalTime: true })
-          .toJSDate(),
-      });
-    } else if (selectedRangeAlias) {
-      // Trigger range selection so that MetricsViewTimeRanges is called with the new time zone
-      await onSelectRange(selectedRangeAlias, timeZone);
-    }
-    metricsExplorerStore.setTimeZone($exploreName, timeZone);
-  }
-
-  $: usingRillTime =
-    !selectedRangeAlias?.startsWith("P") &&
-    !selectedRangeAlias?.startsWith("rill-");
-
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (usingRillTime && selectedRangeAlias) {
-      metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
-    } else if (baseTimeRange) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        baseTimeRange,
-        timeGrain,
-        $dashboardStore?.selectedComparisonTimeRange,
-      );
-    }
   }
 
   function isUrlTooLongAfterInListFilter(
@@ -433,87 +132,18 @@
 
 <div class="flex flex-col gap-y-2 size-full">
   {#if hasTimeSeries}
-    <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
-      <Tooltip.Root delayDuration={0}>
-        <Tooltip.Trigger class="cursor-default text-fg-secondary">
-          <Calendar size="16px" />
-        </Tooltip.Trigger>
-        <Tooltip.Content side="bottom" sideOffset={10}>
-          <Metadata
-            timeZone={activeTimeZone}
-            timeStart={allTimeRange?.start}
-            timeEnd={allTimeRange?.end}
-          />
-        </Tooltip.Content>
-      </Tooltip.Root>
-      {#if allTimeRange?.start && allTimeRange?.end}
-        <SuperPill
-          {minDate}
-          {maxDate}
-          {selectedRangeAlias}
-          showPivot={$showPivot}
-          {minTimeGrain}
-          {defaultTimeRange}
-          {availableTimeZones}
-          {timeRanges}
-          complete={false}
-          {interval}
-          context={$exploreName}
-          {timeStart}
-          {timeEnd}
-          lockTimeZone={exploreSpec.lockTimeZone}
-          allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
-          {maxQueryTimeRange}
-          {activeTimeGrain}
-          {activeTimeZone}
-          canPanLeft={$canPanLeft}
-          canPanRight={$canPanRight}
-          {primaryTimeDimension}
-          {selectedTimeDimension}
-          {showDefaultItem}
-          timeDimensions={timeDimensionOptions}
-          watermark={watermark ? DateTime.fromISO(watermark) : undefined}
-          applyRange={selectRange}
-          {onTimeDimensionSelect}
-          {onSelectRange}
-          {onTimeGrainSelect}
-          {onSelectTimeZone}
-          {onPan}
-        />
-        <ComparisonPill
-          {minTimeGrain}
-          {allTimeRange}
-          {selectedTimeRange}
-          showTimeComparison={!!showTimeComparison}
-          {selectedComparisonTimeRange}
-        />
-      {/if}
-
-      {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
-        <Tooltip.Root delayDuration={0}>
-          <Tooltip.Trigger>
-            <span class="text-fg-secondary italic">
-              {m.dashboard_as_of()}
-              <Timestamp
-                id="filter-bar-as-of"
-                italic
-                suppress
-                showDate={false}
-                date={allTimeRangeInterval.end}
-                zone={activeTimeZone}
-              />
-            </span>
-          </Tooltip.Trigger>
-          <Tooltip.Content side="bottom" sideOffset={10}>
-            <Metadata
-              timeZone={activeTimeZone}
-              timeStart={allTimeRange?.start}
-              timeEnd={allTimeRange?.end}
-            />
-          </Tooltip.Content>
-        </Tooltip.Root>
-      {/if}
-    </div>
+    <TimeFilters
+      {timeFilterManager}
+      {dashboardConfigProvider}
+      defaultUrlParams={$defaultUrlParamsStore.data}
+      config={{
+        showTimeDimensionSelector: true,
+        showDefaultItem: true,
+        showFullRange: true,
+        showWatermark: true,
+      }}
+      context="explore"
+    />
   {/if}
 
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">

@@ -43,9 +43,6 @@
     showComparison,
     comparisonTimeRangeOptions,
     interval,
-
-    onSelectComparisonRange,
-    onToggleShowComparison,
   } = $derived(comparisonTimeRangeManager);
 
   let { smallestTimeGrain } = $derived(metricsViewsProvider);
@@ -67,6 +64,11 @@
   function applyCustomRange(range: Interval<true>) {
     onSelectComparisonRange(`${range.start.toISO()} to ${range.end.toISO()}`);
   }
+
+  function onSelectComparisonRange(range: string) {
+    open = false;
+    comparisonTimeRangeManager.onSelectComparisonRange(range);
+  }
 </script>
 
 <div
@@ -76,7 +78,7 @@
   <button
     {disabled}
     class="flex gap-x-1.5 cursor-pointer"
-    onclick={onToggleShowComparison}
+    onclick={() => comparisonTimeRangeManager.onToggleShowComparison()}
     type="button"
     aria-label={m.dashboard_toggle_time_comparison_aria()}
   >
@@ -140,10 +142,7 @@
               {@const selected = selectedLabel === option.name}
               <DropdownMenu.Item
                 class="flex gap-x-2"
-                onclick={() => {
-                  onSelectComparisonRange(option.name);
-                  open = false;
-                }}
+                onclick={() => onSelectComparisonRange(option.name)}
               >
                 <span class:font-bold={selected}>
                   {preset?.label || option.name}

@@ -72,12 +72,6 @@
     truncationGrain,
     ref,
     snapToEnd,
-
-    onSelectRange,
-    onSelectZone,
-    onSelectGrain,
-    onSelectAsOfOption,
-    onSelectTimeDimension,
   } = $derived(timeRangeManager);
 
   let { smallestTimeGrain, maxQueryTimeRange } = $derived(metricsViewsProvider);
@@ -147,6 +141,23 @@
     } else if (asOf === "now" || !asOf) {
       return DateTime.now().setZone(zone);
     }
+  }
+
+  function onSelectRange(range: string, ignoreSnap?: boolean) {
+    open = false;
+    void timeRangeManager.onSelectRange(range, ignoreSnap);
+  }
+
+  function onSelectTimeZone(zone: string) {
+    open = false;
+    timeZonePickerOpen = false;
+    timeRangeManager.onSelectZone(zone);
+  }
+
+  function onSelectTimeDimension(dim: string) {
+    open = false;
+    timeAxisPickerOpen = false;
+    timeRangeManager.onSelectTimeDimension(dim);
   }
 </script>
 
@@ -232,10 +243,7 @@
       {context}
       {timeString}
       bind:searchValue
-      onSelectRange={(range) => {
-        open = false;
-        void onSelectRange(range);
-      }}
+      {onSelectRange}
     />
 
     <div
@@ -357,11 +365,7 @@
                   referencePoint={dateTimeAnchor ??
                     interval?.end ??
                     DateTime.now()}
-                  onSelectTimeZone={(z) => {
-                    onSelectZone(z);
-                    open = false;
-                    timeZonePickerOpen = false;
-                  }}
+                  {onSelectTimeZone}
                 />
               </Popover.Content>
             </Popover.Root>
@@ -409,11 +413,7 @@
                           aria-label={m.dashboard_select_time_dimension({
                             label,
                           })}
-                          onclick={() => {
-                            onSelectTimeDimension(value);
-                            open = false;
-                            timeAxisPickerOpen = false;
-                          }}
+                          onclick={() => onSelectTimeDimension(value)}
                         >
                           {label}
                           {#if value === (timeDimension || primaryTimeDimension)}
@@ -477,12 +477,12 @@
     {snapToEnd}
     {ref}
     zone={timeZone}
-    onSelectEnding={onSelectGrain}
+    onSelectEnding={(g) => timeRangeManager.onSelectGrain(g)}
     onToggleAlignment={(inclusive) => {
-      onSelectAsOfOption(ref, inclusive);
+      timeRangeManager.onSelectAsOfOption(ref, inclusive);
     }}
     onSelectAsOfOption={(o) => {
-      onSelectAsOfOption(o, snapToEnd);
+      timeRangeManager.onSelectAsOfOption(o, snapToEnd);
     }}
   />
 {/if}

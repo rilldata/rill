@@ -4,34 +4,36 @@
   import { Nudge } from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components";
   import TimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/TimeRangePicker.svelte";
   import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
-  import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Metadata from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Metadata.svelte";
   import ComparisonTimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/ComparisonTimeRangePicker.svelte";
-  import { type V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
-  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   let {
     timeFilterManager,
-    metricsViewsProvider,
-    yamlConfigProvider,
+    dashboardConfigProvider,
+    defaultUrlParams,
     context,
     config,
   }: {
     timeFilterManager: TimeFilterManager;
-    metricsViewsProvider: MetricsViewsProvider;
-    yamlConfigProvider: YAMLConfigProvider;
-    dimensions: string[];
-    timeRanges: V1ExploreTimeRange[];
+    dashboardConfigProvider: DashboardConfigProvider;
+    defaultUrlParams?: URLSearchParams;
     context: string;
     config: TimeFiltersConfig;
   } = $props();
-  let hidePan = $derived(config.hidePan);
+  let hidePan = $derived(config.hidePan ?? false);
   let canPanLeft = $derived(config.canPanLeft ?? !hidePan);
   let canPanRight = $derived(config.canPanRight ?? !hidePan);
 
   let timeRangeManager = $derived(timeFilterManager.timeRangeManager);
   let { timeZone, minDate, maxDate } = $derived(timeRangeManager);
+  // svelte-ignore state_referenced_locally
+  timeFilterManager.syncWithUrl(() => defaultUrlParams);
+
+  let { metricsViewsProvider, yamlConfigProvider } = $derived(
+    dashboardConfigProvider,
+  );
 
   let comparisonTimeRangeManager = $derived(
     timeFilterManager.comparisonTimeRangeManager,

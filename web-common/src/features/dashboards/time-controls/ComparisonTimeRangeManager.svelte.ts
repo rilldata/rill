@@ -11,6 +11,7 @@ import {
 } from "@rilldata/web-common/lib/time/comparisons";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types.ts";
 import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 type ComparisonTimeRangeOption = {
   name: TimeComparisonOption;
@@ -21,10 +22,10 @@ type ComparisonTimeRangeOption = {
 export class ComparisonTimeRangeManager {
   public comparisonTimeRange = $state<string | undefined>(undefined);
   public showComparison = $state<boolean>(false);
+  public interval = $state<Interval | undefined>(undefined);
 
   public comparisonTimeRangeOptions: ComparisonTimeRangeOption[];
 
-  public interval: Interval | undefined;
   public parsedTime: RillTime | undefined;
 
   public constructor(
@@ -46,7 +47,30 @@ export class ComparisonTimeRangeManager {
     });
   }
 
-  public onSelectComparisonRange = (range: string) => {
+  public setUrlParams(searchParams: URLSearchParams) {
+    if (searchParams.has(ExploreStateURLParams.ComparisonTimeRange)) {
+      this.showComparison = true;
+      void this.onSelectComparisonRange(
+        searchParams.get(ExploreStateURLParams.ComparisonTimeRange)!,
+      );
+    } else {
+      this.showComparison = false;
+      this.comparisonTimeRange = undefined;
+    }
+  }
+
+  public applyFilterToParams(searchParams: URLSearchParams) {
+    if (this.showComparison && this.comparisonTimeRange) {
+      searchParams.set(
+        ExploreStateURLParams.ComparisonTimeRange,
+        this.comparisonTimeRange,
+      );
+    } else {
+      searchParams.delete(ExploreStateURLParams.ComparisonTimeRange);
+    }
+  }
+
+  public onSelectComparisonRange(range: string) {
     // TODO: reassign when primary time range changes.
 
     this.comparisonTimeRange = range;
@@ -69,11 +93,11 @@ export class ComparisonTimeRangeManager {
     } catch {
       return undefined;
     }
-  };
+  }
 
-  public onToggleShowComparison = () => {
+  public onToggleShowComparison() {
     this.showComparison = !this.showComparison;
-  };
+  }
 
   private getComparisonTimeRangeOptions() {
     if (

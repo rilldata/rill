@@ -12,6 +12,7 @@ import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 export class DashboardConfigProvider {
   public readonly metricsViewsProvider: MetricsViewsProvider;
   public readonly yamlConfigProvider: YAMLConfigProvider;
+  public defaultUrlParams: URLSearchParams = $state(new URLSearchParams());
 
   public cleanup: (() => void) | undefined = undefined;
 
