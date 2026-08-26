@@ -243,12 +243,12 @@
   });
 </script>
 
-{#if isFetching || measures.length === 0}
+{#if error}
+  <ComponentError error={error.message} />
+{:else if isFetching || measures.length === 0}
   <div class="flex items-center justify-center h-full w-full">
     <Spinner status={EntityStatus.Running} size="20px" />
   </div>
-{:else if error}
-  <ComponentError error={error.message} />
 {:else if hasNoData}
   <div
     class="flex w-full h-full p-2 text-xl text-fg-disabled items-center justify-center"
