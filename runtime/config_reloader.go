@@ -57,6 +57,14 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (v
 		return 0, false, err
 	}
 
+	// Nothing to reload without an admin connector (not configured for tests
+	// and standalone runtimes). Acquiring the admin service anyway fails with
+	// `unknown connector ""`, which made CreateInstance return a 500 on
+	// standalone runtimes even though the instance was created successfully.
+	if inst.AdminConnector == "" {
+		return 0, false, nil
+	}
+
 	admin, release, err := r.rt.Admin(ctx, instanceID)
 	if err != nil {
 		return 0, false, err
