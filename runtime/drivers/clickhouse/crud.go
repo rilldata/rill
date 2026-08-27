@@ -260,13 +260,16 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 			Query:    fmt.Sprintf("DROP DICTIONARY IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
+		if err != nil {
+			return err
+		}
 		// then drop the table it sourced from, which is now unreferenced
 		if srcTable != "" {
 			if dropErr := c.dropTable(ctx, srcTable); dropErr != nil && !errors.Is(dropErr, drivers.ErrNotFound) {
 				c.logger.Warn("clickhouse: failed to drop dictionary source table", zap.String("name", srcTable), zap.Error(dropErr), observability.ZapCtx(ctx))
 			}
 		}
-		return err
+		return nil
 	case "TABLE":
 		// drop the main table
 		// use IF EXISTS so drops succeed in cluster mode even for tables that don't exist on every node,
