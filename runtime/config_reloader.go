@@ -57,11 +57,6 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) (v
 		return 0, false, err
 	}
 
-	// Nothing to reload without an admin connector (just a defensive check, usually always configured if configReloader is enabled)
-	if inst.AdminConnector == "" {
-		return 0, false, nil
-	}
-
 	admin, release, err := r.rt.Admin(ctx, instanceID)
 	if err != nil {
 		return 0, false, err

@@ -91,7 +91,8 @@ type Config struct {
 	LogBufferSizeBytes      int64                  `default:"16777216" split_words:"true"` // 16MB by default
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
-	AllowHostAccess bool `default:"false" split_words:"true"`
+	AllowHostAccess      bool `default:"false" split_words:"true"`
+	ConfigReloaderEnable bool `default:"true" split_words:"true"`
 	// DataDir stores data for all instances like duckdb file, temporary downloaded file etc.
 	// The data for each instance is stored in a child directory named instance_id
 	DataDir string `split_words:"true"`
@@ -251,7 +252,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					},
 				},
 				Version:              ch.Version,
-				EnableConfigReloader: true,
+				EnableConfigReloader: conf.ConfigReloaderEnable,
 			}
 			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {
