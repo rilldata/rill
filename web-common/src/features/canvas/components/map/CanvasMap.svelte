@@ -1,54 +1,63 @@
 <script lang="ts">
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
-  import { isMapColorConfig, type MapComponent } from ".";
-  import { onMount, onDestroy } from "svelte";
-  import mapboxgl from "mapbox-gl";
-  import "mapbox-gl/dist/mapbox-gl.css";
-  import type * as GeoJSON from "geojson";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { canQueryWithTimeRange } from "@rilldata/web-common/features/components/charts/query-util";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import {
     getQueryServiceMetricsViewAggregationQueryOptions,
     type V1MetricsViewAggregationDimension,
     type V1MetricsViewAggregationMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { canQueryWithTimeRange } from "@rilldata/web-common/features/components/charts/query-util";
   import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
+  import type * as GeoJSON from "geojson";
+  import mapboxgl from "mapbox-gl";
+  import "mapbox-gl/dist/mapbox-gl.css";
+  import { onDestroy, onMount, untrack } from "svelte";
   import { derived } from "svelte/store";
-  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
-  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { isMapColorConfig, type MapComponent, type MapSpec } from ".";
   import {
-    resolveStaticColor,
-    resolveColorRange,
-    computeMinMax,
     buildColorExpression,
     buildSizeExpression,
+    computeMinMax,
+    resolveColorRange,
+    resolveStaticColor,
   } from "./color-utils";
   import {
-    transformToGeoJSON,
     calculateBounds,
     detectPolygonMode,
-    showTooltip,
     removeTooltip,
+    showTooltip,
+    transformToGeoJSON,
   } from "./map-utils";
+  import {
+    MAPBOX_ACCESS_TOKEN,
+    MAPBOX_STYLE_DARK,
+    MAPBOX_STYLE_LIGHT,
+  } from "./mapbox";
 
-  export let component: MapComponent;
+  type Props = {
+    component: MapComponent;
+  };
 
-  let mapContainer: HTMLDivElement;
+  let { component }: Props = $props();
+
+  let mapContainer = $state<HTMLDivElement>();
+  let mapReady = $state(false);
+
   let map: mapboxgl.Map | null = null;
-
-  const MAPBOX_TOKEN =
-    "pk.eyJ1IjoicmlsbGRhdGEiLCJhIjoiY21nemp4Mnl3MDViaGQzc2J0MzB1NjdvMiJ9.4Q8jXek0-EF4RLA_TF4-oA";
-  const MAPBOX_STYLE_LIGHT = "mapbox://styles/mapbox/light-v11";
-  const MAPBOX_STYLE_DARK = "mapbox://styles/mapbox/dark-v11";
-
-  let mapReady = false;
-  let currentMapStyle: string;
+  let currentMapStyle = "";
   let layerHandlersRegistered = false;
+  // Identifies the dataset the camera was last auto-fit to, so a filter change
+  // does not re-fit the camera.
+  let fittedDataKey: string | null = null;
 
   const runtimeClient = useRuntimeClient();
-  $: ({ instanceId } = runtimeClient);
+  const { instanceId } = runtimeClient;
 
+  // The component instance owns the stores below for the lifetime of this
+  // render, so they are read once rather than tracked.
   const {
     specStore,
     timeAndFilterStore,
@@ -57,33 +66,44 @@
       name: canvasName,
       metricsView: { getMetricsViewFromName },
     },
-  } = component;
-  $: mapSpec = $specStore ?? ({} as Partial<import(".").MapSpec>);
-  $: title = mapSpec.title;
-  $: description = mapSpec.description;
-  $: show_description_as_tooltip = mapSpec.show_description_as_tooltip;
-  $: metrics_view = mapSpec.metrics_view ?? "";
-  $: geo_dimension = mapSpec.geo_dimension ?? "";
-  $: color = mapSpec.color;
-  $: size_measure = mapSpec.size_measure;
-  $: time_filters = mapSpec.time_filters;
-  $: dimension_filters = mapSpec.dimension_filters;
+  } = untrack(() => component);
 
-  $: filters = {
-    time_filters,
-    dimension_filters,
-  };
+  const mapSpec = $derived($specStore ?? ({} as Partial<MapSpec>));
+  const title = $derived(mapSpec.title);
+  const description = $derived(mapSpec.description);
+  const showDescriptionAsTooltip = $derived(
+    mapSpec.show_description_as_tooltip,
+  );
+  const metricsView = $derived(mapSpec.metrics_view ?? "");
+  const geoDimension = $derived(mapSpec.geo_dimension ?? "");
+  const tooltipDimension = $derived(mapSpec.tooltip_dimension);
+  const color = $derived(mapSpec.color);
+  const sizeMeasure = $derived(mapSpec.size_measure);
+  const filters = $derived({
+    time_filters: mapSpec.time_filters,
+    dimension_filters: mapSpec.dimension_filters,
+  });
 
-  $: isThemeModeDark = $themeControl === "dark";
-  $: ({
-    canvasEntity: { theme: canvasTheme },
-  } = getCanvasStore(canvasName, instanceId));
-  $: resolvedTheme = resolveThemeColors($canvasTheme?.spec, isThemeModeDark);
+  // Read as primitives so that editing the view in YAML moves the camera,
+  // without re-running on every unrelated spec update.
+  const initialLongitude = $derived(mapSpec.initial_view?.longitude);
+  const initialLatitude = $derived(mapSpec.initial_view?.latitude);
+  const initialZoom = $derived(mapSpec.initial_view?.zoom);
+  const hasInitialView = $derived(
+    initialLongitude !== undefined && initialLatitude !== undefined,
+  );
 
-  $: colorMeasure = isMapColorConfig(color) ? color.measure : null;
+  const isThemeModeDark = $derived($themeControl === "dark");
+  const canvasStore = $derived(getCanvasStore(canvasName, instanceId));
+  const canvasTheme = $derived(canvasStore.canvasEntity.theme);
+  const resolvedTheme = $derived(
+    resolveThemeColors($canvasTheme?.spec, isThemeModeDark),
+  );
 
-  $: metricsViewQuery = getMetricsViewFromName(metrics_view);
-  $: metricsViewSpec = $metricsViewQuery?.metricsView;
+  const colorMeasure = $derived(isMapColorConfig(color) ? color.measure : null);
+
+  const metricsViewQuery = $derived(getMetricsViewFromName(metricsView));
+  const metricsViewSpec = $derived($metricsViewQuery?.metricsView);
 
   function getMeasureDisplayName(measureName: string): string {
     const measure = metricsViewSpec?.measures?.find(
@@ -92,17 +112,17 @@
     return measure?.displayName || measureName;
   }
 
-  $: tooltipCtx = {
-    tooltipDimension: mapSpec?.tooltip_dimension,
+  const tooltipCtx = $derived({
+    tooltipDimension,
     colorMeasure,
-    sizeMeasure: size_measure,
+    sizeMeasure,
     getDisplayName: getMeasureDisplayName,
-  };
+  });
 
   const queryOptionsStore = derived(
     [specStore, timeAndFilterStore, visible],
     ([specVal, $timeAndFilterStore, $visible]) => {
-      const spec = specVal ?? ({} as Partial<import(".").MapSpec>);
+      const spec = specVal ?? ({} as Partial<MapSpec>);
       const mv = spec.metrics_view ?? "";
       const gd = spec.geo_dimension ?? "";
 
@@ -113,6 +133,8 @@
         dimensions.push({ name: spec.tooltip_dimension });
       }
 
+      // Measures are optional: a map with a static color and no size measure
+      // just plots the locations of the geo dimension.
       const measures: V1MetricsViewAggregationMeasure[] = [];
       const cm = isMapColorConfig(spec.color) ? spec.color.measure : null;
       if (cm) measures.push({ name: cm });
@@ -130,6 +152,7 @@
           metricsView: mv,
           dimensions,
           measures,
+          limit: "5000",
           where,
           timeRange: hasTimeSeries ? timeRange : undefined,
         },
@@ -145,15 +168,15 @@
 
   const mapDataQuery = createQuery(queryOptionsStore);
 
-  $: queryResult = $mapDataQuery;
-  $: rows = queryResult?.data?.data ?? [];
+  const rows = $derived($mapDataQuery.data?.data ?? []);
+  const isPending = $derived($mapDataQuery.isPending);
 
-  $: geoJsonOpts = {
-    geoDimension: geo_dimension,
+  const geoJsonOpts = $derived({
+    geoDimension,
     colorMeasure,
-    sizeMeasure: size_measure,
-    tooltipDimension: mapSpec?.tooltip_dimension,
-  };
+    sizeMeasure,
+    tooltipDimension,
+  });
 
   function getColorPaint(
     geoJson: GeoJSON.FeatureCollection,
@@ -179,10 +202,26 @@
     geoJson: GeoJSON.FeatureCollection,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): any {
-    if (!size_measure) return 6;
+    if (!sizeMeasure) return 6;
 
-    const [min, max] = computeMinMax(geoJson.features, size_measure);
-    return buildSizeExpression(size_measure, min, max);
+    const [min, max] = computeMinMax(geoJson.features, sizeMeasure);
+    return buildSizeExpression(sizeMeasure, min, max);
+  }
+
+  // Auto-fit the camera once per dataset. Re-fitting on every filter change
+  // moves the map under the user and discards any panning or zooming they did.
+  // An `initial_view` in the spec opts out of auto-fitting entirely.
+  function fitToData(geoJson: GeoJSON.FeatureCollection) {
+    if (!map || hasInitialView) return;
+
+    const dataKey = `${metricsView}::${geoDimension}`;
+    if (fittedDataKey === dataKey) return;
+
+    const bounds = calculateBounds(geoJson.features);
+    if (!bounds) return;
+
+    fittedDataKey = dataKey;
+    map.fitBounds(bounds, { padding: 50, maxZoom: 10 });
   }
 
   function updateMap(geoJson: GeoJSON.FeatureCollection) {
@@ -265,26 +304,24 @@
     map.setPaintProperty("polygons-outline", "line-color", outlineColor);
     map.setPaintProperty("polygons-outline", "line-width", 2);
 
-    if (geoJson.features.length > 0) {
-      const bounds = calculateBounds(geoJson.features);
-      if (bounds) {
-        map.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 10,
-        });
-      }
-    }
+    fitToData(geoJson);
   }
 
   onMount(() => {
     if (!mapContainer) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
     currentMapStyle = isThemeModeDark ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT;
 
     map = new mapboxgl.Map({
       container: mapContainer,
       style: currentMapStyle,
+      ...(initialLongitude !== undefined && initialLatitude !== undefined
+        ? {
+            center: [initialLongitude, initialLatitude] as [number, number],
+            ...(initialZoom !== undefined && { zoom: initialZoom }),
+          }
+        : {}),
     });
 
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
@@ -298,42 +335,44 @@
     });
   });
 
+  // Keeps the camera in sync while the initial view is being edited.
+  $effect(() => {
+    if (!map || !mapReady) return;
+    if (initialLongitude === undefined || initialLatitude === undefined) return;
+    map.jumpTo({
+      center: [initialLongitude, initialLatitude],
+      ...(initialZoom !== undefined && { zoom: initialZoom }),
+    });
+  });
+
   // setStyle() strips all sources/layers, so re-add data only after the new
   // style has finished loading. Re-adding synchronously would race the async
   // style load and get wiped, causing the points to disappear.
-  $: {
+  $effect(() => {
     const targetStyle = isThemeModeDark
       ? MAPBOX_STYLE_DARK
       : MAPBOX_STYLE_LIGHT;
-    if (map && mapReady && targetStyle !== currentMapStyle) {
-      currentMapStyle = targetStyle;
-      map.setStyle(targetStyle);
-      map.once("style.load", () => {
-        if (rows.length > 0) {
-          updateMap(transformToGeoJSON(rows, geoJsonOpts));
-        }
-      });
-    }
-  }
+    if (!map || !mapReady || targetStyle === currentMapStyle) return;
 
-  $: mapRenderDeps = {
-    color,
-    colorMeasure,
-    size_measure,
-    tooltipDim: mapSpec?.tooltip_dimension,
-    geoDim: geo_dimension,
-    resolvedTheme,
-  };
+    currentMapStyle = targetStyle;
+    map.setStyle(targetStyle);
+    map.once("style.load", () => {
+      if (!isPending) updateMap(transformToGeoJSON(rows, geoJsonOpts));
+    });
+  });
 
-  $: isPolygonMode = detectPolygonMode(rows, geo_dimension);
-  $: if (component._isPolygonMode !== isPolygonMode) {
+  $effect(() => {
+    const isPolygonMode = detectPolygonMode(rows, geoDimension);
+    if (component._isPolygonMode === isPolygonMode) return;
     component._isPolygonMode = isPolygonMode;
     component.specStore.update((s) => ({ ...s }));
-  }
+  });
 
-  $: if (mapReady && rows.length > 0 && mapRenderDeps) {
+  // Reruns on any spec, theme or data change read by `updateMap`.
+  $effect(() => {
+    if (!mapReady || isPending) return;
     updateMap(transformToGeoJSON(rows, geoJsonOpts));
-  }
+  });
 
   onDestroy(() => {
     removeTooltip();
@@ -349,7 +388,7 @@
     faint={!title}
     {title}
     {description}
-    showDescriptionAsTooltip={show_description_as_tooltip}
+    {showDescriptionAsTooltip}
     {filters}
     {component}
   />

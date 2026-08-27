@@ -25,6 +25,13 @@ export interface MapColorConfig {
   colorRange?: ColorRangeMapping;
 }
 
+/** Camera position the map opens with. When set, the map never auto-fits to the data. */
+export interface MapInitialView {
+  longitude: number;
+  latitude: number;
+  zoom?: number;
+}
+
 export interface MapSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
@@ -33,6 +40,7 @@ export interface MapSpec
   color: string | MapColorConfig;
   size_measure?: string;
   tooltip_dimension?: string;
+  initial_view?: MapInitialView;
 }
 
 export function isMapColorConfig(
@@ -44,7 +52,13 @@ export function isMapColorConfig(
 export class MapComponent extends BaseCanvasComponent<MapSpec> {
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
-  resetParams = ["geo_dimension", "color", "size_measure", "tooltip_dimension"];
+  resetParams = [
+    "geo_dimension",
+    "color",
+    "size_measure",
+    "tooltip_dimension",
+    "initial_view",
+  ];
   type: CanvasComponentType = "map";
   component = CanvasMap;
   _isPolygonMode = false;

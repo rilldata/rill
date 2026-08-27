@@ -11,27 +11,36 @@
   import type { MapColorConfig } from ".";
   import type { ColorRangeMapping } from "@rilldata/web-common/features/components/charts/types";
 
-  export let canvasName: string;
-  export let metricsView: string;
-  export let colorConfig: string | MapColorConfig;
-  export let onChange: (updatedConfig: string | MapColorConfig) => void;
+  type Props = {
+    canvasName: string;
+    metricsView: string;
+    colorConfig: string | MapColorConfig;
+    onChange: (updatedConfig: string | MapColorConfig) => void;
+  };
+
+  let { canvasName, metricsView, colorConfig, onChange }: Props = $props();
 
   const client = useRuntimeClient();
-  $: ({
-    canvasEntity: { theme },
-  } = getCanvasStore(canvasName, client.instanceId));
+  const canvasStore = $derived(getCanvasStore(canvasName, client.instanceId));
+  const theme = $derived(canvasStore.canvasEntity.theme);
 
-  $: isThemeModeDark = $themeControl === "dark";
-  $: resolvedTheme = resolveThemeColors($theme?.spec, isThemeModeDark);
+  const isThemeModeDark = $derived($themeControl === "dark");
+  const resolvedTheme = $derived(
+    resolveThemeColors($theme?.spec, isThemeModeDark),
+  );
 
   // 0 = One color, 1 = By measure
-  $: selected = typeof colorConfig === "object" && colorConfig !== null ? 1 : 0;
+  const selected = $derived(
+    typeof colorConfig === "object" && colorConfig !== null ? 1 : 0,
+  );
 
-  $: currentColorRange =
-    typeof colorConfig === "object" ? colorConfig.colorRange : undefined;
+  const currentColorRange = $derived(
+    typeof colorConfig === "object" ? colorConfig.colorRange : undefined,
+  );
 
-  $: currentMeasure =
-    typeof colorConfig === "object" ? colorConfig.measure : undefined;
+  const currentMeasure = $derived(
+    typeof colorConfig === "object" ? colorConfig.measure : undefined,
+  );
 
   function handleModeSwitch(_: number, field: string) {
     if (field === "One color") {

@@ -9,12 +9,13 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
   V1Resource,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { ComponentType, SvelteComponent } from "svelte";
+import type { Component, ComponentType, SvelteComponent } from "svelte";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
@@ -27,7 +28,6 @@ import type {
   TimeAndFilterStore,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   CanvasEntity,
   ComponentPath,
@@ -65,7 +65,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
   abstract type: CanvasComponentType;
   // Component responsible for DOM rendering
-  abstract component: ComponentType<SvelteComponent>;
+  abstract component: ComponentType<SvelteComponent> | Component<any>;
   // Will be deprecated
   abstract minSize: ComponentSize;
   // Will be deprecated
