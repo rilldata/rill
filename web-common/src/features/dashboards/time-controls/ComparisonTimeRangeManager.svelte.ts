@@ -12,6 +12,8 @@ import {
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types.ts";
 import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import { copySubsetParams } from "@rilldata/web-common/lib/url-utils.ts";
+import { getAdjustedInterval } from "@rilldata/web-common/lib/time/ranges";
 
 type ComparisonTimeRangeOption = {
   name: TimeComparisonOption;
@@ -19,14 +21,22 @@ type ComparisonTimeRangeOption = {
   interval: Interval<true>;
 };
 
+const ComparisonTimeRangeParams = new Set([
+  ExploreStateURLParams.ComparisonTimeRange,
+]);
+
 export class ComparisonTimeRangeManager {
   public comparisonTimeRange = $state<string | undefined>(undefined);
   public showComparison = $state<boolean>(false);
   public interval = $state<Interval | undefined>(undefined);
+  public adjustedInterval = $state<Interval | undefined>(undefined);
 
   public comparisonTimeRangeOptions: ComparisonTimeRangeOption[];
 
   public parsedTime: RillTime | undefined;
+
+  public curStateParams = $state(new URLSearchParams());
+  public curSetParams = $state(new URLSearchParams());
 
   public constructor(
     private readonly yamlConfigProvider: YAMLConfigProvider,
@@ -47,7 +57,21 @@ export class ComparisonTimeRangeManager {
     });
   }
 
+  public createListener() {
+    $effect(() => {
+      const newParams = new URLSearchParams();
+      this.applyFilterToParams(newParams);
+      if (newParams.toString() === this.curStateParams.toString()) return;
+      this.curStateParams = newParams;
+    });
+  }
+
   public setUrlParams(searchParams: URLSearchParams) {
+    this.curSetParams = copySubsetParams(
+      searchParams,
+      ComparisonTimeRangeParams,
+    );
+
     if (searchParams.has(ExploreStateURLParams.ComparisonTimeRange)) {
       this.showComparison = true;
       void this.onSelectComparisonRange(
@@ -89,6 +113,13 @@ export class ComparisonTimeRangeManager {
           range,
           this.timeRangeManager.timeZone,
         );
+        this.adjustedInterval = this.interval
+          ? getAdjustedInterval(
+              this.interval,
+              this.timeRangeManager.timeGrain,
+              this.timeRangeManager.timeZone,
+            )
+          : undefined;
       }
     } catch {
       return undefined;
@@ -100,6 +131,7 @@ export class ComparisonTimeRangeManager {
   }
 
   private getComparisonTimeRangeOptions() {
+    // Type-safety
     if (
       !this.timeRangeManager.minDate ||
       !this.timeRangeManager.maxDate ||

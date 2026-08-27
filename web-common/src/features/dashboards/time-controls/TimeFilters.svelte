@@ -8,6 +8,7 @@
   import Metadata from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Metadata.svelte";
   import ComparisonTimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/ComparisonTimeRangePicker.svelte";
   import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   let {
     timeFilterManager,
@@ -15,24 +16,34 @@
     defaultUrlParams,
     context,
     config,
+    syncTimeFilters,
   }: {
     timeFilterManager: TimeFilterManager;
     dashboardConfigProvider: DashboardConfigProvider;
     defaultUrlParams?: URLSearchParams;
     context: string;
     config: TimeFiltersConfig;
+    syncTimeFilters: () => Promise<void>;
   } = $props();
   let hidePan = $derived(config.hidePan ?? false);
   let canPanLeft = $derived(config.canPanLeft ?? !hidePan);
   let canPanRight = $derived(config.canPanRight ?? !hidePan);
 
+  // svelte-ignore state_referenced_locally
+  timeFilterManager.createListener();
   let timeRangeManager = $derived(timeFilterManager.timeRangeManager);
   let { timeZone, minDate, maxDate } = $derived(timeRangeManager);
-  // svelte-ignore state_referenced_locally
-  timeFilterManager.syncWithUrl(() => defaultUrlParams);
 
   let { metricsViewsProvider, yamlConfigProvider } = $derived(
     dashboardConfigProvider,
+  );
+
+  // svelte-ignore state_referenced_locally
+  syncStoreWithSource(
+    timeFilterManager,
+    syncTimeFilters,
+    () => metricsViewsProvider.ready,
+    () => defaultUrlParams,
   );
 
   let comparisonTimeRangeManager = $derived(
@@ -71,14 +82,14 @@
       {context}
       {config}
     />
-
-    <ComparisonTimeRangePicker
-      {timeRangeManager}
-      {comparisonTimeRangeManager}
-      {metricsViewsProvider}
-      {config}
-    />
   </div>
+
+  <ComparisonTimeRangePicker
+    {timeRangeManager}
+    {comparisonTimeRangeManager}
+    {metricsViewsProvider}
+    {config}
+  />
 </div>
 
 <style lang="postcss">

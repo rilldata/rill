@@ -14,7 +14,9 @@ import {
 import { getTruncationGrain } from "@rilldata/web-common/lib/time/rill-time-grains.ts";
 import {
   allowedGrainsForInterval,
+  DateTimeUnitToV1TimeGrain,
   getGrainOrder,
+  V1TimeGrainToDateTimeUnit,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
@@ -26,9 +28,17 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import { FromURLParamTimeDimensionMap } from "@rilldata/web-common/features/dashboards/url-state/mappers.ts";
+import { copySubsetParams } from "@rilldata/web-common/lib/url-utils.ts";
+import { getAdjustedInterval } from "@rilldata/web-common/lib/time/ranges";
 
 const DefaultTimeZone = "UTC";
+
+const TimeRangeParams = new Set([
+  ExploreStateURLParams.TimeRange,
+  ExploreStateURLParams.TimeGrain,
+  ExploreStateURLParams.TimeZone,
+  ExploreStateURLParams.TimeDimension,
+]);
 
 export class TimeRangeManager {
   public timeRange = $state<string | undefined>(undefined);
@@ -36,6 +46,7 @@ export class TimeRangeManager {
   public timeZone = $state<string>(DefaultTimeZone);
   public timeDimension = $state<string | undefined>(undefined);
   public interval = $state<Interval | undefined>(undefined);
+  public adjustedInterval = $state<Interval | undefined>(undefined);
 
   public minDate: DateTime<true> | undefined;
   public maxDate: DateTime<true> | undefined;
@@ -44,6 +55,9 @@ export class TimeRangeManager {
   public truncationGrain: V1TimeGrain | undefined;
   public ref: RillTimeLabel | string | undefined;
   public snapToEnd: boolean;
+
+  public curStateParams = $state(new URLSearchParams());
+  public curSetParams = $state(new URLSearchParams());
 
   public constructor(
     private readonly runtimeClient: RuntimeClient,
@@ -85,9 +99,20 @@ export class TimeRangeManager {
     );
   }
 
+  public createListener() {
+    $effect(() => {
+      const newParams = new URLSearchParams();
+      this.applyFilterToParams(newParams);
+      if (newParams.toString() === this.curStateParams.toString()) return;
+      this.curStateParams = newParams;
+    });
+  }
+
   public setUrlParams(searchParams: URLSearchParams) {
+    this.curSetParams = copySubsetParams(searchParams, TimeRangeParams);
+
     this.timeGrain =
-      FromURLParamTimeDimensionMap[
+      DateTimeUnitToV1TimeGrain[
         searchParams.get(ExploreStateURLParams.TimeGrain)!
       ] ?? undefined;
 
@@ -115,8 +140,11 @@ export class TimeRangeManager {
       searchParams.delete(ExploreStateURLParams.TimeRange);
     }
 
-    if (this.timeGrain) {
-      searchParams.set(ExploreStateURLParams.TimeGrain, this.timeGrain);
+    const mappedGrain = this.timeGrain
+      ? V1TimeGrainToDateTimeUnit[this.timeGrain]
+      : undefined;
+    if (mappedGrain) {
+      searchParams.set(ExploreStateURLParams.TimeGrain, mappedGrain);
     } else {
       searchParams.delete(ExploreStateURLParams.TimeGrain);
     }
@@ -226,10 +254,11 @@ export class TimeRangeManager {
   }
 
   private async applyTimeRange(newTimeRange: string, tz = this.timeZone) {
-    console.log("applyTimeRange", newTimeRange);
     // If we don't have a valid time range, early return
-    if (!this.metricsViewsProvider.timeRangeSummary?.max) {
-      console.log("No summary");
+    if (
+      !this.metricsViewsProvider.timeRangeSummary?.max ||
+      this.timeRange === newTimeRange
+    ) {
       return;
     }
 
@@ -297,6 +326,12 @@ export class TimeRangeManager {
           : allowedGrains[0];
 
     this.interval = latestInterval;
+    this.adjustedInterval = getAdjustedInterval(
+      latestInterval,
+      finalGrain,
+      this.timeZone,
+    );
+    this.timeRange = newTimeRange;
     this.timeGrain = finalGrain;
   }
 }

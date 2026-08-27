@@ -18,6 +18,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import TimeFilters from "@rilldata/web-common/features/dashboards/time-controls/TimeFilters.svelte";
   import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 
   export let readOnly = false;
   export let metricsViewName: string;
@@ -28,6 +29,7 @@
 
   const StateManagers = getStateManagers();
   const {
+    exploreName,
     actions: {
       dimensionsFilter: {
         toggleMultipleDimensionValueSelections,
@@ -100,6 +102,7 @@
     validSpecStore as any,
     timeRangeSummaryStore as any,
   );
+  $: defaultUrlParams = $defaultUrlParamsStore.data;
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -128,6 +131,11 @@
     const url = dashboardStateSync.getUrlForExploreState(exploreState);
     return isUrlTooLong(url);
   }
+
+  function syncTimeFilters() {
+    metricsExplorerStore.syncTimeFilters($exploreName, timeFilterManager);
+    return Promise.resolve();
+  }
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
@@ -135,7 +143,7 @@
     <TimeFilters
       {timeFilterManager}
       {dashboardConfigProvider}
-      defaultUrlParams={$defaultUrlParamsStore.data}
+      {defaultUrlParams}
       config={{
         showTimeDimensionSelector: true,
         showDefaultItem: true,
@@ -143,6 +151,7 @@
         showWatermark: true,
       }}
       context="explore"
+      {syncTimeFilters}
     />
   {/if}
 

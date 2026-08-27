@@ -112,6 +112,7 @@
             aria-disabled={disabled}
             aria-label={m.dashboard_select_time_comparison_aria()}
             type="button"
+            class="rounded-r-full"
           >
             <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
               {#if !comparisonTimeRangeOptions.length && !showComparison}
