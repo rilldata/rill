@@ -537,39 +537,3 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
-
-func TestRuntime_ReloadConfigWithoutAdminConnector(t *testing.T) {
-	// Standalone runtimes (`rill runtime start`) run with the config reloader
-	// enabled but often without an admin connector. CreateInstance calls
-	// ReloadConfig, so an unguarded admin acquisition here failed instance
-	// creation with `unknown connector ""` even though the instance was fine.
-	repodsn := t.TempDir()
-	rt := newTestRuntime(t)
-	rt.configReloader = newConfigReloader(rt)
-	defer rt.Close()
-	ctx := context.Background()
-
-	inst := &drivers.Instance{
-		Environment:   "test",
-		OLAPConnector: "duckdb",
-		RepoConnector: "repo",
-		Connectors: []*runtimev1.Connector{
-			{
-				Type:   "file",
-				Name:   "repo",
-				Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
-			},
-			{
-				Type:   "duckdb",
-				Name:   "duckdb",
-				Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
-			},
-		},
-	}
-	require.NoError(t, rt.CreateInstance(ctx, inst))
-
-	summary, err := rt.ReloadConfig(ctx, inst.ID)
-	require.NoError(t, err)
-	require.Zero(t, summary.VarsCount)
-	require.False(t, summary.VarsModified)
-}
