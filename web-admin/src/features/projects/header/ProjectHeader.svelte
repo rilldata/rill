@@ -54,6 +54,7 @@
   import { useReports } from "../../scheduled-reports/selectors";
   import SharePersonalFile from "web-admin/src/features/personal-files/SharePersonalFile.svelte";
   import VisualizationsBreadcrumbDropdown from "./VisualizationsBreadcrumbDropdown.svelte";
+  import EditSessionViewAs from "@rilldata/web-admin/features/edit-session/EditSessionViewAs.svelte";
 
   export let organization: string;
   export let project: string;
@@ -216,6 +217,7 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
+      <EditSessionViewAs />
       {#if $developerChat && !onEditDashboardPreview}
         <ChatToggle open={developerChatOpen} actions={developerChatActions} />
       {/if}
