@@ -132,7 +132,6 @@
         dimensions.push({ name: spec.tooltip_dimension.field });
       }
 
-      // Color is always measure-driven, so there is nothing to draw without it.
       const cm = spec.color?.measure ?? "";
       const measures: V1MetricsViewAggregationMeasure[] = [];
       if (cm) measures.push({ name: cm });
