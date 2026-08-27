@@ -1,7 +1,7 @@
 import type { ColorRangeMapping } from "@rilldata/web-common/features/components/charts/types";
 import {
-  getSequentialColorsAsHex,
   getDivergingColorsAsHex,
+  getSequentialColorsAsHex,
 } from "@rilldata/web-common/features/themes/palette-store";
 import chroma, { type Color } from "chroma-js";
 import * as d3sc from "d3-scale-chromatic";
@@ -33,7 +33,7 @@ const schemeInterpolators: Record<string, ((t: number) => string) | undefined> =
 /**
  * Resolves a theme color reference ("primary"/"secondary") or hex to a hex string.
  */
-export function resolveStaticColor(color: string, theme: MapTheme): string {
+function resolveStaticColor(color: string, theme: MapTheme): string {
   if (color === "primary") return theme.primary.hex();
   if (color === "secondary") return theme.secondary.hex();
   return color;

@@ -4,7 +4,10 @@ import {
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { ColorRangeMapping } from "@rilldata/web-common/features/components/charts/types";
+import type {
+  ColorRangeMapping,
+  FieldConfig,
+} from "@rilldata/web-common/features/components/charts/types";
 import {
   type V1MetricsViewSpec,
   type V1Resource,
@@ -20,10 +23,16 @@ import CanvasMap from "./CanvasMap.svelte";
 
 export { default as CanvasMap } from "./CanvasMap.svelte";
 
+/** Color on a map is always driven by a measure. */
 export interface MapColorConfig {
   measure: string;
   colorRange?: ColorRangeMapping;
 }
+
+export const DEFAULT_MAP_COLOR_RANGE: ColorRangeMapping = {
+  mode: "scheme",
+  scheme: "tealblues",
+};
 
 /** Camera position the map opens with. When set, the map never auto-fits to the data. */
 export interface MapInitialView {
@@ -36,17 +45,11 @@ export interface MapSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
   metrics_view: string;
-  geo_dimension: string;
-  color: string | MapColorConfig;
-  size_measure?: string;
-  tooltip_dimension?: string;
+  geo_dimension: FieldConfig<"nominal">;
+  color: MapColorConfig;
+  size_measure?: FieldConfig<"quantitative">;
+  tooltip_dimension?: FieldConfig<"nominal">;
   initial_view?: MapInitialView;
-}
-
-export function isMapColorConfig(
-  color: string | MapColorConfig | undefined,
-): color is MapColorConfig {
-  return typeof color === "object" && color !== null && "measure" in color;
 }
 
 export class MapComponent extends BaseCanvasComponent<MapSpec> {
@@ -66,8 +69,8 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: MapSpec = {
       metrics_view: "",
-      geo_dimension: "",
-      color: "primary",
+      geo_dimension: { field: "", type: "nominal" },
+      color: { measure: "", colorRange: DEFAULT_MAP_COLOR_RANGE },
     };
     super(resource, parent, path, defaultSpec);
   }
@@ -75,8 +78,8 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
   isValid(spec: MapSpec): boolean {
     return (
       typeof spec.metrics_view === "string" &&
-      typeof spec.geo_dimension === "string" &&
-      spec.geo_dimension !== ""
+      !!spec.geo_dimension?.field &&
+      !!spec.color?.measure
     );
   }
 
@@ -85,26 +88,43 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
         geo_dimension: {
-          type: "dimension",
+          type: "positional",
           label: "Geo dimension",
-          meta: { geoOnly: true },
+          meta: {
+            chartFieldInput: {
+              type: "dimension",
+              geoOnly: true,
+              hideTimeDimension: true,
+            },
+          },
         },
         color: {
           type: "map_color",
           label: "Color",
         },
         size_measure: {
-          type: "measure",
+          type: "positional",
           optional: true,
           label: "Size measure",
           showInUI: !this._isPolygonMode,
-          meta: { isRemovable: true },
+          meta: {
+            chartFieldInput: {
+              type: "measure",
+              isRemovable: true,
+            },
+          },
         },
         tooltip_dimension: {
-          type: "dimension",
+          type: "positional",
           optional: true,
           label: "Tooltip dimension",
-          meta: { isRemovable: true },
+          meta: {
+            chartFieldInput: {
+              type: "dimension",
+              hideTimeDimension: true,
+              isRemovable: true,
+            },
+          },
         },
         ...getCommonOptions(),
       },
@@ -124,19 +144,16 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
     );
     const geoDimensionName = geoDimension?.name || "";
 
-    // Get first measure for color if available
-    const firstMeasure = metricsViewSpec?.measures?.[0];
-    const colorMeasure = firstMeasure?.name;
+    // Color is required, so fall back to the first measure in the metrics view
+    const colorMeasure = metricsViewSpec?.measures?.[0]?.name ?? "";
 
     return {
       metrics_view: metricsViewName,
-      geo_dimension: geoDimensionName,
-      color: colorMeasure
-        ? {
-            measure: colorMeasure,
-            colorRange: { mode: "scheme", scheme: "tealblues" },
-          }
-        : "primary",
+      geo_dimension: { field: geoDimensionName, type: "nominal" },
+      color: {
+        measure: colorMeasure,
+        colorRange: DEFAULT_MAP_COLOR_RANGE,
+      },
     };
   }
 

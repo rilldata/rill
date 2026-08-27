@@ -7,6 +7,7 @@
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
   import VegaSpecInput from "@rilldata/web-common/features/canvas/inspector/chart/VegaSpecInput.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import MapColorSelector from "../components/map/MapColorSelector.svelte";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AIGenerateButton from "./AIGenerateButton.svelte";
@@ -16,7 +17,6 @@
   import MarkSelector from "./chart/MarkSelector.svelte";
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
-  import MapColorSelector from "../components/map/MapColorSelector.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
   import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
@@ -114,7 +114,6 @@
             id={key}
             type={config.type}
             selectedItem={localParamValues[key]}
-            geoOnly={config.meta?.geoOnly ?? false}
             isRemovable={config.meta?.isRemovable ?? false}
             onSelect={(field) => {
               component.updateProperty(key, field);
@@ -345,7 +344,7 @@
           <MapColorSelector
             {canvasName}
             {metricsView}
-            colorConfig={localParamValues[key] || "primary"}
+            colorConfig={localParamValues[key]}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);

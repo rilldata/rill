@@ -47,6 +47,7 @@ export type ChartFieldInput = {
   excludedValues?: string[];
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;
+  geoOnly?: boolean;
   originSelector?: boolean;
   sortSelector?: SortSelectorConfig;
   limitSelector?: { defaultLimit: number };

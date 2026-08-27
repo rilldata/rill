@@ -16,13 +16,12 @@
   import "mapbox-gl/dist/mapbox-gl.css";
   import { onDestroy, onMount, untrack } from "svelte";
   import { derived } from "svelte/store";
-  import { isMapColorConfig, type MapComponent, type MapSpec } from ".";
+  import { DEFAULT_MAP_COLOR_RANGE, type MapComponent, type MapSpec } from ".";
   import {
     buildColorExpression,
     buildSizeExpression,
     computeMinMax,
     resolveColorRange,
-    resolveStaticColor,
   } from "./color-utils";
   import {
     calculateBounds,
@@ -75,10 +74,10 @@
     mapSpec.show_description_as_tooltip,
   );
   const metricsView = $derived(mapSpec.metrics_view ?? "");
-  const geoDimension = $derived(mapSpec.geo_dimension ?? "");
-  const tooltipDimension = $derived(mapSpec.tooltip_dimension);
+  const geoDimension = $derived(mapSpec.geo_dimension?.field ?? "");
+  const tooltipDimension = $derived(mapSpec.tooltip_dimension?.field);
   const color = $derived(mapSpec.color);
-  const sizeMeasure = $derived(mapSpec.size_measure);
+  const sizeMeasure = $derived(mapSpec.size_measure?.field);
   const filters = $derived({
     time_filters: mapSpec.time_filters,
     dimension_filters: mapSpec.dimension_filters,
@@ -100,7 +99,7 @@
     resolveThemeColors($canvasTheme?.spec, isThemeModeDark),
   );
 
-  const colorMeasure = $derived(isMapColorConfig(color) ? color.measure : null);
+  const colorMeasure = $derived(color?.measure ?? "");
 
   const metricsViewQuery = $derived(getMetricsViewFromName(metricsView));
   const metricsViewSpec = $derived($metricsViewQuery?.metricsView);
@@ -124,26 +123,27 @@
     ([specVal, $timeAndFilterStore, $visible]) => {
       const spec = specVal ?? ({} as Partial<MapSpec>);
       const mv = spec.metrics_view ?? "";
-      const gd = spec.geo_dimension ?? "";
+      const gd = spec.geo_dimension?.field ?? "";
 
       const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
 
       const dimensions: V1MetricsViewAggregationDimension[] = [{ name: gd }];
-      if (spec.tooltip_dimension) {
-        dimensions.push({ name: spec.tooltip_dimension });
+      if (spec.tooltip_dimension?.field) {
+        dimensions.push({ name: spec.tooltip_dimension.field });
       }
 
-      // Measures are optional: a map with a static color and no size measure
-      // just plots the locations of the geo dimension.
+      // Color is always measure-driven, so there is nothing to draw without it.
+      const cm = spec.color?.measure ?? "";
       const measures: V1MetricsViewAggregationMeasure[] = [];
-      const cm = isMapColorConfig(spec.color) ? spec.color.measure : null;
       if (cm) measures.push({ name: cm });
-      if (spec.size_measure) measures.push({ name: spec.size_measure });
+      if (spec.size_measure?.field)
+        measures.push({ name: spec.size_measure.field });
 
       const enabled =
         $visible &&
         !!mv &&
         !!gd &&
+        !!cm &&
         canQueryWithTimeRange(hasTimeSeries, timeRange);
 
       return getQueryServiceMetricsViewAggregationQueryOptions(
@@ -169,7 +169,12 @@
   const mapDataQuery = createQuery(queryOptionsStore);
 
   const rows = $derived($mapDataQuery.data?.data ?? []);
+  // `isPending` stays true while the query is disabled (incomplete spec), so
+  // nothing renders until the first result arrives. The color measure is
+  // checked separately because a spec edit can leave placeholder data from the
+  // previous query in place.
   const isPending = $derived($mapDataQuery.isPending);
+  const canRender = $derived(mapReady && !isPending && !!colorMeasure);
 
   const geoJsonOpts = $derived({
     geoDimension,
@@ -178,24 +183,17 @@
     tooltipDimension,
   });
 
+  // Only reached once `canRender` holds, so `colorMeasure` is set.
   function getColorPaint(
     geoJson: GeoJSON.FeatureCollection,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): any {
-    if (!isMapColorConfig(color)) {
-      return resolveStaticColor(color || "primary", resolvedTheme);
-    }
-
-    const measure = color.measure;
-    if (!measure) return resolveStaticColor("primary", resolvedTheme);
-
-    const colorRange = color.colorRange ?? {
-      mode: "scheme" as const,
-      scheme: "tealblues" as const,
-    };
-    const colors = resolveColorRange(colorRange, resolvedTheme);
-    const [min, max] = computeMinMax(geoJson.features, measure);
-    return buildColorExpression(measure, min, max, colors);
+    const colors = resolveColorRange(
+      color?.colorRange ?? DEFAULT_MAP_COLOR_RANGE,
+      resolvedTheme,
+    );
+    const [min, max] = computeMinMax(geoJson.features, colorMeasure);
+    return buildColorExpression(colorMeasure, min, max, colors);
   }
 
   function getRadiusPaint(
@@ -357,7 +355,7 @@
     currentMapStyle = targetStyle;
     map.setStyle(targetStyle);
     map.once("style.load", () => {
-      if (!isPending) updateMap(transformToGeoJSON(rows, geoJsonOpts));
+      if (canRender) updateMap(transformToGeoJSON(rows, geoJsonOpts));
     });
   });
 
@@ -370,7 +368,7 @@
 
   // Reruns on any spec, theme or data change read by `updateMap`.
   $effect(() => {
-    if (!mapReady || isPending) return;
+    if (!canRender) return;
     updateMap(transformToGeoJSON(rows, geoJsonOpts));
   });
 
