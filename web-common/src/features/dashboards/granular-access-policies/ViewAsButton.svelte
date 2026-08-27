@@ -16,12 +16,18 @@
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
-  let viewAsMenuOpen = false;
-  let open = false;
+  let {
+    devJTWUpdater = updateDevJWT,
+  }: {
+    devJTWUpdater?: typeof updateDevJWT;
+  } = $props();
+
+  let viewAsMenuOpen = $state(false);
+  let open = $state(false);
 
   const client = useRuntimeClient();
 
-  $: mockUsers = useMockUsers(client);
+  let mockUsers = $derived(useMockUsers(client));
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -45,7 +51,7 @@
             active={viewAsMenuOpen}
             removeTooltipText={m.dashboard_clear_view()}
             onRemove={() => {
-              updateDevJWT(queryClient, client, null);
+              devJTWUpdater(queryClient, client, null);
             }}
           >
             <div slot="body">
@@ -68,7 +74,7 @@
       {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
           onclick={() => {
-            updateDevJWT(queryClient, client, user);
+            devJTWUpdater(queryClient, client, user);
           }}
           class="flex gap-x-2 items-center"
         >

@@ -8,8 +8,24 @@
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector.ts";
   import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
   import { page } from "$app/state";
+  import { createUpdateEditSessionDevJWT } from "@rilldata/web-admin/features/edit-session/updateEditSessionDevJWT.ts";
+  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import { extractBranchFromPath } from "@rilldata/web-admin/features/branches/branch-utils.ts";
+
+  let { organization, project }: { organization: string; project: string } =
+    $props();
 
   const runtimeClient = useRuntimeClient();
+
+  let branch = extractBranchFromPath(page.url.pathname);
+  let projectQuery = $derived(
+    createAdminServiceGetProject(
+      organization,
+      project,
+      branch ? { branch } : undefined,
+    ),
+  );
+  let deploymentId = $derived($projectQuery.data?.deployment?.id);
 
   let onExplorePreview = $derived(
     !!page.route.id?.startsWith(
@@ -65,8 +81,10 @@
       $rillYamlPolicyCheck.data ||
       referencedMetricsViewsHavePolicy,
   );
+
+  let devJTWUpdater = $derived(createUpdateEditSessionDevJWT(deploymentId));
 </script>
 
 {#if hasSecurityPolicy}
-  <ViewAsButton />
+  <ViewAsButton {devJTWUpdater} />
 {/if}

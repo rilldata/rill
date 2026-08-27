@@ -217,7 +217,7 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
-      <EditSessionViewAs />
+      <EditSessionViewAs {organization} {project} />
       {#if $developerChat && !onEditDashboardPreview}
         <ChatToggle open={developerChatOpen} actions={developerChatActions} />
       {/if}
