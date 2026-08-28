@@ -11,7 +11,10 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { adminServiceGetDeployment } from "@rilldata/web-admin/client";
 
-export function createUpdateEditSessionDevJWT(deploymentId: string) {
+export function createUpdateEditSessionDevJWT(
+  deploymentId: string,
+  editSessionJwt: string,
+) {
   return async (
     queryClient: QueryClient,
     client: RuntimeClient,
@@ -21,7 +24,7 @@ export function createUpdateEditSessionDevJWT(deploymentId: string) {
 
     if (mockUser === null) {
       selectedMockUserJWT.set(null);
-      client.updateJwt(undefined, "user");
+      client.updateJwt(editSessionJwt, "user");
     } else {
       try {
         const { name, email, groups, admin, ...customAttributes } = mockUser;

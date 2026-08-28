@@ -66,6 +66,8 @@
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
   export let editContext: boolean = false;
+  export let editSessionDeploymentId: string | undefined = undefined;
+  export let editSessionJwt: string | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
@@ -217,7 +219,12 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
-      <EditSessionViewAs {organization} {project} />
+      {#if editSessionDeploymentId && editSessionJwt}
+        <EditSessionViewAs
+          deploymentId={editSessionDeploymentId}
+          {editSessionJwt}
+        />
+      {/if}
       {#if $developerChat && !onEditDashboardPreview}
         <ChatToggle open={developerChatOpen} actions={developerChatActions} />
       {/if}
