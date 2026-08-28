@@ -22,18 +22,37 @@
   import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import ExpressionFilters from "../dashboards/filters/ExpressionFilters.svelte";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   const runtimeClient = useRuntimeClient();
 
-  export let filters: ExpressionFilterManager;
-  // TODO: make this support canvas. Unifying time controls should allow for this.
-  export let metricsViewName: string;
-  export let exploreName: string;
-  export let timeControls: TimeControls;
-  export let maxWidth: number | undefined = undefined;
-  export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  let {
+    filters,
+    metricsViewName,
+    exploreName,
+    timeControls,
+    maxWidth = undefined,
+    side = "bottom",
+  }: {
+    filters: ExpressionFilterManager;
+    // TODO: make this support canvas. Unifying time controls should allow for this.
+    metricsViewName: string;
+    exploreName: string;
+    timeControls: TimeControls;
+    maxWidth: number | undefined;
+    side: "top" | "right" | "bottom" | "left";
+  } = $props();
 
-  $: ({
+  // svelte-ignore state_referenced_locally
+  filters.createListener();
+  // svelte-ignore state_referenced_locally
+  syncStoreWithSource(
+    filters,
+    async (newUrlParams) => filters.setUrlParams(newUrlParams),
+    () => filters.metricsViewsProvider.ready,
+  );
+
+  let {
     selectedTimezone,
     allTimeRange: allTimeRangeStore,
     timeRangeStateStore,
@@ -43,69 +62,80 @@
     selectTimeRange,
     setSelectedComparisonRange,
     displayTimeComparison,
-  } = timeControls);
+  } = $derived(timeControls);
 
-  const validSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
-  $: allTimeRange = $allTimeRangeStore;
-  $: exploreSpec = $validSpecQuery.data?.explore ?? {};
-  $: metricsViewSpec = $validSpecQuery.data?.metricsView ?? {};
-  $: timeDimension = metricsViewSpec.timeDimension;
+  let validSpecQuery = $derived(
+    useExploreValidSpec(runtimeClient, exploreName),
+  );
+  let allTimeRange = $derived($allTimeRangeStore);
+  let exploreSpec = $derived($validSpecQuery.data?.explore ?? {});
+  let metricsViewSpec = $derived($validSpecQuery.data?.metricsView ?? {});
+  let timeDimension = $derived(metricsViewSpec.timeDimension);
 
-  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
-  $: selectedComparisonTimeRange =
-    $comparisonRangeStateStore?.selectedComparisonTimeRange;
+  let { selectedTimeRange, timeStart, timeEnd } = $derived(
+    $timeRangeStateStore || {},
+  );
+  let selectedComparisonTimeRange = $derived(
+    $comparisonRangeStateStore?.selectedComparisonTimeRange,
+  );
 
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
+  let baseTimeRange = $derived(
+    selectedTimeRange?.start &&
+      selectedTimeRange?.end && {
+        name: selectedTimeRange?.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+      },
+  );
 
-  $: selectedRangeAlias = selectedTimeRange?.name;
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
-  $: availableTimeZones = exploreSpec.timeZones ?? [];
-  $: timeRanges = exploreSpec.timeRanges ?? [];
+  let selectedRangeAlias = $derived(selectedTimeRange?.name);
+  let activeTimeGrain = $derived(selectedTimeRange?.interval);
+  let defaultTimeRange = $derived(exploreSpec.defaultPreset?.timeRange);
+  let availableTimeZones = $derived(exploreSpec.timeZones ?? []);
+  let timeRanges = $derived(exploreSpec.timeRanges ?? []);
 
-  $: minTimeGrain = $_minTimeGrain;
+  let minTimeGrain = $derived($_minTimeGrain);
 
-  $: activeTimeZone = $selectedTimezone;
+  let activeTimeZone = $derived($selectedTimezone);
 
-  $: maybeInterval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : allTimeRange
-      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : undefined;
+  let maybeInterval = $derived(
+    selectedTimeRange
+      ? Interval.fromDateTimes(
+          DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+          DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
+        )
+      : allTimeRange
+        ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
+        : undefined,
+  );
 
-  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
+  let interval = $derived(maybeInterval?.isValid ? maybeInterval : undefined);
 
-  $: maybeMinDate = allTimeRange?.start
-    ? DateTime.fromJSDate(allTimeRange.start)
-    : undefined;
-  $: maybeMaxDate = allTimeRange?.end
-    ? DateTime.fromJSDate(allTimeRange.end)
-    : undefined;
+  let maybeMinDate = $derived(
+    allTimeRange?.start ? DateTime.fromJSDate(allTimeRange.start) : undefined,
+  );
+  let maybeMaxDate = $derived(
+    allTimeRange?.end ? DateTime.fromJSDate(allTimeRange.end) : undefined,
+  );
 
-  $: minDate = maybeMinDate?.isValid ? maybeMinDate : undefined;
-  $: maxDate = maybeMaxDate?.isValid ? maybeMaxDate : undefined;
+  let minDate = $derived(maybeMinDate?.isValid ? maybeMinDate : undefined);
+  let maxDate = $derived(maybeMaxDate?.isValid ? maybeMaxDate : undefined);
 
-  $: maybeComparisonInterval = selectedComparisonTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedComparisonTimeRange.start).setZone(
-          activeTimeZone,
-        ),
-        DateTime.fromJSDate(selectedComparisonTimeRange.end).setZone(
-          activeTimeZone,
-        ),
-      )
-    : undefined;
-  $: comparisonInterval = maybeComparisonInterval?.isValid
-    ? maybeComparisonInterval
-    : undefined;
+  let maybeComparisonInterval = $derived(
+    selectedComparisonTimeRange
+      ? Interval.fromDateTimes(
+          DateTime.fromJSDate(selectedComparisonTimeRange.start).setZone(
+            activeTimeZone,
+          ),
+          DateTime.fromJSDate(selectedComparisonTimeRange.end).setZone(
+            activeTimeZone,
+          ),
+        )
+      : undefined,
+  );
+  let comparisonInterval = $derived(
+    maybeComparisonInterval?.isValid ? maybeComparisonInterval : undefined,
+  );
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
     timeRange: TimeRange,
@@ -277,6 +307,5 @@
     {timeEnd}
     {timeDimension}
     timeControlsReady
-    selfSync
   />
 </div>

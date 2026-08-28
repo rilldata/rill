@@ -8,6 +8,7 @@
   import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import { onDestroy } from "svelte";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   let {
     expressionFilterManager,
@@ -19,7 +20,7 @@
     timeControlsReady,
     timeDimension,
 
-    selfSync = false,
+    syncExpressionFilters,
 
     isUrlTooLongAfterInListFilter,
   }: {
@@ -34,18 +35,19 @@
     timeControlsReady: boolean | undefined;
     timeDimension?: string | undefined;
 
-    selfSync?: boolean;
+    syncExpressionFilters?: (newUrlParams: URLSearchParams) => Promise<void>;
 
     isUrlTooLongAfterInListFilter?: (name: string, values: string[]) => boolean;
   } = $props();
 
   let stateChangeUnsub: () => void = () => {};
   // svelte-ignore state_referenced_locally
-  if (selfSync) {
-    // Sync back url params
+  if (syncExpressionFilters) {
     expressionFilterManager.createListener();
-    stateChangeUnsub = expressionFilterManager.on("state-changed", () =>
-      expressionFilterManager.foldManagersIntoParam(),
+    syncStoreWithSource(
+      expressionFilterManager,
+      async (newUrlParams) => syncExpressionFilters(newUrlParams),
+      () => expressionFilterManager.metricsViewsProvider.ready,
     );
   }
 

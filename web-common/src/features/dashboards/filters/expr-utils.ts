@@ -29,7 +29,7 @@ export type MergedFilterParams = {
  * would get a chip, and editing it would leave the others in place.
  */
 export function mergeFilterParams(
-  paramByMetricsView: Record<string, string>,
+  urlParams: URLSearchParams,
 ): MergedFilterParams {
   const exprs: V1Expression[] = [];
   const seenExprs = new Set<string>();
@@ -38,8 +38,9 @@ export function mergeFilterParams(
   const seenInlistDimensions = new Set<string>();
   let advanced = false;
 
-  for (const param of Object.values(paramByMetricsView)) {
+  for (const param of urlParams.values()) {
     const parsed = parseFilterParam(param);
+    console.log(parsed);
 
     for (const condition of topLevelConditions(parsed.expr)) {
       // A nested AND/OR has no chip of its own.

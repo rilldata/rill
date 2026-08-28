@@ -29,12 +29,12 @@ function toParam(expr: V1Expression) {
 
 describe("mergeFilterParams", () => {
   it("returns an empty expression when there is nothing to merge", () => {
-    expect(mergeFilterParams({})).toEqual({
+    expect(mergeFilterParams(new URLSearchParams())).toEqual({
       expr: createAndExpression([]),
       inList: [],
       advanced: false,
     });
-    expect(mergeFilterParams({ mv1: "", mv2: "" })).toEqual({
+    expect(mergeFilterParams(new URLSearchParams("mv1=&mv2="))).toEqual({
       expr: createAndExpression([]),
       inList: [],
       advanced: false,
@@ -42,19 +42,20 @@ describe("mergeFilterParams", () => {
   });
 
   it("drops a malformed param", () => {
-    const merged = mergeFilterParams({
-      mv1: "country IN (",
-      mv2: toParam(countryUS),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams(`mv1=country IN (&mv2=${toParam(countryUS)}`),
+    );
     expect(merged.expr).toEqual(createAndExpression([countryUS]));
     expect(merged.advanced).toBe(false);
   });
 
   it("unions conditions across metrics views", () => {
-    const merged = mergeFilterParams({
-      mv1: toParam(createAndExpression([countryUS])),
-      mv2: toParam(createAndExpression([publisherYahoo])),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams([
+        ["mv1", toParam(createAndExpression([countryUS]))],
+        ["mv2", toParam(createAndExpression([publisherYahoo]))],
+      ]),
+    );
     expect(merged.expr).toEqual(
       createAndExpression([countryUS, publisherYahoo]),
     );
@@ -62,10 +63,12 @@ describe("mergeFilterParams", () => {
   });
 
   it("keeps a repeated condition once, regardless of value order", () => {
-    const merged = mergeFilterParams({
-      mv1: toParam(createAndExpression([countryUSCA, publisherYahoo])),
-      mv2: toParam(createAndExpression([countryCAUS])),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams([
+        ["mv1", toParam(createAndExpression([countryUSCA, publisherYahoo]))],
+        ["mv2", toParam(createAndExpression([countryCAUS]))],
+      ]),
+    );
     expect(merged.expr).toEqual(
       createAndExpression([countryUSCA, publisherYahoo]),
     );
@@ -73,10 +76,12 @@ describe("mergeFilterParams", () => {
   });
 
   it("unwraps a param that is a single condition", () => {
-    const merged = mergeFilterParams({
-      mv1: toParam(countryUS),
-      mv2: toParam(createAndExpression([countryUS, publisherYahoo])),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams([
+        ["mv1", toParam(countryUS)],
+        ["mv2", toParam(createAndExpression([countryUS, publisherYahoo]))],
+      ]),
+    );
     expect(merged.expr).toEqual(
       createAndExpression([countryUS, publisherYahoo]),
     );
@@ -84,19 +89,23 @@ describe("mergeFilterParams", () => {
   });
 
   it("merges measure filters", () => {
-    const merged = mergeFilterParams({
-      mv1: toParam(createAndExpression([impressionsGt10])),
-      mv2: toParam(createAndExpression([impressionsGt10])),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams([
+        ["mv1", toParam(createAndExpression([impressionsGt10]))],
+        ["mv2", toParam(createAndExpression([impressionsGt10]))],
+      ]),
+    );
     expect(merged.expr).toEqual(createAndExpression([impressionsGt10]));
     expect(merged.advanced).toBe(false);
   });
 
   it("is advanced when an identifier is filtered two different ways", () => {
-    const merged = mergeFilterParams({
-      mv1: toParam(createAndExpression([countryUS])),
-      mv2: toParam(createAndExpression([countryUSCA])),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams([
+        ["mv1", toParam(createAndExpression([countryUS]))],
+        ["mv2", toParam(createAndExpression([countryUSCA]))],
+      ]),
+    );
     expect(merged.expr).toEqual(createAndExpression([countryUS, countryUSCA]));
     expect(merged.advanced).toBe(true);
   });
@@ -107,42 +116,54 @@ describe("mergeFilterParams", () => {
       ["impressions"],
       createBinaryExpression("impressions", V1Operation.OPERATION_GT, 20),
     );
-    const merged = mergeFilterParams({
-      mv1: toParam(createAndExpression([impressionsGt10])),
-      mv2: toParam(createAndExpression([impressionsGt20])),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams([
+        ["mv1", toParam(createAndExpression([impressionsGt10]))],
+        ["mv2", toParam(createAndExpression([impressionsGt20]))],
+      ]),
+    );
     expect(merged.advanced).toBe(true);
   });
 
   it("is advanced when a condition is a nested AND/OR", () => {
     const nested = createOrExpression([countryUS, publisherYahoo]);
-    const merged = mergeFilterParams({
-      mv1: toParam(createAndExpression([nested])),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams([["mv1", toParam(createAndExpression([nested]))]]),
+    );
     expect(merged.expr).toEqual(createAndExpression([nested]));
     expect(merged.advanced).toBe(true);
   });
 
   it("keeps a top level OR whole", () => {
     const topLevelOr = createOrExpression([countryUS, publisherYahoo]);
-    const merged = mergeFilterParams({
-      mv1: toParam(topLevelOr),
-      mv2: toParam(createAndExpression([countryUS])),
-    });
+    const merged = mergeFilterParams(
+      new URLSearchParams([
+        ["mv1", toParam(topLevelOr)],
+        ["mv2", toParam(createAndExpression([countryUS]))],
+      ]),
+    );
     expect(merged.expr).toEqual(createAndExpression([topLevelOr, countryUS]));
     expect(merged.advanced).toBe(true);
   });
 
   it("unions the in list dimensions", () => {
-    const merged = mergeFilterParams({
-      mv1: convertExpressionToFilterParam(createAndExpression([countryUSCA]), [
-        "country",
+    const merged = mergeFilterParams(
+      new URLSearchParams([
+        [
+          "mv1",
+          convertExpressionToFilterParam(createAndExpression([countryUSCA]), [
+            "country",
+          ]),
+        ],
+        [
+          "mv2",
+          convertExpressionToFilterParam(
+            createAndExpression([countryUSCA, publisherYahoo]),
+            ["country", "publisher"],
+          ),
+        ],
       ]),
-      mv2: convertExpressionToFilterParam(
-        createAndExpression([countryUSCA, publisherYahoo]),
-        ["country", "publisher"],
-      ),
-    });
+    );
     expect(merged.inList).toEqual(["country", "publisher"]);
     expect(merged.advanced).toBe(false);
   });

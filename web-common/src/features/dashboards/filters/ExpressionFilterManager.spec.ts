@@ -225,7 +225,7 @@ describe("setUrlParams", () => {
     // One chip, backed by a single manager instance, so editing it updates the
     // filter for both metrics views at once.
     expect(filterManager.sortedFilterManagers.dimensions).toHaveLength(1);
-    expect(filterManager.paramByManager).toEqual({
+    expect(filterManager.topLevelJoiner.param).toEqual({
       [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
     });
@@ -524,20 +524,6 @@ describe("applyFilterToParams", () => {
       }).toString(),
     );
   });
-
-  it("keeps every filter under the singular param when asked for one", () => {
-    const filterManager = createFilterManager();
-    filterManager.setUrlParams(
-      sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
-    );
-
-    const searchParams = new URLSearchParams();
-    filterManager.applyFilterToParams(searchParams, true);
-
-    expect(searchParams.toString()).toEqual(
-      sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`).toString(),
-    );
-  });
 });
 
 describe("setExprForMetricsView / setParamForMetricsView", () => {
@@ -615,7 +601,7 @@ describe("setExprForMetricsView / setParamForMetricsView", () => {
       ]),
     );
 
-    expect(filterManager.paramByManager).toEqual({
+    expect(filterManager.topLevelJoiner.param).toEqual({
       [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
       [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
     });

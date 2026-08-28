@@ -8,7 +8,11 @@
   import CanvasPdfExportView from "../exports/pdf/CanvasPdfExportView.svelte";
   import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
   import MissingRequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/MissingRequiredFiltersMessage.svelte";
-  import { onDestroy, type Snippet } from "svelte";
+  import { type Snippet } from "svelte";
+  import {
+    syncStoreWithSource,
+    syncStoreWithUrl,
+  } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   const runtimeClient = useRuntimeClient();
   let instanceId = $derived(runtimeClient.instanceId);
@@ -46,7 +50,13 @@
     },
   } = $derived(getCanvasStore(canvasName, instanceId));
   // svelte-ignore state_referenced_locally
-  const syncUnsub = expressionFilterManager.syncWithUrl();
+  expressionFilterManager.createListener();
+  // svelte-ignore state_referenced_locally
+  syncStoreWithSource(
+    expressionFilterManager,
+    syncStoreWithUrl,
+    () => expressionFilterManager.metricsViewsProvider.ready,
+  );
 
   $effect(() => {
     dashboardProvider.yamlConfigProvider.setEditable(builder);
@@ -65,10 +75,6 @@
 
   $effect(() => {
     clientWidth = contentRect.width;
-  });
-
-  onDestroy(() => {
-    syncUnsub();
   });
 </script>
 

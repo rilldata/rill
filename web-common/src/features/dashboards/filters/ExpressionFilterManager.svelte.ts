@@ -1,18 +1,17 @@
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
-import { type V1Expression } from "@rilldata/web-common/runtime-client";
+import {
+  type V1Expression,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import {
   createAndExpression,
   maybeWrapAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterManager.svelte.ts";
-import {
-  type MetricsViewName,
-  MetricsViewsProvider,
-} from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import { toStore, type Readable } from "svelte/store";
 import {
   type DimensionOrMeasureManager,
@@ -24,11 +23,8 @@ import type {
   FilterChangeSource,
   FilterEvents,
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
-import { untrack } from "svelte";
 import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
-import { page } from "$app/state";
-import { goto } from "$app/navigation";
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -40,7 +36,7 @@ import { goto } from "$app/navigation";
  */
 export class ExpressionFilterManager {
   // True when the param cannot be represented as chips.
-  public isComplexFilter: boolean;
+  public isComplexFilter = $state(false);
   public exprByMetricsView: Record<string, V1Expression>;
   // Temporary svelte4 store for legacy components
   public exprByMetricsViewStore: Readable<Record<string, V1Expression>>;
@@ -57,20 +53,15 @@ export class ExpressionFilterManager {
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
 
+  public curStateParams = $state(new URLSearchParams());
+  public curSetParams = $state(new URLSearchParams());
+
   // Shared with every manager below this one, so a chip edit reports itself
   // without the managers in between having to forward it. See `filter-events.ts`.
   private events = new EventEmitter<FilterEvents>();
   public readonly on = this.events.on.bind(
     this.events,
   ) as typeof this.events.on;
-
-  // Raw filter param per metrics view.
-  private paramByMetricsView = $state<Record<MetricsViewName, string>>({});
-  private mergedExprFromParams: ReturnType<typeof mergeFilterParams>;
-  // Filter param based on managers.
-  public paramByManager: Record<MetricsViewName, string>;
-  // The param the url last seeded the managers with. See `writeBackToUrl`.
-  private lastUrlParam = $state<Record<MetricsViewName, string>>({});
 
   // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
   public updating = false;
@@ -79,21 +70,14 @@ export class ExpressionFilterManager {
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
   ) {
-    this.mergedExprFromParams = $derived(
-      mergeFilterParams(this.paramByMetricsView),
-    );
-    this.topLevelJoiner = $derived.by(() => {
-      return JoinerFilterManager.parse(
+    this.topLevelJoiner = $state(
+      new JoinerFilterManager(
         this.metricsViewsProvider,
-        maybeWrapAndExpression(this.mergedExprFromParams.expr) ??
-          createAndExpression([]),
-        this.mergedExprFromParams.inList,
-        this.yamlConfigProvider,
-        this.events,
-      ) as JoinerFilterManager;
-    });
-    this.paramByManager = $derived(this.topLevelJoiner.param);
-    this.isComplexFilter = $derived(this.mergedExprFromParams.advanced);
+        V1Operation.OPERATION_AND,
+        { dimensionManagers: [], measureManagers: [], joinerManagers: [] },
+        [],
+      ),
+    );
 
     this.sortedFilterManagers = $derived.by(() =>
       getSortFilterManagers(this.topLevelJoiner, this.yamlConfigProvider),
@@ -119,56 +103,14 @@ export class ExpressionFilterManager {
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
     );
-
-    // Init with empty url params
-    this.setUrlParams(new URLSearchParams(), true);
   }
 
   public createListener() {
-    // The param the listeners were last told about.
-    // Changes are diffed against this rather than against `paramByMetricsView`, since a change that
-    // goes through the param itself, `clear()` for example, moves both records at once.
-    let emittedParam: Record<MetricsViewName, string> | undefined;
-
     $effect(() => {
-      const param = { ...this.paramByManager };
-      const metricsViewNames = this.metricsViewsProvider.metricsViewNames;
-
-      // The managers only cover the metrics views once the specs have loaded and a param has been applied.
-      // Reporting the empty state before that would clear the filter the url holds.
-      if (!this.metricsViewsProvider.ready) return;
-
-      const unchanged =
-        !emittedParam || recordsMatch(emittedParam, param, metricsViewNames);
-      emittedParam = param;
-      if (unchanged) return;
-
-      const lastParam = untrack(() => this.lastUrlParam);
-      const unchangedFromUrl = recordsMatch(
-        emittedParam,
-        lastParam,
-        metricsViewNames,
-      );
-
-      this.events.emit("state-changed", unchangedFromUrl);
-    });
-  }
-
-  public syncWithUrl() {
-    this.createListener();
-
-    $effect(() => {
-      if (!this.metricsViewsProvider.ready) return;
-
-      const newUrlSearch = page.url.searchParams;
-      this.setUrlParams(newUrlSearch);
-    });
-
-    return this.on("state-changed", () => {
-      const newUrl = new URL(page.url);
-      this.applyFilterToParams(newUrl.searchParams);
-      if (page.url.search === newUrl.search) return;
-      void goto(newUrl);
+      const newParams = new URLSearchParams();
+      this.applyFilterToParams(newParams);
+      if (newParams.toString() === this.curStateParams.toString()) return;
+      this.curStateParams = newParams;
     });
   }
 
@@ -185,70 +127,40 @@ export class ExpressionFilterManager {
     return cloned;
   }
 
-  public setUrlParams = (searchParams: URLSearchParams, force = false) => {
-    const newParamByMetricsView = this.paramFromSearchParams(searchParams);
-    // Recorded even when the param itself does not change, since `writeBackToUrl` diffs against it.
-    this.lastUrlParam = newParamByMetricsView;
-    this.applyParam(newParamByMetricsView, force);
-  };
+  public setUrlParams(searchParams: URLSearchParams) {
+    const relevantUrlParams = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      if (
+        key === ExploreStateURLParams.Filters ||
+        key.startsWith(ExploreStateURLParams.Filters + ".")
+      ) {
+        relevantUrlParams.append(key, value);
+      }
+    });
+
+    const { expr, inList, advanced } = mergeFilterParams(relevantUrlParams);
+
+    this.temporaryFilterName = undefined;
+    this.topLevelJoiner = JoinerFilterManager.parse(
+      this.metricsViewsProvider,
+      maybeWrapAndExpression(expr) ?? createAndExpression([]),
+      inList,
+      this.yamlConfigProvider,
+      this.events,
+    ) as JoinerFilterManager;
+    this.isComplexFilter = advanced;
+
+    this.curSetParams = normalizeUrlParams(
+      relevantUrlParams,
+      this.metricsViewsProvider.metricsViewNames,
+    );
+  }
 
   /**
    * Folds what the managers hold back into the param.
    * For managers that are not synced with a url; the ones that are go through the url instead.
    */
-  public foldManagersIntoParam() {
-    const searchParams = new URLSearchParams();
-    this.applyFilterToParams(searchParams);
-    this.applyParam(this.paramFromSearchParams(searchParams), false);
-  }
-
-  private paramFromSearchParams(rawSearchParams: URLSearchParams) {
-    const newParamByMetricsView = {} as Record<MetricsViewName, string>;
-
-    // Callers pass the url's params as-is, so the filter can be inside `gzipped_state`.
-    const searchParams = expandCompressedParams(rawSearchParams);
-    const singularFilter = searchParams.get(ExploreStateURLParams.Filters);
-    // Tracked on purpose: the params are keyed by metrics view,
-    // so they have to be re-applied once the names arrive.
-    this.metricsViewsProvider.metricsViewNames.forEach((name: string) => {
-      const paramKey = `${ExploreStateURLParams.Filters}.${name}`;
-      newParamByMetricsView[name] =
-        searchParams.get(paramKey) ?? singularFilter ?? "";
-    });
-
-    return newParamByMetricsView;
-  }
-
-  private applyParam(
-    newParamByMetricsView: Record<MetricsViewName, string>,
-    force: boolean,
-  ) {
-    const metricsViewNames = this.metricsViewsProvider.metricsViewNames;
-
-    // Managers can be mutated in place without going through the param,
-    // so the new param also has to match what the managers hold.
-    // Otherwise, a param that reverts such a mutation is a no-op.
-    //
-    // Read untracked: an effect feeding the url into this method must not depend on the state the method writes,
-    // or every manager edit re-runs it and reverts itself back to the url.
-    const unchanged = untrack(
-      () =>
-        recordsMatch(
-          this.paramByMetricsView,
-          newParamByMetricsView,
-          metricsViewNames,
-        ) &&
-        recordsMatch(
-          this.paramByManager,
-          newParamByMetricsView,
-          metricsViewNames,
-        ),
-    );
-    if (unchanged && !force) return;
-
-    this.paramByMetricsView = newParamByMetricsView;
-    this.temporaryFilterName = undefined;
-  }
+  public foldManagersIntoParam() {}
 
   public setExprForMetricsView(
     mvName: string,
@@ -264,20 +176,18 @@ export class ExpressionFilterManager {
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
-    if (this.paramByMetricsView[mvName] === param) return;
+    const paramsAreEqual =
+      this.curSetParams.get(getParamKeyForMv(mvName)) === param;
+    if (paramsAreEqual) return;
 
-    this.paramByMetricsView = { ...this.paramByMetricsView, [mvName]: param };
-    this.temporaryFilterName = undefined;
+    const newParams = new URLSearchParams(this.curSetParams);
+    newParams.set(getParamKeyForMv(mvName), param);
+    this.applyFilterToParams(newParams);
   }
 
-  public applyFilterToParams(
-    searchParams: URLSearchParams,
-    singleParam: boolean = false,
-  ) {
-    Object.entries(this.paramByManager).forEach(([key, value]) => {
-      const paramKey = singleParam
-        ? ExploreStateURLParams.Filters
-        : `${ExploreStateURLParams.Filters}.${key}`;
+  public applyFilterToParams(searchParams: URLSearchParams) {
+    Object.entries(this.topLevelJoiner.param).forEach(([key, value]) => {
+      const paramKey = getParamKeyForMv(key);
       if (value) {
         searchParams.set(paramKey, value);
       } else {
@@ -287,7 +197,7 @@ export class ExpressionFilterManager {
 
     // A singular `f=...` is a legacy canvas filter. `setUrlParams` folds it into every metrics view,
     // so the per metrics view params written above already carry it and it can be dropped.
-    if (!singleParam && this.metricsViewsProvider.ready) {
+    if (this.metricsViewsProvider.ready) {
       searchParams.delete(ExploreStateURLParams.Filters);
     }
   }
@@ -372,16 +282,7 @@ export class ExpressionFilterManager {
 
   public clear() {
     this.temporaryFilterName = undefined;
-    // Applied to the param directly rather than through `setUrlParams`: clearing does not come from
-    // the url, so recording it as the url's state would hide it from `writeBackToUrl`.
-    this.applyParam(
-      Object.fromEntries(
-        this.metricsViewsProvider.metricsViewNames.map((name) => [name, ""]),
-      ),
-      false,
-    );
-    // Clearing goes through the param rather than the managers, so it has to report itself.
-    this.events.emit("filter-changed", { source: undefined });
+    this.setUrlParams(new URLSearchParams());
   }
 
   /**
@@ -430,14 +331,20 @@ export class ExpressionFilterManager {
   }
 }
 
-export function recordsMatch(
-  rec1: Record<string, string>,
-  rec2: Record<string, string>,
-  keys: string[],
+function normalizeUrlParams(
+  urlParams: URLSearchParams,
+  metricsViews: string[],
 ) {
-  const keysMatch =
-    keys.length === Object.keys(rec1).length &&
-    keys.length === Object.keys(rec2).length;
-  if (!keysMatch) return false;
-  return keys.every((key) => rec1[key] === rec2[key]);
+  const singularParam = urlParams.get(ExploreStateURLParams.Filters);
+  if (!singularParam) return urlParams;
+
+  const newUrlParams = new URLSearchParams();
+  metricsViews.forEach((mvName) =>
+    newUrlParams.set(getParamKeyForMv(mvName), singularParam),
+  );
+  return newUrlParams;
+}
+
+function getParamKeyForMv(mvName: string) {
+  return `${ExploreStateURLParams.Filters}.${mvName}`;
 }

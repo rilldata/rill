@@ -67,7 +67,6 @@
     dashboardStore,
     expressionFilterManager,
   } = StateManagers;
-  expressionFilterManager.createListener();
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -389,6 +388,15 @@
       return isUrlTooLong(url);
     });
   }
+
+  function syncExpressionFilters() {
+    metricsExplorerStore.mergePartialExplorerEntity(
+      $exploreName,
+      {},
+      expressionFilterManager,
+    );
+    return Promise.resolve();
+  }
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
@@ -485,5 +493,6 @@
     timeDimension={$dashboardStore.selectedTimeDimension}
     {timeControlsReady}
     {isUrlTooLongAfterInListFilter}
+    {syncExpressionFilters}
   />
 </div>
