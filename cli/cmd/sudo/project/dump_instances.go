@@ -68,6 +68,7 @@ func DumpInstances(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			var m sync.Mutex
+			var skipped int
 			failedProjects := map[string]string{}
 			var instances []*projectInstance
 			grp, ctx := errgroup.WithContext(ctx)
@@ -87,7 +88,9 @@ func DumpInstances(ch *cmdutil.Helper) *cobra.Command {
 						return nil
 					}
 					if inst == nil {
-						// The project has no deployment, e.g. because it's hibernated.
+						m.Lock()
+						skipped++
+						m.Unlock()
 						return nil
 					}
 					m.Lock()
@@ -104,6 +107,10 @@ func DumpInstances(ch *cmdutil.Helper) *cobra.Command {
 
 			printInstances(ch, instances)
 
+			if skipped > 0 {
+				ch.Println()
+				ch.Printf("Skipped %d project(s) without a running deployment\n", skipped)
+			}
 			if len(failedProjects) > 0 {
 				ch.Println()
 			}
@@ -145,8 +152,11 @@ func instanceForProject(ctx context.Context, c *client.Client, org, project stri
 		return nil, err
 	}
 
+	// Skip projects without a running deployment.
+	// A stopped deployment still carries a runtime host and instance ID, but its runtime has been hibernated or deprovisioned,
+	// so dialing it fails. Note that hibernating a project clears its primary deployment, but stopping a deployment does not.
 	depl := proj.Deployment
-	if depl == nil {
+	if depl == nil || depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
 		return nil, nil
 	}
 
