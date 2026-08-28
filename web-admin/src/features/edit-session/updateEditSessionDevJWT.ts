@@ -33,7 +33,7 @@ export function createUpdateEditSessionDevJWT(
         const { accessToken } = await adminServiceGetDeployment(deploymentId, {
           attributes: {
             email,
-            domain: getDomain(email),
+            ...(email ? { domain: getDomain(email) } : {}),
             name: name || "Mock User",
             admin: !!admin,
             groups: groups || [],
