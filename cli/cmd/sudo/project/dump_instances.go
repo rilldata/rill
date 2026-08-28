@@ -19,8 +19,15 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// dumpInstancesConcurrency bounds how many runtimes we query in parallel.
-const dumpInstancesConcurrency = 16
+const (
+	// dumpInstancesConcurrency bounds how many runtimes we query in parallel.
+	dumpInstancesConcurrency = 16
+
+	// dumpInstancesMaxErrLen truncates error messages from the runtime.
+	// A deployment pointing at a decommissioned runtime host returns an HTML error page,
+	// which gRPC embeds in the status message and would otherwise flood the output.
+	dumpInstancesMaxErrLen = 200
+)
 
 func DumpInstances(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
@@ -61,7 +68,7 @@ func DumpInstances(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			var m sync.Mutex
-			failedProjects := map[string]error{}
+			failedProjects := map[string]string{}
 			var instances []*projectInstance
 			grp, ctx := errgroup.WithContext(ctx)
 			grp.SetLimit(dumpInstancesConcurrency)
@@ -75,7 +82,7 @@ func DumpInstances(ch *cmdutil.Helper) *cobra.Command {
 					inst, err := instanceForProject(ctx, c, org, project, sensitive)
 					if err != nil {
 						m.Lock()
-						failedProjects[name] = err
+						failedProjects[name] = shortErrMsg(err)
 						m.Unlock()
 						return nil
 					}
@@ -97,9 +104,11 @@ func DumpInstances(ch *cmdutil.Helper) *cobra.Command {
 
 			printInstances(ch, instances)
 
-			for name, err := range failedProjects {
+			if len(failedProjects) > 0 {
 				ch.Println()
-				ch.PrintfWarn("Failed to dump instance for project %v: %s\n", name, err)
+			}
+			for name, msg := range failedProjects {
+				ch.PrintfWarn("Failed to dump instance for project %v: %s\n", name, msg)
 			}
 			if res.NextPageToken != "" {
 				ch.Println()
@@ -210,4 +219,14 @@ func printInstances(ch *cmdutil.Helper, instances []*projectInstance) {
 		return
 	}
 	fmt.Println(string(jsonData))
+}
+
+// shortErrMsg formats an error as a single truncated line.
+func shortErrMsg(err error) string {
+	msg := strings.Join(strings.Fields(err.Error()), " ")
+	if len(msg) > dumpInstancesMaxErrLen {
+		// ToValidUTF8 drops a rune that the cut may have split in half.
+		msg = strings.ToValidUTF8(msg[:dumpInstancesMaxErrLen], "") + "..."
+	}
+	return msg
 }
