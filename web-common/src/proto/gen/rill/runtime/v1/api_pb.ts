@@ -5133,6 +5133,13 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
   prompt = "";
 
   /**
+   * Locale of the user.
+   *
+   * @generated from field: string locale = 14;
+   */
+  locale = "";
+
+  /**
    * Optional agent to use for the completion.
    * If not set, it will infer an agent based on the prompt and conversation history.
    *
@@ -5175,6 +5182,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "locale", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
@@ -5271,6 +5279,13 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
   prompt = "";
 
   /**
+   * Locale of the user.
+   *
+   * @generated from field: string locale = 14;
+   */
+  locale = "";
+
+  /**
    * Optional agent to use for the completion.
    * If not set, it will infer an agent based on the prompt and conversation history.
    *
@@ -5313,6 +5328,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "locale", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },

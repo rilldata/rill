@@ -416,6 +416,9 @@ paths:
               prompt:
                 type: string
                 description: The prompt to complete.
+              locale:
+                type: string
+                description: Locale of the user.
               agent:
                 type: string
                 description: |-
@@ -476,6 +479,9 @@ paths:
               prompt:
                 type: string
                 description: The prompt to complete.
+              locale:
+                type: string
+                description: Locale of the user.
               agent:
                 type: string
                 description: |-

@@ -12223,6 +12223,8 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
+	// no validation rules for Locale
+
 	if m.GetAgent() != "" {
 
 		if _, ok := _CompleteRequest_Agent_InLookup[m.GetAgent()]; !ok {
@@ -12583,6 +12585,8 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 	// no validation rules for ConversationId
 
 	// no validation rules for Prompt
+
+	// no validation rules for Locale
 
 	if m.GetAgent() != "" {
 

@@ -2766,6 +2766,7 @@ export type RuntimeServiceCompleteBody = {
   conversationId?: string;
   /** The prompt to complete. */
   prompt?: string;
+  locale?: string;
   /** Optional agent to use for the completion.
 If not set, it will infer an agent based on the prompt and conversation history. */
   agent?: string;
