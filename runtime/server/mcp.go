@@ -65,7 +65,8 @@ func (s *Server) mcpHandler() http.Handler {
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true,
 		// Respond with application/json instead of text/event-stream.
-		// The spec allows either, and it means the admin service's unified MCP server can forward tool calls with a plain HTTP request.
+		// It only affects the response: as the spec requires, requests must still accept both content types.
+		// It lets the admin service's unified MCP server forward tool calls with a plain HTTP request instead of parsing an SSE stream.
 		JSONResponse: true,
 	})
 }
