@@ -1,8 +1,5 @@
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
-import {
-  type V1Expression,
-  V1Operation,
-} from "@rilldata/web-common/runtime-client";
+import { type V1Expression } from "@rilldata/web-common/runtime-client";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import {
   createAndExpression,
@@ -25,6 +22,8 @@ import type {
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
+import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
+import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -34,7 +33,7 @@ import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/
  * cover get a manager as well: required and pinned filters that have no value yet, the filter added
  * from the filter menu, and the ones created by a chart interaction.
  */
-export class ExpressionFilterManager {
+export class ExpressionFilterManager implements UrlParamsStore {
   // True when the param cannot be represented as chips.
   public isComplexFilter = $state(false);
   public exprByMetricsView: Record<string, V1Expression>;
@@ -71,12 +70,13 @@ export class ExpressionFilterManager {
     public readonly yamlConfigProvider: YAMLConfigProvider,
   ) {
     this.topLevelJoiner = $state(
-      new JoinerFilterManager(
+      JoinerFilterManager.parse(
         this.metricsViewsProvider,
-        V1Operation.OPERATION_AND,
-        { dimensionManagers: [], measureManagers: [], joinerManagers: [] },
+        createAndExpression([]),
         [],
-      ),
+        this.yamlConfigProvider,
+        this.events,
+      ) as JoinerFilterManager,
     );
 
     this.sortedFilterManagers = $derived.by(() =>
@@ -109,6 +109,11 @@ export class ExpressionFilterManager {
     $effect(() => {
       const newParams = new URLSearchParams();
       this.applyFilterToParams(newParams);
+      console.log(
+        "curStateParams",
+        newParams.toString() === this.curStateParams.toString(),
+        newParams.toString(),
+      );
       if (newParams.toString() === this.curStateParams.toString()) return;
       this.curStateParams = newParams;
     });
@@ -128,8 +133,10 @@ export class ExpressionFilterManager {
   }
 
   public setUrlParams(searchParams: URLSearchParams) {
+    const expandedUrlParams = expandCompressedParams(searchParams);
+
     const relevantUrlParams = new URLSearchParams();
-    searchParams.forEach((value, key) => {
+    expandedUrlParams.forEach((value, key) => {
       if (
         key === ExploreStateURLParams.Filters ||
         key.startsWith(ExploreStateURLParams.Filters + ".")
@@ -140,6 +147,7 @@ export class ExpressionFilterManager {
 
     const { expr, inList, advanced } = mergeFilterParams(relevantUrlParams);
 
+    console.log("setUrlParams", relevantUrlParams.toString());
     this.temporaryFilterName = undefined;
     this.topLevelJoiner = JoinerFilterManager.parse(
       this.metricsViewsProvider,
@@ -156,11 +164,15 @@ export class ExpressionFilterManager {
     );
   }
 
-  /**
-   * Folds what the managers hold back into the param.
-   * For managers that are not synced with a url; the ones that are go through the url instead.
-   */
-  public foldManagersIntoParam() {}
+  public setParamForMetricsView(mvName: string, param: string) {
+    const paramsAreEqual =
+      this.curSetParams.get(getParamKeyForMv(mvName)) === param;
+    if (paramsAreEqual) return;
+
+    const newParams = new URLSearchParams(this.curSetParams);
+    newParams.set(getParamKeyForMv(mvName), param);
+    this.setUrlParams(newParams);
+  }
 
   public setExprForMetricsView(
     mvName: string,
@@ -173,16 +185,6 @@ export class ExpressionFilterManager {
         ? convertExpressionToFilterParam(expr, dimensionsWithInlistFilter)
         : "",
     );
-  }
-
-  public setParamForMetricsView(mvName: string, param: string) {
-    const paramsAreEqual =
-      this.curSetParams.get(getParamKeyForMv(mvName)) === param;
-    if (paramsAreEqual) return;
-
-    const newParams = new URLSearchParams(this.curSetParams);
-    newParams.set(getParamKeyForMv(mvName), param);
-    this.applyFilterToParams(newParams);
   }
 
   public applyFilterToParams(searchParams: URLSearchParams) {
@@ -282,7 +284,9 @@ export class ExpressionFilterManager {
 
   public clear() {
     this.temporaryFilterName = undefined;
-    this.setUrlParams(new URLSearchParams());
+    this.topLevelJoiner.clear();
+    // Clearing goes through the param rather than the managers, so it has to report itself.
+    this.events.emit("filter-changed", { source: undefined });
   }
 
   /**

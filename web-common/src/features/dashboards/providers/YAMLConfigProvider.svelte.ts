@@ -52,4 +52,8 @@ export class YAMLConfigProvider {
       delete this.requiredFilters[filter];
     }
   }
+
+  public isPinnedOrRequiredFilter(name: string) {
+    return Boolean(this.pinnedFilters[name] || this.requiredFilters[name]);
+  }
 }

@@ -40,7 +40,6 @@ export function mergeFilterParams(
 
   for (const param of urlParams.values()) {
     const parsed = parseFilterParam(param);
-    console.log(parsed);
 
     for (const condition of topLevelConditions(parsed.expr)) {
       // A nested AND/OR has no chip of its own.

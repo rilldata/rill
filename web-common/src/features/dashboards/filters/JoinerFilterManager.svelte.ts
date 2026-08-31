@@ -48,11 +48,12 @@ export class JoinerFilterManager {
 
   public constructor(
     private readonly metricsViewsProvider: MetricsViewsProvider,
+    private readonly yamlConfigProvider: YAMLConfigProvider | undefined,
     public type:
       | typeof V1Operation.OPERATION_AND
       | typeof V1Operation.OPERATION_OR,
     managers: AllManagers,
-    public readonly inList: string[],
+    private readonly events: FilterEventEmitter | undefined,
   ) {
     this.managers = $state(managers);
 
@@ -119,74 +120,20 @@ export class JoinerFilterManager {
   ): AnyManager | undefined {
     const op = expr?.cond?.op;
     if (op === V1Operation.OPERATION_AND || op === V1Operation.OPERATION_OR) {
-      const dimensionManagers: DimensionFilterManager[] = [];
-      const measureManagers: MeasureFilterManager[] = [];
-      const joinerManagers: JoinerFilterManager[] = [];
-      const added = new Set<string>();
-
-      const add = (manager: AnyManager, force: boolean) => {
-        if (
-          manager instanceof DimensionFilterManager &&
-          (!added.has(manager.name) || force)
-        ) {
-          added.add(manager.name);
-          dimensionManagers.push(manager);
-        } else if (
-          manager instanceof MeasureFilterManager &&
-          (!added.has(manager.name) || force)
-        ) {
-          added.add(manager.name);
-          measureManagers.push(manager);
-        } else if (manager instanceof JoinerFilterManager) {
-          joinerManagers.push(manager);
-        }
-      };
-
-      expr?.cond?.exprs?.forEach((e) => {
-        const manager = JoinerFilterManager.parse(
-          metricsViewsProvider,
-          e,
-          dimensionsWithInlistFilter,
-          // Deeper parse should not add required/pinned filters. So pass undefined here.
-          undefined,
-          events,
-        );
-        if (!manager) return;
-
-        add(manager, true);
-      });
-
-      // Add required and pinned filters when yamlConfigProvider is provided.
-      // yamlConfigProvider is only provided for the top level manager.
-      // TODO: handle advanced filters
-      if (yamlConfigProvider) {
-        Object.keys(yamlConfigProvider.requiredFilters)
-          .concat(Object.keys(yamlConfigProvider.pinnedFilters))
-          .forEach((requiredFilter) => {
-            const manager =
-              DimensionFilterManager.createForMetricsViews(
-                metricsViewsProvider,
-                requiredFilter,
-                { events },
-              ) ??
-              MeasureFilterManager.createForMetricsViews(
-                metricsViewsProvider,
-                requiredFilter,
-                { events },
-              );
-            if (manager) add(manager, false);
-          });
-      }
+      const managers = this.parseJoinerExpressionManagers(
+        metricsViewsProvider,
+        expr,
+        dimensionsWithInlistFilter,
+        yamlConfigProvider,
+        events,
+      );
 
       return new JoinerFilterManager(
         metricsViewsProvider,
+        yamlConfigProvider,
         op,
-        {
-          dimensionManagers,
-          measureManagers,
-          joinerManagers,
-        },
-        dimensionsWithInlistFilter,
+        managers,
+        events,
       );
     } else {
       const ident = expr?.cond?.exprs?.[0]?.ident ?? "";
@@ -224,6 +171,79 @@ export class JoinerFilterManager {
     }
   }
 
+  private static parseJoinerExpressionManagers(
+    metricsViewsProvider: MetricsViewsProvider,
+    expr: V1Expression | undefined,
+    dimensionsWithInlistFilter: string[],
+    yamlConfigProvider: YAMLConfigProvider | undefined,
+    events: FilterEventEmitter | undefined,
+  ) {
+    const dimensionManagers: DimensionFilterManager[] = [];
+    const measureManagers: MeasureFilterManager[] = [];
+    const joinerManagers: JoinerFilterManager[] = [];
+    const added = new Set<string>();
+
+    const add = (manager: AnyManager, force: boolean) => {
+      if (
+        manager instanceof DimensionFilterManager &&
+        (!added.has(manager.name) || force)
+      ) {
+        added.add(manager.name);
+        dimensionManagers.push(manager);
+      } else if (
+        manager instanceof MeasureFilterManager &&
+        (!added.has(manager.name) || force)
+      ) {
+        added.add(manager.name);
+        measureManagers.push(manager);
+      } else if (manager instanceof JoinerFilterManager) {
+        joinerManagers.push(manager);
+      }
+    };
+
+    expr?.cond?.exprs?.forEach((e) => {
+      const manager = JoinerFilterManager.parse(
+        metricsViewsProvider,
+        e,
+        dimensionsWithInlistFilter,
+        // Deeper parse should not add required/pinned filters. So pass undefined here.
+        undefined,
+        events,
+      );
+      if (!manager) return;
+
+      add(manager, true);
+    });
+
+    // Add required and pinned filters when yamlConfigProvider is provided.
+    // yamlConfigProvider is only provided for the top level manager.
+    // TODO: handle advanced filters
+    if (yamlConfigProvider) {
+      Object.keys(yamlConfigProvider.requiredFilters)
+        .concat(Object.keys(yamlConfigProvider.pinnedFilters))
+        .forEach((requiredFilter) => {
+          const manager =
+            DimensionFilterManager.createForMetricsViews(
+              metricsViewsProvider,
+              requiredFilter,
+              { events },
+            ) ??
+            MeasureFilterManager.createForMetricsViews(
+              metricsViewsProvider,
+              requiredFilter,
+              { events },
+            );
+          if (manager) add(manager, false);
+        });
+    }
+
+    return {
+      dimensionManagers,
+      measureManagers,
+      joinerManagers,
+    };
+  }
+
   public maybeAddDimensionFilter(
     dimensionFilterManager: DimensionFilterManager,
   ) {
@@ -255,6 +275,16 @@ export class JoinerFilterManager {
       ...this.managers,
       measureManagers: [...this.managers.measureManagers, measureFilterManager],
     };
+  }
+
+  public clear() {
+    this.managers = JoinerFilterManager.parseJoinerExpressionManagers(
+      this.metricsViewsProvider,
+      undefined,
+      [],
+      this.yamlConfigProvider,
+      this.events,
+    );
   }
 
   private buildExpression(

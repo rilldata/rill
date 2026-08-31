@@ -9,10 +9,8 @@
   import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
   import MissingRequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/MissingRequiredFiltersMessage.svelte";
   import { type Snippet } from "svelte";
-  import {
-    syncStoreWithSource,
-    syncStoreWithUrl,
-  } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import { goto } from "$app/navigation";
 
   const runtimeClient = useRuntimeClient();
   let instanceId = $derived(runtimeClient.instanceId);
@@ -54,7 +52,7 @@
   // svelte-ignore state_referenced_locally
   syncStoreWithSource(
     expressionFilterManager,
-    syncStoreWithUrl,
+    (newUrlParams) => goto("?" + newUrlParams.toString()),
     () => expressionFilterManager.metricsViewsProvider.ready,
   );
 

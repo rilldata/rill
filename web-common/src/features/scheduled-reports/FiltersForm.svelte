@@ -39,8 +39,8 @@
     metricsViewName: string;
     exploreName: string;
     timeControls: TimeControls;
-    maxWidth: number | undefined;
-    side: "top" | "right" | "bottom" | "left";
+    maxWidth?: number | undefined;
+    side?: "top" | "right" | "bottom" | "left";
   } = $props();
 
   // svelte-ignore state_referenced_locally

@@ -128,6 +128,15 @@ export async function selectDimensionFilterMode(name: RegExp) {
   await selectFromDropdown("dimension-filter-mode-selector", name);
 }
 
+/** Removes the dimension chip for `label`. */
+export async function removeDimensionFilter(label: string) {
+  await act(() =>
+    within(screen.getByLabelText(`${label} filter`))
+      .getByLabelText("Remove")
+      .click(),
+  );
+}
+
 /**
  * Picks the option matching `name` in the `Select` with trigger id `triggerId`.
  *
@@ -215,6 +224,32 @@ export async function toggleSelectAll() {
   await act(() => getSelectAllButton().click());
 }
 
+/** Checks `values` in the open dimension filter dropdown, which is in Select mode. */
+export async function selectValues(values: string[]) {
+  await waitFor(() => expect(screen.getByText(values[0])).toBeVisible());
+  for (const value of values) {
+    await act(() => screen.getByText(value).click());
+  }
+}
+
+/**
+ * Waits for the results of the open dimension filter dropdown to be `values`.
+ * Select mode has no result count to wait on, unlike the other two modes.
+ */
+export async function waitForDimensionFilterResults(
+  name: string,
+  values: string[],
+) {
+  await waitFor(() => expect(getDimensionFilterResults(name)).toEqual(values));
+}
+
+/** Flips the include/exclude toggle of the open dimension filter dropdown. */
+export async function toggleExclude() {
+  await act(() =>
+    fireEvent.click(screen.getByLabelText("Include exclude toggle")),
+  );
+}
+
 /**
  * The chip for the measure filter with `label`, whose text content is the filter as the user sees
  * it. Measure chips are labelled by the measure's display name, without the `filter` suffix the
@@ -243,6 +278,19 @@ export async function toggleMeasureFilter(label: string) {
 export async function closeMeasureFilter(label: string) {
   await toggleMeasureFilter(label);
   await waitFor(() => expect(isMeasureFilterFormOpen()).toBe(false));
+}
+
+export async function waitForEmptyFilters() {
+  await waitFor(() =>
+    expect(screen.getByText("No filters selected")).toBeVisible(),
+  );
+}
+
+export async function clearFilters() {
+  await act(() =>
+    screen.getByRole("button", { name: "Clear filters" }).click(),
+  );
+  await waitForEmptyFilters();
 }
 
 /**
@@ -295,4 +343,17 @@ async function typeInMeasureFilterValue(id: string, value: string) {
   await act(() =>
     fireEvent.input(document.getElementById(id)!, { target: { value } }),
   );
+}
+
+/**
+ * Applies the staged filter, which Contains and In List modes need, and which is the only way a
+ * measure filter reaches the dashboard.
+ */
+export async function applyFilter() {
+  await act(() => screen.getByRole("button", { name: "Apply" }).click());
+}
+
+/** The open dropdown applies the staged filter on a window level Enter. */
+export async function pressEnter() {
+  await act(() => fireEvent.keyDown(window, { key: "Enter" }));
 }

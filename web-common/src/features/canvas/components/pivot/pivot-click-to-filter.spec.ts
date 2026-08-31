@@ -66,13 +66,14 @@ function dk(dims: Record<string, string | null>, order: string[]): string {
 
 /** A real filter manager over {@link PIVOT_METRICS_INIT}, torn down after the test. */
 function createFilterManager() {
-  const { value, destroy } = createInEffectRoot(
-    () =>
-      new ExpressionFilterManager(
-        metricsViewsProvider,
-        new YAMLConfigProvider(),
-      ),
-  );
+  const { value, destroy } = createInEffectRoot(() => {
+    const manager = new ExpressionFilterManager(
+      metricsViewsProvider,
+      new YAMLConfigProvider(),
+    );
+    manager.createListener();
+    return manager;
+  });
   filterManagerCleanups.push(destroy);
   return value;
 }

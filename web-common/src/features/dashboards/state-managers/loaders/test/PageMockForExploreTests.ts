@@ -3,15 +3,15 @@ import { AD_BIDS_EXPLORE_NAME } from "@rilldata/web-common/features/dashboards/s
 import type { ActionResult, AfterNavigate, Page } from "@sveltejs/kit";
 import { writable, get, type Readable, type Updater } from "svelte/store";
 import { expect } from "vitest";
+import { setPageStateMock } from "./page-state.mock.svelte";
 
 /**
  * To actually mock the page we need to hoist the variable using vi.hoisted and vi.mock.
  * To avoid having to rearrange imports we define an empty object and add methods to it.
  */
 export type HoistedPageForExploreTests = Readable<Page> & {
-  // This is specifically for explore tests where goto is called with a url.
-  // If we ever need it elsewhere then we need to handle string arguments as well.
-  goto: (url: URL, opts?: { replaceState?: boolean }) => void;
+  // A string is resolved against the current url, the way SvelteKit does.
+  goto: (url: URL | string, opts?: { replaceState?: boolean }) => void;
   afterNavigate: typeof afterNavigate;
   applyAction: (result: ActionResult) => void;
 };
@@ -32,6 +32,12 @@ export type HoistedPageForExploreTests = Readable<Page> & {
  * vi.mock("$app/stores", () => {
  *   return {
  *     page: hoistedPage,
+ *   };
+ * });
+ * // Needed for components that read the url through the rune based `page`.
+ * vi.mock("$app/state", async () => {
+ *   return {
+ *     page: (await import("./page-state.mock.svelte")).pageStateMock,
  *   };
  * });
  * // Only needed for components with a `sveltekit-superforms` form.
@@ -62,18 +68,27 @@ export class PageMockForExploreTests {
     private readonly hoistedPage: HoistedPageForExploreTests,
     private readonly exploreName = AD_BIDS_EXPLORE_NAME,
   ) {
-    const { update, subscribe } = writable<Page>({
+    const initialPage = {
       url: new URL(`http://localhost/explore/${this.exploreName}`),
       params: { name: "AdBids_explore" },
       route: { id: "/explore/[name]" },
-    } as any);
-    this.update = update;
+    } as any as Page;
+    const { update, subscribe } = writable<Page>(initialPage);
+    // Keep the `$app/state` page, which the rune based stores read, on the same page as the
+    // `$app/stores` one.
+    setPageStateMock(initialPage);
+    this.update = (updater: Updater<Page>) =>
+      update((page) => {
+        const newPage = updater(page);
+        setPageStateMock(newPage);
+        return newPage;
+      });
 
     hoistedPage.subscribe = subscribe;
 
-    hoistedPage.goto = (url: URL, opts?: { replaceState?: boolean }) => {
-      update((page) => {
-        page.url = url;
+    hoistedPage.goto = (url: URL | string, opts?: { replaceState?: boolean }) => {
+      this.update((page) => {
+        page.url = typeof url === "string" ? new URL(url, page.url) : url;
 
         // Trim the leading `?` to make assertions consistent.
         const trimmedSearch = page.url.search.replace(/^\?/, "");
@@ -99,7 +114,7 @@ export class PageMockForExploreTests {
     // Forms built with `sveltekit-superforms` read their validation result back from there, so
     // without this their errors never reach the form.
     hoistedPage.applyAction = (result: ActionResult) => {
-      update((page) => {
+      this.update((page) => {
         page.status = "status" in result ? (result.status ?? 200) : 200;
         page.form = "data" in result ? result.data : undefined;
         return page;

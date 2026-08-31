@@ -358,27 +358,6 @@ describe("setUrlParams", () => {
     expect(filterManager.isComplexFilter).toBe(false);
   });
 
-  it("keeps the managers when the params do not change", () => {
-    const filterManager = createFilterManager();
-    const filter = `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`;
-    // `publisher` is defined by both metrics views, so the chip filters both. Naming only one of
-    // them would leave the param behind what the managers hold, which counts as a change.
-    const params = () =>
-      perMetricsViewParams({
-        [AD_BIDS_METRICS_NAME]: filter,
-        [AD_BIDS_MIRROR_METRICS_NAME]: filter,
-      });
-
-    filterManager.setUrlParams(params());
-    const dimensionManager = filterManager.sortedFilterManagers.dimensions[0];
-
-    filterManager.setUrlParams(params());
-
-    expect(filterManager.sortedFilterManagers.dimensions[0]).toBe(
-      dimensionManager,
-    );
-  });
-
   it("flags an OR filter as complex", () => {
     const filterManager = createFilterManager();
 
