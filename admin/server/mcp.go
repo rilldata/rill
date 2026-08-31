@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -235,8 +236,13 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 		return nil, err
 	}
 
-	url := runtimeHTTPHost(depl.RuntimeHost) + "/v1/instances/" + depl.RuntimeInstanceID + "/mcp"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	reqURL, err := url.Parse(runtimeHTTPHost(depl.RuntimeHost))
+	if err != nil {
+		return nil, err
+	}
+	reqURL = reqURL.JoinPath("/v1/instances", depl.RuntimeInstanceID, "/mcp")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL.String(), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
