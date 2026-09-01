@@ -1,10 +1,12 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type {
+  V1CanvasSpec,
   V1ExploreSpec,
   V1GetExploreResponse,
   V1GetResourceResponse,
   V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
+  V1ResolveCanvasResponse,
   V1Resource,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -88,6 +90,51 @@ export class DashboardFetchMocks {
         },
       },
     } as V1GetExploreResponse);
+  }
+
+  /**
+   * Mocks the ResolveCanvas response, which is the single request a canvas dashboard loads from.
+   * `metricsViews` are the metrics views the canvas references, which reach the canvas as
+   * resources rather than through GetResource.
+   */
+  public mockCanvas(
+    name: string,
+    canvas: V1CanvasSpec,
+    metricsViews: Record<string, V1MetricsViewSpec>,
+  ) {
+    this.responses.set(`canvas__${name}`, {
+      canvas: {
+        meta: {
+          name: {
+            kind: ResourceKind.Canvas,
+            name,
+          },
+        },
+        canvas: {
+          state: {
+            validSpec: canvas,
+          },
+        },
+      },
+      referencedMetricsViews: Object.fromEntries(
+        Object.entries(metricsViews).map(([metricsViewName, spec]) => [
+          metricsViewName,
+          {
+            meta: {
+              name: {
+                kind: ResourceKind.MetricsView,
+                name: metricsViewName,
+              },
+            },
+            metricsView: {
+              state: {
+                validSpec: spec,
+              },
+            },
+          },
+        ]),
+      ),
+    } as V1ResolveCanvasResponse);
   }
 
   public mockTimeRangeSummary(
@@ -212,6 +259,8 @@ export class DashboardFetchMocks {
         (resource) => !parsed.kind || resource.meta?.name?.kind === parsed.kind,
       );
       responseData = { resources };
+    } else if (service === "QueryService" && method === "ResolveCanvas") {
+      responseData = this.responses.get(`canvas__${parsed.canvas}`);
     } else if (
       service === "QueryService" &&
       method === "MetricsViewTimeRange"

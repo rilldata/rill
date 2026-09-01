@@ -43,6 +43,7 @@
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   let {
     organization,
@@ -76,12 +77,14 @@
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
   );
-  const { setUrlParams } = expressionFilterManager;
 
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
-  let curUrlParams = $derived(page.url.searchParams);
-  $effect(() => setUrlParams(curUrlParams));
+  syncStoreWithSource(
+    expressionFilterManager,
+    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
+    () => dashboardConfigProvider.metricsViewsProvider.ready,
+  );
 
   let timeFilterState = $state<
     | {
@@ -93,6 +96,7 @@
     | undefined
   >(undefined);
 
+  let curUrlParams = $derived(page.url.searchParams);
   $effect(() => void processTimeFromUrl());
   async function processTimeFromUrl() {
     const searchParamsObj = new URLSearchParams(curUrlParams);

@@ -6,9 +6,9 @@ import {
   waitForBodyScrollCleanup,
 } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
 import {
-  type HoistedPageForExploreTests,
-  PageMockForExploreTests,
-} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
+  type HoistedPageForComponentTests,
+  PageMockForComponentTests,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_EXPLORE_INIT,
@@ -38,15 +38,15 @@ const PageURLForInitialState =
  * Registers the hooks the component tests need, so call it from a `describe`.
  */
 export function useExploreFiltersVariant(
-  hoistedPage: HoistedPageForExploreTests,
+  hoistedPage: HoistedPageForComponentTests,
 ): ExpressionFiltersVariant {
   mockAnimationsForComponentTesting();
   mockPointerEventsForComponentTesting();
   const mocks = useDashboardFetchMocksForComponentTests();
-  let pageMock!: PageMockForExploreTests;
+  let pageMock!: PageMockForComponentTests;
 
   beforeEach(() => {
-    pageMock = new PageMockForExploreTests(hoistedPage);
+    pageMock = new PageMockForComponentTests(hoistedPage);
 
     mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
     mocks.mockMetricsExplore(AD_BIDS_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
@@ -78,7 +78,10 @@ export function useExploreFiltersVariant(
         getCleanMetricsExploreForAssertion().dimensionsWithInlistFilter ?? [],
     },
 
-    render: async () => {
+    render: async (initUrlSearch?: string) => {
+      // Make sure to populate the url with the initial states.
+      pageMock.gotoSearch(PageURLForInitialState);
+      if (initUrlSearch) pageMock.gotoSearch(initUrlSearch);
       render(ExploreExpressionFiltersTest, {
         props: {
           exploreName: AD_BIDS_EXPLORE_NAME,

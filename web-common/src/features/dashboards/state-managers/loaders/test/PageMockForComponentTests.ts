@@ -9,7 +9,7 @@ import { setPageStateMock } from "./page-state.mock.svelte";
  * To actually mock the page we need to hoist the variable using vi.hoisted and vi.mock.
  * To avoid having to rearrange imports we define an empty object and add methods to it.
  */
-export type HoistedPageForExploreTests = Readable<Page> & {
+export type HoistedPageForComponentTests = Readable<Page> & {
   // A string is resolved against the current url, the way SvelteKit does.
   goto: (url: URL | string, opts?: { replaceState?: boolean }) => void;
   afterNavigate: typeof afterNavigate;
@@ -58,14 +58,16 @@ export type HoistedPageForExploreTests = Readable<Page> & {
  * ...
  * ```
  */
-export class PageMockForExploreTests {
+export class PageMockForComponentTests {
   private readonly update: (updater: Updater<Page>) => void;
-  private afterNavigateCallback: (navigation: AfterNavigate) => void;
+  private afterNavigateCallback:
+    | ((navigation: AfterNavigate) => void)
+    | undefined = undefined;
   // Save the url search history to assert that extra entries are not added.
   public urlSearchHistory: string[] = [];
 
   public constructor(
-    private readonly hoistedPage: HoistedPageForExploreTests,
+    private readonly hoistedPage: HoistedPageForComponentTests,
     private readonly exploreName = AD_BIDS_EXPLORE_NAME,
   ) {
     const initialPage = {
@@ -86,18 +88,20 @@ export class PageMockForExploreTests {
 
     hoistedPage.subscribe = subscribe;
 
-    hoistedPage.goto = (url: URL | string, opts?: { replaceState?: boolean }) => {
+    hoistedPage.goto = (
+      url: URL | string,
+      opts?: { replaceState?: boolean },
+    ) => {
       this.update((page) => {
         page.url = typeof url === "string" ? new URL(url, page.url) : url;
 
-        // Trim the leading `?` to make assertions consistent.
-        const trimmedSearch = page.url.search.replace(/^\?/, "");
+        const search = normalizeSearch(page.url);
+
         // If replaceState is used then replace the last entry.
         if (opts?.replaceState && this.urlSearchHistory.length) {
-          this.urlSearchHistory[this.urlSearchHistory.length - 1] =
-            trimmedSearch;
+          this.urlSearchHistory[this.urlSearchHistory.length - 1] = search;
         } else {
-          this.urlSearchHistory.push(trimmedSearch);
+          this.urlSearchHistory.push(search);
         }
 
         return page;
@@ -123,7 +127,8 @@ export class PageMockForExploreTests {
   }
 
   public assertSearchParams(expectedSearch: string) {
-    expect(get(this.hoistedPage).url.searchParams.toString()).toEqual(
+    const actualSearch = normalizeSearch(get(this.hoistedPage).url);
+    expect(actualSearch).toEqual(
       new URLSearchParams(expectedSearch).toString(),
     );
   }
@@ -137,7 +142,7 @@ export class PageMockForExploreTests {
       return page;
     });
     this.urlSearchHistory.push(search);
-    this.afterNavigateCallback({
+    this.afterNavigateCallback?.({
       from: { url: prevUrl },
       to: { url: get(this.hoistedPage).url },
       type: "goto",
@@ -153,7 +158,7 @@ export class PageMockForExploreTests {
       return page;
     });
     this.urlSearchHistory.push(search);
-    this.afterNavigateCallback({
+    this.afterNavigateCallback?.({
       from: { url: prevUrl },
       to: { url: get(this.hoistedPage).url },
       type: "popstate",
@@ -164,4 +169,12 @@ export class PageMockForExploreTests {
     this.gotoSearch("");
     this.urlSearchHistory = [];
   }
+}
+
+function normalizeSearch(url: URL) {
+  let normalizedSearch = url.searchParams.toString();
+  // Correction for canvas that applies clear=true.
+  // Instead of handling this at every place in tests, we just remove it.
+  if (normalizedSearch === "clear=true") normalizedSearch = "";
+  return normalizedSearch;
 }

@@ -5,9 +5,9 @@ import {
 } from "@rilldata/web-admin/features/bookmarks/utils.ts";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto.ts";
 import {
-  type HoistedPageForExploreTests,
-  PageMockForExploreTests,
-} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests.ts";
+  type HoistedPageForComponentTests,
+  PageMockForComponentTests,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import {
   createAndExpression,
@@ -30,7 +30,7 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
+const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
 vi.mock("$app/stores", () => {
   return {
@@ -40,7 +40,7 @@ vi.mock("$app/stores", () => {
 
 describe("getBookmarkData and parseBookmarks", () => {
   beforeEach(() => {
-    new PageMockForExploreTests(hoistedPage);
+    new PageMockForComponentTests(hoistedPage);
   });
 
   const TestCases: {

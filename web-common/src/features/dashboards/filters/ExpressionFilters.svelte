@@ -7,8 +7,6 @@
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
   import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
-  import { onDestroy } from "svelte";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   let {
     expressionFilterManager,
@@ -19,8 +17,6 @@
     timeStart,
     timeControlsReady,
     timeDimension,
-
-    syncExpressionFilters,
 
     isUrlTooLongAfterInListFilter,
   }: {
@@ -35,21 +31,8 @@
     timeControlsReady: boolean | undefined;
     timeDimension?: string | undefined;
 
-    syncExpressionFilters?: (newUrlParams: URLSearchParams) => Promise<void>;
-
     isUrlTooLongAfterInListFilter?: (name: string, values: string[]) => boolean;
   } = $props();
-
-  let stateChangeUnsub: () => void = () => {};
-  // svelte-ignore state_referenced_locally
-  if (syncExpressionFilters) {
-    expressionFilterManager.createListener();
-    syncStoreWithSource(
-      expressionFilterManager,
-      async (newUrlParams) => syncExpressionFilters(newUrlParams),
-      () => expressionFilterManager.metricsViewsProvider.ready,
-    );
-  }
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -98,10 +81,6 @@
         : [],
     ),
   );
-
-  onDestroy(() => {
-    stateChangeUnsub();
-  });
 </script>
 
 <div

@@ -121,7 +121,7 @@
   });
 </script>
 
-{#if isLoading}
+{#if isLoading || !expressionFilterManager.metricsViewsProvider.ready}
   <DashboardLoading {isLoading} />
 {:else if error}
   <ErrorPage
@@ -129,6 +129,6 @@
     header="Failed to load dashboard"
     detail={extractErrorMessage(error)}
   />
-{:else if $exploreStore}
+{:else if $exploreStore && expressionFilterManager.metricsViewsProvider.ready}
   <slot />
 {/if}

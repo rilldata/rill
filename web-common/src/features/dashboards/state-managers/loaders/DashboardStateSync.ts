@@ -57,6 +57,7 @@ export class DashboardStateSync {
     private readonly dataLoader: DashboardStateDataLoader,
     private readonly expressionFilterManager: ExpressionFilterManager,
   ) {
+    console.log("DashboardStateSync constructor");
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
       client,
@@ -130,7 +131,7 @@ export class DashboardStateSync {
    */
   private async handleExploreInit(initExploreState: ExploreState) {
     // If this is re-triggered any of the dependant query was refetched, then we need to make sure this is not run again.
-    if (this.initialized) return;
+    if (this.updating || this.initialized) return;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
@@ -141,6 +142,8 @@ export class DashboardStateSync {
 
     // Ensure dashboard data is loaded before we proceed.
     if (!rillDefaultExploreURLParams) return;
+    this.updating = true;
+    this.expressionFilterManager.updating = true;
 
     const pageState = get(page);
 
@@ -188,10 +191,12 @@ export class DashboardStateSync {
     }
 
     this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+    this.expressionFilterManager.updating = false;
     log("INIT", redirectUrl);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
+      this.updating = false;
       return;
     }
 
@@ -203,6 +208,7 @@ export class DashboardStateSync {
       state: pageState.state,
     });
     this.initialized = true;
+    this.updating = false;
   }
 
   /**

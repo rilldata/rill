@@ -6,7 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/svelte";
-import { beforeAll, expect } from "vitest";
+import { beforeAll, expect, vi } from "vitest";
 
 export function useDashboardFetchMocksForComponentTests() {
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
@@ -74,6 +74,24 @@ export function mockPointerEventsForComponentTesting() {
     if (!HTMLElement.prototype.scrollIntoView) {
       HTMLElement.prototype.scrollIntoView = () => {};
     }
+  });
+}
+
+/**
+ * jsdom does not implement ResizeObserver, which a `bind:contentRect` needs. jsdom gives elements
+ * no layout either, so the observer would never have a resize to report; a stub that never calls
+ * back leaves the bound rect at its initial zero size, which is what a test sees regardless.
+ */
+export function mockResizeObserverForComponentTesting() {
+  beforeAll(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class ResizeObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
   });
 }
 

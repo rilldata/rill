@@ -1,14 +1,14 @@
-import { useExploreFiltersVariant } from "@rilldata/web-common/features/dashboards/filters/test/explore-filters-variant";
+import { useCanvasFiltersVariant } from "@rilldata/web-common/features/dashboards/filters/test/canvas-filters-variant";
 import {
   testDimensionFilters,
   testMeasureFilters,
-  testUrlLengthLimit,
-  testURLNavigationFlows,
 } from "@rilldata/web-common/features/dashboards/filters/test/expression-filters-suite";
 import type { HoistedPageForComponentTests } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import type { ActionResult } from "@sveltejs/kit";
 import { describe, vi } from "vitest";
 
+// The SvelteKit mocks have to be declared in the spec file, since `vi.mock` is hoisted per file.
+// Everything else lives in the variant and the shared suite.
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
 vi.stubEnv("TZ", "UTC");
@@ -62,17 +62,16 @@ vi.mock("$app/stores", () => {
   };
 });
 
-// Tests filter interactions on the explore dashboard, where the filter bar writes to the explore
-// state and the url. Loading state from other sources is covered by DashboardStateManager.spec.ts.
+// Tests filter interactions on a canvas dashboard, where `CanvasProvider` resolves the canvas and
+// the filter bar writes to the canvas entity's filter manager and the url.
 //
-// The test bodies live in `test/expression-filters-suite.ts`, so that
-// StandaloneExpressionFilters.spec.ts can run them against a bar with no dashboard around it. See
-// `test/README.md`.
-describe("ExploreExpressionFilters", () => {
-  const variant = useExploreFiltersVariant(hoistedPage);
+// The test bodies live in `test/expression-filters-suite.ts`. See `test/README.md`.
+describe("CanvasExpressionFilters", () => {
+  const variant = useCanvasFiltersVariant(hoistedPage);
 
   testDimensionFilters(variant);
-  testUrlLengthLimit(variant);
   testMeasureFilters(variant);
-  testURLNavigationFlows(variant);
+  // We need to fix canvas navigation before enabling this.
+  // Check CanvasInitialization.svelte for more details.
+  // testURLNavigationFlows(variant);
 });

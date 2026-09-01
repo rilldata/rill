@@ -1,12 +1,15 @@
-import { testCommonFilterFlows } from "@rilldata/web-common/features/dashboards/filters/test/expression-filters-suite";
+import {
+  testDimensionFilters,
+  testMeasureFilters,
+} from "@rilldata/web-common/features/dashboards/filters/test/expression-filters-suite";
 import { useStandaloneFiltersVariant } from "@rilldata/web-common/features/dashboards/filters/test/standalone-filters-variant";
-import type { HoistedPageForExploreTests } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
+import type { HoistedPageForComponentTests } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import type { ActionResult } from "@sveltejs/kit";
 import { describe, vi } from "vitest";
 
 // The SvelteKit mocks have to be declared in the spec file, since `vi.mock` is hoisted per file.
 // Everything else lives in the variant and the shared suite.
-const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
+const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
 vi.stubEnv("TZ", "UTC");
 
@@ -62,5 +65,8 @@ vi.mock("$app/stores", () => {
 // Tests the filter bar rendered on its own, with the filter manager as the only source of state.
 // The explore variant of the same flows lives in ExploreExpressionFilters.spec.ts.
 describe("StandaloneExpressionFilters", () => {
-  testCommonFilterFlows(useStandaloneFiltersVariant(hoistedPage));
+  const variant = useStandaloneFiltersVariant(hoistedPage);
+
+  testDimensionFilters(variant);
+  testMeasureFilters(variant);
 });

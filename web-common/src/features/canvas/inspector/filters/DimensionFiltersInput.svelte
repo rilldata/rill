@@ -2,7 +2,10 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import {
+    type ExpressionFilterManager,
+    getParamKeyForMv,
+  } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import VerticalExpressionFilters from "@rilldata/web-common/features/dashboards/filters/VerticalExpressionFilters.svelte";
   import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
@@ -18,12 +21,22 @@
     updateLocalFilterString: (newFilterString: string) => void;
   } = $props();
   // svelte-ignore state_referenced_locally
-  localExpressionFilters.createListener();
-  // svelte-ignore state_referenced_locally
   syncStoreWithSource(
     localExpressionFilters,
-    async (newUrlParams) => localExpressionFilters.setUrlParams(newUrlParams),
+    async (newUrlParams) => {
+      localExpressionFilters.setUrlParams(newUrlParams);
+      updateLocalFilterString(
+        newUrlParams.get(
+          getParamKeyForMv(
+            localExpressionFilters.metricsViewsProvider.metricsViewNames[0],
+            false,
+          ),
+        ) ?? "",
+      );
+    },
     () => localExpressionFilters.metricsViewsProvider.ready,
+    undefined,
+    true,
   );
 
   let localFiltersEnabledOverride = $state(false);

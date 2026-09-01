@@ -52,7 +52,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
 
-  public curStateParams = $state(new URLSearchParams());
   public curSetParams = $state(new URLSearchParams());
 
   // Shared with every manager below this one, so a chip edit reports itself
@@ -68,6 +67,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
+    private readonly singleParamFormMv = false,
   ) {
     this.topLevelJoiner = $state(
       JoinerFilterManager.parse(
@@ -105,19 +105,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
     );
   }
 
-  public createListener() {
-    $effect(() => {
-      const newParams = new URLSearchParams();
-      this.applyFilterToParams(newParams);
-      console.log(
-        "curStateParams",
-        newParams.toString() === this.curStateParams.toString(),
-        newParams.toString(),
-      );
-      if (newParams.toString() === this.curStateParams.toString()) return;
-      this.curStateParams = newParams;
-    });
-  }
+  public createListener() {}
 
   public clone() {
     const cloned = new ExpressionFilterManager(
@@ -147,7 +135,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
     const { expr, inList, advanced } = mergeFilterParams(relevantUrlParams);
 
-    console.log("setUrlParams", relevantUrlParams.toString());
     this.temporaryFilterName = undefined;
     this.topLevelJoiner = JoinerFilterManager.parse(
       this.metricsViewsProvider,
@@ -161,16 +148,17 @@ export class ExpressionFilterManager implements UrlParamsStore {
     this.curSetParams = normalizeUrlParams(
       relevantUrlParams,
       this.metricsViewsProvider.metricsViewNames,
+      this.singleParamFormMv,
     );
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
-    const paramsAreEqual =
-      this.curSetParams.get(getParamKeyForMv(mvName)) === param;
+    const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
+    const paramsAreEqual = this.curSetParams.get(paramKey) === param;
     if (paramsAreEqual) return;
 
     const newParams = new URLSearchParams(this.curSetParams);
-    newParams.set(getParamKeyForMv(mvName), param);
+    newParams.set(paramKey, param);
     this.setUrlParams(newParams);
   }
 
@@ -189,7 +177,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   public applyFilterToParams(searchParams: URLSearchParams) {
     Object.entries(this.topLevelJoiner.param).forEach(([key, value]) => {
-      const paramKey = getParamKeyForMv(key);
+      const paramKey = getParamKeyForMv(key, this.singleParamFormMv);
       if (value) {
         searchParams.set(paramKey, value);
       } else {
@@ -199,7 +187,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
     // A singular `f=...` is a legacy canvas filter. `setUrlParams` folds it into every metrics view,
     // so the per metrics view params written above already carry it and it can be dropped.
-    if (this.metricsViewsProvider.ready) {
+    if (!this.singleParamFormMv && this.metricsViewsProvider.ready) {
       searchParams.delete(ExploreStateURLParams.Filters);
     }
   }
@@ -338,17 +326,23 @@ export class ExpressionFilterManager implements UrlParamsStore {
 function normalizeUrlParams(
   urlParams: URLSearchParams,
   metricsViews: string[],
+  singleParamFormMv: boolean,
 ) {
   const singularParam = urlParams.get(ExploreStateURLParams.Filters);
-  if (!singularParam) return urlParams;
+  if (!singularParam || singleParamFormMv) return urlParams;
 
   const newUrlParams = new URLSearchParams();
   metricsViews.forEach((mvName) =>
-    newUrlParams.set(getParamKeyForMv(mvName), singularParam),
+    newUrlParams.set(
+      getParamKeyForMv(mvName, singleParamFormMv),
+      singularParam,
+    ),
   );
   return newUrlParams;
 }
 
-function getParamKeyForMv(mvName: string) {
-  return `${ExploreStateURLParams.Filters}.${mvName}`;
+export function getParamKeyForMv(mvName: string, singleParamFormMv: boolean) {
+  return singleParamFormMv
+    ? ExploreStateURLParams.Filters
+    : `${ExploreStateURLParams.Filters}.${mvName}`;
 }

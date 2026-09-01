@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ExpressionFilters.svelte";
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
@@ -36,11 +35,12 @@
   // svelte-ignore state_referenced_locally
   onManagerCreated?.(expressionFilterManager);
 
-  expressionFilterManager.createListener();
   syncStoreWithSource(
     expressionFilterManager,
-    (newUrlParams) => goto("?" + newUrlParams.toString()),
+    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
     () => metricsViewsProvider.ready,
+    undefined,
+    true,
   );
 </script>
 

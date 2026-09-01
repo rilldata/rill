@@ -3,7 +3,6 @@ import { page } from "$app/state";
 import { untrack } from "svelte";
 
 export interface UrlParamsStore {
-  curStateParams: URLSearchParams;
   curSetParams: URLSearchParams;
   setUrlParams(urlParams: URLSearchParams): void;
   applyFilterToParams(urlParams: URLSearchParams): void;
@@ -28,7 +27,6 @@ export function syncStoreWithSource(
       );
       const ready = readyGetter();
 
-      console.log(`syncStoreWithSource:fromUrl ready=${ready} lock=${lock}`);
       if (!ready || lock) return;
       lock = true;
 
@@ -40,11 +38,6 @@ export function syncStoreWithSource(
         });
       }
 
-      console.log(
-        "syncStoreWithSource:fromUrl",
-        newUrlParams.toString() === prevUrlSearch,
-        newUrlParams.toString(),
-      );
       if (newUrlParams.toString() === prevUrlSearch) {
         lock = false;
         return;
@@ -57,21 +50,32 @@ export function syncStoreWithSource(
     });
   }
 
-  let prevStateParams = "";
+  let prevStateParams = new URLSearchParams();
   $effect(() => {
     // Read all dependencies first so the subscription survives the guard.
-    const curStateParams = store.curStateParams;
+    const curStateParams = new URLSearchParams();
+    store.applyFilterToParams(curStateParams);
+
     const defaultUrlParams = untrack(() =>
       defaultUrlParamsGetter ? defaultUrlParamsGetter() : undefined,
     );
     const ready = readyGetter();
 
-    console.log(`syncStoreWithSource:toUrl ready=${ready} lock=${lock}`);
-    if (!ready || lock || curStateParams.toString() === prevStateParams) return;
+    if (
+      !ready ||
+      lock ||
+      curStateParams.toString() === prevStateParams.toString()
+    )
+      return;
     lock = true;
-    prevStateParams = curStateParams.toString();
 
-    const currentUrlParams = untrack(() => page.url.searchParams);
+    const currentUrlParams = untrack(() =>
+      skipUrlSync
+        ? new URLSearchParams(prevStateParams)
+        : page.url.searchParams,
+    );
+    prevStateParams = curStateParams;
+
     let newUrlParams = new URLSearchParams(currentUrlParams);
     if (defaultUrlParams) {
       newUrlParams = cleanUrlParams(newUrlParams, defaultUrlParams);
@@ -80,18 +84,14 @@ export function syncStoreWithSource(
       store.applyFilterToParams(newUrlParams);
     });
 
-    console.log(
-      "syncStoreWithSource:toUrl",
-      newUrlParams.toString() === currentUrlParams.toString(),
-      newUrlParams.toString(),
-    );
     if (newUrlParams.toString() === currentUrlParams.toString()) {
       lock = false;
       return;
     }
 
     try {
-      const syncPromise = sync(newUrlParams);
+      // Do not react to `sync` method changes
+      const syncPromise = untrack(() => sync(newUrlParams));
       if (!syncPromise.then) {
         lock = false;
         return;

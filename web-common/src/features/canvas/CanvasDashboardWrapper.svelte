@@ -48,11 +48,13 @@
     },
   } = $derived(getCanvasStore(canvasName, instanceId));
   // svelte-ignore state_referenced_locally
-  expressionFilterManager.createListener();
-  // svelte-ignore state_referenced_locally
   syncStoreWithSource(
     expressionFilterManager,
-    (newUrlParams) => goto("?" + newUrlParams.toString()),
+    (newUrlParams) => {
+      let newSearch = newUrlParams.toString();
+      if (!newSearch) newSearch = "clear=true";
+      return goto("?" + newSearch);
+    },
     () => expressionFilterManager.metricsViewsProvider.ready,
   );
 

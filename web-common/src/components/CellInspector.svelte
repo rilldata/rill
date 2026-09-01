@@ -32,6 +32,7 @@
   function handleKeyDown(event: KeyboardEvent) {
     // Only handle Space key when not in an input, textarea, or other form element
     const target = event.target as HTMLElement;
+    if (!target?.tagName) return; // non-element event
     const tagName = target.tagName.toLowerCase();
     const isContentEditable = target.getAttribute("contenteditable") !== null;
     const isFormElement =

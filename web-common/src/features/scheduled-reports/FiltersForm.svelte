@@ -44,8 +44,6 @@
   } = $props();
 
   // svelte-ignore state_referenced_locally
-  filters.createListener();
-  // svelte-ignore state_referenced_locally
   syncStoreWithSource(
     filters,
     async (newUrlParams) => filters.setUrlParams(newUrlParams),

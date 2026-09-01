@@ -233,6 +233,23 @@ const metricsViewReducers = {
     });
   },
 
+  syncExpressionFilter(
+    name: string,
+    expressionFilterManager: ExpressionFilterManager,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      const mvName =
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+      if (mvName) {
+        exploreState.whereFilter =
+          expressionFilterManager.topLevelJoiner.expr[mvName] ??
+          createAndExpression([]);
+        exploreState.dimensionsWithInlistFilter =
+          expressionFilterManager.inList;
+      }
+    });
+  },
+
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
       if (mode) {

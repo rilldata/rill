@@ -4,9 +4,9 @@ import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboa
 import { setMostRecentExploreStateInLocalStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
-  type HoistedPageForExploreTests,
-  PageMockForExploreTests,
-} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
+  type HoistedPageForComponentTests,
+  PageMockForComponentTests,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
@@ -48,7 +48,7 @@ import { render, screen, waitFor } from "@testing-library/svelte";
 import { readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
+const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
 vi.stubEnv("TZ", "UTC");
 
@@ -70,10 +70,10 @@ vi.mock("$app/stores", () => {
 describe("DashboardStateManager", () => {
   mockAnimationsForComponentTesting();
   const mocks = useDashboardFetchMocksForComponentTests();
-  let pageMock!: PageMockForExploreTests;
+  let pageMock!: PageMockForComponentTests;
 
   beforeEach(() => {
-    pageMock = new PageMockForExploreTests(hoistedPage);
+    pageMock = new PageMockForComponentTests(hoistedPage);
 
     mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT_WITH_TIME);
     mocks.mockMetricsExplore(
