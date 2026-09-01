@@ -125,6 +125,42 @@ describe("deriveFlintFields", () => {
     });
   });
 
+  it('labels the timestamp column "Time"', () => {
+    // The primary time dimension, when it is absent from the dimensions list.
+    expect(
+      deriveFlintFields(["__time"], metricsView).field_display_names,
+    ).toEqual({ __time: "Time" });
+
+    // The runtime declares the timestamp as a dimension and fills its display name with the raw
+    // column name, which is what "Time" replaces.
+    expect(
+      deriveFlintFields(["__time"], {
+        ...metricsView,
+        dimensions: [
+          {
+            name: "__time",
+            displayName: "__time",
+            type: MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+          },
+        ],
+      }).field_display_names,
+    ).toEqual({ __time: "Time" });
+
+    // Other time-typed dimensions keep their own display name.
+    expect(
+      deriveFlintFields(["event_time"], {
+        ...metricsView,
+        dimensions: [
+          {
+            name: "event_time",
+            displayName: "Event Time",
+            type: MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+          },
+        ],
+      }).field_display_names,
+    ).toEqual({ event_time: "Event Time" });
+  });
+
   it("leaves unknown columns unannotated for Flint to infer", () => {
     const { semantic_types } = deriveFlintFields(["mystery"], metricsView);
     expect(semantic_types).toEqual({});

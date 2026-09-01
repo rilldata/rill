@@ -1,7 +1,6 @@
 import {
   MetricsViewSpecDimensionType,
   V1TimeGrain,
-  type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -41,6 +40,12 @@ export interface FlintFields {
   semantic_types: Record<string, FlintSemanticType>;
   field_display_names: Record<string, string>;
 }
+
+/**
+ * A metrics view carries no meaningful display name for its timestamp column, so charts would
+ * otherwise label axes and tooltips with the raw column name. The rest of the app labels it "Time".
+ */
+const TIME_DISPLAY_NAME = "Time";
 
 /**
  * Maps the grain a time dimension is bucketed at to the matching Flint temporal type.
@@ -84,15 +89,21 @@ export function deriveFlintFields(
 
     const dimension = dimensions.get(column);
     if (dimension) {
-      semantic_types[column] = dimensionSemanticType(
-        column,
-        dimension,
-        metricsViewSpec,
-        timeGrain,
-      );
-      if (dimension.displayName) {
-        field_display_names[column] = dimension.displayName;
-      }
+      const isTimestampColumn = column === metricsViewSpec.timeDimension;
+
+      semantic_types[column] =
+        isTimestampColumn ||
+        dimension.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME
+          ? timeSemanticType(timeGrain)
+          : "Category";
+
+      // The runtime fills in a display name for every dimension, defaulting it to the column name
+      // (`__time` stays `__time` since names starting with an underscore are left alone). So the
+      // timestamp column's display name is replaced rather than used.
+      const displayName = isTimestampColumn
+        ? TIME_DISPLAY_NAME
+        : dimension.displayName;
+      if (displayName) field_display_names[column] = displayName;
       continue;
     }
 
@@ -100,6 +111,7 @@ export function deriveFlintFields(
     // primary time dimension, which is not always present in the dimensions list.
     if (column === metricsViewSpec.timeDimension) {
       semantic_types[column] = timeSemanticType(timeGrain);
+      field_display_names[column] = TIME_DISPLAY_NAME;
     }
     // Otherwise leave it unannotated so Flint infers from the raw values.
   }
@@ -136,19 +148,6 @@ function measureSemanticType(
   }
 
   return "Number";
-}
-
-function dimensionSemanticType(
-  column: string,
-  dimension: MetricsViewSpecDimension,
-  metricsViewSpec: V1MetricsViewSpec,
-  timeGrain: V1TimeGrain | undefined,
-): FlintSemanticType {
-  const isTime =
-    dimension.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME ||
-    column === metricsViewSpec.timeDimension;
-
-  return isTime ? timeSemanticType(timeGrain) : "Category";
 }
 
 function timeSemanticType(
