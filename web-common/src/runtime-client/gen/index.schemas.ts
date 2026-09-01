@@ -1,3 +1,10 @@
+import  {
+  ColumnCardinalityRequest,
+  ColumnDescriptiveStatisticsRequest,
+  ColumnNullCountRequest,
+  ColumnNumericHistogramRequest, type ColumnRollupIntervalRequest,
+  ColumnRugHistogramRequest, ColumnTimeGrainRequest, ColumnTimeRangeRequest, ColumnTimeSeriesRequest, ColumnTopKRequest } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb.ts";
+
 /**
  * Runtime API type definitions.
  *
@@ -12,12 +19,6 @@
  *   file instead.
  * - Once all consumers of a V1* type have migrated, delete the type from this file.
  */
-export interface ColumnTimeSeriesRequestBasicMeasure {
-  id?: string;
-  expression?: string;
-  sqlName?: string;
-}
-
 export interface ConnectorDriverProperty {
   key?: string;
   type?: ConnectorDriverPropertyType;
@@ -197,22 +198,6 @@ export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
 }
-
-/**
- * `NullValue` is a singleton enumeration to represent the null value for the
-`Value` type union.
-
-The JSON representation for `NullValue` is JSON `null`.
-
- - NULL_VALUE: Null value.
- */
-export type ProtobufNullValue =
-  (typeof ProtobufNullValue)[keyof typeof ProtobufNullValue];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ProtobufNullValue = {
-  NULL_VALUE: "NULL_VALUE",
-} as const;
 
 export interface RpcStatus {
   code?: number;
@@ -511,11 +496,6 @@ This may be empty if the data refresh time is not known, e.g. if the metrics vie
   dataRefreshedOn?: string;
 }
 
-export interface V1CategoricalSummary {
-  topK?: V1TopK;
-  cardinality?: number;
-}
-
 export interface V1CharLocation {
   line?: number;
 }
@@ -525,156 +505,6 @@ export interface V1Color {
   green?: number;
   blue?: number;
   alpha?: number;
-}
-
-export interface V1ColumnCardinalityRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  priority?: number;
-}
-
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
-export interface V1ColumnDescriptiveStatisticsRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  priority?: number;
-}
-
-export interface V1ColumnDescriptiveStatisticsResponse {
-  numericSummary?: V1NumericSummary;
-}
-
-export interface V1ColumnNullCountRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  priority?: number;
-}
-
-export interface V1ColumnNullCountResponse {
-  count?: number;
-}
-
-export interface V1ColumnNumericHistogramRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  histogramMethod?: V1HistogramMethod;
-  priority?: number;
-}
-
-export interface V1ColumnNumericHistogramResponse {
-  numericSummary?: V1NumericSummary;
-}
-
-export interface V1ColumnRollupIntervalRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  priority?: number;
-}
-
-export interface V1ColumnRollupIntervalResponse {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
-export interface V1ColumnRugHistogramRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  priority?: number;
-}
-
-export interface V1ColumnRugHistogramResponse {
-  numericSummary?: V1NumericSummary;
-}
-
-export interface V1ColumnTimeGrainRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  priority?: number;
-}
-
-export interface V1ColumnTimeGrainResponse {
-  timeGrain?: V1TimeGrain;
-}
-
-export interface V1ColumnTimeRangeRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  priority?: number;
-}
-
-export interface V1ColumnTimeRangeResponse {
-  timeRangeSummary?: V1TimeRangeSummary;
-}
-
-export interface V1ColumnTimeSeriesRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  pixels?: number;
-  sampleSize?: number;
-  priority?: number;
-  timeZone?: string;
-}
-
-export interface V1ColumnTimeSeriesResponse {
-  rollup?: V1TimeSeriesResponse;
-}
-
-export interface V1ColumnTopKRequest {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  tableName?: string;
-  columnName?: string;
-  agg?: string;
-  k?: number;
-  priority?: number;
-}
-
-export interface V1ColumnTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CompleteResponse {
@@ -806,30 +636,6 @@ export interface V1CreateDirectoryResponse {
   [key: string]: unknown;
 }
 
-export type V1CreateInstanceRequestVariables = { [key: string]: string };
-
-export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
-
-/**
- * Request message for RuntimeService.CreateInstance.
-See message Instance for field descriptions.
- */
-export interface V1CreateInstanceRequest {
-  instanceId?: string;
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  connectors?: V1Connector[];
-  variables?: V1CreateInstanceRequestVariables;
-  annotations?: V1CreateInstanceRequestAnnotations;
-  frontendUrl?: string;
-}
-
-export interface V1CreateInstanceResponse {
-  instance?: V1Instance;
-}
 
 export interface V1CreateTriggerResponse {
   [key: string]: unknown;
@@ -848,9 +654,6 @@ export interface V1DeleteFileResponse {
   [key: string]: unknown;
 }
 
-export interface V1DeleteInstanceResponse {
-  [key: string]: unknown;
-}
 
 /**
  * Context for prompts handled by the developer_agent.
@@ -869,9 +672,6 @@ export interface V1DirEntry {
   isDir?: boolean;
 }
 
-export interface V1EditInstanceResponse {
-  instance?: V1Instance;
-}
 
 /**
  * Example contains metadata about an example project that is available for unpacking.
@@ -1107,23 +907,6 @@ export interface V1GenerateMetricsViewFileResponse {
   aiSucceeded?: boolean;
 }
 
-export type V1GenerateRendererResponseRendererProperties = {
-  [key: string]: unknown;
-};
-
-export interface V1GenerateRendererResponse {
-  renderer?: string;
-  rendererProperties?: V1GenerateRendererResponseRendererProperties;
-}
-
-export type V1GenerateResolverResponseResolverProperties = {
-  [key: string]: unknown;
-};
-
-export interface V1GenerateResolverResponse {
-  resolver?: string;
-  resolverProperties?: V1GenerateResolverResponseResolverProperties;
-}
 
 export interface V1GetAIMessageResponse {
   message?: V1Message;
@@ -1235,16 +1018,6 @@ export interface V1HealthResponse {
   networkError?: string;
   instancesHealth?: V1HealthResponseInstancesHealth;
 }
-
-export type V1HistogramMethod =
-  (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1HistogramMethod = {
-  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
-  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
-  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
-} as const;
 
 export type V1InstanceVariables = { [key: string]: string };
 
@@ -2024,14 +1797,6 @@ export interface V1Notifier {
   properties?: V1NotifierProperties;
 }
 
-export interface V1NumericHistogramBins {
-  bins?: NumericHistogramBinsBin[];
-}
-
-export interface V1NumericOutliers {
-  outliers?: NumericOutliersOutlier[];
-}
-
 export interface V1NumericStatistics {
   min?: number;
   max?: number;
@@ -2040,12 +1805,6 @@ export interface V1NumericStatistics {
   q50?: number;
   q75?: number;
   sd?: number;
-}
-
-export interface V1NumericSummary {
-  numericHistogramBins?: V1NumericHistogramBins;
-  numericStatistics?: V1NumericStatistics;
-  numericOutliers?: V1NumericOutliers;
 }
 
 export type V1OLAPGetTableResponseUnsupportedColumns = {
@@ -2149,16 +1908,16 @@ export interface V1Query {
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
   metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
-  columnRollupIntervalRequest?: V1ColumnRollupIntervalRequest;
-  columnTopKRequest?: V1ColumnTopKRequest;
-  columnNullCountRequest?: V1ColumnNullCountRequest;
-  columnDescriptiveStatisticsRequest?: V1ColumnDescriptiveStatisticsRequest;
-  columnTimeGrainRequest?: V1ColumnTimeGrainRequest;
-  columnNumericHistogramRequest?: V1ColumnNumericHistogramRequest;
-  columnRugHistogramRequest?: V1ColumnRugHistogramRequest;
-  columnTimeRangeRequest?: V1ColumnTimeRangeRequest;
-  columnCardinalityRequest?: V1ColumnCardinalityRequest;
-  columnTimeSeriesRequest?: V1ColumnTimeSeriesRequest;
+  columnRollupIntervalRequest?: ColumnRollupIntervalRequest;
+  columnTopKRequest?: ColumnTopKRequest;
+  columnNullCountRequest?: ColumnNullCountRequest;
+  columnDescriptiveStatisticsRequest?: ColumnDescriptiveStatisticsRequest;
+  columnTimeGrainRequest?: ColumnTimeGrainRequest;
+  columnNumericHistogramRequest?: ColumnNumericHistogramRequest;
+  columnRugHistogramRequest?: ColumnRugHistogramRequest;
+  columnTimeRangeRequest?: ColumnTimeRangeRequest;
+  columnCardinalityRequest?: ColumnCardinalityRequest;
+  columnTimeSeriesRequest?: ColumnTimeSeriesRequest;
   tableCardinalityRequest?: V1TableCardinalityRequest;
   tableColumnsRequest?: V1TableColumnsRequest;
   tableRowsRequest?: V1TableRowsRequest;
@@ -2625,18 +2384,6 @@ export interface V1TimeRangeSummary {
   watermark?: string;
 }
 
-export interface V1TimeSeriesResponse {
-  results?: V1TimeSeriesValue[];
-  spark?: V1TimeSeriesValue[];
-  sampleSize?: number;
-}
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export type V1TimeSeriesValueRecords = { [key: string]: unknown };
 
 export interface V1TimeSeriesValue {
@@ -2670,10 +2417,6 @@ export interface V1ToolResult {
   isError?: boolean;
 }
 
-export interface V1TopK {
-  entries?: TopKEntry[];
-}
-
 /**
  * Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
  */
@@ -2705,62 +2448,6 @@ export interface V1WatchResourcesResponse {
   resource?: V1Resource;
 }
 
-export type ConnectorServiceListDatabaseSchemasParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceOLAPGetTableParams = {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  table?: string;
-};
-
-export type ConnectorServiceGetTableParams = {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  table?: string;
-};
-
-export type ConnectorServiceListTablesParams = {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type RuntimeServiceListInstancesParams = {
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type RuntimeServiceGetInstanceParams = {
-  sensitive?: boolean;
-};
-
-export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
-
-/**
- * Request message for RuntimeService.EditInstance.
-See message Instance for field descriptions.
- */
-export type RuntimeServiceEditInstanceBody = {
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  connectors?: V1Connector[];
-};
-
 export type RuntimeServiceCompleteBody = {
   /** Conversation ID to continue. If empty, a new conversation is created. */
   conversationId?: string;
@@ -2774,76 +2461,6 @@ If not set, it will infer an agent based on the prompt and conversation history.
   feedbackAgentContext?: V1FeedbackAgentContext;
 };
 
-export type RuntimeServiceCompleteStreamingBody = {
-  /** Conversation ID to continue. If empty, a new conversation is created. */
-  conversationId?: string;
-  /** The prompt to complete. */
-  prompt?: string;
-  /** Optional agent to use for the completion.
-If not set, it will infer an agent based on the prompt and conversation history. */
-  agent?: string;
-  analystAgentContext?: V1AnalystAgentContext;
-  developerAgentContext?: V1DeveloperAgentContext;
-  feedbackAgentContext?: V1FeedbackAgentContext;
-};
-
-export type RuntimeServiceCompleteStreaming200 = {
-  result?: V1CompleteStreamingResponse;
-  error?: RpcStatus;
-};
-
-export type RuntimeServiceListConversationsParams = {
-  /**
-   * Optional search pattern for filtering by user agent.
-   */
-  userAgentPattern?: string;
-};
-
-export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
-
-export type RuntimeServiceShareConversationBody = {
-  /** optional message ID up to which to share otherwise share all current messages
-only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
-It supports a special value of "none" to unshare the conversation. */
-  untilMessageId?: string;
-};
-
-export type ConnectorServiceListBucketsParams = {
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceListObjectsParams = {
-  /**
-   * Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
-   */
-  path?: string;
-  delimiter?: string;
-  /**
-   * Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
-   */
-  glob?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type RuntimeServiceListFilesParams = {
-  glob?: string;
-};
-
-export type RuntimeServiceCreateDirectoryBody = {
-  path?: string;
-};
-
-export type RuntimeServiceGetFileParams = {
-  path?: string;
-};
-
-export type RuntimeServiceDeleteFileParams = {
-  path?: string;
-  force?: boolean;
-};
-
 export type RuntimeServicePutFileBody = {
   path?: string;
   blob?: string;
@@ -2851,16 +2468,6 @@ export type RuntimeServicePutFileBody = {
   /** Will cause the operation to fail if the file already exists.
 It should only be set when create = true. */
   createOnly?: boolean;
-};
-
-export type RuntimeServiceGenerateCanvasFileBody = {
-  /** Metrics view name to base the canvas on. */
-  metricsViewName?: string;
-  /** Path to save the canvas file to. */
-  path?: string;
-  /** If true, the AI will be used to generate the canvas file.
-Otherwise, it falls back to a simpler heuristic approach. */
-  useAi?: boolean;
 };
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
@@ -2888,193 +2495,7 @@ Otherwise, it falls back to a simpler heuristic approach. */
   prompt?: string;
 };
 
-export type RuntimeServiceRenameFileBody = {
-  fromPath?: string;
-  toPath?: string;
-};
 
-export type RuntimeServiceUnpackEmptyBody = {
-  displayName?: string;
-  olap?: string;
-  force?: boolean;
-};
-
-export type RuntimeServiceUnpackExampleBody = {
-  name?: string;
-  force?: boolean;
-};
-
-export type RuntimeServiceWatchFilesParams = {
-  replay?: boolean;
-};
-
-export type RuntimeServiceWatchFiles200 = {
-  result?: V1WatchFilesResponse;
-  error?: RpcStatus;
-};
-
-export type RuntimeServiceGenerateRendererBodyResolverProperties = {
-  [key: string]: unknown;
-};
-
-export type RuntimeServiceGenerateRendererBody = {
-  prompt?: string;
-  resolver?: string;
-  resolverProperties?: RuntimeServiceGenerateRendererBodyResolverProperties;
-};
-
-export type RuntimeServiceGenerateResolverBody = {
-  prompt?: string;
-  /** Both connector and table must be specified if metrics_view is not. */
-  connector?: string;
-  table?: string;
-  /** table and connector should not be provided if metrics_view is provided. */
-  metricsView?: string;
-};
-
-export type RuntimeServiceGitSwitchBranchBody = {
-  branch?: string;
-  create?: boolean;
-  ignoreLocalChanges?: boolean;
-};
-
-export type RuntimeServiceGitCommitBody = {
-  commitMessage?: string;
-};
-
-export type RuntimeServiceListGitCommitsParams = {
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type RuntimeServiceGitMergeToBranchBody = {
-  branch?: string;
-  /** In case of merge conflicts, prefer current changes. */
-  force?: boolean;
-};
-
-export type RuntimeServiceGitPullBody = {
-  discardLocal?: boolean;
-};
-
-export type RuntimeServiceGitPushBody = {
-  commitMessage?: string;
-  force?: boolean;
-};
-
-export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
-
-export type RuntimeServiceGetLogsParams = {
-  ascending?: boolean;
-  limit?: number;
-  level?: RuntimeServiceGetLogsLevel;
-};
-
-export type RuntimeServiceGetLogsLevel =
-  (typeof RuntimeServiceGetLogsLevel)[keyof typeof RuntimeServiceGetLogsLevel];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RuntimeServiceGetLogsLevel = {
-  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
-  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
-  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
-  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
-  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
-  LOG_LEVEL_FATAL: "LOG_LEVEL_FATAL",
-} as const;
-
-export type RuntimeServiceWatchLogsParams = {
-  replay?: boolean;
-  replayLimit?: number;
-  level?: RuntimeServiceWatchLogsLevel;
-};
-
-export type RuntimeServiceWatchLogsLevel =
-  (typeof RuntimeServiceWatchLogsLevel)[keyof typeof RuntimeServiceWatchLogsLevel];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RuntimeServiceWatchLogsLevel = {
-  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
-  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
-  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
-  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
-  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
-  LOG_LEVEL_FATAL: "LOG_LEVEL_FATAL",
-} as const;
-
-export type RuntimeServiceWatchLogs200 = {
-  result?: V1WatchLogsResponse;
-  error?: RpcStatus;
-};
-
-export type RuntimeServiceGetModelPartitionsParams = {
-  pending?: boolean;
-  errored?: boolean;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type QueryServiceResolveCanvasBodyArgs = { [key: string]: unknown };
-
-export type QueryServiceResolveCanvasBody = {
-  args?: QueryServiceResolveCanvasBodyArgs;
-};
-
-export type QueryServiceColumnCardinalityParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceTableColumnsParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  priority?: number;
-};
-
-export type QueryServiceResolveComponentBodyArgs = { [key: string]: unknown };
-
-export type QueryServiceResolveComponentBody = {
-  args?: QueryServiceResolveComponentBodyArgs;
-};
-
-export type QueryServiceColumnDescriptiveStatisticsParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceExportBody = {
-  /** Optional limit on the number of rows to export. It is applied in addition to any limit specified in the query. */
-  limit?: string;
-  format?: V1ExportFormat;
-  query?: V1Query;
-  /** Deprecated. Use query instead. */
-  bakedQuery?: string;
-  /** If true, the export will include header comments with metadata about the export. */
-  includeHeader?: boolean;
-  originDashboard?: V1ResourceName;
-  /** Optional UI URL that the export originates from.
-Only used if include_header is true. */
-  originUrl?: string;
-  /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
-  executionTime?: string;
-};
-
-export type QueryServiceConvertExpressionToMetricsSQLBody = {
-  expression?: V1Expression;
-};
 
 export type QueryServiceMetricsViewAggregationBody = {
   dimensions?: V1MetricsViewAggregationDimension[];
@@ -3103,169 +2524,6 @@ export type QueryServiceMetricsViewAggregationBody = {
   trace?: boolean;
 };
 
-export type QueryServiceMetricsViewAnnotationsBody = {
-  measures?: string[];
-  priority?: number;
-  timeRange?: V1TimeRange;
-  timeGrain?: V1TimeGrain;
-  timeZone?: string;
-  limit?: string;
-  offset?: string;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewComparisonBody = {
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewRowsBody = {
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  where?: V1Expression;
-  sort?: V1MetricsViewSort[];
-  limit?: number;
-  offset?: string;
-  priority?: number;
-  timeZone?: string;
-  filter?: V1MetricsViewFilter;
-  timeDimension?: string;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewSchemaParams = {
-  priority?: number;
-  /**
-   * Optional. If true, the response will include traces of spans captured during execution.
-   */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewSearchBody = {
-  dimensions?: string[];
-  search?: string;
-  timeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  limit?: number;
-  priority?: number;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewTimeRangeBody = {
-  priority?: number;
-  timeDimension?: string;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewTimeRangesBody = {
-  /** Optional time range expressions to resolve (uses the rilltime expression syntax). */
-  expressions?: string[];
-  /** Optional query priority. */
-  priority?: number;
-  /** Optional time zone that overrides the time zones used when resolving the time range expressions. */
-  timeZone?: string;
-  /** Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension. */
-  timeDimension?: string;
-  /** Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided. */
-  executionTime?: string;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewTimeSeriesBody = {
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  timeZone?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  timeDimension?: string;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewToplistBody = {
-  dimensionName?: string;
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  whereSql?: string;
-  having?: V1Expression;
-  havingSql?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceMetricsViewTotalsBody = {
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  timeDimension?: string;
-  /** Optional. If true, the response will include traces of spans captured during execution. */
-  trace?: boolean;
-};
-
-export type QueryServiceColumnNullCountParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnNumericHistogramParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
-  priority?: number;
-};
 
 export type QueryServiceColumnNumericHistogramHistogramMethod =
   (typeof QueryServiceColumnNumericHistogramHistogramMethod)[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
@@ -3286,180 +2544,4 @@ export type QueryServiceResolveTemplatedStringBody = {
   useFormatTokens?: boolean;
   additionalWhereByMetricsView?: QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView;
   additionalTimeRange?: V1TimeRange;
-};
-
-export type QueryServiceColumnRollupIntervalBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceTableRowsParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  limit?: number;
-  priority?: number;
-};
-
-export type QueryServiceColumnRugHistogramParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeGrainParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceTableCardinalityParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeRangeParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
-};
-
-export type QueryServiceColumnTimeSeriesBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  pixels?: number;
-  sampleSize?: number;
-  priority?: number;
-  timeZone?: string;
-};
-
-export type QueryServiceColumnTopKBody = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  agg?: string;
-  k?: number;
-  priority?: number;
-};
-
-export type QueryServiceQueryBody = {
-  connector?: string;
-  sql?: string;
-  args?: unknown[];
-  priority?: number;
-  dryRun?: boolean;
-  limit?: number;
-};
-
-export type RuntimeServiceQueryResolverBodyResolverProperties = {
-  [key: string]: unknown;
-};
-
-export type RuntimeServiceQueryResolverBodyResolverArgs = {
-  [key: string]: unknown;
-};
-
-export type RuntimeServiceQueryResolverBody = {
-  resolver?: string;
-  resolverProperties?: RuntimeServiceQueryResolverBodyResolverProperties;
-  resolverArgs?: RuntimeServiceQueryResolverBodyResolverArgs;
-  limit?: number;
-};
-
-export type RuntimeServiceReloadConfigBody = { [key: string]: unknown };
-
-export type QueryServiceExportReportBody = {
-  /** The execution time to evaluate the report relative to.
-This is provided by the report implementation when sending a report. */
-  executionTime?: string;
-  /** Contextual information about the base URL of the UI that initiated the export.
-This is used to generate header comments in the exported file when include_header is true in the report spec. */
-  originBaseUrl?: string;
-};
-
-export type RuntimeServiceGetResourceParams = {
-  "name.kind"?: string;
-  "name.name"?: string;
-  skipSecurityChecks?: boolean;
-};
-
-export type RuntimeServiceListResourcesParams = {
-  /**
-   * Filter by resource kind (optional).
-   */
-  kind?: string;
-  /**
-   * Filter by resource path (optional).
-   */
-  path?: string;
-  /**
-   * Skip security checks
-   */
-  skipSecurityChecks?: boolean;
-};
-
-export type RuntimeServiceWatchResourcesParams = {
-  kind?: string;
-  replay?: boolean;
-};
-
-export type RuntimeServiceWatchResources200 = {
-  result?: V1WatchResourcesResponse;
-  error?: RpcStatus;
-};
-
-export type RuntimeServiceGetExploreParams = {
-  name?: string;
-};
-
-export type RuntimeServiceCreateTriggerBody = {
-  /** Resources to trigger. See RefreshTriggerSpec for details. */
-  resources?: V1ResourceName[];
-  /** Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger. */
-  models?: V1RefreshModelTrigger[];
-  /** Parser is a convenience flag to trigger the global project parser.
-Triggering the project parser ensures a pull of the repository and a full parse of all files. */
-  parser?: boolean;
-  /** Convenience flag to trigger all resources.
-Note: Despite the name, it does not currently trigger alerts and reports. */
-  all?: boolean;
-  /** Convenience flag to trigger all resources with full refreshes for resources that support it.
-Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
-Note: Despite the name, it does not currently trigger alerts and reports. */
-  allFull?: boolean;
-};
-
-export type ConnectorServiceOLAPListTablesParams = {
-  instanceId?: string;
-  /**
-   * Connector to list tables from.
-   */
-  connector?: string;
-  /**
- * Optional search pattern to filter tables by.
-Has the same syntax and behavior as ILIKE in SQL.
-If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
- */
-  searchPattern?: string;
-  pageSize?: number;
-  pageToken?: string;
 };

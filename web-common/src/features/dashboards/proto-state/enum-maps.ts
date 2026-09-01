@@ -1,8 +1,13 @@
 import type { PivotTableMode } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { Operation } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
+import { ExportFormat } from "@rilldata/web-common/proto/gen/rill/runtime/v1/export_format_pb";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import { DashboardState_PivotTableMode } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1ExportFormat,
+  V1Operation,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 
 // This file should contain all the map from proto and API values.
 // TODO: we should try and find a way to merge these enums
@@ -61,4 +66,19 @@ export const FromProtoPivotTableModeMap = {} as Record<
 >;
 for (const op in ToProtoPivotTableModeMap) {
   FromProtoPivotTableModeMap[ToProtoPivotTableModeMap[op]] = op;
+}
+
+export const ToProtoExportFormatMap: Record<V1ExportFormat, ExportFormat> = {
+  [V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED]: ExportFormat.UNSPECIFIED,
+  [V1ExportFormat.EXPORT_FORMAT_CSV]: ExportFormat.CSV,
+  [V1ExportFormat.EXPORT_FORMAT_XLSX]: ExportFormat.XLSX,
+  [V1ExportFormat.EXPORT_FORMAT_PARQUET]: ExportFormat.PARQUET,
+};
+
+export const FromProtoExportFormatMap = {} as Record<
+  ExportFormat,
+  V1ExportFormat
+>;
+for (const format in ToProtoExportFormatMap) {
+  FromProtoExportFormatMap[ToProtoExportFormatMap[format]] = format;
 }

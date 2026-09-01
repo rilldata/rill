@@ -15,15 +15,25 @@ import {
 } from "@tanstack/svelte-query";
 import {
   ColumnCardinalityRequest,
+  ColumnCardinalityResponse,
   ColumnDescriptiveStatisticsRequest,
+  ColumnDescriptiveStatisticsResponse,
   ColumnNullCountRequest,
+  ColumnNullCountResponse,
   ColumnNumericHistogramRequest,
+  ColumnNumericHistogramResponse,
   ColumnRollupIntervalRequest,
+  ColumnRollupIntervalResponse,
   ColumnRugHistogramRequest,
+  ColumnRugHistogramResponse,
   ColumnTimeGrainRequest,
+  ColumnTimeGrainResponse,
   ColumnTimeRangeRequest,
+  ColumnTimeRangeResponse,
   ColumnTimeSeriesRequest,
+  ColumnTimeSeriesResponse,
   ColumnTopKRequest,
+  ColumnTopKResponse,
   ConvertExpressionToMetricsSQLRequest,
   ExportReportRequest,
   ExportRequest,
@@ -49,26 +59,6 @@ import {
   TableRowsRequest,
 } from "../../../proto/gen/rill/runtime/v1/queries_pb";
 import type {
-  V1ColumnCardinalityRequest,
-  V1ColumnCardinalityResponse,
-  V1ColumnDescriptiveStatisticsRequest,
-  V1ColumnDescriptiveStatisticsResponse,
-  V1ColumnNullCountRequest,
-  V1ColumnNullCountResponse,
-  V1ColumnNumericHistogramRequest,
-  V1ColumnNumericHistogramResponse,
-  V1ColumnRollupIntervalRequest,
-  V1ColumnRollupIntervalResponse,
-  V1ColumnRugHistogramRequest,
-  V1ColumnRugHistogramResponse,
-  V1ColumnTimeGrainRequest,
-  V1ColumnTimeGrainResponse,
-  V1ColumnTimeRangeRequest,
-  V1ColumnTimeRangeResponse,
-  V1ColumnTimeSeriesRequest,
-  V1ColumnTimeSeriesResponse,
-  V1ColumnTopKRequest,
-  V1ColumnTopKResponse,
   V1ConvertExpressionToMetricsSQLResponse,
   V1ExportReportResponse,
   V1ExportResponse,
@@ -110,19 +100,12 @@ export async function queryServiceProjectStorage(
   client: RuntimeClient,
   request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<PartialMessage<ProjectStorageResponse>> {
+): Promise<ProjectStorageResponse> {
   const r = await client.queryService.projectStorage(
-    ProjectStorageRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as PartialMessage<ProjectStorageResponse>;
+  return r;
 }
 
 export function getQueryServiceProjectStorageQueryKey(
@@ -133,55 +116,42 @@ export function getQueryServiceProjectStorageQueryKey(
 }
 
 export function getQueryServiceProjectStorageQueryOptions<
-  TData = PartialMessage<ProjectStorageResponse>,
+  TData = ProjectStorageResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<
-        PartialMessage<ProjectStorageResponse>,
-        ConnectError,
-        TData
-      >
+      CreateQueryOptions<ProjectStorageResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<
-  PartialMessage<ProjectStorageResponse>,
-  ConnectError,
-  TData
-> & { queryKey: QueryKey } {
+): CreateQueryOptions<ProjectStorageResponse, ConnectError, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceProjectStorageQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<PartialMessage<ProjectStorageResponse>> = ({
-    signal,
-  }) => queryServiceProjectStorage(client, request, { signal });
+  const queryFn: QueryFunction<ProjectStorageResponse> = ({ signal }) =>
+    queryServiceProjectStorage(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<
-    PartialMessage<ProjectStorageResponse>,
-    ConnectError,
-    TData
-  > & { queryKey: QueryKey };
+  } as CreateQueryOptions<ProjectStorageResponse, ConnectError, TData> & {
+    queryKey: QueryKey;
+  };
 }
 
 export function createQueryServiceProjectStorage<
-  TData = PartialMessage<ProjectStorageResponse>,
+  TData = ProjectStorageResponse,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<
-        PartialMessage<ProjectStorageResponse>,
-        ConnectError,
-        TData
-      >
+      CreateQueryOptions<ProjectStorageResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -710,12 +680,7 @@ export async function queryServiceMetricsViewTimeRange(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewTimeRangeResponse> {
   const r = await client.queryService.metricsViewTimeRange(
-    MetricsViewTimeRangeRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -795,12 +760,7 @@ export async function queryServiceMetricsViewSchema(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewSchemaResponse> {
   const r = await client.queryService.metricsViewSchema(
-    MetricsViewSchemaRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -878,12 +838,7 @@ export async function queryServiceMetricsViewSearch(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewSearchResponse> {
   const r = await client.queryService.metricsViewSearch(
-    MetricsViewSearchRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -961,12 +916,7 @@ export async function queryServiceMetricsViewTimeRanges(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewTimeRangesResponse> {
   const r = await client.queryService.metricsViewTimeRanges(
-    MetricsViewTimeRangesRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1047,12 +997,7 @@ export async function queryServiceMetricsViewAnnotations(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewAnnotationsResponse> {
   const r = await client.queryService.metricsViewAnnotations(
-    MetricsViewAnnotationsRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1136,12 +1081,7 @@ export async function queryServiceConvertExpressionToMetricsSQL(
   options?: { signal?: AbortSignal },
 ): Promise<V1ConvertExpressionToMetricsSQLResponse> {
   const r = await client.queryService.convertExpressionToMetricsSQL(
-    ConvertExpressionToMetricsSQLRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1241,12 +1181,7 @@ export async function queryServiceResolveCanvas(
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveCanvasResponse> {
   const r = await client.queryService.resolveCanvas(
-    ResolveCanvasRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1319,12 +1254,7 @@ export async function queryServiceResolveComponent(
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveComponentResponse> {
   const r = await client.queryService.resolveComponent(
-    ResolveComponentRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1402,12 +1332,7 @@ export async function queryServiceResolveTemplatedString(
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveTemplatedStringResponse> {
   const r = await client.queryService.resolveTemplatedString(
-    ResolveTemplatedStringRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1484,26 +1409,19 @@ export function createQueryServiceResolveTemplatedString<
  */
 export async function queryServiceColumnRollupInterval(
   client: RuntimeClient,
-  request: Omit<V1ColumnRollupIntervalRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnRollupIntervalRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnRollupIntervalResponse> {
+): Promise<ColumnRollupIntervalResponse> {
   const r = await client.queryService.columnRollupInterval(
-    ColumnRollupIntervalRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnRollupIntervalResponse;
+  return r;
 }
 
 export function getQueryServiceColumnRollupIntervalQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnRollupIntervalRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnRollupIntervalRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1514,44 +1432,42 @@ export function getQueryServiceColumnRollupIntervalQueryKey(
 }
 
 export function getQueryServiceColumnRollupIntervalQueryOptions<
-  TData = V1ColumnRollupIntervalResponse,
+  TData = ColumnRollupIntervalResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnRollupIntervalRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnRollupIntervalRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnRollupIntervalResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnRollupIntervalResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnRollupIntervalResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnRollupIntervalResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnRollupIntervalQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnRollupIntervalResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ColumnRollupIntervalResponse> = ({ signal }) =>
     queryServiceColumnRollupInterval(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<
-    V1ColumnRollupIntervalResponse,
-    ConnectError,
-    TData
-  > & { queryKey: QueryKey };
+  } as CreateQueryOptions<ColumnRollupIntervalResponse, ConnectError, TData> & {
+    queryKey: QueryKey;
+  };
 }
 
 export function createQueryServiceColumnRollupInterval<
-  TData = V1ColumnRollupIntervalResponse,
+  TData = ColumnRollupIntervalResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnRollupIntervalRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnRollupIntervalRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnRollupIntervalResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnRollupIntervalResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1569,65 +1485,58 @@ export function createQueryServiceColumnRollupInterval<
  */
 export async function queryServiceColumnTopK(
   client: RuntimeClient,
-  request: Omit<V1ColumnTopKRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTopKRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnTopKResponse> {
+): Promise<ColumnTopKResponse> {
   const r = await client.queryService.columnTopK(
-    ColumnTopKRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnTopKResponse;
+  return r;
 }
 
 export function getQueryServiceColumnTopKQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnTopKRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnTopKRequest>, "instanceId">,
 ): QueryKey {
   return ["QueryService", "columnTopK", instanceId, request ?? {}] as const;
 }
 
 export function getQueryServiceColumnTopKQueryOptions<
-  TData = V1ColumnTopKResponse,
+  TData = ColumnTopKResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnTopKRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTopKRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnTopKResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnTopKResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnTopKResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnTopKResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnTopKQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnTopKResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ColumnTopKResponse> = ({ signal }) =>
     queryServiceColumnTopK(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ColumnTopKResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ColumnTopKResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnTopK<TData = V1ColumnTopKResponse>(
+export function createQueryServiceColumnTopK<TData = ColumnTopKResponse>(
   client: RuntimeClient,
-  request: Omit<V1ColumnTopKRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTopKRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnTopKResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnTopKResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1645,26 +1554,19 @@ export function createQueryServiceColumnTopK<TData = V1ColumnTopKResponse>(
  */
 export async function queryServiceColumnNullCount(
   client: RuntimeClient,
-  request: Omit<V1ColumnNullCountRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnNullCountRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnNullCountResponse> {
+): Promise<ColumnNullCountResponse> {
   const r = await client.queryService.columnNullCount(
-    ColumnNullCountRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnNullCountResponse;
+  return r;
 }
 
 export function getQueryServiceColumnNullCountQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnNullCountRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnNullCountRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1675,42 +1577,42 @@ export function getQueryServiceColumnNullCountQueryKey(
 }
 
 export function getQueryServiceColumnNullCountQueryOptions<
-  TData = V1ColumnNullCountResponse,
+  TData = ColumnNullCountResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnNullCountRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnNullCountRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnNullCountResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnNullCountResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnNullCountResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnNullCountResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnNullCountQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnNullCountResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ColumnNullCountResponse> = ({ signal }) =>
     queryServiceColumnNullCount(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ColumnNullCountResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ColumnNullCountResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
 export function createQueryServiceColumnNullCount<
-  TData = V1ColumnNullCountResponse,
+  TData = ColumnNullCountResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnNullCountRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnNullCountRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnNullCountResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnNullCountResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1728,26 +1630,25 @@ export function createQueryServiceColumnNullCount<
  */
 export async function queryServiceColumnDescriptiveStatistics(
   client: RuntimeClient,
-  request: Omit<V1ColumnDescriptiveStatisticsRequest, "instanceId">,
+  request: Omit<
+    PartialMessage<ColumnDescriptiveStatisticsRequest>,
+    "instanceId"
+  >,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnDescriptiveStatisticsResponse> {
+): Promise<ColumnDescriptiveStatisticsResponse> {
   const r = await client.queryService.columnDescriptiveStatistics(
-    ColumnDescriptiveStatisticsRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnDescriptiveStatisticsResponse;
+  return r;
 }
 
 export function getQueryServiceColumnDescriptiveStatisticsQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnDescriptiveStatisticsRequest, "instanceId">,
+  request?: Omit<
+    PartialMessage<ColumnDescriptiveStatisticsRequest>,
+    "instanceId"
+  >,
 ): QueryKey {
   return [
     "QueryService",
@@ -1758,21 +1659,24 @@ export function getQueryServiceColumnDescriptiveStatisticsQueryKey(
 }
 
 export function getQueryServiceColumnDescriptiveStatisticsQueryOptions<
-  TData = V1ColumnDescriptiveStatisticsResponse,
+  TData = ColumnDescriptiveStatisticsResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnDescriptiveStatisticsRequest, "instanceId">,
+  request: Omit<
+    PartialMessage<ColumnDescriptiveStatisticsRequest>,
+    "instanceId"
+  >,
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        V1ColumnDescriptiveStatisticsResponse,
+        ColumnDescriptiveStatisticsResponse,
         ConnectError,
         TData
       >
     >;
   },
 ): CreateQueryOptions<
-  V1ColumnDescriptiveStatisticsResponse,
+  ColumnDescriptiveStatisticsResponse,
   ConnectError,
   TData
 > & { queryKey: QueryKey } {
@@ -1780,7 +1684,7 @@ export function getQueryServiceColumnDescriptiveStatisticsQueryOptions<
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnDescriptiveStatisticsResponse> = ({
+  const queryFn: QueryFunction<ColumnDescriptiveStatisticsResponse> = ({
     signal,
   }) => queryServiceColumnDescriptiveStatistics(client, request, { signal });
   return {
@@ -1789,21 +1693,24 @@ export function getQueryServiceColumnDescriptiveStatisticsQueryOptions<
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateQueryOptions<
-    V1ColumnDescriptiveStatisticsResponse,
+    ColumnDescriptiveStatisticsResponse,
     ConnectError,
     TData
   > & { queryKey: QueryKey };
 }
 
 export function createQueryServiceColumnDescriptiveStatistics<
-  TData = V1ColumnDescriptiveStatisticsResponse,
+  TData = ColumnDescriptiveStatisticsResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnDescriptiveStatisticsRequest, "instanceId">,
+  request: Omit<
+    PartialMessage<ColumnDescriptiveStatisticsRequest>,
+    "instanceId"
+  >,
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        V1ColumnDescriptiveStatisticsResponse,
+        ColumnDescriptiveStatisticsResponse,
         ConnectError,
         TData
       >
@@ -1824,26 +1731,19 @@ export function createQueryServiceColumnDescriptiveStatistics<
  */
 export async function queryServiceColumnTimeGrain(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeGrainRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeGrainRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnTimeGrainResponse> {
+): Promise<ColumnTimeGrainResponse> {
   const r = await client.queryService.columnTimeGrain(
-    ColumnTimeGrainRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnTimeGrainResponse;
+  return r;
 }
 
 export function getQueryServiceColumnTimeGrainQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnTimeGrainRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnTimeGrainRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1854,42 +1754,42 @@ export function getQueryServiceColumnTimeGrainQueryKey(
 }
 
 export function getQueryServiceColumnTimeGrainQueryOptions<
-  TData = V1ColumnTimeGrainResponse,
+  TData = ColumnTimeGrainResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeGrainRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeGrainRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnTimeGrainResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnTimeGrainResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnTimeGrainResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnTimeGrainResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnTimeGrainQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnTimeGrainResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ColumnTimeGrainResponse> = ({ signal }) =>
     queryServiceColumnTimeGrain(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ColumnTimeGrainResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ColumnTimeGrainResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
 export function createQueryServiceColumnTimeGrain<
-  TData = V1ColumnTimeGrainResponse,
+  TData = ColumnTimeGrainResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeGrainRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeGrainRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnTimeGrainResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnTimeGrainResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1907,26 +1807,19 @@ export function createQueryServiceColumnTimeGrain<
  */
 export async function queryServiceColumnNumericHistogram(
   client: RuntimeClient,
-  request: Omit<V1ColumnNumericHistogramRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnNumericHistogramRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnNumericHistogramResponse> {
+): Promise<ColumnNumericHistogramResponse> {
   const r = await client.queryService.columnNumericHistogram(
-    ColumnNumericHistogramRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnNumericHistogramResponse;
+  return r;
 }
 
 export function getQueryServiceColumnNumericHistogramQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnNumericHistogramRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnNumericHistogramRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1937,45 +1830,44 @@ export function getQueryServiceColumnNumericHistogramQueryKey(
 }
 
 export function getQueryServiceColumnNumericHistogramQueryOptions<
-  TData = V1ColumnNumericHistogramResponse,
+  TData = ColumnNumericHistogramResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnNumericHistogramRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnNumericHistogramRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnNumericHistogramResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnNumericHistogramResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnNumericHistogramResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnNumericHistogramResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnNumericHistogramQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnNumericHistogramResponse> = ({
-    signal,
-  }) => queryServiceColumnNumericHistogram(client, request, { signal });
+  const queryFn: QueryFunction<ColumnNumericHistogramResponse> = ({ signal }) =>
+    queryServiceColumnNumericHistogram(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
   } as CreateQueryOptions<
-    V1ColumnNumericHistogramResponse,
+    ColumnNumericHistogramResponse,
     ConnectError,
     TData
   > & { queryKey: QueryKey };
 }
 
 export function createQueryServiceColumnNumericHistogram<
-  TData = V1ColumnNumericHistogramResponse,
+  TData = ColumnNumericHistogramResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnNumericHistogramRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnNumericHistogramRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnNumericHistogramResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnNumericHistogramResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -1993,26 +1885,19 @@ export function createQueryServiceColumnNumericHistogram<
  */
 export async function queryServiceColumnRugHistogram(
   client: RuntimeClient,
-  request: Omit<V1ColumnRugHistogramRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnRugHistogramRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnRugHistogramResponse> {
+): Promise<ColumnRugHistogramResponse> {
   const r = await client.queryService.columnRugHistogram(
-    ColumnRugHistogramRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnRugHistogramResponse;
+  return r;
 }
 
 export function getQueryServiceColumnRugHistogramQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnRugHistogramRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnRugHistogramRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -2023,42 +1908,42 @@ export function getQueryServiceColumnRugHistogramQueryKey(
 }
 
 export function getQueryServiceColumnRugHistogramQueryOptions<
-  TData = V1ColumnRugHistogramResponse,
+  TData = ColumnRugHistogramResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnRugHistogramRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnRugHistogramRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnRugHistogramResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnRugHistogramResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnRugHistogramResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnRugHistogramResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnRugHistogramQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnRugHistogramResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ColumnRugHistogramResponse> = ({ signal }) =>
     queryServiceColumnRugHistogram(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ColumnRugHistogramResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ColumnRugHistogramResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
 export function createQueryServiceColumnRugHistogram<
-  TData = V1ColumnRugHistogramResponse,
+  TData = ColumnRugHistogramResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnRugHistogramRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnRugHistogramRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnRugHistogramResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnRugHistogramResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -2076,26 +1961,19 @@ export function createQueryServiceColumnRugHistogram<
  */
 export async function queryServiceColumnTimeRange(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeRangeRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeRangeRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnTimeRangeResponse> {
+): Promise<ColumnTimeRangeResponse> {
   const r = await client.queryService.columnTimeRange(
-    ColumnTimeRangeRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnTimeRangeResponse;
+  return r;
 }
 
 export function getQueryServiceColumnTimeRangeQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnTimeRangeRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnTimeRangeRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -2106,42 +1984,42 @@ export function getQueryServiceColumnTimeRangeQueryKey(
 }
 
 export function getQueryServiceColumnTimeRangeQueryOptions<
-  TData = V1ColumnTimeRangeResponse,
+  TData = ColumnTimeRangeResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeRangeRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeRangeRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnTimeRangeResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnTimeRangeResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnTimeRangeResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnTimeRangeResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnTimeRangeQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnTimeRangeResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ColumnTimeRangeResponse> = ({ signal }) =>
     queryServiceColumnTimeRange(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ColumnTimeRangeResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ColumnTimeRangeResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
 export function createQueryServiceColumnTimeRange<
-  TData = V1ColumnTimeRangeResponse,
+  TData = ColumnTimeRangeResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeRangeRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeRangeRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnTimeRangeResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnTimeRangeResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -2159,26 +2037,19 @@ export function createQueryServiceColumnTimeRange<
  */
 export async function queryServiceColumnCardinality(
   client: RuntimeClient,
-  request: Omit<V1ColumnCardinalityRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnCardinalityRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnCardinalityResponse> {
+): Promise<ColumnCardinalityResponse> {
   const r = await client.queryService.columnCardinality(
-    ColumnCardinalityRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnCardinalityResponse;
+  return r;
 }
 
 export function getQueryServiceColumnCardinalityQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnCardinalityRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnCardinalityRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -2189,42 +2060,42 @@ export function getQueryServiceColumnCardinalityQueryKey(
 }
 
 export function getQueryServiceColumnCardinalityQueryOptions<
-  TData = V1ColumnCardinalityResponse,
+  TData = ColumnCardinalityResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnCardinalityRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnCardinalityRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnCardinalityResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnCardinalityResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnCardinalityResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnCardinalityResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnCardinalityQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnCardinalityResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ColumnCardinalityResponse> = ({ signal }) =>
     queryServiceColumnCardinality(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ColumnCardinalityResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ColumnCardinalityResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
 export function createQueryServiceColumnCardinality<
-  TData = V1ColumnCardinalityResponse,
+  TData = ColumnCardinalityResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnCardinalityRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnCardinalityRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnCardinalityResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnCardinalityResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -2242,26 +2113,19 @@ export function createQueryServiceColumnCardinality<
  */
 export async function queryServiceColumnTimeSeries(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeSeriesRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeSeriesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<V1ColumnTimeSeriesResponse> {
+): Promise<ColumnTimeSeriesResponse> {
   const r = await client.queryService.columnTimeSeries(
-    ColumnTimeSeriesRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1ColumnTimeSeriesResponse;
+  return r;
 }
 
 export function getQueryServiceColumnTimeSeriesQueryKey(
   instanceId: string,
-  request?: Omit<V1ColumnTimeSeriesRequest, "instanceId">,
+  request?: Omit<PartialMessage<ColumnTimeSeriesRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -2272,42 +2136,42 @@ export function getQueryServiceColumnTimeSeriesQueryKey(
 }
 
 export function getQueryServiceColumnTimeSeriesQueryOptions<
-  TData = V1ColumnTimeSeriesResponse,
+  TData = ColumnTimeSeriesResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeSeriesRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeSeriesRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnTimeSeriesResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnTimeSeriesResponse, ConnectError, TData>
     >;
   },
-): CreateQueryOptions<V1ColumnTimeSeriesResponse, ConnectError, TData> & {
+): CreateQueryOptions<ColumnTimeSeriesResponse, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnTimeSeriesQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<V1ColumnTimeSeriesResponse> = ({ signal }) =>
+  const queryFn: QueryFunction<ColumnTimeSeriesResponse> = ({ signal }) =>
     queryServiceColumnTimeSeries(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<V1ColumnTimeSeriesResponse, ConnectError, TData> & {
+  } as CreateQueryOptions<ColumnTimeSeriesResponse, ConnectError, TData> & {
     queryKey: QueryKey;
   };
 }
 
 export function createQueryServiceColumnTimeSeries<
-  TData = V1ColumnTimeSeriesResponse,
+  TData = ColumnTimeSeriesResponse,
 >(
   client: RuntimeClient,
-  request: Omit<V1ColumnTimeSeriesRequest, "instanceId">,
+  request: Omit<PartialMessage<ColumnTimeSeriesRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ColumnTimeSeriesResponse, ConnectError, TData>
+      CreateQueryOptions<ColumnTimeSeriesResponse, ConnectError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -2561,12 +2425,7 @@ export async function queryServiceQuery(
   options?: { signal?: AbortSignal },
 ): Promise<V1QueryResponse> {
   const r = await client.queryService.query(
-    QueryRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1QueryResponse;
@@ -2620,12 +2479,7 @@ export async function queryServiceExport(
   options?: { signal?: AbortSignal },
 ): Promise<V1ExportResponse> {
   const r = await client.queryService.export(
-    ExportRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1ExportResponse;
@@ -2679,12 +2533,7 @@ export async function queryServiceExportReport(
   options?: { signal?: AbortSignal },
 ): Promise<V1ExportReportResponse> {
   const r = await client.queryService.exportReport(
-    ExportReportRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
+    { instanceId: client.instanceId, ...request },
     { signal: options?.signal },
   );
   return r.toJson({

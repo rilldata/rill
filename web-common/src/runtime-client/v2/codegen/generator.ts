@@ -109,7 +109,10 @@ function hasOrvalType(
   return availableOrvalTypes.has(orvalTypeName(protoTypeName));
 }
 
-/** Get the public-facing type for a request or response */
+/**
+ * Get the public-facing type for a request. Falls back to `PartialMessage` for
+ * proto types so callers can pass plain partial objects.
+ */
 function publicType(
   availableOrvalTypes: Set<string>,
   protoTypeName: string,
@@ -117,6 +120,20 @@ function publicType(
   return hasOrvalType(availableOrvalTypes, protoTypeName)
     ? orvalTypeName(protoTypeName)
     : `PartialMessage<${protoTypeName}>`;
+}
+
+/**
+ * Get the public-facing type for a response. Falls back to the proto Message
+ * type (not `PartialMessage`) so callers receive a fully-typed message instance
+ * with its runtime helpers (e.g. `Timestamp.toDate()`, oneof selectors).
+ */
+function publicResponseType(
+  availableOrvalTypes: Set<string>,
+  protoTypeName: string,
+): string {
+  return hasOrvalType(availableOrvalTypes, protoTypeName)
+    ? orvalTypeName(protoTypeName)
+    : protoTypeName;
 }
 
 // --- Method extraction ---
@@ -195,14 +212,27 @@ function requestTypes(ctx: MethodContext) {
   const requestSpread = m.hasInstanceId
     ? `{ instanceId: client.instanceId, ...request }`
     : `request`;
-  const responseType = publicType(orvalTypes, m.outputType);
+  const responseType = publicResponseType(orvalTypes, m.outputType);
   return { requestType, requestSpread, responseType };
 }
 
 function generateRawFunction(ctx: MethodContext): string[] {
-  const { serviceName, serviceClientProp, m } = ctx;
+  const { serviceName, serviceClientProp, m, orvalTypes } = ctx;
   const { rawFn } = methodNames(ctx);
   const { requestType, requestSpread, responseType } = requestTypes(ctx);
+
+  // Orval request types are JSON, so they must be parsed via fromJson (with
+  // undefined stripped, which fromJson rejects). Proto request types are
+  // PartialMessage and can be passed to the ConnectRPC client directly.
+  const requestArg = hasOrvalType(orvalTypes, m.inputType)
+    ? `${m.inputType}.fromJson(stripUndefined(${requestSpread}) as unknown as JsonValue)`
+    : requestSpread;
+
+  // Orval callers expect the JSON representation; proto callers get the message
+  // instance directly (retaining its runtime helpers).
+  const returnStmt = hasOrvalType(orvalTypes, m.outputType)
+    ? `  return r.toJson({ emitDefaultValues: true }) as unknown as ${responseType};`
+    : `  return r;`;
 
   return [
     `/**`,
@@ -214,10 +244,10 @@ function generateRawFunction(ctx: MethodContext): string[] {
     `  options?: { signal?: AbortSignal },`,
     `): Promise<${responseType}> {`,
     `  const r = await client.${serviceClientProp}.${m.methodKey}(`,
-    `    ${m.inputType}.fromJson(stripUndefined(${requestSpread}) as unknown as JsonValue),`,
+    `    ${requestArg},`,
     `    { signal: options?.signal },`,
     `  );`,
-    `  return r.toJson({ emitDefaultValues: true }) as unknown as ${responseType};`,
+    returnStmt,
     `}`,
     ``,
   ];
@@ -385,17 +415,23 @@ function generateServiceFile(
   // --- Package imports ---
 
   // @bufbuild/protobuf
+  // PartialMessage is used for proto request types; JsonValue is only needed
+  // for the fromJson bridge on Orval-typed requests.
   const needsPartialMessage = methods.some(
-    (m) =>
-      !hasOrvalType(availableOrvalTypes, m.inputType) ||
-      !hasOrvalType(availableOrvalTypes, m.outputType),
+    (m) => !hasOrvalType(availableOrvalTypes, m.inputType),
   );
-  const bufSpecs: string[] = ["JsonValue"];
+  const needsJsonBridge = methods.some((m) =>
+    hasOrvalType(availableOrvalTypes, m.inputType),
+  );
+  const bufSpecs: string[] = [];
+  if (needsJsonBridge) bufSpecs.push("JsonValue");
   if (needsPartialMessage) bufSpecs.push("PartialMessage");
   bufSpecs.sort();
-  lines.push(
-    `import type { ${bufSpecs.join(", ")} } from "@bufbuild/protobuf";`,
-  );
+  if (bufSpecs.length > 0) {
+    lines.push(
+      `import type { ${bufSpecs.join(", ")} } from "@bufbuild/protobuf";`,
+    );
+  }
 
   // @connectrpc/connect
   lines.push(`import type { ConnectError } from "@connectrpc/connect";`);
@@ -480,8 +516,11 @@ function generateServiceFile(
   lines.push(`import type { RuntimeClient } from "../runtime-client";`);
 
   // stripUndefined (proto fromJson rejects undefined values;
-  // Orval's HTTP client silently omitted them)
-  lines.push(`import { stripUndefined } from "../strip-undefined";`);
+  // Orval's HTTP client silently omitted them). Only needed for the fromJson
+  // bridge on Orval-typed requests.
+  if (needsJsonBridge) {
+    lines.push(`import { stripUndefined } from "../strip-undefined";`);
+  }
 
   lines.push(``);
 
