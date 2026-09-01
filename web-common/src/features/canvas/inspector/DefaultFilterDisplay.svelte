@@ -41,8 +41,8 @@
       uiFilters={$defaultUIFiltersStore}
       timeRangeString={defaultTimeRange}
       comparisonRange={defaultComparisonRange}
-      timeStart={interval?.start?.toISO()}
-      timeEnd={interval?.end?.toISO()}
+      timeStart={interval?.start?.toUTC().toISO()}
+      timeEnd={interval?.end?.toUTC().toISO()}
     />
   </div>
 

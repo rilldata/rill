@@ -3525,6 +3525,17 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: pageSize
+          description: Maximum number of resources to return. If zero, returns all resources.
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          description: Page token returned by a previous ListResources call.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/-/watch:
@@ -5550,6 +5561,7 @@ definitions:
       - EXPORT_FORMAT_CSV
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
+      - EXPORT_FORMAT_PDF
     default: EXPORT_FORMAT_UNSPECIFIED
   v1ExportReportResponse:
     type: object
@@ -6066,6 +6078,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Resource'
+      nextPageToken:
+        type: string
   v1ListTablesResponse:
     type: object
     properties:

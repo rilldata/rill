@@ -851,6 +851,11 @@ paths:
                 type: string
               role:
                 type: string
+              attributes:
+                type: object
+                description: |-
+                  Custom attributes to set on the new membership.
+                  If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
               superuserForceAccess:
                 type: boolean
       x-visibility: public
@@ -1760,6 +1765,12 @@ paths:
               navigation:
                 type: boolean
                 description: Navigation denotes whether navigation between different resources should be enabled in the embed.
+              hideNavigationBar:
+                type: boolean
+                description: |-
+                  HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+                  It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+                  In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
               state:
                 type: string
                 description: Blob containing UI state for rendering the initial embed. Not currently supported.
@@ -1883,6 +1894,12 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+              attributes:
+                type: object
+                description: |-
+                  Custom attributes to set on the user's org membership (attributes are org-scoped).
+                  If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                  Setting attributes requires permission to manage org members.
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}:
     get:
@@ -5424,6 +5441,7 @@ definitions:
       - EXPORT_FORMAT_CSV
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
+      - EXPORT_FORMAT_PDF
     default: EXPORT_FORMAT_UNSPECIFIED
   v1Expression:
     type: object
@@ -6239,6 +6257,8 @@ definitions:
         type: string
       invitedBy:
         type: string
+      attributes:
+        type: object
   v1OrganizationMemberService:
     type: object
     properties:
@@ -6722,6 +6742,13 @@ definitions:
         title: either canvas or explore should be set
       canvas:
         type: string
+      metricsViewFilters:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
+        description: |-
+          Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+          Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
       webOpenMode:
         type: string
         title: |-

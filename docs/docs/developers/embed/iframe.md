@@ -16,7 +16,7 @@ Rill Cloud provides the ability to embed dashboards as components in your own ap
 - Embedding individual dashboards with the ability to navigate to other dashboards (that exist in the _same_ project)
 - Embedding the dashboard list page present in a Rill project (with the ability to select and navigate between dashboards)
 
-When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill API. Afterwards, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
+When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill API. Afterward, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
 
 ```mermaid
 sequenceDiagram
@@ -296,6 +296,7 @@ The API accepts the following parameters:
 | resource         | The name of the dashboard to embed                                                                                                                                              | No (if not specified, `navigation` should be set to `true`)       |
 | type             | The type of the dashboard identified by `resource` (options: `explore`, `canvas`)                                                                                               | No (defaults to `explore`)                                        |
 | navigation       | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation) | No (defaults to `false`)                                          |
+| hide_navigation_bar | Boolean whether to hide the navigation bar (the home link and dashboard breadcrumbs) while keeping navigation enabled. Only meaningful when `navigation` is `true`; the bar is always hidden when `navigation` is `false`. In-dashboard navigation, such as the drill-through from a Canvas component to an Explore dashboard, remains available. | No (defaults to `false`)                                          |
 | theme            | If [themes](/developers/build/dashboards/customization#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                            | No (set to the name of the theme)                                 |
 | theme_mode       | The theme mode to use for the embedded dashboard. Valid values: `light`, `dark`, `system`. When set to `system`, the dashboard will follow the user's system preference.        | No (defaults to `light`)                                          |
 | user_email       | Email of the end user accessing the embed. Used to populate attributes for use in security policies.                                                                            | No (only one of `user_email` or `attributes` should be passed in) |
@@ -347,6 +348,18 @@ If you wish to still embed a dashboard _but allow navigation between dashboards_
   "navigation": true
 }
 ```
+
+If you wish to allow navigation _but hide the navigation bar_ — for example to embed a Canvas dashboard whose components can drill through to an Explore dashboard, without showing Rill's own breadcrumbs — then add `hide_navigation_bar`:
+```json
+{
+  "type": "canvas",
+  "resource": "dashboardName",
+  "navigation": true,
+  "hide_navigation_bar": true
+}
+```
+
+Note that in this mode there is no in-iframe affordance for returning from a dashboard the user drilled into. Your application should listen for the [`navigation` notification](/developers/embed/postmessage) — still emitted when the navigation bar is hidden — and provide its own way back.
 
 Finally, _if you wish to embed the project list view of dashboards instead (what you see when you first open a project in Rill Cloud)_, then you can simply omit the `resource` and appropriately set `navigation` in your payload:
 ```json

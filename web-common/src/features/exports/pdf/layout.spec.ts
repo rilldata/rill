@@ -50,6 +50,50 @@ describe("paginate", () => {
     expect(p.yPt).toBeCloseTo(result.marginPt, 1);
   });
 
+  // A phone-width capture used to be stretched to the page, which inflated every
+  // row past the page height and sliced whole charts across pages.
+  it("does not magnify a capture narrower than the page", () => {
+    const result = paginate([block({ id: "a", widthPx: 390, heightPx: 300 })], {
+      ...A4,
+      contentWidthPx: 390,
+    });
+
+    expect(result.pageCount).toBe(1);
+    const p = result.placements[0];
+    expect(p.wPt).toBeCloseTo(390, 1);
+    expect(p.hPt).toBeCloseTo(300, 1);
+  });
+
+  it("centres a capture that is narrower than the page", () => {
+    const result = paginate([block({ id: "a", widthPx: 390, heightPx: 300 })], {
+      ...A4,
+      contentWidthPx: 390,
+    });
+
+    const p = result.placements[0];
+    const contentWidthPt = result.pageWidthPt - 2 * result.marginPt;
+    expect(p.xPt).toBeCloseTo(result.marginPt + (contentWidthPt - 390) / 2, 1);
+    // Equal gutters either side.
+    expect(result.pageWidthPt - (p.xPt + p.wPt)).toBeCloseTo(p.xPt, 1);
+  });
+
+  // Three phone-width charts fit one page at 1:1; magnified they would not.
+  it("fits several narrow rows on one page instead of slicing them", () => {
+    const result = paginate(
+      [
+        block({ id: "a", yPx: 0, widthPx: 390, heightPx: 240, rowIndex: 0 }),
+        block({ id: "b", yPx: 250, widthPx: 390, heightPx: 240, rowIndex: 1 }),
+        block({ id: "c", yPx: 500, widthPx: 390, heightPx: 240, rowIndex: 2 }),
+      ],
+      { ...A4, contentWidthPx: 390 },
+    );
+
+    expect(result.pageCount).toBe(1);
+    expect(result.placements.every((p) => p.srcHeightPx === undefined)).toBe(
+      true,
+    );
+  });
+
   it("keeps two columns of one row on the same page side by side", () => {
     const result = paginate(
       [
@@ -198,6 +242,74 @@ describe("paginate", () => {
     );
     // Page 0 must carry content, not just the title.
     expect(result.placements.some((p) => p.page === 0)).toBe(true);
+  });
+
+  it("moves a tab label band and the tab's first row to the next page together", () => {
+    // A label band shares its rowIndex with the tab's first row (see
+    // rowIndexFor in capture.ts) and sits above it, so the row's height is the
+    // combined vertical extent. When that unit doesn't fit under the previous
+    // row, the label must move with the cards, never stay behind alone.
+    const result = paginate(
+      [
+        block({ id: "prev", rowIndex: 0, yPx: 0, heightPx: 900 }),
+        block({ id: "label", rowIndex: 1, yPx: 900, heightPx: 40 }),
+        block({ id: "card", rowIndex: 1, yPx: 940, heightPx: 900 }),
+      ],
+      { ...A4, contentWidthPx: 1000 },
+    );
+    const label = result.placements.find((p) => p.block.id === "label")!;
+    const card = result.placements.find((p) => p.block.id === "card")!;
+    expect(label.page).toBe(1);
+    expect(card.page).toBe(label.page);
+    // The label renders directly above the card, preserving on-screen offsets.
+    expect(label.yPt).toBeLessThan(card.yPt);
+    expect(card.yPt).toBeCloseTo(label.yPt + label.hPt, 1);
+  });
+
+  it("keeps the label atop the first slice when the tab's first row must be sliced", () => {
+    const result = paginate(
+      [
+        block({ id: "label", rowIndex: 0, yPx: 0, heightPx: 40 }),
+        block({ id: "tall-card", rowIndex: 0, yPx: 40, heightPx: 5000 }),
+      ],
+      { ...A4, contentWidthPx: 1000 },
+    );
+    const labels = result.placements.filter((p) => p.block.id === "label");
+    const slices = result.placements
+      .filter((p) => p.block.id === "tall-card")
+      .sort((a, b) => a.page - b.page);
+    // The label is placed once, on the same page as the first slice, above it.
+    expect(labels).toHaveLength(1);
+    expect(slices.length).toBeGreaterThan(1);
+    expect(labels[0].page).toBe(slices[0].page);
+    expect(labels[0].yPt).toBeLessThan(slices[0].yPt);
+  });
+
+  // The title and the footer are drawn from this, so it has to be the gutter
+  // the blocks actually start after.
+  it("exposes the gutter it centred the content with", () => {
+    const result = paginate([block({ id: "a", widthPx: 390, heightPx: 300 })], {
+      ...A4,
+      contentWidthPx: 390,
+    });
+
+    expect(result.contentOffsetPt).toBeGreaterThan(0);
+    expect(result.marginPt + result.contentOffsetPt).toBeCloseTo(
+      result.placements[0].xPt,
+      1,
+    );
+  });
+
+  // Centring against a width of zero used to shift every block half a content
+  // width to the right, off the page.
+  it("does not offset the content when its width is unknown", () => {
+    const result = paginate([block({ id: "a", widthPx: 390, heightPx: 300 })], {
+      ...A4,
+      contentWidthPx: 0,
+    });
+
+    expect(result.contentOffsetPt).toBe(0);
+    expect(result.placements[0].xPt).toBeCloseTo(result.marginPt, 1);
   });
 
   it("places the filter bar (rowIndex -1) before content rows", () => {

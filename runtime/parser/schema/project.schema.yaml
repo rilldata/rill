@@ -2963,6 +2963,7 @@ definitions:
                   - csv
                   - xlsx
                   - parquet
+                  - pdf
                 description: Export file format
               include_header:
                 type: boolean
@@ -4248,6 +4249,12 @@ definitions:
           banner:
             type: string
             description: Custom banner displayed at the header of the explore view.
+          dimensions:
+            $ref: '#/definitions/field_selector_properties'
+            description: Dimensions to include in the explore view. Defaults to all dimensions in the metrics view.
+          measures:
+            $ref: '#/definitions/field_selector_properties'
+            description: Measures to include in the explore view. Defaults to all measures in the metrics view.
           theme:
             oneOf:
               - type: string

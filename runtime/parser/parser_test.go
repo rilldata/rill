@@ -1423,6 +1423,26 @@ notify:
 annotations:
   foo: bar
 `,
+		// Canvas PDF report: no data or query, rendered from a canvas in the browser
+		`reports/r3.yaml`: `
+type: report
+display_name: My Canvas PDF Report
+
+refresh:
+  cron: 0 * * * *
+  time_zone: America/Los_Angeles
+
+export:
+  format: pdf
+
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+
+annotations:
+  canvas: c1
+`,
 	})
 
 	resources := []*Resource{
@@ -1480,11 +1500,88 @@ annotations:
 				IntervalsLimit:       10,
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r3"},
+			Paths: []string{"/reports/r3.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName: "My Canvas PDF Report",
+				RefreshSchedule: &runtimev1.Schedule{
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
+				},
+				ExportFormat: runtimev1.ExportFormat_EXPORT_FORMAT_PDF,
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+				}},
+				Annotations: map[string]string{"canvas": "c1"},
+			},
+		},
 	}
 
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestReportPdfValidation(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// PDF export with a query is not allowed
+		`reports/r1.yaml`: `
+type: report
+export:
+  format: pdf
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  canvas: c1
+`,
+		// PDF export without a canvas annotation is not allowed
+		`reports/r2.yaml`: `
+type: report
+export:
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Reports without a data or query property must have PDF export format
+		`reports/r3.yaml`: `
+type: report
+export:
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{
+		{
+			Message:  `export format "pdf" does not support "data" or "query" properties`,
+			FilePath: "/reports/r1.yaml",
+		},
+		{
+			Message:  `export format "pdf" requires the "canvas" annotation`,
+			FilePath: "/reports/r2.yaml",
+		},
+		{
+			Message:  `missing required property "data" or "query.name"`,
+			FilePath: "/reports/r3.yaml",
+		},
+	})
 }
 
 func TestAlert(t *testing.T) {

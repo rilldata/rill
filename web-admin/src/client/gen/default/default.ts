@@ -10955,12 +10955,144 @@ export const adminServiceListOrganizationMemberUsergroups = (
   });
 };
 
+export const getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryKey = (
+  org?: string,
+  params?: AdminServiceListOrganizationMemberUsergroupsParams,
+) => {
+  return [
+    "infinite",
+    `/v1/orgs/${org}/usergroups`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
 export const getAdminServiceListOrganizationMemberUsergroupsQueryKey = (
   org?: string,
   params?: AdminServiceListOrganizationMemberUsergroupsParams,
 ) => {
   return [`/v1/orgs/${org}/usergroups`, ...(params ? [params] : [])] as const;
 };
+
+export const getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryOptions =
+  <
+    TData = InfiniteData<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    >,
+    TError = RpcStatus,
+  >(
+    org: string,
+    params?: AdminServiceListOrganizationMemberUsergroupsParams,
+    options?: {
+      query?: Partial<
+        CreateInfiniteQueryOptions<
+          Awaited<
+            ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+          >,
+          TError,
+          TData,
+          Awaited<
+            ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+          >,
+          QueryKey,
+          AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+        >
+      >;
+    },
+  ) => {
+    const { query: queryOptions } = options ?? {};
+
+    const queryKey =
+      queryOptions?.queryKey ??
+      getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryKey(
+        org,
+        params,
+      );
+
+    const queryFn: QueryFunction<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      QueryKey,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    > = ({ signal, pageParam }) =>
+      adminServiceListOrganizationMemberUsergroups(
+        org,
+        { ...params, pageToken: pageParam || params?.["pageToken"] },
+        signal,
+      );
+
+    return {
+      queryKey,
+      queryFn,
+      enabled: !!org,
+      ...queryOptions,
+    } as CreateInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      TError,
+      TData,
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      QueryKey,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    > & { queryKey: DataTag<QueryKey, TData, TError> };
+  };
+
+export type AdminServiceListOrganizationMemberUsergroupsInfiniteQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>
+  >;
+export type AdminServiceListOrganizationMemberUsergroupsInfiniteQueryError =
+  RpcStatus;
+
+/**
+ * @summary ListOrganizationMemberUsergroups lists the organization's user groups
+ */
+
+export function createAdminServiceListOrganizationMemberUsergroupsInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+    AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+  >,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceListOrganizationMemberUsergroupsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<
+          ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+        >,
+        TError,
+        TData,
+        Awaited<
+          ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+        >,
+        QueryKey,
+        AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryOptions(
+      org,
+      params,
+      options,
+    );
+
+  const query = createInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as CreateInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 export const getAdminServiceListOrganizationMemberUsergroupsQueryOptions = <
   TData = Awaited<

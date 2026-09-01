@@ -7,6 +7,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func AddCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -17,6 +18,8 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	var explores []string
 	var canvases []string
 	var restrictResources bool
+	var attributes map[string]string
+	var attributesJSON string
 
 	addCmd := &cobra.Command{
 		Use:   "add",
@@ -42,6 +45,23 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("resource restrictions can only be set when adding a user to a project")
 			}
 
+			// Parse custom attributes if provided.
+			// They apply to the user's org membership, so they are not supported when only adding to a group.
+			var attrsPB *structpb.Struct
+			if len(attributes) > 0 || attributesJSON != "" {
+				if projectName == "" && group != "" {
+					return fmt.Errorf("attributes can only be set when adding a user to an organization or project")
+				}
+				attrs, err := parseAttributes(attributes, attributesJSON)
+				if err != nil {
+					return err
+				}
+				attrsPB, err = structpb.NewStruct(attrs)
+				if err != nil {
+					return fmt.Errorf("failed to parse attributes: %w", err)
+				}
+			}
+
 			// Handle adding the user to the org.
 			// We do this only if a more specific target (group or project) is not specified.
 			if projectName == "" && group == "" {
@@ -58,9 +78,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Add to org
 				res, err := client.AddOrganizationMemberUser(cmd.Context(), &adminv1.AddOrganizationMemberUserRequest{
-					Org:   ch.Org,
-					Email: email,
-					Role:  role,
+					Org:        ch.Org,
+					Email:      email,
+					Role:       role,
+					Attributes: attrsPB,
 				})
 				if err != nil {
 					return err
@@ -104,6 +125,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					Role:              role,
 					Resources:         resources,
 					RestrictResources: &restrictResources,
+					Attributes:        attrsPB,
 				})
 				if err != nil {
 					// We don't need to handle org membership errors since AddProjectMemberUser automatically invites the user to the org with role guest if needed.
@@ -196,6 +218,8 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd.Flags().StringArrayVar(&explores, "explore", nil, "Explore resource to restrict to (repeat for multiple)")
 	addCmd.Flags().StringArrayVar(&canvases, "canvas", nil, "Canvas resource to restrict to (repeat for multiple)")
 	addCmd.Flags().BoolVar(&restrictResources, "restrict-resources", false, "Restrict the user to the provided resources (defaults to true when resources are provided)")
+	addCmd.Flags().StringToStringVar(&attributes, "attribute", nil, "Custom attributes in key=value format (--attribute app=foo --attribute dept=bar)")
+	addCmd.Flags().StringVar(&attributesJSON, "json", "", "Custom attributes as JSON object (--json '{\"app\":\"foo\",\"dept\":\"bar\"}')")
 
 	return addCmd
 }

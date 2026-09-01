@@ -39,15 +39,15 @@ export class ArrayRuneStore<Val> implements RuneStore<Val[]> {
   }
 
   public toggle = (value: Val) => {
-    const newTags = this.value.includes(value)
+    const newValues = this.value.includes(value)
       ? this.value.filter((v) => v !== value)
       : [...this.value, value];
-    this.setter(newTags);
+    this.setter(newValues);
   };
 
   public delete = (value: Val) => {
-    const newTags = this.value.filter((v) => v !== value);
-    this.setter(newTags);
+    const newValues = this.value.filter((v) => v !== value);
+    this.setter(newValues);
   };
 }
 

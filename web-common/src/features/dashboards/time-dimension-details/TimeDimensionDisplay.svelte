@@ -202,7 +202,7 @@
 
 <div
   class="h-full w-full flex flex-col bg-surface-base"
-  aria-label="{expandedMeasureName} Time Dimension Display"
+  aria-label={m.dashboard_tdd_display_aria({ name: expandedMeasureName })}
 >
   <TDDHeader
     {areAllTableRowsSelected}
@@ -231,7 +231,10 @@
             <a
               target="_blank"
               rel="noopener noreferrer"
-              href="https://discord.gg/2ubRfjC7Rh">Discord</a
+              href="https://discord.gg/2ubRfjC7Rh"
+            >
+              <!-- i18n-ignore: standalone product name -->
+              Discord</a
             >.
           </div>
         {/if}

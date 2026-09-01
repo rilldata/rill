@@ -127,7 +127,7 @@
       />
 
       {#if activeTab && grid}
-        {#each $grid as row, rowIndex (rowIndex)}
+        {#each $grid as row, rowIndex (`${activeTab.name}-${rowIndex}`)}
           <EditableCanvasRow
             {row}
             {maxWidth}

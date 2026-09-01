@@ -22,7 +22,6 @@ type PaymentFailedArgs struct {
 	Amount            string
 	Currency          string
 	DueDate           time.Time
-	FailedAt          time.Time
 }
 
 func (PaymentFailedArgs) Kind() string { return "payment_failed" }
@@ -41,6 +40,18 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 			return nil
 		}
 		return fmt.Errorf("failed to find organization of billing customer id %q: %w", job.Args.BillingCustomerID, err)
+	}
+
+	// check invoice status directly from the biller;
+	// Orb can deliver payment_failed events out of order or redeliver stale ones,
+	// e.g. a late failure notification arriving after the invoice was already paid
+	invoice, err := w.admin.Biller.GetInvoice(ctx, job.Args.InvoiceID)
+	if err != nil {
+		return fmt.Errorf("failed to get invoice %q: %w", job.Args.InvoiceID, err)
+	}
+	if !w.admin.Biller.IsInvoiceValid(ctx, invoice) || w.admin.Biller.IsInvoicePaid(ctx, invoice) {
+		w.logger.Info("ignoring payment failed event for already paid or voided invoice", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_status", invoice.Status))
+		return nil
 	}
 
 	be, err := w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
@@ -66,7 +77,7 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 		Amount:             job.Args.Amount,
 		Currency:           job.Args.Currency,
 		DueDate:            job.Args.DueDate,
-		FailedOn:           job.Args.FailedAt,
+		FailedOn:           time.Now().UTC(),
 		GracePeriodEndDate: gracePeriodEndDate,
 	}
 
@@ -75,7 +86,7 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 		OrgID:     org.ID,
 		Type:      database.BillingIssueTypePaymentFailed,
 		Metadata:  &database.BillingIssueMetadataPaymentFailed{Invoices: metadata.Invoices},
-		EventTime: job.Args.FailedAt,
+		EventTime: time.Now().UTC(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add billing error: %w", err)

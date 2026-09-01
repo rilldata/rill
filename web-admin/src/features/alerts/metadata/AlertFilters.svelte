@@ -58,7 +58,7 @@
   $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
 </script>
 
-<div class="flex flex-col gap-y-3" aria-label="Alert filters">
+<div class="flex flex-col gap-y-3" aria-label={m.alert_metadata_filters_aria()}>
   <MetadataLabel
     >{m.alert_filters_label({ count: String(filtersLength) })}</MetadataLabel
   >

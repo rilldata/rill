@@ -234,9 +234,12 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
         let timeGrain = globalGrainStore;
 
+        // Timestamps sent to the runtime must be UTC:
+        // the protobuf JSON codec rejects ISO strings with both milliseconds and a timezone offset,
+        // which is what Luxon produces for zoned datetimes (e.g. 2026-08-13T00:00:00.000+09:00).
         let timeRange: V1TimeRange = {
-          start: globalInterval?.start.toISO(),
-          end: globalInterval?.end.toISO(),
+          start: globalInterval?.start.toUTC().toISO(),
+          end: globalInterval?.end.toUTC().toISO(),
           timeZone,
         };
 
@@ -249,13 +252,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
                 interval: globalGrainStore,
               }
             : undefined,
-          timeStart: globalInterval?.start.toISO(),
-          timeEnd: globalInterval?.end.toISO(),
+          timeStart: globalInterval?.start.toUTC().toISO(),
+          timeEnd: globalInterval?.end.toUTC().toISO(),
         };
 
         let comparisonTimeRange: V1TimeRange | undefined = {
-          start: globalComparisonInterval?.start.toISO(),
-          end: globalComparisonInterval?.end.toISO(),
+          start: globalComparisonInterval?.start.toUTC().toISO(),
+          end: globalComparisonInterval?.end.toUTC().toISO(),
           timeZone,
         };
 
@@ -263,8 +266,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
         let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
           globalComparisonInterval && {
-            comparisonTimeStart: globalComparisonInterval.start.toISO(),
-            comparisonTimeEnd: globalComparisonInterval.end.toISO(),
+            comparisonTimeStart: globalComparisonInterval.start.toUTC().toISO(),
+            comparisonTimeEnd: globalComparisonInterval.end.toUTC().toISO(),
             selectedComparisonTimeRange: {
               start: globalComparisonInterval.start.toJSDate(),
               end: globalComparisonInterval.end.toJSDate(),
@@ -294,14 +297,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
           if (componentSpec?.["time_filters"]) {
             timeRange = {
-              start: localInterval?.start.toISO(),
-              end: localInterval?.end.toISO(),
+              start: localInterval?.start.toUTC().toISO(),
+              end: localInterval?.end.toUTC().toISO(),
               timeZone,
             };
 
             comparisonTimeRange = {
-              start: localComparisonInterval?.start.toISO(),
-              end: localComparisonInterval?.end.toISO(),
+              start: localComparisonInterval?.start.toUTC().toISO(),
+              end: localComparisonInterval?.end.toUTC().toISO(),
               timeZone,
             };
 
@@ -318,14 +321,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
                     interval: localGrainStore ?? globalGrainStore,
                   }
                 : undefined,
-              timeStart: localInterval?.start.toISO(),
-              timeEnd: localInterval?.end.toISO(),
+              timeStart: localInterval?.start.toUTC().toISO(),
+              timeEnd: localInterval?.end.toUTC().toISO(),
             };
             const localComparisonRangeState:
               | ComparisonTimeRangeState
               | undefined = localComparisonInterval && {
-              comparisonTimeStart: localComparisonInterval.start.toISO(),
-              comparisonTimeEnd: localComparisonInterval.end.toISO(),
+              comparisonTimeStart: localComparisonInterval.start
+                .toUTC()
+                .toISO(),
+              comparisonTimeEnd: localComparisonInterval.end.toUTC().toISO(),
               selectedComparisonTimeRange: {
                 start: localComparisonInterval.start.toJSDate(),
                 end: localComparisonInterval.end.toJSDate(),

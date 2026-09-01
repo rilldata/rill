@@ -1026,10 +1026,10 @@
     }}
   >
     <AlertDialog.Content>
-      <AlertDialog.Title>Delete tab?</AlertDialog.Title>
+      <AlertDialog.Title>{m.canvas_delete_tab()}</AlertDialog.Title>
 
       <AlertDialog.Description>
-        This tab and all of its widgets will be permanently removed.
+        {m.canvas_delete_tab_description()}
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
@@ -1043,7 +1043,7 @@
                 pendingTabDelete = undefined;
               }}
             >
-              Cancel
+              {m.common_cancel()}
             </Button>
           {/snippet}
         </AlertDialog.Cancel>
@@ -1056,7 +1056,7 @@
               type="destructive"
               onClick={confirmDeleteTab}
             >
-              Delete
+              {m.common_delete()}
             </Button>
           {/snippet}
         </AlertDialog.Action>

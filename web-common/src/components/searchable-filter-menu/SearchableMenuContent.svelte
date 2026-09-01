@@ -124,7 +124,7 @@
             data-testid="searchable-menu-no-results"
             class="text-fg-disabled text-center p-2 w-full"
           >
-            no results
+            {m.common_no_results()}
           </div>
         {/each}
 

@@ -8,9 +8,9 @@
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceUpdateUsergroup,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
+  import { invalidateOrgUsergroups } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -114,19 +114,14 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       eventBus.emit("notification", { message: m.groups_renamed() });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -173,14 +168,7 @@
         ),
       });
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       pendingAdditions = [];
       pendingRemovals = [];
@@ -190,7 +178,9 @@
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }

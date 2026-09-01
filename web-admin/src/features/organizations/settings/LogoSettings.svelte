@@ -113,7 +113,7 @@
         <UploadImagePopover
           imageUrl={organizationLogoUrl}
           accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-          label="logo"
+          label={m.settings_logo_title()}
           {organization}
           loading={isLogoLoading}
           error={getRpcErrorMessage(logoError)}
@@ -148,7 +148,7 @@
           dark
           imageUrl={organizationLogoDarkUrl}
           accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-          label="dark logo"
+          label={m.settings_dark_logo_label()}
           {organization}
           loading={isLogoDarkLoading}
           error={getRpcErrorMessage(logoDarkError)}

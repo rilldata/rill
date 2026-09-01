@@ -159,22 +159,50 @@ export function isOnboardingPage(page: Page): boolean {
   );
 }
 
+// `isProjectPage` matches every `/{org}/{project}/-/*` route bar a few exceptions, so it subsumes
+// reports and alerts. It has to be tested last, or the specific screens below it are never reached.
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):
       return MetricsEventScreenName.Organization;
-    case isProjectPage(page):
-      return MetricsEventScreenName.Project;
     case isMetricsExplorerPage(page):
       return MetricsEventScreenName.Dashboard;
     case isCanvasDashboardPage(page):
       return MetricsEventScreenName.Canvas;
+    case isReportExportPage(page):
+      return MetricsEventScreenName.ReportExport;
     case isReportPage(page):
       return MetricsEventScreenName.Report;
     case isAlertPage(page):
       return MetricsEventScreenName.Alert;
-    case isReportExportPage(page):
-      return MetricsEventScreenName.ReportExport;
+    case isProjectPage(page):
+      return MetricsEventScreenName.Project;
   }
   return MetricsEventScreenName.Unknown;
+}
+
+/**
+ * Identifies the resource a page is showing, for telemetry.
+ * Returns empty strings on pages that aren't showing a named resource, in which case consumers fall
+ * back to parsing the resource out of the page URL.
+ *
+ * The type values are also produced by that URL fallback, which lives in the `rill_ui_telemetry_model`
+ * model of the rill-cloud-metrics project. Keep the two vocabularies in step: they land in the same
+ * column, so a value only used by one of them reads as two different resource types over time.
+ */
+export function getResourceFromPage(page: Page): {
+  type: string;
+  name: string;
+} {
+  switch (true) {
+    case isMetricsExplorerPage(page):
+      return { type: "explore", name: page.params.dashboard ?? "" };
+    case isCanvasDashboardPage(page):
+      return { type: "canvas", name: page.params.dashboard ?? "" };
+    case isReportPage(page):
+      return { type: "report", name: page.params.report ?? "" };
+    case isAlertPage(page):
+      return { type: "alert", name: page.params.alert ?? "" };
+  }
+  return { type: "", name: "" };
 }

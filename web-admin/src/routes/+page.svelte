@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-  <title>Home - Rill</title>
+  <title>{m.home_page_title()}</title>
 </svelte:head>
 
 <OrganizationRedirect>

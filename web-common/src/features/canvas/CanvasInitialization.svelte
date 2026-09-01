@@ -27,6 +27,18 @@
   export let showBanner = false;
   export let projectId: string | undefined = undefined;
   export let allowUnvalidatedSpec = false;
+  // When set, relative time ranges are anchored at this time instead of now/latest
+  // (e.g. for scheduled report exports). Applied when the store is resolved,
+  // before any component subscribes to the time interval.
+  export let executionTime: string | undefined = undefined;
+  // Isolated consumers (e.g. the scheduled report dialog and export page) apply canvas
+  // state without page-URL side effects: no redirects that would rewrite the host page's
+  // URL and no last-visited snapshot. Implied when urlStateOverride is set.
+  export let isolated = false;
+  // Canvas state (a URL search string) to apply instead of the page URL.
+  // Used by isolated consumers that render a canvas with stored state (e.g. a report's
+  // captured filters) on a page whose own URL does not carry canvas state.
+  export let urlStateOverride: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -82,9 +94,21 @@
 
   $: ready = !!resolvedStore;
 
+  $: effectiveUrl =
+    urlStateOverride !== undefined
+      ? new URL(
+          `${url.pathname}${urlStateOverride ? `?${urlStateOverride}` : ""}`,
+          url.origin,
+        )
+      : url;
+
   $: if (resolvedStore) {
     resolvedStore.canvasEntity
-      .onUrlChange({ url, projectId })
+      .onUrlChange({
+        url: effectiveUrl,
+        projectId,
+        isolated: isolated || urlStateOverride !== undefined,
+      })
       .catch(console.error);
   }
 
@@ -143,6 +167,12 @@
     existingStore: CanvasStore | undefined,
     instanceId: string,
   ) {
+    // Always set (not just when defined): the store is cached and shared across surfaces,
+    // so an undefined executionTime must reset an anchor left behind by a previous consumer
+    // (e.g. the report export page), or the live dashboard would keep showing stale data.
+    existingStore?.canvasEntity.timeManager.executionTimeStore.set(
+      executionTime,
+    );
     if (fetchedCanvas && !isReconciling) {
       const metricsViews: Record<string, V1MetricsView | undefined> = {};
       const refMetricsViews = fetchedCanvas?.referencedMetricsViews;
@@ -173,6 +203,7 @@
           client,
           allowUnvalidatedSpec,
         );
+        newStore.canvasEntity.timeManager.executionTimeStore.set(executionTime);
         newStore.canvasEntity.acquire();
         release?.(); // release our reference to the previous entity, if any
         release = newStore.canvasEntity.release;

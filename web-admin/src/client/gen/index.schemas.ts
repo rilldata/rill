@@ -518,6 +518,7 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+  EXPORT_FORMAT_PDF: "EXPORT_FORMAT_PDF",
 } as const;
 
 export interface V1Expression {
@@ -1039,10 +1040,13 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export type V1OrganizationInviteAttributes = { [key: string]: unknown };
+
 export interface V1OrganizationInvite {
   email?: string;
   roleName?: string;
   invitedBy?: string;
+  attributes?: V1OrganizationInviteAttributes;
 }
 
 export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
@@ -1325,6 +1329,12 @@ export interface V1RenewBillingSubscriptionResponse {
 
 export type V1ReportOptionsResolverProperties = { [key: string]: unknown };
 
+/**
+ * Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+ */
+export type V1ReportOptionsMetricsViewFilters = { [key: string]: V1Expression };
+
 export interface V1ReportOptions {
   displayName?: string;
   refreshCron?: string;
@@ -1347,6 +1357,9 @@ export interface V1ReportOptions {
   webOpenState?: string;
   explore?: string;
   canvas?: string;
+  /** Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+Baked into the report's security rules so magic-token recipients cannot query unfiltered data. */
+  metricsViewFilters?: V1ReportOptionsMetricsViewFilters;
   webOpenMode?: string;
 }
 
@@ -1948,9 +1961,20 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   searchPattern?: string;
 };
 
+/**
+ * Custom attributes to set on the new membership.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+ */
+export type AdminServiceAddOrganizationMemberUserBodyAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
   role?: string;
+  /** Custom attributes to set on the new membership.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted. */
+  attributes?: AdminServiceAddOrganizationMemberUserBodyAttributes;
   superuserForceAccess?: boolean;
 };
 
@@ -2136,6 +2160,10 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
+  /** HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available. */
+  hideNavigationBar?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */
   state?: string;
   /** DEPRECATED: Additional parameters to set outright in the generated URL query. */
@@ -2159,11 +2187,24 @@ export type AdminServiceListProjectMemberUsersParams = {
   superuserForceAccess?: boolean;
 };
 
+/**
+ * Custom attributes to set on the user's org membership (attributes are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting attributes requires permission to manage org members.
+ */
+export type AdminServiceAddProjectMemberUserBodyAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+  /** Custom attributes to set on the user's org membership (attributes are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting attributes requires permission to manage org members. */
+  attributes?: AdminServiceAddProjectMemberUserBodyAttributes;
 };
 
 export type AdminServiceCreatePersonalFileBody = {

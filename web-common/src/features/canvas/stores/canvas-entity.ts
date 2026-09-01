@@ -131,6 +131,10 @@ export class CanvasEntity {
   // data query (see BaseCanvasComponent.dataEnabled) so all components fetch and
   // render regardless of the lazy-load latch, without mutating that latch.
   exportMode = writable<boolean>(false);
+  // Whether the PDF export renders every tab of each tab group (stacked in strip
+  // order) or only each group's active tab. Set by exportCanvasPdf alongside
+  // exportMode; read by CanvasPdfExportView.
+  exportAllTabs = writable<boolean>(true);
 
   // This is to skip processing the spec the first time the store updates with a value
   // We've already called it as part of the constructor
@@ -523,25 +527,34 @@ export class CanvasEntity {
   onUrlChange = async ({
     url: { searchParams, pathname },
     projectId,
+    isolated = false,
   }: {
     url: URL;
     projectId?: string;
+    // Isolated consumers (e.g. the scheduled report dialog and export page) apply the given
+    // params as-is: no redirects to last-visited/bookmark/default state (which would rewrite
+    // the host page's URL) and no last-visited snapshot (their state is not a canvas visit).
+    isolated?: boolean;
   }) => {
-    const redirected = await this.handleCanvasRedirect({
-      canvasName: this.name,
-      searchParams,
-      pathname,
+    if (!isolated) {
+      const redirected = await this.handleCanvasRedirect({
+        canvasName: this.name,
+        searchParams,
+        pathname,
 
-      projectId,
-    });
+        projectId,
+      });
 
-    if (redirected) return;
+      if (redirected) return;
+    }
 
     this.filterManager.onUrlChange(searchParams);
     this.searchParams.set(searchParams);
-    this.saveSnapshot(searchParams.toString());
+    if (!isolated) {
+      this.saveSnapshot(searchParams.toString());
+    }
     this.timeManager.state.onUrlChange(searchParams);
-    this.applyTabsFromURL();
+    this.applyTabsFromURL(searchParams);
   };
 
   // Acquires a reference to the entity. The cached entity is shared across
@@ -863,11 +876,12 @@ export class CanvasEntity {
   // Read the `tabs` URL param (group:tab pairs) and apply it to the matching tab groups.
   // Groups absent from the param are reset to their first tab so back/forward navigation
   // restores tab state symmetrically (a removed pair means "first tab").
-  applyTabsFromURL = () => {
+  // Reads the window URL unless the caller provides the params (e.g. isolated consumers).
+  applyTabsFromURL = (searchParams?: URLSearchParams) => {
     if (typeof window === "undefined") return;
-    const param = new URLSearchParams(window.location.search).get(
-      CANVAS_TABS_URL_PARAM,
-    );
+    const param = (
+      searchParams ?? new URLSearchParams(window.location.search)
+    ).get(CANVAS_TABS_URL_PARAM);
 
     const active = new Map<string, string>();
     if (param) {

@@ -6,6 +6,7 @@
   import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
+    deltaColumn,
     valueColumn,
   } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-widths";
   import Leaderboard from "@rilldata/web-common/features/dashboards/leaderboard/Leaderboard.svelte";
@@ -108,13 +109,14 @@
   // Reset column widths when the measure changes
   $: if (leaderboardMeasureNames) {
     valueColumn.reset();
+    deltaColumn.reset();
   }
 
   $: totalContextWidth = leaderboardMeasureNames.reduce(
     (sum, measureName) =>
       sum +
       $valueColumn +
-      (showTimeComparison ? COMPARISON_COLUMN_WIDTH * 2 : 0) +
+      (showTimeComparison ? $deltaColumn + COMPARISON_COLUMN_WIDTH : 0) +
       (isValidPercentOfTotal(measureName) ? COMPARISON_COLUMN_WIDTH : 0),
     0,
   );

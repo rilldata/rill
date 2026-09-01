@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.kind", req.Kind),
 		attribute.Bool("args.skip_security_checks", req.SkipSecurityChecks),
+		attribute.Int64("args.page_size", int64(req.PageSize)),
 	)
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
@@ -49,44 +51,64 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, err
 	}
 
-	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
-		an := a.Meta.Name
-		bn := b.Meta.Name
-		if an.Kind < bn.Kind {
-			return -1
-		}
-		if an.Kind > bn.Kind {
-			return 1
-		}
-		return strings.Compare(an.Name, bn.Name)
-	})
-
 	if req.SkipSecurityChecks {
 		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
 		}
+	} else {
+		i := 0
+		for i < len(rs) {
+			r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, rs[i])
+			if err != nil {
+				return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+			}
+			if !access {
+				rs[i] = rs[len(rs)-1]
+				rs[len(rs)-1] = nil
+				rs = rs[:len(rs)-1]
+				continue
+			}
+			rs[i] = r
+			i++
+		}
+	}
+
+	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
+		an := a.Meta.Name
+		bn := b.Meta.Name
+		if an.Kind != bn.Kind {
+			return strings.Compare(an.Kind, bn.Kind)
+		}
+		return strings.Compare(an.Name, bn.Name)
+	})
+
+	if req.PageSize == 0 {
 		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
 	}
 
-	i := 0
-	for i < len(rs) {
-		r := rs[i]
-		r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
-		if err != nil {
-			return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
+	var afterKind, afterName string
+	if req.PageToken != "" {
+		if err := pagination.UnmarshalPageToken(req.PageToken, &afterKind, &afterName); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
 		}
-		if !access {
-			// Remove from the slice
-			rs[i] = rs[len(rs)-1]
-			rs[len(rs)-1] = nil
-			rs = rs[:len(rs)-1]
-			continue
-		}
-		rs[i] = r
-		i++
 	}
 
-	return &runtimev1.ListResourcesResponse{Resources: rs}, nil
+	start := sort.Search(len(rs), func(i int) bool {
+		n := rs[i].Meta.Name
+		return n.Kind > afterKind || (n.Kind == afterKind && n.Name > afterName)
+	})
+	end := min(start+int(req.PageSize), len(rs))
+
+	var nextPageToken string
+	if end < len(rs) {
+		last := rs[end-1].Meta.Name
+		nextPageToken = pagination.MarshalPageToken(last.Kind, last.Name)
+	}
+
+	return &runtimev1.ListResourcesResponse{
+		Resources:     rs[start:end],
+		NextPageToken: nextPageToken,
+	}, nil
 }
 
 // WatchResources implements runtimev1.RuntimeServiceServer

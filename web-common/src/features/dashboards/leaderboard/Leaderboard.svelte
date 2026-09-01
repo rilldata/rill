@@ -42,7 +42,11 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import {
+    COMPARISON_COLUMN_WIDTH,
+    deltaColumn,
+    valueColumn,
+  } from "./leaderboard-widths";
 
   const runtimeClient = useRuntimeClient();
   const gutterWidth = 24;
@@ -298,14 +302,28 @@
 
   $: isTimeComparisonActive = !!comparisonTimeRange;
 
+  // Measures that render context columns (percent of total, delta absolute and
+  // delta percent). This must be a reactive value rather than a function: a
+  // function called from the markup does not track the props it reads, so the
+  // columns would go stale when the context toggle changes.
+  $: measuresWithContext = new Set(
+    leaderboardShowContextForAllMeasures
+      ? leaderboardMeasureNames
+      : [leaderboardSortByMeasureName],
+  );
+
   $: columnCount =
     1 + // Base column (dimension)
-    leaderboardMeasureNames.length + // Value column for each measure
-    (isTimeComparisonActive
-      ? leaderboardMeasureNames.length * // For each measure
-        ((isValidPercentOfTotal(leaderboardSortByMeasureName) ? 1 : 0) + // Percent of total column
-          (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
-      : 0);
+    leaderboardMeasureNames.reduce(
+      (count, measureName) =>
+        count +
+        1 + // Value column
+        (measuresWithContext.has(measureName)
+          ? (isValidPercentOfTotal(measureName) ? 1 : 0) + // Percent of total column
+            (isTimeComparisonActive ? 2 : 0) // Delta absolute and delta percent columns
+          : 0),
+      0,
+    );
 
   // Calculate maximum values for relative magnitude bar sizing
   // This includes both above-the-fold and below-the-fold data for accurate scaling
@@ -313,18 +331,11 @@
     [...aboveTheFold, ...belowTheFoldRows],
     leaderboardMeasures,
   );
-
-  function shouldShowContextColumns(measureName: string): boolean {
-    return (
-      leaderboardShowContextForAllMeasures ||
-      measureName === leaderboardSortByMeasureName
-    );
-  }
 </script>
 
 <div
   class="flex flex-col"
-  aria-label="{dimensionName} leaderboard"
+  aria-label={m.dashboard_dimension_leaderboard_aria({ name: dimensionName })}
   role="table"
   bind:this={container}
   onmouseenter={() => (hovered = true)}
@@ -339,17 +350,14 @@
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
       {#each leaderboardMeasureNames as measureName, index (index)}
         <col data-measure-column style:width="{$valueColumn}px" />
-        {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
+        {#if isValidPercentOfTotal(measureName) && measuresWithContext.has(measureName)}
           <col
             data-percent-of-total-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
           />
         {/if}
-        {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
-          <col
-            data-absolute-change-column
-            style:width="{COMPARISON_COLUMN_WIDTH}px"
-          />
+        {#if isTimeComparisonActive && measuresWithContext.has(measureName)}
+          <col data-absolute-change-column style:width="{$deltaColumn}px" />
           <col
             data-percent-change-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
@@ -372,7 +380,7 @@
       {isTimeComparisonActive}
       {sortedAscending}
       {leaderboardMeasureNames}
-      {leaderboardShowContextForAllMeasures}
+      {measuresWithContext}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -399,11 +407,10 @@
             {dimensionName}
             {itemData}
             {isValidPercentOfTotal}
-            {leaderboardShowContextForAllMeasures}
+            {measuresWithContext}
             {isTimeComparisonActive}
             {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
-            {leaderboardSortByMeasureName}
             {formatters}
             {tooltipFormatters}
             {dimensionColumnWidth}
@@ -421,13 +428,12 @@
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}
-          {leaderboardShowContextForAllMeasures}
+          {measuresWithContext}
           {isTimeComparisonActive}
           {leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}
-          {leaderboardSortByMeasureName}
           {formatters}
           {tooltipFormatters}
           {dimensionColumnWidth}

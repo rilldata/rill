@@ -14,6 +14,8 @@
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import ResourceListToolbar from "./ResourceListToolbar.svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { flip } from "svelte/animate";
 
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
@@ -21,23 +23,33 @@
   export let kind: string;
   export let toolbar: boolean = true;
   export let fixedRowHeight: boolean = true;
-  export let initialSorting: SortingState = [];
+  export let sorting: SortingState = [];
+  export let pinnedRows: string[] = [];
+  export let maxRows: number | undefined = undefined;
 
-  let sorting: SortingState = initialSorting;
-  function setSorting(updater) {
-    if (updater instanceof Function) {
-      sorting = updater(sorting);
-    } else {
-      sorting = updater;
-    }
+  function setSorting(newSorting: SortingState) {
     options.update((old) => ({
       ...old,
       state: {
         ...old.state,
-        sorting,
+        sorting: newSorting,
       },
     }));
   }
+  $: setSorting(sorting);
+
+  function setPinned(newPinnedRows: string[]) {
+    options.update((old) => ({
+      ...old,
+      state: {
+        ...old.state,
+        rowPinning: {
+          top: [...newPinnedRows],
+        },
+      },
+    }));
+  }
+  $: setPinned(pinnedRows);
 
   const options = writable<TableOptions<unknown>>({
     data: data,
@@ -46,11 +58,18 @@
     enableSorting: true,
     enableFilters: true,
     enableGlobalFilter: true,
+    enableRowPinning: true,
     state: {
       sorting,
       columnVisibility,
+      rowPinning: {},
     },
-    onSortingChange: setSorting,
+    getRowId(originalRow, index) {
+      return (
+        (originalRow as V1Resource).meta?.name?.name?.toLowerCase() ??
+        index.toString()
+      );
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -73,6 +92,9 @@
 
   // Check if we're in a filtered state (search is active)
   $: isFiltered = $table.getState().globalFilter?.length > 0;
+
+  $: allRows = [...$table.getTopRows(), ...$table.getCenterRows()];
+  $: limitedRows = allRows.slice(0, maxRows ?? allRows.length);
 </script>
 
 <div class="flex flex-col gap-y-3 w-full">
@@ -85,8 +107,12 @@
   <div class="w-full">
     <slot name="header" />
     <ul role="list" class="resource-list">
-      {#each $table.getRowModel().rows as row (row.id)}
-        <li class="resource-list-item" class:fixed-height={fixedRowHeight}>
+      {#each limitedRows as row (row.id)}
+        <li
+          class="resource-list-item"
+          class:fixed-height={fixedRowHeight}
+          animate:flip={{ duration: 200 }}
+        >
           {#each row.getVisibleCells() as cell (cell.id)}
             <svelte:component
               this={flexRender(cell.column.columnDef.cell, cell.getContext())}

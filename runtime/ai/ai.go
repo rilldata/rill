@@ -32,10 +32,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// maxMessageSizeBytes is the maximum allowed size of a message's contents.
-// Exceeding it will result in an error.
-const maxMessageSizeBytes = 100 * 1024 // 100 KB
-
 // Tracer for instrumenting requests.
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
 
@@ -85,8 +81,10 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 
 // SessionOptions provides options for initializing a new session.
 type SessionOptions struct {
-	InstanceID        string
-	SessionID         string
+	InstanceID string
+	SessionID  string
+	// CreateIfNotExists creates the session if it does not exist.
+	// If SessionID is set, the session is created with that ID.
 	CreateIfNotExists bool
 	Claims            *runtime.SecurityClaims
 	UserAgent         string
@@ -113,9 +111,15 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	if opts.SessionID != "" {
 		session, err = catalog.FindAISession(ctx, opts.SessionID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
+			// If CreateIfNotExists is set, an unknown session ID is created below instead of erroring.
+			// This lets a caller that doesn't know Rill's session IDs address a stable session,
+			// which the unified MCP server in the admin service relies on to keep one session per project.
+			if !errors.Is(err, drivers.ErrNotFound) || !opts.CreateIfNotExists {
+				return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
+			}
 		}
-
+	}
+	if session != nil {
 		// Check access: you can access anonymous sessions, your own sessions, and shared sessions.
 		// For shared sessions, if you are not the owner, you can only see messages up to the SharedUntilMessageID (inclusive).
 		// For sessions without an owner (unauthenticated users using a public project), we don't check access and rely on security by obscurity (generally a decent trade-off, but specifically introduced to get citation links over MCP working for unauthenticated demos).
@@ -151,9 +155,13 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 			}
 		}
 	}
-	if opts.SessionID == "" {
+	if session == nil {
+		id := opts.SessionID
+		if id == "" {
+			id = uuid.NewString()
+		}
 		session = &drivers.AISession{
-			ID:         uuid.NewString(),
+			ID:         id,
 			InstanceID: opts.InstanceID,
 			OwnerID:    opts.Claims.UserID,
 			Title:      "",
@@ -948,12 +956,19 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 		return nil, ctx.Err()
 	}
 
+	// Resolve the configured maximum message size.
+	cfg, err := s.runner.Runtime.InstanceConfig(ctx, s.instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
+	maxMessageSizeBytes := cfg.AIMaxMessageSizeBytes
+
 	var argsJSON json.RawMessage
-	argsJSON, err := json.Marshal(opts.Args)
+	argsJSON, err = json.Marshal(opts.Args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal args: %w", err)
 	}
-	if len(argsJSON) > maxMessageSizeBytes {
+	if len(argsJSON) > int(maxMessageSizeBytes) {
 		return nil, fmt.Errorf("call args size %d exceeds maximum of %d bytes", len(argsJSON), maxMessageSizeBytes)
 	}
 
@@ -1014,7 +1029,7 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 		outJSON, err = json.Marshal(handlerOut)
 		if err != nil {
 			handlerErr = fmt.Errorf("failed to marshal result: %w (out: %v)", err, handlerOut)
-		} else if len(outJSON) > maxMessageSizeBytes {
+		} else if len(outJSON) > int(maxMessageSizeBytes) {
 			handlerErr = fmt.Errorf("marshaled result size %d exceeds maximum of %d bytes", len(outJSON), maxMessageSizeBytes)
 			outJSON = nil
 		}

@@ -13,7 +13,16 @@
   import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
-  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { stripInternalReportParams } from "@rilldata/web-common/features/scheduled-reports/utils";
+  import {
+    ResourceKind,
+    useResource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    getRuntimeServiceListResourcesQueryKey,
+    V1ExportFormat,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createAdminServiceDeleteReport } from "../../../client";
@@ -43,20 +52,37 @@
   $: reportQuery = useReport(runtimeClient, report);
   $: isReportCreatedByCode = useIsReportCreatedByCode(runtimeClient, report);
 
+  $: reportSpec = $reportQuery.data?.resource?.report?.spec;
+  $: isCanvasReport = !!reportSpec?.annotations?.canvas;
+
   // Get dashboard
-  $: exploreName = useReportDashboardName(runtimeClient, report);
-  $: validSpecResp = useExploreValidSpec(runtimeClient, $exploreName.data);
+  $: dashboardName = useReportDashboardName(runtimeClient, report);
+  $: validSpecResp = useExploreValidSpec(
+    runtimeClient,
+    isCanvasReport ? "" : ($dashboardName.data ?? ""),
+  );
   $: exploreSpec = $validSpecResp.data?.explore;
-  $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
-  $: dashboardDoesNotExist =
-    $validSpecResp.isError && isNotFoundError($validSpecResp.error);
+  $: canvasQuery = useResource<V1Resource>(
+    runtimeClient,
+    isCanvasReport ? ($dashboardName.data ?? "") : "",
+    ResourceKind.Canvas,
+  );
+  $: canvasValidSpec = $canvasQuery.data?.canvas?.state?.validSpec;
+  $: dashboardTitle = isCanvasReport
+    ? canvasValidSpec?.displayName || $dashboardName.data
+    : exploreSpec?.displayName || $dashboardName.data;
+  $: dashboardDoesNotExist = isCanvasReport
+    ? $canvasQuery.isError && isNotFoundError($canvasQuery.error)
+    : $validSpecResp.isError && isNotFoundError($validSpecResp.error);
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
     runtimeClient,
-    $exploreName.data,
+    isCanvasReport ? "" : ($dashboardName.data ?? ""),
   );
-
-  $: reportSpec = $reportQuery.data?.resource?.report?.spec;
+  $: dashboardIsValid = isCanvasReport ? !!canvasValidSpec : $exploreIsValid;
+  $: dashboardIsPending = isCanvasReport
+    ? $canvasQuery.isPending
+    : $validSpecResp.isPending;
 
   // Get human-readable frequency
   $: humanReadableFrequency = reportSpec?.refreshSchedule?.cron
@@ -77,7 +103,7 @@
 
   $: exploreUrl = getMappedExploreUrl(
     {
-      exploreName: $exploreName.data,
+      exploreName: isCanvasReport ? "" : ($dashboardName.data ?? ""),
       queryName,
       queryArgsJson,
     },
@@ -91,6 +117,17 @@
       project,
     },
   );
+
+  // Canvas reports link to the canvas page with the captured state applied.
+  $: canvasUrl = (() => {
+    if (!$dashboardName.data) return "";
+    const path = `/${organization}/${project}/canvas/${$dashboardName.data}`;
+    const search = stripInternalReportParams(
+      new URLSearchParams(reportSpec?.annotations?.web_open_state ?? ""),
+    ).toString();
+    return search ? `${path}?${search}` : path;
+  })();
+  $: dashboardUrl = isCanvasReport ? canvasUrl : $exploreUrl;
 
   // Actions
   const queryClient = useQueryClient();
@@ -133,17 +170,22 @@
         </ProjectAccessControls>
         <!-- Format -->
         <span>
-          {exportFormatToPrettyString(reportSpec.exportFormat)} •
+          {exportFormatToPrettyString(reportSpec.exportFormat)}
         </span>
-        <!-- Limit -->
-        <span>
-          {reportSpec.exportLimit === "0"
-            ? m.report_no_row_limit()
-            : m.report_row_limit({ count: reportSpec.exportLimit })}
-        </span>
+        <!-- Limit (not applicable to PDF exports) -->
+        {#if reportSpec.exportFormat !== V1ExportFormat.EXPORT_FORMAT_PDF}
+          <span>
+            • {reportSpec.exportLimit === "0"
+              ? m.report_no_row_limit()
+              : m.report_row_limit({ count: reportSpec.exportLimit })}
+          </span>
+        {/if}
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-fg-primary text-lg font-bold" aria-label="Report name">
+        <h1
+          class="text-fg-primary text-lg font-bold"
+          aria-label={m.report_metadata_name_aria()}
+        >
           {reportSpec.displayName}
         </h1>
         <div class="grow"></div>
@@ -158,7 +200,7 @@
             <DropdownMenu.Content align="start">
               <DropdownMenu.Item
                 onclick={handleEditReport}
-                disabled={!$exploreIsValid}
+                disabled={!dashboardIsValid}
               >
                 {m.report_edit()}
               </DropdownMenu.Item>
@@ -174,7 +216,10 @@
     <!-- Three columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-6">
       <!-- Dashboard -->
-      <div class="flex flex-col gap-y-3" aria-label="Report dashboard name">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.report_metadata_dashboard_name_aria()}
+      >
         {#if dashboardTitle}
           <MetadataLabel>{m.report_dashboard()}</MetadataLabel>
           <MetadataValue>
@@ -189,7 +234,7 @@
                 </Tooltip>
               </div>
             {:else}
-              <a href={$exploreUrl}>
+              <a href={dashboardUrl}>
                 {dashboardTitle}
               </a>
             {/if}
@@ -203,7 +248,10 @@
       </div>
 
       <!-- Frequency -->
-      <div class="flex flex-col gap-y-3" aria-label="Report schedule">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.report_metadata_schedule_aria()}
+      >
         <MetadataLabel>{m.report_repeats()}</MetadataLabel>
         <MetadataValue>
           {humanReadableFrequency}
@@ -239,7 +287,7 @@
   </div>
 {/if}
 
-{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending && showEditReportDialog}
+{#if reportSpec && dashboardIsValid && !dashboardIsPending && showEditReportDialog}
   <ScheduledReportDialog
     bind:open={showEditReportDialog}
     props={{
