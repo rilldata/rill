@@ -33,6 +33,7 @@ import {
   type PivotMeasureFormatting,
   type PivotTableMode,
 } from "../pivot/types";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -234,6 +235,33 @@ const metricsViewReducers = {
 
       // remove references to non existent dimensions
       syncDimensions(explore, exploreState);
+    });
+  },
+
+  syncTimeFilters(name: string, timeFilterManager: TimeFilterManager) {
+    if (!name) return;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedTimeRange = {
+        name: timeFilterManager.timeRangeManager.timeRange,
+        start:
+          timeFilterManager.timeRangeManager.interval?.start?.toJSDate() ??
+          new Date(),
+        end:
+          timeFilterManager.timeRangeManager.interval?.end?.toJSDate() ??
+          new Date(),
+        interval: timeFilterManager.timeRangeManager.timeGrain,
+      } as any;
+      exploreState.showTimeComparison =
+        timeFilterManager.comparisonTimeRangeManager.showComparison;
+      exploreState.selectedComparisonTimeRange = {
+        name: timeFilterManager.comparisonTimeRangeManager.comparisonTimeRange,
+        start:
+          timeFilterManager.comparisonTimeRangeManager.interval?.start?.toJSDate() ??
+          new Date(),
+        end:
+          timeFilterManager.comparisonTimeRangeManager.interval?.end?.toJSDate() ??
+          new Date(),
+      };
     });
   },
 

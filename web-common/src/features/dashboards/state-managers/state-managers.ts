@@ -33,6 +33,11 @@ import {
   contextColWidthDefaults,
   type ContextColWidths,
 } from "../leaderboard-context-column";
+import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import {
+  DashboardConfigProvider,
+  ExploreDashboardConfigProvider,
+} from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
 export type StateManagers = {
   runtimeClient: RuntimeClient;
@@ -65,6 +70,9 @@ export type StateManagers = {
    */
   contextColumnWidths: Writable<ContextColWidths>;
   defaultExploreState: Readable<V1ExplorePreset>;
+  dashboardConfigProvider: DashboardConfigProvider;
+  timeFilterManager: TimeFilterManager;
+  cleanup: () => void;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -163,6 +171,17 @@ export function createStateManagers({
     },
   );
 
+  const dashboardConfigProvider = new ExploreDashboardConfigProvider(
+    runtimeClient,
+    exploreName,
+  );
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+    true,
+  );
+
   return {
     runtimeClient,
     metricsViewName: metricsViewNameStore,
@@ -191,5 +210,11 @@ export function createStateManagers({
     }),
     contextColumnWidths,
     defaultExploreState,
+
+    dashboardConfigProvider,
+    timeFilterManager,
+    cleanup: () => {
+      dashboardConfigProvider.cleanup?.();
+    },
   };
 }
