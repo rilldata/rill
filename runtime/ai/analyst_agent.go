@@ -416,7 +416,7 @@ The administrator has defined the following skills that always apply to this ana
 {{ end }}
 
 {{ if .skills_index }}
-The administrator has defined the following analysis skills. Before starting the analysis, check whether any skill matches the user's request; if one does, call the "load_skill" tool with its name and follow its instructions:
+The administrator has defined the following analysis skills. As your first step, check whether any skill's description matches the user's request. If one does, you MUST call the "load_skill" tool to retrieve it and follow its instructions before running any queries; proceed without a skill only when none of them match:
 {{ .skills_index }}
 {{ end }}
 
