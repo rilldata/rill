@@ -95,6 +95,58 @@ func TestSkillsEmptyProject(t *testing.T) {
 	require.ErrorContains(t, err, "does not define any skills")
 }
 
+// TestSkillsInListMetricsViews verifies that always-apply skills are appended to the
+// ai_instructions field of list_metrics_views for external MCP clients,
+// but not for Rill's own agents (which receive them directly in their prompts).
+func TestSkillsInListMetricsViews(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"skills/glossary.md": `---
+description: Business glossary.
+always_apply: true
+---
+
+ARPU excludes trial users.`,
+			"skills/on-demand.md": `---
+description: An on-demand skill.
+---
+
+Not injected wholesale.`,
+		},
+	})
+
+	newSessionWithUserAgent := func(t *testing.T, userAgent string) *ai.Session {
+		claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
+		r := ai.NewRunner(rt, activity.NewNoopClient())
+		s, err := r.Session(t.Context(), &ai.SessionOptions{
+			InstanceID: instanceID,
+			Claims:     claims,
+			UserAgent:  userAgent,
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, s.Flush(t.Context()))
+		})
+		return s
+	}
+
+	// External MCP client: always-apply skill body is included, on-demand skill is not
+	s := newSessionWithUserAgent(t, "mcp-client")
+	var res *ai.ListMetricsViewsResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &res, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.Contains(t, res.AIInstructions, "## Skill: glossary")
+	require.Contains(t, res.AIInstructions, "ARPU excludes trial users.")
+	require.NotContains(t, res.AIInstructions, "Not injected wholesale.")
+
+	// Rill's own agents: no enrichment (skills are injected into their prompts instead)
+	s = newSessionWithUserAgent(t, "rill-web")
+	res = nil
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &res, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.Empty(t, res.AIInstructions)
+}
+
 // TestSkillsMCPAccess verifies that the skill tools are exposed to any principal with UseAI,
 // including viewers without repo access.
 func TestSkillsMCPAccess(t *testing.T) {

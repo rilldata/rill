@@ -9,6 +9,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"go.uber.org/zap"
 )
 
 const ListMetricsViewsName = "list_metrics_views"
@@ -94,15 +95,35 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 
 	// Find instance-wide AI context and add it to the response.
 	// NOTE: These arguably belong in the top-level instructions or other metadata, but that doesn't currently support dynamic values.
-	// Rill's own agents receive the project instructions directly in their prompts,
-	// so this is only for external MCP clients (identified by a non-rill user agent).
-	var aiInstructions string
+	// Rill's own agents receive the project instructions and always-apply skills directly in their prompts,
+	// so this enrichment is only for external MCP clients (identified by a non-rill user agent).
+	var aiInstructions strings.Builder
 	if !strings.HasPrefix(session.CatalogSession().UserAgent, "rill") {
 		instance, err := t.Runtime.Instance(ctx, session.InstanceID())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get instance %q: %w", session.InstanceID(), err)
 		}
-		aiInstructions = instance.AIInstructions
+		aiInstructions.WriteString(instance.AIInstructions)
+
+		// Append always-apply skills so external clients receive them without extra round-trips.
+		// Skill loading failures should degrade the response, not fail it.
+		skills, _, err := session.Skills(ctx)
+		if err != nil {
+			session.logger.Warn("failed to load project skills", zap.Error(err))
+		}
+		for _, sk := range skills {
+			if !sk.AlwaysApply {
+				continue
+			}
+			if aiInstructions.Len()+len(sk.Body) > skillsMaxAlwaysApplyBytes {
+				session.logger.Warn("always-apply skill exceeds the size cap; clients must load it with load_skill", zap.String("skill", sk.Name))
+				continue
+			}
+			if aiInstructions.Len() > 0 {
+				aiInstructions.WriteString("\n\n")
+			}
+			fmt.Fprintf(&aiInstructions, "## Skill: %s\n\n%s", sk.Name, sk.Body)
+		}
 	}
 
 	var metricsViews []map[string]any
@@ -120,7 +141,7 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 	}
 
 	return &ListMetricsViewsResult{
-		AIInstructions: aiInstructions,
+		AIInstructions: aiInstructions.String(),
 		MetricsViews:   metricsViews,
 	}, nil
 }
