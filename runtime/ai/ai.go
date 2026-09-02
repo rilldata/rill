@@ -61,6 +61,8 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 	RegisterTool(r, &CreateChart{Runtime: rt})
+	RegisterTool(r, &ListSkills{Runtime: rt})
+	RegisterTool(r, &LoadSkill{Runtime: rt})
 
 	RegisterTool(r, &DevelopFile{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
@@ -526,6 +528,11 @@ type BaseSession struct {
 	messages      []*Message
 	messagesDirty bool
 	subscribers   map[chan *Message]struct{}
+
+	skillsMu     sync.Mutex
+	skillsLoaded bool
+	skills       []*Skill
+	skillIssues  []SkillIssue
 }
 
 func (s *BaseSession) Flush(ctx context.Context) error {

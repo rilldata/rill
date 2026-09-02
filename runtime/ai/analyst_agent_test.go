@@ -384,6 +384,73 @@ func requireValidChartSpec(t *testing.T, s *ai.Session, chartCall *ai.Message, v
 	return spec
 }
 
+func TestAnalystSkills(t *testing.T) {
+	// Setup the basic orders metrics view plus two project skills:
+	// an on-demand RCA playbook (loaded via load_skill) and an always-apply glossary.
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AIConnector: "openai",
+		Files: map[string]string{
+			"models/orders.yaml": `
+type: model
+materialize: true
+sql: |
+  SELECT '2025-01-01T00:00:00Z'::TIMESTAMP AS event_time, 'United States' AS country, 100 AS revenue
+  UNION ALL
+  SELECT '2025-01-01T00:00:00Z'::TIMESTAMP AS event_time, 'Denmark' AS country, 10 AS revenue
+  UNION ALL
+  SELECT '2025-01-02T00:00:00Z'::TIMESTAMP AS event_time, 'United States' AS country, 100 AS revenue
+  UNION ALL
+  SELECT '2025-01-02T00:00:00Z'::TIMESTAMP AS event_time, 'Denmark' AS country, 10 AS revenue
+`,
+			"metrics/orders.yaml": `
+type: metrics_view
+model: orders
+timeseries: event_time
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+- name: revenue
+  expression: SUM(revenue)
+`,
+			"skills/revenue-rca.md": `---
+description: Playbook for analyzing revenue. Use whenever asked about revenue amounts or changes.
+metrics_views: [orders]
+---
+
+When answering any question about revenue, you MUST end your final answer with the exact phrase "(via revenue-rca)".
+`,
+			"skills/glossary.md": `---
+description: Business glossary.
+always_apply: true
+---
+
+"Nordics revenue" refers to revenue where the country is Denmark.
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	// Initialize eval
+	s := newEval(t, rt, instanceID)
+
+	// Ask a revenue question that exercises both skills
+	var res *ai.RouterAgentResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt: "What is the total Nordics revenue? Answer with the number and any required attribution, nothing else.",
+	})
+	require.NoError(t, err)
+	require.Equal(t, ai.AnalystAgentName, res.Agent)
+
+	// The on-demand RCA skill must have been loaded and its instruction followed
+	require.NotEmpty(t, s.Messages(ai.FilterByType(ai.MessageTypeCall), ai.FilterByTool(ai.LoadSkillName)))
+	require.Contains(t, res.Response, "(via revenue-rca)")
+
+	// The always-apply glossary skill defines "Nordics revenue" as Denmark's revenue
+	require.Contains(t, res.Response, "20")
+}
+
 func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)

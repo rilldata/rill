@@ -14,7 +14,7 @@ import File from "@rilldata/web-common/components/icons/File.svelte";
 import SettingsIcon from "@rilldata/web-common/components/icons/SettingsIcon.svelte";
 import { isEnvFile } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
-import { Sheet } from "lucide-svelte";
+import { GraduationCap, Sheet } from "lucide-svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
@@ -71,5 +71,14 @@ export function getIconComponent(
   if (extractFileExtension(filePath) === ".parquet") {
     return Sheet;
   }
+  if (isSkillFile(filePath)) {
+    return GraduationCap;
+  }
   return File;
+}
+
+// Skill files are markdown instructions for the AI agents at `skills/<name>.md` or `skills/<name>/SKILL.md`.
+// They are not parsed resources, so they are identified by path.
+export function isSkillFile(filePath: string) {
+  return /^\/skills\/([^/]+\.md|[^/]+\/SKILL\.md)$/.test(filePath);
 }

@@ -28,6 +28,12 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 
+## Skills
+Projects may define **skills**: instruction files that teach agents project-specific analysis or development practices, such as analysis playbooks and business glossaries.
+- Use "list_skills" early in a session to discover the project's skills.
+- Before doing work that a skill's description covers, use "load_skill" to fetch its full instructions and follow them.
+- Load any skill marked "always_apply" up front and treat its instructions as always in effect.
+
 ## Project Development
 If you have edit access, the server also exposes tools for inspecting and editing the project's source code, which consists of YAML and SQL files:
 - **List files:** Use "list_files" to browse the files in the project.

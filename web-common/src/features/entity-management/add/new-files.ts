@@ -142,6 +142,24 @@ export const ResourceKindMap: Record<
   },
 };
 
+// Skills are markdown files read directly by the AI agents rather than parsed resources,
+// so they are created outside the ResourceKind machinery above.
+export const skillFileTemplate = `---
+# The AI uses the required description to decide when to load this skill, so phrase it as "what it does + when to use it".
+description: Describe what this skill does and when to use it.
+# metrics_views: [my_metrics_view]  # Optional: only offer this skill for analyses involving these metrics views
+# always_apply: true                # Optional: always include the full skill instead of loading it on demand
+---
+
+# My skill
+
+Write instructions for Rill's AI here, for example an analysis playbook or a business glossary.
+
+1. When asked about ..., always start by ...
+2. Break down changes by ...
+3. Account for known seasonality: ...
+`;
+
 export function getBaseNameForNewResourceFile(
   newKind: ResourceKind,
   baseResource?: V1Resource,

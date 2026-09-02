@@ -16,6 +16,8 @@ There are two places to add `ai_instructions`:
 1.  **`rill.yaml`**: Project-wide instructions that apply to all queries across your entire project.
 2.  **`<metrics_view>.yaml`**: Metrics view-specific instructions for individual dashboards.
 
+For longer, structured guidance — such as step-by-step analysis playbooks — use [skills](#skills) instead, which the AI loads on demand.
+
 ## Automatic Context Inclusion
 
 In addition to `ai_instructions`, Rill automatically includes the following in the AI context:
@@ -94,6 +96,48 @@ ai_instructions: |
   - Refunds are processed with a 2-3 day delay, so recent data may shift.
   - Weekend traffic patterns are anomalous due to our B2B focus.
 ```
+
+## Skills
+
+Skills are markdown files that teach Rill's AI project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) or business glossaries. Where `ai_instructions` is best for short guidance that always applies, skills hold longer, structured instructions that the AI loads only when they are relevant to the question at hand. Skills apply both in [AI Chat](/guide/ai/ai-chat) and to external AI clients connected via the [MCP Server](/guide/ai/mcp).
+
+A skill lives at `skills/<name>.md` (or `skills/<name>/SKILL.md`) and consists of YAML front matter followed by markdown instructions:
+
+```markdown
+---
+description: Playbook for diagnosing revenue drops. Use when asked why revenue or bookings declined.
+---
+
+# Revenue root-cause analysis
+
+When asked why revenue declined:
+1. Establish the comparison window and compute the total change.
+2. Break the change down by `channel`, then `region`, then `plan_type`.
+3. Account for known seasonality: B2B traffic drops on weekends.
+4. State your confidence and call out data quirks that may affect the result.
+```
+
+The `description` is required: the AI sees an index of skill names and descriptions, and uses the description to decide when to load a skill. Phrase it as "what it does + when to use it".
+
+The front matter supports these additional properties:
+
+```markdown
+---
+description: Business glossary for our e-commerce metrics.
+name: glossary               # Optional: overrides the name derived from the file path
+metrics_views: [orders]      # Optional: only offer this skill for analyses involving these metrics views
+always_apply: true           # Optional: always include the full skill instead of loading it on demand
+---
+```
+
+- **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control.
+- **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request.
+
+When the AI uses a skill, the chat response's activity trace shows a "Loaded skill" step, so you can verify a skill was applied and iterate on it: edit the file, ask a test question, and check the trace.
+
+:::warning Skills are visible to all AI users
+Skill contents are provided to every user who can use AI features in the project, including viewers. Never put secrets or sensitive data in a skill. Access to the underlying data is still governed by your metrics view security policies.
+:::
 
 ## Visualization Tips 
 
