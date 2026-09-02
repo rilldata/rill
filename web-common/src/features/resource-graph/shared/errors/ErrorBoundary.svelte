@@ -174,7 +174,7 @@
   }
 
   .btn-primary {
-    @apply rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white;
+    @apply rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-fg-primary;
   }
 
   .btn-primary:hover {

@@ -70,7 +70,7 @@
           >
             <MoonCircleOutline
               size="104px"
-              className="text-gray-300"
+              className="text-icon-muted"
               gradientStopColor="slate-200"
             />
           </div>
@@ -78,7 +78,7 @@
             class="absolute inset-0 transition-opacity duration-200"
             class:opacity-0={!isWaking}
           >
-            <LoadingCircleOutline size="104px" className="text-gray-300" />
+            <LoadingCircleOutline size="104px" className="text-icon-muted" />
           </div>
         </div>
         <CtaHeader variant="bold">
@@ -99,7 +99,7 @@
       <svelte:fragment slot="read-project">
         <MoonCircleOutline
           size="104px"
-          className="text-gray-300"
+          className="text-icon-muted"
           gradientStopColor="slate-200"
         />
         <CtaHeader variant="bold">{m.project_this_is_hibernating()}</CtaHeader>

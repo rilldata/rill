@@ -145,7 +145,7 @@
               getRandomBgColor(m.users_everyone_at_org({ organization })),
             )}
           >
-            <span class="text-sm text-white font-semibold"
+            <span class="text-sm text-fg-primary font-semibold"
               >{getInitials(m.users_everyone_at_org({ organization }))}</span
             >
           </div>
@@ -221,7 +221,7 @@
         <div
           class="h-5 w-5 flex items-center justify-center bg-primary-600 rounded-sm"
         >
-          <span class="text-xs text-white font-semibold"
+          <span class="text-xs text-fg-primary font-semibold"
             >{organization[0].toUpperCase()}</span
           >
         </div>

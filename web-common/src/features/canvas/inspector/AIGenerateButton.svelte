@@ -113,6 +113,6 @@
   }
 
   .status {
-    @apply text-xs text-gray-500 py-1;
+    @apply text-xs text-fg-muted py-1;
   }
 </style>

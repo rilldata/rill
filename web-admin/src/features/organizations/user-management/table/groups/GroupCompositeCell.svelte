@@ -94,7 +94,7 @@
       getRandomBgColor(name),
     )}
   >
-    <span class="text-sm text-white font-semibold">{getInitials(name)}</span>
+    <span class="text-sm text-fg-primary font-semibold">{getInitials(name)}</span>
   </div>
   <div class="flex flex-col text-left">
     <span class="text-sm font-medium text-fg-primary flex flex-row gap-x-1">
@@ -115,7 +115,7 @@
       </div>
       <TooltipContent slot="tooltip-content">
         {#if (usersCount ?? 0) === 0}
-          <div class="text-xs text-gray-300 px-1 py-0.5">
+          <div class="text-xs text-fg-muted px-1 py-0.5">
             {m.users_no_users()}
           </div>
         {:else if $listUsergroupMemberUsers.isLoading}

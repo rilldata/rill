@@ -33,11 +33,11 @@
       {formattedDate}
     </div>
     <TooltipContent slot="tooltip-content">
-      <span class="text-xs text-gray-50 font-medium">
+      <span class="text-xs font-medium">
         {full}
       </span>
     </TooltipContent>
   </Tooltip>
 {:else}
-  <span class="text-gray-500">-</span>
+  <span class="text-fg-secondary">-</span>
 {/if}
