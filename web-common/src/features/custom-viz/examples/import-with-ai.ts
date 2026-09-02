@@ -119,7 +119,9 @@ function buildImportPrompt(filePath: string, entry: GalleryEntry): string {
     "```",
     "",
     `- Use "${entry.chartType}" as the display_name.`,
-    entry.description ? `- The example it is based on: ${entry.description}` : "",
+    entry.description
+      ? `- The example it is based on: ${entry.description}`
+      : "",
     `- Give the limit param a default of ${entry.defaultLimit}, which suits this chart's density.`,
     "- Order a time series by the time dimension ascending; order anything else by the main measure descending, without an order_by param.",
   ]

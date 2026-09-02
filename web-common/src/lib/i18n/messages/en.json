@@ -405,6 +405,7 @@
   "component_used_by": "Used by",
   "canvas_component_ref_edit_note": "Edits affect all dashboards using this component.",
   "canvas_component_ref_missing": "Component \"{name}\" not found",
+  "canvas_inspector_unknown_component": "Unknown component \"{type}\"",
   "canvas_component_ref_unsupported_renderer": "Components with renderer \"{renderer}\" cannot be referenced on a canvas yet",
   "canvas_config": "Config",
   "canvas_configuration": "{label} Configuration",

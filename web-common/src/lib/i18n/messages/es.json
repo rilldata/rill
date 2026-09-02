@@ -405,6 +405,7 @@
   "component_used_by": "Usado por",
   "canvas_component_ref_edit_note": "Los cambios afectan a todos los dashboards que usan este componente.",
   "canvas_component_ref_missing": "Componente \"{name}\" no encontrado",
+  "canvas_inspector_unknown_component": "Componente \"{type}\" desconocido",
   "canvas_component_ref_unsupported_renderer": "Los componentes con renderizador \"{renderer}\" aún no se pueden referenciar en un canvas",
   "canvas_config": "Configuración",
   "canvas_configuration": "Configuración de {label}",

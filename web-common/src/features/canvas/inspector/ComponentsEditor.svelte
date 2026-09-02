@@ -86,7 +86,7 @@
     </div>
   {:else}
     <div class="inspector-center">
-      Unknown Component {type}
+      {m.canvas_inspector_unknown_component({ type })}
     </div>
   {/if}
 </SidebarWrapper>
