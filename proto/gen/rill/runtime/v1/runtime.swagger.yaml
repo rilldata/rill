@@ -3489,6 +3489,10 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: locale
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources:
@@ -3533,6 +3537,10 @@ paths:
           format: int64
         - name: pageToken
           description: Page token returned by a previous ListResources call.
+          in: query
+          required: false
+          type: string
+        - name: locale
           in: query
           required: false
           type: string
@@ -3591,6 +3599,10 @@ paths:
           required: true
           type: string
         - name: name
+          in: query
+          required: false
+          type: string
+        - name: locale
           in: query
           required: false
           type: string
@@ -4055,6 +4067,37 @@ definitions:
         type: number
         format: double
         title: Not optional, not null
+  TranslationsDimensionTranslation:
+    type: object
+    properties:
+      displayName:
+        type: string
+      description:
+        type: string
+  TranslationsMeasureTranslation:
+    type: object
+    properties:
+      displayName:
+        type: string
+      description:
+        type: string
+      formatD3Locale:
+        type: object
+  TranslationsTranslation:
+    type: object
+    properties:
+      displayName:
+        type: string
+      description:
+        type: string
+      dimensions:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/TranslationsDimensionTranslation'
+      measures:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/TranslationsMeasureTranslation'
   TypeCode:
     type: string
     enum:
@@ -5478,6 +5521,8 @@ definitions:
       definedInMetricsView:
         type: boolean
         description: When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
+      translations:
+        $ref: '#/definitions/v1Translations'
   v1ExploreState:
     type: object
     properties:
@@ -6753,6 +6798,8 @@ definitions:
           Maximum time span any single query against this metrics view may cover, as an ISO 8601 duration with day-or-larger granularity (e.g. "P90D", "P3M", "P1Y").
           Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
           Time-range introspection RPCs are exempt. If unset, no limit is enforced.
+      translations:
+        $ref: '#/definitions/v1Translations'
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -8403,6 +8450,13 @@ definitions:
           type: object
           $ref: '#/definitions/v1Span'
     description: Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
+  v1Translations:
+    type: object
+    properties:
+      translations:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/TranslationsTranslation'
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty

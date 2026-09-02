@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { ConnectError } from "@connectrpc/connect";
 import { derived, type Readable } from "svelte/store";
+import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
 
 export const PollIntervalWhenExploreReconciling = 1000;
 export const PollIntervalWhenExploreErrored = 5000;
@@ -26,7 +27,7 @@ export function useExplore(
 ) {
   return createRuntimeServiceGetExplore(
     client,
-    { name: exploreName },
+    { name: exploreName, locale: getLocale() },
     {
       query: queryOptions,
     },
@@ -82,7 +83,7 @@ export function useExploreValidSpec(
 ) {
   return createRuntimeServiceGetExplore(
     client,
-    { name: exploreName },
+    { name: exploreName, locale: getLocale() },
     {
       query: {
         select: (data) =>

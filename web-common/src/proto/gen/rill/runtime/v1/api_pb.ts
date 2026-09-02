@@ -2926,6 +2926,11 @@ export class ListResourcesRequest extends Message$1<ListResourcesRequest> {
    */
   pageToken = "";
 
+  /**
+   * @generated from field: optional string locale = 7;
+   */
+  locale?: string;
+
   constructor(data?: PartialMessage<ListResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2940,6 +2945,7 @@ export class ListResourcesRequest extends Message$1<ListResourcesRequest> {
     { no: 4, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 6, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "locale", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesRequest {
@@ -3119,6 +3125,11 @@ export class GetResourceRequest extends Message$1<GetResourceRequest> {
    */
   skipSecurityChecks = false;
 
+  /**
+   * @generated from field: optional string locale = 4;
+   */
+  locale?: string;
+
   constructor(data?: PartialMessage<GetResourceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3130,6 +3141,7 @@ export class GetResourceRequest extends Message$1<GetResourceRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "message", T: ResourceName },
     { no: 3, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "locale", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetResourceRequest {
@@ -3200,6 +3212,11 @@ export class GetExploreRequest extends Message$1<GetExploreRequest> {
    */
   name = "";
 
+  /**
+   * @generated from field: optional string locale = 3;
+   */
+  locale?: string;
+
   constructor(data?: PartialMessage<GetExploreRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3210,6 +3227,7 @@ export class GetExploreRequest extends Message$1<GetExploreRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "locale", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetExploreRequest {

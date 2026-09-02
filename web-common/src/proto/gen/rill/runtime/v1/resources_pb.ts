@@ -1573,6 +1573,11 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   maxQueryTimeRange = "";
 
+  /**
+   * @generated from field: rill.runtime.v1.Translations translations = 38;
+   */
+  translations?: Translations;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1609,6 +1614,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 34, name: "rollups", kind: "message", T: MetricsViewSpec_Rollup, repeated: true },
     { no: 36, name: "max_query_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 38, name: "translations", kind: "message", T: Translations },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -2869,6 +2875,11 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   definedInMetricsView = false;
 
+  /**
+   * @generated from field: rill.runtime.v1.Translations translations = 22;
+   */
+  translations?: Translations;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2895,6 +2906,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 22, name: "translations", kind: "message", T: Translations },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -6120,6 +6132,190 @@ export class ConnectorState extends Message<ConnectorState> {
 
   static equals(a: ConnectorState | PlainMessage<ConnectorState> | undefined, b: ConnectorState | PlainMessage<ConnectorState> | undefined): boolean {
     return proto3.util.equals(ConnectorState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Translations
+ */
+export class Translations extends Message<Translations> {
+  /**
+   * @generated from field: map<string, rill.runtime.v1.Translations.Translation> translations = 1;
+   */
+  translations: { [key: string]: Translations_Translation } = {};
+
+  constructor(data?: PartialMessage<Translations>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Translations";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "translations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Translations_Translation} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Translations {
+    return new Translations().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Translations {
+    return new Translations().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Translations {
+    return new Translations().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Translations | PlainMessage<Translations> | undefined, b: Translations | PlainMessage<Translations> | undefined): boolean {
+    return proto3.util.equals(Translations, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Translations.DimensionTranslation
+ */
+export class Translations_DimensionTranslation extends Message<Translations_DimensionTranslation> {
+  /**
+   * @generated from field: string display_name = 1;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<Translations_DimensionTranslation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Translations.DimensionTranslation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Translations_DimensionTranslation {
+    return new Translations_DimensionTranslation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Translations_DimensionTranslation {
+    return new Translations_DimensionTranslation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Translations_DimensionTranslation {
+    return new Translations_DimensionTranslation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Translations_DimensionTranslation | PlainMessage<Translations_DimensionTranslation> | undefined, b: Translations_DimensionTranslation | PlainMessage<Translations_DimensionTranslation> | undefined): boolean {
+    return proto3.util.equals(Translations_DimensionTranslation, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Translations.MeasureTranslation
+ */
+export class Translations_MeasureTranslation extends Message<Translations_MeasureTranslation> {
+  /**
+   * @generated from field: string display_name = 1;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct format_d3_locale = 3;
+   */
+  formatD3Locale?: Struct;
+
+  constructor(data?: PartialMessage<Translations_MeasureTranslation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Translations.MeasureTranslation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "format_d3_locale", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Translations_MeasureTranslation {
+    return new Translations_MeasureTranslation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Translations_MeasureTranslation {
+    return new Translations_MeasureTranslation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Translations_MeasureTranslation {
+    return new Translations_MeasureTranslation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Translations_MeasureTranslation | PlainMessage<Translations_MeasureTranslation> | undefined, b: Translations_MeasureTranslation | PlainMessage<Translations_MeasureTranslation> | undefined): boolean {
+    return proto3.util.equals(Translations_MeasureTranslation, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Translations.Translation
+ */
+export class Translations_Translation extends Message<Translations_Translation> {
+  /**
+   * @generated from field: string display_name = 1;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  /**
+   * @generated from field: map<string, rill.runtime.v1.Translations.DimensionTranslation> dimensions = 3;
+   */
+  dimensions: { [key: string]: Translations_DimensionTranslation } = {};
+
+  /**
+   * @generated from field: map<string, rill.runtime.v1.Translations.MeasureTranslation> measures = 4;
+   */
+  measures: { [key: string]: Translations_MeasureTranslation } = {};
+
+  constructor(data?: PartialMessage<Translations_Translation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Translations.Translation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "dimensions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Translations_DimensionTranslation} },
+    { no: 4, name: "measures", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Translations_MeasureTranslation} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Translations_Translation {
+    return new Translations_Translation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Translations_Translation {
+    return new Translations_Translation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Translations_Translation {
+    return new Translations_Translation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Translations_Translation | PlainMessage<Translations_Translation> | undefined, b: Translations_Translation | PlainMessage<Translations_Translation> | undefined): boolean {
+    return proto3.util.equals(Translations_Translation, a, b);
   }
 }
 

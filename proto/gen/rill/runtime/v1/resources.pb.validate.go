@@ -3443,6 +3443,35 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for MaxQueryTimeRange
 
+	if all {
+		switch v := interface{}(m.GetTranslations()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "Translations",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "Translations",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTranslations()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpecValidationError{
+				field:  "Translations",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if m.CacheEnabled != nil {
 		// no validation rules for CacheEnabled
 	}
@@ -4919,6 +4948,35 @@ func (m *ExploreSpec) validate(all bool) error {
 	// no validation rules for AllowCustomTimeRange
 
 	// no validation rules for DefinedInMetricsView
+
+	if all {
+		switch v := interface{}(m.GetTranslations()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "Translations",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "Translations",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTranslations()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreSpecValidationError{
+				field:  "Translations",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
@@ -13005,6 +13063,151 @@ var _ interface {
 	ErrorName() string
 } = ConnectorStateValidationError{}
 
+// Validate checks the field values on Translations with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Translations) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Translations with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in TranslationsMultiError, or
+// nil if none found.
+func (m *Translations) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Translations) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	{
+		sorted_keys := make([]string, len(m.GetTranslations()))
+		i := 0
+		for key := range m.GetTranslations() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetTranslations()[key]
+			_ = val
+
+			// no validation rules for Translations[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, TranslationsValidationError{
+							field:  fmt.Sprintf("Translations[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, TranslationsValidationError{
+							field:  fmt.Sprintf("Translations[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return TranslationsValidationError{
+						field:  fmt.Sprintf("Translations[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
+	if len(errors) > 0 {
+		return TranslationsMultiError(errors)
+	}
+
+	return nil
+}
+
+// TranslationsMultiError is an error wrapping multiple validation errors
+// returned by Translations.ValidateAll() if the designated constraints aren't met.
+type TranslationsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TranslationsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TranslationsMultiError) AllErrors() []error { return m }
+
+// TranslationsValidationError is the validation error returned by
+// Translations.Validate if the designated constraints aren't met.
+type TranslationsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TranslationsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TranslationsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TranslationsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TranslationsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TranslationsValidationError) ErrorName() string { return "TranslationsValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TranslationsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTranslations.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TranslationsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TranslationsValidationError{}
+
 // Validate checks the field values on MetricsViewSpec_Dimension with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -14011,3 +14214,446 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSpec_RollupValidationError{}
+
+// Validate checks the field values on Translations_DimensionTranslation with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *Translations_DimensionTranslation) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Translations_DimensionTranslation
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// Translations_DimensionTranslationMultiError, or nil if none found.
+func (m *Translations_DimensionTranslation) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Translations_DimensionTranslation) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
+	if len(errors) > 0 {
+		return Translations_DimensionTranslationMultiError(errors)
+	}
+
+	return nil
+}
+
+// Translations_DimensionTranslationMultiError is an error wrapping multiple
+// validation errors returned by
+// Translations_DimensionTranslation.ValidateAll() if the designated
+// constraints aren't met.
+type Translations_DimensionTranslationMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m Translations_DimensionTranslationMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m Translations_DimensionTranslationMultiError) AllErrors() []error { return m }
+
+// Translations_DimensionTranslationValidationError is the validation error
+// returned by Translations_DimensionTranslation.Validate if the designated
+// constraints aren't met.
+type Translations_DimensionTranslationValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Translations_DimensionTranslationValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Translations_DimensionTranslationValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Translations_DimensionTranslationValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Translations_DimensionTranslationValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Translations_DimensionTranslationValidationError) ErrorName() string {
+	return "Translations_DimensionTranslationValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Translations_DimensionTranslationValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTranslations_DimensionTranslation.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Translations_DimensionTranslationValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Translations_DimensionTranslationValidationError{}
+
+// Validate checks the field values on Translations_MeasureTranslation with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *Translations_MeasureTranslation) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Translations_MeasureTranslation with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// Translations_MeasureTranslationMultiError, or nil if none found.
+func (m *Translations_MeasureTranslation) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Translations_MeasureTranslation) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
+	if all {
+		switch v := interface{}(m.GetFormatD3Locale()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, Translations_MeasureTranslationValidationError{
+					field:  "FormatD3Locale",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, Translations_MeasureTranslationValidationError{
+					field:  "FormatD3Locale",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFormatD3Locale()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Translations_MeasureTranslationValidationError{
+				field:  "FormatD3Locale",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return Translations_MeasureTranslationMultiError(errors)
+	}
+
+	return nil
+}
+
+// Translations_MeasureTranslationMultiError is an error wrapping multiple
+// validation errors returned by Translations_MeasureTranslation.ValidateAll()
+// if the designated constraints aren't met.
+type Translations_MeasureTranslationMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m Translations_MeasureTranslationMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m Translations_MeasureTranslationMultiError) AllErrors() []error { return m }
+
+// Translations_MeasureTranslationValidationError is the validation error
+// returned by Translations_MeasureTranslation.Validate if the designated
+// constraints aren't met.
+type Translations_MeasureTranslationValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Translations_MeasureTranslationValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Translations_MeasureTranslationValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Translations_MeasureTranslationValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Translations_MeasureTranslationValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Translations_MeasureTranslationValidationError) ErrorName() string {
+	return "Translations_MeasureTranslationValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Translations_MeasureTranslationValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTranslations_MeasureTranslation.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Translations_MeasureTranslationValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Translations_MeasureTranslationValidationError{}
+
+// Validate checks the field values on Translations_Translation with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *Translations_Translation) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Translations_Translation with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// Translations_TranslationMultiError, or nil if none found.
+func (m *Translations_Translation) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Translations_Translation) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
+	{
+		sorted_keys := make([]string, len(m.GetDimensions()))
+		i := 0
+		for key := range m.GetDimensions() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetDimensions()[key]
+			_ = val
+
+			// no validation rules for Dimensions[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, Translations_TranslationValidationError{
+							field:  fmt.Sprintf("Dimensions[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, Translations_TranslationValidationError{
+							field:  fmt.Sprintf("Dimensions[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return Translations_TranslationValidationError{
+						field:  fmt.Sprintf("Dimensions[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
+	{
+		sorted_keys := make([]string, len(m.GetMeasures()))
+		i := 0
+		for key := range m.GetMeasures() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetMeasures()[key]
+			_ = val
+
+			// no validation rules for Measures[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, Translations_TranslationValidationError{
+							field:  fmt.Sprintf("Measures[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, Translations_TranslationValidationError{
+							field:  fmt.Sprintf("Measures[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return Translations_TranslationValidationError{
+						field:  fmt.Sprintf("Measures[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
+	if len(errors) > 0 {
+		return Translations_TranslationMultiError(errors)
+	}
+
+	return nil
+}
+
+// Translations_TranslationMultiError is an error wrapping multiple validation
+// errors returned by Translations_Translation.ValidateAll() if the designated
+// constraints aren't met.
+type Translations_TranslationMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m Translations_TranslationMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m Translations_TranslationMultiError) AllErrors() []error { return m }
+
+// Translations_TranslationValidationError is the validation error returned by
+// Translations_Translation.Validate if the designated constraints aren't met.
+type Translations_TranslationValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Translations_TranslationValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Translations_TranslationValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Translations_TranslationValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Translations_TranslationValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Translations_TranslationValidationError) ErrorName() string {
+	return "Translations_TranslationValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Translations_TranslationValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTranslations_Translation.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Translations_TranslationValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Translations_TranslationValidationError{}

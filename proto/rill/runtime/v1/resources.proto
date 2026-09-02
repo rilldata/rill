@@ -386,6 +386,8 @@ message MetricsViewSpec {
   // Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
   // Time-range introspection RPCs are exempt. If unset, no limit is enforced.
   string max_query_time_range = 36;
+
+  Translations translations = 38;
 }
 
 message SecurityRule {
@@ -501,6 +503,8 @@ message ExploreSpec {
   bool allow_custom_time_range = 20;
   // When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
   bool defined_in_metrics_view = 21;
+
+  Translations translations = 22;
 }
 
 message ExploreState {
@@ -1032,4 +1036,27 @@ message ConnectorSpec {
 
 message ConnectorState {
   string spec_hash = 1;
+}
+
+message Translations {
+  message DimensionTranslation {
+    string display_name = 1;
+    string description = 2;
+  }
+
+  message MeasureTranslation {
+    string display_name = 1;
+    string description = 2;
+    google.protobuf.Struct format_d3_locale = 3;
+  }
+
+  message Translation {
+    string display_name = 1;
+    string description = 2;
+    map<string, DimensionTranslation> dimensions = 3;
+    map<string, MeasureTranslation> measures = 4;
+  }
+
+  map<string, Translation> translations = 1;
+  string default_locale = 2;
 }

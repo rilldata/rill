@@ -68,6 +68,11 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 				rs = rs[:len(rs)-1]
 				continue
 			}
+
+			if req.Locale != nil {
+				r = s.runtime.ApplyTranslations(r, *req.Locale)
+			}
+
 			rs[i] = r
 			i++
 		}
@@ -165,6 +170,8 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 			if !access {
 				return
 			}
+
+			// TODO: locale
 		}
 
 		err = ss.Send(&runtimev1.WatchResourcesResponse{
@@ -216,6 +223,10 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	}
 	if !access {
 		return nil, ErrForbidden
+	}
+
+	if req.Locale != nil {
+		r = s.runtime.ApplyTranslations(r, *req.Locale)
 	}
 
 	return &runtimev1.GetResourceResponse{Resource: r}, nil
@@ -275,6 +286,11 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 	}
 	if !access {
 		return nil, ErrForbidden
+	}
+
+	if req.Locale != nil {
+		e = s.runtime.ApplyTranslations(e, *req.Locale)
+		m = s.runtime.ApplyTranslations(m, *req.Locale)
 	}
 
 	return &runtimev1.GetExploreResponse{

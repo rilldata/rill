@@ -7089,6 +7089,10 @@ func (m *ListResourcesRequest) validate(all bool) error {
 
 	// no validation rules for PageToken
 
+	if m.Locale != nil {
+		// no validation rules for Locale
+	}
+
 	if len(errors) > 0 {
 		return ListResourcesRequestMultiError(errors)
 	}
@@ -7643,6 +7647,10 @@ func (m *GetResourceRequest) validate(all bool) error {
 
 	// no validation rules for SkipSecurityChecks
 
+	if m.Locale != nil {
+		// no validation rules for Locale
+	}
+
 	if len(errors) > 0 {
 		return GetResourceRequestMultiError(errors)
 	}
@@ -7879,6 +7887,10 @@ func (m *GetExploreRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Name
+
+	if m.Locale != nil {
+		// no validation rules for Locale
+	}
 
 	if len(errors) > 0 {
 		return GetExploreRequestMultiError(errors)

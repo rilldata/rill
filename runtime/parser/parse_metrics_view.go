@@ -19,22 +19,22 @@ import (
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
-	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Parent            string           `yaml:"parent"` // Parent metrics view, if any
-	DisplayName       string           `yaml:"display_name"`
-	Title             string           `yaml:"title"` // Deprecated: use display_name
-	Description       string           `yaml:"description"`
-	AIInstructions    string           `yaml:"ai_instructions"`
-	Model             string           `yaml:"model"`
-	Database          string           `yaml:"database"`
-	DatabaseSchema    string           `yaml:"database_schema"`
-	Table             string           `yaml:"table"`
-	TimeDimension     string           `yaml:"timeseries"`
-	Watermark         string           `yaml:"watermark"`
-	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
-	MaxQueryTimeRange string           `yaml:"max_query_time_range"`
+	commonYAML        `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Parent            string `yaml:"parent"` // Parent metrics view, if any
+	DisplayName       string `yaml:"display_name"`
+	Title             string `yaml:"title"` // Deprecated: use display_name
+	Description       string `yaml:"description"`
+	AIInstructions    string `yaml:"ai_instructions"`
+	Model             string `yaml:"model"`
+	Database          string `yaml:"database"`
+	DatabaseSchema    string `yaml:"database_schema"`
+	Table             string `yaml:"table"`
+	TimeDimension     string `yaml:"timeseries"`
+	Watermark         string `yaml:"watermark"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
+	MaxQueryTimeRange string `yaml:"max_query_time_range"`
 	Dimensions        []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
@@ -108,6 +108,7 @@ type MetricsViewYAML struct {
 		Skip                  bool   `yaml:"skip"`
 		Name                  string `yaml:"name"` // Name of the explore, defaults to the metrics view name
 	} `yaml:"explore"`
+	Translations *TranslationsYAML `yaml:"translations"`
 
 	// DEPRECATED FIELDS
 	DefaultTimeRange   string   `yaml:"default_time_range"`
@@ -938,6 +939,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
 	spec.QueryAttributes = tmp.QueryAttributes
 
+	if tmp.Translations != nil {
+		spec.Translations, err = tmp.Translations.Proto()
+		if err != nil {
+			return err
+		}
+	}
+
 	// When version is greater than 0 or inline explore is defined or skip explore set to true, we skip creating a default explore resource. Application should set version to 0 now to enable automatic explore emission.
 	if node.Version > 0 || skipExplore {
 		return nil
@@ -1051,7 +1059,10 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 		return false, nil, err
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
-	def.applyToSpec(r.ExploreSpec, &tmp.Explore.ExploreDefinitionYAML)
+	err = def.applyToSpec(r.ExploreSpec, &tmp.Explore.ExploreDefinitionYAML)
+	if err != nil {
+		return false, nil, err
+	}
 	if r.ExploreSpec.DisplayName == "" {
 		r.ExploreSpec.DisplayName = ToDisplayName(name)
 	}

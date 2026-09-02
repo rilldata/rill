@@ -848,6 +848,7 @@ message ListResourcesRequest {
   uint32 page_size = 5 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
   // Page token returned by a previous ListResources call.
   string page_token = 6;
+  optional string locale = 7;
 }
 
 message ListResourcesResponse {
@@ -871,6 +872,7 @@ message GetResourceRequest {
   string instance_id = 1;
   ResourceName name = 2 [(validate.rules).message.required = true];
   bool skip_security_checks = 3;
+  optional string locale = 4;
 }
 
 message GetResourceResponse {
@@ -880,6 +882,7 @@ message GetResourceResponse {
 message GetExploreRequest {
   string instance_id = 1;
   string name = 2;
+  optional string locale = 3;
 }
 
 message GetExploreResponse {

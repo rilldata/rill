@@ -216,6 +216,25 @@ func (r *Runtime) ApplySecurityPolicy(ctx context.Context, instID string, claims
 	}
 }
 
+// ApplyTranslations rewrites the translatable fields of a resource using the translations defined for the given locale.
+// If the locale is empty or the resource does not have translations for it, the resource is returned unchanged.
+// The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
+func (r *Runtime) ApplyTranslations(res *runtimev1.Resource, locale string) *runtimev1.Resource {
+	if locale == "" {
+		return res
+	}
+
+	switch res.Resource.(type) {
+	case *runtimev1.Resource_MetricsView:
+		return r.applyMetricsViewTranslations(res, locale)
+	case *runtimev1.Resource_Explore:
+		return r.applyExploreTranslations(res, locale)
+	default:
+		// The resource does not have translatable fields, so it can be returned as is.
+		return res
+	}
+}
+
 // applyMetricsViewSecurity rewrites a metrics view based on the field access conditions of a security policy.
 func (r *Runtime) applyMetricsViewSecurity(res *runtimev1.Resource, security *ResolvedSecurity) *runtimev1.Resource {
 	if security.CanAccessAllFields() {
@@ -345,4 +364,117 @@ func (r *Runtime) applyExploreSecurity(res *runtimev1.Resource, security *Resolv
 			State: &runtimev1.ExploreState{ValidSpec: spec},
 		}},
 	}
+}
+
+// applyMetricsViewTranslations rewrites a metrics view using the translations for the given locale.
+func (r *Runtime) applyMetricsViewTranslations(res *runtimev1.Resource, locale string) *runtimev1.Resource {
+	mv := res.GetMetricsView()
+	specTranslation := translationForLocale(mv.Spec.GetTranslations(), locale)
+	validSpecTranslation := translationForLocale(mv.State.GetValidSpec().GetTranslations(), locale)
+
+	if specTranslation == nil && validSpecTranslation == nil {
+		return res
+	}
+
+	mv = proto.Clone(mv).(*runtimev1.MetricsView)
+
+	if specTranslation != nil {
+		applyMetricsViewSpecTranslation(mv.Spec, specTranslation)
+	}
+
+	if validSpecTranslation != nil {
+		applyMetricsViewSpecTranslation(mv.State.ValidSpec, validSpecTranslation)
+	}
+
+	// We mustn't modify the resource in-place
+	return &runtimev1.Resource{
+		Meta:     res.Meta,
+		Resource: &runtimev1.Resource_MetricsView{MetricsView: mv},
+	}
+}
+
+// applyMetricsViewSpecTranslation rewrites a metrics view spec in-place using the given translation.
+// It must only be called on a spec that is safe to modify, i.e. one obtained by cloning.
+func applyMetricsViewSpecTranslation(spec *runtimev1.MetricsViewSpec, translation *runtimev1.Translations_Translation) {
+	if translation.DisplayName != "" {
+		spec.DisplayName = translation.DisplayName
+	}
+	if translation.Description != "" {
+		spec.Description = translation.Description
+	}
+
+	for _, dim := range spec.Dimensions {
+		dimTranslation, ok := translation.Dimensions[dim.Name]
+		if !ok {
+			continue
+		}
+		if dimTranslation.DisplayName != "" {
+			dim.DisplayName = dimTranslation.DisplayName
+		}
+		if dimTranslation.Description != "" {
+			dim.Description = dimTranslation.Description
+		}
+	}
+
+	for _, m := range spec.Measures {
+		measureTranslation, ok := translation.Measures[m.Name]
+		if !ok {
+			continue
+		}
+		if measureTranslation.DisplayName != "" {
+			m.DisplayName = measureTranslation.DisplayName
+		}
+		if measureTranslation.Description != "" {
+			m.Description = measureTranslation.Description
+		}
+		if measureTranslation.FormatD3Locale != nil {
+			m.FormatD3Locale = measureTranslation.FormatD3Locale
+		}
+	}
+}
+
+// applyExploreTranslations rewrites an explore using the translations for the given locale.
+func (r *Runtime) applyExploreTranslations(res *runtimev1.Resource, locale string) *runtimev1.Resource {
+	exp := res.GetExplore()
+	specTranslation := translationForLocale(exp.Spec.GetTranslations(), locale)
+	validSpecTranslation := translationForLocale(exp.State.GetValidSpec().GetTranslations(), locale)
+
+	if specTranslation == nil && validSpecTranslation == nil {
+		return res
+	}
+
+	exp = proto.Clone(exp).(*runtimev1.Explore)
+
+	if specTranslation != nil {
+		applyExploreSpecTranslation(exp.Spec, specTranslation)
+	}
+
+	if validSpecTranslation != nil {
+		applyExploreSpecTranslation(exp.State.ValidSpec, validSpecTranslation)
+	}
+
+	// We mustn't modify the resource in-place
+	return &runtimev1.Resource{
+		Meta:     res.Meta,
+		Resource: &runtimev1.Resource_Explore{Explore: exp},
+	}
+}
+
+// applyExploreSpecTranslation rewrites an explore spec in-place using the given translation.
+// It must only be called on a spec that is safe to modify, i.e. one obtained by cloning.
+func applyExploreSpecTranslation(spec *runtimev1.ExploreSpec, translation *runtimev1.Translations_Translation) {
+	if translation.DisplayName != "" {
+		spec.DisplayName = translation.DisplayName
+	}
+	if translation.Description != "" {
+		spec.Description = translation.Description
+	}
+}
+
+// translationForLocale returns the translation for the given locale, or nil if there isn't one.
+func translationForLocale(translations *runtimev1.Translations, locale string) *runtimev1.Translations_Translation {
+	if translations == nil {
+		return nil
+	}
+	return translations.Translations[locale]
 }
