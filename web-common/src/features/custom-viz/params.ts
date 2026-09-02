@@ -329,3 +329,34 @@ export function substituteArgsRecursively(
   }
   return value;
 }
+
+/**
+ * Optimistically resolves a component's renderer properties client-side, so the chart can render
+ * before ResolveComponent returns (and at all for a draft that has yet to reconcile).
+ *
+ * Returns undefined when the result still holds a placeholder. Only `.params` (and its `.args`
+ * alias) can be substituted here; `.fields`, `.env` and `.user` resolve on the server against the
+ * metrics view, the project variables and the caller's claims. Half-resolved properties are worse
+ * than none: a leftover placeholder reaches the renderer as a field name, or inside a Vega
+ * expression that then fails to parse. So the fallback is all-or-nothing, and the caller waits for
+ * the server resolution instead.
+ */
+export function optimisticRendererProps(
+  rendererProperties: unknown,
+  args: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  if (!rendererProperties) return undefined;
+  const props = substituteArgsRecursively(rendererProperties, args);
+  if (hasTemplatePlaceholder(props)) return undefined;
+  return props as Record<string, unknown>;
+}
+
+/** Whether any string nested in the value still contains a template placeholder. */
+function hasTemplatePlaceholder(value: unknown): boolean {
+  if (typeof value === "string") return value.includes("{{");
+  if (Array.isArray(value)) return value.some(hasTemplatePlaceholder);
+  if (value && typeof value === "object") {
+    return Object.values(value).some(hasTemplatePlaceholder);
+  }
+  return false;
+}

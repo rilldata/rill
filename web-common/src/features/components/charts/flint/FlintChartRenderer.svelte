@@ -18,15 +18,23 @@
   } from "@rilldata/web-common/runtime-client";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { View } from "svelte-vega";
+  import type { View, VisualizationSpec } from "svelte-vega";
   import { convertV1ExpressionToMapstructure } from "../custom/expression-utils";
   import {
     compileFlintSpec,
     type FlintChartSpec,
   } from "@rilldata/web-common/features/custom-viz/flint/compile";
+  import { EJECTED_DATA_NAME } from "@rilldata/web-common/features/custom-viz/flint/eject";
   import { deriveFlintFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
 
   export let spec: FlintChartSpec | undefined = undefined;
+  /**
+   * A Vega-Lite spec to render instead of compiling `spec`, set by a component that has been
+   * ejected. It renders through the same query, measure formatters and theme as a chart spec, so
+   * ejecting changes how the chart is described rather than how it is drawn; what it gives up is
+   * the compiler's data-driven layout, which is why the two are mutually exclusive.
+   */
+  export let vegaSpec: string | undefined = undefined;
   export let metricsSQL: string | undefined = undefined;
   export let metricsViewName: string | undefined = undefined;
   export let timeGrain: V1TimeGrain | undefined = undefined;
@@ -127,9 +135,11 @@
     };
   }, {});
 
+  $: ejected = parseVegaSpec(vegaSpec);
+
   // Flint reads the data to make layout decisions, so compilation waits for the rows.
   $: compiled =
-    spec && $dataQuery.isSuccess
+    spec && !vegaSpec && $dataQuery.isSuccess
       ? compileFlintSpec({
           spec,
           rows,
@@ -148,10 +158,31 @@
   // Flint silently drops rows when a discrete axis overflows its layout budget, so surface it.
   $: overflowWarnings =
     compiled?.warnings.filter((warning) => warning.severity !== "info") ?? [];
+
+  $: renderedSpec = ejected?.spec ?? compiled?.spec;
+  $: specError = ejected?.error ?? compiled?.error;
+
+  // A compiled chart spec inlines the rows it read, so only an ejected spec is handed a named
+  // dataset: passing Vega a dataset the spec never declares makes it throw.
+  $: namedData = ejected ? { [EJECTED_DATA_NAME]: rows } : {};
+
+  function parseVegaSpec(
+    value: string | undefined,
+  ): { spec: VisualizationSpec | null; error: string | null } | null {
+    if (!value?.trim()) return null;
+    try {
+      return { spec: JSON.parse(value) as VisualizationSpec, error: null };
+    } catch (e) {
+      return {
+        spec: null,
+        error: `Invalid Vega-Lite spec: ${e instanceof Error ? e.message : String(e)}`,
+      };
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-2 h-full">
-  {#if showDataTable && spec && !compiled?.error && !queryError}
+  {#if showDataTable && (spec || vegaSpec) && !specError && !queryError}
     <div class="flex flex-row items-center gap-2 p-1">
       <FieldSwitcher
         fields={viewOptions}
@@ -168,7 +199,7 @@
         bind:clientWidth={chartWidth}
         bind:clientHeight={chartHeight}
       >
-        {#if !spec}
+        {#if !spec && !vegaSpec}
           <ComponentError error="No spec provided" />
         {:else if !metricsSQL}
           <ComponentError error="No metrics SQL provided" />
@@ -176,9 +207,9 @@
           <ComponentError error={queryError.message || "Error loading data"} />
         {:else if isLoading}
           <ReconcilingSpinner />
-        {:else if compiled?.error}
-          <ComponentError error={compiled.error} />
-        {:else if compiled?.spec}
+        {:else if specError}
+          <ComponentError error={specError} />
+        {:else if renderedSpec}
           {#if overflowWarnings.length}
             <div
               class="px-2 py-1 text-[11px] text-yellow-800 bg-yellow-50 border-b border-yellow-200"
@@ -189,7 +220,8 @@
           <div class="grow min-h-0">
             <VegaLiteRenderer
               {renderer}
-              spec={compiled.spec}
+              spec={renderedSpec}
+              data={namedData}
               canvasDashboard
               {themeMode}
               config={getRillTheme(themeMode === "dark", theme)}

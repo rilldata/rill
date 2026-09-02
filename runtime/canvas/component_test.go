@@ -1026,7 +1026,7 @@ custom_chart:
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
 
-	// Invalid: Vega-Lite is not authored at the component level.
+	// Valid: an ejected component draws a Vega-Lite spec instead of a chart spec.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
@@ -1035,9 +1035,37 @@ custom_chart:
   vega_spec: '{"mark": "bar"}'
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: a component draws one or the other, not both.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec: '{"mark": "bar"}'
+  spec:
+    chartType: Bar Chart
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
 	testruntime.RequireParseErrors(t, rt, id, map[string]string{
-		"/c1.yaml": `"vega_spec" is not supported in a component file`,
+		"/c1.yaml": `"spec" and "vega_spec" are mutually exclusive`,
+	})
+
+	// Invalid: vega_spec is a JSON string, not a mapping.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec:
+    mark: bar
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"vega_spec" must be a string`,
 	})
 
 	// Invalid: spec must be a mapping, not a JSON string.

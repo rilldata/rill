@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -781,6 +782,104 @@ custom_chart:
 	require.Error(t, err)
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 	require.ErrorContains(t, err, `unknown param "nope"`)
+}
+
+func TestResolveEjectedComponent(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country, 1 AS amount`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+  display_name: Country
+measures:
+- name: revenue
+  display_name: Total Revenue
+  expression: SUM(amount)
+  format_preset: currency_usd
+`,
+			// What ejecting a chart spec produces: the Vega-Lite it compiled to, with the bound
+			// values turned back into references to the params and their field metadata.
+			"trend.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: dim
+    type: dimension
+    required: true
+  - name: measure
+    type: measure
+    required: true
+custom_chart:
+  metrics_sql: "SELECT {{ .params.dim }}, {{ .params.measure }} FROM {{ .params.metrics_view }}"
+  vega_spec: |
+    {
+      "mark": "bar",
+      "encoding": {
+        "x": {"field": "{{ .params.dim }}", "title": "{{ .fields.dim.display_name }}"},
+        "y": {
+          "field": "{{ .params.measure }}",
+          "title": "{{ .fields.measure.display_name }}",
+          "formatType": "{{ .fields.measure.format_type }}",
+          "format": "{{ .fields.measure.format_d3 }}"
+        }
+      },
+      "data": {"name": "query1"}
+    }
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	args, err := structpb.NewStruct(map[string]any{
+		"metrics_view": "mv1",
+		"dim":          "country",
+		"measure":      "revenue",
+	})
+	require.NoError(t, err)
+
+	res, err := server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.NoError(t, err)
+
+	props := res.RendererProperties.AsMap()
+	require.Equal(t, "SELECT country, revenue FROM mv1", props["metrics_sql"])
+
+	var vegaSpec struct {
+		Encoding struct {
+			X struct {
+				Field string `json:"field"`
+				Title string `json:"title"`
+			} `json:"x"`
+			Y struct {
+				Field      string `json:"field"`
+				Title      string `json:"title"`
+				FormatType string `json:"formatType"`
+				Format     string `json:"format"`
+			} `json:"y"`
+		} `json:"encoding"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(props["vega_spec"].(string)), &vegaSpec))
+
+	require.Equal(t, "country", vegaSpec.Encoding.X.Field)
+	require.Equal(t, "Country", vegaSpec.Encoding.X.Title)
+	require.Equal(t, "revenue", vegaSpec.Encoding.Y.Field)
+	require.Equal(t, "Total Revenue", vegaSpec.Encoding.Y.Title)
+	require.Equal(t, "rill_revenue", vegaSpec.Encoding.Y.FormatType)
+	// The measure formats from a preset rather than a d3 string, so there is nothing to substitute.
+	require.Empty(t, vegaSpec.Encoding.Y.Format)
 }
 
 func TestResolveCanvasWithParamBoundMetricsView(t *testing.T) {

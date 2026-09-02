@@ -3167,7 +3167,7 @@ definitions:
             description: Detailed description of the component's purpose and functionality
           params:
             type: array
-            description: List of typed parameters that canvases can bind values to when referencing this component. Bound values are available in the renderer properties' templating as `{{ .params.<name> }}`.
+            description: List of typed parameters that canvases can bind values to when referencing this component. Bound values are available in the renderer properties' templating as `{{ .params.<name> }}`, and the metrics view metadata of a field-typed param as `{{ .fields.<name>.display_name }}`, `{{ .fields.<name>.format_d3 }}`, `{{ .fields.<name>.format_preset }}` and `{{ .fields.<name>.format_type }}`.
             items:
               $ref: '#/definitions/component_param_properties'
           input:
@@ -3215,6 +3215,15 @@ definitions:
           Measures arrive pre-aggregated; do not wrap them in aggregate functions.
       spec:
         $ref: '#/definitions/flint_chart_spec'
+      vega_spec:
+        type: string
+        description: |
+          A Vega-Lite spec, as an alternative to `spec` for a chart Rill cannot describe.
+          This is what ejecting a chart spec in the component editor produces: the Vega-Lite it
+          compiled to, with the param bindings turned back into template references. Rill no longer
+          derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
+          Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`.
+          Mutually exclusive with `spec`.
     additionalProperties: false
 
   # Flint Chart Spec

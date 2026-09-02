@@ -10,6 +10,7 @@ import {
   paramToInputParam,
   prettyParamLabel,
   reconcileOrderByArg,
+  optimisticRendererProps,
   substituteArgs,
   substituteArgsRecursively,
 } from "./params";
@@ -309,6 +310,53 @@ describe("substituteArgsRecursively", () => {
       },
       count: 1,
     });
+  });
+});
+
+describe("optimisticRendererProps", () => {
+  it("resolves properties that only reference params", () => {
+    expect(
+      optimisticRendererProps(
+        {
+          metrics_sql: "SELECT {{ .params.m }} FROM mv",
+          spec: { encodings: { y: { field: "{{ .params.m }}" } } },
+        },
+        { m: "total" },
+      ),
+    ).toEqual({
+      metrics_sql: "SELECT total FROM mv",
+      spec: { encodings: { y: { field: "total" } } },
+    });
+  });
+
+  it("gives up when a placeholder is left over", () => {
+    // .fields resolves on the server against the metrics view. Substituting only the params would
+    // leave the display name as a literal placeholder, which Vega then reads as part of a tooltip
+    // expression and fails to parse, so there is nothing safe to render optimistically.
+    expect(
+      optimisticRendererProps(
+        {
+          vega_spec:
+            '{"encoding":{"y":{"field":"{{ .params.m }}","title":"{{ .fields.m.display_name }}"}}}',
+        },
+        { m: "total" },
+      ),
+    ).toBeUndefined();
+
+    // Likewise for an unbound param, and for the namespaces only the server can resolve.
+    expect(
+      optimisticRendererProps({ spec: { x: "{{ .params.missing }}" } }, {}),
+    ).toBeUndefined();
+    expect(
+      optimisticRendererProps({ spec: { x: "{{ .env.name }}" } }, {}),
+    ).toBeUndefined();
+    expect(
+      optimisticRendererProps({ spec: { x: "{{ .user.email }}" } }, {}),
+    ).toBeUndefined();
+  });
+
+  it("returns undefined when there are no renderer properties", () => {
+    expect(optimisticRendererProps(undefined, {})).toBeUndefined();
   });
 });
 

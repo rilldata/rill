@@ -13,6 +13,7 @@
   import ReconcileWarningPanel from "@rilldata/web-common/features/entity-management/ReconcileWarningPanel.svelte";
   import { sendComponentFilePrompt } from "@rilldata/web-common/features/custom-viz/component-ai-agent";
   import ComponentPreview from "@rilldata/web-common/features/custom-viz/workspace/ComponentPreview.svelte";
+  import EjectButton from "@rilldata/web-common/features/custom-viz/workspace/EjectButton.svelte";
   import TestBindingsPanel from "@rilldata/web-common/features/custom-viz/workspace/TestBindingsPanel.svelte";
   import UsedByPanel from "@rilldata/web-common/features/custom-viz/workspace/UsedByPanel.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -123,7 +124,16 @@
     codeToggle
     onTitleChange={onChangeCallback}
     resourceKind={ResourceKind.Component}
-  />
+  >
+    {#snippet cta()}
+      <EjectButton
+        {fileArtifact}
+        {componentName}
+        {resource}
+        args={$argsStore}
+      />
+    {/snippet}
+  </WorkspaceHeader>
 
   <svelte:fragment slot="body">
     <div class="flex flex-col h-full">

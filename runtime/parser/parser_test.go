@@ -2253,6 +2253,46 @@ kpi:
 			wantErr: `reference undeclared param "b"`,
 		},
 		{
+			name: "undeclared param reference in a .fields reference",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+  - name: a
+    type: measure
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.b.display_name }}"}'
+`},
+			wantErr: `reference undeclared param "b"`,
+		},
+		{
+			name: "field metadata reference to a scalar param",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: a
+    type: string
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.a.display_name }}"}'
+`},
+			wantErr: `param "a" is not of type measure, dimension, time_dimension`,
+		},
+		{
+			name: "unknown field metadata property",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+  - name: a
+    type: measure
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.a.displayName }}"}'
+`},
+			wantErr: `".fields.a.displayName", which is not a field property`,
+		},
+		{
 			name: "params on inline component",
 			files: map[string]string{`canvases/d.yaml`: `
 type: canvas

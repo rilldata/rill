@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/canvas"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -87,6 +89,13 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Merge the declared param defaults (and legacy input variable defaults) under the provided args.
 	effectiveArgs := canvas.EffectiveArgs(spec, args)
 
+	// Resolve the metrics view metadata of the bound fields, so a spec can title an axis with a
+	// measure's display name or format it with the measure's formatter. See canvas.FieldTemplateData.
+	metricsViews, err := s.boundMetricsViews(ctx, req.InstanceId, claims, spec.Params, effectiveArgs)
+	if err != nil {
+		return nil, err
+	}
+
 	// Setup templating data.
 	// The effective args are exposed both as .params (canonical, matching the YAML key) and .args (legacy alias).
 	td := parser.TemplateData{
@@ -96,6 +105,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		ExtraProps: map[string]any{
 			"args":   effectiveArgs,
 			"params": effectiveArgs,
+			"fields": canvas.FieldTemplateData(spec.Params, effectiveArgs, metricsViews),
 		},
 	}
 
@@ -143,4 +153,43 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		RendererProperties: rendererProps,
 		ResolvedArgs:       resolvedArgs,
 	}, nil
+}
+
+// boundMetricsViews loads the valid specs of the metrics views bound to a component's
+// metrics_view params, with the caller's security policy applied.
+// Metrics views that don't exist or that the caller cannot access are omitted.
+func (s *Server) boundMetricsViews(ctx context.Context, instanceID string, claims *runtime.SecurityClaims, params []*runtimev1.ComponentParam, args map[string]any) (map[string]*runtimev1.MetricsViewSpec, error) {
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make(map[string]*runtimev1.MetricsViewSpec)
+	for _, p := range params {
+		if p.Type != "metrics_view" {
+			continue
+		}
+		name, ok := args[p.Name].(string)
+		if !ok || name == "" || res[name] != nil {
+			continue
+		}
+		mvRes, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				continue
+			}
+			return nil, err
+		}
+		mvRes, access, err := s.runtime.ApplySecurityPolicy(ctx, instanceID, claims, mvRes)
+		if err != nil {
+			return nil, err
+		}
+		if !access {
+			continue
+		}
+		if spec := mvRes.GetMetricsView().State.ValidSpec; spec != nil {
+			res[name] = spec
+		}
+	}
+	return res, nil
 }

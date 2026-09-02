@@ -1,14 +1,18 @@
 <script lang="ts">
   import type { PartialMessage, Struct } from "@bufbuild/protobuf";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
+  import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import FlintChartRenderer from "@rilldata/web-common/features/components/charts/flint/FlintChartRenderer.svelte";
   import type { FlintChartSpec } from "@rilldata/web-common/features/custom-viz/flint/compile";
   import { sendComponentFilePrompt } from "@rilldata/web-common/features/custom-viz/component-ai-agent";
-  import { substituteArgsRecursively } from "@rilldata/web-common/features/custom-viz/params";
+  import { optimisticRendererProps } from "@rilldata/web-common/features/custom-viz/params";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { V1TimeGrain, type V1Resource } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceResolveComponent } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
@@ -64,11 +68,10 @@
     },
   );
 
-  $: optimisticProps = componentSpec?.rendererProperties
-    ? (substituteArgsRecursively(componentSpec.rendererProperties, args) as
-        | Record<string, unknown>
-        | undefined)
-    : undefined;
+  $: optimisticProps = optimisticRendererProps(
+    componentSpec?.rendererProperties,
+    args,
+  );
 
   $: resolvedProps = hasValidSpec
     ? (($resolvedQuery.data?.rendererProperties as
@@ -78,6 +81,8 @@
 
   $: metricsSQL = normalizeMetricsSQL(resolvedProps?.metrics_sql);
   $: flintSpec = resolvedProps?.spec as FlintChartSpec | undefined;
+  // An ejected component carries the Vega-Lite it used to compile to instead of a chart spec.
+  $: vegaSpec = resolvedProps?.vega_spec as string | undefined;
 
   // The metrics view the preview is bound to, from whichever param declares it.
   $: metricsViewParam = componentSpec?.params?.find(
@@ -122,6 +127,12 @@
         </button>
       {/if}
     </div>
+  {:else if !resolvedProps}
+    <!-- The properties reference something only the server resolves, so either its response or a
+         reconcile of the edited file is still outstanding; both settle on their own. -->
+    <div class="flex-1 flex items-center justify-center">
+      <ReconcilingSpinner />
+    </div>
   {:else}
     <!-- overflow-hidden bounds charts with fixed/step sizes to the preview area. -->
     <div class="flex-1 min-h-[320px] max-h-full overflow-hidden">
@@ -130,6 +141,7 @@
       <FlintChartRenderer
         name={componentName}
         spec={flintSpec}
+        {vegaSpec}
         {metricsSQL}
         {metricsViewName}
         timeGrain={V1TimeGrain.TIME_GRAIN_DAY}

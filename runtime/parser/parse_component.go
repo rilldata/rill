@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -26,7 +27,9 @@ type ComponentYAML struct {
 
 // ComponentParamYAML declares a typed parameter of a component.
 // Canvases bind values to params when referencing the component;
-// bound values are available in the renderer properties' templating as {{ .params.<name> }}.
+// bound values are available in the renderer properties' templating as {{ .params.<name> }},
+// and the metrics view metadata of a field-typed param as {{ .fields.<name>.<property> }}
+// (see canvas.FieldTemplateData).
 type ComponentParamYAML struct {
 	Name        string `yaml:"name"`
 	Type        string `yaml:"type"`
@@ -117,7 +120,8 @@ func (p *Parser) parseComponent(node *Node) error {
 // parseComponentYAML parses and validates a ComponentYAML.
 // It is separated from parseComponent to allow inline creation of components from a canvas YAML file.
 // The inline flag selects the custom chart spec format: inline canvas charts author Vega-Lite under
-// "vega_spec", while standalone component files author Flint under "spec".
+// "vega_spec", while standalone component files author a chart spec under "spec" and only carry a
+// "vega_spec" once that chart spec has been ejected.
 func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1.ComponentSpec, []ResourceName, error) {
 	// Display name backwards compatibility
 	if tmp.Title != "" && tmp.DisplayName == "" {
@@ -166,12 +170,22 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 				return nil, nil, errors.New(`renderer property "spec" is not supported in an inline canvas chart: use "vega_spec", or define a component file to author a chart spec`)
 			}
 		} else {
-			if _, ok := props["vega_spec"]; ok {
-				return nil, nil, errors.New(`renderer property "vega_spec" is not supported in a component file: use "spec" with a chart spec`)
+			_, hasSpec := props["spec"]
+			_, hasVegaSpec := props["vega_spec"]
+			// A component file authors a chart spec under "spec". It may instead carry a Vega-Lite spec
+			// under "vega_spec", which is what ejecting a chart spec produces; the two describe the same
+			// chart at different levels, so exactly one of them draws it.
+			if hasSpec && hasVegaSpec {
+				return nil, nil, errors.New(`renderer properties "spec" and "vega_spec" are mutually exclusive: a component draws either a chart spec or a Vega-Lite spec`)
 			}
-			if spec, ok := props["spec"]; ok {
-				if _, ok := spec.(map[string]any); !ok {
+			if hasSpec {
+				if _, ok := props["spec"].(map[string]any); !ok {
 					return nil, nil, errors.New(`renderer property "spec" must be a mapping`)
+				}
+			}
+			if hasVegaSpec {
+				if _, ok := props["vega_spec"].(string); !ok {
+					return nil, nil, errors.New(`renderer property "vega_spec" must be a string containing a Vega-Lite spec`)
 				}
 			}
 		}
@@ -212,17 +226,35 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 	}
 
 	// When params are declared, require that all template references to .params (or its .args alias)
-	// in the renderer properties refer to declared params. This catches typos at parse time.
+	// and to .fields in the renderer properties refer to declared params. This catches typos at parse time.
 	if len(params) > 0 {
 		declared := make(map[string]bool, len(params))
+		fieldTyped := make(map[string]bool, len(params))
 		for _, param := range params {
 			declared[param.Name] = true
+			fieldTyped[param.Name] = slices.Contains(componentParamFieldTypes, param.Type)
 		}
 		vars := make(map[string]string)
 		if err := AnalyzeTemplateRecursively(props, vars); err != nil {
 			return nil, nil, fmt.Errorf("failed to analyze templating in renderer properties: %w", err)
 		}
 		for v := range vars {
+			if rest, ok := strings.CutPrefix(v, "fields."); ok {
+				name, key, _ := strings.Cut(rest, ".")
+				if !declared[name] {
+					return nil, nil, fmt.Errorf("renderer properties reference undeclared param %q", name)
+				}
+				// ".fields" exposes metrics view metadata, which only a field-typed param resolves against.
+				if !fieldTyped[name] {
+					return nil, nil, fmt.Errorf(`renderer properties reference ".fields.%s", but param %q is not of type %s`, name, name, strings.Join(componentParamFieldTypes, ", "))
+				}
+				// A mistyped key resolves to Go's "<no value>" placeholder rather than to an error,
+				// which would then reach the renderer as a field or formatter name.
+				if !slices.Contains(canvas.FieldMetadataKeys, key) {
+					return nil, nil, fmt.Errorf(`renderer properties reference ".fields.%s.%s", which is not a field property (options: %s)`, name, key, strings.Join(canvas.FieldMetadataKeys, ", "))
+				}
+				continue
+			}
 			rest, ok := strings.CutPrefix(v, "params.")
 			if !ok {
 				rest, ok = strings.CutPrefix(v, "args.")

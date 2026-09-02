@@ -1,8 +1,9 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
+  import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import FlintChartRenderer from "@rilldata/web-common/features/components/charts/flint/FlintChartRenderer.svelte";
   import type { FlintChartSpec } from "@rilldata/web-common/features/custom-viz/flint/compile";
-  import { substituteArgsRecursively } from "@rilldata/web-common/features/custom-viz/params";
+  import { optimisticRendererProps } from "@rilldata/web-common/features/custom-viz/params";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { createQueryServiceResolveComponent } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -59,11 +60,10 @@
 
   // While the server resolution is in flight (or failed transiently), fall back to
   // optimistic client-side substitution of the raw renderer properties.
-  $: optimisticProps = componentSpec?.rendererProperties
-    ? (substituteArgsRecursively(componentSpec.rendererProperties, args) as
-        | Record<string, unknown>
-        | undefined)
-    : undefined;
+  $: optimisticProps = optimisticRendererProps(
+    componentSpec?.rendererProperties,
+    args,
+  );
 
   $: resolvedProps =
     ($resolvedQuery.data?.rendererProperties as
@@ -73,6 +73,8 @@
   // Flint takes a single row set, so components declare one metrics_sql query.
   $: metricsSQL = normalizeMetricsSQL(resolvedProps?.metrics_sql);
   $: flintSpec = resolvedProps?.spec as FlintChartSpec | undefined;
+  // An ejected component carries the Vega-Lite it used to compile to instead of a chart spec.
+  $: vegaSpec = resolvedProps?.vega_spec as string | undefined;
 
   $: metricsViewName = $specStore.metrics_view as string | undefined;
   $: timeGrain = $timeAndFilterStore?.timeGrain;
@@ -99,10 +101,17 @@
   />
 {:else if $resolvedQuery.error && !optimisticProps}
   <ComponentError error={$resolvedQuery.error.message} />
+{:else if !resolvedProps}
+  <!-- The properties reference something only the server resolves, so its response is still
+       outstanding; it settles on its own. -->
+  <div class="size-full flex items-center justify-center">
+    <ReconcilingSpinner />
+  </div>
 {:else}
   <FlintChartRenderer
     name={component.id}
     spec={flintSpec}
+    {vegaSpec}
     {metricsSQL}
     {metricsViewName}
     {timeGrain}

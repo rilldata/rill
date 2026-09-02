@@ -22,7 +22,7 @@ _[string]_ - Detailed description of the component's purpose and functionality
 
 ### `params`
 
-_[array of object]_ - List of typed parameters that canvases can bind values to when referencing this component. Bound values are available in the renderer properties' templating as `{{ .params.<name> }}`.
+_[array of object]_ - List of typed parameters that canvases can bind values to when referencing this component. Bound values are available in the renderer properties' templating as `{{ .params.<name> }}`, and the metrics view metadata of a field-typed param as `{{ .fields.<name>.display_name }}`, `{{ .fields.<name>.format_d3 }}`, `{{ .fields.<name>.format_preset }}` and `{{ .fields.<name>.format_type }}`.
 
   - **`name`** - _[string]_ - Param name. Must be a valid identifier; referenced in the renderer properties' templating as `{{ .params.<name> }}`. _(required)_
 
@@ -341,3 +341,10 @@ metrics view's semantics, so the spec only states the chart type and which field
 
 
     - **`chartProperties`** - _[object]_ - Per-chart-type presentation tuning, e.g. `innerRadius`, `stackMode`, `interpolate`.
+
+  - **`vega_spec`** - _[string]_ - A Vega-Lite spec, as an alternative to `spec` for a chart Rill cannot describe.
+  This is what ejecting a chart spec in the component editor produces: the Vega-Lite it
+  compiled to, with the param bindings turned back into template references. Rill no longer
+  derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
+  Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`.
+  Mutually exclusive with `spec`.
