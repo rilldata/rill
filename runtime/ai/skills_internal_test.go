@@ -1,10 +1,23 @@
 package ai
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestMCPInstructionsFor(t *testing.T) {
+	require.Contains(t, mcpInstructionsFor(true), "## Skills")
+	require.NotContains(t, mcpInstructionsFor(false), "## Skills")
+	// The surrounding sections are present either way
+	for _, hasSkills := range []bool{true, false} {
+		instr := mcpInstructionsFor(hasSkills)
+		require.Contains(t, instr, "## Workflow Overview")
+		require.Contains(t, instr, "## Project Development")
+	}
+	require.True(t, strings.Contains(MCPInstructions, "## Skills"))
+}
 
 func TestSkillNameForPath(t *testing.T) {
 	tests := []struct {
