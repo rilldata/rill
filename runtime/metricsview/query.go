@@ -61,6 +61,7 @@ type MeasureCompute struct {
 	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total,omitempty" mapstructure:"percent_of_total"`
 	URI             *MeasureComputeURI             `json:"uri,omitempty" mapstructure:"uri"`
 	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time,omitempty" mapstructure:"comparison_time"`
+	Expression      *MeasureComputeExpression      `json:"expression,omitempty" mapstructure:"expression"`
 }
 
 // QueryLimits represents limits that should be applied to a query, such as requiring a time range or limiting the maximum time range for interactive queries. These are not part of the Query json itself because they are not intrinsic to the query, but rather are constraints that may be applied to the query before execution.
@@ -144,6 +145,9 @@ func (m *MeasureCompute) Validate() error {
 	if m.ComparisonTime != nil {
 		n++
 	}
+	if m.Expression != nil {
+		n++
+	}
 	if n == 0 {
 		return fmt.Errorf(`must specify a compute operation`)
 	}
@@ -180,6 +184,14 @@ type MeasureComputeURI struct {
 
 type MeasureComputeComparisonTime struct {
 	Dimension string `json:"dimension" mapstructure:"dimension"`
+}
+
+// MeasureComputeExpression computes an ephemeral measure derived from other measures via an arithmetic expression.
+// The expression is validated by ParseMeasureExpression: it may only reference existing measure names,
+// combined with numeric literals, NULL, the operators + - * / %, parentheses, and an allowlist of scalar functions.
+type MeasureComputeExpression struct {
+	Expression  string `json:"expression" mapstructure:"expression"`
+	DisplayName string `json:"display_name,omitempty" mapstructure:"display_name"`
 }
 
 type Spine struct {
@@ -410,6 +422,16 @@ func AnalyzeQueryFields(q *Query) []string {
 	// Add measures
 	for _, meas := range q.Measures {
 		fieldsMap[getMeasureName(meas)] = struct{}{}
+		// An expression compute references other measures; report the referenced names so that
+		// inferred security rules (see InferRequiredSecurityRules) grant access to them.
+		// Parse errors are ignored here; the executor reports them when the query runs.
+		if meas.Compute != nil && meas.Compute.Expression != nil {
+			if expr, err := ParseMeasureExpression(meas.Compute.Expression.Expression); err == nil {
+				for _, ref := range expr.Refs() {
+					fieldsMap[ref] = struct{}{}
+				}
+			}
+		}
 	}
 	// Add time dimension if present
 	if q.TimeRange != nil && q.TimeRange.TimeDimension != "" {
@@ -462,6 +484,8 @@ func getMeasureName(m Measure) string {
 		return m.Compute.URI.Dimension
 	case m.Compute.ComparisonTime != nil:
 		return m.Compute.ComparisonTime.Dimension
+	case m.Compute.Expression != nil:
+		return "" // skip; the referenced measures are added separately in AnalyzeQueryFields
 	default:
 		panic("could not find measure name")
 	}
@@ -647,6 +671,12 @@ const QueryJSONSchema = `
         },
         "uri": {
           "$ref": "#/$defs/MeasureComputeURI"
+        },
+        "comparison_time": {
+          "$ref": "#/$defs/MeasureComputeComparisonTime"
+        },
+        "expression": {
+          "$ref": "#/$defs/MeasureComputeExpression"
         }
       },
       "oneOf": [
@@ -656,7 +686,9 @@ const QueryJSONSchema = `
         {"required": ["comparison_delta"]},
         {"required": ["comparison_ratio"]},
         {"required": ["percent_of_total"]},
-        {"required": ["uri"]}
+        {"required": ["uri"]},
+        {"required": ["comparison_time"]},
+        {"required": ["expression"]}
       ]
     },
     "MeasureComputeCountDistinct": {
@@ -722,6 +754,30 @@ const QueryJSONSchema = `
         }
       },
       "required": ["dimension"]
+    },
+    "MeasureComputeComparisonTime": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "description": "Time dimension to return the comparison time for"
+        }
+      },
+      "required": ["dimension"]
+    },
+    "MeasureComputeExpression": {
+      "type": "object",
+      "properties": {
+        "expression": {
+          "type": "string",
+          "description": "Arithmetic expression that derives an ephemeral measure from existing measures, e.g. 'revenue - cost'. References must be existing measure names. Only numeric literals, NULL, the operators + - * / %, parentheses, and the functions abs, round, floor, ceil, sqrt, ln, exp, power, coalesce, nullif, greatest, least are allowed."
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Optional display name for the derived measure"
+        }
+      },
+      "required": ["expression"]
     },
     "Spine": {
       "type": "object",

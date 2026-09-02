@@ -246,6 +246,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
+		Measures:        req.Measures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
 		TimeGranularity: req.TimeGranularity,

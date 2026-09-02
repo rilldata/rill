@@ -2590,6 +2590,17 @@ paths:
                 type: array
                 items:
                   type: string
+                description: |-
+                  Names of measures in the metrics view to include.
+                  At least one of measure_names or measures must be provided.
+              measures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+                description: |-
+                  Optional additional measures, e.g. ephemeral measures with an `expression` compute.
+                  Only the `expression` compute is supported for time series.
               timeStart:
                 type: string
                 format: date-time
@@ -5390,6 +5401,11 @@ definitions:
         description: |-
           Per-measure pivot conditional formatting, serialized in the URL param
           format (frontend-only; persisted in URL state).
+      calculatedMeasures:
+        type: string
+        description: |-
+          Calculated (ephemeral) measures for the explore, serialized in the URL
+          param format (frontend-only; persisted in URL state).
       chartDynamicYAxis:
         type: boolean
         title: Chart display settings (frontend-only; persisted in URL state)
@@ -6173,6 +6189,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeURI'
       comparisonTime:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonTime'
+      expression:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeExpression'
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -6200,6 +6218,20 @@ definitions:
     properties:
       dimension:
         type: string
+  v1MetricsViewAggregationMeasureComputeExpression:
+    type: object
+    properties:
+      expression:
+        type: string
+        description: Arithmetic expression over existing measure names, e.g. "revenue - cost".
+      displayName:
+        type: string
+        description: Optional display name used in exports and result metadata.
+    description: |-
+      Computes an ephemeral measure derived from other measures in the metrics view.
+      The expression may only contain measure references, numeric literals, NULL,
+      the arithmetic operators + - * / %, parentheses, and a small allowlist of scalar functions.
+      Referenced measures are subject to the metrics view's security policies.
   v1MetricsViewAggregationMeasureComputePercentOfTotal:
     type: object
     properties:
@@ -6864,6 +6896,17 @@ definitions:
         type: array
         items:
           type: string
+        description: |-
+          Names of measures in the metrics view to include.
+          At least one of measure_names or measures must be provided.
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+        description: |-
+          Optional additional measures, e.g. ephemeral measures with an `expression` compute.
+          Only the `expression` compute is supported for time series.
       timeStart:
         type: string
         format: date-time

@@ -517,6 +517,7 @@ message MetricsViewAggregationMeasure {
     MetricsViewAggregationMeasureComputePercentOfTotal percent_of_total = 10;
     MetricsViewAggregationMeasureComputeURI uri = 11;
     MetricsViewAggregationMeasureComputeComparisonTime comparison_time = 12;
+    MetricsViewAggregationMeasureComputeExpression expression = 13;
   }
 }
 
@@ -548,6 +549,17 @@ message MetricsViewAggregationMeasureComputeURI {
 
 message MetricsViewAggregationMeasureComputeComparisonTime {
   string dimension = 1;
+}
+
+// Computes an ephemeral measure derived from other measures in the metrics view.
+// The expression may only contain measure references, numeric literals, NULL,
+// the arithmetic operators + - * / %, parentheses, and a small allowlist of scalar functions.
+// Referenced measures are subject to the metrics view's security policies.
+message MetricsViewAggregationMeasureComputeExpression {
+  // Arithmetic expression over existing measure names, e.g. "revenue - cost".
+  string expression = 1;
+  // Optional display name used in exports and result metadata.
+  string display_name = 2;
 }
 
 message MetricsViewAggregationSort {
@@ -716,7 +728,12 @@ message MetricsViewComparisonMeasureAlias {
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
+  // Names of measures in the metrics view to include.
+  // At least one of measure_names or measures must be provided.
+  repeated string measure_names = 3;
+  // Optional additional measures, e.g. ephemeral measures with an `expression` compute.
+  // Only the `expression` compute is supported for time series.
+  repeated MetricsViewAggregationMeasure measures = 17;
   // Optional. Defaults to min
   google.protobuf.Timestamp time_start = 4;
   // Optional. Defaults to max

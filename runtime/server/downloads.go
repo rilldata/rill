@@ -275,6 +275,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		q = &queries.MetricsViewTimeSeries{
 			MetricsViewName: r.MetricsViewName,
 			MeasureNames:    r.MeasureNames,
+			Measures:        r.Measures,
 			TimeStart:       r.TimeStart,
 			TimeEnd:         r.TimeEnd,
 			Where:           r.Where,

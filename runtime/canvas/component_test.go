@@ -966,3 +966,197 @@ leaderboard:
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
+
+func TestValidateCalculatedMeasures(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// A kpi_grid referencing a calculated measure should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures: [y, profit]
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A leaderboard referencing a calculated measure should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+leaderboard:
+  metrics_view: mv1
+  measures: [profit]
+  dimensions: [foo]
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A table with a calculated measure column should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+table:
+  metrics_view: mv1
+  columns: [foo, y, profit]
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A pivot with a calculated measure should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [profit]
+  row_dimensions: [foo]
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A bar chart using a calculated measure on the y axis (single and multi) should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: nominal
+  y:
+    field: profit
+    type: quantitative
+    fields: [y, profit]
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A pie chart using a calculated measure should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pie_chart:
+  metrics_view: mv1
+  measure:
+    field: profit
+    type: quantitative
+  color:
+    field: foo
+    type: nominal
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A heatmap using a calculated measure as the color field should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+heatmap:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: nominal
+  color:
+    field: profit
+    type: quantitative
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A chart referencing an undefined calculated measure should fail.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: nominal
+  y:
+    field: missing
+    type: quantitative
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "not a measure in metrics view")
+
+	// An invalid expression should fail validation.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures: [profit]
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: sum(y)
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "aggregate function")
+
+	// An expression referencing an unknown measure should fail validation.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures: [profit]
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - unknown
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "not a measure in metrics view")
+
+	// A measure not defined anywhere should still fail.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures: [missing]
+  calculated_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a measure")
+}

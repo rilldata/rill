@@ -580,6 +580,40 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		}, nil
 	}
 
+	if qm.Compute.Expression != nil {
+		parsed, err := ParseMeasureExpression(qm.Compute.Expression.Expression)
+		if err != nil {
+			return nil, fmt.Errorf("invalid expression for measure %q: %w", qm.Name, err)
+		}
+
+		// Resolve every referenced measure to check it exists and is visible under the security policy.
+		for _, ref := range parsed.Refs() {
+			if _, err := a.LookupMeasure(ref, visible); err != nil {
+				return nil, fmt.Errorf("invalid expression for measure %q: measure %q: %w", qm.Name, ref, err)
+			}
+		}
+
+		// Re-render the expression from the parsed tree with dialect-safe escaping.
+		// Never splice the user-supplied string into SQL directly.
+		expr := parsed.Render(MeasureExpressionRenderOptions{
+			EscapeRef:  a.Dialect.EscapeAlias,
+			SafeDivide: a.Dialect.SafeDivideExpression,
+		})
+
+		displayName := qm.Compute.Expression.DisplayName
+		if displayName == "" {
+			displayName = qm.Name
+		}
+
+		return &runtimev1.MetricsViewSpec_Measure{
+			Name:               qm.Name,
+			Expression:         expr,
+			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+			ReferencedMeasures: parsed.Refs(),
+			DisplayName:        displayName,
+		}, nil
+	}
+
 	if qm.Compute.URI != nil {
 		dim, err := a.LookupDimension(qm.Compute.URI.Dimension, visible)
 		if err != nil {
