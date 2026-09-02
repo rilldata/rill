@@ -31,7 +31,7 @@
     sendComponentFilePrompt(
       client,
       filePath,
-      `It fails to render with this error: "${error}". Fix it so it renders cleanly, keeping its chart type and bound channels.`,
+      `It fails to render with this error: "${error}". Fix it so it renders cleanly, keeping the chart it draws, its bound channels, and whichever spec format it already uses.`,
     );
   }
 

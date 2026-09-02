@@ -8,7 +8,7 @@ description: Detailed instructions and examples for developing component (custom
 
 Components are reusable visualizations ("custom viz") defined as standalone `type: component` files, conventionally under `viz_library/`. A component declares typed **params** and a **renderer**; canvas dashboards reference the component by name and bind values to its params. This makes one visualization reusable across many dashboards with different metrics views, measures, and dimensions.
 
-Charts are described with a declarative chart spec: you state the chart type and which field goes on which channel, and Rill derives the scales, axes, number formats, sorting, stacking, colors and layout from the data and from the metrics view's semantics. You do not write Vega-Lite here. **Do not set axis titles, tick counts, colors, fonts, widths or heights anywhere**; they are computed.
+Charts are described with a declarative chart spec: you state the chart type and which field goes on which channel, and Rill derives the scales, axes, number formats, sorting, stacking, colors and layout from the data and from the metrics view's semantics. **In a chart spec, do not set axis titles, tick counts, colors, fonts, widths or heights anywhere**; they are computed. Reach for Vega-Lite only when the chart spec cannot express what was asked, and then only as described in "Going beyond the chart spec" below.
 
 ## Anatomy
 
@@ -173,6 +173,113 @@ Small multiples: one panel per value of a dimension:
       color: { field: "{{ .params.series }}" }
 ```
 
+## Going beyond the chart spec: ejecting to Vega-Lite
+
+The chart spec is deliberately narrow: a chart type, six encoding keys, and `chartProperties`. When a
+request needs something it cannot reach — a mark it has no chart type for, layered or dual-axis
+composition, a data transform, an interaction, or specific control over an axis, legend, scale or
+number format — the component **ejects**: `spec` is replaced by `vega_spec`, a Vega-Lite v5 spec
+written as a string. The two are mutually exclusive; a component that declares both fails to parse.
+
+Try the chart spec first. Ejecting is a one-way trade: Rill stops deriving scales, axes, formats,
+sorting, stacking and layout, so the chart no longer adapts to its data, and everything the chart
+spec used to compute becomes yours to write and maintain. Eject when the request genuinely cannot be
+met otherwise, not to gain incidental control. If a listed chart type does what was asked, use it.
+Say plainly in your summary that the component was ejected and what it gave up.
+
+Nothing else about the component changes: keep the `params` and the `metrics_sql` exactly as they
+were, so every dashboard already referencing the component keeps working. Only the renderer's chart
+description changes.
+
+### Keeping an ejected component parameterized
+
+A component is reusable because its bindings are templated, and an ejected spec must stay that way.
+Never write a field name, an axis title or a number format as a literal — bind each one back to the
+param it came from:
+
+| What you need | Write |
+| --- | --- |
+| A field name, anywhere: encodings, transforms, `datum[...]` expressions, tooltips | `{{ .params.<param> }}` |
+| A field's label, for an axis, legend or tooltip title | `{{ .fields.<param>.display_name }}` |
+| A measure's number format | `formatType: "{{ .fields.<param>.format_type }}"` |
+
+`.fields.<param>` exposes the metrics view metadata of a **field-typed** param (`measure`,
+`dimension`, `time_dimension`) and is an error on any other param. Its properties are `name` (the
+same value as `{{ .params.<param> }}`), `display_name`, `format_d3`, `format_preset` and
+`format_type`. A mistyped property is rejected at parse time.
+
+Prefer `formatType` with `format_type` over a raw `format` string: it routes values through the
+formatter Rill registers for that measure, so currency, percent and duration presets render the way
+they do everywhere else in the dashboard. Use `format: "{{ .fields.<param>.format_d3 }}"` only when
+the spec has to be portable outside Rill.
+
+Scalar params (`string`, `number`, `boolean`) are additionally injected as native Vega-Lite params,
+so a spec can reference one as a signal by name in an expression, predicate or extent — in addition
+to substituting it textually as `{{ .params.<name> }}`.
+
+### Vega-Lite rules for an ejected component
+
+- Write a valid Vega-Lite v5 spec as a YAML block scalar (`vega_spec: |`).
+- Read the query result from `{"data": {"name": "query1"}}`. A component issues exactly one query, so
+  there is never a `query2`. Never inline `{"values": [...]}`.
+- Set `"width": "container"`, `"height": "container"` and `"autosize": {"type": "fit"}` at the top
+  level, so the chart fills its widget instead of overflowing it. `autosize` is not optional: without
+  it only the width is fitted and axis and legend decorations run past the bottom of the container.
+- Set `type` on every encoding (`quantitative`, `nominal`, `ordinal`, `temporal`). Nothing is derived
+  any more, and an unset type silently renders wrong.
+- A time dimension selected plainly by the `metrics_sql` is still bucketed at the dashboard's grain,
+  so encode it as `"type": "temporal"` and let the query drive the bucket.
+- Include a tooltip covering the encoded fields, titled with `display_name` and formatted with
+  `format_type`.
+
+```yaml
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.time_dim }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.time_dim }}
+    LIMIT {{ .params.limit }}
+  vega_spec: |
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": {"type": "fit"},
+      "data": {"name": "query1"},
+      "mark": {"type": "line", "interpolate": "monotone", "point": true},
+      "encoding": {
+        "x": {
+          "field": "{{ .params.time_dim }}",
+          "type": "temporal",
+          "title": "{{ .fields.time_dim.display_name }}"
+        },
+        "y": {
+          "field": "{{ .params.measure }}",
+          "type": "quantitative",
+          "title": "{{ .fields.measure.display_name }}",
+          "axis": {"formatType": "{{ .fields.measure.format_type }}"}
+        },
+        "tooltip": [
+          {
+            "field": "{{ .params.time_dim }}",
+            "type": "temporal",
+            "title": "{{ .fields.time_dim.display_name }}"
+          },
+          {
+            "field": "{{ .params.measure }}",
+            "type": "quantitative",
+            "title": "{{ .fields.measure.display_name }}",
+            "formatType": "{{ .fields.measure.format_type }}"
+          }
+        ]
+      }
+    }
+```
+
+The component editor also has an **Eject to Vega-Lite** action, which compiles the current chart spec
+and writes the equivalent parameterized Vega-Lite for the user. It is a good starting point for
+someone editing by hand, but it is not available to you: write the `vega_spec` directly.
+
 ## metrics_sql rules
 
 `metrics_sql` queries metrics views as virtual tables, and it is a deliberately restricted dialect — treat it as "pick columns", not general SQL:
@@ -195,4 +302,4 @@ If a visualization needs cross-row derivations (running sums, per-group offsets,
 - **Do not set `type` or `aggregate` on an encoding** unless the derived behaviour is actually wrong; the semantics Rill supplies are usually right, and hardcoding them is what breaks a component when it is rebound to a different metrics view. A dimension typed `quantitative` renders a blank chart.
 - New params on an already-used component should be optional or have a default, otherwise existing dashboards break.
 - Components are validated leniently while they contain unresolved `{{ .params.* }}` placeholders; the fully-bound instance is validated in each canvas that references it.
-- Inline `custom_chart` blocks inside a canvas are a different, Vega-Lite-based widget and still use `vega_spec`. A component file must use `spec`, and an inline canvas chart must not.
+- Inline `custom_chart` blocks inside a canvas are a different, Vega-Lite-based widget and always use `vega_spec`; they never accept `spec`. A component file authors `spec` by default and switches to `vega_spec` only when ejected (see "Going beyond the chart spec").

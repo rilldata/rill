@@ -882,6 +882,127 @@ custom_chart:
 	require.Empty(t, vegaSpec.Encoding.Y.Format)
 }
 
+// TestResolveEjectedComponentFromAgentInstructions runs the exact spec shape that the component
+// authoring instructions tell the developer agent to write when it ejects a chart spec
+// (runtime/ai/instructions/data/resources/component.md), so the two cannot drift apart.
+func TestResolveEjectedComponentFromAgentInstructions(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT NOW() AS ts, 1 AS amount`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+measures:
+- name: revenue
+  display_name: Total Revenue
+  expression: SUM(amount)
+  format_preset: currency_usd
+`,
+			"trend.yaml": `
+type: component
+display_name: Measure trend
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: time_dim
+    type: time_dimension
+    required: true
+  - name: limit
+    type: number
+    default: 500
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.time_dim }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.time_dim }}
+    LIMIT {{ .params.limit }}
+  vega_spec: |
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": {"type": "fit"},
+      "data": {"name": "query1"},
+      "mark": {"type": "line", "interpolate": "monotone", "point": true},
+      "encoding": {
+        "x": {
+          "field": "{{ .params.time_dim }}",
+          "type": "temporal",
+          "title": "{{ .fields.time_dim.display_name }}"
+        },
+        "y": {
+          "field": "{{ .params.measure }}",
+          "type": "quantitative",
+          "title": "{{ .fields.measure.display_name }}",
+          "axis": {"formatType": "{{ .fields.measure.format_type }}"}
+        },
+        "tooltip": [
+          {
+            "field": "{{ .params.measure }}",
+            "type": "quantitative",
+            "title": "{{ .fields.measure.display_name }}",
+            "formatType": "{{ .fields.measure.format_type }}"
+          }
+        ]
+      }
+    }
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	args, err := structpb.NewStruct(map[string]any{
+		"metrics_view": "mv1",
+		"measure":      "revenue",
+		"time_dim":     "ts",
+	})
+	require.NoError(t, err)
+
+	res, err := server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.NoError(t, err)
+
+	props := res.RendererProperties.AsMap()
+	vegaSpec := props["vega_spec"].(string)
+
+	// Nothing may be left for Vega to choke on: an unresolved placeholder reaches it as a field
+	// name or inside a tooltip expression.
+	require.NotContains(t, vegaSpec, "{{")
+
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal([]byte(vegaSpec), &spec))
+	require.Equal(t, "container", spec["width"])
+	require.Equal(t, "container", spec["height"])
+	require.Equal(t, map[string]any{"type": "fit"}, spec["autosize"])
+	require.Equal(t, map[string]any{"name": "query1"}, spec["data"])
+
+	encoding := spec["encoding"].(map[string]any)
+	x := encoding["x"].(map[string]any)
+	y := encoding["y"].(map[string]any)
+	require.Equal(t, "ts", x["field"])
+	require.Equal(t, "Time", x["title"])
+	require.Equal(t, "revenue", y["field"])
+	require.Equal(t, "Total Revenue", y["title"])
+	require.Equal(t, "rill_revenue", y["axis"].(map[string]any)["formatType"])
+
+	// The scalar param is injected as a native Vega-Lite param, as the instructions state.
+	params := spec["params"].([]any)
+	require.Contains(t, params, map[string]any{"name": "limit", "value": float64(500)})
+}
+
 func TestResolveCanvasWithParamBoundMetricsView(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
