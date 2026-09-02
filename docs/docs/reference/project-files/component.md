@@ -346,5 +346,6 @@ metrics view's semantics, so the spec only states the chart type and which field
   This is what ejecting a chart spec in the component editor produces: the Vega-Lite it
   compiled to, with the param bindings turned back into template references. Rill no longer
   derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
-  Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`.
-  Mutually exclusive with `spec`.
+  Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
+  and size the chart to its container with `"width": "container"`, `"height": "container"`
+  and `"autosize": {"type": "fit"}`. Mutually exclusive with `spec`.

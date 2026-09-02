@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { compile } from "vega-lite";
+import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+import { createSingleLayerBaseSpec } from "@rilldata/web-common/features/components/charts/builder";
 import {
   V1TimeGrain,
   type V1MetricsViewSpec,
@@ -127,13 +130,58 @@ describe("ejectToVegaSpec", () => {
     );
   });
 
-  it("drops the fixed view size the compiler fills in", () => {
+  it("sizes to the container the way the native charts do", () => {
     const { spec } = ejectBar();
 
+    expect(spec.width).toBe("container");
+    expect(spec.height).toBe("container");
+    // Without this the Rill theme's "fit-x" default applies, which fits the width only and lets
+    // axis and legend decorations run past the bottom of the container.
+    expect(spec.autosize).toEqual({ type: "fit" });
+
+    // The compiler's own sizing is replaced, not layered under it.
     expect(spec.config.view?.continuousWidth).toBeUndefined();
     expect(spec.config.view?.continuousHeight).toBeUndefined();
-    // A step width is the compiler's density decision, not a container measurement.
-    expect(spec.width).toEqual({ step: 40 });
+  });
+
+  it("fills its container like a native chart does", () => {
+    // The end of the sizing story: what reaches Vega after the renderer spreads the measured
+    // dimensions over the spec and the Rill theme is applied as config. "fit" makes those
+    // dimensions the total size; the theme's "fit-x" default would fit only the width.
+    const autosizeOf = (spec: unknown) =>
+      compile({ ...(spec as object), width: 600, height: 390 } as never, {
+        config: getRillTheme(false) as never,
+      }).spec.autosize;
+
+    const native = {
+      ...createSingleLayerBaseSpec("bar"),
+      height: "container",
+      encoding: { y: { field: "total_records", type: "quantitative" } },
+    };
+
+    const { spec } = ejectBar();
+    expect(autosizeOf(spec)).toBe("fit");
+    expect(autosizeOf(spec)).toEqual(autosizeOf(native));
+  });
+
+  it("leaves multi-view sizing to the composition", () => {
+    // Vega-Lite rejects container sizing on a faceted spec, and its subplots are sized by the
+    // facet rather than by the enclosing view.
+    const spec = JSON.parse(
+      ejectToVegaSpec(
+        {
+          facet: { field: "publisher", type: "nominal" },
+          spec: { mark: "bar", width: 120 },
+          config: { view: { continuousWidth: 540 } },
+        },
+        bindings,
+      ),
+    ) as Record<string, any>;
+
+    expect(spec.width).toBeUndefined();
+    expect(spec.height).toBeUndefined();
+    expect(spec.autosize).toBeUndefined();
+    expect(spec.config.view.continuousWidth).toBe(540);
   });
 
   it("templates field names embedded in transforms and expressions", () => {

@@ -124,6 +124,10 @@ custom_chart:
   vega_spec: |
     {
       "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": { "type": "fit" },
+      "data": { "name": "query1" },
       "mark": "line",
       "encoding": {
         "x": {
@@ -137,13 +141,14 @@ custom_chart:
           "title": "{{ .fields.measure.display_name }}",
           "formatType": "{{ .fields.measure.format_type }}"
         }
-      },
-      "data": { "name": "query1" }
+      }
     }
 ```
 
 The query result arrives as the `query1` dataset, which is why the spec reads its data from
-`{"name": "query1"}` rather than declaring values inline.
+`{"name": "query1"}` rather than declaring values inline. The container sizing is the same as the
+native charts use: `autosize: fit` makes the rendered dimensions the chart's total size, so axes and
+legends stay inside the widget instead of growing past it.
 
 Alongside `display_name` and `format_type`, a field-typed param also exposes `name` (the same value
 as `{{ .params.<param> }}`), `format_d3` and `format_preset`, which are useful when you would rather

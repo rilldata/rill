@@ -82,11 +82,18 @@ export function ejectToVegaSpec(
     spec[key] = templatize(value, undefined, key, bindings, replacements);
   }
 
-  spec.data = { name: EJECTED_DATA_NAME };
-  stripMeasuredViewSize(spec);
-
-  // Ordered so the spec opens with the keys a reader orients by.
-  return JSON.stringify({ $schema: VEGA_LITE_SCHEMA, ...spec }, null, 2);
+  // Ordered so the spec opens with the keys a reader orients by, matching the base specs the
+  // native charts are built from (see features/components/charts/builder.ts).
+  return JSON.stringify(
+    {
+      $schema: VEGA_LITE_SCHEMA,
+      ...takeContainerSizing(spec),
+      data: { name: EJECTED_DATA_NAME },
+      ...spec,
+    },
+    null,
+    2,
+  );
 }
 
 /**
@@ -191,23 +198,44 @@ function substitute(
 }
 
 /**
- * Removes the fixed view size the compiler fills in for the box it was asked to draw into, so the
- * ejected spec sizes to whatever container renders it. Sizes the compiler chose for the chart
- * itself, such as a bar chart's `{step: 40}` band width, are a density decision and are kept.
+ * Replaces the compiler's fixed sizing with container sizing, matching the base specs Rill's native
+ * charts are built from: `width`/`height` of "container" and `autosize: {type: "fit"}`.
+ *
+ * The compiler sizes charts itself: handed the box it should draw into, it writes back a plot area
+ * that already leaves room for axes and legends. A static spec cannot redo that arithmetic when the
+ * container changes, so it hands the fitting to Vega-Lite instead. `autosize: "fit"` is the part
+ * that matters — it makes the given dimensions the chart's *total* size rather than its plot area,
+ * which keeps axis and legend decorations inside the container. Without it the Rill theme's
+ * "fit-x" default applies, which fits the width only and lets the chart run past the bottom of
+ * its box.
+ *
+ * Multi-view specs (facet, repeat, concat) size their subplots from the composition, and Vega-Lite
+ * rejects container sizing for them, so theirs is left as the compiler wrote it.
+ *
+ * Mutates the spec to drop the sizing it replaces, and returns the keys to write in its place.
  */
-function stripMeasuredViewSize(spec: Record<string, unknown>): void {
-  if (MULTI_VIEW_KEYS.some((key) => key in spec)) return;
+function takeContainerSizing(
+  spec: Record<string, unknown>,
+): Record<string, unknown> {
+  if (MULTI_VIEW_KEYS.some((key) => key in spec)) return {};
+
+  // Includes a bar chart's `{step: 40}` band width: the renderer already sizes over it, and the
+  // point of ejecting is a chart that fills whatever container it lands in.
+  delete spec.width;
+  delete spec.height;
 
   const view = (spec.config as Record<string, unknown> | undefined)?.view as
     | Record<string, unknown>
     | undefined;
-  if (!view) return;
-
-  delete view.continuousWidth;
-  delete view.continuousHeight;
-  if (Object.keys(view).length === 0) {
-    delete (spec.config as Record<string, unknown>).view;
+  if (view) {
+    delete view.continuousWidth;
+    delete view.continuousHeight;
+    if (Object.keys(view).length === 0) {
+      delete (spec.config as Record<string, unknown>).view;
+    }
   }
+
+  return { width: "container", height: "container", autosize: { type: "fit" } };
 }
 
 function escapeRegExp(value: string): string {
