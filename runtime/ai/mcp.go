@@ -15,7 +15,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const mcpInstructions = `
+// MCPInstructions are the instructions advertised by the MCP server.
+// It is exported so the unified MCP server in the admin service can extend it instead of restating it.
+const MCPInstructions = `
 # Rill MCP Server
 This server exposes APIs for querying **metrics views**, which represent Rill's metrics layer.
 
@@ -42,6 +44,19 @@ If you have edit access, the server also exposes tools for inspecting and editin
 - **Write a file:** Use "write_file" to create, update or delete a file. If the file declares a Rill resource, it returns the resource's status and any errors encountered after reconciliation.
 `
 
+// MCPToolSpecs returns the specs of all registered tools, keyed by name.
+// The specs are freshly built and owned by the caller, so they may be mutated.
+// It is used by the unified MCP server in the admin service, which advertises the tools without being able to run them.
+func MCPToolSpecs() map[string]*mcp.Tool {
+	// Safe to pass a nil runtime: Spec() does not use it (asserted by TestMCPToolSpecs).
+	runner := NewRunner(nil, nil)
+	specs := make(map[string]*mcp.Tool, len(runner.Tools))
+	for name, t := range runner.Tools {
+		specs[name] = t.Spec
+	}
+	return specs
+}
+
 // MCPServer returns a new MCP server scoped to the current session.
 // Since it is scoped to the session, a new MCP server should be created for each client connection.
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
@@ -54,7 +69,7 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 			Version: s.runner.Runtime.Version().String(),
 		},
 		&mcp.ServerOptions{
-			Instructions: mcpInstructions,
+			Instructions: MCPInstructions,
 			InitializedHandler: func(ctx context.Context, r *mcp.InitializedRequest) {
 				// Save user agent in the session
 				clientInfo := r.Session.InitializeParams().ClientInfo
