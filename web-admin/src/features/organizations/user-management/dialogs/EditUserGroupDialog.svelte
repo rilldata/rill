@@ -1,16 +1,21 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
-  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceListOrganizationInvites,
     createAdminServiceListOrganizationMemberUsers,
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceUpdateUsergroup,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import { invalidateOrgUsergroups } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
+  import {
+    invalidateOrgInvites,
+    invalidateOrgUsergroups,
+    pendingInviteesMatching,
+    type GroupMemberRow,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -37,7 +42,7 @@
   let searchInput = "";
   let debouncedSearchText = "";
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-  let selectedUsers: V1OrganizationMemberUser[] = [];
+  let selectedUsers: GroupMemberRow[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
   let initialized = false;
@@ -56,7 +61,17 @@
     groupName,
   );
 
-  $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  // Members include users with a pending invite that adds them to the group on acceptance
+  $: userGroupMembersUsers = (
+    $listUsergroupMemberUsers.data?.members ?? []
+  ).map(
+    (u): GroupMemberRow => ({
+      userEmail: u.userEmail ?? "",
+      userName: u.userName,
+      userPhotoUrl: u.userPhotoUrl,
+      pendingAcceptance: u.pendingAcceptance,
+    }),
+  );
 
   // Query organization users when user types (debounced)
   // Use a more stable pattern - create query once and let params drive it
@@ -75,11 +90,31 @@
     },
   );
 
-  $: allOrganizationUsers =
-    $organizationUsersQuery.data?.members?.filter(
-      (u) =>
-        !selectedUsers.some((selected) => selected.userEmail === u.userEmail),
-    ) ?? [];
+  // Pending invitees can be added to a group too, so they are searched alongside members.
+  // ListOrganizationInvites has no search parameter, so the (typically short) list is fetched once and filtered here.
+  $: organizationInvitesQuery = createAdminServiceListOrganizationInvites(
+    organization,
+    { pageSize: 1000 },
+    { query: { enabled: open } },
+  );
+
+  $: allOrganizationUsers = [
+    ...($organizationUsersQuery.data?.members ?? []).map(
+      (u): GroupMemberRow => ({
+        userEmail: u.userEmail ?? "",
+        userName: u.userName,
+        userPhotoUrl: u.userPhotoUrl,
+        roleName: u.roleName,
+      }),
+    ),
+    ...pendingInviteesMatching(
+      $organizationInvitesQuery.data?.invites,
+      debouncedSearchText,
+    ),
+  ].filter(
+    (u) =>
+      !selectedUsers.some((selected) => selected.userEmail === u.userEmail),
+  );
 
   $: if (
     userGroupMembersUsers.length > 0 &&
@@ -169,6 +204,8 @@
       });
 
       await invalidateOrgUsergroups(queryClient, organization);
+      // Pending invites carry their groups, so the users table needs a refresh too
+      await invalidateOrgInvites(queryClient, organization);
 
       pendingAdditions = [];
       pendingRemovals = [];
@@ -229,11 +266,11 @@
   $: coercedUsersToOptions = [
     ...selectedUsers.map((user) => ({
       value: user.userEmail,
-      label: user.userName,
+      label: user.userName || user.userEmail,
     })),
     ...allOrganizationUsers.map((user) => ({
       value: user.userEmail,
-      label: user.userName,
+      label: user.userName || user.userEmail,
     })),
   ];
 
@@ -242,7 +279,11 @@
       selectedUsers.find((u) => u.userEmail === email) ||
       allOrganizationUsers.find((u) => u.userEmail === email);
     return user
-      ? { name: user.userName, photoUrl: user.userPhotoUrl }
+      ? {
+          name: user.userName || user.userEmail,
+          photoUrl: user.userPhotoUrl,
+          pendingAcceptance: user.pendingAcceptance,
+        }
       : undefined;
   }
 
@@ -354,10 +395,11 @@
           {#each selectedUsers as user (user.userEmail)}
             <div class="flex flex-row justify-between gap-2 items-center">
               <AvatarListItem
-                name={user.userName}
+                name={user.userName || user.userEmail}
                 email={user.userEmail}
                 photoUrl={user.userPhotoUrl}
                 isCurrentUser={user.userEmail === currentUserEmail}
+                pendingAcceptance={user.pendingAcceptance ?? false}
                 role={user.roleName}
               />
               <Button

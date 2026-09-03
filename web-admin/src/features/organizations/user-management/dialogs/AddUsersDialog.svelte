@@ -2,10 +2,13 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import { createAdminServiceAddOrganizationMemberUser } from "@rilldata/web-admin/client";
+  import UserGroupsMultiSelect from "@rilldata/web-admin/features/organizations/user-management/UserGroupsMultiSelect.svelte";
   import {
     buildInviteAttributes,
+    buildInviteUsergroups,
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
+    invalidateOrgUsergroups,
     type AttributeRow,
   } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import {
@@ -52,11 +55,14 @@
   let alreadyMembers: string[] = [];
   let failedInvites: string[] = [];
   let showAttributes = false;
+  // Names of the user groups every invited user is added to (or joins on acceptance)
+  let selectedGroups: string[] = [];
 
   async function handleCreate(
     newEmail: string,
     newRole: string,
     attributes: Record<string, string> | undefined,
+    usergroups: string[] | undefined,
     isSuperUser: boolean = false,
   ) {
     await $addOrganizationMemberUser.mutateAsync({
@@ -65,6 +71,7 @@
         email: newEmail,
         role: newRole,
         attributes,
+        usergroups,
         superuserForceAccess: isSuperUser,
       },
     });
@@ -72,6 +79,8 @@
     await invalidateOrgMemberUsers(queryClient, organization);
 
     await invalidateOrgInvites(queryClient, organization);
+
+    if (usergroups) await invalidateOrgUsergroups(queryClient, organization);
 
     email = "";
     role = "";
@@ -121,13 +130,20 @@
         const emails = values.emails.map((e) => e.trim()).filter(Boolean);
         if (emails.length === 0) return;
 
-        // The same attributes apply to every invited email
+        // The same attributes and groups apply to every invited email
         const attributes = buildInviteAttributes(values.attributes);
+        const usergroups = buildInviteUsergroups(selectedGroups);
 
         const results = await Promise.all(
           emails.map(async (email, index) => {
             try {
-              await handleCreate(email, values.role, attributes, isSuperUser);
+              await handleCreate(
+                email,
+                values.role,
+                attributes,
+                usergroups,
+                isSuperUser,
+              );
               return { index, email, success: true, alreadyMember: false };
             } catch (error) {
               console.error("Error adding user to organization", error);
@@ -202,6 +218,7 @@
       $form.emails = [""];
       $form.attributes = [];
       showAttributes = false;
+      selectedGroups = [];
     }
   }}
 >
@@ -223,6 +240,7 @@
       $form.emails = [""];
       $form.attributes = [];
       showAttributes = false;
+      selectedGroups = [];
     }}
   >
     <DialogHeader>
@@ -295,6 +313,20 @@
           </Button>
         </svelte:fragment>
       </MultiInput>
+
+      <div class="mt-3 flex flex-col gap-y-1">
+        <label for="invite-usergroups" class="text-xs font-medium">
+          {m.users_user_groups()}
+        </label>
+        <div class="text-[11px] text-fg-secondary">
+          {m.users_user_groups_hint()}
+        </div>
+        <UserGroupsMultiSelect
+          id="invite-usergroups"
+          {organization}
+          bind:selected={selectedGroups}
+        />
+      </div>
 
       <div class="mt-3 flex flex-col gap-y-1">
         <button

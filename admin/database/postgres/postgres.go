@@ -1086,6 +1086,12 @@ func (c *connection) UpdateUsergroupDescription(ctx context.Context, description
 }
 
 func (c *connection) DeleteUsergroup(ctx context.Context, groupID string) error {
+	// Pending org invites reference usergroups by ID without a foreign key, so scrub the group from them first.
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE org_invites SET usergroup_ids = array_remove(usergroup_ids, $1::text) WHERE $1::text = ANY(usergroup_ids)", groupID)
+	if err != nil {
+		return parseErr("org invites", err)
+	}
+
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups WHERE id=$1", groupID)
 	return checkDeleteRow("usergroup", res, err)
 }
@@ -1102,13 +1108,25 @@ func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID st
 	return res, nil
 }
 
+// FindUsergroupMemberUsers returns the group's members, including users with a pending org invite that will add them to the group on acceptance.
+// Both are keyed by email, so pagination by afterEmail works across the union.
+// An email cannot appear in both sets since org invites are deleted when the user signs up.
 func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.UsergroupMemberUser, error) {
 	var res []*database.UsergroupMemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT uug.user_id as "id", u.email, u.display_name, u.photo_url FROM usergroups_users uug
-		JOIN users u ON uug.user_id = u.id
-		WHERE uug.usergroup_id = $1 AND lower(u.email) > lower($2)
-		ORDER BY lower(u.email) LIMIT $3
+		SELECT m.id, m.email, m.display_name, m.photo_url, m.pending_acceptance FROM (
+			SELECT uug.user_id::text AS id, u.email, u.display_name, u.photo_url, false AS pending_acceptance
+			FROM usergroups_users uug
+			JOIN users u ON uug.user_id = u.id
+			WHERE uug.usergroup_id = $1
+			UNION ALL
+			SELECT '' AS id, oi.email, '' AS display_name, '' AS photo_url, true AS pending_acceptance
+			FROM org_invites oi
+			JOIN usergroups ug ON ug.org_id = oi.org_id
+			WHERE ug.id = $1 AND ug.id::text = ANY(oi.usergroup_ids)
+		) m
+		WHERE lower(m.email) > lower($2)
+		ORDER BY lower(m.email) LIMIT $3
 	`, groupID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("usergroup member", err)
@@ -1118,6 +1136,23 @@ func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afte
 
 func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_users (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
+	if err != nil {
+		return parseErr("usergroup member", err)
+	}
+	return nil
+}
+
+// InsertUsergroupsMemberUser adds the user to each of the groups, skipping groups the user is already a member of.
+// It is safe to call inside a transaction since duplicates do not raise a unique violation.
+func (c *connection) InsertUsergroupsMemberUser(ctx context.Context, userID string, groupIDs []string) error {
+	if len(groupIDs) == 0 {
+		return nil
+	}
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_users (user_id, usergroup_id)
+		SELECT $1::uuid, unnest($2::text[])::uuid
+		ON CONFLICT DO NOTHING
+	`, userID, groupIDs)
 	if err != nil {
 		return parseErr("usergroup member", err)
 	}
@@ -2604,7 +2639,8 @@ func (c *connection) DeleteProjectMemberService(ctx context.Context, serviceID, 
 func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.OrganizationInviteWithRole, error) {
 	var dtos []*organizationInviteWithRoleDTO
 	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
-		SELECT uoi.id, uoi.email, ur.name as role_name, uoi.attributes, u.email as invited_by
+		SELECT uoi.id, uoi.email, ur.name as role_name, uoi.attributes, u.email as invited_by,
+			(SELECT COALESCE(array_agg(ug.name ORDER BY lower(ug.name)), '{}') FROM usergroups ug WHERE ug.id::text = ANY(uoi.usergroup_ids)) as usergroups
 		FROM org_invites uoi
 		JOIN org_roles ur ON uoi.org_role_id = ur.id
 		LEFT JOIN users u ON uoi.invited_by_user_id = u.id
@@ -2675,7 +2711,13 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		inviterID = opts.InviterID
 	}
 
-	_, err = c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4, $5)", opts.Email, inviterID, opts.OrgID, opts.RoleID, attrs)
+	// usergroup_ids is NOT NULL, so a nil slice must be inserted as an empty array
+	groupIDs := opts.UsergroupIDs
+	if groupIDs == nil {
+		groupIDs = []string{}
+	}
+
+	_, err = c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id, attributes, usergroup_ids) VALUES ($1, $2, $3, $4, $5, $6)", opts.Email, inviterID, opts.OrgID, opts.RoleID, attrs, groupIDs)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
@@ -3760,10 +3802,16 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 
 type organizationInviteWithRoleDTO struct {
 	*database.OrganizationInviteWithRole
-	Attributes pgtype.JSON `db:"attributes"`
+	Usergroups pgtype.TextArray `db:"usergroups"`
+	Attributes pgtype.JSON      `db:"attributes"`
 }
 
 func (o *organizationInviteWithRoleDTO) AsModel() (*database.OrganizationInviteWithRole, error) {
+	err := o.Usergroups.AssignTo(&o.OrganizationInviteWithRole.Usergroups)
+	if err != nil {
+		return nil, err
+	}
+
 	// Handle Attributes: Normalize NULL JSONB to empty map
 	var attrs map[string]any
 	if err := o.Attributes.AssignTo(&attrs); err != nil {
