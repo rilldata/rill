@@ -61,7 +61,7 @@
       {/snippet}
     </DialogTrigger>
     <DialogContent
-      class="p-0 m-0 w-[802px] max-w-fit rounded-md"
+      class="p-0 m-0 w-[min(802px,calc(100vw-2rem))] max-w-fit rounded-md"
       noClose
       onEscapeKeydown={preventClose}
       onInteractOutside={preventClose}

@@ -973,6 +973,9 @@
   "edit_continue_editing": "Continue editing",
   "edit_create_and_edit": "Create & edit",
   "edit_describe_changes": "Describe your changes...",
+  "edit_desktop_only_back_link": "Back to project",
+  "edit_desktop_only_message": "Switch to a larger screen to edit this project.",
+  "edit_desktop_only_title": "Editing is available on desktop",
   "edit_env_manage_in_settings": "Manage environment variables in",
   "edit_env_settings_link": "Settings →",
   "edit_existing_branch": "Existing branch",
@@ -1435,6 +1438,8 @@
   "pivot_auto": "Auto",
   "pivot_chip_aria": "{title} pivot chip",
   "pivot_collapse_row": "Collapse row",
+  "pivot_desktop_only_message": "Switch to a larger screen to use the pivot view.",
+  "pivot_desktop_only_title": "Pivot is available on desktop",
   "pivot_dim_label": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],

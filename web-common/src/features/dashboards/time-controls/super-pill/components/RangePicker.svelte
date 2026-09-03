@@ -59,9 +59,17 @@
       </button>
     {/snippet}
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
-    <div class="flex">
-      <div class="flex flex-col w-48 p-1">
+  <DropdownMenu.Content
+    align="start"
+    {side}
+    class="p-0 overflow-hidden max-w-[calc(100vw-2rem)]"
+  >
+    <!-- Side-by-side panels need 448px; on phones they stack and scroll
+         vertically instead of the calendar being clipped by the popover cap. -->
+    <div
+      class="flex flex-col sm:flex-row max-h-[70vh] sm:max-h-none overflow-y-auto sm:overflow-y-visible"
+    >
+      <div class="flex flex-col w-full sm:w-48 p-1">
         <TimeRangeMenu
           {ranges}
           {selected}
@@ -77,7 +85,9 @@
         />
       </div>
       {#if showSelector}
-        <div class="bg-surface-background border-l flex flex-col w-64 p-3">
+        <div
+          class="bg-surface-background border-t sm:border-t-0 sm:border-l flex flex-col w-full sm:w-64 p-3"
+        >
           <CalendarPlusDateInput
             {interval}
             {zone}

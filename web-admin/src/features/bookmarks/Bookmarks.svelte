@@ -183,7 +183,7 @@
       </Button>
     {/snippet}
   </DropdownMenuTrigger>
-  <DropdownMenuContent class="w-[450px]">
+  <DropdownMenuContent class="w-[min(450px,calc(100vw-2rem))]">
     <DropdownMenuItem onclick={() => (showDialog = true)}>
       <div class="flex flex-row gap-x-2 items-center">
         <BookmarkPlusIcon size="16px" strokeWidth={1.5} />

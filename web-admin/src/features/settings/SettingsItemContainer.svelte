@@ -29,7 +29,7 @@
 
 <style lang="postcss">
   .plan-container {
-    @apply w-[800px] border border-gray-200 m-5;
+    @apply w-full max-w-[800px] border border-gray-200 m-5;
   }
 
   .plan-title {
