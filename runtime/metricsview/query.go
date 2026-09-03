@@ -421,16 +421,8 @@ func AnalyzeQueryFields(q *Query) []string {
 	}
 	// Add measures
 	for _, meas := range q.Measures {
-		fieldsMap[getMeasureName(meas)] = struct{}{}
-		// An expression compute references other measures; report the referenced names so that
-		// inferred security rules (see InferRequiredSecurityRules) grant access to them.
-		// Parse errors are ignored here; the executor reports them when the query runs.
-		if meas.Compute != nil && meas.Compute.Expression != nil {
-			if expr, err := ParseMeasureExpression(meas.Compute.Expression.Expression); err == nil {
-				for _, ref := range expr.Refs() {
-					fieldsMap[ref] = struct{}{}
-				}
-			}
+		for _, name := range getMeasureNames(meas) {
+			fieldsMap[name] = struct{}{}
 		}
 	}
 	// Add time dimension if present
@@ -463,29 +455,38 @@ func getDimensionName(dim Dimension) string {
 	panic("could not find dimension name")
 }
 
-func getMeasureName(m Measure) string {
+// getMeasureNames returns the metrics view fields that the measure resolves to.
+// It returns nil for measures that don't reference a field, such as a count.
+func getMeasureNames(m Measure) []string {
 	if m.Compute == nil {
-		return m.Name
+		return []string{m.Name}
 	}
 	switch {
 	case m.Compute.Count:
-		return "" // skip
+		return nil
 	case m.Compute.CountDistinct != nil:
-		return m.Compute.CountDistinct.Dimension
+		return []string{m.Compute.CountDistinct.Dimension}
 	case m.Compute.ComparisonValue != nil: // although comparison cases can be skipped as base fields would have already been added but adding for switch completeness as it will deduped
-		return m.Compute.ComparisonValue.Measure
+		return []string{m.Compute.ComparisonValue.Measure}
 	case m.Compute.ComparisonDelta != nil:
-		return m.Compute.ComparisonDelta.Measure
+		return []string{m.Compute.ComparisonDelta.Measure}
 	case m.Compute.ComparisonRatio != nil:
-		return m.Compute.ComparisonRatio.Measure
+		return []string{m.Compute.ComparisonRatio.Measure}
 	case m.Compute.PercentOfTotal != nil:
-		return m.Compute.PercentOfTotal.Measure
+		return []string{m.Compute.PercentOfTotal.Measure}
 	case m.Compute.URI != nil:
-		return m.Compute.URI.Dimension
+		return []string{m.Compute.URI.Dimension}
 	case m.Compute.ComparisonTime != nil:
-		return m.Compute.ComparisonTime.Dimension
+		return []string{m.Compute.ComparisonTime.Dimension}
 	case m.Compute.Expression != nil:
-		return "" // skip; the referenced measures are added separately in AnalyzeQueryFields
+		// The expression itself is ephemeral, but it references measures in the metrics view.
+		// Report those so that inferred security rules (see InferRequiredSecurityRules) grant access to them.
+		// Parse errors are ignored here; the executor reports them when the query runs.
+		expr, err := ParseMeasureExpression(m.Compute.Expression.Expression)
+		if err != nil {
+			return nil
+		}
+		return expr.Refs()
 	default:
 		panic("could not find measure name")
 	}

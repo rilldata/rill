@@ -949,8 +949,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotShowTotalsRow?: boolean;
   /** Per-measure pivot conditional formatting, serialized in the URL param format. */
   pivotFormatting?: string;
-  /** Calculated (ephemeral) measures for the explore, serialized in the URL param format. */
-  calculatedMeasures?: string;
+  /** Ephemeral measures for the explore, serialized in the URL param format. */
+  ephemeralMeasures?: string;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
@@ -1806,9 +1806,9 @@ export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
-  /** Optional additional measures, e.g. ephemeral measures with an `expression` compute.
+  /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
 Only the `expression` compute is supported for time series. */
-  measures?: V1MetricsViewAggregationMeasure[];
+  ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -3211,9 +3211,9 @@ export type QueryServiceMetricsViewTimeRangesBody = {
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
-  /** Optional additional measures, e.g. ephemeral measures with an `expression` compute.
+  /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
 Only the `expression` compute is supported for time series. */
-  measures?: V1MetricsViewAggregationMeasure[];
+  ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;

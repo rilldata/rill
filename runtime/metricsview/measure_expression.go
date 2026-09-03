@@ -18,9 +18,11 @@ import (
 
 // Limits for measure expressions.
 // They guard against abusive input since expressions may be supplied by non-admin users at query time.
+// The depth limit counts AST levels, not just parentheses,
+// so a left-associative chain like "a + b + c" costs one level per term.
 const (
 	maxMeasureExpressionLength = 1024
-	maxMeasureExpressionDepth  = 64
+	maxMeasureExpressionDepth  = 32
 )
 
 // measureExpressionFuncs is the allowlist of scalar functions permitted in measure expressions, with their allowed arities.

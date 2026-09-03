@@ -24,23 +24,23 @@ import (
 type MetricsViewTimeSeries struct {
 	MetricsViewName string   `json:"metrics_view_name,omitempty"`
 	MeasureNames    []string `json:"measure_names,omitempty"`
-	// Measures are additional measures, e.g. ephemeral measures with an `expression` compute.
+	// EphemeralMeasures are measures defined by the query rather than the metrics view.
 	// Only the `expression` compute is supported for time series.
-	Measures        []*runtimev1.MetricsViewAggregationMeasure `json:"measures,omitempty"`
-	TimeStart       *timestamppb.Timestamp                     `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp                     `json:"time_end,omitempty"`
-	Limit           int64                                      `json:"limit,omitempty"`
-	Offset          int64                                      `json:"offset,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort               `json:"sort,omitempty"`
-	Where           *runtimev1.Expression                      `json:"where,omitempty"`
-	WhereSQL        string                                     `json:"where_sql,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter               `json:"filter,omitempty"` // backwards compatibility
-	Having          *runtimev1.Expression                      `json:"having,omitempty"`
-	HavingSQL       string                                     `json:"having_sql,omitempty"`
-	TimeGranularity runtimev1.TimeGrain                        `json:"time_granularity,omitempty"`
-	TimeZone        string                                     `json:"time_zone,omitempty"`
-	SecurityClaims  *runtime.SecurityClaims                    `json:"security_claims,omitempty"`
-	TimeDimension   string                                     `json:"time_dimension,omitempty"`
+	EphemeralMeasures []*runtimev1.MetricsViewAggregationMeasure `json:"ephemeral_measures,omitempty"`
+	TimeStart         *timestamppb.Timestamp                     `json:"time_start,omitempty"`
+	TimeEnd           *timestamppb.Timestamp                     `json:"time_end,omitempty"`
+	Limit             int64                                      `json:"limit,omitempty"`
+	Offset            int64                                      `json:"offset,omitempty"`
+	Sort              []*runtimev1.MetricsViewSort               `json:"sort,omitempty"`
+	Where             *runtimev1.Expression                      `json:"where,omitempty"`
+	WhereSQL          string                                     `json:"where_sql,omitempty"`
+	Filter            *runtimev1.MetricsViewFilter               `json:"filter,omitempty"` // backwards compatibility
+	Having            *runtimev1.Expression                      `json:"having,omitempty"`
+	HavingSQL         string                                     `json:"having_sql,omitempty"`
+	TimeGranularity   runtimev1.TimeGrain                        `json:"time_granularity,omitempty"`
+	TimeZone          string                                     `json:"time_zone,omitempty"`
+	SecurityClaims    *runtime.SecurityClaims                    `json:"security_claims,omitempty"`
+	TimeDimension     string                                     `json:"time_dimension,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -397,7 +397,7 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 		qry.Measures = append(qry.Measures, metricsview.Measure{Name: m})
 	}
 
-	for _, m := range q.Measures {
+	for _, m := range q.EphemeralMeasures {
 		res := metricsview.Measure{Name: m.Name}
 		if m.Compute != nil {
 			c, ok := m.Compute.(*runtimev1.MetricsViewAggregationMeasure_Expression)

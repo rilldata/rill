@@ -61,7 +61,7 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 		return err
 	}
 
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 	if !ok {
 		return errors.New("renderer properties must include a string 'y.field' property")
 	}
-	if !metricsViewHasMeasure(mv, yField) && !calcNames[yField] {
+	if !metricsViewHasMeasure(mv, yField) && !ephemeralNames[yField] {
 		return fmt.Errorf("referenced y.field %q is not a measure in metrics view %q", yField, mvn)
 	}
 
@@ -88,7 +88,7 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 		return err
 	}
 	for _, f := range yFields {
-		if !metricsViewHasMeasure(mv, f) && !calcNames[f] {
+		if !metricsViewHasMeasure(mv, f) && !ephemeralNames[f] {
 			return fmt.Errorf("referenced y.fields value %q is not a measure in metrics view %q", f, mvn)
 		}
 	}
@@ -104,7 +104,7 @@ func validateCircularChart(props map[string]any, metricsViews map[string]*runtim
 		return err
 	}
 
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func validateCircularChart(props map[string]any, metricsViews map[string]*runtim
 	if !ok {
 		return errors.New("renderer properties must include a string 'measure.field' property")
 	}
-	if !metricsViewHasMeasure(mv, measureField) && !calcNames[measureField] {
+	if !metricsViewHasMeasure(mv, measureField) && !ephemeralNames[measureField] {
 		return fmt.Errorf("referenced measure.field %q is not a measure in metrics view %q", measureField, mvn)
 	}
 
@@ -127,7 +127,7 @@ func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev
 		return err
 	}
 
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev
 	if !ok {
 		return errors.New("renderer properties must include a string 'x.field' property")
 	}
-	if !metricsViewHasMeasure(mv, xField) && !calcNames[xField] {
+	if !metricsViewHasMeasure(mv, xField) && !ephemeralNames[xField] {
 		return fmt.Errorf("referenced x.field %q is not a measure in metrics view %q", xField, mvn)
 	}
 
@@ -144,7 +144,7 @@ func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev
 	if !ok {
 		return errors.New("renderer properties must include a string 'y.field' property")
 	}
-	if !metricsViewHasMeasure(mv, yField) && !calcNames[yField] {
+	if !metricsViewHasMeasure(mv, yField) && !ephemeralNames[yField] {
 		return fmt.Errorf("referenced y.field %q is not a measure in metrics view %q", yField, mvn)
 	}
 
@@ -152,7 +152,7 @@ func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev
 		return err
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "size.field", calcNames); err != nil {
+	if err := validateOptionalMeasureField(mv, mvn, props, "size.field", ephemeralNames); err != nil {
 		return err
 	}
 
@@ -167,12 +167,12 @@ func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev
 		return err
 	}
 
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "measure.field", calcNames); err != nil {
+	if err := validateOptionalMeasureField(mv, mvn, props, "measure.field", ephemeralNames); err != nil {
 		return err
 	}
 
@@ -182,7 +182,7 @@ func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev
 		return err
 	}
 	for _, f := range fields {
-		if !metricsViewHasMeasure(mv, f) && !calcNames[f] {
+		if !metricsViewHasMeasure(mv, f) && !ephemeralNames[f] {
 			return fmt.Errorf("referenced measure.fields value %q is not a measure in metrics view %q", f, mvn)
 		}
 	}
@@ -220,13 +220,13 @@ func validateHeatmap(props map[string]any, metricsViews map[string]*runtimev1.Me
 		return err
 	}
 
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
 
 	// Note: for heatmap, color is a measure (not a dimension like other charts)
-	return validateOptionalMeasureField(mv, mvn, props, "color.field", calcNames)
+	return validateOptionalMeasureField(mv, mvn, props, "color.field", ephemeralNames)
 }
 
 // validateComboChart validates properties for combo_chart.
@@ -240,16 +240,16 @@ func validateComboChart(props map[string]any, metricsViews map[string]*runtimev1
 		return err
 	}
 
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "y1.field", calcNames); err != nil {
+	if err := validateOptionalMeasureField(mv, mvn, props, "y1.field", ephemeralNames); err != nil {
 		return err
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "y2.field", calcNames); err != nil {
+	if err := validateOptionalMeasureField(mv, mvn, props, "y2.field", ephemeralNames); err != nil {
 		return err
 	}
 
@@ -287,11 +287,11 @@ func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.Metric
 	if !ok {
 		return errors.New("renderer properties for kpi must include a string 'measure' property")
 	}
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
-	if !metricsViewHasMeasure(mv, measure) && !calcNames[measure] {
+	if !metricsViewHasMeasure(mv, measure) && !ephemeralNames[measure] {
 		return fmt.Errorf("referenced measure %q is not a measure in metrics view %q", measure, mvn)
 	}
 
@@ -312,12 +312,12 @@ func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.Me
 	if len(measures) == 0 {
 		return errors.New("renderer properties for kpi_grid must include a non-empty 'measures' array of strings")
 	}
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
 	for _, m := range measures {
-		if !metricsViewHasMeasure(mv, m) && !calcNames[m] {
+		if !metricsViewHasMeasure(mv, m) && !ephemeralNames[m] {
 			return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m, mvn)
 		}
 	}
@@ -339,12 +339,12 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 	if len(columns) == 0 {
 		return errors.New("renderer properties for table must include a non-empty 'columns' array of strings")
 	}
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
 	for _, col := range columns {
-		if !metricsViewHasDimension(mv, col) && !metricsViewHasMeasure(mv, col) && !isEncodedTimeDimension(mv, col) && !calcNames[col] {
+		if !metricsViewHasDimension(mv, col) && !metricsViewHasMeasure(mv, col) && !isEncodedTimeDimension(mv, col) && !ephemeralNames[col] {
 			return fmt.Errorf("referenced columns value %q is not a dimension or measure in metrics view %q", col, mvn)
 		}
 	}
@@ -376,12 +376,12 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		return errors.New("renderer properties for pivot must include at least one of 'measures', 'row_dimensions', or 'col_dimensions'")
 	}
 
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
 	for _, m := range measures {
-		if !metricsViewHasMeasure(mv, m) && !calcNames[m] {
+		if !metricsViewHasMeasure(mv, m) && !ephemeralNames[m] {
 			return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m, mvn)
 		}
 	}
@@ -419,12 +419,12 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 		return errors.New("renderer properties for leaderboard must include at least one 'measures' or 'dimensions' entry")
 	}
 
-	calcNames, err := calculatedMeasureNames(props, mvn, mv)
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
 	for _, m := range measures {
-		if !metricsViewHasMeasure(mv, m) && !calcNames[m] {
+		if !metricsViewHasMeasure(mv, m) && !ephemeralNames[m] {
 			return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m, mvn)
 		}
 	}
@@ -467,8 +467,8 @@ func validateOptionalDimensionField(mv *runtimev1.MetricsViewSpec, mvName string
 }
 
 // validateOptionalMeasureField validates that a field at the given path, if present,
-// is a measure in the metrics view or one of the component's calculated measures.
-func validateOptionalMeasureField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, path string, calcNames map[string]bool) error {
+// is a measure in the metrics view or one of the component's ephemeral measures.
+func validateOptionalMeasureField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, path string, ephemeralNames map[string]bool) error {
 	field, ok, err := getOptionalPathString(props, path)
 	if err != nil {
 		return err
@@ -476,7 +476,7 @@ func validateOptionalMeasureField(mv *runtimev1.MetricsViewSpec, mvName string, 
 	if !ok {
 		return nil
 	}
-	if !metricsViewHasMeasure(mv, field) && !calcNames[field] {
+	if !metricsViewHasMeasure(mv, field) && !ephemeralNames[field] {
 		return fmt.Errorf("referenced %s %q is not a measure in metrics view %q", path, field, mvName)
 	}
 	return nil
@@ -592,42 +592,42 @@ func isEncodedTimeDimension(mv *runtimev1.MetricsViewSpec, fieldName string) boo
 	return ok && v != int32(runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
 }
 
-// calculatedMeasureNames extracts and validates the optional "calculated_measures" renderer property.
+// ephemeralMeasureNames extracts and validates the optional "ephemeral_measures" renderer property.
 // Each entry defines an ephemeral measure derived from existing measures via an arithmetic expression;
 // the returned set contains the names that may be referenced alongside the metrics view's own measures.
-func calculatedMeasureNames(props map[string]any, mvn string, mv *runtimev1.MetricsViewSpec) (map[string]bool, error) {
-	raw, ok := props["calculated_measures"]
+func ephemeralMeasureNames(props map[string]any, mvn string, mv *runtimev1.MetricsViewSpec) (map[string]bool, error) {
+	raw, ok := props["ephemeral_measures"]
 	if !ok || raw == nil {
 		return nil, nil
 	}
 	list, ok := raw.([]any)
 	if !ok {
-		return nil, errors.New("renderer property 'calculated_measures' must be an array")
+		return nil, errors.New("renderer property 'ephemeral_measures' must be an array")
 	}
 	names := make(map[string]bool, len(list))
 	for _, item := range list {
 		entry, ok := item.(map[string]any)
 		if !ok {
-			return nil, errors.New("entries in 'calculated_measures' must be objects with 'name' and 'expression'")
+			return nil, errors.New("entries in 'ephemeral_measures' must be objects with 'name' and 'expression'")
 		}
 		name, _ := entry["name"].(string)
 		expression, _ := entry["expression"].(string)
 		if name == "" || expression == "" {
-			return nil, errors.New("entries in 'calculated_measures' must have a non-empty 'name' and 'expression'")
+			return nil, errors.New("entries in 'ephemeral_measures' must have a non-empty 'name' and 'expression'")
 		}
 		if metricsViewHasMeasure(mv, name) || metricsViewHasDimension(mv, name) {
-			return nil, fmt.Errorf("calculated measure %q collides with a field in metrics view %q", name, mvn)
+			return nil, fmt.Errorf("ephemeral measure %q collides with a field in metrics view %q", name, mvn)
 		}
 		if names[name] {
-			return nil, fmt.Errorf("duplicate calculated measure %q", name)
+			return nil, fmt.Errorf("duplicate ephemeral measure %q", name)
 		}
 		parsed, err := metricsview.ParseMeasureExpression(expression)
 		if err != nil {
-			return nil, fmt.Errorf("calculated measure %q: %w", name, err)
+			return nil, fmt.Errorf("ephemeral measure %q: %w", name, err)
 		}
 		for _, ref := range parsed.Refs() {
 			if !metricsViewHasMeasure(mv, ref) {
-				return nil, fmt.Errorf("calculated measure %q references %q, which is not a measure in metrics view %q", name, ref, mvn)
+				return nil, fmt.Errorf("ephemeral measure %q references %q, which is not a measure in metrics view %q", name, ref, mvn)
 			}
 		}
 		names[name] = true

@@ -287,14 +287,14 @@ func TestMetricsViewsAggregation_expression_security(t *testing.T) {
 	require.Len(t, q.Result.Data, 1)
 }
 
-// The time series API accepts expression measures via the `measures` field.
+// The time series API accepts expression measures via the `ephemeral_measures` field.
 func TestMetricsViewTimeSeries_expression_measure(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_1"},
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+		EphemeralMeasures: []*runtimev1.MetricsViewAggregationMeasure{
 			expressionMeasure("profit", "measure_1 - measure_2"),
 		},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -315,7 +315,7 @@ func TestMetricsViewTimeSeries_expression_measure_only(t *testing.T) {
 
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: "ad_bids_metrics",
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+		EphemeralMeasures: []*runtimev1.MetricsViewAggregationMeasure{
 			expressionMeasure("profit", "measure_1 - measure_2"),
 		},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -331,7 +331,7 @@ func TestMetricsViewTimeSeries_expression_rejects_other_computes(t *testing.T) {
 
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: "ad_bids_metrics",
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+		EphemeralMeasures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
 				Name: "prev",
 				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{

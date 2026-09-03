@@ -2573,19 +2573,19 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
 
   /**
    * Names of measures in the metrics view to include.
-   * At least one of measure_names or measures must be provided.
+   * At least one of measure_names or ephemeral_measures must be provided.
    *
    * @generated from field: repeated string measure_names = 3;
    */
   measureNames: string[] = [];
 
   /**
-   * Optional additional measures, e.g. ephemeral measures with an `expression` compute.
+   * Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
    * Only the `expression` compute is supported for time series.
    *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationMeasure measures = 17;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationMeasure ephemeral_measures = 17;
    */
-  measures: MetricsViewAggregationMeasure[] = [];
+  ephemeralMeasures: MetricsViewAggregationMeasure[] = [];
 
   /**
    * Optional. Defaults to min
@@ -2680,7 +2680,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 17, name: "measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
+    { no: 17, name: "ephemeral_measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },

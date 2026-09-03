@@ -967,19 +967,19 @@ leaderboard:
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
 
-func TestValidateCalculatedMeasures(t *testing.T) {
+func TestValidateEphemeralMeasures(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: metricsViewFiles(),
 	})
 
-	// A kpi_grid referencing a calculated measure should be valid.
+	// A kpi_grid referencing a ephemeral measure should be valid.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
 kpi_grid:
   metrics_view: mv1
   measures: [y, profit]
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -987,7 +987,7 @@ kpi_grid:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// A leaderboard referencing a calculated measure should be valid.
+	// A leaderboard referencing a ephemeral measure should be valid.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
@@ -995,7 +995,7 @@ leaderboard:
   metrics_view: mv1
   measures: [profit]
   dimensions: [foo]
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1003,14 +1003,14 @@ leaderboard:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// A table with a calculated measure column should be valid.
+	// A table with a ephemeral measure column should be valid.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
 table:
   metrics_view: mv1
   columns: [foo, y, profit]
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1018,7 +1018,7 @@ table:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// A pivot with a calculated measure should be valid.
+	// A pivot with a ephemeral measure should be valid.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
@@ -1026,7 +1026,7 @@ pivot:
   metrics_view: mv1
   measures: [profit]
   row_dimensions: [foo]
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1034,7 +1034,7 @@ pivot:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// A bar chart using a calculated measure on the y axis (single and multi) should be valid.
+	// A bar chart using a ephemeral measure on the y axis (single and multi) should be valid.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
@@ -1047,7 +1047,7 @@ bar_chart:
     field: profit
     type: quantitative
     fields: [y, profit]
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1055,7 +1055,7 @@ bar_chart:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// A pie chart using a calculated measure should be valid.
+	// A pie chart using a ephemeral measure should be valid.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
@@ -1067,7 +1067,7 @@ pie_chart:
   color:
     field: foo
     type: nominal
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1075,7 +1075,7 @@ pie_chart:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// A heatmap using a calculated measure as the color field should be valid.
+	// A heatmap using a ephemeral measure as the color field should be valid.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
@@ -1087,7 +1087,7 @@ heatmap:
   color:
     field: profit
     type: quantitative
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1095,7 +1095,7 @@ heatmap:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// A chart referencing an undefined calculated measure should fail.
+	// A chart referencing an undefined ephemeral measure should fail.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
@@ -1119,7 +1119,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [profit]
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: sum(y)
@@ -1135,7 +1135,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [profit]
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - unknown
@@ -1151,7 +1151,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [missing]
-  calculated_measures:
+  ephemeral_measures:
   - name: profit
     display_name: Profit
     expression: y - z

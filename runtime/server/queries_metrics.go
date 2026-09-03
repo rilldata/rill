@@ -244,20 +244,20 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	}
 
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName: req.MetricsViewName,
-		MeasureNames:    req.MeasureNames,
-		Measures:        req.Measures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		TimeGranularity: req.TimeGranularity,
-		Where:           req.Where,
-		WhereSQL:        req.WhereSql,
-		Having:          req.Having,
-		HavingSQL:       req.HavingSql,
-		TimeZone:        req.TimeZone,
-		Filter:          req.Filter,
-		SecurityClaims:  claims,
-		TimeDimension:   req.TimeDimension,
+		MetricsViewName:   req.MetricsViewName,
+		MeasureNames:      req.MeasureNames,
+		EphemeralMeasures: req.EphemeralMeasures,
+		TimeStart:         req.TimeStart,
+		TimeEnd:           req.TimeEnd,
+		TimeGranularity:   req.TimeGranularity,
+		Where:             req.Where,
+		WhereSQL:          req.WhereSql,
+		Having:            req.Having,
+		HavingSQL:         req.HavingSql,
+		TimeZone:          req.TimeZone,
+		Filter:            req.Filter,
+		SecurityClaims:    claims,
+		TimeDimension:     req.TimeDimension,
 	}
 	var collector *observability.RequestScopedCollector
 	if req.Trace && canTrace(claims) {
