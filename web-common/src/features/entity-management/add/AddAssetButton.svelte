@@ -74,7 +74,10 @@
     currentDirectory,
   );
 
-  $: skillsFileNamesQuery = useFileNamesInDirectory(runtimeClient, "skills");
+  $: skillDirectoryNamesQuery = useDirectoryNamesInDirectory(
+    runtimeClient,
+    "skills",
+  );
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
@@ -147,14 +150,14 @@
    * Put a skill file (markdown instructions for the AI agents) in the skills directory
    */
   async function handleAddSkill() {
-    const existingNames = ($skillsFileNamesQuery?.data ?? []).map((name) =>
-      name.replace(/\.md$/, ""),
-    );
-    const path = `skills/${getName("my_skill", existingNames)}.md`;
+    const existingNames = $skillDirectoryNamesQuery?.data ?? [];
+    // Skill names only allow lowercase letters, numbers and hyphens, so replace the "_N" suffixes getName may add
+    const name = getName("my-skill", existingNames).replace(/_/g, "-");
+    const path = `skills/${name}/SKILL.md`;
 
     await $createFile.mutateAsync({
       path,
-      blob: skillFileTemplate,
+      blob: skillFileTemplate(name),
       create: true,
       createOnly: true,
     });

@@ -107,7 +107,7 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 
 		// Append always-apply skills so external clients receive them without extra round-trips.
 		// Skill loading failures should degrade the response, not fail it.
-		skills, _, err := session.Skills(ctx)
+		skills, err := session.Skills(ctx)
 		if err != nil {
 			session.logger.Warn("failed to load project skills", zap.Error(err))
 		}

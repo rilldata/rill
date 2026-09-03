@@ -81,7 +81,7 @@ func MCPToolSpecs() map[string]*mcp.Tool {
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	// Advertise the skills section only when the project defines skills.
 	// On a load error, fail open with the full instructions: they are harmless without skills.
-	skills, _, err := s.Skills(ctx)
+	skills, err := s.Skills(ctx)
 	if err != nil {
 		s.logger.Warn("failed to load project skills", zap.Error(err))
 	}

@@ -99,12 +99,13 @@ ai_instructions: |
 
 ## Skills
 
-Skills are markdown files that teach Rill's AI project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) or business glossaries. Where `ai_instructions` is best for short guidance that always applies, skills hold longer, structured instructions that the AI loads only when they are relevant to the question at hand. Skills apply both in [AI Chat](/guide/ai/ai-chat) and to external AI clients connected via the [MCP Server](/guide/ai/mcp).
+Skills teach Rill's AI project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) or business glossaries. Where `ai_instructions` is best for short guidance that always applies, skills hold longer, structured instructions that the AI loads only when they are relevant to the question at hand. Skills apply both in [AI Chat](/guide/ai/ai-chat) and to external AI clients connected via the [MCP Server](/guide/ai/mcp).
 
-A skill lives at `skills/<name>.md` (or `skills/<name>/SKILL.md`) and consists of YAML front matter followed by markdown instructions:
+Skills follow the [Agent Skills](https://agentskills.io) format: a skill is a directory containing a `SKILL.md` file with YAML front matter followed by markdown instructions. Rill loads skills from `skills/<name>/SKILL.md`, and also from `.agents/skills/<name>/SKILL.md` for compatibility with skills authored for other agent clients (note that the Rill Developer file explorer hides dot-directories, so prefer `skills/` for skills you edit in Rill). For example, `skills/revenue-rca/SKILL.md`:
 
 ```markdown
 ---
+name: revenue-rca
 description: Playbook for diagnosing revenue drops. Use when asked why revenue or bookings declined.
 ---
 
@@ -117,23 +118,24 @@ When asked why revenue declined:
 4. State your confidence and call out data quirks that may affect the result.
 ```
 
-The `description` is required: the AI sees an index of skill names and descriptions, and uses the description to decide when to load a skill. Phrase it as "what it does + when to use it".
+The `description` is required: the AI sees an index of skill names and descriptions, and uses the description to decide when to load a skill. Phrase it as "what it does + when to use it". The `name` must match the skill's directory name (lowercase letters, numbers and hyphens); if omitted, it is derived from the directory.
 
-The front matter supports these additional properties:
+In addition to the standard Agent Skills fields, Rill supports these extension properties:
 
 ```markdown
 ---
 description: Business glossary for our e-commerce metrics.
-name: glossary               # Optional: overrides the name derived from the file path
 metrics_views: [orders]      # Optional: only offer this skill for analyses involving these metrics views
 always_apply: true           # Optional: always include the full skill instead of loading it on demand
 ---
 ```
 
-- **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control.
+- **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file.
 - **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request.
 
-When the AI uses a skill, the chat response's activity trace shows a "Loaded skill" step, so you can verify a skill was applied and iterate on it: edit the file, ask a test question, and check the trace.
+Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa.
+
+Skills are parsed into resources like the rest of your project: invalid skill files (e.g. a missing `description`) show an error on the file in Rill Developer. When the AI uses a skill, the chat response's activity trace shows a "Loaded skill" step, so you can verify a skill was applied and iterate on it: edit the file, ask a test question, and check the trace.
 
 :::warning Skills are visible to all AI users
 Skill contents are provided to every user who can use AI features in the project, including viewers. Never put secrets or sensitive data in a skill. Access to the underlying data is still governed by your metrics view security policies.

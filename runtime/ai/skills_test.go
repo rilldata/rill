@@ -1,7 +1,6 @@
 package ai_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -15,38 +14,27 @@ import (
 func TestSkills(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
-			"skills/revenue-rca.md": `---
+			"skills/revenue-rca/SKILL.md": `---
+name: revenue-rca
 description: Playbook for diagnosing revenue drops.
 metrics_views: [orders]
 ---
 
 # Revenue RCA playbook
 Always break revenue down by country first.`,
-			"skills/glossary/SKILL.md": `---
+			// Skills are also loaded from the generic .agents/skills directory
+			".agents/skills/glossary/SKILL.md": `---
 description: Business glossary.
 always_apply: true
 agents: [analyst, developer]
 ---
 
 ARPU excludes trial users.`,
-			// Auxiliary file in a skill directory: not a skill.
-			"skills/glossary/notes.md": "Internal notes, not a skill.",
-			// Missing required description.
-			"skills/broken.md": "# No front matter here",
-			// Duplicate name (sorted after revenue-rca.md, so it loses).
-			"skills/zzz-dupe.md": `---
-name: revenue-rca
-description: Duplicate of the RCA skill.
----
-
-Body.`,
-			// Exceeds the per-file size cap.
-			"skills/oversized.md": "---\ndescription: Too big.\n---\n\n" + strings.Repeat("x", 1<<17),
 		},
 	})
 	s := newSession(t, rt, instanceID)
 
-	// List skills: valid skills in path order, invalid files reported with errors
+	// List skills: sorted by name
 	var listRes *ai.ListSkillsResult
 	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListSkillsName, &listRes, &ai.ListSkillsArgs{})
 	require.NoError(t, err)
@@ -57,15 +45,6 @@ Body.`,
 	require.Equal(t, "revenue-rca", listRes.Skills[1].Name)
 	require.Equal(t, []string{"orders"}, listRes.Skills[1].MetricsViews)
 	require.Equal(t, []string{"analyst"}, listRes.Skills[1].Agents)
-
-	require.Len(t, listRes.Invalid, 3)
-	issues := map[string]string{}
-	for _, issue := range listRes.Invalid {
-		issues[issue.Path] = issue.Error
-	}
-	require.Contains(t, issues["/skills/broken.md"], "description")
-	require.Contains(t, issues["/skills/oversized.md"], "maximum skill size")
-	require.Contains(t, issues["/skills/zzz-dupe.md"], "duplicate skill name")
 
 	// Load a skill by name
 	var loadRes *ai.LoadSkillResult
@@ -88,11 +67,41 @@ func TestSkillsEmptyProject(t *testing.T) {
 	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListSkillsName, &listRes, &ai.ListSkillsArgs{})
 	require.NoError(t, err)
 	require.Empty(t, listRes.Skills)
-	require.Empty(t, listRes.Invalid)
 
 	var loadRes *ai.LoadSkillResult
 	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.LoadSkillName, &loadRes, &ai.LoadSkillArgs{Name: "anything"})
 	require.ErrorContains(t, err, "does not define any skills")
+}
+
+// TestSkillsValidation verifies that invalid skill files surface as parse errors on the file,
+// and don't affect the valid skills in the project.
+func TestSkillsValidation(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"skills/valid/SKILL.md": `---
+description: A valid skill.
+---
+
+Body.`,
+			"skills/broken/SKILL.md": `# No front matter here`,
+		},
+	})
+
+	ctrl, err := rt.Controller(t.Context(), instanceID)
+	require.NoError(t, err)
+	pp, err := ctrl.Get(t.Context(), runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+	parseErrors := pp.GetProjectParser().State.ParseErrors
+	require.Len(t, parseErrors, 1)
+	require.Equal(t, "/skills/broken/SKILL.md", parseErrors[0].FilePath)
+	require.Contains(t, parseErrors[0].Message, "front matter")
+
+	s := newSession(t, rt, instanceID)
+	var listRes *ai.ListSkillsResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ListSkillsName, &listRes, &ai.ListSkillsArgs{})
+	require.NoError(t, err)
+	require.Len(t, listRes.Skills, 1)
+	require.Equal(t, "valid", listRes.Skills[0].Name)
 }
 
 // TestSkillsInListMetricsViews verifies that always-apply skills are appended to the
@@ -101,13 +110,13 @@ func TestSkillsEmptyProject(t *testing.T) {
 func TestSkillsInListMetricsViews(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
-			"skills/glossary.md": `---
+			"skills/glossary/SKILL.md": `---
 description: Business glossary.
 always_apply: true
 ---
 
 ARPU excludes trial users.`,
-			"skills/on-demand.md": `---
+			"skills/on-demand/SKILL.md": `---
 description: An on-demand skill.
 ---
 

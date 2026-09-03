@@ -420,6 +420,9 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 	// Everyone can access a theme.
 	case ResourceKindTheme:
 		rules = append(rules, allowAccessRule)
+	// Everyone can access a skill. Skills are instructions served to anyone who can use AI features, so they must never contain secrets.
+	case ResourceKindSkill:
+		rules = append(rules, allowAccessRule)
 	// All other resources can only be accessed by admins.
 	default:
 		if claims.Admin() {

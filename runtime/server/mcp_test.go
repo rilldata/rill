@@ -85,6 +85,8 @@ explore:
 		ai.ReadFileName,
 		ai.SearchFilesName,
 		ai.WriteFileName,
+		ai.ListSkillsName,
+		ai.LoadSkillName,
 	}
 	require.Len(t, tools.Tools, len(expectedTools))
 	for _, tool := range tools.Tools {

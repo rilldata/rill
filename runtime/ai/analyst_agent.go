@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai/instructions"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/parser"
 	"go.uber.org/zap"
 )
 
@@ -163,12 +164,12 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// Load project-defined skills relevant to this analysis.
 	// Skill loading failures should degrade the analysis, not fail it.
-	skills, _, err := s.Skills(ctx)
+	skills, err := s.Skills(ctx)
 	if err != nil {
 		s.logger.Warn("failed to load project skills", zap.Error(err))
 		skills = nil
 	}
-	skills = filterSkills(skills, skillAgentAnalyst, metricsViewNames)
+	skills = filterSkills(skills, parser.SkillAgentAnalyst, metricsViewNames)
 
 	// Determine tools that can be used
 	tools := []string{}

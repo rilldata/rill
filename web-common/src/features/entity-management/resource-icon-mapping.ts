@@ -28,6 +28,7 @@ export const resourceIconMapping = {
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,
   [ResourceKind.Alert]: AlertIcon,
+  [ResourceKind.Skill]: GraduationCap,
 };
 
 export const resourceLabelMapping = {
@@ -42,6 +43,7 @@ export const resourceLabelMapping = {
   [ResourceKind.Theme]: "Theme",
   [ResourceKind.Report]: "Report",
   [ResourceKind.Alert]: "Alert",
+  [ResourceKind.Skill]: "AI Skill",
 };
 
 export const resourceShorthandMapping = {
@@ -56,6 +58,7 @@ export const resourceShorthandMapping = {
   [ResourceKind.Theme]: "theme",
   [ResourceKind.Report]: "report",
   [ResourceKind.Alert]: "alert",
+  [ResourceKind.Skill]: "skill",
 };
 
 export function getIconComponent(
@@ -77,8 +80,8 @@ export function getIconComponent(
   return File;
 }
 
-// Skill files are markdown instructions for the AI agents at `skills/<name>.md` or `skills/<name>/SKILL.md`.
-// They are not parsed resources, so they are identified by path.
+// Skill files are SKILL.md files at `skills/<name>/SKILL.md` or `.agents/skills/<name>/SKILL.md`.
+// The path check is a fallback for files that haven't been parsed into a Skill resource yet.
 export function isSkillFile(filePath: string) {
-  return /^\/skills\/([^/]+\.md|[^/]+\/SKILL\.md)$/.test(filePath);
+  return /^\/(\.agents\/)?skills\/[^/]+\/SKILL\.md$/.test(filePath);
 }

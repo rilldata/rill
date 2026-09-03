@@ -319,6 +319,12 @@ export class Resource extends Message<Resource> {
      */
     value: ConnectorV2;
     case: "connector";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.Skill skill = 18;
+     */
+    value: Skill;
+    case: "skill";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Resource>) {
@@ -344,6 +350,7 @@ export class Resource extends Message<Resource> {
     { no: 14, name: "canvas", kind: "message", T: Canvas, oneof: "resource" },
     { no: 15, name: "api", kind: "message", T: API, oneof: "resource" },
     { no: 16, name: "connector", kind: "message", T: ConnectorV2, oneof: "resource" },
+    { no: 18, name: "skill", kind: "message", T: Skill, oneof: "resource" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Resource {
@@ -4526,6 +4533,154 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
 
   static equals(a: RefreshModelTrigger | PlainMessage<RefreshModelTrigger> | undefined, b: RefreshModelTrigger | PlainMessage<RefreshModelTrigger> | undefined): boolean {
     return proto3.util.equals(RefreshModelTrigger, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Skill
+ */
+export class Skill extends Message<Skill> {
+  /**
+   * @generated from field: rill.runtime.v1.SkillSpec spec = 1;
+   */
+  spec?: SkillSpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.SkillState state = 2;
+   */
+  state?: SkillState;
+
+  constructor(data?: PartialMessage<Skill>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Skill";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: SkillSpec },
+    { no: 2, name: "state", kind: "message", T: SkillState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Skill {
+    return new Skill().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Skill {
+    return new Skill().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Skill {
+    return new Skill().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Skill | PlainMessage<Skill> | undefined, b: Skill | PlainMessage<Skill> | undefined): boolean {
+    return proto3.util.equals(Skill, a, b);
+  }
+}
+
+/**
+ * SkillSpec is parsed from a SKILL.md file that follows the Agent Skills format (https://agentskills.io).
+ * Skills teach AI agents project-specific practices, such as analysis playbooks and business glossaries.
+ *
+ * @generated from message rill.runtime.v1.SkillSpec
+ */
+export class SkillSpec extends Message<SkillSpec> {
+  /**
+   * Description of what the skill does and when to use it.
+   *
+   * @generated from field: string description = 1;
+   */
+  description = "";
+
+  /**
+   * Markdown body with the skill's full instructions.
+   *
+   * @generated from field: string body = 2;
+   */
+  body = "";
+
+  /**
+   * Rill extension: metrics views the skill is relevant to. Empty means all.
+   *
+   * @generated from field: repeated string metrics_views = 3;
+   */
+  metricsViews: string[] = [];
+
+  /**
+   * Rill extension: Rill agents the skill applies to ("analyst" and/or "developer").
+   *
+   * @generated from field: repeated string agents = 4;
+   */
+  agents: string[] = [];
+
+  /**
+   * Rill extension: if true, the skill's body is always injected into the agent's context instead of being loaded on demand.
+   *
+   * @generated from field: bool always_apply = 5;
+   */
+  alwaysApply = false;
+
+  constructor(data?: PartialMessage<SkillSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SkillSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "metrics_views", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "agents", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "always_apply", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SkillSpec {
+    return new SkillSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SkillSpec {
+    return new SkillSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SkillSpec {
+    return new SkillSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SkillSpec | PlainMessage<SkillSpec> | undefined, b: SkillSpec | PlainMessage<SkillSpec> | undefined): boolean {
+    return proto3.util.equals(SkillSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SkillState
+ */
+export class SkillState extends Message<SkillState> {
+  constructor(data?: PartialMessage<SkillState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SkillState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SkillState {
+    return new SkillState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SkillState {
+    return new SkillState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SkillState {
+    return new SkillState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SkillState | PlainMessage<SkillState> | undefined, b: SkillState | PlainMessage<SkillState> | undefined): boolean {
+    return proto3.util.equals(SkillState, a, b);
   }
 }
 

@@ -544,7 +544,6 @@ type BaseSession struct {
 	skillsMu     sync.Mutex
 	skillsLoaded bool
 	skills       []*Skill
-	skillIssues  []SkillIssue
 }
 
 func (s *BaseSession) Flush(ctx context.Context) error {

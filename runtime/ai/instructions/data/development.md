@@ -191,15 +191,15 @@ Most projects don't define reports directly as files; instead, users can define 
 
 ### Skills
 
-Skills are markdown files that teach Rill's AI agents project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) and business glossaries.
-Unlike the resource types above, they are not parsed into resources; they are plain markdown files read directly by the AI agents.
-They live at `skills/<name>.md` or `skills/<name>/SKILL.md` and consist of YAML front matter followed by a markdown body with the instructions.
+Skills teach Rill's AI agents project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) and business glossaries.
+A skill is a directory containing a `SKILL.md` file that follows the Agent Skills format (https://agentskills.io): YAML front matter followed by a markdown body with the instructions.
+Rill loads skills from `skills/<name>/SKILL.md`, and also from `.agents/skills/<name>/SKILL.md` for compatibility with skills authored for other agent clients.
 The front matter supports these properties:
 - `description:` (required) a short summary used to decide when the skill applies; write it as "what it does + when to use it"
-- `name:` (optional) overrides the name derived from the file path
-- `metrics_views:` (optional) list of metrics view names; the skill is only offered when the analysis involves one of them
-- `agents:` (optional) list of agents the skill applies to, `analyst` and/or `developer`; defaults to `[analyst]`
-- `always_apply:` (optional) if `true`, the skill's full body is always injected into the agent's context instead of being loaded on demand; use for short, broadly applicable guidance such as glossaries
+- `name:` (optional) must match the directory name; lowercase letters, numbers and hyphens only
+- `metrics_views:` (optional, Rill extension) list of metrics view names; the skill is only offered when the analysis involves one of them
+- `agents:` (optional, Rill extension) list of agents the skill applies to, `analyst` and/or `developer`; defaults to `[analyst]`
+- `always_apply:` (optional, Rill extension) if `true`, the skill's full body is always injected into the agent's context instead of being loaded on demand; use for short, broadly applicable guidance such as glossaries
 
 Skill contents are visible to every user who can use AI features in the project, so they must never contain secrets.
 

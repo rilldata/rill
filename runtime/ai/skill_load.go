@@ -53,7 +53,7 @@ func (t *LoadSkill) CheckAccess(ctx context.Context) (bool, error) {
 func (t *LoadSkill) Handler(ctx context.Context, args *LoadSkillArgs) (*LoadSkillResult, error) {
 	s := GetSession(ctx)
 
-	skills, _, err := s.Skills(ctx)
+	skills, err := s.Skills(ctx)
 	if err != nil {
 		return nil, err
 	}

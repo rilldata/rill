@@ -18,8 +18,7 @@ var _ Tool[*ListSkillsArgs, *ListSkillsResult] = (*ListSkills)(nil)
 type ListSkillsArgs struct{}
 
 type ListSkillsResult struct {
-	Skills  []*SkillInfo `json:"skills"`
-	Invalid []SkillIssue `json:"invalid,omitempty"`
+	Skills []*SkillInfo `json:"skills"`
 }
 
 // SkillInfo describes a skill without its body. Use load_skill to fetch the full instructions.
@@ -57,7 +56,7 @@ func (t *ListSkills) CheckAccess(ctx context.Context) (bool, error) {
 func (t *ListSkills) Handler(ctx context.Context, args *ListSkillsArgs) (*ListSkillsResult, error) {
 	s := GetSession(ctx)
 
-	skills, issues, err := s.Skills(ctx)
+	skills, err := s.Skills(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +72,5 @@ func (t *ListSkills) Handler(ctx context.Context, args *ListSkillsArgs) (*ListSk
 		}
 	}
 
-	return &ListSkillsResult{
-		Skills:  infos,
-		Invalid: issues,
-	}, nil
+	return &ListSkillsResult{Skills: infos}, nil
 }

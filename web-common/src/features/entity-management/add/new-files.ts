@@ -142,9 +142,10 @@ export const ResourceKindMap: Record<
   },
 };
 
-// Skills are markdown files read directly by the AI agents rather than parsed resources,
+// Skills are directories containing a SKILL.md file (following the Agent Skills format, https://agentskills.io),
 // so they are created outside the ResourceKind machinery above.
-export const skillFileTemplate = `---
+export const skillFileTemplate = (name: string) => `---
+name: ${name}
 # The AI uses the required description to decide when to load this skill, so phrase it as "what it does + when to use it".
 description: Describe what this skill does and when to use it.
 # metrics_views: [my_metrics_view]  # Optional: only offer this skill for analyses involving these metrics views

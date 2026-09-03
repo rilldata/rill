@@ -97,7 +97,7 @@ func parseInstruction(path string, content []byte, opts Options) (*Instruction, 
 
 	// Parse front matter
 	var fm frontMatter
-	body, err := ParseFrontMatter(content, &fm)
+	body, err := parseFrontMatter(content, &fm)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +115,10 @@ func parseInstruction(path string, content []byte, opts Options) (*Instruction, 
 	}, nil
 }
 
-// ParseFrontMatter extracts YAML front matter from markdown content, decoding it into the provided struct.
+// parseFrontMatter extracts YAML front matter from markdown content, decoding it into the provided struct.
 // Front matter is expected to be delimited by "---" at the start and end.
 // If the content has no front matter, the struct is left untouched and the full content is returned as the body.
-func ParseFrontMatter(content []byte, into any) (string, error) {
+func parseFrontMatter(content []byte, into any) (string, error) {
 	contentStr := strings.TrimSpace(string(content))
 
 	// Check for front matter delimiter at the start
