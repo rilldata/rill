@@ -8,6 +8,20 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 
+/**
+ * The subset of an aggregation measure that identifies the spec measure it derives from.
+ * Both spec measures and aggregation measures satisfy it,
+ * so selectors that only resolve the source measure can accept either.
+ */
+type AggregationMeasureRef = Pick<
+  V1MetricsViewAggregationMeasure,
+  | "name"
+  | "comparisonDelta"
+  | "comparisonValue"
+  | "comparisonRatio"
+  | "percentOfTotal"
+>;
+
 export const allMeasures = ({
   validMetricsView,
   validExplore,
@@ -147,13 +161,17 @@ export const filterOutSomeAdvancedMeasures = (
  *
  * This is a variant of the above but works on V1MetricsViewAggregationMeasure.
  * Once we move all queries to MetricsViewAggregation we dont need the above method.
+ *
+ * It is generic over the measure type so callers that pass spec measures get spec measures back.
  */
-export const filterOutSomeAdvancedAggregationMeasures = (
+export const filterOutSomeAdvancedAggregationMeasures = <
+  T extends AggregationMeasureRef,
+>(
   exploreState: ExploreState,
   metricsViewSpec: V1MetricsViewSpec,
-  measures: V1MetricsViewAggregationMeasure[],
+  measures: T[],
   includeWindowMeasures: boolean,
-) => {
+): T[] => {
   const measuresSeen = new Set<string>();
 
   return measures.filter((measure) => {

@@ -11,7 +11,6 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/opcode"
-
 	// The parser driver provides the ValueExpr implementation and registers itself on import.
 	"github.com/pingcap/tidb/pkg/parser/test_driver"
 )
