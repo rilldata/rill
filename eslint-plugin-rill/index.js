@@ -1,4 +1,4 @@
-import noDisallowedTailwindTextColors from "./no-disallowed-tailwind-text-colors.js";
+import noDisallowedTailwindTextColors from "./no-disallowed-tailwind-colors.js";
 
 export default {
   rules: {

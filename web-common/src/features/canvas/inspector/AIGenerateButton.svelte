@@ -97,7 +97,7 @@
 
   .generate-btn {
     @apply p-1.5 rounded-md;
-    @apply text-gray-400 transition-colors;
+    @apply text-primary-foreground transition-colors;
   }
 
   .generate-btn:hover {
@@ -109,7 +109,7 @@
   }
 
   .hint {
-    @apply text-[10px] text-gray-400;
+    @apply text-[10px] text-fg-muted;
   }
 
   .status {

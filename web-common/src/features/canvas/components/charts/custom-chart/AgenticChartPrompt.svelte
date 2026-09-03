@@ -41,7 +41,7 @@
   <div class="flex flex-col items-center justify-center h-full gap-3 p-4">
     <div class="w-full max-w-md flex flex-col gap-3">
       <textarea
-        class="w-full px-3 py-2 text-sm border rounded-md border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 resize-none bg-white text-fg-primary placeholder:text-fg-muted"
+        class="w-full px-3 py-2 text-sm border rounded-md border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 resize-none text-fg-primary placeholder:text-fg-muted"
         rows="3"
         placeholder={m.canvas_describe_chart_prompt()}
         bind:value={prompt}
