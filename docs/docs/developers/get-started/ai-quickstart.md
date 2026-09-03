@@ -48,11 +48,13 @@ rill init my-project --agent agentsmd
 
 ### Adding agent instructions to an existing project
 
-If you already have a Rill project, you can add agent instructions without affecting your existing files:
+If you already have a Rill project, run `rill init` with only the `--agent` flag to generate the agent instruction files:
 
 ```bash
 rill init ./my-existing-project --agent all
 ```
+
+The command only writes agent instruction files and MCP configuration — but note that it [overwrites existing agent files](/developers/agent-skills/install#existing-project) at the generated paths.
 
 ## Step 2: Start Rill in preview mode
 
