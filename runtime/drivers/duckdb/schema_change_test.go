@@ -16,7 +16,7 @@ import (
 func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 	tests := []struct {
 		name       string
-		mode       OnSchemaChange
+		mode       drivers.OnSchemaChange
 		sourceSQL  string
 		wantErr    string
 		wantCols   []string
@@ -24,7 +24,7 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 	}{
 		{
 			name:      "ignore added column",
-			mode:      OnSchemaChangeIgnore,
+			mode:      drivers.OnSchemaChangeIgnore,
 			sourceSQL: `SELECT 1 AS id, 1 AS partition_id, 'new-1' AS old_value, 42 AS new_value`,
 			wantCols:  []string{"id", "partition_id", "old_value"},
 			assertRows: func(t *testing.T, c *connection, table string) {
@@ -33,7 +33,7 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 		},
 		{
 			name:      "ignore removed column",
-			mode:      OnSchemaChangeIgnore,
+			mode:      drivers.OnSchemaChangeIgnore,
 			sourceSQL: `SELECT 1 AS id, 1 AS partition_id`,
 			wantCols:  []string{"id", "partition_id", "old_value"},
 			assertRows: func(t *testing.T, c *connection, table string) {
@@ -41,16 +41,8 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 			},
 		},
 		{
-			name:       "ignore disjoint schema",
-			mode:       OnSchemaChangeIgnore,
-			sourceSQL:  `SELECT 1 AS other_id, 1 AS other_partition`,
-			wantErr:    "no columns in common",
-			wantCols:   []string{"id", "partition_id", "old_value"},
-			assertRows: assertOriginalSchemaChangeRows,
-		},
-		{
 			name:      "ignore retains target type",
-			mode:      OnSchemaChangeIgnore,
+			mode:      drivers.OnSchemaChangeIgnore,
 			sourceSQL: `SELECT 1 AS id, 1 AS partition_id, 123::INTEGER AS old_value`,
 			wantCols:  []string{"id", "partition_id", "old_value"},
 			assertRows: func(t *testing.T, c *connection, table string) {
@@ -59,22 +51,22 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 		},
 		{
 			name:       "fail added column",
-			mode:       OnSchemaChangeFail,
+			mode:       drivers.OnSchemaChangeFail,
 			sourceSQL:  `SELECT 1 AS id, 1 AS partition_id, 'new-1' AS old_value, 42 AS new_value`,
 			wantErr:    "does not match the schema of table",
 			wantCols:   []string{"id", "partition_id", "old_value"},
 			assertRows: assertOriginalSchemaChangeRows,
 		},
 		{
-			name:       "omitted mode defaults to fail",
+			name:       "omitted mode is rejected",
 			sourceSQL:  `SELECT 1 AS id, 1 AS partition_id, 'new-1' AS old_value, 42 AS new_value`,
-			wantErr:    "does not match the schema of table",
+			wantErr:    `invalid on_schema_change mode ""`,
 			wantCols:   []string{"id", "partition_id", "old_value"},
 			assertRows: assertOriginalSchemaChangeRows,
 		},
 		{
 			name:       "fail removed column",
-			mode:       OnSchemaChangeFail,
+			mode:       drivers.OnSchemaChangeFail,
 			sourceSQL:  `SELECT 1 AS id, 1 AS partition_id`,
 			wantErr:    "does not match the schema of table",
 			wantCols:   []string{"id", "partition_id", "old_value"},
@@ -82,7 +74,7 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 		},
 		{
 			name:      "fail retains target type",
-			mode:      OnSchemaChangeFail,
+			mode:      drivers.OnSchemaChangeFail,
 			sourceSQL: `SELECT 1 AS id, 1 AS partition_id, 123::INTEGER AS old_value`,
 			wantCols:  []string{"id", "partition_id", "old_value"},
 			assertRows: func(t *testing.T, c *connection, table string) {
@@ -91,7 +83,7 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 		},
 		{
 			name:      "append added and retain removed columns",
-			mode:      OnSchemaChangeAppendNewColumns,
+			mode:      drivers.OnSchemaChangeAppendNewColumns,
 			sourceSQL: `SELECT 1 AS id, 1 AS partition_id, 42 AS new_value`,
 			wantCols:  []string{"id", "partition_id", "old_value", "new_value"},
 			assertRows: func(t *testing.T, c *connection, table string) {
@@ -100,7 +92,7 @@ func TestInsertTableAsSelectSchemaChangeModes(t *testing.T) {
 		},
 		{
 			name:      "append retains target type",
-			mode:      OnSchemaChangeAppendNewColumns,
+			mode:      drivers.OnSchemaChangeAppendNewColumns,
 			sourceSQL: `SELECT 1 AS id, 1 AS partition_id, 123::INTEGER AS old_value, 42 AS new_value`,
 			wantCols:  []string{"id", "partition_id", "old_value", "new_value"},
 			assertRows: func(t *testing.T, c *connection, table string) {
@@ -142,7 +134,7 @@ func TestInsertTableAsSelectHandlesReorderedQuotedColumns(t *testing.T) {
 			_, err := c.createTableAsSelect(context.Background(), table, `SELECT 1 AS "Key", 10 AS "Partition Key", 'old' AS "select"`, &createTableOptions{})
 			require.NoError(t, err)
 
-			opts := schemaChangeInsertOptions(strategy, OnSchemaChangeFail)
+			opts := schemaChangeInsertOptions(strategy, drivers.OnSchemaChangeFail)
 			opts.UniqueKey = []string{"KEY"}
 			opts.PartitionBy = `"Partition Key"`
 			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 'new' AS "SELECT", 1 AS "key", 10 AS "partition key"`, opts)
@@ -163,7 +155,7 @@ func TestInsertTableAsSelectAppendNewColumnsAcrossInserts(t *testing.T) {
 			_, err := c.createTableAsSelect(context.Background(), table, `SELECT 1 AS id, 1 AS partition_id`, &createTableOptions{})
 			require.NoError(t, err)
 
-			opts := schemaChangeInsertOptions(strategy, OnSchemaChangeAppendNewColumns)
+			opts := schemaChangeInsertOptions(strategy, drivers.OnSchemaChangeAppendNewColumns)
 			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 2 AS id, 2 AS partition_id, 'two' AS new_value`, opts)
 			require.NoError(t, err)
 			require.Equal(t, []string{"id", "partition_id", "new_value"}, schemaChangeColumnNames(t, c, table))
@@ -187,7 +179,7 @@ func TestInsertTableAsSelectAppendNewColumnsAcrossInserts(t *testing.T) {
 // TestInsertTableAsSelectUncastableValue documents that the target's column types are retained,
 // so DuckDB fails the insert when it cannot convert an incoming value.
 func TestInsertTableAsSelectUncastableValue(t *testing.T) {
-	for _, mode := range []OnSchemaChange{OnSchemaChangeFail, OnSchemaChangeIgnore, OnSchemaChangeAppendNewColumns} {
+	for _, mode := range []drivers.OnSchemaChange{drivers.OnSchemaChangeFail, drivers.OnSchemaChangeIgnore, drivers.OnSchemaChangeAppendNewColumns} {
 		t.Run(string(mode), func(t *testing.T) {
 			c := newSchemaChangeTestConnection(t)
 			table := "uncastable_" + string(mode)
@@ -214,7 +206,7 @@ func TestInsertTableAsSelectKeyColumnDropped(t *testing.T) {
 		{drivers.IncrementalStrategyPartitionOverwrite, `failed to resolve the "partition_by" expression "partition_id" against the new data`},
 	}
 	for _, tt := range tests {
-		for _, mode := range []OnSchemaChange{OnSchemaChangeIgnore, OnSchemaChangeAppendNewColumns} {
+		for _, mode := range []drivers.OnSchemaChange{drivers.OnSchemaChangeIgnore, drivers.OnSchemaChangeAppendNewColumns} {
 			t.Run(fmt.Sprintf("%s/%s", tt.strategy, mode), func(t *testing.T) {
 				c := newSchemaChangeTestConnection(t)
 				table := fmt.Sprintf("keydrop_%s_%s", tt.strategy, mode)
@@ -236,6 +228,30 @@ func TestInsertTableAsSelectKeyColumnDropped(t *testing.T) {
 	}
 }
 
+// TestInsertTableAsSelectKeyColumnMissingFromTarget covers new data that contains a unique_key column the target lacks.
+// Adding it would give every existing row a NULL key, and merge treats NULL keys as equal,
+// so a NULL incoming key would otherwise delete every existing row.
+func TestInsertTableAsSelectKeyColumnMissingFromTarget(t *testing.T) {
+	for _, mode := range []drivers.OnSchemaChange{drivers.OnSchemaChangeFail, drivers.OnSchemaChangeIgnore, drivers.OnSchemaChangeAppendNewColumns} {
+		t.Run(string(mode), func(t *testing.T) {
+			c := newSchemaChangeTestConnection(t)
+			table := "keymissing_" + string(mode)
+			_, err := c.createTableAsSelect(context.Background(), table, `
+				SELECT 1 AS partition_id, 'a' AS value
+				UNION ALL SELECT 2 AS partition_id, 'b' AS value
+			`, &createTableOptions{})
+			require.NoError(t, err)
+
+			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT NULL::INTEGER AS id, 1 AS partition_id, 'new' AS value`, schemaChangeInsertOptions(drivers.IncrementalStrategyMerge, mode))
+			require.ErrorContains(t, err, `does not contain the "id" column from "unique_key"`)
+
+			require.Equal(t, []string{"partition_id", "value"}, schemaChangeColumnNames(t, c, table))
+			requireQueryStrings(t, c, fmt.Sprintf(`SELECT partition_id::VARCHAR, value FROM %s ORDER BY partition_id`, safeSQLName(table)),
+				[][]string{{"1", "a"}, {"2", "b"}})
+		})
+	}
+}
+
 // TestInsertTableAsSelectPartitionByExpression checks that a partition_by SQL expression, rather than a plain
 // column reference, still resolves against the new data.
 func TestInsertTableAsSelectPartitionByExpression(t *testing.T) {
@@ -247,7 +263,7 @@ func TestInsertTableAsSelectPartitionByExpression(t *testing.T) {
 	`, &createTableOptions{})
 	require.NoError(t, err)
 
-	opts := schemaChangeInsertOptions(drivers.IncrementalStrategyPartitionOverwrite, OnSchemaChangeAppendNewColumns)
+	opts := schemaChangeInsertOptions(drivers.IncrementalStrategyPartitionOverwrite, drivers.OnSchemaChangeAppendNewColumns)
 	opts.PartitionBy = "date_trunc('day', ts)"
 	_, err = c.insertTableAsSelect(context.Background(), table, `
 		SELECT 3 AS id, '2024-01-01 09:00:00'::TIMESTAMP AS ts, 'replaced' AS value, 42 AS extra
@@ -267,7 +283,7 @@ func TestInsertTableAsSelectEmptyPartitionSkipsSchemaHandling(t *testing.T) {
 			_, err := c.createTableAsSelect(context.Background(), table, `SELECT 1 AS id, 1 AS partition_id, 'old' AS value`, &createTableOptions{})
 			require.NoError(t, err)
 
-			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 1 AS id, 42 AS added WHERE false`, schemaChangeInsertOptions(strategy, OnSchemaChangeFail))
+			_, err = c.insertTableAsSelect(context.Background(), table, `SELECT 1 AS id, 42 AS added WHERE false`, schemaChangeInsertOptions(strategy, drivers.OnSchemaChangeFail))
 			require.NoError(t, err)
 			require.Equal(t, []string{"id", "partition_id", "value"}, schemaChangeColumnNames(t, c, table))
 			requireQueryStrings(t, c, fmt.Sprintf(`SELECT id::VARCHAR, partition_id::VARCHAR, value FROM %s`, safeSQLName(table)), [][]string{{"1", "1", "old"}})
@@ -285,7 +301,7 @@ func newSchemaChangeTestConnection(t *testing.T) *connection {
 	return c
 }
 
-func schemaChangeInsertOptions(strategy drivers.IncrementalStrategy, mode OnSchemaChange) *InsertTableOptions {
+func schemaChangeInsertOptions(strategy drivers.IncrementalStrategy, mode drivers.OnSchemaChange) *InsertTableOptions {
 	return &InsertTableOptions{
 		Strategy:       strategy,
 		UniqueKey:      []string{"id"},
@@ -336,30 +352,42 @@ func TestOnSchemaChangeValidation(t *testing.T) {
 		props   ModelOutputProperties
 		opts    drivers.ModelExecuteOptions
 		wantErr string
-		want    OnSchemaChange
+		want    drivers.OnSchemaChange
 	}{
 		{
-			name:  "unset stays unset",
+			name:  "unset defaults to fail for merge",
 			props: ModelOutputProperties{UniqueKey: []string{"id"}},
+			opts:  drivers.ModelExecuteOptions{Incremental: true},
+			want:  drivers.OnSchemaChangeFail,
+		},
+		{
+			name:  "unset defaults to fail for partitioned run",
+			props: ModelOutputProperties{},
+			opts:  drivers.ModelExecuteOptions{Incremental: true, PartitionRun: true, PartitionKey: "p1"},
+			want:  drivers.OnSchemaChangeFail,
+		},
+		{
+			name:  "unset stays unset for append",
+			props: ModelOutputProperties{},
 			opts:  drivers.ModelExecuteOptions{Incremental: true},
 		},
 		{
 			name:  "merge without partitions",
-			props: ModelOutputProperties{UniqueKey: []string{"id"}, OnSchemaChange: OnSchemaChangeAppendNewColumns},
+			props: ModelOutputProperties{UniqueKey: []string{"id"}, OnSchemaChange: drivers.OnSchemaChangeAppendNewColumns},
 			opts:  drivers.ModelExecuteOptions{Incremental: true},
-			want:  OnSchemaChangeAppendNewColumns,
+			want:  drivers.OnSchemaChangeAppendNewColumns,
 		},
 		{
 			name:  "partition_overwrite without partitions",
-			props: ModelOutputProperties{PartitionBy: "day", IncrementalStrategy: drivers.IncrementalStrategyPartitionOverwrite, OnSchemaChange: OnSchemaChangeIgnore},
+			props: ModelOutputProperties{PartitionBy: "day", IncrementalStrategy: drivers.IncrementalStrategyPartitionOverwrite, OnSchemaChange: drivers.OnSchemaChangeIgnore},
 			opts:  drivers.ModelExecuteOptions{Incremental: true},
-			want:  OnSchemaChangeIgnore,
+			want:  drivers.OnSchemaChangeIgnore,
 		},
 		{
 			name:  "partitioned run",
-			props: ModelOutputProperties{OnSchemaChange: OnSchemaChangeFail},
+			props: ModelOutputProperties{OnSchemaChange: drivers.OnSchemaChangeFail},
 			opts:  drivers.ModelExecuteOptions{Incremental: true, PartitionRun: true, PartitionKey: "p1"},
-			want:  OnSchemaChangeFail,
+			want:  drivers.OnSchemaChangeFail,
 		},
 		{
 			name:    "invalid mode",
@@ -369,13 +397,13 @@ func TestOnSchemaChangeValidation(t *testing.T) {
 		},
 		{
 			name:    "append strategy",
-			props:   ModelOutputProperties{IncrementalStrategy: drivers.IncrementalStrategyAppend, OnSchemaChange: OnSchemaChangeIgnore},
+			props:   ModelOutputProperties{IncrementalStrategy: drivers.IncrementalStrategyAppend, OnSchemaChange: drivers.OnSchemaChangeIgnore},
 			opts:    drivers.ModelExecuteOptions{Incremental: true},
 			wantErr: `only supported for the "merge" and "partition_overwrite" incremental strategies`,
 		},
 		{
 			name:    "non incremental model",
-			props:   ModelOutputProperties{OnSchemaChange: OnSchemaChangeIgnore},
+			props:   ModelOutputProperties{OnSchemaChange: drivers.OnSchemaChangeIgnore},
 			opts:    drivers.ModelExecuteOptions{},
 			wantErr: `only supported for the "merge" and "partition_overwrite" incremental strategies`,
 		},

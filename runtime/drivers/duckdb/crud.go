@@ -73,7 +73,7 @@ type InsertTableOptions struct {
 	// PartitionBy is a SQL expression to use for dropping/replacing partitions with the partition_overwrite incremental strategy.
 	PartitionBy string
 	// OnSchemaChange controls how schema differences are handled for merge and partition_overwrite inserts.
-	OnSchemaChange OnSchemaChange
+	OnSchemaChange drivers.OnSchemaChange
 }
 
 func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) (*tableWriteMetrics, error) {
@@ -158,23 +158,44 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return nil
 			}
 
-			onSchemaChange := opts.OnSchemaChange
-			if onSchemaChange == "" {
-				onSchemaChange = OnSchemaChangeFail
+			targetColumns, err := readDuckDBColumns(ctx, conn, name)
+			if err != nil {
+				return fmt.Errorf("failed to read schema of %q: %w", name, err)
 			}
-			cols, err := reconcileTableSchema(ctx, conn, name, tmp, onSchemaChange, c.logger)
+			sourceColumns, err := readDuckDBColumns(ctx, conn, tmp)
+			if err != nil {
+				return fmt.Errorf("failed to read schema of %q: %w", tmp, err)
+			}
+
+			// Validate the key columns before applying any schema change, so a failed run leaves the target table untouched.
+			switch opts.Strategy {
+			case drivers.IncrementalStrategyMerge:
+				for _, key := range opts.UniqueKey {
+					if !containsColumn(sourceColumns, key) {
+						return fmt.Errorf("the new data does not contain the %q column from %q", key, "unique_key")
+					}
+					// Adding a key column would give every existing row a NULL key, which merge treats as a single key.
+					if !containsColumn(targetColumns, key) {
+						return fmt.Errorf("table %q does not contain the %q column from %q; run a full refresh to change the key", name, key, "unique_key")
+					}
+				}
+			case drivers.IncrementalStrategyPartitionOverwrite:
+				// Check that the partition expression resolves against the new data on its own.
+				// The DELETE below references it unqualified in a subquery, so a column that is missing from the new data
+				// would instead bind to the target table as a correlated reference and match every row.
+				_, err = conn.ExecContext(ctx, fmt.Sprintf("SELECT %s FROM %s LIMIT 0", opts.PartitionBy, safeSQLName(tmp)))
+				if err != nil {
+					return fmt.Errorf("failed to resolve the %q expression %q against the new data: %w", "partition_by", opts.PartitionBy, err)
+				}
+			}
+
+			cols, err := applySchemaChange(ctx, conn, name, targetColumns, sourceColumns, opts.OnSchemaChange, c.logger)
 			if err != nil {
 				return err
 			}
 
 			switch opts.Strategy {
 			case drivers.IncrementalStrategyMerge:
-				for _, key := range opts.UniqueKey {
-					if !cols.hasSource(key) {
-						return fmt.Errorf("the new data does not contain the %q column from %q", key, "unique_key")
-					}
-				}
-
 				// Drop the rows from the target table where the unique key is present in the temporary table.
 				where := ""
 				for i, key := range opts.UniqueKey {
@@ -189,14 +210,6 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 					return err
 				}
 			case drivers.IncrementalStrategyPartitionOverwrite:
-				// Check that the partition expression resolves against the new data on its own.
-				// The DELETE below references it unqualified in a subquery, so a column that is missing from the new data
-				// would instead bind to the target table as a correlated reference and match every row.
-				_, err = conn.ExecContext(ctx, fmt.Sprintf("SELECT %s FROM %s LIMIT 0", opts.PartitionBy, safeSQLName(tmp)))
-				if err != nil {
-					return fmt.Errorf("failed to resolve the %q expression %q against the new data: %w", "partition_by", opts.PartitionBy, err)
-				}
-
 				// Drop the rows from the target table where the partition expression overlaps with the temporary table.
 				_, err = conn.ExecContext(ctx, fmt.Sprintf(
 					"DELETE FROM %s WHERE %s IN (SELECT DISTINCT %s FROM %s)",
@@ -210,17 +223,17 @@ func (c *connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				}
 			}
 
-			targetColumns := make([]string, len(cols.target))
-			sourceColumns := make([]string, len(cols.source))
+			insertInto := make([]string, len(cols.target))
+			selectFrom := make([]string, len(cols.source))
 			for i := range cols.target {
-				targetColumns[i] = safeSQLName(cols.target[i])
-				sourceColumns[i] = safeSQLName(cols.source[i])
+				insertInto[i] = safeSQLName(cols.target[i])
+				selectFrom[i] = safeSQLName(cols.source[i])
 			}
 			_, err = conn.ExecContext(ctx, fmt.Sprintf(
 				"INSERT INTO %s (%s) SELECT %s FROM %s",
 				safeSQLName(name),
-				strings.Join(targetColumns, ", "),
-				strings.Join(sourceColumns, ", "),
+				strings.Join(insertInto, ", "),
+				strings.Join(selectFrom, ", "),
 				safeSQLName(tmp),
 			))
 			return err
