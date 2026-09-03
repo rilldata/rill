@@ -15,6 +15,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"gopkg.in/yaml.v3"
 )
 
 // Built-in parser limits
@@ -1214,6 +1215,34 @@ func newYAMLError(err error) error {
 			Line: uint32(line),
 		},
 	}
+}
+
+// yamlCustomFieldErrRegexp matches strict YAML decoding errors for unknown fields prefixed with "custom_"
+var yamlCustomFieldErrRegexp = regexp.MustCompile(`^line \d+: field custom_\S* not found in type `)
+
+// filterCustomFieldErrors removes strict YAML decoding errors for unknown fields prefixed with "custom_" at any nesting depth.
+// Such fields are reserved for user-defined metadata and should not fail parsing.
+// It returns nil if all the errors were for "custom_" fields.
+func filterCustomFieldErrors(err error) error {
+	var typeErr *yaml.TypeError
+	if !errors.As(err, &typeErr) {
+		return err
+	}
+
+	var remaining []string
+	for _, msg := range typeErr.Errors {
+		if !yamlCustomFieldErrRegexp.MatchString(msg) {
+			remaining = append(remaining, msg)
+		}
+	}
+
+	if len(remaining) == 0 {
+		return nil
+	}
+	if len(remaining) == len(typeErr.Errors) {
+		return err
+	}
+	return &yaml.TypeError{Errors: remaining}
 }
 
 // duckDBErrLineRegexp matches the line number in a DuckDB parser error

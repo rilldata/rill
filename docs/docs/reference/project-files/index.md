@@ -14,6 +14,12 @@ It is possible to define resources (such as [models](models.md), [metrics-views]
 
 :::
 
+:::info Custom fields
+
+Rill validates project files strictly and rejects unknown properties, with one exception: properties prefixed with `custom_` (for example, `custom_owner: data-team`) are ignored by validation. You can add such properties at any nesting level, in any project file (including `rill.yaml`), to attach your own metadata for use by external tooling.
+
+:::
+
 Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics view configurations. The result is a set of functioning exploratory dashboards.
 
 You can see a few different example projects by visiting our [example GitHub repository](https://github.com/rilldata/rill-examples).
