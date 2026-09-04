@@ -42,6 +42,9 @@ type Server struct {
 	logger   *zap.Logger
 	app      *App
 	metadata *localMetadata
+	// cloudRuntime caches an authenticated client for the cloud deployment's runtime,
+	// used by the AI feedback review endpoints. Its zero value is usable.
+	cloudRuntime cloudRuntimeCache
 }
 
 var _ localv1connect.LocalServiceHandler = (*Server)(nil)

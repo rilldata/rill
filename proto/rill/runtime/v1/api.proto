@@ -297,6 +297,47 @@ service RuntimeService {
     };
   }
 
+  // ListAIFeedback lists AI feedback items (ratings and review requests) for an instance.
+  // Requires the ManageAIFeedback permission.
+  rpc ListAIFeedback(ListAIFeedbackRequest) returns (ListAIFeedbackResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/feedback"};
+  }
+
+  // GetAIFeedback returns a feedback item along with the full transcript of the conversation it belongs to.
+  // Requires the ManageAIFeedback permission, which grants read access to the referenced conversation
+  // regardless of its owner.
+  rpc GetAIFeedback(GetAIFeedbackRequest) returns (GetAIFeedbackResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/feedback/{feedback_id}"};
+  }
+
+  // UpdateAIFeedbackStatus updates the review status of a feedback item.
+  // Requires the ManageAIFeedback permission.
+  rpc UpdateAIFeedbackStatus(UpdateAIFeedbackStatusRequest) returns (UpdateAIFeedbackStatusResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/feedback/{feedback_id}/status",
+      body: "*"
+    };
+  }
+
+  // GenerateAIFeedbackFix generates a proposed project change addressing a feedback item.
+  // The feedback item and transcript are passed in because they may live in another deployment's store.
+  // Requires repo edit access; intended for Rill Developer.
+  rpc GenerateAIFeedbackFix(GenerateAIFeedbackFixRequest) returns (GenerateAIFeedbackFixResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/feedback/fix",
+      body: "*"
+    };
+  }
+
+  // GenerateAIEvalFix proposes ai_instructions changes that fix the latest run's failing eval cases
+  // without breaking the passing ones. Requires repo edit access; intended for Rill Developer.
+  rpc GenerateAIEvalFix(GenerateAIEvalFixRequest) returns (GenerateAIEvalFixResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/evals/{eval}/fix",
+      body: "*"
+    };
+  }
+
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -922,6 +963,8 @@ message CreateTriggerRequest {
   repeated ResourceName resources = 4;
   // Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
   repeated RefreshModelTrigger models = 5;
+  // AI evals to run. Unlike resources, this supports running a subset of cases and cancellation.
+  repeated AIEvalTrigger ai_evals = 9;
   // Parser is a convenience flag to trigger the global project parser.
   // Triggering the project parser ensures a pull of the repository and a full parse of all files.
   bool parser = 6;
@@ -1125,6 +1168,7 @@ message DeveloperAgentContext {
 // When provided, the agent records feedback and, for negative sentiment, runs attribution.
 message FeedbackAgentContext {
   // The ID of the message being rated.
+  // Optional: if empty, the feedback applies to the conversation as a whole.
   string target_message_id = 1;
   // Sentiment: "positive" or "negative".
   string sentiment = 2;
@@ -1132,6 +1176,8 @@ message FeedbackAgentContext {
   repeated string categories = 3;
   // Optional free-text comment.
   string comment = 4;
+  // If true, flags the feedback for review by project admins.
+  bool request_review = 5;
 }
 
 // Request message for RuntimeService.ListConversations
@@ -1260,6 +1306,144 @@ message GetAIMessageRequest {
 message GetAIMessageResponse {
   Message message = 1;
   Message result = 2;
+}
+
+// AIFeedback is a user feedback item on an AI conversation: a rating or a review request.
+message AIFeedback {
+  string id = 1;
+  // ID of the conversation the feedback belongs to.
+  string conversation_id = 2;
+  // ID of the rated message. Empty for conversation-level feedback.
+  string target_message_id = 3;
+  // Kind of feedback: "rating" or "review_request".
+  string kind = 4;
+  // Sentiment: "positive" or "negative".
+  string sentiment = 5;
+  // Categories selected by the user.
+  repeated string categories = 6;
+  // Free-text comment from the user.
+  string comment = 7;
+  // AI-predicted attribution of the issue: "rill", "project", "user", or empty.
+  string predicted_attribution = 8;
+  // AI-suggested action derived from the attribution.
+  string suggested_action = 9;
+  // Review status: "open", "addressed" or "dismissed".
+  string status = 10;
+  // ID of the user who submitted the feedback.
+  string owner_id = 11;
+  // Email of the user who submitted the feedback (captured from claims at submit time).
+  string owner_email = 12;
+  // ID of the user who last changed the status to a terminal state.
+  string resolved_by = 13;
+  google.protobuf.Timestamp resolved_on = 14;
+  google.protobuf.Timestamp created_on = 15;
+  google.protobuf.Timestamp updated_on = 16;
+  // Title of the conversation (joined for list convenience).
+  string conversation_title = 17;
+}
+
+// Request message for RuntimeService.ListAIFeedback
+message ListAIFeedbackRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Optional status filter: "open", "addressed" or "dismissed".
+  string status = 2 [(validate.rules).string = {ignore_empty: true, in: ["open", "addressed", "dismissed"]}];
+  // Optional kind filter: "rating" or "review_request".
+  string kind = 3 [(validate.rules).string = {ignore_empty: true, in: ["rating", "review_request"]}];
+  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 5;
+}
+
+// Response message for RuntimeService.ListAIFeedback
+message ListAIFeedbackResponse {
+  repeated AIFeedback feedback = 1;
+  string next_page_token = 2;
+}
+
+// Request message for RuntimeService.GetAIFeedback
+message GetAIFeedbackRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string feedback_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.GetAIFeedback
+message GetAIFeedbackResponse {
+  AIFeedback feedback = 1;
+  // The conversation the feedback belongs to. Null if the conversation has been deleted.
+  Conversation conversation = 2;
+  // Full transcript of the conversation. Empty if the conversation has been deleted.
+  repeated Message messages = 3;
+}
+
+// Request message for RuntimeService.UpdateAIFeedbackStatus
+message UpdateAIFeedbackStatusRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string feedback_id = 2 [(validate.rules).string.min_len = 1];
+  // New status: "open", "addressed" or "dismissed".
+  string status = 3 [(validate.rules).string = {in: ["open", "addressed", "dismissed"]}];
+}
+
+// Response message for RuntimeService.UpdateAIFeedbackStatus
+message UpdateAIFeedbackStatusResponse {
+  AIFeedback feedback = 1;
+}
+
+// One turn of a conversation transcript passed to GenerateAIFeedbackFix.
+message AIFeedbackFixTranscriptMessage {
+  string role = 1;
+  string text = 2;
+}
+
+// Request message for RuntimeService.GenerateAIFeedbackFix
+message GenerateAIFeedbackFixRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // The feedback item to fix, passed through since it may live in another deployment's store.
+  AIFeedback feedback = 2;
+  // Flattened transcript of the conversation the feedback refers to.
+  repeated AIFeedbackFixTranscriptMessage transcript = 3;
+}
+
+// Response message for RuntimeService.GenerateAIFeedbackFix
+message GenerateAIFeedbackFixResponse {
+  // Proposed action: "add_project_instruction", "add_metrics_view_instruction", "add_measure" or "none".
+  string action = 1;
+  // Explanation of the proposal, shown to the admin.
+  string summary = 2;
+  // Metrics view name, set for metrics-view-scoped actions.
+  string metrics_view = 3;
+  // File the proposal edits, set for all actions except "none".
+  string file_path = 4;
+  // The proposed ai_instructions rule, set for instruction actions. The admin can tune it before applying.
+  string instruction = 5;
+  // The proposed measure definition as a YAML mapping, set for the add_measure action.
+  string measure_yaml = 8;
+  // Draft eval case capturing the exchange, proposed alongside every fix.
+  string eval_question = 6;
+  string eval_expected_answer = 7;
+}
+
+// Request message for RuntimeService.GenerateAIEvalFix
+message GenerateAIEvalFixRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Name of the AI eval resource.
+  string eval = 2 [(validate.rules).string.min_len = 1];
+  // Optional failing case names to fix. Empty fixes all failing cases in the latest run.
+  repeated string cases = 3;
+}
+
+// One appliable ai_instructions addition proposed by GenerateAIEvalFix.
+message AIEvalFixProposal {
+  // File whose ai_instructions the rule should be appended to.
+  string file_path = 1;
+  // Why this rule fixes the failing case(s) without breaking the passing ones.
+  string reason = 2;
+  // The proposed ai_instructions rule. The admin can tune it before applying.
+  string instruction = 3;
+}
+
+// Response message for RuntimeService.GenerateAIEvalFix
+message GenerateAIEvalFixResponse {
+  string analysis = 1;
+  repeated AIEvalFixProposal proposals = 2;
 }
 
 // **********

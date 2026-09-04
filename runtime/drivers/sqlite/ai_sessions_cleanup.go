@@ -47,7 +47,7 @@ func (c *connection) deleteExpiredAISessions(ctx context.Context) error {
 		if end > len(ids) {
 			end = len(ids)
 		}
-		if err := c.deleteAISessionBatch(ctx, ids[start:end]); err != nil {
+		if err := c.deleteAISessionBatch(ctx, cutoff, ids[start:end]); err != nil {
 			return err
 		}
 	}
@@ -56,12 +56,14 @@ func (c *connection) deleteExpiredAISessions(ctx context.Context) error {
 }
 
 // expiredAISessionIDs returns the IDs of AI sessions older than cutoff with no messages newer than cutoff.
+// Sessions with open feedback are exempt: they are pinned until an admin resolves the feedback.
 // It does a single full scan of ai_messages (filtered by created_on >= cutoff) and a single scan of ai_sessions.
 func (c *connection) expiredAISessionIDs(ctx context.Context, cutoff time.Time) ([]string, error) {
 	rows, err := c.db.QueryContext(ctx, `
 		SELECT id FROM ai_sessions
 		WHERE created_on < ?
 		  AND id NOT IN (SELECT session_id FROM ai_messages WHERE created_on >= ?)
+		  AND id NOT IN (SELECT session_id FROM ai_feedback WHERE status = 'open')
 	`, cutoff, cutoff)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query expired AI sessions: %w", err)
@@ -82,7 +84,7 @@ func (c *connection) expiredAISessionIDs(ctx context.Context, cutoff time.Time) 
 	return ids, nil
 }
 
-func (c *connection) deleteAISessionBatch(ctx context.Context, ids []string) error {
+func (c *connection) deleteAISessionBatch(ctx context.Context, cutoff time.Time, ids []string) error {
 	placeholders := strings.Repeat("?,", len(ids)-1) + "?"
 	args := make([]any, len(ids))
 	for i, id := range ids {
@@ -95,10 +97,44 @@ func (c *connection) deleteAISessionBatch(ctx context.Context, ids []string) err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`DELETE FROM ai_messages WHERE session_id IN (%s)`, placeholders), args...); err != nil {
+	// Re-apply the exemption predicates inside the transaction: a session snapshotted as expired
+	// may have received a new message or an open feedback item since the snapshot was taken.
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+		SELECT id FROM ai_sessions
+		WHERE id IN (%s)
+		  AND id NOT IN (SELECT session_id FROM ai_messages WHERE created_on >= ?)
+		  AND id NOT IN (SELECT session_id FROM ai_feedback WHERE status = 'open')
+	`, placeholders), append(args, cutoff)...)
+	if err != nil {
+		return fmt.Errorf("failed to re-check expired AI sessions: %w", err)
+	}
+	var eligible []any
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return fmt.Errorf("failed to scan expired AI session id: %w", err)
+		}
+		eligible = append(eligible, id)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("failed to re-check expired AI sessions: %w", err)
+	}
+	rows.Close()
+
+	if len(eligible) == 0 {
+		return nil
+	}
+	placeholders = strings.Repeat("?,", len(eligible)-1) + "?"
+
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`DELETE FROM ai_feedback WHERE session_id IN (%s)`, placeholders), eligible...); err != nil {
+		return fmt.Errorf("failed to delete expired AI feedback: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`DELETE FROM ai_messages WHERE session_id IN (%s)`, placeholders), eligible...); err != nil {
 		return fmt.Errorf("failed to delete expired AI messages: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`DELETE FROM ai_sessions WHERE id IN (%s)`, placeholders), args...); err != nil {
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`DELETE FROM ai_sessions WHERE id IN (%s)`, placeholders), eligible...); err != nil {
 		return fmt.Errorf("failed to delete expired AI sessions: %w", err)
 	}
 	if err := tx.Commit(); err != nil {

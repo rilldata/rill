@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -145,4 +146,123 @@ func TestUserFeedbackAccessDeniedForNonRillUserAgent(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "access denied")
+}
+
+func TestUserFeedbackRecordedInCatalog(t *testing.T) {
+	// Setup empty project and test session (no LLM configured; attribution failures are tolerated)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
+	s := newSession(t, rt, instanceID)
+
+	// Create a real tool call to target with feedback
+	var listRes *ai.ListMetricsViewsResult
+	callRes, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &listRes, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	targetID := callRes.Result.ID
+
+	catalog, release, err := rt.Catalog(t.Context(), instanceID)
+	require.NoError(t, err)
+	defer release()
+
+	// Positive feedback is not recorded in the catalog
+	var res *ai.FeedbackAgentResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
+		TargetMessageID: targetID,
+		Sentiment:       "positive",
+	})
+	require.NoError(t, err)
+	rows, err := catalog.FindAIFeedbackForSession(t.Context(), s.CatalogSession().ID)
+	require.NoError(t, err)
+	require.Len(t, rows, 0)
+
+	// Negative feedback is recorded as an open rating
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
+		TargetMessageID: targetID,
+		Sentiment:       "negative",
+		Categories:      []string{"other"},
+		Comment:         "wrong metric",
+	})
+	require.NoError(t, err)
+	rows, err = catalog.FindAIFeedbackForSession(t.Context(), s.CatalogSession().ID)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, drivers.AIFeedbackKindRating, rows[0].Kind)
+	require.Equal(t, drivers.AIFeedbackStatusOpen, rows[0].Status)
+	require.Equal(t, "negative", rows[0].Sentiment)
+	require.Equal(t, []string{"other"}, rows[0].Categories)
+	require.Equal(t, "wrong metric", rows[0].Comment)
+	require.Equal(t, targetID, rows[0].TargetMessageID)
+	require.NotEmpty(t, rows[0].OwnerID)
+
+	// Repeated feedback on the same target updates the open item instead of duplicating it
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
+		TargetMessageID: targetID,
+		Sentiment:       "negative",
+		Comment:         "still wrong",
+	})
+	require.NoError(t, err)
+	rows, err = catalog.FindAIFeedbackForSession(t.Context(), s.CatalogSession().ID)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, "still wrong", rows[0].Comment)
+
+	// A review request upgrades the existing item's kind
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
+		TargetMessageID: targetID,
+		Sentiment:       "negative",
+		Comment:         "please review",
+		RequestReview:   true,
+	})
+	require.NoError(t, err)
+	rows, err = catalog.FindAIFeedbackForSession(t.Context(), s.CatalogSession().ID)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, drivers.AIFeedbackKindReviewRequest, rows[0].Kind)
+	require.Equal(t, "please review", rows[0].Comment)
+	require.Contains(t, res.Response, "An admin will review it shortly")
+
+	// A conversation-level review request (no target) creates a separate item
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
+		Sentiment:     "negative",
+		Comment:       "the whole conversation went wrong",
+		RequestReview: true,
+	})
+	require.NoError(t, err)
+	rows, err = catalog.FindAIFeedbackForSession(t.Context(), s.CatalogSession().ID)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	var conversationLevel *drivers.AIFeedback
+	for _, f := range rows {
+		if f.TargetMessageID == "" {
+			conversationLevel = f
+		}
+	}
+	require.NotNil(t, conversationLevel)
+	require.Equal(t, drivers.AIFeedbackKindReviewRequest, conversationLevel.Kind)
+
+	// An upvote retracts the same user's open rating on that target, but never an explicit review request
+	callRes2, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &listRes, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	target2 := callRes2.Result.ID
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
+		TargetMessageID: target2,
+		Sentiment:       "negative",
+		Comment:         "changed my mind later",
+	})
+	require.NoError(t, err)
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
+		TargetMessageID: target2,
+		Sentiment:       "positive",
+	})
+	require.NoError(t, err)
+	rows, err = catalog.FindAIFeedbackForSession(t.Context(), s.CatalogSession().ID)
+	require.NoError(t, err)
+	require.Len(t, rows, 3)
+	for _, f := range rows {
+		switch {
+		case f.TargetMessageID == target2:
+			require.Equal(t, drivers.AIFeedbackStatusDismissed, f.Status, "the retracted rating should be dismissed")
+		case f.TargetMessageID == "":
+			require.Equal(t, drivers.AIFeedbackStatusOpen, f.Status, "review requests must not be retracted by upvotes")
+		}
+	}
 }

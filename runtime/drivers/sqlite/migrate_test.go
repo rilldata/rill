@@ -44,6 +44,14 @@ func TestDeleteExpiredAISessions(t *testing.T) {
 	// Session 4: new session with no messages (should be kept).
 	require.NoError(t, catalog.InsertAISession(t.Context(), &drivers.AISession{ID: "s4", CreatedOn: now, UpdatedOn: now}))
 
+	// Session 5: old session with open feedback (should be kept: open feedback pins the session).
+	require.NoError(t, catalog.InsertAISession(t.Context(), &drivers.AISession{ID: "s5", CreatedOn: old, UpdatedOn: old}))
+	require.NoError(t, catalog.InsertAIFeedback(t.Context(), &drivers.AIFeedback{ID: "f5", InstanceID: "inst", SessionID: "s5", Kind: drivers.AIFeedbackKindReviewRequest, Status: drivers.AIFeedbackStatusOpen, CreatedOn: old, UpdatedOn: old}))
+
+	// Session 6: old session with resolved feedback (should be deleted along with its feedback).
+	require.NoError(t, catalog.InsertAISession(t.Context(), &drivers.AISession{ID: "s6", CreatedOn: old, UpdatedOn: old}))
+	require.NoError(t, catalog.InsertAIFeedback(t.Context(), &drivers.AIFeedback{ID: "f6", InstanceID: "inst", SessionID: "s6", Kind: drivers.AIFeedbackKindRating, Status: drivers.AIFeedbackStatusAddressed, CreatedOn: old, UpdatedOn: old}))
+
 	require.NoError(t, h.(*connection).deleteExpiredAISessions(t.Context()))
 
 	// Query the database directly to verify results.
@@ -51,9 +59,22 @@ func TestDeleteExpiredAISessions(t *testing.T) {
 
 	var sessionIDs []string
 	require.NoError(t, db.SelectContext(t.Context(), &sessionIDs, `SELECT id FROM ai_sessions ORDER BY id`))
-	require.Equal(t, []string{"s3", "s4"}, sessionIDs)
+	require.Equal(t, []string{"s3", "s4", "s5"}, sessionIDs)
 
 	var messageIDs []string
 	require.NoError(t, db.SelectContext(t.Context(), &messageIDs, `SELECT id FROM ai_messages ORDER BY id`))
 	require.Equal(t, []string{"m3"}, messageIDs)
+
+	var feedbackIDs []string
+	require.NoError(t, db.SelectContext(t.Context(), &feedbackIDs, `SELECT id FROM ai_feedback ORDER BY id`))
+	require.Equal(t, []string{"f5"}, feedbackIDs)
+
+	// A batch delete re-checks the exemption predicates inside the transaction:
+	// feedback opened between the expiry snapshot and the delete must save the session.
+	cutoff := now.Add(-aiSessionTTL)
+	require.NoError(t, h.(*connection).deleteAISessionBatch(t.Context(), cutoff, []string{"s5"}))
+	require.NoError(t, db.SelectContext(t.Context(), &sessionIDs, `SELECT id FROM ai_sessions ORDER BY id`))
+	require.Contains(t, sessionIDs, "s5", "sessions with open feedback must survive a stale-snapshot batch delete")
+	require.NoError(t, db.SelectContext(t.Context(), &feedbackIDs, `SELECT id FROM ai_feedback ORDER BY id`))
+	require.Equal(t, []string{"f5"}, feedbackIDs)
 }

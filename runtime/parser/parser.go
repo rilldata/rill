@@ -54,6 +54,7 @@ type Resource struct {
 	CanvasSpec      *runtimev1.CanvasSpec
 	APISpec         *runtimev1.APISpec
 	ConnectorSpec   *runtimev1.ConnectorSpec
+	AIEvalSpec      *runtimev1.AIEvalSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -90,6 +91,7 @@ const (
 	ResourceKindCanvas
 	ResourceKindAPI
 	ResourceKindConnector
+	ResourceKindAIEval
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -122,6 +124,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAPI, nil
 	case "connector":
 		return ResourceKindConnector, nil
+	case "eval", "ai_eval":
+		return ResourceKindAIEval, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}
@@ -155,6 +159,8 @@ func (k ResourceKind) String() string {
 		return "API"
 	case ResourceKindConnector:
 		return "Connector"
+	case ResourceKindAIEval:
+		return "AIEval"
 	default:
 		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
@@ -908,6 +914,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths, tags []st
 		r.APISpec = &runtimev1.APISpec{}
 	case ResourceKindConnector:
 		r.ConnectorSpec = &runtimev1.ConnectorSpec{}
+	case ResourceKindAIEval:
+		r.AIEvalSpec = &runtimev1.AIEvalSpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}

@@ -8692,6 +8692,40 @@ func (m *CreateTriggerRequest) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetAiEvals() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CreateTriggerRequestValidationError{
+						field:  fmt.Sprintf("AiEvals[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CreateTriggerRequestValidationError{
+						field:  fmt.Sprintf("AiEvals[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CreateTriggerRequestValidationError{
+					field:  fmt.Sprintf("AiEvals[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for Parser
 
 	// no validation rules for All
@@ -10870,6 +10904,8 @@ func (m *FeedbackAgentContext) validate(all bool) error {
 	// no validation rules for Sentiment
 
 	// no validation rules for Comment
+
+	// no validation rules for RequestReview
 
 	if len(errors) > 0 {
 		return FeedbackAgentContextMultiError(errors)
@@ -13174,6 +13210,1902 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetAIMessageResponseValidationError{}
+
+// Validate checks the field values on AIFeedback with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIFeedback) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIFeedback with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AIFeedbackMultiError, or
+// nil if none found.
+func (m *AIFeedback) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIFeedback) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for ConversationId
+
+	// no validation rules for TargetMessageId
+
+	// no validation rules for Kind
+
+	// no validation rules for Sentiment
+
+	// no validation rules for Comment
+
+	// no validation rules for PredictedAttribution
+
+	// no validation rules for SuggestedAction
+
+	// no validation rules for Status
+
+	// no validation rules for OwnerId
+
+	// no validation rules for OwnerEmail
+
+	// no validation rules for ResolvedBy
+
+	if all {
+		switch v := interface{}(m.GetResolvedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIFeedbackValidationError{
+					field:  "ResolvedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIFeedbackValidationError{
+					field:  "ResolvedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolvedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIFeedbackValidationError{
+				field:  "ResolvedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIFeedbackValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIFeedbackValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIFeedbackValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUpdatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AIFeedbackValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AIFeedbackValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AIFeedbackValidationError{
+				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for ConversationTitle
+
+	if len(errors) > 0 {
+		return AIFeedbackMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIFeedbackMultiError is an error wrapping multiple validation errors
+// returned by AIFeedback.ValidateAll() if the designated constraints aren't met.
+type AIFeedbackMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIFeedbackMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIFeedbackMultiError) AllErrors() []error { return m }
+
+// AIFeedbackValidationError is the validation error returned by
+// AIFeedback.Validate if the designated constraints aren't met.
+type AIFeedbackValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIFeedbackValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIFeedbackValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIFeedbackValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIFeedbackValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIFeedbackValidationError) ErrorName() string { return "AIFeedbackValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIFeedbackValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIFeedback.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIFeedbackValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIFeedbackValidationError{}
+
+// Validate checks the field values on ListAIFeedbackRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListAIFeedbackRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListAIFeedbackRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListAIFeedbackRequestMultiError, or nil if none found.
+func (m *ListAIFeedbackRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListAIFeedbackRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_ListAIFeedbackRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := ListAIFeedbackRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetStatus() != "" {
+
+		if _, ok := _ListAIFeedbackRequest_Status_InLookup[m.GetStatus()]; !ok {
+			err := ListAIFeedbackRequestValidationError{
+				field:  "Status",
+				reason: "value must be in list [open addressed dismissed]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.GetKind() != "" {
+
+		if _, ok := _ListAIFeedbackRequest_Kind_InLookup[m.GetKind()]; !ok {
+			err := ListAIFeedbackRequestValidationError{
+				field:  "Kind",
+				reason: "value must be in list [rating review_request]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 1000 {
+			err := ListAIFeedbackRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 1000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListAIFeedbackRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListAIFeedbackRequestMultiError is an error wrapping multiple validation
+// errors returned by ListAIFeedbackRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListAIFeedbackRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListAIFeedbackRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListAIFeedbackRequestMultiError) AllErrors() []error { return m }
+
+// ListAIFeedbackRequestValidationError is the validation error returned by
+// ListAIFeedbackRequest.Validate if the designated constraints aren't met.
+type ListAIFeedbackRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListAIFeedbackRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListAIFeedbackRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListAIFeedbackRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListAIFeedbackRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListAIFeedbackRequestValidationError) ErrorName() string {
+	return "ListAIFeedbackRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListAIFeedbackRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListAIFeedbackRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListAIFeedbackRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListAIFeedbackRequestValidationError{}
+
+var _ListAIFeedbackRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+var _ListAIFeedbackRequest_Status_InLookup = map[string]struct{}{
+	"open":      {},
+	"addressed": {},
+	"dismissed": {},
+}
+
+var _ListAIFeedbackRequest_Kind_InLookup = map[string]struct{}{
+	"rating":         {},
+	"review_request": {},
+}
+
+// Validate checks the field values on ListAIFeedbackResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListAIFeedbackResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListAIFeedbackResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListAIFeedbackResponseMultiError, or nil if none found.
+func (m *ListAIFeedbackResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListAIFeedbackResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetFeedback() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListAIFeedbackResponseValidationError{
+						field:  fmt.Sprintf("Feedback[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListAIFeedbackResponseValidationError{
+						field:  fmt.Sprintf("Feedback[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListAIFeedbackResponseValidationError{
+					field:  fmt.Sprintf("Feedback[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return ListAIFeedbackResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListAIFeedbackResponseMultiError is an error wrapping multiple validation
+// errors returned by ListAIFeedbackResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListAIFeedbackResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListAIFeedbackResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListAIFeedbackResponseMultiError) AllErrors() []error { return m }
+
+// ListAIFeedbackResponseValidationError is the validation error returned by
+// ListAIFeedbackResponse.Validate if the designated constraints aren't met.
+type ListAIFeedbackResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListAIFeedbackResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListAIFeedbackResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListAIFeedbackResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListAIFeedbackResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListAIFeedbackResponseValidationError) ErrorName() string {
+	return "ListAIFeedbackResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListAIFeedbackResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListAIFeedbackResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListAIFeedbackResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListAIFeedbackResponseValidationError{}
+
+// Validate checks the field values on GetAIFeedbackRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAIFeedbackRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAIFeedbackRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAIFeedbackRequestMultiError, or nil if none found.
+func (m *GetAIFeedbackRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAIFeedbackRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GetAIFeedbackRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GetAIFeedbackRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetFeedbackId()) < 1 {
+		err := GetAIFeedbackRequestValidationError{
+			field:  "FeedbackId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetAIFeedbackRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAIFeedbackRequestMultiError is an error wrapping multiple validation
+// errors returned by GetAIFeedbackRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetAIFeedbackRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAIFeedbackRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAIFeedbackRequestMultiError) AllErrors() []error { return m }
+
+// GetAIFeedbackRequestValidationError is the validation error returned by
+// GetAIFeedbackRequest.Validate if the designated constraints aren't met.
+type GetAIFeedbackRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAIFeedbackRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAIFeedbackRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAIFeedbackRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAIFeedbackRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAIFeedbackRequestValidationError) ErrorName() string {
+	return "GetAIFeedbackRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAIFeedbackRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAIFeedbackRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAIFeedbackRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAIFeedbackRequestValidationError{}
+
+var _GetAIFeedbackRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GetAIFeedbackResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAIFeedbackResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAIFeedbackResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAIFeedbackResponseMultiError, or nil if none found.
+func (m *GetAIFeedbackResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAIFeedbackResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFeedback()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetAIFeedbackResponseValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetAIFeedbackResponseValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFeedback()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetAIFeedbackResponseValidationError{
+				field:  "Feedback",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetConversation()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetAIFeedbackResponseValidationError{
+					field:  "Conversation",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetAIFeedbackResponseValidationError{
+					field:  "Conversation",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetConversation()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetAIFeedbackResponseValidationError{
+				field:  "Conversation",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetMessages() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetAIFeedbackResponseValidationError{
+						field:  fmt.Sprintf("Messages[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetAIFeedbackResponseValidationError{
+						field:  fmt.Sprintf("Messages[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetAIFeedbackResponseValidationError{
+					field:  fmt.Sprintf("Messages[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GetAIFeedbackResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAIFeedbackResponseMultiError is an error wrapping multiple validation
+// errors returned by GetAIFeedbackResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetAIFeedbackResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAIFeedbackResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAIFeedbackResponseMultiError) AllErrors() []error { return m }
+
+// GetAIFeedbackResponseValidationError is the validation error returned by
+// GetAIFeedbackResponse.Validate if the designated constraints aren't met.
+type GetAIFeedbackResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAIFeedbackResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAIFeedbackResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAIFeedbackResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAIFeedbackResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAIFeedbackResponseValidationError) ErrorName() string {
+	return "GetAIFeedbackResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAIFeedbackResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAIFeedbackResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAIFeedbackResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAIFeedbackResponseValidationError{}
+
+// Validate checks the field values on UpdateAIFeedbackStatusRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateAIFeedbackStatusRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateAIFeedbackStatusRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// UpdateAIFeedbackStatusRequestMultiError, or nil if none found.
+func (m *UpdateAIFeedbackStatusRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateAIFeedbackStatusRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_UpdateAIFeedbackStatusRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := UpdateAIFeedbackStatusRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetFeedbackId()) < 1 {
+		err := UpdateAIFeedbackStatusRequestValidationError{
+			field:  "FeedbackId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, ok := _UpdateAIFeedbackStatusRequest_Status_InLookup[m.GetStatus()]; !ok {
+		err := UpdateAIFeedbackStatusRequestValidationError{
+			field:  "Status",
+			reason: "value must be in list [open addressed dismissed]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return UpdateAIFeedbackStatusRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateAIFeedbackStatusRequestMultiError is an error wrapping multiple
+// validation errors returned by UpdateAIFeedbackStatusRequest.ValidateAll()
+// if the designated constraints aren't met.
+type UpdateAIFeedbackStatusRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateAIFeedbackStatusRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateAIFeedbackStatusRequestMultiError) AllErrors() []error { return m }
+
+// UpdateAIFeedbackStatusRequestValidationError is the validation error
+// returned by UpdateAIFeedbackStatusRequest.Validate if the designated
+// constraints aren't met.
+type UpdateAIFeedbackStatusRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateAIFeedbackStatusRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateAIFeedbackStatusRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateAIFeedbackStatusRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateAIFeedbackStatusRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateAIFeedbackStatusRequestValidationError) ErrorName() string {
+	return "UpdateAIFeedbackStatusRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateAIFeedbackStatusRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateAIFeedbackStatusRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateAIFeedbackStatusRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateAIFeedbackStatusRequestValidationError{}
+
+var _UpdateAIFeedbackStatusRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+var _UpdateAIFeedbackStatusRequest_Status_InLookup = map[string]struct{}{
+	"open":      {},
+	"addressed": {},
+	"dismissed": {},
+}
+
+// Validate checks the field values on UpdateAIFeedbackStatusResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateAIFeedbackStatusResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateAIFeedbackStatusResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// UpdateAIFeedbackStatusResponseMultiError, or nil if none found.
+func (m *UpdateAIFeedbackStatusResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateAIFeedbackStatusResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFeedback()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdateAIFeedbackStatusResponseValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdateAIFeedbackStatusResponseValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFeedback()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateAIFeedbackStatusResponseValidationError{
+				field:  "Feedback",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UpdateAIFeedbackStatusResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateAIFeedbackStatusResponseMultiError is an error wrapping multiple
+// validation errors returned by UpdateAIFeedbackStatusResponse.ValidateAll()
+// if the designated constraints aren't met.
+type UpdateAIFeedbackStatusResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateAIFeedbackStatusResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateAIFeedbackStatusResponseMultiError) AllErrors() []error { return m }
+
+// UpdateAIFeedbackStatusResponseValidationError is the validation error
+// returned by UpdateAIFeedbackStatusResponse.Validate if the designated
+// constraints aren't met.
+type UpdateAIFeedbackStatusResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateAIFeedbackStatusResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateAIFeedbackStatusResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateAIFeedbackStatusResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateAIFeedbackStatusResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateAIFeedbackStatusResponseValidationError) ErrorName() string {
+	return "UpdateAIFeedbackStatusResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateAIFeedbackStatusResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateAIFeedbackStatusResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateAIFeedbackStatusResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateAIFeedbackStatusResponseValidationError{}
+
+// Validate checks the field values on AIFeedbackFixTranscriptMessage with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AIFeedbackFixTranscriptMessage) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIFeedbackFixTranscriptMessage with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// AIFeedbackFixTranscriptMessageMultiError, or nil if none found.
+func (m *AIFeedbackFixTranscriptMessage) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIFeedbackFixTranscriptMessage) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Role
+
+	// no validation rules for Text
+
+	if len(errors) > 0 {
+		return AIFeedbackFixTranscriptMessageMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIFeedbackFixTranscriptMessageMultiError is an error wrapping multiple
+// validation errors returned by AIFeedbackFixTranscriptMessage.ValidateAll()
+// if the designated constraints aren't met.
+type AIFeedbackFixTranscriptMessageMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIFeedbackFixTranscriptMessageMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIFeedbackFixTranscriptMessageMultiError) AllErrors() []error { return m }
+
+// AIFeedbackFixTranscriptMessageValidationError is the validation error
+// returned by AIFeedbackFixTranscriptMessage.Validate if the designated
+// constraints aren't met.
+type AIFeedbackFixTranscriptMessageValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIFeedbackFixTranscriptMessageValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIFeedbackFixTranscriptMessageValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIFeedbackFixTranscriptMessageValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIFeedbackFixTranscriptMessageValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIFeedbackFixTranscriptMessageValidationError) ErrorName() string {
+	return "AIFeedbackFixTranscriptMessageValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AIFeedbackFixTranscriptMessageValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIFeedbackFixTranscriptMessage.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIFeedbackFixTranscriptMessageValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIFeedbackFixTranscriptMessageValidationError{}
+
+// Validate checks the field values on GenerateAIFeedbackFixRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateAIFeedbackFixRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateAIFeedbackFixRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateAIFeedbackFixRequestMultiError, or nil if none found.
+func (m *GenerateAIFeedbackFixRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateAIFeedbackFixRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateAIFeedbackFixRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateAIFeedbackFixRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if all {
+		switch v := interface{}(m.GetFeedback()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GenerateAIFeedbackFixRequestValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GenerateAIFeedbackFixRequestValidationError{
+					field:  "Feedback",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFeedback()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GenerateAIFeedbackFixRequestValidationError{
+				field:  "Feedback",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetTranscript() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GenerateAIFeedbackFixRequestValidationError{
+						field:  fmt.Sprintf("Transcript[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GenerateAIFeedbackFixRequestValidationError{
+						field:  fmt.Sprintf("Transcript[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GenerateAIFeedbackFixRequestValidationError{
+					field:  fmt.Sprintf("Transcript[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GenerateAIFeedbackFixRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateAIFeedbackFixRequestMultiError is an error wrapping multiple
+// validation errors returned by GenerateAIFeedbackFixRequest.ValidateAll() if
+// the designated constraints aren't met.
+type GenerateAIFeedbackFixRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateAIFeedbackFixRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateAIFeedbackFixRequestMultiError) AllErrors() []error { return m }
+
+// GenerateAIFeedbackFixRequestValidationError is the validation error returned
+// by GenerateAIFeedbackFixRequest.Validate if the designated constraints
+// aren't met.
+type GenerateAIFeedbackFixRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateAIFeedbackFixRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateAIFeedbackFixRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateAIFeedbackFixRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateAIFeedbackFixRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateAIFeedbackFixRequestValidationError) ErrorName() string {
+	return "GenerateAIFeedbackFixRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateAIFeedbackFixRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateAIFeedbackFixRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateAIFeedbackFixRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateAIFeedbackFixRequestValidationError{}
+
+var _GenerateAIFeedbackFixRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GenerateAIFeedbackFixResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateAIFeedbackFixResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateAIFeedbackFixResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GenerateAIFeedbackFixResponseMultiError, or nil if none found.
+func (m *GenerateAIFeedbackFixResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateAIFeedbackFixResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Action
+
+	// no validation rules for Summary
+
+	// no validation rules for MetricsView
+
+	// no validation rules for FilePath
+
+	// no validation rules for Instruction
+
+	// no validation rules for MeasureYaml
+
+	// no validation rules for EvalQuestion
+
+	// no validation rules for EvalExpectedAnswer
+
+	if len(errors) > 0 {
+		return GenerateAIFeedbackFixResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateAIFeedbackFixResponseMultiError is an error wrapping multiple
+// validation errors returned by GenerateAIFeedbackFixResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GenerateAIFeedbackFixResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateAIFeedbackFixResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateAIFeedbackFixResponseMultiError) AllErrors() []error { return m }
+
+// GenerateAIFeedbackFixResponseValidationError is the validation error
+// returned by GenerateAIFeedbackFixResponse.Validate if the designated
+// constraints aren't met.
+type GenerateAIFeedbackFixResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateAIFeedbackFixResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateAIFeedbackFixResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateAIFeedbackFixResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateAIFeedbackFixResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateAIFeedbackFixResponseValidationError) ErrorName() string {
+	return "GenerateAIFeedbackFixResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateAIFeedbackFixResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateAIFeedbackFixResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateAIFeedbackFixResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateAIFeedbackFixResponseValidationError{}
+
+// Validate checks the field values on GenerateAIEvalFixRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateAIEvalFixRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateAIEvalFixRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateAIEvalFixRequestMultiError, or nil if none found.
+func (m *GenerateAIEvalFixRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateAIEvalFixRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateAIEvalFixRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateAIEvalFixRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetEval()) < 1 {
+		err := GenerateAIEvalFixRequestValidationError{
+			field:  "Eval",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GenerateAIEvalFixRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateAIEvalFixRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateAIEvalFixRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateAIEvalFixRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateAIEvalFixRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateAIEvalFixRequestMultiError) AllErrors() []error { return m }
+
+// GenerateAIEvalFixRequestValidationError is the validation error returned by
+// GenerateAIEvalFixRequest.Validate if the designated constraints aren't met.
+type GenerateAIEvalFixRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateAIEvalFixRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateAIEvalFixRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateAIEvalFixRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateAIEvalFixRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateAIEvalFixRequestValidationError) ErrorName() string {
+	return "GenerateAIEvalFixRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateAIEvalFixRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateAIEvalFixRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateAIEvalFixRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateAIEvalFixRequestValidationError{}
+
+var _GenerateAIEvalFixRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on AIEvalFixProposal with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AIEvalFixProposal) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIEvalFixProposal with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AIEvalFixProposalMultiError, or nil if none found.
+func (m *AIEvalFixProposal) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIEvalFixProposal) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for FilePath
+
+	// no validation rules for Reason
+
+	// no validation rules for Instruction
+
+	if len(errors) > 0 {
+		return AIEvalFixProposalMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIEvalFixProposalMultiError is an error wrapping multiple validation errors
+// returned by AIEvalFixProposal.ValidateAll() if the designated constraints
+// aren't met.
+type AIEvalFixProposalMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIEvalFixProposalMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIEvalFixProposalMultiError) AllErrors() []error { return m }
+
+// AIEvalFixProposalValidationError is the validation error returned by
+// AIEvalFixProposal.Validate if the designated constraints aren't met.
+type AIEvalFixProposalValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIEvalFixProposalValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIEvalFixProposalValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIEvalFixProposalValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIEvalFixProposalValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIEvalFixProposalValidationError) ErrorName() string {
+	return "AIEvalFixProposalValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AIEvalFixProposalValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIEvalFixProposal.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIEvalFixProposalValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIEvalFixProposalValidationError{}
+
+// Validate checks the field values on GenerateAIEvalFixResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateAIEvalFixResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateAIEvalFixResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateAIEvalFixResponseMultiError, or nil if none found.
+func (m *GenerateAIEvalFixResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateAIEvalFixResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Analysis
+
+	for idx, item := range m.GetProposals() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GenerateAIEvalFixResponseValidationError{
+						field:  fmt.Sprintf("Proposals[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GenerateAIEvalFixResponseValidationError{
+						field:  fmt.Sprintf("Proposals[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GenerateAIEvalFixResponseValidationError{
+					field:  fmt.Sprintf("Proposals[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GenerateAIEvalFixResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateAIEvalFixResponseMultiError is an error wrapping multiple validation
+// errors returned by GenerateAIEvalFixResponse.ValidateAll() if the
+// designated constraints aren't met.
+type GenerateAIEvalFixResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateAIEvalFixResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateAIEvalFixResponseMultiError) AllErrors() []error { return m }
+
+// GenerateAIEvalFixResponseValidationError is the validation error returned by
+// GenerateAIEvalFixResponse.Validate if the designated constraints aren't met.
+type GenerateAIEvalFixResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateAIEvalFixResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateAIEvalFixResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateAIEvalFixResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateAIEvalFixResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateAIEvalFixResponseValidationError) ErrorName() string {
+	return "GenerateAIEvalFixResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateAIEvalFixResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateAIEvalFixResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateAIEvalFixResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateAIEvalFixResponseValidationError{}
 
 // Validate checks the field values on IssueDevJWTRequest with the rules
 // defined in the proto definition for this message. If any rules are

@@ -6,7 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
-import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
+import { AIEvalTrigger, RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { ContentBlock, Tool } from "../../ai/v1/ai_pb.js";
 import { Expression } from "./expression_pb.js";
 
@@ -3512,6 +3512,13 @@ export class CreateTriggerRequest extends Message$1<CreateTriggerRequest> {
   models: RefreshModelTrigger[] = [];
 
   /**
+   * AI evals to run. Unlike resources, this supports running a subset of cases and cancellation.
+   *
+   * @generated from field: repeated rill.runtime.v1.AIEvalTrigger ai_evals = 9;
+   */
+  aiEvals: AIEvalTrigger[] = [];
+
+  /**
    * Parser is a convenience flag to trigger the global project parser.
    * Triggering the project parser ensures a pull of the repository and a full parse of all files.
    *
@@ -3547,6 +3554,7 @@ export class CreateTriggerRequest extends Message$1<CreateTriggerRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 5, name: "models", kind: "message", T: RefreshModelTrigger, repeated: true },
+    { no: 9, name: "ai_evals", kind: "message", T: AIEvalTrigger, repeated: true },
     { no: 6, name: "parser", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "all", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "all_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -4612,6 +4620,7 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
 export class FeedbackAgentContext extends Message$1<FeedbackAgentContext> {
   /**
    * The ID of the message being rated.
+   * Optional: if empty, the feedback applies to the conversation as a whole.
    *
    * @generated from field: string target_message_id = 1;
    */
@@ -4638,6 +4647,13 @@ export class FeedbackAgentContext extends Message$1<FeedbackAgentContext> {
    */
   comment = "";
 
+  /**
+   * If true, flags the feedback for review by project admins.
+   *
+   * @generated from field: bool request_review = 5;
+   */
+  requestReview = false;
+
   constructor(data?: PartialMessage<FeedbackAgentContext>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4650,6 +4666,7 @@ export class FeedbackAgentContext extends Message$1<FeedbackAgentContext> {
     { no: 2, name: "sentiment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "categories", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "comment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "request_review", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FeedbackAgentContext {
@@ -5474,6 +5491,823 @@ export class GetAIMessageResponse extends Message$1<GetAIMessageResponse> {
 
   static equals(a: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined, b: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined): boolean {
     return proto3.util.equals(GetAIMessageResponse, a, b);
+  }
+}
+
+/**
+ * AIFeedback is a user feedback item on an AI conversation: a rating or a review request.
+ *
+ * @generated from message rill.runtime.v1.AIFeedback
+ */
+export class AIFeedback extends Message$1<AIFeedback> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * ID of the conversation the feedback belongs to.
+   *
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * ID of the rated message. Empty for conversation-level feedback.
+   *
+   * @generated from field: string target_message_id = 3;
+   */
+  targetMessageId = "";
+
+  /**
+   * Kind of feedback: "rating" or "review_request".
+   *
+   * @generated from field: string kind = 4;
+   */
+  kind = "";
+
+  /**
+   * Sentiment: "positive" or "negative".
+   *
+   * @generated from field: string sentiment = 5;
+   */
+  sentiment = "";
+
+  /**
+   * Categories selected by the user.
+   *
+   * @generated from field: repeated string categories = 6;
+   */
+  categories: string[] = [];
+
+  /**
+   * Free-text comment from the user.
+   *
+   * @generated from field: string comment = 7;
+   */
+  comment = "";
+
+  /**
+   * AI-predicted attribution of the issue: "rill", "project", "user", or empty.
+   *
+   * @generated from field: string predicted_attribution = 8;
+   */
+  predictedAttribution = "";
+
+  /**
+   * AI-suggested action derived from the attribution.
+   *
+   * @generated from field: string suggested_action = 9;
+   */
+  suggestedAction = "";
+
+  /**
+   * Review status: "open", "addressed" or "dismissed".
+   *
+   * @generated from field: string status = 10;
+   */
+  status = "";
+
+  /**
+   * ID of the user who submitted the feedback.
+   *
+   * @generated from field: string owner_id = 11;
+   */
+  ownerId = "";
+
+  /**
+   * Email of the user who submitted the feedback (captured from claims at submit time).
+   *
+   * @generated from field: string owner_email = 12;
+   */
+  ownerEmail = "";
+
+  /**
+   * ID of the user who last changed the status to a terminal state.
+   *
+   * @generated from field: string resolved_by = 13;
+   */
+  resolvedBy = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp resolved_on = 14;
+   */
+  resolvedOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 15;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 16;
+   */
+  updatedOn?: Timestamp;
+
+  /**
+   * Title of the conversation (joined for list convenience).
+   *
+   * @generated from field: string conversation_title = 17;
+   */
+  conversationTitle = "";
+
+  constructor(data?: PartialMessage<AIFeedback>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIFeedback";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "target_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "sentiment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "categories", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "comment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "predicted_attribution", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "suggested_action", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "owner_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "resolved_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "resolved_on", kind: "message", T: Timestamp },
+    { no: 15, name: "created_on", kind: "message", T: Timestamp },
+    { no: 16, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 17, name: "conversation_title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIFeedback {
+    return new AIFeedback().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIFeedback {
+    return new AIFeedback().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIFeedback {
+    return new AIFeedback().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIFeedback | PlainMessage<AIFeedback> | undefined, b: AIFeedback | PlainMessage<AIFeedback> | undefined): boolean {
+    return proto3.util.equals(AIFeedback, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ListAIFeedback
+ *
+ * @generated from message rill.runtime.v1.ListAIFeedbackRequest
+ */
+export class ListAIFeedbackRequest extends Message$1<ListAIFeedbackRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Optional status filter: "open", "addressed" or "dismissed".
+   *
+   * @generated from field: string status = 2;
+   */
+  status = "";
+
+  /**
+   * Optional kind filter: "rating" or "review_request".
+   *
+   * @generated from field: string kind = 3;
+   */
+  kind = "";
+
+  /**
+   * @generated from field: uint32 page_size = 4;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 5;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListAIFeedbackRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListAIFeedbackRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListAIFeedbackRequest {
+    return new ListAIFeedbackRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListAIFeedbackRequest {
+    return new ListAIFeedbackRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListAIFeedbackRequest {
+    return new ListAIFeedbackRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListAIFeedbackRequest | PlainMessage<ListAIFeedbackRequest> | undefined, b: ListAIFeedbackRequest | PlainMessage<ListAIFeedbackRequest> | undefined): boolean {
+    return proto3.util.equals(ListAIFeedbackRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ListAIFeedback
+ *
+ * @generated from message rill.runtime.v1.ListAIFeedbackResponse
+ */
+export class ListAIFeedbackResponse extends Message$1<ListAIFeedbackResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.AIFeedback feedback = 1;
+   */
+  feedback: AIFeedback[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListAIFeedbackResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListAIFeedbackResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "feedback", kind: "message", T: AIFeedback, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListAIFeedbackResponse {
+    return new ListAIFeedbackResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListAIFeedbackResponse {
+    return new ListAIFeedbackResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListAIFeedbackResponse {
+    return new ListAIFeedbackResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListAIFeedbackResponse | PlainMessage<ListAIFeedbackResponse> | undefined, b: ListAIFeedbackResponse | PlainMessage<ListAIFeedbackResponse> | undefined): boolean {
+    return proto3.util.equals(ListAIFeedbackResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GetAIFeedback
+ *
+ * @generated from message rill.runtime.v1.GetAIFeedbackRequest
+ */
+export class GetAIFeedbackRequest extends Message$1<GetAIFeedbackRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string feedback_id = 2;
+   */
+  feedbackId = "";
+
+  constructor(data?: PartialMessage<GetAIFeedbackRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIFeedbackRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "feedback_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIFeedbackRequest {
+    return new GetAIFeedbackRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIFeedbackRequest {
+    return new GetAIFeedbackRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIFeedbackRequest {
+    return new GetAIFeedbackRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIFeedbackRequest | PlainMessage<GetAIFeedbackRequest> | undefined, b: GetAIFeedbackRequest | PlainMessage<GetAIFeedbackRequest> | undefined): boolean {
+    return proto3.util.equals(GetAIFeedbackRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GetAIFeedback
+ *
+ * @generated from message rill.runtime.v1.GetAIFeedbackResponse
+ */
+export class GetAIFeedbackResponse extends Message$1<GetAIFeedbackResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.AIFeedback feedback = 1;
+   */
+  feedback?: AIFeedback;
+
+  /**
+   * The conversation the feedback belongs to. Null if the conversation has been deleted.
+   *
+   * @generated from field: rill.runtime.v1.Conversation conversation = 2;
+   */
+  conversation?: Conversation;
+
+  /**
+   * Full transcript of the conversation. Empty if the conversation has been deleted.
+   *
+   * @generated from field: repeated rill.runtime.v1.Message messages = 3;
+   */
+  messages: Message[] = [];
+
+  constructor(data?: PartialMessage<GetAIFeedbackResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIFeedbackResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "feedback", kind: "message", T: AIFeedback },
+    { no: 2, name: "conversation", kind: "message", T: Conversation },
+    { no: 3, name: "messages", kind: "message", T: Message, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIFeedbackResponse {
+    return new GetAIFeedbackResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIFeedbackResponse {
+    return new GetAIFeedbackResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIFeedbackResponse {
+    return new GetAIFeedbackResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIFeedbackResponse | PlainMessage<GetAIFeedbackResponse> | undefined, b: GetAIFeedbackResponse | PlainMessage<GetAIFeedbackResponse> | undefined): boolean {
+    return proto3.util.equals(GetAIFeedbackResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.UpdateAIFeedbackStatus
+ *
+ * @generated from message rill.runtime.v1.UpdateAIFeedbackStatusRequest
+ */
+export class UpdateAIFeedbackStatusRequest extends Message$1<UpdateAIFeedbackStatusRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string feedback_id = 2;
+   */
+  feedbackId = "";
+
+  /**
+   * New status: "open", "addressed" or "dismissed".
+   *
+   * @generated from field: string status = 3;
+   */
+  status = "";
+
+  constructor(data?: PartialMessage<UpdateAIFeedbackStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UpdateAIFeedbackStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "feedback_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAIFeedbackStatusRequest {
+    return new UpdateAIFeedbackStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateAIFeedbackStatusRequest {
+    return new UpdateAIFeedbackStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateAIFeedbackStatusRequest {
+    return new UpdateAIFeedbackStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateAIFeedbackStatusRequest | PlainMessage<UpdateAIFeedbackStatusRequest> | undefined, b: UpdateAIFeedbackStatusRequest | PlainMessage<UpdateAIFeedbackStatusRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateAIFeedbackStatusRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.UpdateAIFeedbackStatus
+ *
+ * @generated from message rill.runtime.v1.UpdateAIFeedbackStatusResponse
+ */
+export class UpdateAIFeedbackStatusResponse extends Message$1<UpdateAIFeedbackStatusResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.AIFeedback feedback = 1;
+   */
+  feedback?: AIFeedback;
+
+  constructor(data?: PartialMessage<UpdateAIFeedbackStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UpdateAIFeedbackStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "feedback", kind: "message", T: AIFeedback },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAIFeedbackStatusResponse {
+    return new UpdateAIFeedbackStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateAIFeedbackStatusResponse {
+    return new UpdateAIFeedbackStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateAIFeedbackStatusResponse {
+    return new UpdateAIFeedbackStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateAIFeedbackStatusResponse | PlainMessage<UpdateAIFeedbackStatusResponse> | undefined, b: UpdateAIFeedbackStatusResponse | PlainMessage<UpdateAIFeedbackStatusResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateAIFeedbackStatusResponse, a, b);
+  }
+}
+
+/**
+ * One turn of a conversation transcript passed to GenerateAIFeedbackFix.
+ *
+ * @generated from message rill.runtime.v1.AIFeedbackFixTranscriptMessage
+ */
+export class AIFeedbackFixTranscriptMessage extends Message$1<AIFeedbackFixTranscriptMessage> {
+  /**
+   * @generated from field: string role = 1;
+   */
+  role = "";
+
+  /**
+   * @generated from field: string text = 2;
+   */
+  text = "";
+
+  constructor(data?: PartialMessage<AIFeedbackFixTranscriptMessage>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIFeedbackFixTranscriptMessage";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIFeedbackFixTranscriptMessage {
+    return new AIFeedbackFixTranscriptMessage().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIFeedbackFixTranscriptMessage {
+    return new AIFeedbackFixTranscriptMessage().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIFeedbackFixTranscriptMessage {
+    return new AIFeedbackFixTranscriptMessage().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIFeedbackFixTranscriptMessage | PlainMessage<AIFeedbackFixTranscriptMessage> | undefined, b: AIFeedbackFixTranscriptMessage | PlainMessage<AIFeedbackFixTranscriptMessage> | undefined): boolean {
+    return proto3.util.equals(AIFeedbackFixTranscriptMessage, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GenerateAIFeedbackFix
+ *
+ * @generated from message rill.runtime.v1.GenerateAIFeedbackFixRequest
+ */
+export class GenerateAIFeedbackFixRequest extends Message$1<GenerateAIFeedbackFixRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * The feedback item to fix, passed through since it may live in another deployment's store.
+   *
+   * @generated from field: rill.runtime.v1.AIFeedback feedback = 2;
+   */
+  feedback?: AIFeedback;
+
+  /**
+   * Flattened transcript of the conversation the feedback refers to.
+   *
+   * @generated from field: repeated rill.runtime.v1.AIFeedbackFixTranscriptMessage transcript = 3;
+   */
+  transcript: AIFeedbackFixTranscriptMessage[] = [];
+
+  constructor(data?: PartialMessage<GenerateAIFeedbackFixRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateAIFeedbackFixRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "feedback", kind: "message", T: AIFeedback },
+    { no: 3, name: "transcript", kind: "message", T: AIFeedbackFixTranscriptMessage, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateAIFeedbackFixRequest {
+    return new GenerateAIFeedbackFixRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateAIFeedbackFixRequest {
+    return new GenerateAIFeedbackFixRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateAIFeedbackFixRequest {
+    return new GenerateAIFeedbackFixRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateAIFeedbackFixRequest | PlainMessage<GenerateAIFeedbackFixRequest> | undefined, b: GenerateAIFeedbackFixRequest | PlainMessage<GenerateAIFeedbackFixRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateAIFeedbackFixRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GenerateAIFeedbackFix
+ *
+ * @generated from message rill.runtime.v1.GenerateAIFeedbackFixResponse
+ */
+export class GenerateAIFeedbackFixResponse extends Message$1<GenerateAIFeedbackFixResponse> {
+  /**
+   * Proposed action: "add_project_instruction", "add_metrics_view_instruction", "add_measure" or "none".
+   *
+   * @generated from field: string action = 1;
+   */
+  action = "";
+
+  /**
+   * Explanation of the proposal, shown to the admin.
+   *
+   * @generated from field: string summary = 2;
+   */
+  summary = "";
+
+  /**
+   * Metrics view name, set for metrics-view-scoped actions.
+   *
+   * @generated from field: string metrics_view = 3;
+   */
+  metricsView = "";
+
+  /**
+   * File the proposal edits, set for all actions except "none".
+   *
+   * @generated from field: string file_path = 4;
+   */
+  filePath = "";
+
+  /**
+   * The proposed ai_instructions rule, set for instruction actions. The admin can tune it before applying.
+   *
+   * @generated from field: string instruction = 5;
+   */
+  instruction = "";
+
+  /**
+   * The proposed measure definition as a YAML mapping, set for the add_measure action.
+   *
+   * @generated from field: string measure_yaml = 8;
+   */
+  measureYaml = "";
+
+  /**
+   * Draft eval case capturing the exchange, proposed alongside every fix.
+   *
+   * @generated from field: string eval_question = 6;
+   */
+  evalQuestion = "";
+
+  /**
+   * @generated from field: string eval_expected_answer = 7;
+   */
+  evalExpectedAnswer = "";
+
+  constructor(data?: PartialMessage<GenerateAIFeedbackFixResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateAIFeedbackFixResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "action", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "instruction", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "measure_yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "eval_question", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "eval_expected_answer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateAIFeedbackFixResponse {
+    return new GenerateAIFeedbackFixResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateAIFeedbackFixResponse {
+    return new GenerateAIFeedbackFixResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateAIFeedbackFixResponse {
+    return new GenerateAIFeedbackFixResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateAIFeedbackFixResponse | PlainMessage<GenerateAIFeedbackFixResponse> | undefined, b: GenerateAIFeedbackFixResponse | PlainMessage<GenerateAIFeedbackFixResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateAIFeedbackFixResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GenerateAIEvalFix
+ *
+ * @generated from message rill.runtime.v1.GenerateAIEvalFixRequest
+ */
+export class GenerateAIEvalFixRequest extends Message$1<GenerateAIEvalFixRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Name of the AI eval resource.
+   *
+   * @generated from field: string eval = 2;
+   */
+  eval = "";
+
+  /**
+   * Optional failing case names to fix. Empty fixes all failing cases in the latest run.
+   *
+   * @generated from field: repeated string cases = 3;
+   */
+  cases: string[] = [];
+
+  constructor(data?: PartialMessage<GenerateAIEvalFixRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateAIEvalFixRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "eval", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "cases", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateAIEvalFixRequest {
+    return new GenerateAIEvalFixRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateAIEvalFixRequest {
+    return new GenerateAIEvalFixRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateAIEvalFixRequest {
+    return new GenerateAIEvalFixRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateAIEvalFixRequest | PlainMessage<GenerateAIEvalFixRequest> | undefined, b: GenerateAIEvalFixRequest | PlainMessage<GenerateAIEvalFixRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateAIEvalFixRequest, a, b);
+  }
+}
+
+/**
+ * One appliable ai_instructions addition proposed by GenerateAIEvalFix.
+ *
+ * @generated from message rill.runtime.v1.AIEvalFixProposal
+ */
+export class AIEvalFixProposal extends Message$1<AIEvalFixProposal> {
+  /**
+   * File whose ai_instructions the rule should be appended to.
+   *
+   * @generated from field: string file_path = 1;
+   */
+  filePath = "";
+
+  /**
+   * Why this rule fixes the failing case(s) without breaking the passing ones.
+   *
+   * @generated from field: string reason = 2;
+   */
+  reason = "";
+
+  /**
+   * The proposed ai_instructions rule. The admin can tune it before applying.
+   *
+   * @generated from field: string instruction = 3;
+   */
+  instruction = "";
+
+  constructor(data?: PartialMessage<AIEvalFixProposal>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIEvalFixProposal";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "reason", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "instruction", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIEvalFixProposal {
+    return new AIEvalFixProposal().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIEvalFixProposal {
+    return new AIEvalFixProposal().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIEvalFixProposal {
+    return new AIEvalFixProposal().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIEvalFixProposal | PlainMessage<AIEvalFixProposal> | undefined, b: AIEvalFixProposal | PlainMessage<AIEvalFixProposal> | undefined): boolean {
+    return proto3.util.equals(AIEvalFixProposal, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GenerateAIEvalFix
+ *
+ * @generated from message rill.runtime.v1.GenerateAIEvalFixResponse
+ */
+export class GenerateAIEvalFixResponse extends Message$1<GenerateAIEvalFixResponse> {
+  /**
+   * @generated from field: string analysis = 1;
+   */
+  analysis = "";
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.AIEvalFixProposal proposals = 2;
+   */
+  proposals: AIEvalFixProposal[] = [];
+
+  constructor(data?: PartialMessage<GenerateAIEvalFixResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateAIEvalFixResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "analysis", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "proposals", kind: "message", T: AIEvalFixProposal, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateAIEvalFixResponse {
+    return new GenerateAIEvalFixResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateAIEvalFixResponse {
+    return new GenerateAIEvalFixResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateAIEvalFixResponse {
+    return new GenerateAIEvalFixResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateAIEvalFixResponse | PlainMessage<GenerateAIEvalFixResponse> | undefined, b: GenerateAIEvalFixResponse | PlainMessage<GenerateAIEvalFixResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateAIEvalFixResponse, a, b);
   }
 }
 

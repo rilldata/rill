@@ -9,6 +9,7 @@ import {
   getRuntimeServiceGetConversationQueryOptions,
   getRuntimeServiceListConversationsQueryKey,
   getRuntimeServiceListConversationsQueryOptions,
+  type V1Conversation,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "./types";
@@ -77,6 +78,17 @@ export function invalidateConversationsList(instanceId: string) {
   return queryClient.invalidateQueries({ queryKey: listConversationsKey });
 }
 
+// User agents of internally created sessions that should not appear in users' chat conversation lists.
+const internalConversationUserAgents = new Set(["rill/report", "rill/eval"]);
+
+/**
+ * Whether a conversation was started by a user chatting (as opposed to an internal
+ * process like a report or an eval run) and should appear in conversation lists.
+ */
+export function isUserChatConversation(conversation: V1Conversation): boolean {
+  return !internalConversationUserAgents.has(conversation.userAgent ?? "");
+}
+
 /**
  * Returns the last updated conversation ID.
  */
@@ -90,7 +102,7 @@ export function getLatestConversationQueryOptions(client: RuntimeClient) {
     createQuery(listConversationsQueryOptions, queryClient),
     (conversationsResp) => {
       const conversations = conversationsResp?.data?.conversations?.filter(
-        (c) => c.userAgent !== "rill/report",
+        isUserChatConversation,
       );
       return conversations?.[0]?.id;
     },

@@ -16,15 +16,29 @@
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
   import ErrorMessage from "@rilldata/web-common/features/chat/core/messages/error/ErrorMessage.svelte";
+  import AddToEvalDialog from "@rilldata/web-common/features/ai-evals/draft/AddToEvalDialog.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { editorRoutePrefix } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
   export let config: ChatConfig;
 
+  const { aiEvals, readOnly } = featureFlags;
+
   // Feedback modal state (UI concern - stays here)
   let feedbackModalOpen = false;
   let pendingFeedbackMessageId: string | null = null;
+
+  // Add-to-eval dialog state
+  let addToEvalOpen = false;
+  let addToEvalMessageId: string | null = null;
+
+  // Adding eval cases writes project files, so it's only available in editable surfaces:
+  // web-local outside readonly mode, and cloud edit sessions (which set the global
+  // readOnly flag but mount an editable workspace, indicated by the editor route prefix).
+  $: canAddToEval = $aiEvals && (!$readOnly || $editorRoutePrefix !== "");
 
   const runtimeClient = useRuntimeClient();
 
@@ -96,6 +110,17 @@
     pendingFeedbackMessageId = null;
   }
 
+  // Add-to-eval handlers
+  function handleAddToEval(messageId: string) {
+    addToEvalMessageId = messageId;
+    addToEvalOpen = true;
+  }
+
+  function handleAddToEvalClose() {
+    addToEvalOpen = false;
+    addToEvalMessageId = null;
+  }
+
   function isNearBottom(element: Element, threshold = 100): boolean {
     const { scrollTop, scrollHeight, clientHeight } = element;
     return scrollHeight - scrollTop - clientHeight <= threshold;
@@ -138,6 +163,7 @@
             {block}
             conversation={currentConversation}
             onDownvote={handleDownvote}
+            onAddToEval={canAddToEval ? handleAddToEval : undefined}
           />
         {/if}
       {:else if block.type === "thinking"}
@@ -165,6 +191,15 @@
   agent={config.agent}
   onClose={handleFeedbackModalClose}
 />
+
+{#if canAddToEval}
+  <AddToEvalDialog
+    open={addToEvalOpen}
+    messages={$getConversationQuery.data?.messages ?? []}
+    targetMessageId={addToEvalMessageId}
+    onClose={handleAddToEvalClose}
+  />
+{/if}
 
 <style lang="postcss">
   .chat-messages {

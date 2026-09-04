@@ -57,7 +57,7 @@
   const createFile = createRuntimeServicePutFileMutation(runtimeClient);
   const createFolder =
     createRuntimeServiceCreateDirectoryMutation(runtimeClient);
-  const { developerChat } = featureFlags;
+  const { developerChat, aiEvals } = featureFlags;
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
@@ -296,6 +296,20 @@
           />
           Theme
         </DropdownMenu.Item>
+        {#if $aiEvals}
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            class="flex gap-x-2"
+            onclick={() =>
+              createResourceAndNavigate(runtimeClient, ResourceKind.AIEval)}
+          >
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.AIEval]}
+              size="16px"
+            />
+            AI Eval
+          </DropdownMenu.Item>
+        {/if}
         <!-- Temporarily hide Report and Alert options -->
         <!-- <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
             <svelte:component

@@ -8,6 +8,7 @@
   import { type V1Conversation } from "../../../../runtime-client";
   import ConnectClientPopover from "../../connect/ConnectClientPopover.svelte";
   import type { ConversationManager } from "../../core/conversation-manager";
+  import { isUserChatConversation } from "../../core/utils";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
 
@@ -26,7 +27,7 @@
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
   $: conversations = ($listConversationsQuery.data?.conversations ?? []).filter(
-    (c) => c.userAgent !== "rill/report",
+    isUserChatConversation,
   );
 
   function handleNewConversation() {

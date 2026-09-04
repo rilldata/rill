@@ -61,6 +61,11 @@ const (
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_GetAIMessage_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetAIMessage"
+	RuntimeService_ListAIFeedback_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListAIFeedback"
+	RuntimeService_GetAIFeedback_FullMethodName           = "/rill.runtime.v1.RuntimeService/GetAIFeedback"
+	RuntimeService_UpdateAIFeedbackStatus_FullMethodName  = "/rill.runtime.v1.RuntimeService/UpdateAIFeedbackStatus"
+	RuntimeService_GenerateAIFeedbackFix_FullMethodName   = "/rill.runtime.v1.RuntimeService/GenerateAIFeedbackFix"
+	RuntimeService_GenerateAIEvalFix_FullMethodName       = "/rill.runtime.v1.RuntimeService/GenerateAIEvalFix"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
@@ -176,6 +181,23 @@ type RuntimeServiceClient interface {
 	CompleteStreaming(ctx context.Context, in *CompleteStreamingRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamingResponse], error)
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error)
+	// ListAIFeedback lists AI feedback items (ratings and review requests) for an instance.
+	// Requires the ManageAIFeedback permission.
+	ListAIFeedback(ctx context.Context, in *ListAIFeedbackRequest, opts ...grpc.CallOption) (*ListAIFeedbackResponse, error)
+	// GetAIFeedback returns a feedback item along with the full transcript of the conversation it belongs to.
+	// Requires the ManageAIFeedback permission, which grants read access to the referenced conversation
+	// regardless of its owner.
+	GetAIFeedback(ctx context.Context, in *GetAIFeedbackRequest, opts ...grpc.CallOption) (*GetAIFeedbackResponse, error)
+	// UpdateAIFeedbackStatus updates the review status of a feedback item.
+	// Requires the ManageAIFeedback permission.
+	UpdateAIFeedbackStatus(ctx context.Context, in *UpdateAIFeedbackStatusRequest, opts ...grpc.CallOption) (*UpdateAIFeedbackStatusResponse, error)
+	// GenerateAIFeedbackFix generates a proposed project change addressing a feedback item.
+	// The feedback item and transcript are passed in because they may live in another deployment's store.
+	// Requires repo edit access; intended for Rill Developer.
+	GenerateAIFeedbackFix(ctx context.Context, in *GenerateAIFeedbackFixRequest, opts ...grpc.CallOption) (*GenerateAIFeedbackFixResponse, error)
+	// GenerateAIEvalFix proposes ai_instructions changes that fix the latest run's failing eval cases
+	// without breaking the passing ones. Requires repo edit access; intended for Rill Developer.
+	GenerateAIEvalFix(ctx context.Context, in *GenerateAIEvalFixRequest, opts ...grpc.CallOption) (*GenerateAIEvalFixResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -674,6 +696,56 @@ func (c *runtimeServiceClient) GetAIMessage(ctx context.Context, in *GetAIMessag
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListAIFeedback(ctx context.Context, in *ListAIFeedbackRequest, opts ...grpc.CallOption) (*ListAIFeedbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAIFeedbackResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListAIFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GetAIFeedback(ctx context.Context, in *GetAIFeedbackRequest, opts ...grpc.CallOption) (*GetAIFeedbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAIFeedbackResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetAIFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UpdateAIFeedbackStatus(ctx context.Context, in *UpdateAIFeedbackStatusRequest, opts ...grpc.CallOption) (*UpdateAIFeedbackStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAIFeedbackStatusResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UpdateAIFeedbackStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GenerateAIFeedbackFix(ctx context.Context, in *GenerateAIFeedbackFixRequest, opts ...grpc.CallOption) (*GenerateAIFeedbackFixResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateAIFeedbackFixResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GenerateAIFeedbackFix_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GenerateAIEvalFix(ctx context.Context, in *GenerateAIEvalFixRequest, opts ...grpc.CallOption) (*GenerateAIEvalFixResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateAIEvalFixResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GenerateAIEvalFix_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IssueDevJWTResponse)
@@ -913,6 +985,23 @@ type RuntimeServiceServer interface {
 	CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error)
+	// ListAIFeedback lists AI feedback items (ratings and review requests) for an instance.
+	// Requires the ManageAIFeedback permission.
+	ListAIFeedback(context.Context, *ListAIFeedbackRequest) (*ListAIFeedbackResponse, error)
+	// GetAIFeedback returns a feedback item along with the full transcript of the conversation it belongs to.
+	// Requires the ManageAIFeedback permission, which grants read access to the referenced conversation
+	// regardless of its owner.
+	GetAIFeedback(context.Context, *GetAIFeedbackRequest) (*GetAIFeedbackResponse, error)
+	// UpdateAIFeedbackStatus updates the review status of a feedback item.
+	// Requires the ManageAIFeedback permission.
+	UpdateAIFeedbackStatus(context.Context, *UpdateAIFeedbackStatusRequest) (*UpdateAIFeedbackStatusResponse, error)
+	// GenerateAIFeedbackFix generates a proposed project change addressing a feedback item.
+	// The feedback item and transcript are passed in because they may live in another deployment's store.
+	// Requires repo edit access; intended for Rill Developer.
+	GenerateAIFeedbackFix(context.Context, *GenerateAIFeedbackFixRequest) (*GenerateAIFeedbackFixResponse, error)
+	// GenerateAIEvalFix proposes ai_instructions changes that fix the latest run's failing eval cases
+	// without breaking the passing ones. Requires repo edit access; intended for Rill Developer.
+	GenerateAIEvalFix(context.Context, *GenerateAIEvalFixRequest) (*GenerateAIEvalFixResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -1080,6 +1169,21 @@ func (UnimplementedRuntimeServiceServer) CompleteStreaming(*CompleteStreamingReq
 }
 func (UnimplementedRuntimeServiceServer) GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAIMessage not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListAIFeedback(context.Context, *ListAIFeedbackRequest) (*ListAIFeedbackResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAIFeedback not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetAIFeedback(context.Context, *GetAIFeedbackRequest) (*GetAIFeedbackResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAIFeedback not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UpdateAIFeedbackStatus(context.Context, *UpdateAIFeedbackStatusRequest) (*UpdateAIFeedbackStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateAIFeedbackStatus not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GenerateAIFeedbackFix(context.Context, *GenerateAIFeedbackFixRequest) (*GenerateAIFeedbackFixResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateAIFeedbackFix not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GenerateAIEvalFix(context.Context, *GenerateAIEvalFixRequest) (*GenerateAIEvalFixResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateAIEvalFix not implemented")
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
@@ -1872,6 +1976,96 @@ func _RuntimeService_GetAIMessage_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListAIFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAIFeedbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListAIFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListAIFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListAIFeedback(ctx, req.(*ListAIFeedbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GetAIFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAIFeedbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetAIFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetAIFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetAIFeedback(ctx, req.(*GetAIFeedbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UpdateAIFeedbackStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAIFeedbackStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UpdateAIFeedbackStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UpdateAIFeedbackStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UpdateAIFeedbackStatus(ctx, req.(*UpdateAIFeedbackStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GenerateAIFeedbackFix_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateAIFeedbackFixRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GenerateAIFeedbackFix(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GenerateAIFeedbackFix_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GenerateAIFeedbackFix(ctx, req.(*GenerateAIFeedbackFixRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GenerateAIEvalFix_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateAIEvalFixRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GenerateAIEvalFix(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GenerateAIEvalFix_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GenerateAIEvalFix(ctx, req.(*GenerateAIEvalFixRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_IssueDevJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IssueDevJWTRequest)
 	if err := dec(in); err != nil {
@@ -2282,6 +2476,26 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAIMessage",
 			Handler:    _RuntimeService_GetAIMessage_Handler,
+		},
+		{
+			MethodName: "ListAIFeedback",
+			Handler:    _RuntimeService_ListAIFeedback_Handler,
+		},
+		{
+			MethodName: "GetAIFeedback",
+			Handler:    _RuntimeService_GetAIFeedback_Handler,
+		},
+		{
+			MethodName: "UpdateAIFeedbackStatus",
+			Handler:    _RuntimeService_UpdateAIFeedbackStatus_Handler,
+		},
+		{
+			MethodName: "GenerateAIFeedbackFix",
+			Handler:    _RuntimeService_GenerateAIFeedbackFix_Handler,
+		},
+		{
+			MethodName: "GenerateAIEvalFix",
+			Handler:    _RuntimeService_GenerateAIEvalFix_Handler,
 		},
 		{
 			MethodName: "IssueDevJWT",

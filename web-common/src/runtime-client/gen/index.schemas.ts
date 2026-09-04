@@ -1055,7 +1055,7 @@ export interface V1Expression {
 When provided, the agent records feedback and, for negative sentiment, runs attribution.
  */
 export interface V1FeedbackAgentContext {
-  /** The ID of the message being rated. */
+  /** The ID of the message being rated. Empty for conversation-level feedback. */
   targetMessageId?: string;
   /** Sentiment: "positive" or "negative". */
   sentiment?: string;
@@ -1063,6 +1063,8 @@ export interface V1FeedbackAgentContext {
   categories?: string[];
   /** Optional free-text comment. */
   comment?: string;
+  /** If true, flags the feedback for review by project admins. */
+  requestReview?: boolean;
 }
 
 /**
@@ -2344,7 +2346,87 @@ export interface V1Resource {
   canvas?: V1Canvas;
   api?: V1API;
   connector?: V1ConnectorV2;
+  aiEval?: V1AIEval;
 }
+
+export interface V1AIEval {
+  spec?: V1AIEvalSpec;
+  state?: V1AIEvalState;
+}
+
+export interface V1AIEvalSpec {
+  displayName?: string;
+  /** Agent that answers the questions. Currently only "analyst_agent". */
+  agent?: string;
+  /** Suite-level guidance for the LLM judge, prepended to each case's notes. */
+  notes?: string;
+  explore?: string;
+  timeoutSeconds?: number;
+  caseTimeoutSeconds?: number;
+  concurrency?: number;
+  cases?: V1AIEvalCase[];
+  /** Ephemeral fields used to trigger runs. Not derived from code files. */
+  trigger?: boolean;
+  triggerCases?: string[];
+}
+
+export interface V1AIEvalCase {
+  name?: string;
+  question?: string;
+  notes?: string;
+  explore?: string;
+  expectAnswer?: string;
+  expectMetricsView?: string;
+  expectMeasures?: string[];
+  expectDimensions?: string[];
+  expectResultSql?: string;
+  expectResultOrdered?: boolean;
+}
+
+export interface V1AIEvalState {
+  currentExecution?: V1AIEvalExecution;
+  executionHistory?: V1AIEvalExecution[];
+  executionCount?: number;
+}
+
+export interface V1AIEvalExecution {
+  adhoc?: boolean;
+  triggerCases?: string[];
+  errorMessage?: string;
+  canceled?: boolean;
+  startedOn?: string;
+  finishedOn?: string;
+  caseResults?: V1AIEvalCaseResult[];
+  passedCount?: number;
+  failedCount?: number;
+  erroredCount?: number;
+}
+
+export interface V1AIEvalCaseResult {
+  caseName?: string;
+  verdict?: V1AIEvalVerdict;
+  failureReasons?: string[];
+  judgeReasoning?: string;
+  /** AI session holding the full transcript of the case's conversation. */
+  sessionId?: string;
+  answerPreview?: string;
+  startedOn?: string;
+  finishedOn?: string;
+}
+
+export type V1AIEvalVerdict =
+  (typeof V1AIEvalVerdict)[keyof typeof V1AIEvalVerdict];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1AIEvalVerdict = {
+  AI_EVAL_VERDICT_UNSPECIFIED: "AI_EVAL_VERDICT_UNSPECIFIED",
+  AI_EVAL_VERDICT_PENDING: "AI_EVAL_VERDICT_PENDING",
+  AI_EVAL_VERDICT_RUNNING: "AI_EVAL_VERDICT_RUNNING",
+  AI_EVAL_VERDICT_PASS: "AI_EVAL_VERDICT_PASS",
+  AI_EVAL_VERDICT_FAIL: "AI_EVAL_VERDICT_FAIL",
+  AI_EVAL_VERDICT_ERROR: "AI_EVAL_VERDICT_ERROR",
+  AI_EVAL_VERDICT_SKIPPED: "AI_EVAL_VERDICT_SKIPPED",
+} as const;
 
 export type V1ResourceEvent =
   (typeof V1ResourceEvent)[keyof typeof V1ResourceEvent];

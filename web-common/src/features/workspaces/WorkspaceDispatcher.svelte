@@ -11,6 +11,7 @@
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
+  import EvalWorkspace from "@rilldata/web-common/features/workspaces/EvalWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
@@ -27,6 +28,7 @@
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Explore, ExploreWorkspace],
     [ResourceKind.Canvas, CanvasWorkspace],
+    [ResourceKind.AIEval, EvalWorkspace],
     [null, null],
     [undefined, null],
   ]);

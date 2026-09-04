@@ -68,6 +68,10 @@ var defaultFeatureFlags = map[string]string{
 	"custom_charts": "false",
 	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
 	"personal_canvases": "false",
+	// Controls visibility of the AI feedback review inbox in Rill Developer
+	"feedback_inbox": "false",
+	// Controls visibility of the AI evals feature in Rill Developer
+	"ai_evals": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

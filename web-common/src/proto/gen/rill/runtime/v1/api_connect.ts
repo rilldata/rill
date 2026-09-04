@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRevertRequest, GitRevertResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
+import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateAIEvalFixRequest, GenerateAIEvalFixResponse, GenerateAIFeedbackFixRequest, GenerateAIFeedbackFixResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIFeedbackRequest, GetAIFeedbackResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRevertRequest, GitRevertResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListAIFeedbackRequest, ListAIFeedbackResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, UpdateAIFeedbackStatusRequest, UpdateAIFeedbackStatusResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -483,6 +483,68 @@ export const RuntimeService = {
       name: "GetAIMessage",
       I: GetAIMessageRequest,
       O: GetAIMessageResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListAIFeedback lists AI feedback items (ratings and review requests) for an instance.
+     * Requires the ManageAIFeedback permission.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.ListAIFeedback
+     */
+    listAIFeedback: {
+      name: "ListAIFeedback",
+      I: ListAIFeedbackRequest,
+      O: ListAIFeedbackResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetAIFeedback returns a feedback item along with the full transcript of the conversation it belongs to.
+     * Requires the ManageAIFeedback permission, which grants read access to the referenced conversation
+     * regardless of its owner.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.GetAIFeedback
+     */
+    getAIFeedback: {
+      name: "GetAIFeedback",
+      I: GetAIFeedbackRequest,
+      O: GetAIFeedbackResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * UpdateAIFeedbackStatus updates the review status of a feedback item.
+     * Requires the ManageAIFeedback permission.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.UpdateAIFeedbackStatus
+     */
+    updateAIFeedbackStatus: {
+      name: "UpdateAIFeedbackStatus",
+      I: UpdateAIFeedbackStatusRequest,
+      O: UpdateAIFeedbackStatusResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GenerateAIFeedbackFix generates a proposed project change addressing a feedback item.
+     * The feedback item and transcript are passed in because they may live in another deployment's store.
+     * Requires repo edit access; intended for Rill Developer.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.GenerateAIFeedbackFix
+     */
+    generateAIFeedbackFix: {
+      name: "GenerateAIFeedbackFix",
+      I: GenerateAIFeedbackFixRequest,
+      O: GenerateAIFeedbackFixResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GenerateAIEvalFix proposes ai_instructions changes that fix the latest run's failing eval cases
+     * without breaking the passing ones. Requires repo edit access; intended for Rill Developer.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.GenerateAIEvalFix
+     */
+    generateAIEvalFix: {
+      name: "GenerateAIEvalFix",
+      I: GenerateAIEvalFixRequest,
+      O: GenerateAIEvalFixResponse,
       kind: MethodKind.Unary,
     },
     /**

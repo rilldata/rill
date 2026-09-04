@@ -88,6 +88,10 @@ type SessionOptions struct {
 	CreateIfNotExists bool
 	Claims            *runtime.SecurityClaims
 	UserAgent         string
+	// ReviewerAccess grants full read access to another user's session for feedback review.
+	// It only takes effect if the claims have the ManageAIFeedback permission,
+	// and should only be set by code paths that have verified the session has associated feedback.
+	ReviewerAccess bool
 }
 
 // Session creates or loads an AI session.
@@ -124,12 +128,16 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		// For shared sessions, if you are not the owner, you can only see messages up to the SharedUntilMessageID (inclusive).
 		// For sessions without an owner (unauthenticated users using a public project), we don't check access and rely on security by obscurity (generally a decent trade-off, but specifically introduced to get citation links over MCP working for unauthenticated demos).
 		// It's important to respect SkipChecks to ensure access in Rill Developer (where auth is disabled, but SkipChecks is true).
+		// Reviewers with the ManageAIFeedback permission get full read access when ReviewerAccess is requested (used by the feedback review APIs).
 		var retrieveUntilMessageID string
 		if session.OwnerID != "" && session.OwnerID != opts.Claims.UserID && !opts.Claims.SkipChecks {
-			if session.SharedUntilMessageID == "" {
+			if opts.ReviewerAccess && opts.Claims.Can(runtime.ManageAIFeedback) {
+				// Full read access for feedback review; no SharedUntilMessageID truncation.
+			} else if session.SharedUntilMessageID == "" {
 				return nil, fmt.Errorf("%w: access denied to session %q", runtime.ErrForbidden, session.ID)
+			} else {
+				retrieveUntilMessageID = session.SharedUntilMessageID
 			}
-			retrieveUntilMessageID = session.SharedUntilMessageID
 		}
 
 		ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
@@ -974,7 +982,6 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 
 	var callMsg *Message
 	callSession := s
-	callCtx := ctx
 	if !opts.Unwrap {
 		callMsg = s.AddMessage(&AddMessageOptions{
 			Role:        opts.Role,
@@ -984,8 +991,11 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 			Content:     string(argsJSON),
 		})
 		callSession = s.WithParent(callMsg.ID)
-		callCtx = WithSession(ctx, callSession)
 	}
+	// Attach the session even for unwrapped calls: the handler may run GetSession on the context,
+	// and the incoming context has no session when the call is not nested in another call
+	// (e.g. the eval runner's judge, which calls Complete with UnwrapCall on a fresh session).
+	callCtx := WithSession(ctx, callSession)
 
 	handlerOut, handlerErr := func() (handlerOut any, handlerErr error) {
 		// Instrumentation and logging

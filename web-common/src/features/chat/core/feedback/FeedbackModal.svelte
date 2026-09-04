@@ -32,23 +32,27 @@
 
   function handleSubmit() {
     if (!messageId || isSubmitDisabled) return;
-    // Close immediately - let the chat show the feedback response
-    handleClose();
-    // Submit asynchronously - conversation will handle streaming
+    // Submit before closing: handleClose resets the form and clears messageId
+    // (via the parent), so the arguments must be read first. The call captures
+    // them synchronously and streams in the background, so the modal still
+    // closes immediately. Negative feedback is always flagged for admin review.
     void conversation.submitFeedback(
       messageId,
       "negative",
       selectedCategories,
       comment || undefined,
+      { requestReview: true },
     );
+    handleClose();
   }
 
   function handleSkip() {
     if (!messageId) return;
-    // Close immediately - let the chat show the feedback response
+    // Submit with no categories before closing (see handleSubmit for ordering).
+    void conversation.submitFeedback(messageId, "negative", [], undefined, {
+      requestReview: true,
+    });
     handleClose();
-    // Submit asynchronously with no categories
-    void conversation.submitFeedback(messageId, "negative");
   }
 
   function handleClose() {
