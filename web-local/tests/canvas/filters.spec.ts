@@ -69,7 +69,6 @@ test.describe("canvas time filters", () => {
     await page.getByRole("menuitem", { name: "Domain" }).click();
 
     await page.getByLabel("domain results").getByText("facebook.com").click();
-
     await page
       .getByLabel("domain results")
       .getByText("google.com", { exact: true })

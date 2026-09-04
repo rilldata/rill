@@ -75,23 +75,29 @@ export const filteredSimpleMeasures = ({
   validMetricsView,
   validExplore,
 }: DashboardDataSources) => {
-  return () => {
-    if (!validMetricsView?.measures || !validExplore?.measures) return [];
-
-    return (
-      validMetricsView.measures
-        .filter(
-          (m) => validExplore.measures!.includes(m.name!) && isSimpleMeasure(m),
-        )
-        // Sort the filtered measures based on their order in validExplore.measures
-        .sort(
-          (a, b) =>
-            validExplore.measures!.indexOf(a.name!) -
-            validExplore.measures!.indexOf(b.name!),
-        )
+  return () =>
+    getFilteredSimpleMeasures(
+      validMetricsView?.measures ?? [],
+      validExplore?.measures,
     );
-  };
 };
+
+export function getFilteredSimpleMeasures(
+  allMeasures: MetricsViewSpecMeasure[],
+  exploreMeasures: string[] | undefined,
+) {
+  if (!exploreMeasures) return [];
+
+  return (
+    allMeasures
+      .filter((m) => exploreMeasures.includes(m.name!) && isSimpleMeasure(m))
+      // Sort the filtered measures based on their order in validExplore.measures
+      .sort(
+        (a, b) =>
+          exploreMeasures.indexOf(a.name!) - exploreMeasures.indexOf(b.name!),
+      )
+  );
+}
 
 export const isSimpleMeasure = (measure: MetricsViewSpecMeasure) =>
   !measure.window &&

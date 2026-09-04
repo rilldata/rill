@@ -16,12 +16,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import {
     getComparisonRequestMeasures,
     getURIRequestMeasure,
   } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
@@ -55,8 +53,7 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
-  export let whereFilter: V1Expression;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let whereFilter: V1Expression | undefined;
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasures: MetricsViewSpecMeasure[];
   export let leaderboardShowContextForAllMeasures: boolean;
@@ -143,22 +140,18 @@
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
-  $: where = isComplexFilter
-    ? whereFilter
-    : sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(whereFilter, dimensionName),
-          dimensionThresholdFilters,
-        ),
-        undefined,
-      );
+  $: where = sanitiseExpression(
+    isComplexFilter
+      ? whereFilter
+      : getFiltersForOtherDimensions(whereFilter, dimensionName),
+  );
 
   $: measures = [
     ...getMeasuresForDimensionOrLeaderboardDisplay(
       leaderboardShowContextForAllMeasures
         ? null
         : leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
+      whereFilter,
       leaderboardMeasureNames,
     ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 

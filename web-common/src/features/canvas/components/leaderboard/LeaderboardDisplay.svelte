@@ -3,7 +3,6 @@
   import { validateLeaderboardSchema } from "@rilldata/web-common/features/canvas/components/leaderboard/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
-  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
     deltaColumn,
@@ -13,7 +12,6 @@
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import {
@@ -22,127 +20,124 @@
     MIN_DIMENSION_COLUMN_WIDTH,
   } from "./util";
 
-  export let component: LeaderboardComponent;
+  let { component }: { component: LeaderboardComponent } = $props();
 
   const runtimeClient = useRuntimeClient();
+  const { instanceId } = runtimeClient;
 
-  let metricsViewName: string;
-  let leaderboardMeasureNames: string[] = [];
-  let dimensionNames: string[] = [];
-  let numRows = 7;
-  let leaderboardWrapperWidth = 0;
+  let leaderboardWrapperWidth = $state(0);
 
-  $: ({ instanceId } = runtimeClient);
+  let specStore = $derived(component.specStore);
+  let timeAndFilterStore = $derived(component.timeAndFilterStore);
+  let leaderboardState = $derived(component.leaderboardState);
+  let toggleSort = $derived(component.toggleSort);
+  let dataEnabled = $derived(component.dataEnabled);
 
-  $: ({
-    specStore,
-    timeAndFilterStore,
-    leaderboardState,
-    toggleSort,
-    parent: { name: canvasName },
-    dataEnabled: visible,
-  } = component);
-  $: leaderboardProperties = $specStore;
+  let leaderboardProperties = $derived($specStore);
 
-  $: store = getCanvasStore(canvasName, instanceId);
-  $: ({
-    canvasEntity: {
-      metricsView: {
-        getMetricsViewFromName,
-        getDimensionsForMetricView,
-        getMeasuresForMetricView,
-      },
-      filterManager: {
-        metricsViewFilters,
-        actions: { toggleDimensionValueSelections },
-      },
-    },
-  } = store);
-
-  $: {
-    metricsViewName = leaderboardProperties.metrics_view;
-    leaderboardMeasureNames = leaderboardProperties.measures ?? [];
-    dimensionNames = leaderboardProperties.dimensions ?? [];
-    numRows = leaderboardProperties.num_rows ?? 7;
-  }
-
-  $: metricsViewQuery = getMetricsViewFromName(metricsViewName);
-
-  $: schema = validateLeaderboardSchema(
-    leaderboardProperties,
-    $metricsViewQuery,
+  let store = $derived(getCanvasStore(component.parent.name, instanceId));
+  let metricsViewSelectors = $derived(store.canvasEntity.metricsView);
+  let expressionFilterManager = $derived(
+    store.canvasEntity.expressionFilterManager,
   );
 
-  $: ({ showTimeComparison, comparisonTimeRange, timeRange, where } =
-    $timeAndFilterStore);
+  let metricsViewName = $derived(leaderboardProperties.metrics_view);
+  let leaderboardMeasureNames = $derived(leaderboardProperties.measures ?? []);
+  let dimensionNames = $derived(leaderboardProperties.dimensions ?? []);
+  let numRows = $derived(leaderboardProperties.num_rows ?? 7);
 
-  $: ({ dimensionFilters: whereFilter, dimensionThresholdFilters } =
-    splitWhereFilter(where));
-
-  $: allDimensions = getDimensionsForMetricView(metricsViewName);
-  $: allMeasures = getMeasuresForMetricView(metricsViewName);
-
-  $: visibleDimensions = dimensionNames
-    .map((name) =>
-      $allDimensions.find((d) => (d.name || (d.column as string)) === name),
-    )
-    .filter((d) => d !== undefined);
-
-  $: visibleMeasures = leaderboardMeasureNames
-    .map((lm) => $allMeasures.find((m) => m.name === lm))
-    .filter(Boolean) as MetricsViewSpecMeasure[];
-
-  $: measureFormatters = Object.fromEntries(
-    visibleMeasures.map((m) => [
-      m.name,
-      createMeasureValueFormatter<null | undefined>(m),
-    ]),
+  let metricsViewQuery = $derived(
+    metricsViewSelectors.getMetricsViewFromName(metricsViewName),
   );
 
-  $: measureTooltipFormatters = Object.fromEntries(
-    visibleMeasures.map((m) => [
-      m.name,
-      createMeasureValueFormatter<null | undefined>(m, "tooltip"),
-    ]),
+  let schema = $derived(
+    validateLeaderboardSchema(leaderboardProperties, $metricsViewQuery),
   );
 
-  // Reset column widths when the measure changes
-  $: if (leaderboardMeasureNames) {
-    valueColumn.reset();
-    deltaColumn.reset();
-  }
+  let showTimeComparison = $derived($timeAndFilterStore.showTimeComparison);
+  let comparisonTimeRange = $derived($timeAndFilterStore.comparisonTimeRange);
+  let timeRange = $derived($timeAndFilterStore.timeRange);
 
-  $: totalContextWidth = leaderboardMeasureNames.reduce(
-    (sum, measureName) =>
-      sum +
-      $valueColumn +
-      (showTimeComparison ? $deltaColumn + COMPARISON_COLUMN_WIDTH : 0) +
-      (isValidPercentOfTotal(measureName) ? COMPARISON_COLUMN_WIDTH : 0),
-    0,
+  let whereFilter = $derived($timeAndFilterStore.where);
+
+  let allDimensions = $derived(
+    metricsViewSelectors.getDimensionsForMetricView(metricsViewName),
+  );
+  let allMeasures = $derived(
+    metricsViewSelectors.getMeasuresForMetricView(metricsViewName),
   );
 
-  $: dimensionColumnWidth = getDimensionColumnWidth(
-    leaderboardWrapperWidth,
-    totalContextWidth,
+  let visibleDimensions = $derived(
+    dimensionNames
+      .map((name) =>
+        $allDimensions.find((d) => (d.name || (d.column as string)) === name),
+      )
+      .filter((d) => d !== undefined),
   );
 
-  $: estimatedTableWidth = MIN_DIMENSION_COLUMN_WIDTH + totalContextWidth;
+  let visibleMeasures = $derived(
+    leaderboardMeasureNames
+      .map((lm) => $allMeasures.find((m) => m.name === lm))
+      .filter((m) => m !== undefined),
+  );
 
-  $: ({
-    title,
-    description,
-    show_description_as_tooltip,
-    time_filters,
-    dimension_filters,
-  } = leaderboardProperties);
+  let measureFormatters = $derived(
+    Object.fromEntries(
+      visibleMeasures.map((m) => [
+        m.name,
+        createMeasureValueFormatter<null | undefined>(m),
+      ]),
+    ),
+  );
 
-  $: filters = {
-    time_filters,
-    dimension_filters,
-  };
+  let measureTooltipFormatters = $derived(
+    Object.fromEntries(
+      visibleMeasures.map((m) => [
+        m.name,
+        createMeasureValueFormatter<null | undefined>(m, "tooltip"),
+      ]),
+    ),
+  );
 
-  $: ({ leaderboardSortByMeasureName, sortDirection, sortType } =
-    $leaderboardState);
+  let totalContextWidth = $derived(
+    leaderboardMeasureNames.reduce(
+      (sum, measureName) =>
+        sum +
+        $valueColumn +
+        (showTimeComparison ? $deltaColumn + COMPARISON_COLUMN_WIDTH : 0) +
+        (isValidPercentOfTotal(measureName) ? COMPARISON_COLUMN_WIDTH : 0),
+      0,
+    ),
+  );
+
+  let dimensionColumnWidth = $derived(
+    getDimensionColumnWidth(leaderboardWrapperWidth, totalContextWidth),
+  );
+
+  let estimatedTableWidth = $derived(
+    MIN_DIMENSION_COLUMN_WIDTH + totalContextWidth,
+  );
+
+  let filters = $derived({
+    time_filters: leaderboardProperties.time_filters,
+    dimension_filters: leaderboardProperties.dimension_filters,
+  });
+
+  let leaderboardSortByMeasureName = $derived(
+    $leaderboardState.leaderboardSortByMeasureName,
+  );
+  let sortDirection = $derived($leaderboardState.sortDirection);
+  let sortType = $derived($leaderboardState.sortType);
+
+  // Reset column widths when the measures change. Uses `$effect.pre` so the reset
+  // lands before the DOM update, keeping the width derivations above in sync for
+  // the same render rather than one frame later.
+  $effect.pre(() => {
+    if (leaderboardMeasureNames) {
+      valueColumn.reset();
+      deltaColumn.reset();
+    }
+  });
 
   function isValidPercentOfTotal(measureName: string) {
     return (
@@ -150,23 +145,22 @@
         ?.validPercentOfTotal ?? false
     );
   }
-
-  $: mvFilters = metricsViewFilters.get(metricsViewName);
-  $: parsed = mvFilters?.parsed;
 </script>
 
 {#if schema.isValid}
   <ComponentHeader
     {component}
-    {title}
-    {description}
-    showDescriptionAsTooltip={show_description_as_tooltip}
+    title={leaderboardProperties.title}
+    description={leaderboardProperties.description}
+    showDescriptionAsTooltip={leaderboardProperties.show_description_as_tooltip}
     {filters}
   />
 
   <div
-    class="h-fit p-0 grow relative"
-    class:!p-0={visibleDimensions.length === 1}
+    class={[
+      "h-fit p-0 grow relative",
+      visibleDimensions.length === 1 && "!p-0",
+    ]}
   >
     <span class="border-overlay"></span>
     <div
@@ -184,20 +178,20 @@
               leaderboardShowContextForAllMeasures
               timeControlsReady
               slice={numRows}
-              visible={$visible}
+              visible={$dataEnabled}
               {isValidPercentOfTotal}
               {metricsViewName}
               leaderboardSortByMeasureName={leaderboardSortByMeasureName ??
-                leaderboardMeasureNames?.[0]}
+                leaderboardMeasureNames[0]}
               leaderboardMeasures={visibleMeasures}
               {whereFilter}
-              {dimensionThresholdFilters}
               tableWidth={dimensionColumnWidth + totalContextWidth}
               {dimensionColumnWidth}
               sortedAscending={sortDirection === SortDirection.ASCENDING}
               {sortType}
-              filterExcludeMode={$parsed?.dimensionFilters.get(dimension.name)
-                ?.isInclude === false}
+              filterExcludeMode={expressionFilterManager.sortedFilterManagers.dimensions.find(
+                (dfm) => dfm.name === dimension.name,
+              )?.exclude ?? false}
               {timeRange}
               comparisonTimeRange={showTimeComparison
                 ? comparisonTimeRange
@@ -218,17 +212,15 @@
               tooltipFormatters={measureTooltipFormatters}
               {toggleSort}
               toggleDimensionValueSelection={async (
-                name,
+                _1,
                 value,
-                keepPillVisible,
-                isExclusiveFilter,
+                _2,
+                exclusive,
               ) => {
-                await toggleDimensionValueSelections(
-                  name,
-                  [value],
-                  [metricsViewName],
-                  keepPillVisible,
-                  isExclusiveFilter,
+                expressionFilterManager.dimensionFilterAction(
+                  dimension.name!,
+                  (dimensionManager) =>
+                    dimensionManager.toggleValue(value, exclusive ?? false),
                 );
               }}
               measureLabel={(measureName) =>

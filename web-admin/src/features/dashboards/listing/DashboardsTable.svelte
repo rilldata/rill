@@ -96,7 +96,6 @@
       dashboardFavourites.value.filter((f) =>
         filteredDashboards.find((r) => r.meta?.name?.name?.toLowerCase() === f),
       ),
-      (e) => e,
     ),
   );
 
