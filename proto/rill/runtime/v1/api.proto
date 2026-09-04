@@ -1204,6 +1204,8 @@ message CompleteRequest {
   string conversation_id = 2;
   // The prompt to complete.
   string prompt = 3;
+  // Locale of the user.
+  string locale = 14;
   // Optional agent to use for the completion.
   // If not set, it will infer an agent based on the prompt and conversation history.
   string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent", "feedback_agent"]}];
@@ -1232,6 +1234,8 @@ message CompleteStreamingRequest {
   string conversation_id = 2;
   // The prompt to complete.
   string prompt = 3;
+  // Locale of the user.
+  string locale = 14;
   // Optional agent to use for the completion.
   // If not set, it will infer an agent based on the prompt and conversation history.
   string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent", "feedback_agent"]}];

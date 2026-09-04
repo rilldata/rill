@@ -27,6 +27,7 @@ var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
 	Prompt             string              `json:"prompt" jsonschema:"The user's prompt to be routed."`
+	Locale             string              `json:"locale" yaml:"locale" jsonschema:"Optional locale for the prompt. If provided, the prompt will be localized to this locale and the response will be in the locale's language'."`
 	Agent              string              `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
 	AnalystAgentArgs   *AnalystAgentArgs   `json:"analyst_agent_args,omitempty" jsonschema:"Optional arguments to pass to the analyst agent if the selected agent is analyst_agent."`
 	DeveloperAgentArgs *DeveloperAgentArgs `json:"developer_agent_args,omitempty" jsonschema:"Optional arguments to pass to the developer agent if the selected agent is developer_agent."`
@@ -157,6 +158,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			analystAgentArgs = &AnalystAgentArgs{}
 		}
 		analystAgentArgs.Prompt = args.Prompt
+		analystAgentArgs.Locale = args.Locale
 
 		var res *AnalystAgentResult
 		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{

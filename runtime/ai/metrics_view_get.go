@@ -21,6 +21,7 @@ var _ Tool[*GetMetricsViewArgs, *GetMetricsViewResult] = (*GetMetricsView)(nil)
 
 type GetMetricsViewArgs struct {
 	MetricsView string `json:"metrics_view" jsonschema:"Name of the metrics view"`
+	Locale      string `json:"locale" yaml:"locale" jsonschema:"Optional locale for the prompt. If provided, labels will in the locale's language'."`
 }
 
 type GetMetricsViewResult struct {
@@ -58,6 +59,15 @@ func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) 
 		return nil, err
 	}
 
+	var translations *runtimev1.TranslationSpec
+	if args.Locale != "" {
+		// Look up the translations once instead of once per resource.
+		translations, err = t.Runtime.TranslationsForLocale(ctx, session.InstanceID(), args.Locale)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: args.MetricsView}, false)
 	if err != nil {
 		return nil, err
@@ -69,6 +79,10 @@ func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) 
 	}
 	if !access {
 		return nil, fmt.Errorf("resource not found")
+	}
+
+	if translations != nil {
+		r = runtime.ApplyTranslations(r, translations)
 	}
 
 	if r.GetMetricsView().State.ValidSpec == nil {
