@@ -12,10 +12,17 @@
   style="grid-template-columns: auto max-content"
   style:min-width="200px"
 >
+  <!--
+    `min-w-0` is required alongside `break-words`: without it the grid item is sized
+    to its min-content width, and `overflow-wrap: break-word` does not contribute
+    break opportunities to min-content, so a single unbroken value (a URL, a UUID)
+    would overflow the tooltip instead of wrapping.
+  -->
   <div
     class="font-bold text-fg-inverse"
     class:truncate={!wrap}
     class:break-words={wrap}
+    class:min-w-0={wrap}
     aria-label="tooltip-name"
   >
     <slot name="name" />
