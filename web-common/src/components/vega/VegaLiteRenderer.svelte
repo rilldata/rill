@@ -39,7 +39,9 @@
   let measured = false;
 
   $: width = contentRect.width;
-  $: height = contentRect.height - 10;
+  // Clamped: a container can report its width before its height, and a negative height
+  // gives Vega an inverted y range until the next resize.
+  $: height = Math.max(0, contentRect.height - 10);
   $: if (width > 0) measured = true;
 
   $: if (viewVL && tooltipFormatter) {
@@ -65,7 +67,7 @@
   }
 
   // Deliberately excludes width/height so a resize leaves this object's identity untouched
-  // and svelte-vega resizes the existing view rather than re-embedding it.
+  // and svelte-vega does not re-embed the view; the size is applied in `applySize` instead.
   $: baseOptions = createBaseEmbedOptions({
     client: runtimeClient,
     config,
@@ -82,7 +84,7 @@
   // passes and its cheap `view.width()` path is unreachable. Sizing the view through `options`
   // therefore re-embedded every chart on every frame of a divider drag, which stalled the page
   // and flashed blank canvases. Instead, `options` only picks up the size when it is (re)built
-  // and later size changes are applied to the live view below.
+  // and later size changes are applied to the live view in `applySize` below.
   // `withEmbedSize` reads `width` and `height` inside a function on purpose: a `$:` statement
   // only tracks the variables it references directly.
   $: options = withEmbedSize(baseOptions, measured);
@@ -92,11 +94,21 @@
     return { ...base, width, height };
   }
 
-  // Resize the existing view in place. vega-embed applies `options.width`/`height` the same way,
-  // so this matches the initial embed. Setting an unchanged size is a no-op for Vega.
-  $: if (viewVL && measured) {
-    viewVL.width(width);
-    viewVL.height(height);
+  $: if (viewVL && measured) applySize(width, height);
+
+  function applySize(w: number, h: number) {
+    // svelte-vega still re-embeds from `options` whenever the spec changes, so its size fields
+    // have to stay current or the chart re-embeds at the size it had when `options` was last
+    // rebuilt. The mutation goes through a local alias on purpose: assigning to `options.width`
+    // directly would invalidate `options` and trigger the very re-embed this avoids.
+    const embedOptions = options;
+    embedOptions.width = w;
+    embedOptions.height = h;
+
+    // Resize the existing view in place. vega-embed applies `options.width`/`height` the same
+    // way, so this matches the initial embed. Setting an unchanged size is a no-op for Vega.
+    viewVL.width(w);
+    viewVL.height(h);
     void viewVL.runAsync();
   }
 
