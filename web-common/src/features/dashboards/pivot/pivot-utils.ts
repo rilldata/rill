@@ -2,6 +2,7 @@ import {
   itemsInTag,
   type TagIndex,
 } from "@rilldata/web-common/components/menu/tag-utils";
+import { buildExpandKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
 import { getValuesForExpandedKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expansion";
 import {
   createAndExpression,
@@ -583,24 +584,16 @@ export function getValuesForFlatTable(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   rowId: string,
-  hasTotalsRow: boolean,
 ): string[] {
-  let index = parseInt(rowId, 10);
-  const dimensionValues: string[] = [];
+  const row = tableData?.find(
+    (candidate) =>
+      buildExpandKey(rowDimensions.map((dim) => candidate[dim])) === rowId,
+  );
+  if (!row) return [];
 
-  if (hasTotalsRow) index = index - 1;
-
-  const row = tableData?.[index];
-  if (!row) return dimensionValues;
-
-  // For flat tables, collect all dimension values in order
-  rowDimensions.forEach((dim) => {
-    if (dim in row) {
-      dimensionValues.push(row[dim] as string);
-    }
-  });
-
-  return dimensionValues;
+  return rowDimensions
+    .filter((dim) => dim in row)
+    .map((dim) => row[dim] as string);
 }
 
 /**
@@ -653,28 +646,16 @@ export function getFiltersForCell(
   tableData: PivotDataRow[],
   upToDimensionIndex?: number,
 ): PivotFilter {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-  const hasTotalsRow =
-    config.pivot?.showTotalsRow !== false && measureNames.length > 0;
+  const { rowDimensionNames, isFlat } = config;
 
   let values: string[];
   if (isFlat) {
-    values = getValuesForFlatTable(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      hasTotalsRow,
-    );
+    values = getValuesForFlatTable(tableData, rowDimensionNames, rowId);
     if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
       values = values.slice(0, upToDimensionIndex + 1);
     }
   } else {
-    values = getValuesForExpandedKey(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      hasTotalsRow,
-    );
+    values = getValuesForExpandedKey(tableData, rowDimensionNames, rowId);
   }
 
   const rowEntries = values.map((value, index) => ({

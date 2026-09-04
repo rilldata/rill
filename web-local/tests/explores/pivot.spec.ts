@@ -700,3 +700,70 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectSortedDeltaCol, 4);
   });
 });
+
+test.describe("pivot expansion persistence", () => {
+  test.use({ project: "AdBids" });
+
+  // Expanded rows are keyed by dimension values, so they survive config
+  // changes that keep the same rows.
+  // https://github.com/rilldata/rill/issues/9781
+  test("expanded rows survive adding a measure and sorting", async ({
+    page,
+  }) => {
+    test.setTimeout(45_000);
+    const watcher = new ResourceWatcher(page);
+
+    await gotoNavEntry(page, "/metrics/AdBids_metrics.yaml");
+    await page.getByRole("button", { name: "switch to code editor" }).click();
+    await watcher.updateAndWaitForDashboard(pivotDashboard);
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
+    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("link", { name: "Pivot", exact: true }).click();
+
+    const rowZone = page.locator(".dnd-zone.horizontal").nth(0);
+    const columnZone = page.locator(".dnd-zone.horizontal").nth(1);
+    const totalRecords = page.getByLabel("Total records pivot chip", {
+      exact: true,
+    });
+    const timeMonth = page.getByLabel("Time pivot chip", { exact: true });
+    const addRowField = page
+      .getByRole("button", { name: "Add filter button" })
+      .nth(1);
+    const addColumnField = page
+      .getByRole("button", { name: "Add filter button" })
+      .nth(2);
+
+    // Rows = Time (month) > Publisher, columns = Total records.
+    await dragPivotChip(page, totalRecords, columnZone);
+    await dragPivotChip(page, timeMonth, rowZone);
+    await addRowField.click();
+    await clickMenuButton(page, "Publisher");
+    await expect(page.locator(".status.running")).toHaveCount(0);
+
+    // Expand a month; a nested publisher row becomes visible.
+    await page.locator("td").filter({ hasText: "Jan" }).first().click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await expect(
+      page.locator("td").filter({ hasText: "Facebook" }).first(),
+    ).toBeVisible();
+
+    // The nested row must stay visible after adding a measure.
+    await addColumnField.click();
+    await clickMenuButton(page, "Sum of Bid Price");
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await expect(
+      page.locator("td").filter({ hasText: "Facebook" }).first(),
+    ).toBeVisible();
+
+    // And it must stay visible after sorting by a measure.
+    await page
+      .locator(".header-cell")
+      .filter({ hasText: "Total records" })
+      .first()
+      .click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await expect(
+      page.locator("td").filter({ hasText: "Facebook" }).first(),
+    ).toBeVisible();
+  });
+});
