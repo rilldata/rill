@@ -68,6 +68,8 @@ var defaultFeatureFlags = map[string]string{
 	"custom_charts": "false",
 	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
 	"personal_canvases": "false",
+	// Controls visibility of the SQL Console
+	"sql_console": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.
