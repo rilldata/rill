@@ -183,70 +183,85 @@
       </Button>
     {/snippet}
   </DropdownMenuTrigger>
-  <DropdownMenuContent class="w-[450px]">
-    <DropdownMenuItem onclick={() => (showDialog = true)}>
-      <div class="flex flex-row gap-x-2 items-center">
-        <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
-        <div class="text-xs">{m.bookmark_current_view()}</div>
+  <!--
+    The content is bounded to the space available below the trigger (capped at 600px)
+    so long bookmark lists scroll instead of running off the viewport.
+    The "bookmark current view" action and search stay pinned; only the lists scroll.
+  -->
+  <DropdownMenuContent
+    class="flex flex-col w-[450px] max-h-[min(600px,var(--bits-floating-available-height))] overflow-hidden p-0"
+  >
+    <div class="flex-none p-1.5">
+      <DropdownMenuItem onclick={() => (showDialog = true)}>
+        <div class="flex flex-row gap-x-2 items-center">
+          <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
+          <div class="text-xs">{m.bookmark_current_view()}</div>
+        </div>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <div class="p-2">
+        <Search
+          autofocus={false}
+          bind:value={searchText}
+          showBorderOnFocus={false}
+        />
       </div>
-    </DropdownMenuItem>
-    <DropdownMenuSeparator />
-    <div class="p-2">
-      <Search
-        autofocus={false}
-        bind:value={searchText}
-        showBorderOnFocus={false}
-      />
     </div>
     {#if filteredBookmarks}
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-fg-secondary text-[10px] h-6 uppercase">
-          {m.bookmark_your_bookmarks()}
-        </DropdownMenuLabel>
-        {#if filteredBookmarks.personal?.length}
-          {#each filteredBookmarks.personal as bookmark (bookmark.resource.id)}
-            {#key bookmark.resource.id}
-              <BookmarksMenuItem
-                {bookmark}
-                {onEdit}
-                onDelete={deleteBookmark}
-              />
-            {/key}
-          {/each}
-        {:else}
-          <div class="my-2 text-fg-muted text-center">
-            {m.bookmark_no_bookmarks()}
-          </div>
-        {/if}
-      </DropdownMenuGroup>
-      <DropdownMenuSeparator />
-      <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-fg-secondary">
-          <div class="text-[10px] h-4 uppercase">
-            {m.bookmark_managed_bookmarks()}
-          </div>
-          <div class="text-[11px] font-normal">
-            {m.bookmark_created_by_admin()}
-          </div>
-        </DropdownMenuLabel>
-        {#if filteredBookmarks.shared?.length}
-          {#each filteredBookmarks.shared as bookmark (bookmark.resource.id)}
-            {#key bookmark.resource.id}
-              <BookmarksMenuItem
-                {bookmark}
-                {onEdit}
-                onDelete={deleteBookmark}
-                readOnly={!manageProject}
-              />
-            {/key}
-          {/each}
-        {:else}
-          <div class="my-2 text-fg-muted text-center">
-            {m.bookmark_no_shared()}
-          </div>
-        {/if}
-      </DropdownMenuGroup>
+      <div class="flex-1 min-h-0 overflow-y-auto p-1.5 pt-0">
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel
+            class="sticky top-0 z-10 bg-popover text-fg-secondary text-[10px] h-6 uppercase"
+          >
+            {m.bookmark_your_bookmarks()}
+          </DropdownMenuLabel>
+          {#if filteredBookmarks.personal?.length}
+            {#each filteredBookmarks.personal as bookmark (bookmark.resource.id)}
+              {#key bookmark.resource.id}
+                <BookmarksMenuItem
+                  {bookmark}
+                  {onEdit}
+                  onDelete={deleteBookmark}
+                />
+              {/key}
+            {/each}
+          {:else}
+            <div class="my-2 text-fg-muted text-center">
+              {m.bookmark_no_bookmarks()}
+            </div>
+          {/if}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel
+            class="sticky top-0 z-10 bg-popover text-fg-secondary"
+          >
+            <div class="text-[10px] h-4 uppercase">
+              {m.bookmark_managed_bookmarks()}
+            </div>
+            <div class="text-[11px] font-normal">
+              {m.bookmark_created_by_admin()}
+            </div>
+          </DropdownMenuLabel>
+          {#if filteredBookmarks.shared?.length}
+            {#each filteredBookmarks.shared as bookmark (bookmark.resource.id)}
+              {#key bookmark.resource.id}
+                <BookmarksMenuItem
+                  {bookmark}
+                  {onEdit}
+                  onDelete={deleteBookmark}
+                  readOnly={!manageProject}
+                />
+              {/key}
+            {/each}
+          {:else}
+            <div class="my-2 text-fg-muted text-center">
+              {m.bookmark_no_shared()}
+            </div>
+          {/if}
+        </DropdownMenuGroup>
+      </div>
     {/if}
   </DropdownMenuContent>
 </DropdownMenu>
