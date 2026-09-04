@@ -2414,6 +2414,14 @@ definitions:
                               - **table** - Similar to Pivot table, add dimensions and measures to visualize your data
                               - **heatmap** - Heat Map chart to visualize distribution of data
                               - **donut_chart** - Donut or Pie chart to display sums of total
+                      params:
+                        type: object
+                        description: Values bound to the referenced component's declared params. Only valid together with `component`. Values must be scalars.
+                        additionalProperties:
+                          type:
+                            - string
+                            - number
+                            - boolean
                       width:
                         type:
                           - string
@@ -3165,6 +3173,11 @@ definitions:
           description:
             type: string
             description: Detailed description of the component's purpose and functionality
+          params:
+            type: array
+            description: List of typed parameters that canvases can bind values to when referencing this component. Bound values are available in the renderer properties' templating as `{{ .params.<name> }}`, and the metrics view metadata of a field-typed param as `{{ .fields.<name>.display_name }}`, `{{ .fields.<name>.format_d3 }}`, `{{ .fields.<name>.format_preset }}` and `{{ .fields.<name>.format_type }}`.
+            items:
+              $ref: '#/definitions/component_param_properties'
           input:
             type: array
             description: List of input variables that can be passed to the component
@@ -3188,9 +3201,93 @@ definitions:
             $ref: '#/definitions/markdown_properties'
           image:
             $ref: '#/definitions/image_properties'
+          custom_chart:
+            $ref: '#/definitions/custom_chart_properties'
         required:
           - type
         additionalProperties: false
+
+  # Custom Chart Properties (Flint)
+  custom_chart_properties:
+    type: object
+    description: |
+      A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
+      Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
+      metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+    properties:
+      metrics_sql:
+        type: string
+        description: |
+          Metrics SQL query selecting the dimensions and measures to plot, e.g.
+          `SELECT {{ .params.dim }}, {{ .params.measure }} FROM {{ .params.metrics_view }} LIMIT 10`.
+          Measures arrive pre-aggregated; do not wrap them in aggregate functions.
+      spec:
+        $ref: '#/definitions/flint_chart_spec'
+      vega_spec:
+        type: string
+        description: |
+          A Vega-Lite spec, as an alternative to `spec` for a chart Rill cannot describe.
+          This is what ejecting a chart spec in the component editor produces: the Vega-Lite it
+          compiled to, with the param bindings turned back into template references. Rill no longer
+          derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
+          Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
+          and size the chart to its container with `"width": "container"`, `"height": "container"`
+          and `"autosize": {"type": "fit"}`. Mutually exclusive with `spec`.
+    additionalProperties: false
+
+  # Flint Chart Spec
+  flint_chart_spec:
+    type: object
+    properties:
+      chartType:
+        type: string
+        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+      encodings:
+        type: object
+        description: |
+          Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+          to a field. Each value is either a field name or an encoding object.
+        additionalProperties:
+          oneOf:
+            - type: string
+            - $ref: '#/definitions/flint_chart_encoding'
+            - type: array
+              items:
+                oneOf:
+                  - type: string
+                  - $ref: '#/definitions/flint_chart_encoding'
+      chartProperties:
+        type: object
+        description: Per-chart-type presentation tuning, e.g. `innerRadius`, `stackMode`, `interpolate`.
+    additionalProperties: false
+
+  # Flint Chart Encoding
+  flint_chart_encoding:
+    type: object
+    properties:
+      field:
+        type: string
+        description: Name of the column to bind to this channel.
+      type:
+        type: string
+        enum: [quantitative, nominal, ordinal, temporal]
+        description: Overrides the type derived from the field's semantics. Rarely needed.
+      aggregate:
+        type: string
+        enum: [count, sum, average, mean]
+        description: |
+          Aggregates rows within the chart. Rarely needed in Rill: measures selected from a metrics view
+          are already aggregated.
+      sortOrder:
+        type: string
+        enum: [ascending, descending]
+      sortBy:
+        type: string
+        description: Channel or field to sort this channel's values by, e.g. `y`.
+      scheme:
+        type: string
+        description: Color scheme name for the `color` channel, e.g. `viridis`, `tableau10`.
+    additionalProperties: false
 
   # Chart Properties
   chart_properties:
@@ -3405,6 +3502,50 @@ definitions:
         description: Overrides any properties in production environment.
 
 
+  component_param_properties:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Param name. Must be a valid identifier; referenced in the renderer properties' templating as `{{ .params.<name> }}`.
+      type:
+        type: string
+        enum:
+          - string
+          - number
+          - boolean
+          - metrics_view
+          - measure
+          - dimension
+          - time_dimension
+        description: Param type. Params of type `metrics_view` must be named `metrics_view` or end with `_metrics_view`.
+      description:
+        type: string
+        description: Human-facing description of the param
+      required:
+        type: boolean
+        description: If true, a canvas item referencing this component must bind a value for the param. Mutually exclusive with `default`.
+      default:
+        description: Default value used when the param is not bound
+        type:
+          - string
+          - number
+          - boolean
+      metrics_view:
+        type: string
+        description: For `measure`, `dimension` and `time_dimension` params, the name of a sibling param of type `metrics_view` whose bound metrics view the field must belong to. May be omitted when exactly one `metrics_view` param is declared.
+      options:
+        type: array
+        description: For scalar params, the allowed values. Renders as a select input in visual editors.
+        items:
+          type:
+            - string
+            - number
+            - boolean
+    required:
+      - name
+      - type
+    additionalProperties: false
   component_variable_properties:
     type: object
     properties:

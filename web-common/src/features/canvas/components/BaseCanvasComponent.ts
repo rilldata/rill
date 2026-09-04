@@ -10,6 +10,7 @@ import type {
 import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type {
+  V1CanvasItem,
   V1Expression,
   V1Resource,
   V1TimeRange,
@@ -169,7 +170,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.unsubscribeSpec?.();
   }
 
-  update(resource: V1Resource, path: ComponentPath) {
+  // item is the canvas item this instance renders; only used by components whose
+  // editable state lives on the item rather than the resource (see ComponentRefComponent).
+  update(resource: V1Resource, path: ComponentPath, item?: V1CanvasItem) {
+    void item;
     const yamlSpec = (resource.component?.state?.validSpec
       ?.rendererProperties ??
       (this.parent.allowUnvalidatedSpec

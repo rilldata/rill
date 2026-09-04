@@ -826,6 +826,9 @@ message ComponentSpec {
   string description = 7;
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
+  // Declared parameters that canvases can bind values to when referencing this component.
+  // Bound values are available in the renderer properties' templating as {{ .params.<name> }}.
+  repeated ComponentParam params = 10;
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
   bool defined_in_canvas = 6;
@@ -843,6 +846,26 @@ message ComponentVariable {
   string name = 1;
   string type = 2;
   google.protobuf.Value default_value = 3;
+}
+
+// ComponentParam declares a typed, validated parameter of a component.
+message ComponentParam {
+  // Param name. Must be a valid identifier; referenced in templates as {{ .params.<name> }}.
+  string name = 1;
+  // Param type. One of: "string", "number", "boolean", "metrics_view", "measure", "dimension", "time_dimension".
+  string type = 2;
+  // Human-facing description of the param.
+  string description = 3;
+  // If true, a canvas item referencing this component must bind a value for the param.
+  bool required = 4;
+  // Default value used when the param is not bound. Mutually exclusive with required=true.
+  google.protobuf.Value default = 5;
+  // For "measure", "dimension" and "time_dimension" params:
+  // the name of a sibling param of type "metrics_view" whose bound metrics view the field must belong to.
+  // May be omitted when exactly one "metrics_view" param is declared, in which case the parser fills it in.
+  string metrics_view_param = 6;
+  // For scalar params: allowed values. Renders as a select input in visual editors.
+  repeated google.protobuf.Value options = 7;
 }
 
 message Canvas {
@@ -937,6 +960,9 @@ message CanvasItem {
   string component = 1;
   // Indicates if the component was defined inline as part of the canvas YAML.
   bool defined_in_canvas = 8;
+  // Values bound to the referenced component's declared params.
+  // Only set for items that reference an externally defined component.
+  google.protobuf.Struct params = 11;
   // Width of the item. The unit is given in width_unit.
   optional uint32 width = 9;
   // Unit of the width. Current possible values: empty string.

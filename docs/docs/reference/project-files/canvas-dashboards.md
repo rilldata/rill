@@ -52,6 +52,8 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
         - **donut_chart** - Donut or Pie chart to display sums of total
 
 
+    - **`params`** - _[object]_ - Values bound to the referenced component's declared params. Only valid together with `component`. Values must be scalars.
+
     - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit)
 
   - **`name`** - _[string]_ - Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries.

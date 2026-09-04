@@ -20,6 +20,24 @@ _[string]_ - Refers to the display name for the component
 
 _[string]_ - Detailed description of the component's purpose and functionality
 
+### `params`
+
+_[array of object]_ - List of typed parameters that canvases can bind values to when referencing this component. Bound values are available in the renderer properties' templating as `{{ .params.<name> }}`, and the metrics view metadata of a field-typed param as `{{ .fields.<name>.display_name }}`, `{{ .fields.<name>.format_d3 }}`, `{{ .fields.<name>.format_preset }}` and `{{ .fields.<name>.format_type }}`.
+
+  - **`name`** - _[string]_ - Param name. Must be a valid identifier; referenced in the renderer properties' templating as `{{ .params.<name> }}`. _(required)_
+
+  - **`type`** - _[string]_ - Param type. Params of type `metrics_view` must be named `metrics_view` or end with `_metrics_view`. _(required)_
+
+  - **`description`** - _[string]_ - Human-facing description of the param
+
+  - **`required`** - _[boolean]_ - If true, a canvas item referencing this component must bind a value for the param. Mutually exclusive with `default`.
+
+  - **`default`** - _[string, number, boolean]_ - Default value used when the param is not bound
+
+  - **`metrics_view`** - _[string]_ - For `measure`, `dimension` and `time_dimension` params, the name of a sibling param of type `metrics_view` whose bound metrics view the field must belong to. May be omitted when exactly one `metrics_view` param is declared.
+
+  - **`options`** - _[array]_ - For scalar params, the allowed values. Renders as a select input in visual editors.
+
 ### `input`
 
 _[array of object]_ - List of input variables that can be passed to the component
@@ -301,3 +319,33 @@ _[object]_ - (no description)
   - **`title`** - _[string]_ - Image title
 
   - **`description`** - _[string]_ - Image description
+
+### `custom_chart`
+
+_[object]_ - A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
+Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
+metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+
+
+  - **`metrics_sql`** - _[string]_ - Metrics SQL query selecting the dimensions and measures to plot, e.g.
+  `SELECT {{ .params.dim }}, {{ .params.measure }} FROM {{ .params.metrics_view }} LIMIT 10`.
+  Measures arrive pre-aggregated; do not wrap them in aggregate functions.
+
+
+  - **`spec`** - _[object]_ - (no description)
+
+    - **`chartType`** - _[string]_ - The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+
+    - **`encodings`** - _[object]_ - Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+    to a field. Each value is either a field name or an encoding object.
+
+
+    - **`chartProperties`** - _[object]_ - Per-chart-type presentation tuning, e.g. `innerRadius`, `stackMode`, `interpolate`.
+
+  - **`vega_spec`** - _[string]_ - A Vega-Lite spec, as an alternative to `spec` for a chart Rill cannot describe.
+  This is what ejecting a chart spec in the component editor produces: the Vega-Lite it
+  compiled to, with the param bindings turned back into template references. Rill no longer
+  derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
+  Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
+  and size the chart to its container with `"width": "container"`, `"height": "container"`
+  and `"autosize": {"type": "fit"}`. Mutually exclusive with `spec`.

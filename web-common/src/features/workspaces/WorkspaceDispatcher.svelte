@@ -4,13 +4,16 @@
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
   import { generatingCanvasFilePath } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
+  import { generatingComponentFilePath } from "@rilldata/web-common/features/custom-viz/examples/import-with-ai";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
+  import ComponentWorkspace from "@rilldata/web-common/features/workspaces/ComponentWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
@@ -52,8 +55,13 @@
 
   let resourceKind = $derived($resourceName?.kind as ResourceKind | undefined);
 
+  const { customComponents } = featureFlags;
+
   let WorkspaceComponent = $derived(
-    workspaces.get(resourceKind ?? $inferredResourceKind),
+    (resourceKind ?? $inferredResourceKind) === ResourceKind.Component &&
+      $customComponents
+      ? ComponentWorkspace
+      : workspaces.get(resourceKind ?? $inferredResourceKind),
   );
 
   let resourceQuery = $derived(getResource(queryClient));
@@ -69,6 +77,9 @@
   let parseError = $derived($parseErrorQuery);
 
   let isGeneratingThisFile = $derived($generatingCanvasFilePath === path);
+  let isImportingThisComponent = $derived(
+    $generatingComponentFilePath === path,
+  );
 
   onMount(() => {
     expandDirectory(path);
@@ -92,6 +103,8 @@
   <div class="flex-1 overflow-hidden">
     {#if isGeneratingThisFile}
       <GeneratingMessage title="Generating your Canvas dashboard..." />
+    {:else if isImportingThisComponent}
+      <GeneratingMessage title="Importing example using AI..." description="" />
     {:else if fileArtifact.isPreviewableDataFile}
       <ParquetWorkspace {fileArtifact} />
     {:else if WorkspaceComponent}

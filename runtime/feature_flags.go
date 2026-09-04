@@ -66,6 +66,8 @@ var defaultFeatureFlags = map[string]string{
 	"cloud_editing": "false",
 	// Controls visibility of the custom chart option in canvas dashboards
 	"custom_charts": "false",
+	// Controls visibility of standalone custom viz components (creation, canvas references, extraction, examples gallery)
+	"custom_components": "false",
 	// Controls visibility of the personal canvas feature (per-user owner-only canvases stored as virtual files)
 	"personal_canvases": "false",
 }

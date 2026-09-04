@@ -308,6 +308,7 @@ func TestCanvasResolveTransitiveAccess(t *testing.T) {
 		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
 		"m2.sql": `SELECT 'bar' as bar, 2 as y`,
 		"m3.sql": `SELECT 'baz' as baz, 3 as z`,
+		"m4.sql": `SELECT 'qux' as qux, 4 as w`,
 		"mv1.yaml": `
 version: 1
 type: metrics_view
@@ -338,6 +339,16 @@ measures:
 - name: z
   expression: sum(z)
 `,
+		"mv4.yaml": `
+version: 1
+type: metrics_view
+model: m4
+dimensions:
+- column: qux
+measures:
+- name: w
+  expression: sum(w)
+`,
 		"c1.yaml": `
 type: canvas
 rows:
@@ -350,12 +361,17 @@ rows:
       - custom_chart:
           metrics_sql: "SELECT bar, y FROM mv2"
   - items:
+      - custom_chart:
+          metrics_sql:
+            - "SELECT bar, y FROM mv2"
+            - "SELECT qux, w FROM mv4"
+  - items:
       - markdown:
           content: 'Total z: {{ metrics_sql "SELECT z FROM mv3" }}'
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 11, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 14, 0, 0)
 
 	// Build claims with a transitive access rule on the canvas
 	ctx := t.Context()
@@ -391,4 +407,167 @@ rows:
 	sec, err = rt.ResolveSecurity(ctx, id, claims, mv3)
 	require.NoError(t, err)
 	require.True(t, sec.CanAccess())
+
+	// Resolve security for mv4 (referenced via a metrics_sql list in a multi-query custom chart); should be accessible
+	mv4 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv4")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv4)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+}
+
+func TestCanvasItemParamBindings(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": ""},
+	})
+
+	// Create a model, a metrics view, a parameterized component, and a canvas binding values to its params.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT '2025-01-01T00:00:00Z'::TIMESTAMP AS ts, 'foo' as foo, 1 as x`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+timeseries: ts
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"trend.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: time_dim
+    type: time_dimension
+    required: true
+  - name: limit
+    type: number
+    default: 500
+custom_chart:
+  metrics_sql: SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: ts}
+      y: {field: value}
+`,
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+      - component: trend
+        params:
+          metrics_view: mv1
+          measure: x
+          time_dim: ts
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+
+	// The canvas should be valid and have a parser-added ref to the param-bound metrics view.
+	c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
+	var hasMVRef bool
+	for _, ref := range c1.Meta.Refs {
+		if ref.Kind == runtime.ResourceKindMetricsView && ref.Name == "mv1" {
+			hasMVRef = true
+		}
+	}
+	require.True(t, hasMVRef, "expected canvas to have a ref to the param-bound metrics view")
+
+	// The param-bound metrics view should be accessible through transitive access on the canvas.
+	claims := &runtime.SecurityClaims{
+		AdditionalRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: "c1"},
+					},
+				},
+			},
+		},
+	}
+	mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
+	sec, err := rt.ResolveSecurity(t.Context(), id, claims, mv1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+
+	// Invalid: a bound measure that doesn't exist in the metrics view.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+      - component: trend
+        params:
+          metrics_view: mv1
+          measure: nonexistent
+          time_dim: ts
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindCanvas, "c1", `not a measure in metrics view "mv1"`)
+
+	// Invalid: a missing required param.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+      - component: trend
+        params:
+          metrics_view: mv1
+          time_dim: ts
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindCanvas, "c1", `missing value for required param "measure"`)
+
+	// Invalid: passing params to a component that doesn't declare any.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"plain.yaml": `
+type: component
+kpi:
+  metrics_view: mv1
+  measure: x
+`,
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+      - component: plain
+        params:
+          foo: 1
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 6, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindCanvas, "c1", "does not declare any params")
+
+	// Valid again: fix the canvas and check it recovers.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+      - component: trend
+        params:
+          metrics_view: mv1
+          measure: x
+          time_dim: ts
+          limit: 100
+      - component: plain
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 }

@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -13,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -665,4 +668,418 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func TestResolveComponentWithParams(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+			"trend.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: limit
+    type: number
+    default: 500
+  - name: smooth
+    type: boolean
+    default: false
+custom_chart:
+  metrics_sql: "SELECT country, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}"
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: country}
+      y: {field: "{{ .params.measure }}"}
+    chartProperties:
+      pointCount: "{{ .params.limit }}"
+      showPoints: "{{ .params.smooth }}"
+      label: "Top {{ .params.limit }}"
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	args, err := structpb.NewStruct(map[string]any{
+		"metrics_view": "mv1",
+		"measure":      "count",
+		"smooth":       false,
+	})
+	require.NoError(t, err)
+
+	res, err := server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.NoError(t, err)
+
+	// Templating should resolve provided args and declared defaults.
+	props := res.RendererProperties.AsMap()
+	require.Equal(t, "SELECT country, count AS value FROM mv1 LIMIT 500", props["metrics_sql"])
+
+	// Field params are templated into the spec as strings.
+	spec := props["spec"].(map[string]any)
+	encodings := spec["encodings"].(map[string]any)
+	require.Equal(t, "count", encodings["y"].(map[string]any)["field"])
+
+	// Numeric and boolean params keep their type when a value is exactly one placeholder,
+	// so Flint receives 500 and false rather than "500" and "false".
+	chartProps := spec["chartProperties"].(map[string]any)
+	require.Equal(t, float64(500), chartProps["pointCount"])
+	require.Equal(t, false, chartProps["showPoints"])
+
+	// Partial interpolations remain strings.
+	require.Equal(t, "Top 500", chartProps["label"])
+
+	// The resolved args should contain the merged defaults and provided args.
+	require.Equal(t, map[string]any{
+		"metrics_view": "mv1",
+		"measure":      "count",
+		"limit":        float64(500),
+		"smooth":       false,
+	}, res.ResolvedArgs.AsMap())
+
+	// Missing required arg should return InvalidArgument.
+	args, err = structpb.NewStruct(map[string]any{"metrics_view": "mv1"})
+	require.NoError(t, err)
+	_, err = server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.Error(t, err)
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+	require.ErrorContains(t, err, `missing value for required param "measure"`)
+
+	// Unknown arg should return InvalidArgument.
+	args, err = structpb.NewStruct(map[string]any{"metrics_view": "mv1", "measure": "count", "nope": 1})
+	require.NoError(t, err)
+	_, err = server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.Error(t, err)
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+	require.ErrorContains(t, err, `unknown param "nope"`)
+}
+
+func TestResolveEjectedComponent(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country, 1 AS amount`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+  display_name: Country
+measures:
+- name: revenue
+  display_name: Total Revenue
+  expression: SUM(amount)
+  format_preset: currency_usd
+`,
+			// What ejecting a chart spec produces: the Vega-Lite it compiled to, with the bound
+			// values turned back into references to the params and their field metadata.
+			"trend.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: dim
+    type: dimension
+    required: true
+  - name: measure
+    type: measure
+    required: true
+custom_chart:
+  metrics_sql: "SELECT {{ .params.dim }}, {{ .params.measure }} FROM {{ .params.metrics_view }}"
+  vega_spec: |
+    {
+      "mark": "bar",
+      "encoding": {
+        "x": {"field": "{{ .params.dim }}", "title": "{{ .fields.dim.display_name }}"},
+        "y": {
+          "field": "{{ .params.measure }}",
+          "title": "{{ .fields.measure.display_name }}",
+          "formatType": "{{ .fields.measure.format_type }}",
+          "format": "{{ .fields.measure.format_d3 }}"
+        }
+      },
+      "data": {"name": "query1"}
+    }
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	args, err := structpb.NewStruct(map[string]any{
+		"metrics_view": "mv1",
+		"dim":          "country",
+		"measure":      "revenue",
+	})
+	require.NoError(t, err)
+
+	res, err := server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.NoError(t, err)
+
+	props := res.RendererProperties.AsMap()
+	require.Equal(t, "SELECT country, revenue FROM mv1", props["metrics_sql"])
+
+	var vegaSpec struct {
+		Encoding struct {
+			X struct {
+				Field string `json:"field"`
+				Title string `json:"title"`
+			} `json:"x"`
+			Y struct {
+				Field      string `json:"field"`
+				Title      string `json:"title"`
+				FormatType string `json:"formatType"`
+				Format     string `json:"format"`
+			} `json:"y"`
+		} `json:"encoding"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(props["vega_spec"].(string)), &vegaSpec))
+
+	require.Equal(t, "country", vegaSpec.Encoding.X.Field)
+	require.Equal(t, "Country", vegaSpec.Encoding.X.Title)
+	require.Equal(t, "revenue", vegaSpec.Encoding.Y.Field)
+	require.Equal(t, "Total Revenue", vegaSpec.Encoding.Y.Title)
+	require.Equal(t, "rill_revenue", vegaSpec.Encoding.Y.FormatType)
+	// The measure formats from a preset rather than a d3 string, so there is nothing to substitute.
+	require.Empty(t, vegaSpec.Encoding.Y.Format)
+}
+
+// TestResolveEjectedComponentFromAgentInstructions runs the exact spec shape that the component
+// authoring instructions tell the developer agent to write when it ejects a chart spec
+// (runtime/ai/instructions/data/resources/component.md), so the two cannot drift apart.
+func TestResolveEjectedComponentFromAgentInstructions(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT NOW() AS ts, 1 AS amount`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+measures:
+- name: revenue
+  display_name: Total Revenue
+  expression: SUM(amount)
+  format_preset: currency_usd
+`,
+			"trend.yaml": `
+type: component
+display_name: Measure trend
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: time_dim
+    type: time_dimension
+    required: true
+  - name: limit
+    type: number
+    default: 500
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.time_dim }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.time_dim }}
+    LIMIT {{ .params.limit }}
+  vega_spec: |
+    {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": "container",
+      "autosize": {"type": "fit"},
+      "data": {"name": "query1"},
+      "mark": {"type": "line", "interpolate": "monotone", "point": true},
+      "encoding": {
+        "x": {
+          "field": "{{ .params.time_dim }}",
+          "type": "temporal",
+          "title": "{{ .fields.time_dim.display_name }}"
+        },
+        "y": {
+          "field": "{{ .params.measure }}",
+          "type": "quantitative",
+          "title": "{{ .fields.measure.display_name }}",
+          "axis": {"formatType": "{{ .fields.measure.format_type }}"}
+        },
+        "tooltip": [
+          {
+            "field": "{{ .params.measure }}",
+            "type": "quantitative",
+            "title": "{{ .fields.measure.display_name }}",
+            "formatType": "{{ .fields.measure.format_type }}"
+          }
+        ]
+      }
+    }
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	args, err := structpb.NewStruct(map[string]any{
+		"metrics_view": "mv1",
+		"measure":      "revenue",
+		"time_dim":     "ts",
+	})
+	require.NoError(t, err)
+
+	res, err := server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.NoError(t, err)
+
+	props := res.RendererProperties.AsMap()
+	vegaSpec := props["vega_spec"].(string)
+
+	// Nothing may be left for Vega to choke on: an unresolved placeholder reaches it as a field
+	// name or inside a tooltip expression.
+	require.NotContains(t, vegaSpec, "{{")
+
+	var spec map[string]any
+	require.NoError(t, json.Unmarshal([]byte(vegaSpec), &spec))
+	require.Equal(t, "container", spec["width"])
+	require.Equal(t, "container", spec["height"])
+	require.Equal(t, map[string]any{"type": "fit"}, spec["autosize"])
+	require.Equal(t, map[string]any{"name": "query1"}, spec["data"])
+
+	encoding := spec["encoding"].(map[string]any)
+	x := encoding["x"].(map[string]any)
+	y := encoding["y"].(map[string]any)
+	require.Equal(t, "ts", x["field"])
+	require.Equal(t, "Time", x["title"])
+	require.Equal(t, "revenue", y["field"])
+	require.Equal(t, "Total Revenue", y["title"])
+	require.Equal(t, "rill_revenue", y["axis"].(map[string]any)["formatType"])
+
+	// The scalar param is injected as a native Vega-Lite param, as the instructions state.
+	params := spec["params"].([]any)
+	require.Contains(t, params, map[string]any{"name": "limit", "value": float64(500)})
+}
+
+func TestResolveCanvasWithParamBoundMetricsView(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+			"trend.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+custom_chart:
+  metrics_sql: "SELECT country, {{ .params.measure }} AS value FROM {{ .params.metrics_view }}"
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: ts}
+      y: {field: value}
+`,
+			// Built-in renderer with a templated metrics_view: ResolveCanvas must not
+			// treat the raw template string as a metrics view resource name.
+			"tplkpi.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
+			"c1.yaml": `
+type: canvas
+rows:
+- items:
+  - component: trend
+    params:
+      metrics_view: mv1
+      measure: count
+  - component: tplkpi
+    params:
+      metrics_view: mv1
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
+		InstanceId: instanceID,
+		Canvas:     "c1",
+	})
+	require.NoError(t, err)
+
+	// The referenced components should be returned, and the param-bound metrics view
+	// should be included in the referenced metrics views.
+	require.Contains(t, res.ResolvedComponents, "trend")
+	require.Contains(t, res.ResolvedComponents, "tplkpi")
+	require.Contains(t, res.ReferencedMetricsViews, "mv1")
+	require.Len(t, res.ReferencedMetricsViews, 1)
+
+	// The canvas items should carry the param bindings.
+	items := res.Canvas.GetCanvas().State.ValidSpec.Rows[0].Items
+	require.Len(t, items, 2)
+	require.Equal(t, map[string]any{"metrics_view": "mv1", "measure": "count"}, items[0].Params.AsMap())
 }

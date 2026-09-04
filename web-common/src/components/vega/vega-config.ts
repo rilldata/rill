@@ -102,6 +102,7 @@ export const getRillTheme: (
     bar: {
       fill: barColor,
     },
+    text: { fill: axisLabelColor },
     line: { stroke: lineColor, strokeWidth: 1.5, strokeOpacity: 1 },
     path: { stroke: lineColor },
     rect: { fill: lineColor },

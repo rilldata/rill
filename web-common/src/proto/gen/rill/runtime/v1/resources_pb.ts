@@ -4787,6 +4787,14 @@ export class ComponentSpec extends Message<ComponentSpec> {
   rendererProperties?: Struct;
 
   /**
+   * Declared parameters that canvases can bind values to when referencing this component.
+   * Bound values are available in the renderer properties' templating as {{ .params.<name> }}.
+   *
+   * @generated from field: repeated rill.runtime.v1.ComponentParam params = 10;
+   */
+  params: ComponentParam[] = [];
+
+  /**
    * @generated from field: repeated rill.runtime.v1.ComponentVariable input = 8;
    */
   input: ComponentVariable[] = [];
@@ -4813,6 +4821,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 7, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 10, name: "params", kind: "message", T: ComponentParam, repeated: true },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -4929,6 +4938,97 @@ export class ComponentVariable extends Message<ComponentVariable> {
 
   static equals(a: ComponentVariable | PlainMessage<ComponentVariable> | undefined, b: ComponentVariable | PlainMessage<ComponentVariable> | undefined): boolean {
     return proto3.util.equals(ComponentVariable, a, b);
+  }
+}
+
+/**
+ * ComponentParam declares a typed, validated parameter of a component.
+ *
+ * @generated from message rill.runtime.v1.ComponentParam
+ */
+export class ComponentParam extends Message<ComponentParam> {
+  /**
+   * Param name. Must be a valid identifier; referenced in templates as {{ .params.<name> }}.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Param type. One of: "string", "number", "boolean", "metrics_view", "measure", "dimension", "time_dimension".
+   *
+   * @generated from field: string type = 2;
+   */
+  type = "";
+
+  /**
+   * Human-facing description of the param.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * If true, a canvas item referencing this component must bind a value for the param.
+   *
+   * @generated from field: bool required = 4;
+   */
+  required = false;
+
+  /**
+   * Default value used when the param is not bound. Mutually exclusive with required=true.
+   *
+   * @generated from field: google.protobuf.Value default = 5;
+   */
+  default?: Value;
+
+  /**
+   * For "measure", "dimension" and "time_dimension" params:
+   * the name of a sibling param of type "metrics_view" whose bound metrics view the field must belong to.
+   * May be omitted when exactly one "metrics_view" param is declared, in which case the parser fills it in.
+   *
+   * @generated from field: string metrics_view_param = 6;
+   */
+  metricsViewParam = "";
+
+  /**
+   * For scalar params: allowed values. Renders as a select input in visual editors.
+   *
+   * @generated from field: repeated google.protobuf.Value options = 7;
+   */
+  options: Value[] = [];
+
+  constructor(data?: PartialMessage<ComponentParam>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ComponentParam";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "required", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "default", kind: "message", T: Value },
+    { no: 6, name: "metrics_view_param", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "options", kind: "message", T: Value, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentParam {
+    return new ComponentParam().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ComponentParam {
+    return new ComponentParam().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ComponentParam {
+    return new ComponentParam().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ComponentParam | PlainMessage<ComponentParam> | undefined, b: ComponentParam | PlainMessage<ComponentParam> | undefined): boolean {
+    return proto3.util.equals(ComponentParam, a, b);
   }
 }
 
@@ -5390,6 +5490,14 @@ export class CanvasItem extends Message<CanvasItem> {
   definedInCanvas = false;
 
   /**
+   * Values bound to the referenced component's declared params.
+   * Only set for items that reference an externally defined component.
+   *
+   * @generated from field: google.protobuf.Struct params = 11;
+   */
+  params?: Struct;
+
+  /**
    * Width of the item. The unit is given in width_unit.
    *
    * @generated from field: optional uint32 width = 9;
@@ -5413,6 +5521,7 @@ export class CanvasItem extends Message<CanvasItem> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "params", kind: "message", T: Struct },
     { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

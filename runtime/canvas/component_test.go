@@ -966,3 +966,297 @@ leaderboard:
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
+
+func TestValidateCustomChart(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: static metrics_sql string and a Flint spec.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: foo}
+      y: {field: y}
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: channels may bind a bare field name instead of an encoding mapping.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: foo
+      y: [y]
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: incomplete drafts are allowed; the visual editor persists custom charts with
+	// missing or empty properties while the user is still building them.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: metrics_sql of the wrong type.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: 42
+  spec:
+    chartType: Bar Chart
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
+
+	// Valid: an ejected component draws a Vega-Lite spec instead of a chart spec.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: a component draws one or the other, not both.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec: '{"mark": "bar"}'
+  spec:
+    chartType: Bar Chart
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"spec" and "vega_spec" are mutually exclusive`,
+	})
+
+	// Invalid: vega_spec is a JSON string, not a mapping.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec:
+    mark: bar
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"vega_spec" must be a string`,
+	})
+
+	// Invalid: spec must be a mapping, not a JSON string.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec: '{"chartType": "Bar Chart"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"spec" must be a mapping`,
+	})
+
+	// Invalid: empty chartType.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: ""
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'spec.chartType' must not be empty")
+
+	// Invalid: an encoding channel that is neither a field name nor an encoding mapping.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: 42
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a field name or an encoding mapping")
+
+	// Valid: a parameterized component with templated properties reconciles.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+custom_chart:
+  metrics_sql: SELECT foo, {{ .params.measure }} AS value FROM {{ .params.metrics_view }}
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: foo}
+      y: {field: "{{ .params.measure }}"}
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: a parameterized component still gets structural checks despite templated properties.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+custom_chart:
+  metrics_sql: 42
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: "{{ .params.metrics_view }}"}
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
+}
+
+func TestValidateParameterizedRenderer(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: all fields templated; membership checks are deferred to param binding.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+  measure: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: templated properties do not exempt the component from structural checks;
+	// the required 'measure' property is missing.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'measure' property")
+
+	// Valid: static metrics view with a templated field; the static x.field is still validated.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: measure
+    type: measure
+    required: true
+    metrics_view: metrics_view
+  - name: metrics_view
+    type: metrics_view
+    default: mv1
+line_chart:
+  metrics_view: mv1
+  x:
+    field: foo
+  y:
+    field: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: static x.field is a measure, caught even though other fields are templated.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: measure
+    type: measure
+    required: true
+    metrics_view: metrics_view
+  - name: metrics_view
+    type: metrics_view
+    default: mv1
+line_chart:
+  metrics_view: mv1
+  x:
+    field: y
+  y:
+    field: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
+}
+
+func TestValidateUnknownRendererWithParams(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// A parameterized component skips field validation, but an unknown renderer
+	// (e.g. an erroneous `renderer:` wrapper around the real block) must still fail.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+renderer:
+  custom_chart:
+    metrics_sql: SELECT foo, y FROM {{ .params.metrics_view }}
+    vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `unsupported renderer "renderer"`)
+}

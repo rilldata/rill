@@ -4445,6 +4445,13 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
    */
   rendererProperties?: Struct;
 
+  /**
+   * The effective args used for resolution: the component's declared param defaults merged with the provided args.
+   *
+   * @generated from field: google.protobuf.Struct resolved_args = 3;
+   */
+  resolvedArgs?: Struct;
+
   constructor(data?: PartialMessage<ResolveComponentResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4454,6 +4461,7 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
   static readonly typeName = "rill.runtime.v1.ResolveComponentResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 2, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 3, name: "resolved_args", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentResponse {
