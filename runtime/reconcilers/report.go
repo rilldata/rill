@@ -887,6 +887,20 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
 	var t time.Time
 	for _, ref := range refs {
+		// Explores (referenced by AI reports) inherit the watermark of their metrics view.
+		// Resolving the metrics view here instead of in the watermark query keeps the query's cache keyed on the metrics view's data.
+		if ref.Kind == runtime.ResourceKindExplore {
+			res, err := r.C.Get(ctx, ref, false)
+			if err != nil {
+				return t, false, fmt.Errorf("failed to get explore %q: %w", ref.Name, err)
+			}
+			spec := res.GetExplore().State.ValidSpec
+			if spec == nil {
+				return t, false, fmt.Errorf("explore %q is not valid", ref.Name)
+			}
+			ref = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
+		}
+
 		q := &queries.ResourceWatermark{
 			ResourceKind: ref.Kind,
 			ResourceName: ref.Name,

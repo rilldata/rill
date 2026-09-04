@@ -139,7 +139,7 @@ Supports ai resolvers only as of now.
 
       - **`time_zone`** - _[string]_ - IANA time zone used to evaluate the time range expressions (e.g., 'America/New_York'). Defaults to UTC.
 
-      - **`explore`** - _[string]_ - Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard, and the time range is resolved against it.
+      - **`explore`** - _[string]_ - Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard. Combined with `watermark: inherit` on the report, time range expressions are resolved against the latest data in the metrics view instead of the report's trigger time.
 
       - **`dimensions`** - _[array of string]_ - List of dimensions to include in the analysis
 

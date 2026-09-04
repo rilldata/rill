@@ -3792,7 +3792,7 @@ definitions:
                 description: IANA time zone used to evaluate the time range expressions (e.g., 'America/New_York'). Defaults to UTC.
               explore:
                 type: string
-                description: Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard, and the time range is resolved against it.
+                description: "Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard. Combined with `watermark: inherit` on the report, time range expressions are resolved against the latest data in the metrics view instead of the report's trigger time."
               dimensions:
                 type: array
                 items:
