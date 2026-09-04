@@ -21,11 +21,13 @@ function makeResource(
   } as unknown as V1Resource;
 }
 
-function makeQuery(resources: V1Resource[] | undefined) {
+// `initializing` defaults to false to match the wire format: the runtime always
+// serializes the field, so it is never undefined on a successful response.
+function makeQuery(resources: V1Resource[] | undefined, initializing = false) {
   // Minimal query-shaped object matching what refetchInterval receives.
   return {
     state: {
-      data: resources ? { resources } : undefined,
+      data: resources ? { resources, initializing } : undefined,
     },
   } as any;
 }
@@ -156,64 +158,38 @@ describe("createSmartRefetchInterval", () => {
     expect(refetchInterval(q)).toBe(false);
   });
 
-  // ─── Fallback behavior: no relevant resources yet ────────────────
+  // ─── No relevant resources yet ───────────────────────────────────
+  //
+  // The runtime hides the ProjectParser from non-admins, so the response can't
+  // be used to tell "still building" from "nothing to show". ListResources
+  // reports that in `initializing` instead.
 
-  it("polls when no relevant resources but non-parser resources are reconciling", () => {
-    // Simulates runtime restart: models are still being built,
-    // dashboards haven't been created yet
-    const q = makeQuery([
-      makeResource({
-        projectParser: {},
-        reconcileStatus: "RECONCILE_STATUS_RUNNING",
-      } as any),
-      makeResource({ reconcileStatus: "RECONCILE_STATUS_RUNNING" }), // model
-    ]);
-    expect(refetchInterval(q)).toBe(INITIAL_REFETCH_INTERVAL);
-  });
-
-  it("polls slowly when only ProjectParser is reconciling and no relevant resources", () => {
-    // Can't distinguish "empty project" from "parser still creating
-    // resources during startup," so we poll conservatively.
-    const q = makeQuery([
-      makeResource({
-        projectParser: {},
-        reconcileStatus: "RECONCILE_STATUS_RUNNING",
-      } as any),
-    ]);
+  it("polls when no relevant resources and the runtime is still initializing", () => {
+    // Runtime restart: models are still being built, dashboards don't exist yet.
+    const q = makeQuery(
+      [makeResource({ reconcileStatus: "RECONCILE_STATUS_RUNNING" })],
+      true,
+    );
     expect(refetchInterval(q)).toBe(MAX_REFETCH_INTERVAL);
   });
 
-  it("keeps polling when non-parser resources are idle but parser is still reconciling", () => {
-    // During wake-up the parser creates resources incrementally;
-    // early resources (sources, models) may finish before explores
-    // are created. Keep polling so we pick them up.
-    const q = makeQuery([
-      makeResource({
-        projectParser: {},
-        reconcileStatus: "RECONCILE_STATUS_RUNNING",
-      } as any),
-      makeResource(), // idle model
-    ]);
-    expect(refetchInterval(q)).not.toBe(false);
-  });
-
-  it("stops polling when all resources including parser are idle and no relevant resources", () => {
-    const q = makeQuery([
-      makeResource({
-        projectParser: {},
-        reconcileStatus: "RECONCILE_STATUS_IDLE",
-      } as any),
-      makeResource(), // idle model
-    ]);
+  it("stops polling when no relevant resources and the runtime is done initializing", () => {
+    const q = makeQuery([makeResource()], false);
     expect(refetchInterval(q)).toBe(false);
   });
 
-  // ─── Empty resource list (runtime just started) ──────────────────
+  // ─── Empty resource list ─────────────────────────────────────────
 
-  it("polls when resource list is completely empty", () => {
-    // Runtime just started; not even ProjectParser created yet.
-    const q = makeQuery([]);
-    expect(refetchInterval(q)).not.toBe(false);
+  it("polls when the resource list is empty and the runtime is still initializing", () => {
+    const q = makeQuery([], true);
+    expect(refetchInterval(q)).toBe(MAX_REFETCH_INTERVAL);
+  });
+
+  it("stops polling when the resource list is empty and the runtime is done initializing", () => {
+    // Security policies denied every resource. ListResources returns 200 with an
+    // empty list, which used to be read as "runtime not ready" and polled forever.
+    const q = makeQuery([], false);
+    expect(refetchInterval(q)).toBe(false);
   });
 
   // ─── Error state (runtime returning errors) ──────────────────────

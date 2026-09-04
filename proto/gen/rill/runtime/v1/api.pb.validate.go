@@ -7227,6 +7227,8 @@ func (m *ListResourcesResponse) validate(all bool) error {
 
 	// no validation rules for NextPageToken
 
+	// no validation rules for Initializing
+
 	if len(errors) > 0 {
 		return ListResourcesResponseMultiError(errors)
 	}

@@ -82,53 +82,31 @@ export function createSmartRefetchInterval(
   ): number | false {
     const resources = query.state.data?.resources;
 
-    // No data (query errored or hasn't resolved) or empty resource list
-    // (runtime just started, parser hasn't created resources yet): keep
-    // polling so we pick up resources once the runtime is ready.
-    if (!resources || resources.length === 0) {
+    // No data yet (the query errored or hasn't resolved): keep polling so we
+    // pick up resources once the runtime responds.
+    if (!resources) {
       return MAX_REFETCH_INTERVAL;
     }
 
+    // Only inspect the resources this caller cares about. Checking all of them
+    // would poll forever off the ProjectParser, which stays RUNNING
+    // indefinitely on dev/branch deployments (file watching).
     const relevantResources = resources.filter(isRelevant);
-
-    // When no relevant resources exist yet, we need to decide whether to
-    // keep polling (resources are still being built) or stop (project is
-    // genuinely empty). Three cases:
-    //
-    // 1. Relevant resources exist → only check those. This avoids
-    //    perpetual polling from ProjectParser, which stays RUNNING
-    //    indefinitely on dev/branch deployments (file watching).
-    //
-    // 2. No relevant resources, but non-parser resources are reconciling
-    //    or the parser is still creating resources → keep polling.
-    //    During startup the parser creates resources incrementally
-    //    (sources → models → explores), so explores may not exist yet.
-    //
-    // 3. Only ProjectParser exists (no non-parser resources yet) and
-    //    it's reconciling → poll at MAX_REFETCH_INTERVAL. We can't
-    //    distinguish "empty project" from "parser still creating
-    //    resources," so we poll conservatively. Once the parser creates
-    //    non-parser resources we move to case 2; if it finishes without
-    //    creating any, we stop.
-    let toCheck: V1Resource[];
-    if (relevantResources.length > 0) {
-      toCheck = relevantResources;
-    } else {
-      const nonParser = resources.filter((r) => !r.projectParser);
-      const parserReconciling = resources.some(
-        (r) => !!r.projectParser && isResourceReconciling(r),
-      );
-      if (nonParser.length === 0 && parserReconciling) {
-        return MAX_REFETCH_INTERVAL;
-      } else if (nonParser.length > 0 && parserReconciling) {
-        toCheck = resources;
-      } else {
-        toCheck = nonParser;
-      }
+    if (relevantResources.length === 0) {
+      // An empty list is a valid, terminal answer: the project may have no resources, or the
+      // user's security policies may have denied all of them (ListResources splices denied
+      // resources out and still returns 200). Only the runtime can tell the two apart, which is
+      // what `initializing` is for. Note the runtime hides the ProjectParser from everyone but
+      // admins, so a viewer's response never carries the reconcile state we'd otherwise infer
+      // this from.
+      return query.state.data?.initializing ? MAX_REFETCH_INTERVAL : false;
     }
 
     const currentState = queryRefetchStateMap.get(query) || {};
-    const updatedState = updateSmartRefetchMeta(toCheck, currentState);
+    const updatedState = updateSmartRefetchMeta(
+      relevantResources,
+      currentState,
+    );
     queryRefetchStateMap.set(query, updatedState);
 
     return updatedState.refetchInterval;
