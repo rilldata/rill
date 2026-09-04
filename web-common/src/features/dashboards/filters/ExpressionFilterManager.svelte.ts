@@ -52,7 +52,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
 
-  public curSetParams = $state(new URLSearchParams());
+  private curSetParams = $state<URLSearchParams | undefined>(undefined);
 
   // Shared with every manager below this one, so a chip edit reports itself
   // without the managers in between having to forward it. See `filter-events.ts`.
@@ -105,12 +105,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
     );
   }
 
-  public createListener() {}
-
   public clone() {
     const cloned = new ExpressionFilterManager(
       this.metricsViewsProvider,
       this.yamlConfigProvider,
+      this.singleParamFormMv,
     );
 
     const newUrlSearch = new URLSearchParams();
@@ -121,7 +120,13 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   public setUrlParams(searchParams: URLSearchParams) {
-    const expandedUrlParams = expandCompressedParams(searchParams);
+    let expandedUrlParams: URLSearchParams;
+    try {
+      expandedUrlParams = expandCompressedParams(searchParams);
+    } catch {
+      // If we fail to decompress, do not throw here.
+      return;
+    }
 
     const relevantUrlParams = new URLSearchParams();
     expandedUrlParams.forEach((value, key) => {
@@ -132,6 +137,13 @@ export class ExpressionFilterManager implements UrlParamsStore {
         relevantUrlParams.append(key, value);
       }
     });
+
+    // Do not update managers if params didnt change.
+    if (
+      this.curSetParams &&
+      this.curSetParams.toString() === relevantUrlParams.toString()
+    )
+      return;
 
     const { expr, inList, advanced } = mergeFilterParams(relevantUrlParams);
 
@@ -154,9 +166,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   public setParamForMetricsView(mvName: string, param: string) {
     const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
-    const paramsAreEqual = this.curSetParams.get(paramKey) === param;
-    if (paramsAreEqual) return;
-
     const newParams = new URLSearchParams(this.curSetParams);
     newParams.set(paramKey, param);
     this.setUrlParams(newParams);

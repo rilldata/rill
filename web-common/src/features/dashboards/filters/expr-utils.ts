@@ -18,15 +18,15 @@ export type MergedFilterParams = {
 /**
  * Merges the filter params of individual metrics views into a single expression.
  *
- * The UI has one filter editor, so the filters of every metrics view have to be folded into one
- * expression. Each param is parsed and its top level conditions are unioned, in the order the
- * metrics views are given. Conditions that repeat across metrics views are kept once, matched on
- * meaning rather than shape, so `country IN ('US','CA')` and `country IN ('CA','US')` merge.
+ * The UI has one filter editor, so the filters of every metrics view have to be folded into one expression.
+ * Each param is parsed and its top level conditions are unioned.
+ * Conditions that repeat across metrics views are kept once,
+ * matched on meaning rather than shape, so `country IN ('US','CA')` and `country IN ('CA','US')` merge.
  *
- * `advanced` reports that the merge cannot be shown as chips, because a condition is a nested
- * AND/OR, or because a dimension or measure ended up with more than one condition. The latter
- * happens when metrics views filter the same identifier differently: only one of those conditions
- * would get a chip, and editing it would leave the others in place.
+ * `advanced` reports that the merge cannot be shown as chips because,
+ * 1. A condition is a nested AND/OR
+ * 2. A dimension or measure ended up with more than one condition.
+ * The latter happens when metrics views filter the same identifier differently.
  */
 export function mergeFilterParams(
   urlParams: URLSearchParams,

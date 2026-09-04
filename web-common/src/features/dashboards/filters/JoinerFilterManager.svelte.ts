@@ -43,8 +43,6 @@ export class JoinerFilterManager {
   >;
   // Dimensions currently filtered in "In List" mode, which have their own param syntax.
   public inListDimensions: string[];
-  public hasSomeFilter: boolean;
-  public isComplexFilter: boolean;
 
   public constructor(
     private readonly metricsViewsProvider: MetricsViewsProvider,
@@ -97,17 +95,6 @@ export class JoinerFilterManager {
             : "",
         ]),
       ),
-    );
-
-    this.hasSomeFilter = $derived(Object.values(this.managerLookup).length > 0);
-    // Currently only single level AND joiner is supported where each dimension/measure has a single filter.
-    // Anything else is considered complex filter, and we only show an editable text box.
-    this.isComplexFilter = $derived(
-      this.type === V1Operation.OPERATION_OR ||
-        Object.values(this.managerLookup).some(
-          (managers) => managers.length > 1,
-        ) ||
-        this.managers.joinerManagers.length > 0,
     );
   }
 

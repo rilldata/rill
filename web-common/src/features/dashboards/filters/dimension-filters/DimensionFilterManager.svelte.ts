@@ -109,13 +109,19 @@ export class DimensionFilterManager {
   }
 
   public clone() {
-    return new DimensionFilterManager(
+    const cloned = new DimensionFilterManager(
       this.name,
       this.label,
       this.expr,
       this.mode === DimensionFilterMode.InList,
       true,
     );
+    if (!this.expr) {
+      // If expr is empty then these fields get lost
+      cloned.mode = this.mode;
+      cloned.exclude = this.exclude;
+    }
+    return cloned;
   }
 
   public apply(dimensionManager: DimensionFilterManager) {

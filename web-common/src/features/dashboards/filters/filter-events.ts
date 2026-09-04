@@ -8,8 +8,6 @@ import type { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 export type FilterChangeSource = string | undefined;
 
 export type FilterEvents = {
-  /** The filter param settled on a new value. Diffed and emitted by `ExpressionFilterManager.createListener`. */
-  "state-changed": boolean;
   /** A filter was mutated. Emitted synchronously by the manager that was mutated. */
   "filter-changed": { source: FilterChangeSource };
 };

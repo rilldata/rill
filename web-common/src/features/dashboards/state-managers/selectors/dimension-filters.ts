@@ -97,6 +97,34 @@ export const useSelectedValuesForCompareDimension = (ctx: StateManagers) => {
   ) as ReturnType<typeof selectedDimensionValues>;
 };
 
+/**
+ * Selected values for `dimensionName` as they appear in `whereFilter`.
+ * Returns undefined when the values cannot be read off the expression,
+ * a contains filter for example, where they come from a search query instead.
+ */
+export function getSelectedValuesInFilter(
+  whereFilter: V1Expression | undefined,
+  dimensionName: string,
+): string[] | undefined {
+  if (!whereFilter || isExpressionUnsupported(whereFilter) || !dimensionName)
+    return undefined;
+
+  const dimExpr = whereFilter.cond?.exprs?.find(
+    (e) => matchExpressionByName(e, dimensionName) && !isSubqueryExpression(e),
+  );
+  // No filter on the dimension, so nothing is selected.
+  if (!dimExpr?.cond?.op) return [];
+
+  if (
+    dimExpr.cond.op === V1Operation.OPERATION_IN ||
+    dimExpr.cond.op === V1Operation.OPERATION_NIN
+  ) {
+    return [...new Set(getValuesInExpression(dimExpr) as string[])];
+  }
+
+  return undefined;
+}
+
 export const getWhereFilterExpressionIndex = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((name: string) => number | undefined) => {

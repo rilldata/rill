@@ -1,6 +1,9 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import {
+  getSelectedValuesInFilter,
+  getWhereFilterExpressionIndex,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
@@ -241,9 +244,18 @@ const metricsViewReducers = {
       const mvName =
         expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
       if (mvName) {
-        exploreState.whereFilter =
+        const newWhereFilter =
           expressionFilterManager.topLevelJoiner.expr[mvName] ??
           createAndExpression([]);
+        // Read before whereFilter is replaced, since the pin moves with the values it points at.
+        exploreState.tdd.pinIndex = getUpdatedPinIndex(
+          exploreState.tdd.pinIndex,
+          exploreState.selectedComparisonDimension,
+          exploreState.whereFilter,
+          newWhereFilter,
+        );
+
+        exploreState.whereFilter = newWhereFilter;
         exploreState.dimensionsWithInlistFilter =
           expressionFilterManager.inList;
       }
@@ -732,6 +744,30 @@ function getPinIndexForDimension(
 
   // 1st entry in the expression is the identifier. hence the -2 here.
   return dimExpr.cond.exprs.length - 2;
+}
+
+/**
+ * `tdd.pinIndex` is an index into the comparison dimension's selected values,
+ * so removing or reordering those values leaves the pin on the wrong row.
+ * Everything up to and including the pin stays pinned,
+ * and the pin is dropped once none of those values are selected anymore.
+ */
+export function getUpdatedPinIndex(
+  pinIndex: number,
+  dimensionName: string | undefined,
+  oldWhereFilter: V1Expression | undefined,
+  newWhereFilter: V1Expression | undefined,
+) {
+  if (pinIndex === -1 || !dimensionName) return pinIndex;
+
+  const oldValues = getSelectedValuesInFilter(oldWhereFilter, dimensionName);
+  const newValues = getSelectedValuesInFilter(newWhereFilter, dimensionName);
+  // A contains filter gets its values from a search query rather than the expression,
+  // so there is nothing to remap against. Leave the pin as is.
+  if (!oldValues || !newValues) return pinIndex;
+
+  const pinnedValues = new Set(oldValues.slice(0, pinIndex + 1));
+  return newValues.findLastIndex((v) => pinnedValues.has(v));
 }
 
 export const dimensionSearchText = writable("");

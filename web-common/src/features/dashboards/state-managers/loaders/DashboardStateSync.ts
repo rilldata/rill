@@ -57,7 +57,6 @@ export class DashboardStateSync {
     private readonly dataLoader: DashboardStateDataLoader,
     private readonly expressionFilterManager: ExpressionFilterManager,
   ) {
-    console.log("DashboardStateSync constructor");
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
       client,
@@ -249,6 +248,7 @@ export class DashboardStateSync {
     this.updating = true;
     this.expressionFilterManager.updating = true;
     let redirectUrl: URL | undefined = undefined;
+    // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
     try {
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
         // Resolve start/end by making a network call.

@@ -157,6 +157,15 @@ export class MetricsViewsProvider {
   public setMetricsViewNames(metricsViewNames: string[]) {
     metricsViewNames = metricsViewNames.filter(Boolean);
     if (arrayUnorderedEquals(this.metricsViewNames, metricsViewNames)) return;
+
+    // Cleanup time range query store subscribe for removed metrics views.
+    // Also create a copy of the entries to easily update in place.
+    [...this.timeRangeUnsubs.entries()].forEach(([mv, unsub]) => {
+      if (metricsViewNames.includes(mv)) return;
+      unsub();
+      this.timeRangeUnsubs.delete(mv);
+    });
+
     this.metricsViewNames = metricsViewNames;
     this.processResources();
   }

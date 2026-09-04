@@ -627,7 +627,6 @@ export function testDimensionFilters(variant: ExpressionFiltersVariant) {
       // Select mode applies once the dropdown closes.
       await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
 
-      console.log("Remove...");
       await removeDimensionFilter(AD_BIDS_PUBLISHER_DIMENSION);
 
       await waitForEmptyFilters();

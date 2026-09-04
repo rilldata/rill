@@ -3,7 +3,6 @@ import { page } from "$app/state";
 import { untrack } from "svelte";
 
 export interface UrlParamsStore {
-  curSetParams: URLSearchParams;
   setUrlParams(urlParams: URLSearchParams): void;
   applyFilterToParams(urlParams: URLSearchParams): void;
 }
@@ -16,7 +15,6 @@ export function syncStoreWithSource(
   skipUrlSync = false,
 ) {
   let lock = false;
-  let prevUrlSearch = "";
 
   if (!skipUrlSync) {
     $effect(() => {
@@ -38,12 +36,8 @@ export function syncStoreWithSource(
         });
       }
 
-      if (newUrlParams.toString() === prevUrlSearch) {
-        lock = false;
-        return;
-      }
-      prevUrlSearch = newUrlParams.toString();
-
+      // No need to safeguard against unchanged url.
+      // It should already happen in setUrlParams since it will have other callers.
       untrack(() => store.setUrlParams(newUrlParams));
 
       lock = false;
