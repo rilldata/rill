@@ -1,23 +1,20 @@
 package ai
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/stretchr/testify/require"
 )
 
-func TestMCPInstructionsFor(t *testing.T) {
-	require.Contains(t, mcpInstructionsFor(true), "## Skills")
-	require.NotContains(t, mcpInstructionsFor(false), "## Skills")
+func TestMCPInstructions(t *testing.T) {
+	require.Contains(t, MCPInstructions, "## Skills")
+	require.NotContains(t, mcpInstructionsWithoutSkills, "## Skills")
 	// The surrounding sections are present either way
-	for _, hasSkills := range []bool{true, false} {
-		instr := mcpInstructionsFor(hasSkills)
+	for _, instr := range []string{MCPInstructions, mcpInstructionsWithoutSkills} {
 		require.Contains(t, instr, "## Workflow Overview")
 		require.Contains(t, instr, "## Project Development")
 	}
-	require.True(t, strings.Contains(MCPInstructions, "## Skills"))
 }
 
 func TestFilterSkills(t *testing.T) {

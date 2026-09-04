@@ -67,6 +67,9 @@ explore:
 	// jwt, err := auth.NewDevToken(nil, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI})
 	// require.NoError(t, err)
 
+	// The project defines no skills, so the instructions omit the skills section
+	require.NotContains(t, conn.InitializeResult().Instructions, "## Skills")
+
 	// Test tool listings
 	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
 	require.NoError(t, err)
@@ -161,4 +164,33 @@ explore:
 		},
 	})
 	require.ErrorContains(t, err, `want "object"`)
+}
+
+// TestMCPInstructionsWithSkills asserts that the skills section of the MCP server instructions
+// is advertised when the project defines skills.
+func TestMCPInstructionsWithSkills(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"skills/glossary/SKILL.md": `---
+description: Business glossary.
+---
+
+ARPU excludes trial users.`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "mcp/test", Version: "1.0.0"}, nil)
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, nil)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	require.Contains(t, conn.InitializeResult().Instructions, "## Skills")
 }

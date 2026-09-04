@@ -53,14 +53,8 @@ If you have edit access, the server also exposes tools for inspecting and editin
 // and cannot tailor the instructions per project, can extend it instead of restating it.
 const MCPInstructions = mcpWorkflowInstructions + mcpSkillsInstructions + mcpProjectDevInstructions
 
-// mcpInstructionsFor returns the MCP server instructions for a project,
-// omitting the skills section when the project defines no skills.
-func mcpInstructionsFor(hasSkills bool) string {
-	if hasSkills {
-		return MCPInstructions
-	}
-	return mcpWorkflowInstructions + mcpProjectDevInstructions
-}
+// mcpInstructionsWithoutSkills are the instructions advertised to clients of a project that defines no skills.
+const mcpInstructionsWithoutSkills = mcpWorkflowInstructions + mcpProjectDevInstructions
 
 // MCPToolSpecs returns the specs of all registered tools, keyed by name.
 // The specs are freshly built and owned by the caller, so they may be mutated.
@@ -79,15 +73,8 @@ func MCPToolSpecs() map[string]*mcp.Tool {
 // Since it is scoped to the session, a new MCP server should be created for each client connection.
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
-	// Advertise the skills section only when the project defines skills.
-	// On a load error, fail open with the full instructions: they are harmless without skills.
-	skills, err := s.Skills(ctx)
-	if err != nil {
-		s.logger.Warn("failed to load project skills", zap.Error(err))
-	}
-	instructions := mcpInstructionsFor(err != nil || len(skills) > 0)
-
-	// Create the MCP server
+	// Create the MCP server.
+	// The instructions omit the skills section; it is added during the initialization handshake if the project defines skills (see below).
 	srv := mcp.NewServer(
 		&mcp.Implementation{
 			Name:    "rill",
@@ -95,7 +82,7 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 			Version: s.runner.Runtime.Version().String(),
 		},
 		&mcp.ServerOptions{
-			Instructions: instructions,
+			Instructions: mcpInstructionsWithoutSkills,
 			InitializedHandler: func(ctx context.Context, r *mcp.InitializedRequest) {
 				// Save user agent in the session
 				clientInfo := r.Session.InitializeParams().ClientInfo
@@ -118,6 +105,31 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 			},
 		},
 	)
+
+	// Advertise the skills section of the instructions only when the project defines skills.
+	// It is resolved during the initialization handshake rather than when building the server,
+	// because the instructions are only returned on initialization while the server is rebuilt for every request.
+	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			res, err := next(ctx, method, req)
+			if method != "initialize" || err != nil {
+				return res, err
+			}
+			init, ok := res.(*mcp.InitializeResult)
+			if !ok {
+				return res, err
+			}
+			// On a load error, fail open with the skills section: it is harmless for projects without skills.
+			skills, skillsErr := s.Skills(ctx)
+			if skillsErr != nil {
+				s.logger.Warn("failed to load project skills", zap.Error(skillsErr))
+			}
+			if skillsErr != nil || len(skills) > 0 {
+				init.Instructions = MCPInstructions
+			}
+			return init, nil
+		}
+	})
 
 	// Inject the Session before every request, and trigger a flush after each request is finished.
 	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {

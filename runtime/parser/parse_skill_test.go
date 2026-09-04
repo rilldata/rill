@@ -49,6 +49,11 @@ name: broken
 ---
 
 Body.`,
+		// Invalid: empty front matter, which must be reported as the missing description rather than as an unclosed delimiter
+		`skills/empty/SKILL.md`: `---
+---
+
+Body.`,
 		// Invalid: front matter name doesn't match the directory name
 		`skills/mismatch/SKILL.md`: `---
 name: other-name
@@ -105,6 +110,7 @@ Body.`,
 	}
 	perrors := []*runtimev1.ParseError{
 		{FilePath: "/skills/broken/SKILL.md", Message: `missing required front matter field "description"`},
+		{FilePath: "/skills/empty/SKILL.md", Message: `missing required front matter field "description"`},
 		{FilePath: "/skills/mismatch/SKILL.md", Message: `must match the skill's directory name`},
 		{FilePath: "/skills/typo/SKILL.md", Message: "failed to parse front matter"},
 		{FilePath: "/skills/Bad_Name/SKILL.md", Message: "invalid skill name"},

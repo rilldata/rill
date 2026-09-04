@@ -378,15 +378,24 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.updatedResources = nil
 	p.deletedResources = nil
 
-	// Load entire repo
-	files, err := p.Repo.ListGlob(ctx, "**/*.{env,md,sql,yaml,yml}", true)
+	// Load entire repo.
+	// Skills are listed with a dedicated glob instead of adding "md" to the glob below,
+	// since matching every markdown file in the repo would count unrelated docs against drivers.RepoListLimit.
+	files, err := p.Repo.ListGlob(ctx, "**/*.{env,sql,yaml,yml}", true)
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
+	skillFiles, err := p.Repo.ListGlob(ctx, "**/SKILL.md", true)
+	if err != nil {
+		return fmt.Errorf("could not list project skill files: %w", err)
+	}
 
 	// Build paths slice
-	paths := make([]string, 0, len(files))
+	paths := make([]string, 0, len(files)+len(skillFiles))
 	for _, file := range files {
+		paths = append(paths, file.Path)
+	}
+	for _, file := range skillFiles {
 		paths = append(paths, file.Path)
 	}
 

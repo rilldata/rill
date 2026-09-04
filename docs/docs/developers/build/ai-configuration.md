@@ -126,11 +126,13 @@ In addition to the standard Agent Skills fields, Rill supports these extension p
 ---
 description: Business glossary for our e-commerce metrics.
 metrics_views: [orders]      # Optional: only offer this skill for analyses involving these metrics views
+agents: [analyst]            # Optional: which agents the skill applies to; defaults to [analyst]
 always_apply: true           # Optional: always include the full skill instead of loading it on demand
 ---
 ```
 
 - **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file.
+- **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[analyst]`.
 - **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request.
 
 Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa.
@@ -138,7 +140,7 @@ Other agent clients ignore Rill's extension fields, so a Rill skill remains a va
 Skills are parsed into resources like the rest of your project: invalid skill files (e.g. a missing `description`) show an error on the file in Rill Developer. When the AI uses a skill, the chat response's activity trace shows a "Loaded skill" step, so you can verify a skill was applied and iterate on it: edit the file, ask a test question, and check the trace.
 
 :::warning Skills are visible to all AI users
-Skill contents are provided to every user who can use AI features in the project, including viewers. Never put secrets or sensitive data in a skill. Access to the underlying data is still governed by your metrics view security policies.
+Skill contents are provided to every user who can use AI features in the project, including viewers and, on a public project, anonymous visitors. Never put secrets or sensitive data in a skill. Access to the underlying data is still governed by your metrics view security policies.
 :::
 
 ## Visualization Tips 

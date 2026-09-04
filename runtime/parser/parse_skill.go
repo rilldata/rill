@@ -128,6 +128,14 @@ func parseSkillFrontMatter(content string, into *skillYAML) (string, error) {
 	}
 
 	rest := strings.TrimPrefix(strings.TrimPrefix(content, "---"), "\r")[1:] // Skip "---\n" or "---\r\n"
+
+	// A closing delimiter on the very next line means the front matter is empty.
+	// It is handled here because the search below requires the delimiter to be preceded by a newline.
+	if rest == "---" || strings.HasPrefix(rest, "---\n") || strings.HasPrefix(rest, "---\r\n") {
+		// Leave the struct zero-valued so required-field validation reports the actual problem
+		return strings.TrimSpace(strings.TrimPrefix(rest, "---")), nil
+	}
+
 	endIdx := strings.Index(rest, "\n---")
 	if endIdx == -1 {
 		return "", errors.New(`unclosed front matter: missing closing "---" line`)

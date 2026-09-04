@@ -9,6 +9,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/parser"
 	"go.uber.org/zap"
 )
 
@@ -111,7 +112,7 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 		if err != nil {
 			session.logger.Warn("failed to load project skills", zap.Error(err))
 		}
-		for _, sk := range skills {
+		for _, sk := range filterSkills(skills, parser.SkillAgentAnalyst, nil) {
 			if !sk.AlwaysApply {
 				continue
 			}

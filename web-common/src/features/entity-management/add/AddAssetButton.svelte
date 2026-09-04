@@ -150,9 +150,14 @@
    * Put a skill file (markdown instructions for the AI agents) in the skills directory
    */
   async function handleAddSkill() {
-    const existingNames = $skillDirectoryNamesQuery?.data ?? [];
-    // Skill names only allow lowercase letters, numbers and hyphens, so replace the "_N" suffixes getName may add
-    const name = getName("my-skill", existingNames).replace(/_/g, "-");
+    // Skill names only allow lowercase letters, numbers and hyphens, so we can't use getName, which appends "_N" suffixes
+    const existingNames = new Set(
+      ($skillDirectoryNamesQuery?.data ?? []).map((n) => n.toLowerCase()),
+    );
+    let name = "my-skill";
+    for (let i = 1; existingNames.has(name); i++) {
+      name = `my-skill-${i}`;
+    }
     const path = `skills/${name}/SKILL.md`;
 
     await $createFile.mutateAsync({

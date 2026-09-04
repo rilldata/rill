@@ -256,26 +256,13 @@ func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string
 		measuresQuoted[i] = fmt.Sprintf("`%s`", measure)
 	}
 
-	// Split skills into always-apply bodies (injected wholesale) and an index of on-demand skills (loaded via load_skill).
-	// Always-apply bodies that would exceed the size cap fall back to the on-demand index.
-	var alwaysApplySkills strings.Builder
-	var skillsIndex strings.Builder
-	for _, sk := range skills {
-		if sk.AlwaysApply && alwaysApplySkills.Len()+len(sk.Body) <= skillsMaxAlwaysApplyBytes {
-			fmt.Fprintf(&alwaysApplySkills, "## Skill: %s\n\n%s\n\n", sk.Name, sk.Body)
-		} else {
-			if sk.AlwaysApply {
-				session.logger.Warn("always-apply skill exceeds the prompt size cap; falling back to on-demand loading", zap.String("skill", sk.Name))
-			}
-			fmt.Fprintf(&skillsIndex, "- %s: %s\n", sk.Name, sk.Description)
-		}
-	}
+	alwaysApplySkills, skillsIndex := skillPrompts(skills, session.logger)
 
 	data := map[string]any{
 		"prompt":              args.Prompt,
 		"ai_instructions":     session.ProjectInstructions(),
-		"always_apply_skills": strings.TrimSpace(alwaysApplySkills.String()),
-		"skills_index":        strings.TrimSpace(skillsIndex.String()),
+		"always_apply_skills": alwaysApplySkills,
+		"skills_index":        skillsIndex,
 		"is_prompt":           args.Prompt != "",
 		"metrics_views":       strings.Join(metricsViewsQuoted, ", "),
 		"explore":             args.Explore,

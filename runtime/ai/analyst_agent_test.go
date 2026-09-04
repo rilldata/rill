@@ -414,14 +414,14 @@ measures:
 - name: revenue
   expression: SUM(revenue)
 `,
-			"skills/revenue-rca.md": `---
+			"skills/revenue-rca/SKILL.md": `---
 description: Playbook for analyzing revenue. Use whenever asked about revenue amounts or changes.
 metrics_views: [orders]
 ---
 
 When answering any question about revenue, you MUST end your final answer with the exact phrase "(via revenue-rca)".
 `,
-			"skills/glossary.md": `---
+			"skills/glossary/SKILL.md": `---
 description: Business glossary.
 always_apply: true
 ---
@@ -430,7 +430,7 @@ always_apply: true
 `,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
 
 	// Initialize eval
 	s := newEval(t, rt, instanceID)

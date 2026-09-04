@@ -2,10 +2,12 @@ package ai
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/rilldata/rill/runtime"
+	"go.uber.org/zap"
 )
 
 // skillsMaxAlwaysApplyBytes caps the total size of always-apply skill bodies injected into a prompt.
@@ -87,4 +89,22 @@ func filterSkills(skills []*Skill, agent string, metricsViewNames []string) []*S
 		res = append(res, sk)
 	}
 	return res
+}
+
+// skillPrompts splits skills into the always-apply bodies to inject into an agent's prompt wholesale
+// and an index of the remaining skills for the agent to fetch on demand with the load_skill tool.
+// An always-apply body that would exceed the size cap falls back to the on-demand index.
+func skillPrompts(skills []*Skill, logger *zap.Logger) (alwaysApply, index string) {
+	var alwaysApplyBuf, indexBuf strings.Builder
+	for _, sk := range skills {
+		if sk.AlwaysApply && alwaysApplyBuf.Len()+len(sk.Body) <= skillsMaxAlwaysApplyBytes {
+			fmt.Fprintf(&alwaysApplyBuf, "## Skill: %s\n\n%s\n\n", sk.Name, sk.Body)
+			continue
+		}
+		if sk.AlwaysApply {
+			logger.Warn("always-apply skill exceeds the prompt size cap; falling back to on-demand loading", zap.String("skill", sk.Name))
+		}
+		fmt.Fprintf(&indexBuf, "- %s: %s\n", sk.Name, sk.Description)
+	}
+	return strings.TrimSpace(alwaysApplyBuf.String()), strings.TrimSpace(indexBuf.String())
 }
