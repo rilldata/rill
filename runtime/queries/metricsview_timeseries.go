@@ -398,18 +398,17 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 	}
 
 	for _, m := range q.EphemeralMeasures {
-		res := metricsview.Measure{Name: m.Name}
-		if m.Compute != nil {
-			c, ok := m.Compute.(*runtimev1.MetricsViewAggregationMeasure_Expression)
-			if !ok {
-				return nil, fmt.Errorf("measure %q: only the `expression` compute is supported for time series", m.Name)
-			}
-			res.Compute = &metricsview.MeasureCompute{Expression: &metricsview.MeasureComputeExpression{
+		c, ok := m.Compute.(*runtimev1.MetricsViewAggregationMeasure_Expression)
+		if !ok {
+			return nil, fmt.Errorf("measure %q: only the `expression` compute is supported for time series", m.Name)
+		}
+		qry.Measures = append(qry.Measures, metricsview.Measure{
+			Name: m.Name,
+			Compute: &metricsview.MeasureCompute{Expression: &metricsview.MeasureComputeExpression{
 				Expression:  c.Expression.Expression,
 				DisplayName: c.Expression.DisplayName,
-			}}
-		}
-		qry.Measures = append(qry.Measures, res)
+			}},
+		})
 	}
 
 	if len(qry.Measures) == 0 {

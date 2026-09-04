@@ -615,7 +615,9 @@ func ephemeralMeasureNames(props map[string]any, mvn string, mv *runtimev1.Metri
 		if name == "" || expression == "" {
 			return nil, errors.New("entries in 'ephemeral_measures' must have a non-empty 'name' and 'expression'")
 		}
-		if metricsViewHasMeasure(mv, name) || metricsViewHasDimension(mv, name) {
+		// Mirror metricsview.AST.checkNameForComputedField, which also rejects the time dimension.
+		// It is often absent from mv.Dimensions, so checking it here surfaces the collision at parse time rather than at query time.
+		if metricsViewHasMeasure(mv, name) || metricsViewHasDimension(mv, name) || name == mv.TimeDimension {
 			return nil, fmt.Errorf("ephemeral measure %q collides with a field in metrics view %q", name, mvn)
 		}
 		if names[name] {

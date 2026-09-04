@@ -596,6 +596,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		// Re-render the expression from the parsed tree with dialect-safe escaping.
 		// Never splice the user-supplied string into SQL directly.
 		expr := parsed.Render(MeasureExpressionRenderOptions{
+			Dialect:    a.Dialect.String(),
 			EscapeRef:  a.Dialect.EscapeAlias,
 			SafeDivide: a.Dialect.SafeDivideExpression,
 		})

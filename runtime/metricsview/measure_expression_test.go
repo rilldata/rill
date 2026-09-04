@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,8 +33,8 @@ func TestParseMeasureExpressionAccepts(t *testing.T) {
 		{`0.4 * revenue`, []string{"revenue"}},
 		{`revenue - revenue`, []string{"revenue"}},
 		{`((((a))))`, []string{"a"}},
-		{`a /* inline comment */ + b`, []string{"a", "b"}},
 		{`"a--b" + x`, []string{"a--b", "x"}},
+		{`"a/*b" + x`, []string{"a/*b", "x"}},
 	}
 	for _, c := range cases {
 		t.Run(c.expr, func(t *testing.T) {
@@ -66,6 +67,7 @@ func TestParseMeasureExpressionRejects(t *testing.T) {
 		{`not a`, "unsupported unary operator"},
 		{`'str'`, "string literals"},
 		{`nullif(a, 'x')`, "string literals"},
+		{`nullif(a, '--')`, "string literals"},
 		{`a || b`, "unsupported operator"},
 		{`@@version`, "unsupported expression"},
 		{`@v`, "unsupported expression"},
@@ -79,6 +81,8 @@ func TestParseMeasureExpressionRejects(t *testing.T) {
 		{`a as profit`, "alias is not allowed"},
 		{`revenue -- cost`, "comments are not allowed"},
 		{`revenue # x`, "comments are not allowed"},
+		{`revenue /*- cost*/`, "comments are not allowed"},
+		{`a /* inline comment */ + b`, "comments are not allowed"},
 		{`*`, "wildcard"},
 		{`a from t`, "SQL clauses"},
 		{`distinct a`, "SQL clauses"},
@@ -120,8 +124,6 @@ func TestMeasureExpressionRender(t *testing.T) {
 		{`coalesce(a, NULL, 0.5)`, `coalesce(<a>, NULL, 0.5)`},
 		{`a % b`, `(<a> % <b>)`},
 		{`"weird""name" + 1`, `(<weird"name> + 1)`},
-		// Comments are stripped because SQL is re-rendered from the parsed tree, never echoed.
-		{`a /* comment */ + b`, `(<a> + <b>)`},
 	}
 	for _, c := range cases {
 		t.Run(c.expr, func(t *testing.T) {
@@ -130,6 +132,15 @@ func TestMeasureExpressionRender(t *testing.T) {
 			require.Equal(t, c.want, e.Render(opts))
 		})
 	}
+}
+
+func TestMeasureExpressionRenderDialectFuncOverrides(t *testing.T) {
+	e, err := ParseMeasureExpression(`round(a, 2) + round(b)`)
+	require.NoError(t, err)
+
+	// Pinot's "round" buckets to a multiple; decimal rounding is "roundDecimal".
+	require.Equal(t, `(roundDecimal(a, 2) + roundDecimal(b))`, e.Render(MeasureExpressionRenderOptions{Dialect: drivers.DialectNamePinot}))
+	require.Equal(t, `(round(a, 2) + round(b))`, e.Render(MeasureExpressionRenderOptions{Dialect: drivers.DialectNameDuckDB}))
 }
 
 func TestMeasureExpressionRenderDefaults(t *testing.T) {

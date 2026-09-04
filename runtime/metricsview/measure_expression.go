@@ -13,6 +13,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/opcode"
 	// The parser driver provides the ValueExpr implementation and registers itself on import.
 	"github.com/pingcap/tidb/pkg/parser/test_driver"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // Limits for measure expressions.
@@ -25,7 +26,9 @@ const (
 )
 
 // measureExpressionFuncs is the allowlist of scalar functions permitted in measure expressions, with their allowed arities.
-// Only add functions that are portable across all supported OLAP dialects (DuckDB, ClickHouse, Druid, Pinot).
+// The names and semantics are those of DuckDB, ClickHouse, Druid, BigQuery, Databricks, Snowflake and StarRocks.
+// Only add functions that are available with these semantics in every supported OLAP dialect;
+// where a dialect spells a function differently, add it to measureExpressionFuncOverrides.
 var measureExpressionFuncs = map[string]struct{ minArgs, maxArgs int }{
 	"abs":      {1, 1},
 	"round":    {1, 2},
@@ -41,6 +44,14 @@ var measureExpressionFuncs = map[string]struct{ minArgs, maxArgs int }{
 	"least":    {2, -1},
 }
 
+// measureExpressionFuncOverrides maps a dialect to the dialect-specific spelling of an allowlisted function.
+// Only functions whose default name is absent or means something else in that dialect belong here.
+var measureExpressionFuncOverrides = map[string]map[string]string{
+	// Pinot's "round" is a time-bucketing function, i.e. "(timeValue / roundToNearest) * roundToNearest",
+	// and has no single-argument form. Decimal rounding is "roundDecimal", which has the same one- and two-argument forms as "round".
+	drivers.DialectNamePinot: {"round": "roundDecimal"},
+}
+
 // MeasureExpression is a parsed and validated arithmetic expression over measure names,
 // e.g. "revenue - cost" or "round(revenue / users, 2)".
 // It is the safe representation of a user-supplied "ephemeral measure" expression:
@@ -53,6 +64,9 @@ type MeasureExpression struct {
 
 // MeasureExpressionRenderOptions provides dialect-specific hooks for rendering a MeasureExpression to SQL.
 type MeasureExpressionRenderOptions struct {
+	// Dialect is the name of the target SQL dialect, used to resolve measureExpressionFuncOverrides.
+	// Defaults to the empty string, which renders every function under its default name.
+	Dialect string
 	// EscapeRef escapes a referenced measure name for use as an identifier. Defaults to the identity function.
 	EscapeRef func(name string) string
 	// SafeDivide renders a division of the two provided SQL fragments. Defaults to "(num)/(den)".
@@ -255,21 +269,28 @@ func parseMeasureExprValue(node ast.ValueExpr) (measureExprNode, error) {
 	}
 }
 
-// checkMeasureExpressionComments rejects SQL line comments (`--` and `#`) outside quoted identifiers.
+// checkMeasureExpressionComments rejects SQL comments (`--`, `#` and `/* ... */`) outside quoted identifiers and string literals.
 // The parser would silently strip them, changing the expression's meaning:
-// e.g. a typo like "revenue -- cost" would parse as just "revenue".
+// e.g. a typo like "revenue -- cost" or "revenue /*- cost*/" would parse as just "revenue".
+// String literals are skipped so that they are reported by parseMeasureExprValue as literals rather than as comments.
 func checkMeasureExpressionComments(expr string) error {
-	inQuote := false
+	var quote byte // The open quote character, or 0 when outside a quoted identifier or string literal.
 	for i := 0; i < len(expr); i++ {
+		if quote != 0 {
+			if expr[i] == quote {
+				quote = 0
+			}
+			continue
+		}
 		switch {
-		case expr[i] == '"':
-			inQuote = !inQuote
-		case inQuote:
-			// ignore everything inside a quoted identifier
+		case expr[i] == '"' || expr[i] == '\'':
+			quote = expr[i]
 		case expr[i] == '#':
 			return errors.New(`comments are not allowed in the expression (found "#")`)
 		case expr[i] == '-' && i+1 < len(expr) && expr[i+1] == '-':
 			return errors.New(`comments are not allowed in the expression (found "--"); use parentheses for double negation, e.g. "a - (-b)"`)
+		case expr[i] == '/' && i+1 < len(expr) && expr[i+1] == '*':
+			return errors.New(`comments are not allowed in the expression (found "/*")`)
 		}
 	}
 	return nil
@@ -336,5 +357,9 @@ func (n measureExprFunc) render(opts MeasureExpressionRenderOptions) string {
 	for i, arg := range n.args {
 		args[i] = arg.render(opts)
 	}
-	return fmt.Sprintf("%s(%s)", n.name, strings.Join(args, ", "))
+	name := n.name
+	if override, ok := measureExpressionFuncOverrides[opts.Dialect][name]; ok {
+		name = override
+	}
+	return fmt.Sprintf("%s(%s)", name, strings.Join(args, ", "))
 }
