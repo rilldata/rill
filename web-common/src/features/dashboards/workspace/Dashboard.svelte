@@ -217,7 +217,7 @@
                 tddChartHeight={$tddChartHeight}
               />
             {:else}
-              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+              <MeasuresContainer {metricsViewName} />
             {/if}
           {/key}
         </div>
