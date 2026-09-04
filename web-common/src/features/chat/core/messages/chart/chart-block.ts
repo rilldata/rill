@@ -1,5 +1,10 @@
 import type { ChartType } from "@rilldata/web-common/features/components/charts";
-import type { V1Message } from "@rilldata/web-common/runtime-client";
+import { getDefaultTimeZone } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
+import { getUTCIANA } from "@rilldata/web-common/lib/time/timezone";
+import type {
+  V1ExploreSpec,
+  V1Message,
+} from "@rilldata/web-common/runtime-client";
 import { MessageContentType } from "../../types";
 
 // =============================================================================
@@ -51,6 +56,23 @@ export function createChartBlock(
     chartType: callData.chart_type,
     chartSpec: callData.spec,
   };
+}
+
+/**
+ * Resolves the timezone used to bin and label a chat chart.
+ *
+ * Explicit `time_range.time_zone` in the spec is authoritative.
+ * Otherwise inherit the explore default (`defaultPreset.timezone`, else
+ * `timeZones[0]`, else UTC). Missing explore context (embed, still loading,
+ * no dashboard for the metrics view) degrades to UTC.
+ */
+export function resolveChartTimeZone(
+  explicitTimeZone: string | undefined,
+  explore: V1ExploreSpec | undefined,
+): string {
+  if (explicitTimeZone) return explicitTimeZone;
+  if (!explore) return getUTCIANA();
+  return getDefaultTimeZone(explore);
 }
 
 // =============================================================================
