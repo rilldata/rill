@@ -34,6 +34,7 @@ message Resource {
     Canvas canvas = 14;
     API api = 15;
     ConnectorV2 connector = 16;
+    Translation translation = 18;
   }
 }
 
@@ -1032,4 +1033,32 @@ message ConnectorSpec {
 
 message ConnectorState {
   string spec_hash = 1;
+}
+
+message Translation {
+  TranslationSpec spec = 1;
+  TranslationState state = 2;
+}
+
+message TranslationState {}
+
+message TranslationSpec {
+  enum LabelsType {
+    LABELS_TYPE_UNSPECIFIED = 0;
+    LABELS_TYPE_BASE = 1;
+    LABELS_TYPE_DIMENSION = 2;
+    LABELS_TYPE_MEASURE = 3;
+  }
+
+  message Labels {
+    LabelsType type = 1;
+    map<string, string> labels = 2;
+  }
+
+  message ResourceTranslation {
+    Labels base_translation = 1;
+    map<string, Labels> sub_translations = 2;
+  }
+
+  map<string, ResourceTranslation> resources = 1;
 }

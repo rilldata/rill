@@ -182,7 +182,10 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	def.applyToSpec(r.ExploreSpec, &tmp.ExploreDefinitionYAML)
+	err = def.applyToSpec(r.ExploreSpec, &tmp.ExploreDefinitionYAML)
+	if err != nil {
+		return err
+	}
 	if r.ExploreSpec.DisplayName == "" {
 		r.ExploreSpec.DisplayName = ToDisplayName(node.Name)
 	}
@@ -327,7 +330,7 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 
 // applyToSpec assigns the parsed definition values to an ExploreSpec.
 // It must only be called after the explore resource has been inserted.
-func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *ExploreDefinitionYAML) {
+func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *ExploreDefinitionYAML) error {
 	spec.DisplayName = tmp.DisplayName
 	spec.Description = tmp.Description
 	spec.Banner = tmp.Banner
@@ -343,6 +346,8 @@ func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *Explor
 	spec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	spec.LockTimeZone = tmp.LockTimeZone
 	spec.AllowCustomTimeRange = d.allowCustomTimeRange
+
+	return nil
 }
 
 // parseThemeRef parses a theme from a YAML node.

@@ -1051,7 +1051,10 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 		return false, nil, err
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
-	def.applyToSpec(r.ExploreSpec, &tmp.Explore.ExploreDefinitionYAML)
+	err = def.applyToSpec(r.ExploreSpec, &tmp.Explore.ExploreDefinitionYAML)
+	if err != nil {
+		return false, nil, err
+	}
 	if r.ExploreSpec.DisplayName == "" {
 		r.ExploreSpec.DisplayName = ToDisplayName(name)
 	}

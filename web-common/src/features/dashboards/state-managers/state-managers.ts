@@ -33,6 +33,7 @@ import {
   contextColWidthDefaults,
   type ContextColWidths,
 } from "../leaderboard-context-column";
+import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
 
 export type StateManagers = {
   runtimeClient: RuntimeClient;
@@ -101,7 +102,7 @@ export function createStateManagers({
   > = derived([exploreNameStore], ([exploreName], set) =>
     createRuntimeServiceGetExplore(
       runtimeClient,
-      { name: exploreName },
+      { name: exploreName, locale: getLocale() },
       {
         query: {
           select: (data) =>

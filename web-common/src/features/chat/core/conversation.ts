@@ -340,6 +340,7 @@ export class Conversation {
    */
   private async startStreaming(request: {
     prompt?: string;
+    locale?: string;
     context?: RuntimeServiceCompleteBody;
     feedbackAgentContext?: {
       targetMessageId: string;
@@ -360,6 +361,7 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt: request.prompt,
+      locale: request.locale,
       agent: request.feedbackAgentContext
         ? ToolName.FEEDBACK_AGENT
         : this.agent,

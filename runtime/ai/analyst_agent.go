@@ -26,6 +26,7 @@ var _ Tool[*AnalystAgentArgs, *AnalystAgentResult] = (*AnalystAgent)(nil)
 
 type AnalystAgentArgs struct {
 	Prompt     string   `json:"prompt"`
+	Locale     string   `json:"locale" yaml:"locale" jsonschema:"Optional locale for the prompt. If provided, the prompt will be localized to this locale and the response will be in the locale's language'."`
 	Explore    string   `json:"explore,omitempty" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
 	Dimensions []string `json:"dimensions,omitempty" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
 	Measures   []string `json:"measures,omitempty" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
@@ -145,6 +146,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 			_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
 				MetricsView: mvName,
+				Locale:      args.Locale,
 			})
 			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
@@ -258,6 +260,10 @@ func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string
 		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
 	}
 
+	if args.Locale != "" {
+		data["locale"] = args.Locale
+	}
+
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
 		data["time_start"] = args.TimeStart.Format(time.RFC3339)
 		data["time_end"] = args.TimeEnd.Format(time.RFC3339)
@@ -289,6 +295,7 @@ func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string
 	// Generate the user prompt.
 	// It carries all the per-invocation context: the current date, dashboard/report context, applied query settings, forked-session caveats, and finally the user's actual prompt.
 	return executeTemplate(`Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
+{{ if .locale }}User's locale is "{{ .locale }}". Make sure to use this locale's language in the response.{{ end }}
 
 {{ if .is_report }}
 You are operating in an automated scheduled insight report mode where you will come up with insights on your own without additional user input.

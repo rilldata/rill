@@ -56,6 +56,12 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 			return nil, ErrForbidden
 		}
 	} else {
+		// Look up the translations once instead of once per resource.
+		translations, err := s.runtime.TranslationsForLocale(ctx, req.InstanceId, req.GetLocale())
+		if err != nil {
+			return nil, err
+		}
+
 		i := 0
 		for i < len(rs) {
 			r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, rs[i])
@@ -68,7 +74,8 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 				rs = rs[:len(rs)-1]
 				continue
 			}
-			rs[i] = r
+
+			rs[i] = runtime.ApplyTranslations(r, translations)
 			i++
 		}
 	}
@@ -165,6 +172,8 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 			if !access {
 				return
 			}
+
+			// TODO: locale
 		}
 
 		err = ss.Send(&runtimev1.WatchResourcesResponse{
@@ -218,7 +227,12 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		return nil, ErrForbidden
 	}
 
-	return &runtimev1.GetResourceResponse{Resource: r}, nil
+	translations, err := s.runtime.TranslationsForLocale(ctx, req.InstanceId, req.GetLocale())
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.GetResourceResponse{Resource: runtime.ApplyTranslations(r, translations)}, nil
 }
 
 // GetExplore implements runtimev1.RuntimeServiceServer
@@ -277,9 +291,14 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		return nil, ErrForbidden
 	}
 
+	translations, err := s.runtime.TranslationsForLocale(ctx, req.InstanceId, req.GetLocale())
+	if err != nil {
+		return nil, err
+	}
+
 	return &runtimev1.GetExploreResponse{
-		Explore:     e,
-		MetricsView: m,
+		Explore:     runtime.ApplyTranslations(e, translations),
+		MetricsView: runtime.ApplyTranslations(m, translations),
 	}, nil
 }
 

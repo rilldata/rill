@@ -9,6 +9,7 @@ import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
+import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
 
 export function useDashboardsLastUpdated(
   client: RuntimeClient,
@@ -53,7 +54,7 @@ export function useDashboards(
 ): CreateQueryResult<V1Resource[]> {
   return createRuntimeServiceListResources(
     client,
-    {},
+    { locale: getLocale() },
     {
       query: {
         select: (data) =>

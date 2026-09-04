@@ -19,7 +19,9 @@ type ListMetricsViews struct {
 
 var _ Tool[*ListMetricsViewsArgs, *ListMetricsViewsResult] = (*ListMetricsViews)(nil)
 
-type ListMetricsViewsArgs struct{}
+type ListMetricsViewsArgs struct {
+	Locale string `json:"locale" yaml:"locale" jsonschema:"Optional locale for the prompt. If provided, labels will in the locale's language'."`
+}
 
 type ListMetricsViewsResult struct {
 	AIInstructions string           `json:"ai_instructions,omitempty"`
@@ -57,6 +59,15 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 		return nil, err
 	}
 
+	var translations *runtimev1.TranslationSpec
+	if args.Locale != "" {
+		// Look up the translations once instead of once per resource.
+		translations, err = t.Runtime.TranslationsForLocale(ctx, session.InstanceID(), args.Locale)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	rs, err := ctrl.List(ctx, runtime.ResourceKindMetricsView, "", false)
 	if err != nil {
 		return nil, err
@@ -88,6 +99,11 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 			rs = rs[:len(rs)-1]
 			continue
 		}
+
+		if translations != nil {
+			r = runtime.ApplyTranslations(r, translations)
+		}
+
 		rs[i] = r
 		i++
 	}

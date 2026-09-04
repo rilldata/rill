@@ -33,6 +33,7 @@ import {
 } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
+import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
 
 export function useMetricsView(
   client: RuntimeClient,
@@ -56,6 +57,7 @@ export function getValidMetricsViewsQueryOptions(client: RuntimeClient) {
     client,
     {
       kind: ResourceKind.MetricsView,
+      locale: getLocale(),
     },
     {
       query: {

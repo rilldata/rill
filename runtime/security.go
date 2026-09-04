@@ -417,8 +417,8 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
 			rules = append([]*runtimev1.SecurityRule{rule}, rules...)
 		}
-	// Everyone can access a theme.
-	case ResourceKindTheme:
+	// Everyone can access themes and translations. They carry presentation labels, not data.
+	case ResourceKindTheme, ResourceKindTranslation:
 		rules = append(rules, allowAccessRule)
 	// All other resources can only be accessed by admins.
 	default:

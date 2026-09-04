@@ -416,6 +416,9 @@ paths:
               prompt:
                 type: string
                 description: The prompt to complete.
+              locale:
+                type: string
+                description: Locale of the user.
               agent:
                 type: string
                 description: |-
@@ -476,6 +479,9 @@ paths:
               prompt:
                 type: string
                 description: The prompt to complete.
+              locale:
+                type: string
+                description: Locale of the user.
               agent:
                 type: string
                 description: |-
@@ -3489,6 +3495,10 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: locale
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources:
@@ -3533,6 +3543,10 @@ paths:
           format: int64
         - name: pageToken
           description: Page token returned by a previous ListResources call.
+          in: query
+          required: false
+          type: string
+        - name: locale
           in: query
           required: false
           type: string
@@ -3591,6 +3605,10 @@ paths:
           required: true
           type: string
         - name: name
+          in: query
+          required: false
+          type: string
+        - name: locale
           in: query
           required: false
           type: string
@@ -4055,6 +4073,32 @@ definitions:
         type: number
         format: double
         title: Not optional, not null
+  TranslationSpecLabels:
+    type: object
+    properties:
+      type:
+        $ref: '#/definitions/TranslationSpecLabelsType'
+      labels:
+        type: object
+        additionalProperties:
+          type: string
+  TranslationSpecLabelsType:
+    type: string
+    enum:
+      - LABELS_TYPE_UNSPECIFIED
+      - LABELS_TYPE_BASE
+      - LABELS_TYPE_DIMENSION
+      - LABELS_TYPE_MEASURE
+    default: LABELS_TYPE_UNSPECIFIED
+  TranslationSpecResourceTranslation:
+    type: object
+    properties:
+      baseTranslation:
+        $ref: '#/definitions/TranslationSpecLabels'
+      subTranslations:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/TranslationSpecLabels'
   TypeCode:
     type: string
     enum:
@@ -7826,6 +7870,8 @@ definitions:
         $ref: '#/definitions/v1API'
       connector:
         $ref: '#/definitions/v1ConnectorV2'
+      translation:
+        $ref: '#/definitions/v1Translation'
   v1ResourceEvent:
     type: string
     enum:
@@ -8403,6 +8449,22 @@ definitions:
           type: object
           $ref: '#/definitions/v1Span'
     description: Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
+  v1Translation:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1TranslationSpec'
+      state:
+        $ref: '#/definitions/v1TranslationState'
+  v1TranslationSpec:
+    type: object
+    properties:
+      resources:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/TranslationSpecResourceTranslation'
+  v1TranslationState:
+    type: object
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty

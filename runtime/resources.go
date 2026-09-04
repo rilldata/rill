@@ -2,10 +2,12 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"google.golang.org/protobuf/proto"
 )
@@ -26,6 +28,7 @@ const (
 	ResourceKindCanvas         string = "rill.runtime.v1.Canvas"
 	ResourceKindAPI            string = "rill.runtime.v1.API"
 	ResourceKindConnector      string = "rill.runtime.v1.Connector"
+	ResourceKindTranslation    string = "rill.runtime.v1.Translation"
 )
 
 // ResourceKindFromPretty converts a user-friendly resource kind to a runtime resource kind.
@@ -60,6 +63,8 @@ func ResourceKindFromShorthand(kind string) string {
 		return ResourceKindAPI
 	case "connector":
 		return ResourceKindConnector
+	case "translation":
+		return ResourceKindTranslation
 	default:
 		return kind
 	}
@@ -80,7 +85,8 @@ func IsKnownResourceKind(kind string) bool {
 		ResourceKindComponent,
 		ResourceKindCanvas,
 		ResourceKindAPI,
-		ResourceKindConnector:
+		ResourceKindConnector,
+		ResourceKindTranslation:
 		return true
 	default:
 		return false
@@ -114,6 +120,8 @@ func ResourceKindFromParser(kind parser.ResourceKind) string {
 		return ResourceKindAPI
 	case parser.ResourceKindConnector:
 		return ResourceKindConnector
+	case parser.ResourceKindTranslation:
+		return ResourceKindTranslation
 	default:
 		panic(fmt.Errorf("unknown parser resource type %q", kind))
 	}
@@ -146,6 +154,8 @@ func ResourceKindToParser(kind string) parser.ResourceKind {
 		return parser.ResourceKindAPI
 	case ResourceKindConnector:
 		return parser.ResourceKindConnector
+	case ResourceKindTranslation:
+		return parser.ResourceKindTranslation
 	case ResourceKindProjectParser, ResourceKindRefreshTrigger:
 		panic(fmt.Errorf("unsupported resource type %q", kind))
 	default:
@@ -213,6 +223,50 @@ func (r *Runtime) ApplySecurityPolicy(ctx context.Context, instID string, claims
 	default:
 		// The resource can be returned as is.
 		return res, true, nil
+	}
+}
+
+// TranslationsForLocale returns the translations defined for the given locale, or nil if there aren't any.
+func (r *Runtime) TranslationsForLocale(ctx context.Context, instanceID, locale string) (*runtimev1.TranslationSpec, error) {
+	if locale == "" {
+		return nil, nil
+	}
+
+	ctrl, err := r.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// The name of a translation resource is the locale it provides translations for.
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindTranslation, Name: locale}, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return res.GetTranslation().Spec, nil
+}
+
+// ApplyTranslations rewrites the translatable fields of a resource using the given translations.
+// If there are no translations for the resource, it is returned unchanged.
+// The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
+func ApplyTranslations(res *runtimev1.Resource, translations *runtimev1.TranslationSpec) *runtimev1.Resource {
+	// The keys are matched exactly. The translation reconciler is what guarantees a key matches the real resource name.
+	t := translations.GetResources()[res.Meta.Name.Name]
+	if t.GetBaseTranslation() == nil && len(t.GetSubTranslations()) == 0 {
+		return res
+	}
+
+	switch res.Resource.(type) {
+	case *runtimev1.Resource_MetricsView:
+		return applyMetricsViewTranslation(res, t)
+	case *runtimev1.Resource_Explore:
+		return applyExploreTranslation(res, t)
+	default:
+		// The resource does not have translatable fields, so it can be returned as is.
+		return res
 	}
 }
 
@@ -344,5 +398,71 @@ func (r *Runtime) applyExploreSecurity(res *runtimev1.Resource, security *Resolv
 			Spec:  res.GetExplore().Spec,
 			State: &runtimev1.ExploreState{ValidSpec: spec},
 		}},
+	}
+}
+
+// applyMetricsViewTranslation rewrites a metrics view using the given translation.
+func applyMetricsViewTranslation(res *runtimev1.Resource, t *runtimev1.TranslationSpec_ResourceTranslation) *runtimev1.Resource {
+	// We mustn't modify the resource in-place
+	mv := proto.Clone(res.GetMetricsView()).(*runtimev1.MetricsView)
+
+	applyMetricsViewSpecTranslation(mv.Spec, t)
+	applyMetricsViewSpecTranslation(mv.State.GetValidSpec(), t)
+
+	return &runtimev1.Resource{
+		Meta:     res.Meta,
+		Resource: &runtimev1.Resource_MetricsView{MetricsView: mv},
+	}
+}
+
+// applyMetricsViewSpecTranslation rewrites a metrics view spec in-place using the given translation.
+// It must only be called on a spec that is safe to modify, i.e. one obtained by cloning.
+func applyMetricsViewSpecTranslation(spec *runtimev1.MetricsViewSpec, t *runtimev1.TranslationSpec_ResourceTranslation) {
+	if spec == nil {
+		return
+	}
+
+	applyLabels(t.GetBaseTranslation(), &spec.DisplayName, &spec.Description)
+
+	for _, dim := range spec.Dimensions {
+		labels := t.GetSubTranslations()[dim.Name]
+		if labels.GetType() == runtimev1.TranslationSpec_LABELS_TYPE_DIMENSION {
+			applyLabels(labels, &dim.DisplayName, &dim.Description)
+		}
+	}
+
+	for _, m := range spec.Measures {
+		labels := t.GetSubTranslations()[m.Name]
+		if labels.GetType() == runtimev1.TranslationSpec_LABELS_TYPE_MEASURE {
+			applyLabels(labels, &m.DisplayName, &m.Description)
+		}
+	}
+}
+
+// applyExploreTranslation rewrites an explore using the given translation.
+func applyExploreTranslation(res *runtimev1.Resource, t *runtimev1.TranslationSpec_ResourceTranslation) *runtimev1.Resource {
+	// We mustn't modify the resource in-place
+	exp := proto.Clone(res.GetExplore()).(*runtimev1.Explore)
+
+	if exp.Spec != nil {
+		applyLabels(t.GetBaseTranslation(), &exp.Spec.DisplayName, &exp.Spec.Description)
+	}
+	if validSpec := exp.State.GetValidSpec(); validSpec != nil {
+		applyLabels(t.GetBaseTranslation(), &validSpec.DisplayName, &validSpec.Description)
+	}
+
+	return &runtimev1.Resource{
+		Meta:     res.Meta,
+		Resource: &runtimev1.Resource_Explore{Explore: exp},
+	}
+}
+
+// applyLabels overwrites the given display name and description with the translated labels, if present.
+func applyLabels(labels *runtimev1.TranslationSpec_Labels, displayName, description *string) {
+	if v, ok := labels.GetLabels()[parser.TranslationLabelDisplayName]; ok {
+		*displayName = v
+	}
+	if v, ok := labels.GetLabels()[parser.TranslationLabelDescription]; ok {
+		*description = v
 	}
 }
