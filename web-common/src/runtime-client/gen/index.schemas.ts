@@ -949,6 +949,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotShowTotalsRow?: boolean;
   /** Per-measure pivot conditional formatting, serialized in the URL param format. */
   pivotFormatting?: string;
+  /** Ephemeral measures for the explore, serialized in the URL param format. */
+  ephemeralMeasures?: string;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
@@ -1445,10 +1447,18 @@ export interface V1MetricsViewAggregationMeasure {
   percentOfTotal?: V1MetricsViewAggregationMeasureComputePercentOfTotal;
   uri?: V1MetricsViewAggregationMeasureComputeURI;
   comparisonTime?: V1MetricsViewAggregationMeasureComputeComparisonTime;
+  expression?: V1MetricsViewAggregationMeasureComputeExpression;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
   measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeExpression {
+  /** Arithmetic expression over existing measure names, e.g. "revenue - cost". */
+  expression?: string;
+  /** Optional display name used in exports and result metadata. */
+  displayName?: string;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonRatio {
@@ -1796,6 +1806,9 @@ export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
+  /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+Only the `expression` compute is supported for time series. */
+  ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -3198,6 +3211,9 @@ export type QueryServiceMetricsViewTimeRangesBody = {
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
+  /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+Only the `expression` compute is supported for time series. */
+  ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;

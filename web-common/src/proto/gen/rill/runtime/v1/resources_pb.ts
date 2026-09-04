@@ -3256,6 +3256,14 @@ export class ExplorePreset extends Message<ExplorePreset> {
   pivotFormatting?: string;
 
   /**
+   * Ephemeral measures for the explore, serialized in the URL
+   * param format (frontend-only; persisted in URL state).
+   *
+   * @generated from field: optional string ephemeral_measures = 40;
+   */
+  ephemeralMeasures?: string;
+
+  /**
    * Chart display settings (frontend-only; persisted in URL state)
    *
    * @generated from field: optional bool chart_dynamic_y_axis = 35;
@@ -3304,6 +3312,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 37, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 38, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 39, name: "pivot_formatting", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 40, name: "ephemeral_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 

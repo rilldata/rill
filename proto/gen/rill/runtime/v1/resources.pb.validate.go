@@ -5607,6 +5607,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotFormatting
 	}
 
+	if m.EphemeralMeasures != nil {
+		// no validation rules for EphemeralMeasures
+	}
+
 	if m.ChartDynamicYAxis != nil {
 		// no validation rules for ChartDynamicYAxis
 	}
