@@ -111,6 +111,25 @@ const (
 	IncrementalStrategyPartitionOverwrite IncrementalStrategy = "partition_overwrite"
 )
 
+// OnSchemaChange controls how an incremental insert handles differences between the target and source schemas.
+type OnSchemaChange string
+
+const (
+	OnSchemaChangeUnspecified      OnSchemaChange = ""
+	OnSchemaChangeIgnore           OnSchemaChange = "ignore"
+	OnSchemaChangeFail             OnSchemaChange = "fail"
+	OnSchemaChangeAppendNewColumns OnSchemaChange = "append_new_columns"
+)
+
+func (m OnSchemaChange) Valid() bool {
+	switch m {
+	case OnSchemaChangeIgnore, OnSchemaChangeFail, OnSchemaChangeAppendNewColumns:
+		return true
+	default:
+		return false
+	}
+}
+
 // FileFormat is a file format for importing or exporting data.
 type FileFormat string
 

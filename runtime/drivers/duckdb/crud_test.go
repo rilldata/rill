@@ -172,9 +172,10 @@ func Test_connection_InsertTableAsSelect_WithMergeStrategy(t *testing.T) {
 	require.NoError(t, err)
 
 	opts := &InsertTableOptions{
-		ByName:    false,
-		Strategy:  drivers.IncrementalStrategyMerge,
-		UniqueKey: []string{"range"},
+		ByName:         false,
+		Strategy:       drivers.IncrementalStrategyMerge,
+		UniqueKey:      []string{"range"},
+		OnSchemaChange: drivers.OnSchemaChangeFail,
 	}
 	_, err = c.insertTableAsSelect(context.Background(), "test-merge", "SELECT range, 'merge' AS strategy FROM range(2, 4)", opts)
 	require.NoError(t, err)

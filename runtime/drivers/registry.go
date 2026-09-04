@@ -137,8 +137,6 @@ type InstanceConfig struct {
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
 	// AIMaxMessageSizeBytes is the maximum allowed size of an AI message's contents (tool call args or results). Exceeding it results in an error.
 	AIMaxMessageSizeBytes int64 `mapstructure:"rill.ai.max_message_size_bytes"`
-	// AIMCPTolerantArgs indicates whether MCP tool-call arguments with object/array fields JSON-encoded as strings are tolerantly decoded.
-	AIMCPTolerantArgs bool `mapstructure:"rill.ai.mcp_tolerant_args"`
 	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
 	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
 	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
@@ -225,7 +223,6 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
 		AIMaxMessageSizeBytes:                200 * 1024, // 200 KB
-		AIMCPTolerantArgs:                    true,
 		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
 		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}

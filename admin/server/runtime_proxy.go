@@ -2,6 +2,8 @@ package server
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,32 +34,11 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	proxyPath := r.PathValue("path")
 	proxyRawQuery := r.URL.RawQuery
 
-	// Find the project we're proxying to
-	proj, err := s.admin.DB.FindProjectByName(r.Context(), org, project)
-	if err != nil {
-		return httputil.Error(http.StatusBadRequest, err)
-	}
-
-	// Find the deployment to proxy to.
+	// Find the project and deployment we're proxying to.
 	// If a branch was specified, use the deployment for that branch; otherwise use the project's primary deployment.
-	var depl *database.Deployment
-	if branch == "" {
-		if proj.PrimaryDeploymentID == nil {
-			return httputil.Errorf(http.StatusBadRequest, "no prod deployment for project")
-		}
-		depl, err = s.admin.DB.FindDeployment(r.Context(), *proj.PrimaryDeploymentID)
-		if err != nil {
-			return httputil.Error(http.StatusBadRequest, err)
-		}
-	} else {
-		depls, err := s.admin.DB.FindDeploymentsForProject(r.Context(), proj.ID, "", branch)
-		if err != nil {
-			return httputil.Error(http.StatusBadRequest, err)
-		}
-		if len(depls) == 0 {
-			return httputil.Errorf(http.StatusBadRequest, "no deployment for branch %q", branch)
-		}
-		depl = depls[0] // At most one deployment per branch is allowed
+	proj, depl, err := s.resolveDeploymentForOrgAndProject(r.Context(), org, project, branch)
+	if err != nil {
+		return err
 	}
 
 	// Prepare a JWT to use for the proxied request.
@@ -78,27 +59,15 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 	// If a direct JWT was not provided, issue a new ephemeral runtime JWT for the proxied request.
 	if jwt == "" {
-		permissions := claims.ProjectPermissions(r.Context(), proj.OrganizationID, depl.ProjectID)
-		if proj.Public {
-			permissions.ReadProject = true
-			permissions.ReadProd = true
-		}
-		if !permissions.ReadProd {
+		jwt, err = s.issueEphemeralRuntimeToken(r.Context(), proj, depl, runtimeProxyAccessTokenTTL)
+		if errors.Is(err, errNoProdAccess) {
 			if claims.OwnerType() == auth.OwnerTypeAnon {
 				// This means no token was provided, so return instructions for how to initiate an OAuth flow.
 				// This is currently used by MCP clients that authenticate with OAuth.
 				w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata(r)))
 			}
-			return httputil.Errorf(http.StatusUnauthorized, "does not have permission to access the production deployment")
+			return httputil.Error(http.StatusUnauthorized, err)
 		}
-
-		jwt, err = s.issueRuntimeToken(r.Context(), &issueRuntimeTokenOptions{
-			project:            proj,
-			deployment:         depl,
-			projectPermissions: permissions,
-			forOwner:           true,
-			ttl:                runtimeProxyAccessTokenTTL,
-		})
 		if err != nil {
 			return httputil.Error(http.StatusInternalServerError, err)
 		}
@@ -107,20 +76,8 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	// Track usage of the deployment
 	s.admin.Used.Deployment(depl.ID)
 
-	// Determine runtime host.
-	// NOTE: In production, the runtime host serves both the HTTP and gRPC servers.
-	// But in development, the two are presently on different ports, and depl.RuntimeHost is that of the gRPC server.
-	// Until we get both servers on the same port in development, this hack rewrites the runtime host to the HTTP server.
-	runtimeHost := depl.RuntimeHost
-	if strings.HasPrefix(runtimeHost, "http://localhost:") {
-		runtimeHost = os.Getenv("RILL_RUNTIME_AUTH_AUDIENCE_URL")
-		if runtimeHost == "" {
-			runtimeHost = "http://localhost:8081"
-		}
-	}
-
 	// Create the URL to proxy to by prepending `/v1/instances/{instanceID}` to the proxy path.
-	proxyURL, err := url.Parse(runtimeHost)
+	proxyURL, err := url.Parse(runtimeHTTPHost(depl.RuntimeHost))
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
@@ -200,4 +157,74 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 
 	return nil
+}
+
+// errNoProdAccess is returned when the caller does not have access to a project's production deployment.
+// It is a sentinel because callers own the response and decide whether to emit an OAuth challenge.
+var errNoProdAccess = errors.New("does not have permission to access the production deployment")
+
+// resolveDeploymentForOrgAndProject resolves an org and project name to the deployment to serve requests from.
+// If branch is empty, it resolves the project's primary deployment.
+func (s *Server) resolveDeploymentForOrgAndProject(ctx context.Context, org, project, branch string) (*database.Project, *database.Deployment, error) {
+	proj, err := s.admin.DB.FindProjectByName(ctx, org, project)
+	if err != nil {
+		return nil, nil, httputil.Error(http.StatusBadRequest, err)
+	}
+
+	if branch == "" {
+		if proj.PrimaryDeploymentID == nil {
+			return nil, nil, httputil.Errorf(http.StatusBadRequest, "no prod deployment for project")
+		}
+		depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
+		if err != nil {
+			return nil, nil, httputil.Error(http.StatusBadRequest, err)
+		}
+		return proj, depl, nil
+	}
+
+	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", branch)
+	if err != nil {
+		return nil, nil, httputil.Error(http.StatusBadRequest, err)
+	}
+	if len(depls) == 0 {
+		return nil, nil, httputil.Errorf(http.StatusBadRequest, "no deployment for branch %q", branch)
+	}
+	return proj, depls[0], nil // At most one deployment per branch is allowed
+}
+
+// issueEphemeralRuntimeToken checks that the caller can read a project's production deployment,
+// then issues a runtime JWT for it similar to the one that could be obtained by calling GetProject.
+// It returns errNoProdAccess if the caller does not have access.
+func (s *Server) issueEphemeralRuntimeToken(ctx context.Context, proj *database.Project, depl *database.Deployment, ttl time.Duration) (string, error) {
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, depl.ProjectID)
+	if proj.Public {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+	}
+	if !permissions.ReadProd {
+		return "", errNoProdAccess
+	}
+
+	return s.issueRuntimeToken(ctx, &issueRuntimeTokenOptions{
+		project:            proj,
+		deployment:         depl,
+		projectPermissions: permissions,
+		forOwner:           true,
+		ttl:                ttl,
+	})
+}
+
+// runtimeHTTPHost returns the host to send HTTP requests to for a deployment.
+// NOTE: In production, the runtime host serves both the HTTP and gRPC servers.
+// But in development, the two are presently on different ports, and depl.RuntimeHost is that of the gRPC server.
+// Until we get both servers on the same port in development, this hack rewrites the runtime host to the HTTP server.
+func runtimeHTTPHost(runtimeHost string) string {
+	if !strings.HasPrefix(runtimeHost, "http://localhost:") {
+		return runtimeHost
+	}
+	if host := os.Getenv("RILL_RUNTIME_AUTH_AUDIENCE_URL"); host != "" {
+		return host
+	}
+	return "http://localhost:8081"
 }
