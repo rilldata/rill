@@ -34,6 +34,7 @@ message Resource {
     Canvas canvas = 14;
     API api = 15;
     ConnectorV2 connector = 16;
+    Translation translation = 18;
   }
 }
 
@@ -386,8 +387,6 @@ message MetricsViewSpec {
   // Sub-day durations (hours, minutes, seconds) are not supported. Applies to queries that take a time range, including the comparison time range.
   // Time-range introspection RPCs are exempt. If unset, no limit is enforced.
   string max_query_time_range = 36;
-
-  Translations translations = 38;
 }
 
 message SecurityRule {
@@ -503,8 +502,6 @@ message ExploreSpec {
   bool allow_custom_time_range = 20;
   // When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
   bool defined_in_metrics_view = 21;
-
-  Translations translations = 22;
 }
 
 message ExploreState {
@@ -1038,25 +1035,30 @@ message ConnectorState {
   string spec_hash = 1;
 }
 
-message Translations {
-  message DimensionTranslation {
-    string display_name = 1;
-    string description = 2;
+message Translation {
+  TranslationSpec spec = 1;
+  TranslationState state = 2;
+}
+
+message TranslationState {}
+
+message TranslationSpec {
+  enum LabelsType {
+    LABELS_TYPE_UNSPECIFIED = 0;
+    LABELS_TYPE_BASE = 1;
+    LABELS_TYPE_DIMENSION = 2;
+    LABELS_TYPE_MEASURE = 3;
   }
 
-  message MeasureTranslation {
-    string display_name = 1;
-    string description = 2;
-    google.protobuf.Struct format_d3_locale = 3;
+  message Labels {
+    LabelsType type = 1;
+    map<string, string> labels = 2;
   }
 
-  message Translation {
-    string display_name = 1;
-    string description = 2;
-    map<string, DimensionTranslation> dimensions = 3;
-    map<string, MeasureTranslation> measures = 4;
+  message ResourceTranslation {
+    Labels base_translation = 1;
+    map<string, Labels> sub_translations = 2;
   }
 
-  map<string, Translation> translations = 1;
-  string default_locale = 2;
+  map<string, ResourceTranslation> resources = 1;
 }

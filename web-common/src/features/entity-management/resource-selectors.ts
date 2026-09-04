@@ -17,6 +17,7 @@ import type { ConnectError } from "@connectrpc/connect";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -157,6 +158,7 @@ export function useResource<T = V1Resource>(
     client,
     {
       name: { kind, name },
+      locale: getLocale(),
     },
     {
       query: {
@@ -191,6 +193,7 @@ export function useResourceV2<T = V1Resource>(
     client,
     {
       name: { kind, name },
+      locale: getLocale(),
     },
     {
       query: {
@@ -229,6 +232,7 @@ export function useFilteredResources<T = Array<V1Resource>>(
     client,
     {
       kind: kind,
+      locale: getLocale(),
     },
     {
       query: {
@@ -250,7 +254,9 @@ export function useClientFilteredResources(
 ) {
   return createRuntimeServiceListResources(
     client,
-    {},
+    {
+      locale: getLocale(),
+    },
     {
       query: {
         select: (data) =>
@@ -273,7 +279,7 @@ export function getClientFilteredResourcesQueryOptions(
 ) {
   return getRuntimeServiceListResourcesQueryOptions(
     client,
-    {},
+    { locale: getLocale() },
     {
       query: {
         select: (data) =>
@@ -347,7 +353,7 @@ export function getMetricsViewAndExploreSpecsQueryOptions(
 ) {
   return getRuntimeServiceListResourcesQueryOptions(
     client,
-    {},
+    { locale: getLocale() },
     {
       query: {
         select: (data) => {

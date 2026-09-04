@@ -39,7 +39,6 @@ type ExploreDefinitionYAML struct {
 	Embeds               struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
-	Translations *TranslationsYAML `yaml:"translations"`
 }
 
 // ExploreDefaultsYAML represents the `defaults` block of an explore definition.
@@ -347,14 +346,6 @@ func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *Explor
 	spec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	spec.LockTimeZone = tmp.LockTimeZone
 	spec.AllowCustomTimeRange = d.allowCustomTimeRange
-
-	if tmp.Translations != nil {
-		var err error
-		spec.Translations, err = tmp.Translations.Proto()
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }

@@ -23,6 +23,10 @@ const (
 	maxFileSize = 1 << 17 // 128kb
 )
 
+// translationsDir is the directory that translation files live in.
+// It's flat: each file directly under it is named after the locale it provides translations for.
+const translationsDir = "/locales"
+
 // ignorePathPrefixes are prefixes of paths that should be ignored by the parser.
 // Note: Generally these ignores should be applied at the repo level (through the defaults for ignore_paths in rill.yaml).
 // This is only for files we DO want to list and show in the UI, but don't want to parse.
@@ -54,6 +58,7 @@ type Resource struct {
 	CanvasSpec      *runtimev1.CanvasSpec
 	APISpec         *runtimev1.APISpec
 	ConnectorSpec   *runtimev1.ConnectorSpec
+	TranslationSpec *runtimev1.TranslationSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -90,6 +95,7 @@ const (
 	ResourceKindCanvas
 	ResourceKindAPI
 	ResourceKindConnector
+	ResourceKindTranslation
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -155,6 +161,8 @@ func (k ResourceKind) String() string {
 		return "API"
 	case ResourceKindConnector:
 		return "Connector"
+	case ResourceKindTranslation:
+		return "Translation"
 	default:
 		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
@@ -297,7 +305,7 @@ func (p *Parser) IsSkippable(path string) bool {
 	if ok {
 		return false
 	}
-	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path) && !pathIsTranslation(path)
 }
 
 // TrackedPathsInDir returns the paths under the given directory that the parser currently has cached results for.
@@ -378,9 +386,19 @@ func (p *Parser) reload(ctx context.Context) error {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
 
+	// Load translation files separately. We can't widen the glob above to include ".json"
+	// because that would make every data file in the project a parse candidate.
+	translationFiles, err := p.Repo.ListGlob(ctx, translationsDir+"/*.json", true)
+	if err != nil {
+		return fmt.Errorf("could not list translation files: %w", err)
+	}
+
 	// Build paths slice
-	paths := make([]string, 0, len(files))
+	paths := make([]string, 0, len(files)+len(translationFiles))
 	for _, file := range files {
+		paths = append(paths, file.Path)
+	}
+	for _, file := range translationFiles {
 		paths = append(paths, file.Path)
 	}
 
@@ -459,7 +477,8 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
-		if !isSQL && !isYAML && !isDotEnv {
+		isTranslation := pathIsTranslation(path)
+		if !isSQL && !isYAML && !isDotEnv && !isTranslation {
 			continue
 		}
 
@@ -641,6 +660,13 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 			}
 			i++
 			continue
+		} else if pathIsTranslation(path) {
+			err := p.parseTranslation(ctx, path)
+			if err != nil {
+				p.addParseError(path, err, false)
+			}
+			i++
+			continue
 		}
 
 		// Identify the range of paths with the same stem as paths[i]
@@ -802,6 +828,18 @@ func (p *Parser) inferAmbiguousRefs(r *Resource) {
 			continue
 		}
 
+		// Translations reference resources by name only, so match against any translatable kind.
+		if r.Name.Kind == ResourceKindTranslation {
+			for _, kind := range []ResourceKind{ResourceKindMetricsView, ResourceKindExplore} {
+				n := ResourceName{Kind: kind, Name: ref.Name}
+				if _, ok := p.Resources[n.Normalized()]; ok {
+					refs = append(refs, n)
+					break
+				}
+			}
+			continue
+		}
+
 		// If it's a metrics view or model and there's a model with that name, use it
 		if r.Name.Kind == ResourceKindMetricsView || r.Name.Kind == ResourceKindModel {
 			n := ResourceName{Kind: ResourceKindModel, Name: ref.Name}
@@ -908,6 +946,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths, tags []st
 		r.APISpec = &runtimev1.APISpec{}
 	case ResourceKindConnector:
 		r.ConnectorSpec = &runtimev1.ConnectorSpec{}
+	case ResourceKindTranslation:
+		r.TranslationSpec = &runtimev1.TranslationSpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
@@ -1102,6 +1142,15 @@ func pathIsSQL(path string) bool {
 // pathIsYAML returns true if the path is a YAML file
 func pathIsYAML(path string) bool {
 	return strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+}
+
+// pathIsTranslation returns true if the path is a translation file, i.e. a JSON file directly under "locales/".
+func pathIsTranslation(path string) bool {
+	rest, ok := strings.CutPrefix(path, translationsDir+"/")
+	if !ok {
+		return false
+	}
+	return strings.HasSuffix(rest, ".json") && !strings.Contains(rest, "/")
 }
 
 // pathIsRillYAML returns true if the path is rill.yaml
