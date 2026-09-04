@@ -147,6 +147,139 @@ func TestOffsetTime(t *testing.T) {
 	require.Equal(t, parseTestTime(t, "2024-03-11T04:00:00Z"), OffsetTime(parseTestTime(t, "2024-03-09T05:00:00Z"), TimeGrainDay, 2, tz))
 }
 
+func TestTimeRangeBins_unalignedUTCDayRepro(t *testing.T) {
+	// Parked hang: start truncated to 00:00Z never equals end 16:00Z under t != end.
+	start := parseTestTime(t, "2026-07-29T16:00:00Z")
+	end := parseTestTime(t, "2026-08-26T16:00:00Z")
+
+	bins, err := TimeRangeBins(start, end, TimeGrainDay, time.UTC, 1, 1)
+	require.NoError(t, err)
+	require.NotEmpty(t, bins)
+	require.LessOrEqual(t, len(bins), MaxTimeRangeBins)
+
+	require.Equal(t, parseTestTime(t, "2026-07-29T00:00:00Z"), bins[0])
+	require.Equal(t, parseTestTime(t, "2026-08-26T00:00:00Z"), bins[len(bins)-1])
+	require.Equal(t, TruncateTime(start, TimeGrainDay, time.UTC, 1, 1), bins[0])
+
+	assertDateTruncAlignedSpine(t, bins, start, end, TimeGrainDay, time.UTC, 1, 1)
+}
+
+func TestTimeRangeBins_exactEndEquality(t *testing.T) {
+	t.Run("truncated start equals end", func(t *testing.T) {
+		start := parseTestTime(t, "2026-08-26T00:00:00Z")
+		end := parseTestTime(t, "2026-08-26T00:00:00Z")
+		bins, err := TimeRangeBins(start, end, TimeGrainDay, time.UTC, 1, 1)
+		require.NoError(t, err)
+		require.Empty(t, bins)
+	})
+
+	t.Run("aligned bounds exclude exclusive end", func(t *testing.T) {
+		start := parseTestTime(t, "2026-07-29T00:00:00Z")
+		end := parseTestTime(t, "2026-08-26T00:00:00Z")
+		bins, err := TimeRangeBins(start, end, TimeGrainDay, time.UTC, 1, 1)
+		require.NoError(t, err)
+		require.Equal(t, start, bins[0])
+		require.Equal(t, parseTestTime(t, "2026-08-25T00:00:00Z"), bins[len(bins)-1])
+		for _, b := range bins {
+			require.False(t, b.Equal(end))
+			require.True(t, b.Before(end))
+		}
+		assertDateTruncAlignedSpine(t, bins, start, end, TimeGrainDay, time.UTC, 1, 1)
+	})
+}
+
+func TestTimeRangeBins_emptyRange(t *testing.T) {
+	start := parseTestTime(t, "2026-08-26T16:00:00Z")
+	end := parseTestTime(t, "2026-07-29T16:00:00Z")
+	bins, err := TimeRangeBins(start, end, TimeGrainDay, time.UTC, 1, 1)
+	require.NoError(t, err)
+	require.Empty(t, bins)
+}
+
+func TestTimeRangeBins_over1500Errors(t *testing.T) {
+	start := parseTestTime(t, "2020-01-01T00:00:00Z")
+
+	t.Run("exactly 1500 bins succeeds", func(t *testing.T) {
+		end := start.Add(1500 * time.Hour)
+		bins, err := TimeRangeBins(start, end, TimeGrainHour, time.UTC, 1, 1)
+		require.NoError(t, err)
+		require.Len(t, bins, MaxTimeRangeBins)
+	})
+
+	t.Run("1501 hours errors", func(t *testing.T) {
+		end := start.Add(1501 * time.Hour)
+		type outcome struct {
+			bins []time.Time
+			err  error
+		}
+		done := make(chan outcome, 1)
+		go func() {
+			bins, err := TimeRangeBins(start, end, TimeGrainHour, time.UTC, 1, 1)
+			done <- outcome{bins, err}
+		}()
+		select {
+		case got := <-done:
+			require.Error(t, got.err)
+			require.Nil(t, got.bins)
+			require.Contains(t, got.err.Error(), "1500")
+		case <-time.After(2 * time.Second):
+			t.Fatal("TimeRangeBins hung instead of erroring above 1500 bins")
+		}
+	})
+
+	t.Run("millisecond grain over a day errors without hanging", func(t *testing.T) {
+		end := start.Add(24 * time.Hour)
+		type outcome struct {
+			bins []time.Time
+			err  error
+		}
+		done := make(chan outcome, 1)
+		go func() {
+			bins, err := TimeRangeBins(start, end, TimeGrainMillisecond, time.UTC, 1, 1)
+			done <- outcome{bins, err}
+		}()
+		select {
+		case got := <-done:
+			require.Error(t, got.err)
+			require.Nil(t, got.bins)
+			require.Contains(t, got.err.Error(), "1500")
+		case <-time.After(2 * time.Second):
+			t.Fatal("TimeRangeBins hung instead of erroring above 1500 bins")
+		}
+	})
+}
+
+func assertDateTruncAlignedSpine(t *testing.T, bins []time.Time, start, end time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) {
+	t.Helper()
+	require.NotEmpty(t, bins)
+	require.Equal(t, TruncateTime(start, tg, tz, firstDay, firstMonth), bins[0], "first bin must be date_trunc of the range start")
+	require.Equal(t, TruncateTime(end.Add(-time.Nanosecond), tg, tz, firstDay, firstMonth), bins[len(bins)-1], "last bin must be date_trunc of the last instant in [start, end)")
+
+	seen := make(map[int64]struct{}, len(bins))
+	for i, b := range bins {
+		// Each spine value is already date_trunc'd, matching the aggregation GROUP BY bucket.
+		require.Equal(t, TruncateTime(b, tg, tz, firstDay, firstMonth), b, "bin %s is not date_trunc aligned", b.Format(time.RFC3339))
+		require.True(t, b.Before(end), "bin %s is not before exclusive end", b.Format(time.RFC3339))
+		if i > 0 {
+			require.Equal(t, OffsetTime(bins[i-1], tg, 1, tz), b, "bin %d is not one grain after the previous", i)
+		}
+		seen[b.UnixNano()] = struct{}{}
+	}
+
+	samples := []time.Time{start, end.Add(-time.Nanosecond)}
+	if end.Sub(start) > 2*time.Hour {
+		samples = append(samples, start.Add(time.Hour), start.Add(end.Sub(start)/2))
+	}
+	for _, ts := range samples {
+		if ts.Before(start) || !ts.Before(end) {
+			continue
+		}
+		truncated := TruncateTime(ts, tg, tz, firstDay, firstMonth)
+		_, ok := seen[truncated.UnixNano()]
+		require.True(t, ok, "date_trunc(%s)=%s is not in the spine", ts.Format(time.RFC3339), truncated.Format(time.RFC3339))
+	}
+}
+
 func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)

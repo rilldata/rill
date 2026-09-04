@@ -1,8 +1,11 @@
 package starrocks
 
 import (
+	"strings"
 	"testing"
+	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -194,4 +197,29 @@ func TestDatabaseTypeToRuntimeType(t *testing.T) {
 			require.Contains(t, result.Code.String(), tt.expected)
 		})
 	}
+}
+
+func TestSelectTimeRangeBins_unalignedUTCDayRepro(t *testing.T) {
+	start, err := time.Parse(time.RFC3339, "2026-07-29T16:00:00Z")
+	require.NoError(t, err)
+	end, err := time.Parse(time.RFC3339, "2026-08-26T16:00:00Z")
+	require.NoError(t, err)
+
+	done := make(chan struct{})
+	var sql string
+	var selErr error
+	go func() {
+		defer close(done)
+		sql, _, selErr = DialectStarRocks.SelectTimeRangeBins(start, end, runtimev1.TimeGrain_TIME_GRAIN_DAY, "ts", time.UTC, 1, 1)
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("SelectTimeRangeBins hung on unaligned UTC day bounds")
+	}
+
+	require.NoError(t, selErr)
+	require.Contains(t, sql, "2026-07-29 00:00:00")
+	require.Contains(t, sql, "2026-08-26 00:00:00")
+	require.Equal(t, 28, strings.Count(sql, "UNION ALL"))
 }

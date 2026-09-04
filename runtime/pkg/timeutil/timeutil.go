@@ -1,6 +1,7 @@
 package timeutil
 
 import (
+	"fmt"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -8,6 +9,10 @@ import (
 	// Load IANA time zone data
 	_ "time/tzdata"
 )
+
+// MaxTimeRangeBins is the maximum number of timestamps a fill-missing time spine may contain.
+// It matches the ApproximateBins pre-check in metricsview/ast.go.
+const MaxTimeRangeBins = 1500
 
 // TimeGrain is extension of std time package with Week and Quarter added
 type TimeGrain int
@@ -182,6 +187,28 @@ func ApproximateBins(start, end time.Time, tg TimeGrain) int {
 	}
 
 	return -1
+}
+
+// TimeRangeBins returns the half-open sequence of truncated timestamps in [start, end).
+// Start is truncated to grain in tz. Iteration uses t.Before(end) so unaligned bounds terminate.
+// More than MaxTimeRangeBins timestamps is an error; the function never loops unbounded.
+func TimeRangeBins(start, end time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) ([]time.Time, error) {
+	if tz == nil {
+		tz = time.UTC
+	}
+	if tg == TimeGrainUnspecified {
+		return nil, fmt.Errorf("time grain is unspecified")
+	}
+
+	start = TruncateTime(start, tg, tz, firstDay, firstMonth)
+	var bins []time.Time
+	for t := start; t.Before(end); t = OffsetTime(t, tg, 1, tz) {
+		if len(bins) >= MaxTimeRangeBins {
+			return nil, fmt.Errorf("time range has more than %d bins for %q grain, move to a larger grain", MaxTimeRangeBins, TimeGrainToAPI(tg))
+		}
+		bins = append(bins, t)
+	}
+	return bins, nil
 }
 
 func OffsetTime(tm time.Time, tg TimeGrain, n int, tz *time.Location) time.Time {

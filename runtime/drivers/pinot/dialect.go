@@ -77,8 +77,10 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 }
 
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
-	g := timeutil.TimeGrainFromAPI(grain)
-	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
+	bins, err := timeutil.TimeRangeBins(start, end, timeutil.TimeGrainFromAPI(grain), tz, firstDay, firstMonth)
+	if err != nil {
+		return "", nil, err
+	}
 	// generate select like - SELECT * FROM (
 	//  VALUES
 	//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
@@ -87,8 +89,8 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	var sb strings.Builder
 	var args []any
 	sb.WriteString("SELECT * FROM (VALUES ")
-	for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
-		if t != start {
+	for i, t := range bins {
+		if i > 0 {
 			sb.WriteString(", ")
 		}
 		sb.WriteString("(CAST(? AS TIMESTAMP))")
