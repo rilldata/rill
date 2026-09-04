@@ -154,6 +154,7 @@
         type={isDimension ? "dimension" : "measure"}
         includeTime={!chartFieldInput?.hideTimeDimension}
         excludedValues={chartFieldInput?.excludedValues}
+        geoOnly={chartFieldInput?.geoOnly ?? false}
         selectedItem={fieldConfig?.field}
         {isRemovable}
         onRemove={() => onChange(undefined)}

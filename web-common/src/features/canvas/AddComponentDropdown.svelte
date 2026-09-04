@@ -13,6 +13,7 @@
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
   import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
+  import MapIcon from "./icons/MapIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
   type MainMenuItem = {
@@ -29,6 +30,7 @@
     { id: "kpi_grid", label: m.canvas_kpi(), icon: BigNumberIcon },
     { id: "leaderboard", label: m.canvas_leaderboard(), icon: LeaderboardIcon },
     { id: "image", label: m.canvas_image(), icon: ChartIcon },
+    { id: "map", label: m.canvas_map(), icon: MapIcon },
   ];
 
   export let disabled = false;

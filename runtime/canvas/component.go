@@ -45,6 +45,8 @@ func ValidateRendererProperties(renderer string, props map[string]any, metricsVi
 		return validatePivot(props, metricsViews)
 	case "leaderboard":
 		return validateLeaderboard(props, metricsViews)
+	case "map":
+		return validateMap(props, metricsViews)
 	case "custom_chart":
 		// TODO: Implement
 		return nil
@@ -384,6 +386,37 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 	}
 
 	return nil
+}
+
+// validateMap validates properties for map.
+func validateMap(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
+	mvn, mv, err := requireMetricsView(props, metricsViews)
+	if err != nil {
+		return err
+	}
+
+	geoDim, ok := pathutil.GetPathString(props, "geo_dimension.field")
+	if !ok {
+		return errors.New("renderer properties for map must include a string 'geo_dimension.field' property")
+	}
+	if !metricsViewHasDimension(mv, geoDim) {
+		return fmt.Errorf("referenced geo_dimension.field %q is not a dimension in metrics view %q", geoDim, mvn)
+	}
+
+	// Color on a map is always measure-driven.
+	colorMeasure, ok := pathutil.GetPathString(props, "color.measure")
+	if !ok {
+		return errors.New("renderer properties for map must include a string 'color.measure' property")
+	}
+	if !metricsViewHasMeasure(mv, colorMeasure) {
+		return fmt.Errorf("referenced color.measure %q is not a measure in metrics view %q", colorMeasure, mvn)
+	}
+
+	if err := validateOptionalMeasureField(mv, mvn, props, "size_measure.field"); err != nil {
+		return err
+	}
+
+	return validateOptionalDimensionField(mv, mvn, props, "tooltip_dimension.field")
 }
 
 // requireMetricsView extracts and validates the "metrics_view" property from renderer props.
