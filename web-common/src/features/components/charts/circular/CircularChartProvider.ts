@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -27,6 +28,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 import {
   canQueryWithTimeRange,
   getFilterWithNullHandling,
@@ -40,6 +42,9 @@ import {
 
 export type CircularChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  ephemeral_measures?: EphemeralMeasureSpec[];
   measure?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal">;
   innerRadius?: number;
@@ -90,7 +95,9 @@ export class CircularChartProvider {
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
     if (config.measure?.field) {
-      measures = [{ name: config.measure.field }];
+      measures = withEphemeralMeasures(config, [
+        { name: config.measure.field },
+      ]);
     }
 
     let colorSort: V1MetricsViewAggregationSort | undefined;

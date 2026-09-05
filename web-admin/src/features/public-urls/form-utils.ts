@@ -1,3 +1,4 @@
+import { parseMeasureExpression } from "@rilldata/web-common/features/dashboards/ephemeral-measures/expression-parser";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -77,10 +78,29 @@ export function getSanitizedExploreStateParam(
     return getProtoFromDashboardState(exploreState, exploreSpec);
 
   // Else, explicitly add the sanitized state that we want to remember.
+  // Ephemeral measures are kept only when every measure they reference is
+  // visible to the recipient, so hidden fields cannot leak through expressions.
+  const sanitizedEphemeralMeasures = exploreState.ephemeralMeasures?.filter(
+    (def) => {
+      const parsed = parseMeasureExpression(def.expression);
+      return (
+        !parsed.error &&
+        parsed.refs.every((ref) => metricsViewFields.includes(ref))
+      );
+    },
+  );
+  const sanitizedEphemeralNames = new Set(
+    sanitizedEphemeralMeasures?.map((def) => def.name) ?? [],
+  );
   const sanitizedDashboardState = {
+    ephemeralMeasures: sanitizedEphemeralMeasures?.length
+      ? sanitizedEphemeralMeasures
+      : undefined,
     // Remove any measures not specified in the metrics view fields
-    visibleMeasures: exploreState.visibleMeasures.filter((measure) =>
-      metricsViewFields?.includes(measure),
+    visibleMeasures: exploreState.visibleMeasures.filter(
+      (measure) =>
+        metricsViewFields?.includes(measure) ||
+        sanitizedEphemeralNames.has(measure),
     ),
     allMeasuresVisible: exploreState.allMeasuresVisible,
     // Remove any dimensions not specified in the metrics view fields

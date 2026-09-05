@@ -67,6 +67,7 @@ export function saveMostRecentPartialExploreState(
       {
         selectedTimezone: exploreState.selectedTimezone,
 
+        ephemeralMeasures: exploreState.ephemeralMeasures,
         visibleMeasures: exploreState.visibleMeasures,
         allMeasuresVisible: exploreState.allMeasuresVisible,
         visibleDimensions: exploreState.visibleDimensions,

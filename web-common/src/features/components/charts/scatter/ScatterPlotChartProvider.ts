@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -28,9 +29,13 @@ import {
   canQueryWithTimeRange,
   getFilterWithNullHandling,
 } from "../query-util";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type ScatterPlotChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  ephemeral_measures?: EphemeralMeasureSpec[];
   x?: FieldConfig<"quantitative" | "time">;
   y?: FieldConfig<"quantitative" | "time">;
   dimension?: FieldConfig<"nominal">;
@@ -60,7 +65,7 @@ export class ScatterPlotChartProvider {
     const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
-    const measures: V1MetricsViewAggregationMeasure[] = [];
+    let measures: V1MetricsViewAggregationMeasure[] = [];
     const dimensions: V1MetricsViewAggregationDimension[] = [];
 
     if (config.x?.field) {
@@ -82,6 +87,7 @@ export class ScatterPlotChartProvider {
     if (config.size?.type === "quantitative" && config.size?.field) {
       measures.push({ name: config.size.field });
     }
+    measures = withEphemeralMeasures(config, measures);
 
     if (config.dimension?.type === "nominal" && config.dimension?.field) {
       dimensions.push({ name: config.dimension.field });

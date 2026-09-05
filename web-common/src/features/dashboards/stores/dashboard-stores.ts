@@ -33,6 +33,8 @@ import {
   type PivotMeasureFormatting,
   type PivotTableMode,
 } from "../pivot/types";
+import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
+import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -72,13 +74,46 @@ export function includeExcludeModeFromFilters(
   return map;
 }
 
+// syncEphemeralMeasures drops ephemeral measures that reference measures no
+// longer in the explore, so a spec change never leaves views permanently
+// erroring. Must run before syncMeasures/syncDimensions, which treat the
+// remaining ephemeral measure names as valid.
+function syncEphemeralMeasures(
+  explore: V1ExploreSpec,
+  exploreState: ExploreState,
+) {
+  if (!exploreState.ephemeralMeasures?.length) return;
+  const measuresSet = new Set(explore.measures ?? []);
+  const dimensionsSet = new Set(explore.dimensions ?? []);
+  exploreState.ephemeralMeasures = exploreState.ephemeralMeasures.filter(
+    (def) => {
+      // A field later added to the spec with the same name must win;
+      // otherwise the stale definition would silently shadow it in requests.
+      if (measuresSet.has(def.name) || dimensionsSet.has(def.name)) {
+        return false;
+      }
+      const parsed = parseMeasureExpression(def.expression);
+      if (parsed.error) return false;
+      return parsed.refs.every((ref) => measuresSet.has(ref));
+    },
+  );
+  if (!exploreState.ephemeralMeasures.length) {
+    exploreState.ephemeralMeasures = undefined;
+  }
+}
+
 function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
   const measuresSet = new Set(explore.measures ?? []);
+  // Ephemeral measure names are valid anywhere a measure name is used.
+  const validNames = new Set([
+    ...measuresSet,
+    ...(exploreState.ephemeralMeasures?.map((def) => def.name) ?? []),
+  ]);
 
   // sync measures with selected leaderboard measure and ensure default measure is set
   if (explore.measures?.length) {
     const defaultMeasure = explore.measures[0];
-    if (!measuresSet.has(exploreState.leaderboardSortByMeasureName)) {
+    if (!validNames.has(exploreState.leaderboardSortByMeasureName)) {
       exploreState.leaderboardSortByMeasureName = defaultMeasure;
     }
     if (!exploreState.leaderboardMeasureNames?.length) {
@@ -99,18 +134,22 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 
   if (
     exploreState.tdd.expandedMeasureName &&
-    !measuresSet.has(exploreState.tdd.expandedMeasureName)
+    !validNames.has(exploreState.tdd.expandedMeasureName)
   ) {
     exploreState.tdd.expandedMeasureName = undefined;
   }
 
   if (exploreState.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
-    exploreState.visibleMeasures = [...measuresSet];
+    // (ephemeral measures count as selectable measures too)
+    exploreState.visibleMeasures = [
+      ...measuresSet,
+      ...(exploreState.ephemeralMeasures?.map((def) => def.name) ?? []),
+    ];
   } else {
     // remove any visible measures that doesn't exist anymore
     exploreState.visibleMeasures = exploreState.visibleMeasures.filter((m) =>
-      measuresSet.has(m),
+      validNames.has(m),
     );
     // If there are no visible measures, make the first measure visible
     if (explore.measures?.length && exploreState.visibleMeasures.length === 0) {
@@ -143,10 +182,15 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
       dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
   );
 
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   exploreState.pivot.columns = exploreState.pivot.columns.filter(
     (col) =>
       measuresSet.has(col.id) ||
       dimensionsSet.has(col.id) ||
+      ephemeralMeasureNames.has(col.id) ||
       col.type === PivotChipType.Time,
   );
 
@@ -229,6 +273,9 @@ const metricsViewReducers = {
   sync(name: string, explore: V1ExploreSpec) {
     if (!name || !explore || !explore.measures) return;
     updateMetricsExplorerByName(name, (exploreState) => {
+      // remove ephemeral measures referencing non existent measures
+      syncEphemeralMeasures(explore, exploreState);
+
       // remove references to non existent measures
       syncMeasures(explore, exploreState);
 
@@ -613,6 +660,90 @@ const metricsViewReducers = {
         ...exploreState.pivot,
         measureFormatting,
       };
+    });
+  },
+
+  addEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.ephemeralMeasures = [
+        ...(exploreState.ephemeralMeasures ?? []),
+        def,
+      ];
+      if (exploreState.activePage === DashboardState_ActivePage.PIVOT) {
+        exploreState.pivot.rowPage = 1;
+        exploreState.pivot.activeCell = null;
+        exploreState.pivot.columns.push({
+          id: def.name,
+          title: def.displayName,
+          type: PivotChipType.Measure,
+        });
+      } else {
+        // Make the new measure visible in the explore view.
+        exploreState.visibleMeasures = [
+          ...exploreState.visibleMeasures,
+          def.name,
+        ];
+        exploreState.allMeasuresVisible = false;
+      }
+    });
+  },
+
+  updateEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
+      exploreState.ephemeralMeasures = (
+        exploreState.ephemeralMeasures ?? []
+      ).map((d) => (d.name === def.name ? def : d));
+      // Chip titles are denormalized; keep any placed pivot chip in sync on rename.
+      exploreState.pivot.columns = exploreState.pivot.columns.map((col) =>
+        col.id === def.name ? { ...col, title: def.displayName } : col,
+      );
+    });
+  },
+
+  removeEphemeralMeasure(name: string, measureName: string) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.ephemeralMeasures = (
+        exploreState.ephemeralMeasures ?? []
+      ).filter((d) => d.name !== measureName);
+
+      // Remove all usages across views.
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
+      exploreState.pivot.columns = exploreState.pivot.columns.filter(
+        (col) => col.id !== measureName,
+      );
+      exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
+        (s) => s.id !== measureName,
+      );
+      if (exploreState.pivot.measureFormatting?.[measureName]) {
+        const measureFormatting = { ...exploreState.pivot.measureFormatting };
+        delete measureFormatting[measureName];
+        exploreState.pivot.measureFormatting = measureFormatting;
+      }
+
+      exploreState.visibleMeasures = exploreState.visibleMeasures.filter(
+        (m) => m !== measureName,
+      );
+      exploreState.leaderboardMeasureNames = (
+        exploreState.leaderboardMeasureNames ?? []
+      ).filter((m) => m !== measureName);
+      if (exploreState.leaderboardSortByMeasureName === measureName) {
+        exploreState.leaderboardSortByMeasureName =
+          exploreState.leaderboardMeasureNames[0] ??
+          exploreState.visibleMeasures[0] ??
+          "";
+      }
+      if (exploreState.tdd.expandedMeasureName === measureName) {
+        exploreState.tdd.expandedMeasureName = undefined;
+        if (
+          exploreState.activePage ===
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
+        ) {
+          exploreState.activePage = DashboardState_ActivePage.DEFAULT;
+        }
+      }
     });
   },
 

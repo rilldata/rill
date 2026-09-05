@@ -18,6 +18,7 @@
 </script>
 
 <script lang="ts">
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import {
@@ -114,6 +115,7 @@
 
   $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: exploreStateStore = useExploreState(exploreName);
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
@@ -341,6 +343,7 @@
           columns: values.columns,
           showTimeComparison: timeControlsState.showTimeComparison,
           selectedTimezone: timeControlsState.selectedTimezone,
+          ephemeralMeasures: $exploreStateStore?.ephemeralMeasures,
         }),
       ],
     );

@@ -1,3 +1,8 @@
+import {
+  ephemeralMeasureNameSet,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
@@ -78,30 +83,41 @@ export const aggregationRequestWithRowsAndColumns = ({
   columns,
   showTimeComparison,
   selectedTimezone,
+  ephemeralMeasures,
 }: {
   exploreSpec: V1ExploreSpec;
   rows: string[];
   columns: string[];
   showTimeComparison: boolean;
   selectedTimezone: string;
+  ephemeralMeasures?: EphemeralMeasureDef[];
 }) => {
   return (aggregationRequest: V1MetricsViewAggregationRequest) => {
     const isFlat = rows.length === 0;
+    const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
+    const isMeasureColumn = (col: string) =>
+      exploreSpec.measures?.includes(col) || ephemeralMeasureNames.has(col);
 
     // Get measures defined as columns. We do allow adding measures as rows so need to check it.
-    const measures = columns
-      .filter((col) => exploreSpec.measures?.includes(col))
-      .flatMap((measureName) => {
+    const measures = mapEphemeralMeasuresForRequest(
+      columns.filter(isMeasureColumn).flatMap((measureName) => {
         const group: V1MetricsViewAggregationMeasure[] = [
           { name: measureName },
         ];
 
-        if (showTimeComparison && aggregationRequest.comparisonTimeRange) {
+        // Comparison computes are not supported for ephemeral measures.
+        if (
+          showTimeComparison &&
+          aggregationRequest.comparisonTimeRange &&
+          !ephemeralMeasureNames.has(measureName)
+        ) {
           group.push(...getComparisonRequestMeasures(measureName));
         }
 
         return group;
-      });
+      }),
+      ephemeralMeasures,
+    );
 
     // Get dimensions defined as rows
     const dimensionsFromRows: V1MetricsViewAggregationDimension[] = rows.map(
@@ -110,7 +126,7 @@ export const aggregationRequestWithRowsAndColumns = ({
 
     // Get dimensions defined as columns
     const dimensionsFromColumns: V1MetricsViewAggregationDimension[] = columns
-      .filter((col) => !exploreSpec.measures?.includes(col))
+      .filter((col) => !isMeasureColumn(col))
       .map((col) =>
         getAggregationDimensionFromFieldName(col, selectedTimezone),
       );

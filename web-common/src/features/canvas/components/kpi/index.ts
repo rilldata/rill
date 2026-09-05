@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import type {
   ComponentCommonProperties,
   ComponentComparisonOptions,
@@ -94,6 +95,9 @@ export interface KPISpec
     ComponentFilterProperties {
   metrics_view: string;
   measure: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; `measure` may name one of them.
+  ephemeral_measures?: EphemeralMeasureSpec[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
   // Defaults to "delta" and "percent_change"

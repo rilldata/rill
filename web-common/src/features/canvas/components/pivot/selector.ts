@@ -40,7 +40,13 @@ export function validateTableSchema(
 }
 
 function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
-  const allMeasures = metricsView?.measures?.map((m) => m.name as string) || [];
+  const ephemeralMeasureNames = new Set(
+    tableSpec.ephemeral_measures?.map((c) => c.name) ?? [],
+  );
+  const allMeasures = [
+    ...(metricsView?.measures?.map((m) => m.name as string) || []),
+    ...ephemeralMeasureNames,
+  ];
   const allDimensions =
     metricsView?.dimensions?.map((d) => d.name || (d.column as string)) || [];
   const columns = tableSpec?.columns || [];
@@ -54,7 +60,11 @@ function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
       error: "Select at least one measure or dimension for the table",
     };
   }
-  const validateMeasuresRes = validateMeasures(metricsView, measures);
+  const validateMeasuresRes = validateMeasures(
+    metricsView,
+    measures,
+    ephemeralMeasureNames,
+  );
   if (!validateMeasuresRes.isValid) {
     const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
     return {
@@ -81,6 +91,9 @@ function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
 }
 
 function validatePivot(tableSpec: PivotSpec, metricsView: V1MetricsViewSpec) {
+  const ephemeralMeasureNames = new Set(
+    tableSpec.ephemeral_measures?.map((c) => c.name) ?? [],
+  );
   const measures = tableSpec.measures || [];
   const rowDimensions = tableSpec.row_dimensions || [];
   const colDimensions = tableSpec.col_dimensions || [];
@@ -91,7 +104,11 @@ function validatePivot(tableSpec: PivotSpec, metricsView: V1MetricsViewSpec) {
       error: "Select at least one measure or dimension for the table",
     };
   }
-  const validateMeasuresRes = validateMeasures(metricsView, measures);
+  const validateMeasuresRes = validateMeasures(
+    metricsView,
+    measures,
+    ephemeralMeasureNames,
+  );
   if (!validateMeasuresRes.isValid) {
     const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
     return {

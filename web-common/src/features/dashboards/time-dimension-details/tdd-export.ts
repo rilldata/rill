@@ -1,3 +1,4 @@
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -86,9 +87,11 @@ export function getTDDAggregationRequest({
   }
   if (!timeRange) return undefined;
 
-  const measures: V1MetricsViewAggregationMeasure[] = [
-    { name: exploreState.tdd.expandedMeasureName },
-  ];
+  const measures: V1MetricsViewAggregationMeasure[] =
+    mapEphemeralMeasuresForRequest(
+      [{ name: exploreState.tdd.expandedMeasureName }],
+      exploreState.ephemeralMeasures,
+    );
 
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
   const dimensionName = exploreState.selectedComparisonDimension as string;

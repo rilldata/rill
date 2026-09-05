@@ -78,6 +78,14 @@ export function getProtoFromDashboardState(
   if (!exploreState) return "";
 
   const state: PartialMessage<DashboardState> = {};
+  if (exploreState.ephemeralMeasures?.length) {
+    state.ephemeralMeasures = exploreState.ephemeralMeasures.map((def) => ({
+      name: def.name,
+      displayName: def.displayName,
+      expression: def.expression,
+      formatPreset: def.formatPreset ?? "",
+    }));
+  }
   if (exploreState.whereFilter) {
     state.where = toExpressionProto(exploreState.whereFilter);
   }

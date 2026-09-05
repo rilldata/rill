@@ -112,6 +112,7 @@
               {metricsViewName}
               leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               leaderboardMeasures={$leaderboardMeasures}
+              ephemeralMeasures={$dashboardStore.ephemeralMeasures}
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}

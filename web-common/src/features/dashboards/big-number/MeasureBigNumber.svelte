@@ -27,10 +27,15 @@
     type CrossfadeParams,
     type FlyParams,
   } from "svelte/transition";
+  import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
   export let measure: MetricsViewSpecMeasure;
+  // ephemeral measure definitions; when `measure` is one of
+  // them, the request carries its `expression` compute.
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
   export let metricsViewName: string;
@@ -47,6 +52,10 @@
   const client = useRuntimeClient();
 
   $: measureName = measure.name ?? "";
+  $: requestMeasures = mapEphemeralMeasuresForRequest(
+    [{ name: measureName }],
+    ephemeralMeasures,
+  );
 
   // Measures with required dimensions (e.g. a rolling window ordered by the time
   // dimension) produce one value per dimension value and have no single total,
@@ -58,7 +67,7 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: [{ name: measureName }],
+      measures: requestMeasures,
       where,
       timeRange: {
         start: timeStart as any,
@@ -84,7 +93,7 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: [{ name: measureName }],
+      measures: requestMeasures,
       where,
       timeRange: {
         start: comparisonTimeStart as any,
@@ -382,15 +391,19 @@
     @apply shadow-md outline-1 outline;
     outline-color: color-mix(
       in oklab,
-      var(--color-theme-500) calc(0.15 * 100%),
+      var(--color-theme-500) ephemeral(0.15 * 100%),
       transparent
     );
 
     background: linear-gradient(
       to bottom,
-      color-mix(in oklab, var(--white) calc(0.15 * 100%), transparent),
+      color-mix(in oklab, var(--white) ephemeral(0.15 * 100%), transparent),
       50%,
-      color-mix(in oklab, var(--color-theme-300) calc(0.1 * 100%), transparent)
+      color-mix(
+        in oklab,
+        var(--color-theme-300) ephemeral(0.1 * 100%),
+        transparent
+      )
     );
   }
 
@@ -398,9 +411,9 @@
     @apply shadow-md  outline-1 outline outline-[#FFFFFF26];
     background: linear-gradient(
       to bottom,
-      color-mix(in oklab, var(--white) calc(0.1 * 100%), transparent),
+      color-mix(in oklab, var(--white) ephemeral(0.1 * 100%), transparent),
       50%,
-      color-mix(in oklab, var(--white) calc(0.05 * 100%), transparent)
+      color-mix(in oklab, var(--white) ephemeral(0.05 * 100%), transparent)
     );
   }
 </style>

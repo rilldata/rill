@@ -1,3 +1,7 @@
+import {
+  ephemeralMeasureNameSet,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
@@ -95,6 +99,9 @@ export function getDimensionTableAggregationRequestForTime({
   comparisonTimeRange: V1TimeRange | undefined;
   dimensionSearchText: string;
 }): V1MetricsViewAggregationRequest {
+  const ephemeralMeasureNames = ephemeralMeasureNameSet(
+    exploreState.ephemeralMeasures,
+  );
   const measures: V1MetricsViewAggregationMeasure[] =
     exploreState.visibleMeasures.map((name) => ({
       name: name,
@@ -105,7 +112,8 @@ export function getDimensionTableAggregationRequestForTime({
     // if selected sort measure is not visible add it to list
     measures.push({ name: apiSortName });
   }
-  if (comparisonTimeRange) {
+  // Comparison computes are not supported for ephemeral measures.
+  if (comparisonTimeRange && !ephemeralMeasureNames.has(apiSortName)) {
     // insert beside the correct measure
     measures.splice(
       measures.findIndex((m) => m.name === apiSortName) + 1,
@@ -137,7 +145,10 @@ export function getDimensionTableAggregationRequestForTime({
         name: exploreState.selectedDimensionName,
       },
     ],
-    measures,
+    measures: mapEphemeralMeasuresForRequest(
+      measures,
+      exploreState.ephemeralMeasures,
+    ),
     timeRange,
     ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
     sort: [

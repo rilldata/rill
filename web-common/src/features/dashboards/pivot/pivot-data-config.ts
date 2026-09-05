@@ -1,3 +1,4 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
 import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
@@ -96,11 +97,19 @@ export function getPivotConfig(
       const { dimension: colDimensions, measure: colMeasures } =
         splitPivotChips(dashboardStore.pivot.columns);
 
+      const ephemeralMeasures = dashboardStore.ephemeralMeasures ?? [];
+      const ephemeralMeasureNames = new Set(
+        ephemeralMeasures.map((d) => d.name),
+      );
+
       const measureNames = colMeasures.flatMap((m) => {
         const measureName = m.id;
         const group = [measureName];
 
-        if (enableComparison) {
+        // Comparison columns are not supported for ephemeral measures:
+        // the comparison computes resolve their referenced measure against
+        // the metrics view spec, which has no entry for them.
+        if (enableComparison && !ephemeralMeasureNames.has(measureName)) {
           group.push(
             `${measureName}${COMPARISON_DELTA}`,
             `${measureName}${COMPARISON_PERCENT}`,
@@ -139,10 +148,15 @@ export function getPivotConfig(
         measureNames,
         rowDimensionNames,
         colDimensionNames,
-        allMeasures: allMeasures({
-          validMetricsView: metricsView,
-          validExplore: explore,
-        }),
+        // Ephemeral measures get a synthetic spec entry so column definitions
+        // (labels, formatters, tooltips) resolve them like any other measure.
+        allMeasures: appendEphemeralSpecMeasures(
+          allMeasures({
+            validMetricsView: metricsView,
+            validExplore: explore,
+          }),
+          ephemeralMeasures,
+        ),
         allDimensions: allDimensions({
           validMetricsView: metricsView,
           validExplore: explore,
@@ -157,6 +171,7 @@ export function getPivotConfig(
         time,
         searchText,
         isFlat,
+        ephemeralMeasures,
       };
 
       const currentKey = getPivotConfigKey(config);

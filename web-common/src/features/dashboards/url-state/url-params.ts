@@ -34,6 +34,7 @@ export enum ExploreStateURLParams {
   PivotShowTotalsColumn = "show_totals_column",
   PivotShowTotalsRow = "show_totals_row",
   PivotFormatting = "format",
+  EphemeralMeasures = "ephemeral",
 
   DynamicYAxisScale = "dyn_y",
 

@@ -30,7 +30,11 @@ export function validateKPISchema(
           error: `Metrics view ${metrics_view} not found`,
         };
       }
-      const validateMeasuresRes = validateMeasures(metricsView, [measure]);
+      const validateMeasuresRes = validateMeasures(
+        metricsView,
+        [measure],
+        new Set(kpiSpec.ephemeral_measures?.map((c) => c.name) ?? []),
+      );
       if (!validateMeasuresRes.isValid) {
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
         return {

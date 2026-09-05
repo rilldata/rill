@@ -1,3 +1,7 @@
+import {
+  injectEphemeralMeasuresIntoMap,
+  validateEphemeralDefsAgainstSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getMultiFieldError,
@@ -45,6 +49,21 @@ export function validateAndCleanExploreState(
     ) ?? [],
     (d) => d.name!,
   );
+
+  // Validate restored ephemeral measures and treat the valid ones as known
+  // measure names for the validations below.
+  if (exploreState.ephemeralMeasures !== undefined) {
+    const { valid, invalidEntries } = validateEphemeralDefsAgainstSpec(
+      exploreState.ephemeralMeasures,
+      measures,
+      dimensions,
+    );
+    exploreState.ephemeralMeasures = valid.length ? valid : undefined;
+    injectEphemeralMeasuresIntoMap(measures, valid);
+    if (invalidEntries.length) {
+      errors.push(getMultiFieldError("calculated measure", invalidEntries));
+    }
+  }
 
   const errorsFromExploreView = validateAndCleanExploreViewState(
     measures,

@@ -21,7 +21,7 @@ export const pivotSelectors = {
       dashData.dashboard.pivot.columns,
     ).measure;
 
-    return measures
+    const specChips = measures
       .filter((m) => !columnMeasures.find((c) => c.id === m.name))
       .map((measure) => ({
         id: measure.name || "Unknown",
@@ -29,6 +29,18 @@ export const pivotSelectors = {
         type: PivotChipType.Measure,
         description: measure.description,
       }));
+
+    // Unplaced ephemeral measures stay available for re-adding until deleted.
+    const ephemeralChips = (dashData.dashboard.ephemeralMeasures ?? [])
+      .filter((def) => !columnMeasures.find((c) => c.id === def.name))
+      .map((def) => ({
+        id: def.name,
+        title: def.displayName,
+        type: PivotChipType.Measure,
+        description: def.expression,
+      }));
+
+    return [...specChips, ...ephemeralChips];
   },
   dimensions: ({
     validMetricsView,

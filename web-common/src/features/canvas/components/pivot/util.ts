@@ -1,3 +1,11 @@
+import {
+  ephemeralSpecsToDefs,
+  type EphemeralMeasureSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+import {
+  appendEphemeralSpecMeasures,
+  ephemeralMeasureNameSet,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import {
@@ -201,11 +209,17 @@ export function processPivot(
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
 
+  const ephemeralMeasures = ephemeralSpecsToDefs(
+    $tableSpec?.ephemeral_measures,
+  );
+  const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
+
   const config: PivotDataStoreConfig = {
     ready,
     measureNames: ($tableSpec?.measures || []).flatMap((name) => {
       const group = [name];
-      if (enableComparison) {
+      // Comparison columns are not supported for ephemeral measures.
+      if (enableComparison && !ephemeralMeasureNames.has(name)) {
         group.push(
           `${name}${COMPARISON_DELTA}`,
           `${name}${COMPARISON_PERCENT}`,
@@ -215,7 +229,11 @@ export function processPivot(
     }),
     rowDimensionNames: $tableSpec?.row_dimensions || [],
     colDimensionNames: $tableSpec?.col_dimensions || [],
-    allMeasures: metricsView?.measures || [],
+    allMeasures: appendEphemeralSpecMeasures(
+      metricsView?.measures || [],
+      ephemeralMeasures,
+    ),
+    ephemeralMeasures,
     allDimensions: metricsView?.dimensions || [],
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
@@ -281,8 +299,14 @@ export function processFlat(
   }
 
   const columns = $tableSpec?.columns || [];
-  const allMeasureNames =
-    metricsView?.measures?.map((m) => m.name as string) || [];
+  const ephemeralMeasures = ephemeralSpecsToDefs(
+    $tableSpec?.ephemeral_measures,
+  );
+  const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
+  const allMeasureNames = [
+    ...(metricsView?.measures?.map((m) => m.name as string) || []),
+    ...ephemeralMeasureNames,
+  ];
 
   const measures = columns.filter((c) => allMeasureNames.includes(c)) || [];
   const dimensions = columns.filter((c) => !measures.includes(c)) || [];
@@ -295,7 +319,8 @@ export function processFlat(
     ready,
     measureNames: (measures || []).flatMap((name) => {
       const group = [name];
-      if (enableComparison) {
+      // Comparison columns are not supported for ephemeral measures.
+      if (enableComparison && !ephemeralMeasureNames.has(name)) {
         group.push(
           `${name}${COMPARISON_DELTA}`,
           `${name}${COMPARISON_PERCENT}`,
@@ -305,7 +330,11 @@ export function processFlat(
     }),
     rowDimensionNames: dimensions || [],
     colDimensionNames: [],
-    allMeasures: metricsView?.measures || [],
+    allMeasures: appendEphemeralSpecMeasures(
+      metricsView?.measures || [],
+      ephemeralMeasures,
+    ),
+    ephemeralMeasures,
     allDimensions: metricsView?.dimensions || [],
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
@@ -365,9 +394,13 @@ export const usePivotForCanvas = (
 export function tableFieldMapper(
   fields: string[],
   metricViewSpec: V1MetricsViewSpec | undefined,
+  ephemeralMeasures?: EphemeralMeasureSpec[],
 ) {
   const timeDimension = metricViewSpec?.timeDimension;
   const measures = metricViewSpec?.measures?.map((m) => m.name as string) || [];
+  const ephemeralByName = new Map(
+    (ephemeralMeasures ?? []).map((c) => [c.name, c]),
+  );
   return fields.map((field) => {
     if (timeDimension && isTimeDimension(field, timeDimension)) {
       const grain = getTimeGrainFromDimension(field);
@@ -377,10 +410,10 @@ export function tableFieldMapper(
         type: PivotChipType.Time,
       };
     }
-    if (measures.includes(field)) {
+    if (measures.includes(field) || ephemeralByName.has(field)) {
       return {
         id: field,
-        title: field,
+        title: ephemeralByName.get(field)?.display_name || field,
         type: PivotChipType.Measure,
       };
     }

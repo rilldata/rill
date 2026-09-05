@@ -225,6 +225,15 @@ export function getDashboardStateFromProto(
     entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
   }
 
+  if (dashboard.ephemeralMeasures?.length) {
+    entity.ephemeralMeasures = dashboard.ephemeralMeasures.map((def) => ({
+      name: def.name,
+      displayName: def.displayName,
+      expression: def.expression,
+      ...(def.formatPreset ? { formatPreset: def.formatPreset } : {}),
+    }));
+  }
+
   if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
     entity.pivot = fromPivotProto(dashboard, metricsView);
   } else if (dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
@@ -382,6 +391,10 @@ function fromPivotProto(
     }
   };
 
+  const ephemeralMeasuresMap = new Map(
+    (dashboard.ephemeralMeasures ?? []).map((def) => [def.name, def]),
+  );
+
   const measuresMap = getMapFromArray(
     metricsView.measures ?? [],
     (m) => m.name,
@@ -390,7 +403,11 @@ function fromPivotProto(
     const mes = measuresMap.get(name);
     return {
       id: name,
-      title: mes?.displayName || mes?.name || "Unknown",
+      title:
+        mes?.displayName ||
+        mes?.name ||
+        ephemeralMeasuresMap.get(name)?.displayName ||
+        "Unknown",
       type: PivotChipType.Measure,
     };
   };

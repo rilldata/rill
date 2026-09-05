@@ -27,15 +27,15 @@
 </script>
 
 <div class="container">
-  <button
-    class="flex gap-1 w-full items-start flex-none"
-    onclick={toggleCollapse}
-  >
-    <span class="header">{label}</span>
-    <div class="transition-transform" class:-rotate-180={!collapsed}>
-      <CaretDownIcon size="12px" />
-    </div>
-  </button>
+  <div class="flex gap-1 w-full items-center flex-none">
+    <button class="flex gap-1 items-center min-w-0" onclick={toggleCollapse}>
+      <span class="header">{label}</span>
+      <div class="transition-transform" class:-rotate-180={!collapsed}>
+        <CaretDownIcon size="12px" />
+      </div>
+    </button>
+    <slot name="header-action" />
+  </div>
 
   {#if !collapsed}
     <div class="w-full h-fit overflow-x-hidden px-[2px] mt-2">

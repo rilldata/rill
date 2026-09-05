@@ -1,4 +1,9 @@
 import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
+import {
+  injectEphemeralMeasuresIntoMap,
+  parseAndValidateEphemeralParam,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import {
   fromPivotFormattingParam,
@@ -107,6 +112,27 @@ export function convertURLToExplorePreset(
       );
     Object.assign(preset, presetFromLegacyState);
     errors.push(...errorsFromLegacyState);
+  }
+
+  // Parse ephemeral measures before any other param: their names are valid
+  // measure names everywhere (visible measures, leaderboards, sort, pivot
+  // columns, formatting, ...), which is achieved by injecting synthetic spec
+  // measures into the `measures` map used by all validations below.
+  if (searchParams.has(ExploreStateURLParams.EphemeralMeasures)) {
+    const ephemeralParam = searchParams.get(
+      ExploreStateURLParams.EphemeralMeasures,
+    ) as string;
+    const { valid, invalidEntries } = parseAndValidateEphemeralParam(
+      ephemeralParam,
+      measures,
+      // Includes time dimensions so a definition cannot shadow one.
+      allDimensions,
+    );
+    preset.ephemeralMeasures = toEphemeralMeasuresParam(valid);
+    injectEphemeralMeasuresIntoMap(measures, valid);
+    if (invalidEntries.length) {
+      errors.push(getMultiFieldError("calculated measure", invalidEntries));
+    }
   }
 
   if (searchParams.has(ExploreStateURLParams.WebView)) {
