@@ -1504,3 +1504,31 @@ func localFileHash(t *testing.T, rt *runtime.Runtime, id string, paths []string)
 	require.NoError(t, err)
 	return localFileHash
 }
+
+func TestControllerInitializing(t *testing.T) {
+	ctx := context.Background()
+	rt, id := testruntime.NewInstance(t)
+	ctrl, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
+
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `SELECT 1 AS a`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	require.False(t, ctrl.Initializing())
+
+	// A refresh is not an initial build, so the instance must not report initializing again,
+	// not even while the refresh trigger is queued and its model is reconciling.
+	err = ctrl.Create(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: "trigger"}, nil, nil, nil, nil, false, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_RefreshTrigger{
+			RefreshTrigger: &runtimev1.RefreshTrigger{
+				Spec: &runtimev1.RefreshTriggerSpec{
+					Resources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "bar"}},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.False(t, ctrl.Initializing())
+}

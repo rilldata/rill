@@ -26,12 +26,14 @@
   let:reconcileErrorMessage
   let:isLoading
   let:isReconciling
+  let:queryError
 >
   <CanvasLoadingState
     {ready}
     errorMessage={reconcileErrorMessage}
     {isLoading}
     {isReconciling}
+    {queryError}
   >
     <slot />
   </CanvasLoadingState>

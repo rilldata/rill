@@ -111,6 +111,11 @@ type Controller struct {
 	// Status indicators
 	closed   atomic.Bool   // Indicates if the controller is running
 	closedCh chan struct{} // Closed when the controller is closed
+	// started indicates that Run has enqueued the initial set of resources.
+	// Until then the controller has nothing queued and would otherwise look idle.
+	started bool
+	// initialized indicates that the initial parse and reconcile has completed. See Initializing.
+	initialized atomic.Bool
 	// subscribers tracks subscribers to catalog events.
 	subscribers      map[int]SubscribeCallback
 	nextSubscriberID int
@@ -179,6 +184,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.enqueue(r.Meta.Name)
 		}
 	}
+	c.started = true
 	c.mu.Unlock()
 
 	// Ticker for periodically flushing catalog changes
@@ -416,6 +422,52 @@ func (c *Controller) WaitUntilIdle(ctx context.Context, ignoreHidden bool) error
 		c.mu.Unlock()
 	}
 	return ctx.Err()
+}
+
+// Initializing returns true until the controller has completed its initial parse and reconcile,
+// i.e. until the project parser has parsed the project and the resources it created have been reconciled once.
+// Once it has returned false, it returns false for the rest of the controller's lifetime:
+// later reconciles, such as a model refresh, do not make an instance initializing again.
+//
+// Callers use it to tell an instance that may still produce resources from one that is merely refreshing them.
+// This can't be inferred from a resource listing:
+// security policies may deny every resource, which is indistinguishable from an instance that hasn't created any yet.
+func (c *Controller) Initializing() bool {
+	if c.initialized.Load() {
+		return false
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	// Run hasn't enqueued the initial resources yet, so the controller only looks idle.
+	if !c.started {
+		return true
+	}
+
+	// There's still work queued or in flight.
+	// Hidden resources are ignored: they never surface in the UI, and short-lived refresh triggers keep appearing long after startup.
+	if len(c.queue) != 0 {
+		return true
+	}
+	for _, inv := range c.invocations {
+		if !inv.isHidden {
+			return true
+		}
+	}
+
+	// The project parser is hidden, but it creates every other resource, so we can't be done before it has parsed the project.
+	// While watching for file changes it stays running indefinitely; it only starts watching after the initial parse.
+	parser, err := c.catalog.get(GlobalProjectParserName, false, false)
+	if err != nil {
+		return true // The parser hasn't been created yet.
+	}
+	if parser.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE && !parser.GetProjectParser().GetState().GetWatching() {
+		return true
+	}
+
+	c.initialized.Store(true)
+	return false
 }
 
 // Get returns a resource by name.

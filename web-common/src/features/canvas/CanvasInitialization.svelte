@@ -11,6 +11,7 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import { onNavigate } from "$app/navigation";
+  import { isNetworkError } from "@rilldata/web-common/lib/errors";
   import { writable } from "svelte/store";
   import {
     type V1MetricsView,
@@ -58,7 +59,10 @@
         { canvas: canvasName, unsafe: allowUnvalidatedSpec },
         {
           query: {
-            retry: 5,
+            // Retry transient network failures only. A PermissionDenied or NotFound is terminal,
+            // and retrying it would leave the user on a spinner for ~18s before the error renders.
+            retry: (failureCount, error) =>
+              isNetworkError(error) && failureCount < 5,
             refetchInterval: (query) => {
               const resource = query?.state?.data;
               if (!resource) return false;
@@ -77,11 +81,20 @@
 
   $: fetchedCanvas = fetchedCanvasQuery ? $fetchedCanvasQuery?.data : undefined;
 
+  // The runtime returns PermissionDenied for a canvas the user's security policies exclude, and the
+  // query can fail for ordinary reasons too. Either way there is no spec coming, so this must be
+  // kept out of isReconciling below, which would otherwise show a build spinner that never resolves.
+  $: queryError = fetchedCanvasQuery ? $fetchedCanvasQuery?.error : undefined;
+
   $: validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
   $: reconcileError = fetchedCanvas?.canvas?.meta?.reconcileError;
 
   $: isReconciling =
-    !existingStore && !validSpec && !reconcileError && !isLoading;
+    !existingStore &&
+    !validSpec &&
+    !reconcileError &&
+    !isLoading &&
+    !queryError;
 
   $: reconcileErrorMessage = !validSpec ? reconcileError : undefined;
 
@@ -227,4 +240,10 @@
   <title>{canvasTitle || `${canvasName} - Rill`}</title>
 </svelte:head>
 
-<slot {ready} {reconcileErrorMessage} {isLoading} {isReconciling} />
+<slot
+  {ready}
+  {reconcileErrorMessage}
+  {isLoading}
+  {isReconciling}
+  {queryError}
+/>

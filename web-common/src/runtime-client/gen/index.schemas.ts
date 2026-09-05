@@ -1373,6 +1373,13 @@ export interface V1ListObjectsResponse {
 
 export interface V1ListResourcesResponse {
   resources?: V1Resource[];
+  nextPageToken?: string;
+  /**
+   * True while the runtime may still produce more resources, i.e. it has not finished its initial
+   * parse and reconcile. Computed before security policies are applied, so it stays meaningful when
+   * every resource is denied.
+   */
+  initializing?: boolean;
 }
 
 export interface V1ListTablesResponse {

@@ -853,6 +853,10 @@ message ListResourcesRequest {
 message ListResourcesResponse {
   repeated Resource resources = 1;
   string next_page_token = 2;
+  // True while the instance may still produce more resources, i.e. it has not finished its initial parse and reconcile.
+  // It is computed before security policies are applied, so it stays meaningful when every resource is denied.
+  // Clients should use it to tell "still building" apart from "nothing to show", instead of inferring it from an empty resource list.
+  bool initializing = 3;
 }
 
 message WatchResourcesRequest {

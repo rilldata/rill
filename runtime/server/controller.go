@@ -51,6 +51,11 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, err
 	}
 
+	// Clients can't infer this from the returned resources:
+	// the list may be narrowed by req.Kind or req.Path, and the security filtering below
+	// can empty it entirely, which is indistinguishable from an instance that hasn't created any resources yet.
+	initializing := ctrl.Initializing()
+
 	if req.SkipSecurityChecks {
 		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
@@ -83,7 +88,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	})
 
 	if req.PageSize == 0 {
-		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
+		return &runtimev1.ListResourcesResponse{Resources: rs, Initializing: initializing}, nil
 	}
 
 	var afterKind, afterName string
@@ -108,6 +113,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	return &runtimev1.ListResourcesResponse{
 		Resources:     rs[start:end],
 		NextPageToken: nextPageToken,
+		Initializing:  initializing,
 	}, nil
 }
 
