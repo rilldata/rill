@@ -10,6 +10,6 @@
     {name}
   </div>
   <TooltipContent slot="tooltip-content">
-    <span class="text-xs text-gray-50 font-medium">{name}</span>
+    <span class="text-xs font-medium">{name}</span>
   </TooltipContent>
 </Tooltip>

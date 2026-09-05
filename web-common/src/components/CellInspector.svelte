@@ -179,9 +179,9 @@
         class:items-center={!isJson}
       >
         {#if value === null}
-          <span class="text-sm text-gray-500 italic">null</span>
+          <span class="text-sm text-fg-muted italic">null</span>
         {:else if value === ""}
-          <span class="text-sm text-gray-500 italic">(empty string)</span>
+          <span class="text-sm text-fg-muted italic">(empty string)</span>
         {:else}
           <span
             class="whitespace-pre-wrap break-words text-sm text-fg-primary w-full"
