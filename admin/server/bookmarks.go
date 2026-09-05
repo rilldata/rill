@@ -12,12 +12,32 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ListBookmarks server returns the bookmarks for the user per project
+// ListBookmarks returns the bookmarks in a project that are visible to the user: their own plus shared and default ones.
+// The resource kind and name are optional filters; when both are empty, all bookmarks in the project are returned.
 func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRequest) (*adminv1.ListBookmarksResponse, error) {
 	claims := auth.GetClaims(ctx)
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	if req.ResourceName != "" && req.ResourceKind == "" {
+		return nil, status.Error(codes.InvalidArgument, "resource_kind is required when resource_name is set")
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if proj.Public {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+	}
+
+	if !permissions.ReadProject {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
 	}
 
 	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.ResourceKind, req.ResourceName, claims.OwnerID())

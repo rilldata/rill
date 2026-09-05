@@ -26,6 +26,9 @@
   export let sorting: SortingState = [];
   export let pinnedRows: string[] = [];
   export let maxRows: number | undefined = undefined;
+  // Defaults to the resource name, which is only meaningful for runtime resources.
+  export let getRowId: ((row: unknown, index: number) => string) | undefined =
+    undefined;
 
   function setSorting(newSorting: SortingState) {
     options.update((old) => ({
@@ -65,6 +68,7 @@
       rowPinning: {},
     },
     getRowId(originalRow, index) {
+      if (getRowId) return getRowId(originalRow, index);
       return (
         (originalRow as V1Resource).meta?.name?.name?.toLowerCase() ??
         index.toString()

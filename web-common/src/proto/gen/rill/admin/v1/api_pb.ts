@@ -10214,6 +10214,9 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 }
 
 /**
+ * ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
+ * the caller's own bookmarks plus shared and default bookmarks.
+ *
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
@@ -10223,11 +10226,16 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   projectId = "";
 
   /**
+   * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+   * When both resource_kind and resource_name are empty, all bookmarks in the project are returned.
+   *
    * @generated from field: string resource_kind = 2;
    */
   resourceKind = "";
 
   /**
+   * Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+   *
    * @generated from field: string resource_name = 3;
    */
   resourceName = "";

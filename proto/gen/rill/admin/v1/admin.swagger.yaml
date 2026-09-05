@@ -4650,10 +4650,14 @@ paths:
           required: false
           type: string
         - name: resourceKind
+          description: |-
+            Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+            When both resource_kind and resource_name are empty, all bookmarks in the project are returned.
           in: query
           required: false
           type: string
         - name: resourceName
+          description: Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
           in: query
           required: false
           type: string

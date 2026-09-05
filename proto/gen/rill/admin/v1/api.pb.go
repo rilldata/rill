@@ -13020,13 +13020,18 @@ func (*RevokeCurrentAuthTokenResponse) Descriptor() ([]byte, []int) {
 	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{211}
 }
 
+// ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
+// the caller's own bookmarks plus shared and default bookmarks.
 type ListBookmarksRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ProjectId    string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	ProjectId string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+	// When both resource_kind and resource_name are empty, all bookmarks in the project are returned.
 	ResourceKind string `protobuf:"bytes,2,opt,name=resource_kind,json=resourceKind,proto3" json:"resource_kind,omitempty"`
+	// Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
 	ResourceName string `protobuf:"bytes,3,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
 }
 

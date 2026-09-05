@@ -2534,7 +2534,14 @@ This is only allowed for superusers. */
 
 export type AdminServiceListBookmarksParams = {
   projectId?: string;
+  /**
+ * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+When both resource_kind and resource_name are empty, all bookmarks in the project are returned.
+ */
   resourceKind?: string;
+  /**
+   * Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+   */
   resourceName?: string;
 };
 

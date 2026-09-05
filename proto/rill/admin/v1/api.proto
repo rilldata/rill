@@ -2650,9 +2650,14 @@ message RevokeCurrentAuthTokenRequest {}
 message RevokeCurrentAuthTokenResponse {
 }
 
+// ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
+// the caller's own bookmarks plus shared and default bookmarks.
 message ListBookmarksRequest {
   string project_id = 1;
+  // Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+  // When both resource_kind and resource_name are empty, all bookmarks in the project are returned.
   string resource_kind = 2;
+  // Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
   string resource_name = 3;
 }
 
