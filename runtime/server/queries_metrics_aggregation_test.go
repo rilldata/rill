@@ -201,3 +201,60 @@ func TestMetricsViewAggregation_dimension_expression_filters(t *testing.T) {
 	require.Equal(t, "com", tr.Data[0].Fields["domain_parts"].GetStringValue())
 	require.Equal(t, "msn.com", tr.Data[0].Fields["tld"].GetStringValue())
 }
+
+func TestMetricsViewAggregation_expression_measure(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewAggregation(testCtx(), &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  instanceId,
+		MetricsView: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "domain"},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_1"},
+			{
+				Name: "profit",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_Expression{
+					Expression: &runtimev1.MetricsViewAggregationMeasureComputeExpression{
+						Expression:  "measure_1 - measure_2",
+						DisplayName: "Profit",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "profit", Desc: true},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 3.0, tr.Data[0].Fields["profit"].GetNumberValue())
+	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, 2.0, tr.Data[1].Fields["profit"].GetNumberValue())
+}
+
+func TestMetricsViewAggregation_expression_measure_invalid(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	_, err := server.MetricsViewAggregation(testCtx(), &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  instanceId,
+		MetricsView: "ad_bids_metrics",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bad",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_Expression{
+					Expression: &runtimev1.MetricsViewAggregationMeasureComputeExpression{
+						Expression: "sum(measure_1)",
+					},
+				},
+			},
+		},
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "aggregate function")
+}
