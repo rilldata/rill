@@ -17,6 +17,8 @@ import (
 
 // mcpWorkflowInstructions and mcpProjectDevInstructions are the parts of the MCP server instructions
 // that apply to every project; the skills section between them is only advertised when the project defines skills.
+//
+//nolint:gosec // G101 false positive: long instructions text, not a credential
 const mcpWorkflowInstructions = `
 # Rill MCP Server
 This server exposes APIs for querying **metrics views**, which represent Rill's metrics layer.
