@@ -180,7 +180,11 @@
           if (def) ephemeralMeasureDialog.set({ def });
         }}
         onDeleteEphemeralMeasure={(id) =>
-          metricsExplorerStore.removeEphemeralMeasure($exploreName, id)}
+          metricsExplorerStore.removeEphemeralMeasure(
+            $exploreName,
+            id,
+            $validSpecStore.data?.explore,
+          )}
       />
     {/if}
     <div

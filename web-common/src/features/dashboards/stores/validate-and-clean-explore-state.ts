@@ -56,7 +56,7 @@ export function validateAndCleanExploreState(
     const { valid, invalidEntries } = validateEphemeralDefsAgainstSpec(
       exploreState.ephemeralMeasures,
       measures,
-      dimensions,
+      metricsViewSpec,
     );
     exploreState.ephemeralMeasures = valid.length ? valid : undefined;
     injectEphemeralMeasuresIntoMap(measures, valid);
@@ -163,8 +163,9 @@ function validateAndCleanMeasureRelatedExploreState(
 
   if (selectedMeasures.length > 0) {
     // If there are any remaining valid measures then set it.
-    exploreState.allMeasuresVisible =
-      selectedMeasures.length === exploreSpec.measures?.length;
+    // `measures` includes ephemeral measures, so a hidden spec measure can
+    // never be masked by a visible ephemeral one.
+    exploreState.allMeasuresVisible = selectedMeasures.length === measures.size;
     exploreState.visibleMeasures = selectedMeasures;
   } else {
     // Else remove the relevant fields so that cascading merge can set fields from other sources.

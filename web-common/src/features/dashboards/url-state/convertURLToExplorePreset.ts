@@ -125,8 +125,7 @@ export function convertURLToExplorePreset(
     const { valid, invalidEntries } = parseAndValidateEphemeralParam(
       ephemeralParam,
       measures,
-      // Includes time dimensions so a definition cannot shadow one.
-      allDimensions,
+      metricsView,
     );
     preset.ephemeralMeasures = toEphemeralMeasuresParam(valid);
     injectEphemeralMeasuresIntoMap(measures, valid);

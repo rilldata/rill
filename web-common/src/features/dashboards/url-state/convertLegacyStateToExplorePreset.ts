@@ -85,7 +85,7 @@ export function convertLegacyStateToExplorePreset(
         ...(def.formatPreset ? { formatPreset: def.formatPreset } : {}),
       })),
       measures,
-      dimensions,
+      metricsView,
     );
     preset.ephemeralMeasures = toEphemeralMeasuresParam(valid);
     injectEphemeralMeasuresIntoMap(measures, valid);

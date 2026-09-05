@@ -136,6 +136,29 @@ describe("ephemeral measures URL state integration", () => {
     ]);
   });
 
+  it("drops definitions named after a measure hidden from the explore", () => {
+    // publisher_count exists in the metrics view but not in the explore, and
+    // the server rejects computed fields that collide with any measure.
+    const errors = applyUrl(
+      "http://localhost/explore/AdBids_explore?view=pivot&cols=publisher_count&ephemeral=publisher_count:PC:impressions*2",
+    );
+    expect(errors.length).toBe(2);
+    expect(errors[0].message).toContain("already used by another field");
+    expect(
+      getCleanMetricsExploreForAssertion().ephemeralMeasures,
+    ).toBeUndefined();
+  });
+
+  it("does not report all measures visible while a spec measure is hidden", () => {
+    const errors = applyUrl(
+      "http://localhost/explore/AdBids_explore?measures=impressions,profit&ephemeral=profit:Profit:impressions*2",
+    );
+    expect(errors).toEqual([]);
+    const state = getCleanMetricsExploreForAssertion();
+    expect(state.visibleMeasures).toEqual(["impressions", "profit"]);
+    expect(state.allMeasuresVisible).toBe(false);
+  });
+
   it("drops definitions whose name collides with a metrics view field", () => {
     const errors = applyUrl(
       "http://localhost/explore/AdBids_explore?view=pivot&cols=bid_price&ephemeral=bid_price:Custom:impressions*2",

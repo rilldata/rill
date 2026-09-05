@@ -107,6 +107,27 @@ export function splitTimeSeriesMeasures(
 }
 
 /**
+ * Recovers ephemeral measure definitions from request measures that carry an
+ * `expression` compute, e.g. when editing a saved report outside an explore.
+ */
+export function ephemeralDefsFromRequestMeasures(
+  measures: V1MetricsViewAggregationMeasure[] | undefined,
+): EphemeralMeasureDef[] | undefined {
+  const defs = (measures ?? []).flatMap((measure) =>
+    measure.name && measure.expression?.expression
+      ? [
+          {
+            name: measure.name,
+            displayName: measure.expression.displayName || measure.name,
+            expression: measure.expression.expression,
+          },
+        ]
+      : [],
+  );
+  return defs.length ? defs : undefined;
+}
+
+/**
  * Returns the set of ephemeral measure names, for quick membership checks.
  */
 export function ephemeralMeasureNameSet(

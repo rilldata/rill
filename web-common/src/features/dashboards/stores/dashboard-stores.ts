@@ -702,7 +702,11 @@ const metricsViewReducers = {
     });
   },
 
-  removeEphemeralMeasure(name: string, measureName: string) {
+  removeEphemeralMeasure(
+    name: string,
+    measureName: string,
+    explore: V1ExploreSpec | undefined,
+  ) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.ephemeralMeasures = (
         exploreState.ephemeralMeasures ?? []
@@ -744,6 +748,10 @@ const metricsViewReducers = {
           exploreState.activePage = DashboardState_ActivePage.DEFAULT;
         }
       }
+
+      // The removed measure may have been the only visible or leaderboard
+      // measure; restore the spec defaults so views never end up measure-less.
+      if (explore) syncMeasures(explore, exploreState);
     });
   },
 

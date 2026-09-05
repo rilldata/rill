@@ -93,12 +93,12 @@ describe("parseMeasureExpression", () => {
     expect(res.error!.message).toContain("deeply nested");
   });
 
-  // Mirrors the server parser, which fails flat chains of more than 64
-  // binary operators with "too deeply nested".
+  // Mirrors the server parser (maxMeasureExpressionDepth = 32), which fails
+  // flat chains of more than 32 binary operators with "too deeply nested".
   it("limits total expression complexity like the server", () => {
-    const ok = Array.from({ length: 65 }, (_, i) => `a${i}`).join("+");
+    const ok = Array.from({ length: 33 }, (_, i) => `a${i}`).join("+");
     expect(parseMeasureExpression(ok).error).toBeUndefined();
-    const tooLong = Array.from({ length: 66 }, (_, i) => `a${i}`).join("+");
+    const tooLong = Array.from({ length: 34 }, (_, i) => `a${i}`).join("+");
     expect(parseMeasureExpression(tooLong).error?.message).toContain(
       "deeply nested",
     );

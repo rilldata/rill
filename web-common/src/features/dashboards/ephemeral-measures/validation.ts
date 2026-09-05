@@ -69,6 +69,31 @@ export function validateEphemeralMeasureName(
 }
 
 /**
+ * Derives a query alias from a display name that passes
+ * `validateEphemeralMeasureName`: reserved suffixes and collisions are
+ * resolved with a numeric suffix, so a valid display name is always saveable.
+ */
+export function slugifyEphemeralMeasureName(
+  label: string,
+  reservedNames: Set<string>,
+): string {
+  let slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    // Collapse runs of underscores so the `__previous`-style pivot suffixes
+    // can never appear.
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  if (!EPHEMERAL_MEASURE_NAME_REGEX.test(slug)) slug = `m_${slug}`;
+  while (slug.includes("_rill_")) slug = slug.replace("_rill_", "_rill");
+  let candidate = slug;
+  for (let i = 2; validateEphemeralMeasureName(candidate, reservedNames); i++) {
+    candidate = `${slug}_${i}`;
+  }
+  return candidate;
+}
+
+/**
  * Validates a full ephemeral measure definition.
  * `knownMeasureNames` are the measure names an expression may reference
  * (the metrics view's measures available in this explore; ephemeral measures

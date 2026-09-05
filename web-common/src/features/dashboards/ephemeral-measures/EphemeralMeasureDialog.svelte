@@ -16,8 +16,8 @@
     parseMeasureExpression,
   } from "./expression-parser";
   import {
-    EPHEMERAL_MEASURE_NAME_REGEX,
     isReferenceableMeasure,
+    slugifyEphemeralMeasureName,
     validateEphemeralMeasureDef,
   } from "./validation";
 
@@ -71,21 +71,6 @@
           ? `"${unknownRef}" is not a measure in this dashboard`
           : undefined));
 
-  function slugify(label: string): string {
-    let slug = label
-      .toLowerCase()
-      .replace(/[^a-z0-9_]+/g, "_")
-      .replace(/^_+|_+$/g, "");
-    if (!EPHEMERAL_MEASURE_NAME_REGEX.test(slug)) slug = `m_${slug}`;
-    let candidate = slug;
-    let i = 2;
-    while (reservedNames.has(candidate)) {
-      candidate = `${slug}_${i}`;
-      i++;
-    }
-    return candidate;
-  }
-
   function insertMeasure(name: string) {
     const token = formatMeasureRef(name);
     expression = expression === "" ? token : `${expression} ${token}`;
@@ -97,7 +82,9 @@
 
   function save() {
     const def: EphemeralMeasureDef = {
-      name: editingDef?.name ?? slugify(displayName),
+      name:
+        editingDef?.name ??
+        slugifyEphemeralMeasureName(displayName, reservedNames),
       displayName: displayName.trim(),
       expression: expression.trim(),
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),
@@ -119,7 +106,11 @@
 
   function remove() {
     if (!editingDef) return;
-    metricsExplorerStore.removeEphemeralMeasure($exploreName, editingDef.name);
+    metricsExplorerStore.removeEphemeralMeasure(
+      $exploreName,
+      editingDef.name,
+      explore,
+    );
     close();
   }
 </script>

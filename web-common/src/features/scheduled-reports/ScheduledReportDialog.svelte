@@ -18,6 +18,7 @@
 </script>
 
 <script lang="ts">
+  import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
@@ -343,7 +344,12 @@
           columns: values.columns,
           showTimeComparison: timeControlsState.showTimeComparison,
           selectedTimezone: timeControlsState.selectedTimezone,
-          ephemeralMeasures: $exploreStateStore?.ephemeralMeasures,
+          // The explore state only exists on the explore page (create mode);
+          // an edited report carries its definitions in the saved request.
+          ephemeralMeasures:
+            props.mode === "edit"
+              ? ephemeralDefsFromRequestMeasures(aggregationRequest.measures)
+              : $exploreStateStore?.ephemeralMeasures,
         }),
       ],
     );

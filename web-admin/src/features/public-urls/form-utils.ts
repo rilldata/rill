@@ -92,6 +92,10 @@ export function getSanitizedExploreStateParam(
   const sanitizedEphemeralNames = new Set(
     sanitizedEphemeralMeasures?.map((def) => def.name) ?? [],
   );
+  const isSharedPivotChip = (chip: { id: string; type: PivotChipType }) =>
+    metricsViewFields.includes(chip.id) ||
+    sanitizedEphemeralNames.has(chip.id) ||
+    chip.type === PivotChipType.Time;
   const sanitizedDashboardState = {
     ephemeralMeasures: sanitizedEphemeralMeasures?.length
       ? sanitizedEphemeralMeasures
@@ -143,16 +147,8 @@ export function getSanitizedExploreStateParam(
     tdd: exploreState.tdd,
     pivot: {
       ...exploreState.pivot,
-      rows: exploreState.pivot.rows.filter(
-        (chip) =>
-          metricsViewFields?.includes(chip.id) ||
-          chip.type === PivotChipType.Time,
-      ),
-      columns: exploreState.pivot.columns.filter(
-        (chip) =>
-          metricsViewFields?.includes(chip.id) ||
-          chip.type === PivotChipType.Time,
-      ),
+      rows: exploreState.pivot.rows.filter(isSharedPivotChip),
+      columns: exploreState.pivot.columns.filter(isSharedPivotChip),
     },
   } as ExploreState;
 

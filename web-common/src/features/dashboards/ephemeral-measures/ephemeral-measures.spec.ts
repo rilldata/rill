@@ -3,6 +3,7 @@ import type { V1MetricsViewAggregationMeasure } from "@rilldata/web-common/runti
 import { prepareMeasuresForRequest } from "../pivot/pivot-utils";
 import type { EphemeralMeasureDef } from "./types";
 import {
+  slugifyEphemeralMeasureName,
   validateEphemeralMeasureDef,
   validateEphemeralMeasureName,
 } from "./validation";
@@ -120,5 +121,38 @@ describe("validateEphemeralMeasureDef", () => {
     expect(validateEphemeralMeasureDef(def, known, reserved)).toContain(
       "display name is required",
     );
+  });
+});
+
+describe("slugifyEphemeralMeasureName", () => {
+  const reserved = new Set(["profit", "revenue", "cost"]);
+
+  it("derives a plain alias from the display name", () => {
+    expect(slugifyEphemeralMeasureName("Gross Margin", reserved)).toBe(
+      "gross_margin",
+    );
+  });
+
+  it("disambiguates collisions with existing fields", () => {
+    expect(slugifyEphemeralMeasureName("Profit", reserved)).toBe("profit_2");
+  });
+
+  it("always yields an alias that passes name validation", () => {
+    for (const label of [
+      "Revenue Delta",
+      "Cost Prev",
+      "Revenue Percent Of Total",
+      "Total Rill Value",
+      "a__previous",
+      "123 abc",
+      "Profit",
+    ]) {
+      const slug = slugifyEphemeralMeasureName(label, reserved);
+      expect(validateEphemeralMeasureName(slug, reserved)).toBeUndefined();
+    }
+    expect(slugifyEphemeralMeasureName("Revenue Delta", reserved)).toBe(
+      "revenue_delta_2",
+    );
+    expect(slugifyEphemeralMeasureName("123 abc", reserved)).toBe("m_123_abc");
   });
 });

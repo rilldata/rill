@@ -1,6 +1,6 @@
 import type {
-  MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
+  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { ephemeralMeasureToSpecMeasure } from "./measure-mapping";
 import { fromEphemeralMeasuresParam } from "./url-param";
@@ -11,21 +11,30 @@ import {
 } from "./validation";
 
 /**
- * Validates ephemeral measure definitions against the metrics view / explore
- * field maps used during URL state conversion. Returns the valid definitions
+ * Validates ephemeral measure definitions during URL state conversion.
+ * `measures` is the explore's measure map (what an expression may reference);
+ * names are reserved against every field of the metrics view, matching the
+ * server's collision check, so a definition can never shadow a hidden
+ * measure, a dimension or the time dimension. Returns the valid definitions
  * and human-readable labels for the dropped ones.
  */
 export function validateEphemeralDefsAgainstSpec(
   defs: EphemeralMeasureDef[],
   measures: Map<string, MetricsViewSpecMeasure>,
-  dimensions: Map<string, MetricsViewSpecDimension>,
+  metricsView: V1MetricsViewSpec,
 ): { valid: EphemeralMeasureDef[]; invalidEntries: string[] } {
   const knownMeasureNames = new Set(
     [...measures.values()]
       .filter(isReferenceableMeasure)
       .map((m) => m.name as string),
   );
-  const reservedNames = new Set([...measures.keys(), ...dimensions.keys()]);
+  const reservedNames = new Set<string>([
+    ...(metricsView.measures ?? []).map((m) => m.name as string),
+    ...(metricsView.dimensions ?? []).map(
+      (d) => (d.name || d.column) as string,
+    ),
+    ...(metricsView.timeDimension ? [metricsView.timeDimension] : []),
+  ]);
   const valid: EphemeralMeasureDef[] = [];
   const invalidEntries: string[] = [];
   for (const def of defs) {
@@ -38,6 +47,8 @@ export function validateEphemeralDefsAgainstSpec(
       invalidEntries.push(`${def.name} (${error})`);
     } else {
       valid.push(def);
+      // Later definitions may not reuse this name either.
+      reservedNames.add(def.name);
     }
   }
   return { valid, invalidEntries };
@@ -49,14 +60,14 @@ export function validateEphemeralDefsAgainstSpec(
 export function parseAndValidateEphemeralParam(
   param: string,
   measures: Map<string, MetricsViewSpecMeasure>,
-  dimensions: Map<string, MetricsViewSpecDimension>,
+  metricsView: V1MetricsViewSpec,
 ): { valid: EphemeralMeasureDef[]; invalidEntries: string[] } {
   const { ephemeralMeasures, invalidEntries } =
     fromEphemeralMeasuresParam(param);
   const res = validateEphemeralDefsAgainstSpec(
     ephemeralMeasures,
     measures,
-    dimensions,
+    metricsView,
   );
   return {
     valid: res.valid,

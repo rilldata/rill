@@ -17,8 +17,8 @@
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/expression-parser";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import {
-    EPHEMERAL_MEASURE_NAME_REGEX,
     isReferenceableMeasure,
+    slugifyEphemeralMeasureName,
     validateEphemeralMeasureDef,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/validation";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -71,7 +71,7 @@
   );
 
   $: reservedNames = new Set([
-    ...knownMeasureNames,
+    ...(metricsViewSpec?.measures ?? []).map((mes) => mes.name as string),
     ...(metricsViewSpec?.dimensions ?? []).map(
       (d) => (d.name || d.column) as string,
     ),
@@ -105,21 +105,6 @@
     );
   }
 
-  function slugify(name: string): string {
-    let slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9_]+/g, "_")
-      .replace(/^_+|_+$/g, "");
-    if (!EPHEMERAL_MEASURE_NAME_REGEX.test(slug)) slug = `m_${slug}`;
-    let candidate = slug;
-    let i = 2;
-    while (reservedNames.has(candidate)) {
-      candidate = `${slug}_${i}`;
-      i++;
-    }
-    return candidate;
-  }
-
   function insertMeasure(name: string) {
     const token = formatMeasureRef(name);
     expression = expression === "" ? token : `${expression} ${token}`;
@@ -127,7 +112,9 @@
 
   function save() {
     const def: EphemeralMeasureDef = {
-      name: editingDef?.name ?? slugify(displayName),
+      name:
+        editingDef?.name ??
+        slugifyEphemeralMeasureName(displayName, reservedNames),
       displayName: displayName.trim(),
       expression: expression.trim(),
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),

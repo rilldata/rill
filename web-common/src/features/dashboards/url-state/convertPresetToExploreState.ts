@@ -265,8 +265,10 @@ function fromExploreUrlParams(
       errors.push(getMultiFieldError("measure", missingMeasures));
     }
 
+    // `measures` includes ephemeral measures, so a hidden spec measure can
+    // never be masked by a visible ephemeral one.
     partialExploreState.allMeasuresVisible =
-      selectedMeasures.length === explore.measures?.length;
+      selectedMeasures.length === measures.size;
     partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 
