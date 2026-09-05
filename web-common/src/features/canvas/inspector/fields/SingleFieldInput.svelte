@@ -93,7 +93,7 @@
             slot="body"
           >
             {#if isTimeSelected}
-              Time
+              {m.canvas_field_time()}
             {:else if selectedItem}
               {$fieldData.displayMap[selectedItem]?.label || selectedItem}
               {#if ephemeralDefsByName.has(selectedItem)}
@@ -102,7 +102,7 @@
                 </span>
               {/if}
             {:else}
-              Choose a field...
+              {m.canvas_field_choose_field()}
             {/if}
           </span>
         </Chip>
@@ -118,11 +118,11 @@
           <DropdownMenu.Item
             class="pl-8 mx-1"
             onclick={() => {
-              onSelect($timeDimension, "Time");
+              onSelect($timeDimension, m.canvas_field_time());
               open = false;
             }}
           >
-            Time
+            {m.canvas_field_time()}
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
         {/if}
@@ -167,7 +167,7 @@
         {:else}
           {#if searchValue}
             <div class="text-fg-disabled text-center p-2 w-full">
-              no results
+              {m.canvas_field_no_results()}
             </div>
           {/if}
         {/each}

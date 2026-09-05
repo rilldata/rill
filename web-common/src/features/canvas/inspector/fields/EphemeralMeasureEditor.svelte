@@ -22,6 +22,7 @@
     validateEphemeralMeasureDef,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/validation";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { ephemeralFormatPresetOptions } from "@rilldata/web-common/features/dashboards/ephemeral-measures/format-presets";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { AllKeys } from "../types";
@@ -43,13 +44,7 @@
   // The spec key holding the definitions on every component that supports them.
   const EPHEMERAL_SPEC_KEY = "ephemeral_measures" as AllKeys<ComponentSpec>;
 
-  const FORMAT_PRESETS: { value: string; label: string }[] = [
-    { value: FormatPreset.HUMANIZE, label: "Humanize" },
-    { value: FormatPreset.NONE, label: "None" },
-    { value: FormatPreset.CURRENCY_USD, label: "Currency (USD)" },
-    { value: FormatPreset.CURRENCY_EUR, label: "Currency (EUR)" },
-    { value: FormatPreset.PERCENTAGE, label: "Percentage" },
-  ];
+  const FORMAT_PRESETS = ephemeralFormatPresetOptions();
 
   let displayName = editingDef?.displayName ?? "";
   let expression = editingDef?.expression ?? "";
@@ -201,7 +196,7 @@
         bind:value={displayName}
         id="canvas-ephemeral-measure-name"
         label={m.dashboard_pivot_ephemeral_display_name_label()}
-        placeholder="Profit"
+        placeholder={m.dashboard_pivot_ephemeral_display_name_placeholder()}
         claimFocusOnMount
       />
 

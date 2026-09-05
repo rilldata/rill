@@ -6,6 +6,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { ephemeralFormatPresetOptions } from "./format-presets";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { get } from "svelte/store";
   import type { EphemeralMeasureDef } from "./types";
@@ -26,13 +27,7 @@
 
   const { exploreName, validSpecStore, dashboardStore } = getStateManagers();
 
-  const FORMAT_PRESETS: { value: string; label: string }[] = [
-    { value: FormatPreset.HUMANIZE, label: "Humanize" },
-    { value: FormatPreset.NONE, label: "None" },
-    { value: FormatPreset.CURRENCY_USD, label: "Currency (USD)" },
-    { value: FormatPreset.CURRENCY_EUR, label: "Currency (EUR)" },
-    { value: FormatPreset.PERCENTAGE, label: "Percentage" },
-  ];
+  const FORMAT_PRESETS = ephemeralFormatPresetOptions();
 
   let displayName = editingDef?.displayName ?? "";
   let expression = editingDef?.expression ?? "";
@@ -149,7 +144,7 @@
         bind:value={displayName}
         id="ephemeral-measure-name"
         label={m.dashboard_pivot_ephemeral_display_name_label()}
-        placeholder="Profit"
+        placeholder={m.dashboard_pivot_ephemeral_display_name_placeholder()}
         claimFocusOnMount
       />
 
