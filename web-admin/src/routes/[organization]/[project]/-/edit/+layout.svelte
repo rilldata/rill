@@ -192,6 +192,8 @@
             {planDisplayName}
             {organizationLogoUrl}
             editContext={true}
+            editSessionDeploymentId={deployment.id}
+            editSessionJwt={jwt}
           />
           <EditSessionTimeoutBanner
             usedOn={deployment.usedOn}
