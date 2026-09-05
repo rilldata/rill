@@ -5297,6 +5297,15 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
   attributes?: Struct;
 
   /**
+   * Names of user groups in the org to add the user to.
+   * If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+   * Groups are additive: on a re-invite they are merged with the groups already on the invite.
+   *
+   * @generated from field: repeated string usergroups = 6;
+   */
+  usergroups: string[] = [];
+
+  /**
    * @generated from field: bool superuser_force_access = 4;
    */
   superuserForceAccess = false;
@@ -5313,6 +5322,7 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "attributes", kind: "message", T: Struct },
+    { no: 6, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -7583,6 +7593,15 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
    */
   attributes?: Struct;
 
+  /**
+   * Names of user groups in the org to add the user to (user groups are org-scoped).
+   * If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+   * Setting user groups requires permission to manage org members.
+   *
+   * @generated from field: repeated string usergroups = 8;
+   */
+  usergroups: string[] = [];
+
   constructor(data?: PartialMessage<AddProjectMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7598,6 +7617,7 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
     { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 7, name: "attributes", kind: "message", T: Struct },
+    { no: 8, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUserRequest {
@@ -17816,6 +17836,14 @@ export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
   userPhotoUrl = "";
 
   /**
+   * True if the user has been invited to the group but has not signed up yet.
+   * For pending members, user_id, user_name and user_photo_url are empty.
+   *
+   * @generated from field: bool pending_acceptance = 8;
+   */
+  pendingAcceptance = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -17837,6 +17865,7 @@ export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
     { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "pending_acceptance", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -17882,6 +17911,13 @@ export class OrganizationInvite extends Message<OrganizationInvite> {
    */
   attributes?: Struct;
 
+  /**
+   * Names of the user groups the user will be added to when the invite is accepted.
+   *
+   * @generated from field: repeated string usergroups = 5;
+   */
+  usergroups: string[] = [];
+
   constructor(data?: PartialMessage<OrganizationInvite>) {
     super();
     proto3.util.initPartial(data, this);
@@ -17894,6 +17930,7 @@ export class OrganizationInvite extends Message<OrganizationInvite> {
     { no: 2, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "attributes", kind: "message", T: Struct },
+    { no: 5, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationInvite {

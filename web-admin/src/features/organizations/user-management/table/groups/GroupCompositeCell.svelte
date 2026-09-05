@@ -133,7 +133,7 @@
         {:else}
           <ul>
             {#each previewUsers.slice(0, PREVIEW_COUNT) as u}
-              {@const displayName = u.userName}
+              {@const displayName = u.userName || u.userEmail}
               {@const colorSeed = u.userEmail}
               <div class="flex items-center gap-1 py-1">
                 <!-- Use email first to seed color for stable, unique avatar colors;

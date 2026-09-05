@@ -587,29 +587,11 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		attribute.String("args.email", req.Email),
 	)
 
-	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
+	groups, err := s.resolveUsergroupsForMembership(ctx, req.Org, []string{req.Usergroup}, false)
 	if err != nil {
 		return nil, err
 	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to add user group members")
-	}
-
-	if group.Managed {
-		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
-	}
-
-	currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, group.OrgID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, err
-	}
-	if currentRole != nil && currentRole.Admin && !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgAdmins {
-		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to edit a group that has an admin role")
-	}
-	// NOTE: In theory, the group could be admin on a project that the current user is not admin on.
-	// We don't check for that because it's complicated and not a big leak of permissions.
+	group := groups[0]
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -626,9 +608,9 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 			return nil, status.Error(codes.FailedPrecondition, "user is not a member of the organization")
 		}
 		// add group to the invite, dedupe the group ids
-		if !slices.Contains(invite.UsergroupIDs, group.ID) {
-			invite.UsergroupIDs = append(invite.UsergroupIDs, group.ID)
-			err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, invite.ID, invite.UsergroupIDs)
+		groupIDs, changed := mergeUnique(invite.UsergroupIDs, []string{group.ID})
+		if changed {
+			err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, invite.ID, groupIDs)
 			if err != nil {
 				return nil, err
 			}
@@ -651,6 +633,47 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 	}
 
 	return &adminv1.AddUsergroupMemberUserResponse{}, nil
+}
+
+// resolveUsergroupsForMembership looks up the named user groups in the org and checks that the caller may add or remove members from them.
+// It is shared by the handlers that add users to groups directly or through an invite, so the rules cannot drift between them.
+// The returned groups are deduplicated and preserve the order of names.
+// With forceAccess (superuser), the permission checks are skipped but managed groups are still rejected.
+func (s *Server) resolveUsergroupsForMembership(ctx context.Context, orgName string, names []string, forceAccess bool) ([]*database.Usergroup, error) {
+	claims := auth.GetClaims(ctx)
+	groups := make([]*database.Usergroup, 0, len(names))
+	seen := make(map[string]bool, len(names))
+	for _, name := range names {
+		group, err := s.admin.DB.FindUsergroupByName(ctx, orgName, name)
+		if err != nil {
+			return nil, err
+		}
+		if seen[group.ID] {
+			continue
+		}
+		seen[group.ID] = true
+
+		if !forceAccess && !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgMembers {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to add user group members")
+		}
+
+		if group.Managed {
+			return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
+		}
+
+		currentRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, group.OrgID)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		if currentRole != nil && currentRole.Admin && !forceAccess && !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgAdmins {
+			return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to edit a group that has an admin role")
+		}
+		// NOTE: In theory, the group could be admin on a project that the current user is not admin on.
+		// We don't check for that because it's complicated and not a big leak of permissions.
+
+		groups = append(groups, group)
+	}
+	return groups, nil
 }
 
 func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.ListUsergroupMemberUsersRequest) (*adminv1.ListUsergroupMemberUsersResponse, error) {
@@ -753,7 +776,26 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		// did not find user, check if there is a pending invite that would add them to the group on acceptance
+		invite, err := s.admin.DB.FindOrganizationInvite(ctx, group.OrgID, req.Email)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, err
+			}
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		if !slices.Contains(invite.UsergroupIDs, group.ID) {
+			return nil, status.Error(codes.NotFound, "user is not a member of the usergroup")
+		}
+		groupIDs := slices.DeleteFunc(slices.Clone(invite.UsergroupIDs), func(id string) bool { return id == group.ID })
+		err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, invite.ID, groupIDs)
+		if err != nil {
+			return nil, err
+		}
+		return &adminv1.RemoveUsergroupMemberUserResponse{}, nil
 	}
 
 	err = s.admin.DB.DeleteUsergroupMemberUser(ctx, group.ID, user.ID)
@@ -762,6 +804,27 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 	}
 
 	return &adminv1.RemoveUsergroupMemberUserResponse{}, nil
+}
+
+// usergroupIDs returns the IDs of the given groups.
+func usergroupIDs(groups []*database.Usergroup) []string {
+	ids := make([]string, len(groups))
+	for i, g := range groups {
+		ids[i] = g.ID
+	}
+	return ids
+}
+
+// mergeUnique appends the values in add that are not already in existing, preserving order.
+// It reports whether anything was added, so callers can skip a no-op write.
+func mergeUnique(existing, add []string) ([]string, bool) {
+	res := slices.Clone(existing)
+	for _, v := range add {
+		if !slices.Contains(res, v) {
+			res = append(res, v)
+		}
+	}
+	return res, len(res) != len(existing)
 }
 
 func usergroupToPB(group *database.Usergroup) *adminv1.Usergroup {

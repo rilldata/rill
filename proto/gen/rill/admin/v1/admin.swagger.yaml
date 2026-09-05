@@ -856,6 +856,14 @@ paths:
                 description: |-
                   Custom attributes to set on the new membership.
                   If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+              usergroups:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Names of user groups in the org to add the user to.
+                  If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                  Groups are additive: on a re-invite they are merged with the groups already on the invite.
               superuserForceAccess:
                 type: boolean
       x-visibility: public
@@ -1900,6 +1908,14 @@ paths:
                   Custom attributes to set on the user's org membership (attributes are org-scoped).
                   If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
                   Setting attributes requires permission to manage org members.
+              usergroups:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Names of user groups in the org to add the user to (user groups are org-scoped).
+                  If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                  Setting user groups requires permission to manage org members.
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}:
     get:
@@ -6259,6 +6275,11 @@ definitions:
         type: string
       attributes:
         type: object
+      usergroups:
+        type: array
+        items:
+          type: string
+        description: Names of the user groups the user will be added to when the invite is accepted.
   v1OrganizationMemberService:
     type: object
     properties:
@@ -7321,6 +7342,11 @@ definitions:
         type: string
       userPhotoUrl:
         type: string
+      pendingAcceptance:
+        type: boolean
+        description: |-
+          True if the user has been invited to the group but has not signed up yet.
+          For pending members, user_id, user_name and user_photo_url are empty.
       createdOn:
         type: string
         format: date-time

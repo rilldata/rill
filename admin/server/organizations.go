@@ -457,6 +457,13 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		attrs = req.Attributes.AsMap()
 	}
 
+	// Resolve and validate the user groups up front, so an invalid group fails the request before anything is written or emailed.
+	groups, err := s.resolveUsergroupsForMembership(ctx, org.Name, req.Usergroups, forceAccess)
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := usergroupIDs(groups)
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -465,11 +472,12 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 
 		// Invite user to join org
 		err := s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-			Email:      req.Email,
-			InviterID:  invitedByUserID,
-			OrgID:      org.ID,
-			RoleID:     role.ID,
-			Attributes: attrs,
+			Email:        req.Email,
+			InviterID:    invitedByUserID,
+			OrgID:        org.ID,
+			RoleID:       role.ID,
+			UsergroupIDs: groupIDs,
+			Attributes:   attrs,
 		})
 		if err != nil {
 			if !errors.Is(err, database.ErrNotUnique) {
@@ -488,6 +496,13 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			// Update the invite's attributes only when explicitly provided, to avoid clearing them on a plain re-invite.
 			if req.Attributes != nil {
 				err = s.admin.DB.UpdateOrganizationInviteAttributes(ctx, invite.ID, attrs)
+				if err != nil {
+					return nil, err
+				}
+			}
+			// User groups are additive: merge them with the groups already on the invite.
+			if mergedGroupIDs, changed := mergeUnique(invite.UsergroupIDs, groupIDs); changed {
+				err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, invite.ID, mergedGroupIDs)
 				if err != nil {
 					return nil, err
 				}
@@ -522,13 +537,29 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d seats", org.Name, org.QuotaSeats)
 	}
 
-	// Insert the user in the org and its managed usergroups transactionally.
+	// Insert the user in the org, its managed usergroups and the requested usergroups transactionally.
+	ctx, tx, err := s.admin.DB.NewTx(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, attrs, false)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
 		}
 		return nil, status.Error(codes.AlreadyExists, "user is already a member of the organization")
+	}
+
+	err = s.admin.DB.InsertUsergroupsMemberUser(ctx, user.ID, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
 	}
 
 	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{

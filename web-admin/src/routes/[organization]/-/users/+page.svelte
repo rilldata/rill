@@ -8,6 +8,7 @@
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddUsersDialog.svelte";
   import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ChangingBillingContactRoleDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
+  import ManageUserGroupsDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ManageUserGroupsDialog.svelte";
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/user-management/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/user-management/table/users/OrgUsersTable.svelte";
   import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemovingBillingContactDialog.svelte";
@@ -15,6 +16,7 @@
     getOrgUserInvites,
     getOrgUserMembers,
   } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
+  import type { OrgUserRow } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -35,6 +37,13 @@
   let isUpdateBillingContactDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let editingUserGroupName = "";
+  let isManageGroupsDialogOpen = false;
+  let manageGroupsUser: {
+    email: string;
+    userId: string;
+    pendingAcceptance: boolean;
+    usergroups: string[];
+  } | null = null;
 
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
@@ -175,6 +184,15 @@
             editingUserGroupName = groupName;
             isEditUserGroupDialogOpen = true;
           }}
+          onManageGroups={(user: OrgUserRow) => {
+            manageGroupsUser = {
+              email: user.userEmail ?? "",
+              userId: user.userId ?? "",
+              pendingAcceptance: "invitedBy" in user,
+              usergroups: user.usergroups ?? [],
+            };
+            isManageGroupsDialogOpen = true;
+          }}
           onConvertToMember={() => {}}
         />
       </div>
@@ -210,5 +228,16 @@
     bind:open={isEditUserGroupDialogOpen}
     groupName={editingUserGroupName}
     currentUserEmail={$currentUser.data?.user.email}
+  />
+{/if}
+
+{#if manageGroupsUser}
+  <ManageUserGroupsDialog
+    bind:open={isManageGroupsDialogOpen}
+    {organization}
+    email={manageGroupsUser.email}
+    userId={manageGroupsUser.userId}
+    pendingAcceptance={manageGroupsUser.pendingAcceptance}
+    currentGroups={manageGroupsUser.usergroups}
   />
 {/if}

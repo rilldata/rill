@@ -20,7 +20,9 @@
   export let selectedValues: string[] = [];
   export let getMetadata: (
     value: string,
-  ) => { name: string; photoUrl?: string } | undefined = () => undefined;
+  ) =>
+    | { name: string; photoUrl?: string; pendingAcceptance?: boolean }
+    | undefined = () => undefined;
   export let enableClientFiltering = true; // When false, pass options as-is (for server-side filtering)
   export let hasMore: boolean = false;
   export let isLoadingMore: boolean = false;
@@ -150,6 +152,8 @@
               name={getValidMetadata(item.value)?.name || item.label}
               email={item.value}
               photoUrl={getValidMetadata(item.value)?.photoUrl}
+              pendingAcceptance={getValidMetadata(item.value)
+                ?.pendingAcceptance ?? false}
               leftSpacing={false}
             />
             <div class="grow"></div>

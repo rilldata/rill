@@ -4,9 +4,9 @@
     V1ListOrganizationInvitesResponse,
     V1ListOrganizationMemberUsersResponse,
     V1OrganizationMemberUser,
-    V1OrganizationInvite,
     V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
+  import type { OrgUserRow as OrgUser } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import UserCompositeCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserCompositeCell.svelte";
   import UserActionsCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserActionsCell.svelte";
   import UserRoleCell from "@rilldata/web-admin/features/organizations/user-management/table/users/UserRoleCell.svelte";
@@ -20,10 +20,6 @@
   import { ExternalLinkIcon } from "lucide-svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-
-  interface OrgUser extends V1OrganizationMemberUser, V1OrganizationInvite {
-    invitedBy?: string;
-  }
 
   export let organization: string;
   export let data: OrgUser[];
@@ -45,6 +41,7 @@
   export let onAttemptChangeBillingContactUserRole: () => void;
   export let onEditUserGroup: (groupName: string) => void;
   export let onConvertToMember: (user: V1OrganizationMemberUser) => void;
+  export let onManageGroups: (user: OrgUser) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
 
@@ -88,10 +85,15 @@
     header: m.users_table_header_groups(),
     cell: ({ row }) =>
       renderComponent(UserGroupsCell, {
-        userId: row.original.userId,
+        userId: row.original.userId ?? "",
         organization,
         groupCount: row.original.usergroupsCount ?? 0,
+        pendingAcceptance: "invitedBy" in row.original,
+        usergroups: row.original.usergroups ?? [],
         onEditUserGroup,
+        onManageGroups: organizationPermissions.manageOrgMembers
+          ? () => onManageGroups(row.original)
+          : undefined,
       }),
     meta: {
       widthPercent: 40,
@@ -126,6 +128,7 @@
         pendingAcceptance: "invitedBy" in row.original,
         onAttemptRemoveBillingContactUser,
         onConvertToMember: () => onConvertToMember(row.original),
+        onManageGroups: () => onManageGroups(row.original),
       }),
     meta: {
       widthPercent: 5,
@@ -133,7 +136,7 @@
   };
   $: columns = guestOnly
     ? [UserCell, UserGroupCell, ProjectsCell, ContextActionsCell]
-    : [UserCell, RoleCell, UserGroupCell];
+    : [UserCell, RoleCell, UserGroupCell, ContextActionsCell];
 
   function handleLoadMore() {
     if (usersQuery.hasNextPage) {
