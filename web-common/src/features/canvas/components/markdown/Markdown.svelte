@@ -6,6 +6,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { MarkdownCanvasComponent } from "./";
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
+  import { CANVAS_TOC_REFRESH_EVENT } from "@rilldata/web-common/features/canvas/toc/toc";
   import {
     getPositionClasses,
     hasTemplatingSyntax,
@@ -91,12 +92,28 @@
 
     return extractErrorMessage(error);
   })();
+
+  // Tell the canvas table of contents to re-derive whenever this markdown mounts, re-renders its
+  // content, or unmounts, so the TOC controller doesn't have to observe the whole dashboard subtree
+  // for mutations. `update` runs on content changes and `destroy` on unmount; the scroll container
+  // captured at mount stays mounted across all three. Outside a canvas (e.g. the PDF export view)
+  // there is no scroll container, so this is a no-op.
+  function notifyTableOfContents(node: HTMLElement, _content: string) {
+    const container = node.closest("#canvas-scroll-container");
+    const notify = () =>
+      container?.dispatchEvent(new CustomEvent(CANVAS_TOC_REFRESH_EVENT));
+    notify();
+    return { update: notify, destroy: notify };
+  }
 </script>
 
 <div
   class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface-card"
 >
-  <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
+  <div
+    class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min"
+    use:notifyTableOfContents={resolvedContent}
+  >
     {#if needsTemplating && $resolveQuery?.isError}
       <div class="markdown-error">
         <p>{errorMessage}</p>
