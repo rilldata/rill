@@ -54,7 +54,7 @@
   $: schema = validateKPISchema(ctx, spec);
   $: ({ isValid } = $schema);
 
-  $: ephemeralMeasures = ephemeralSpecsToDefs(spec.ephemeral_measures);
+  $: ephemeralMeasures = ephemeralSpecsToDefs(spec.calculated_measures);
   $: ephemeralDef = ephemeralMeasures?.find((def) => def.name === measureName);
 
   $: measureStore = getMeasureForMetricView(measureName, metricsViewName);

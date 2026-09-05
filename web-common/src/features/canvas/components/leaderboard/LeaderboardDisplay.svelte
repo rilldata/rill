@@ -91,7 +91,7 @@
     .filter((d) => d !== undefined);
 
   $: ephemeralMeasures = ephemeralSpecsToDefs(
-    leaderboardProperties.ephemeral_measures,
+    leaderboardProperties.calculated_measures,
   );
   $: allMeasuresWithEphemeral = appendEphemeralSpecMeasures(
     $allMeasures,

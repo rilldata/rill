@@ -102,7 +102,7 @@ export interface PivotSpec
   metrics_view: string;
   measures: string[];
   // Ad-hoc measures derived from existing measures via an arithmetic expression.
-  ephemeral_measures?: EphemeralMeasureSpec[];
+  calculated_measures?: EphemeralMeasureSpec[];
   row_dimensions?: string[];
   col_dimensions?: string[];
   hide_totals_row?: boolean;
@@ -117,7 +117,7 @@ export interface TableSpec
   metrics_view: string;
   columns: string[];
   // Ad-hoc measures derived from existing measures via an arithmetic expression.
-  ephemeral_measures?: EphemeralMeasureSpec[];
+  calculated_measures?: EphemeralMeasureSpec[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
   conditional_format?: PivotConditionalFormatSpec[];
@@ -137,7 +137,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     "row_dimensions",
     "col_dimensions",
     "conditional_format",
-    "ephemeral_measures",
+    "calculated_measures",
   ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
@@ -271,8 +271,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { allowedTypes: ["measure"] },
             label: m.canvas_measures_label(),
           },
-          ephemeral_measures: {
-            type: "ephemeral_measures",
+          calculated_measures: {
+            type: "calculated_measures",
             label: m.canvas_ephemeral_measures_label(),
             optional: true,
             // Managed through the measures selector's create/edit dialog.
@@ -341,8 +341,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: m.canvas_columns_label(),
             meta: { allowedTypes: ["time", "dimension", "measure"] },
           },
-          ephemeral_measures: {
-            type: "ephemeral_measures",
+          calculated_measures: {
+            type: "calculated_measures",
             label: m.canvas_ephemeral_measures_label(),
             optional: true,
             // Managed through the measures selector's create/edit dialog.

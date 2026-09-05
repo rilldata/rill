@@ -97,7 +97,7 @@ export interface KPISpec
   measure: string;
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; `measure` may name one of them.
-  ephemeral_measures?: EphemeralMeasureSpec[];
+  calculated_measures?: EphemeralMeasureSpec[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
   // Defaults to "delta" and "percent_change"

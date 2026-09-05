@@ -92,8 +92,8 @@ export abstract class BaseChart<
       options: {
         metrics_view: { type: "metrics", label: m.canvas_metrics_view_label() },
         // Managed through the measure selectors' create/edit dialog.
-        ephemeral_measures: {
-          type: "ephemeral_measures",
+        calculated_measures: {
+          type: "calculated_measures",
           optional: true,
           showInUI: false,
         },
@@ -242,7 +242,7 @@ export abstract class BaseChart<
   ): Partial<BaseChartConfig> {
     const {
       metrics_view,
-      ephemeral_measures,
+      calculated_measures,
       title,
       description,
       vl_config,
@@ -275,7 +275,7 @@ export abstract class BaseChart<
 
     return {
       metrics_view,
-      ...(ephemeral_measures ? { ephemeral_measures } : {}),
+      ...(calculated_measures ? { calculated_measures } : {}),
       title,
       description,
       vl_config,

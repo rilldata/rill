@@ -979,7 +979,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [y, profit]
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -995,7 +995,7 @@ leaderboard:
   metrics_view: mv1
   measures: [profit]
   dimensions: [foo]
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1010,7 +1010,7 @@ type: component
 table:
   metrics_view: mv1
   columns: [foo, y, profit]
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1026,7 +1026,7 @@ pivot:
   metrics_view: mv1
   measures: [profit]
   row_dimensions: [foo]
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1047,7 +1047,7 @@ bar_chart:
     field: profit
     type: quantitative
     fields: [y, profit]
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1067,7 +1067,7 @@ pie_chart:
   color:
     field: foo
     type: nominal
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1087,7 +1087,7 @@ heatmap:
   color:
     field: profit
     type: quantitative
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1119,7 +1119,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [profit]
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: sum(y)
@@ -1135,7 +1135,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [profit]
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - unknown
@@ -1151,7 +1151,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [missing]
-  ephemeral_measures:
+  calculated_measures:
   - name: profit
     display_name: Profit
     expression: y - z

@@ -11,7 +11,7 @@ import type { CommonChartProperties } from "./types";
 
 type EphemeralMeasureCarrier = Pick<
   CommonChartProperties,
-  "ephemeral_measures"
+  "calculated_measures"
 >;
 
 /**
@@ -24,7 +24,7 @@ export function withEphemeralMeasures(
 ): V1MetricsViewAggregationMeasure[] {
   return mapEphemeralMeasuresForRequest(
     measures,
-    ephemeralSpecsToDefs(config.ephemeral_measures),
+    ephemeralSpecsToDefs(config.calculated_measures),
   );
 }
 
@@ -35,7 +35,7 @@ export function chartEphemeralMeasureNames(
   config: EphemeralMeasureCarrier,
 ): Set<string> {
   return new Set(
-    ephemeralSpecsToDefs(config.ephemeral_measures)?.map((def) => def.name) ??
+    ephemeralSpecsToDefs(config.calculated_measures)?.map((def) => def.name) ??
       [],
   );
 }
@@ -49,7 +49,7 @@ export function resolveEphemeralMeasureSpec(
   config: EphemeralMeasureCarrier,
   name: string,
 ): MetricsViewSpecMeasure | undefined {
-  const def = ephemeralSpecsToDefs(config.ephemeral_measures)?.find(
+  const def = ephemeralSpecsToDefs(config.calculated_measures)?.find(
     (d) => d.name === name,
   );
   return def ? ephemeralMeasureToSpecMeasure(def) : undefined;

@@ -58,14 +58,14 @@
     "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
 
   $: componentEphemeralMeasures = ephemeralSpecsToDefs(
-    "ephemeral_measures" in localParamValues
-      ? localParamValues.ephemeral_measures
+    "calculated_measures" in localParamValues
+      ? localParamValues.calculated_measures
       : undefined,
   );
 
   // Components that support ephemeral measures declare the param (hidden from
   // the UI); their measure selectors then offer creating and editing them.
-  $: supportsEphemeralMeasures = "ephemeral_measures" in inputParams;
+  $: supportsEphemeralMeasures = "calculated_measures" in inputParams;
 
   $: entries = Object.entries(inputParams) as [
     AllKeys<ComponentSpec>,

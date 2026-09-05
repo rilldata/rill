@@ -35,7 +35,7 @@ export type ScatterPlotChartSpec = {
   metrics_view: string;
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; measure fields may name them.
-  ephemeral_measures?: EphemeralMeasureSpec[];
+  calculated_measures?: EphemeralMeasureSpec[];
   x?: FieldConfig<"quantitative" | "time">;
   y?: FieldConfig<"quantitative" | "time">;
   dimension?: FieldConfig<"nominal">;

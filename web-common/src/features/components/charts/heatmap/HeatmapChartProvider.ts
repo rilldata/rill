@@ -37,7 +37,7 @@ export type HeatmapChartSpec = {
   metrics_view: string;
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; measure fields may name them.
-  ephemeral_measures?: EphemeralMeasureSpec[];
+  calculated_measures?: EphemeralMeasureSpec[];
   x?: FieldConfig<"nominal" | "time">;
   y?: FieldConfig<"nominal" | "time">;
   color?: FieldConfig<"quantitative">;

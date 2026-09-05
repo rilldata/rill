@@ -33,7 +33,7 @@ export function validateKPISchema(
       const validateMeasuresRes = validateMeasures(
         metricsView,
         [measure],
-        new Set(kpiSpec.ephemeral_measures?.map((c) => c.name) ?? []),
+        new Set(kpiSpec.calculated_measures?.map((c) => c.name) ?? []),
       );
       if (!validateMeasuresRes.isValid) {
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");

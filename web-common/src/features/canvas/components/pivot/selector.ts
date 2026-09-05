@@ -41,7 +41,7 @@ export function validateTableSchema(
 
 function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
   const ephemeralMeasureNames = new Set(
-    tableSpec.ephemeral_measures?.map((c) => c.name) ?? [],
+    tableSpec.calculated_measures?.map((c) => c.name) ?? [],
   );
   const allMeasures = [
     ...(metricsView?.measures?.map((m) => m.name as string) || []),
@@ -92,7 +92,7 @@ function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
 
 function validatePivot(tableSpec: PivotSpec, metricsView: V1MetricsViewSpec) {
   const ephemeralMeasureNames = new Set(
-    tableSpec.ephemeral_measures?.map((c) => c.name) ?? [],
+    tableSpec.calculated_measures?.map((c) => c.name) ?? [],
   );
   const measures = tableSpec.measures || [];
   const rowDimensions = tableSpec.row_dimensions || [];

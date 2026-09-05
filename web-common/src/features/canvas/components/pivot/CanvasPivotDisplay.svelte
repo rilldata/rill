@@ -60,7 +60,7 @@
       columns: tableFieldMapper(
         columns,
         metricsViewSpec,
-        tableSpec.ephemeral_measures,
+        tableSpec.calculated_measures,
       ),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
@@ -82,7 +82,7 @@
         ...tableFieldMapper(
           measures,
           metricsViewSpec,
-          tableSpec.ephemeral_measures,
+          tableSpec.calculated_measures,
         ),
       ],
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),

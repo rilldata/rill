@@ -10,7 +10,7 @@ type SemanticInputTypes =
   | "dimension"
   | "multi_fields"
   | "multi_fields_format"
-  | "ephemeral_measures"
+  | "calculated_measures"
   | "metrics_sql";
 type NativeInputTypes = "text" | "number" | "boolean" | "textarea" | "select";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";

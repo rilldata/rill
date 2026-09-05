@@ -42,7 +42,7 @@
   const client = useRuntimeClient();
 
   // The spec key holding the definitions on every component that supports them.
-  const EPHEMERAL_SPEC_KEY = "ephemeral_measures" as AllKeys<ComponentSpec>;
+  const EPHEMERAL_SPEC_KEY = "calculated_measures" as AllKeys<ComponentSpec>;
 
   const FORMAT_PRESETS = ephemeralFormatPresetOptions();
 
@@ -59,8 +59,8 @@
   $: specStore = component.specStore;
   $: defs =
     ephemeralSpecsToDefs(
-      ($specStore as { ephemeral_measures?: EphemeralMeasureSpec[] })
-        .ephemeral_measures,
+      ($specStore as { calculated_measures?: EphemeralMeasureSpec[] })
+        .calculated_measures,
     ) ?? [];
 
   $: referenceableMeasures = (metricsViewSpec?.measures ?? []).filter(
@@ -93,8 +93,8 @@
   // added or reordered elsewhere (code editor, another refetch) while the
   // editor was open. Unknown or partial entries are preserved verbatim.
   function currentRawSpecs(): EphemeralMeasureSpec[] {
-    const raw = ($specStore as { ephemeral_measures?: EphemeralMeasureSpec[] })
-      .ephemeral_measures;
+    const raw = ($specStore as { calculated_measures?: EphemeralMeasureSpec[] })
+      .calculated_measures;
     return Array.isArray(raw) ? [...raw] : [];
   }
 

@@ -210,7 +210,7 @@ export function processPivot(
     $timeAndFilterStore.showTimeComparison;
 
   const ephemeralMeasures = ephemeralSpecsToDefs(
-    $tableSpec?.ephemeral_measures,
+    $tableSpec?.calculated_measures,
   );
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
 
@@ -300,7 +300,7 @@ export function processFlat(
 
   const columns = $tableSpec?.columns || [];
   const ephemeralMeasures = ephemeralSpecsToDefs(
-    $tableSpec?.ephemeral_measures,
+    $tableSpec?.calculated_measures,
   );
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
   const allMeasureNames = [
