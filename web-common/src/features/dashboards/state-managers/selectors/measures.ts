@@ -5,8 +5,29 @@ import {
   type V1MetricsViewSpec,
   V1TimeGrain,
   type V1MetricsViewAggregationMeasure,
+  type V1MetricsViewAggregationMeasureComputeExpression,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
+
+/**
+ * The subset of an aggregation measure that identifies the spec measure it derives from.
+ * Both spec measures and aggregation measures satisfy it,
+ * so selectors that only resolve the source measure can accept either.
+ */
+type AggregationMeasureRef = Pick<
+  V1MetricsViewAggregationMeasure,
+  | "name"
+  | "comparisonDelta"
+  | "comparisonValue"
+  | "comparisonRatio"
+  | "percentOfTotal"
+> & {
+  /**
+   * Aggregation measures carry the ephemeral expression compute here, while spec measures carry
+   * their SQL expression as a plain string. Only the object form marks an ephemeral measure.
+   */
+  expression?: V1MetricsViewAggregationMeasureComputeExpression | string;
+};
 
 export const allMeasures = ({
   validMetricsView,
@@ -147,34 +168,46 @@ export const filterOutSomeAdvancedMeasures = (
  *
  * This is a variant of the above but works on V1MetricsViewAggregationMeasure.
  * Once we move all queries to MetricsViewAggregation we dont need the above method.
+ *
+ * It is generic over the measure type so callers that pass spec measures get spec measures back.
  */
-export const filterOutSomeAdvancedAggregationMeasures = (
+export const filterOutSomeAdvancedAggregationMeasures = <
+  T extends AggregationMeasureRef,
+>(
   exploreState: ExploreState,
   metricsViewSpec: V1MetricsViewSpec,
-  measures: V1MetricsViewAggregationMeasure[],
+  measures: T[],
   includeWindowMeasures: boolean,
-) => {
+): T[] => {
   const measuresSeen = new Set<string>();
 
   return measures.filter((measure) => {
-    const sourceMeasureName =
-      measure.comparisonDelta?.measure ??
-      measure.comparisonValue?.measure ??
-      measure.comparisonRatio?.measure ??
-      measure.percentOfTotal?.measure ??
-      measure.name ??
-      "";
-    const measureSpec = metricsViewSpec.measures?.find(
-      (m) => m.name === sourceMeasureName,
-    );
-    if (!measureSpec) return false;
-    const measureIsSupported = isMeasureSupported(
-      exploreState,
-      measureSpec,
-      includeWindowMeasures,
-      false,
-    );
-    if (!measureIsSupported || measuresSeen.has(measure.name!)) return false;
+    // Ephemeral expression measures are derived from measures already in the spec and have no spec
+    // entry of their own, so there is no source measure to resolve or check for support.
+    const isEphemeralExpression =
+      !!measure.expression && typeof measure.expression === "object";
+    if (!isEphemeralExpression) {
+      const sourceMeasureName =
+        measure.comparisonDelta?.measure ??
+        measure.comparisonValue?.measure ??
+        measure.comparisonRatio?.measure ??
+        measure.percentOfTotal?.measure ??
+        measure.name ??
+        "";
+      const measureSpec = metricsViewSpec.measures?.find(
+        (m) => m.name === sourceMeasureName,
+      );
+      if (!measureSpec) return false;
+      const measureIsSupported = isMeasureSupported(
+        exploreState,
+        measureSpec,
+        includeWindowMeasures,
+        false,
+      );
+      if (!measureIsSupported) return false;
+    }
+
+    if (measuresSeen.has(measure.name!)) return false;
 
     measuresSeen.add(measure.name!);
     return true;

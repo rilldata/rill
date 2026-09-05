@@ -3069,6 +3069,34 @@ light:
 				},
 			},
 		},
+		{
+			name: "dimension and measure variables are accepted",
+			yaml: `
+type: theme
+light:
+  primary: red
+  dimension: "#f1f5f9"
+  dimension-foreground: "#0f172a"
+  dimension-border: "#cbd5e1"
+  measure: "#f1f5f9"
+  measure-foreground: "#0f172a"
+  measure-border: "#cbd5e1"
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary: "red",
+					Variables: map[string]string{
+						"dimension":            "#f1f5f9",
+						"dimension-foreground": "#0f172a",
+						"dimension-border":     "#cbd5e1",
+						"measure":              "#f1f5f9",
+						"measure-foreground":   "#0f172a",
+						"measure-border":       "#cbd5e1",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -81,11 +81,16 @@ class ThemeManager {
 
       const themeBoundary = document.querySelector(".dashboard-theme-boundary");
       if (themeBoundary) {
-        const scopedValue = getComputedStyle(
-          themeBoundary as HTMLElement,
-        ).getPropertyValue(modeVariant);
-        if (scopedValue && scopedValue.trim()) {
-          return scopedValue.trim();
+        const boundaryStyle = getComputedStyle(themeBoundary as HTMLElement);
+        // Theme.generateCSS declares the plain `--color-primary-500` form on the boundary
+        // rather than the -light-/-dark- pair, and already picks the shade for the active
+        // mode. Check the mode variant first (themeManager.applyTheme sets those), then the
+        // plain name, so both ways of theming a dashboard resolve here.
+        for (const name of [modeVariant, varName]) {
+          const scopedValue = boundaryStyle.getPropertyValue(name);
+          if (scopedValue && scopedValue.trim()) {
+            return scopedValue.trim();
+          }
         }
       }
 

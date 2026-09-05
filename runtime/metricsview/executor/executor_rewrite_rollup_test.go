@@ -357,6 +357,61 @@ func TestRollupEligible_ComparisonDeltaMissingReferencedMeasure(t *testing.T) {
 	require.Equal(t, rejectMeasureMissing, reason)
 }
 
+func TestRollupEligible_ExpressionMeasure(t *testing.T) {
+	// An expression measure is a pure SQL wrapper over its referenced measures,
+	// so it is eligible as long as every referenced measure is in the rollup.
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions", "total_clicks"},
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{
+			{
+				Name: "ctr",
+				Compute: &metricsview.MeasureCompute{
+					Expression: &metricsview.MeasureComputeExpression{Expression: "total_clicks / total_impressions"},
+				},
+			},
+		},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.True(t, eligible)
+	require.Empty(t, reason)
+}
+
+func TestRollupEligible_ExpressionMeasureMissingReferencedMeasure(t *testing.T) {
+	// An expression measure referencing a measure that's not in the rollup must be rejected.
+	rollup := &runtimev1.MetricsViewSpec_Rollup{
+		Table:     "daily_rollup",
+		TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Measures:  []string{"total_impressions"}, // missing total_clicks
+	}
+	qry := &metricsview.Query{
+		Measures: []metricsview.Measure{
+			{
+				Name: "ctr",
+				Compute: &metricsview.MeasureCompute{
+					Expression: &metricsview.MeasureComputeExpression{Expression: "total_clicks / total_impressions"},
+				},
+			},
+		},
+		TimeRange: &metricsview.TimeRange{
+			Start: time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	require.NoError(t, err)
+	require.False(t, eligible)
+	require.Equal(t, rejectMeasureMissing, reason)
+}
+
 func TestRollupEligible_CountStillRejected(t *testing.T) {
 	// Non-comparison computed measures (count, count_distinct, percent_of_total) remain rejected.
 	rollup := &runtimev1.MetricsViewSpec_Rollup{
