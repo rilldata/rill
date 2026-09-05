@@ -2,6 +2,7 @@ import { page } from "$app/stores";
 import {
   createAdminServiceGetCurrentUser,
   createAdminServiceListBookmarks,
+  getAdminServiceListBookmarksQueryKey,
   getAdminServiceListBookmarksQueryOptions,
   type V1Bookmark,
   type V1ListBookmarksResponse,
@@ -60,6 +61,44 @@ export function getBookmarksQueryOptions(
       );
     },
   );
+}
+
+/**
+ * Query options for every bookmark in the project that is visible to the current user.
+ * This powers the bookmark manager; the dashboard dropdowns use {@link getBookmarksQueryOptions} scoped to one resource.
+ */
+export function getProjectBookmarksQueryOptions(
+  orgAndProjectNameStore: OrgAndProjectNameStore,
+) {
+  const projectIdQuery = createQuery(
+    getProjectIdQueryOptions(orgAndProjectNameStore),
+  );
+
+  return derived(
+    [createAdminServiceGetCurrentUser(), projectIdQuery],
+    ([userResp, projectIdQueryResp]) => {
+      const projectId = projectIdQueryResp.data;
+
+      return getAdminServiceListBookmarksQueryOptions(
+        { projectId },
+        {
+          query: {
+            enabled: Boolean(userResp.data?.user && projectId),
+          },
+        },
+      );
+    },
+  );
+}
+
+/**
+ * Invalidates every bookmarks list query: the per-dashboard ones behind the bookmark dropdowns and the project-wide one behind the bookmark manager.
+ * The generated query keys are `["/v1/users/bookmarks", params]`, so the param-less key prefix-matches all of them.
+ */
+export function invalidateBookmarkQueries() {
+  return queryClient.invalidateQueries({
+    queryKey: getAdminServiceListBookmarksQueryKey(),
+  });
 }
 
 export function getBookmarks(

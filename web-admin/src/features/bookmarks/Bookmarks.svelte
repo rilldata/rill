@@ -5,12 +5,14 @@
     createAdminServiceCreateBookmark,
     createAdminServiceRemoveBookmark,
     createAdminServiceUpdateBookmark,
-    getAdminServiceListBookmarksQueryKey,
     type V1Bookmark,
   } from "@rilldata/web-admin/client";
   import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
   import BookmarksFormDialog from "@rilldata/web-admin/features/bookmarks/BookmarksFormDialog.svelte";
-  import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
+  import {
+    invalidateBookmarkQueries,
+    isHomeBookmark,
+  } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     type BookmarkEntry,
     type Bookmarks,
@@ -18,6 +20,7 @@
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import HomeBookmarkButton from "@rilldata/web-admin/features/bookmarks/HomeBookmarkButton.svelte";
+  import { RecentlyUsedBookmarks } from "@rilldata/web-admin/features/bookmarks/recently-used-bookmarks.ts";
   import {
     getProjectIdQueryOptions,
     getProjectPermissions,
@@ -35,7 +38,7 @@
   import { Search } from "@rilldata/web-common/components/search";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+  import { createQuery } from "@tanstack/svelte-query";
   import { BookmarkIcon, BookmarkPlusIcon } from "lucide-svelte";
   import { writable } from "svelte/store";
 
@@ -63,6 +66,11 @@
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
+  $: recentlyUsedBookmarks = new RecentlyUsedBookmarks(organization, project);
+  function recordUsage(bookmark: BookmarkEntry) {
+    recentlyUsedBookmarks.update(bookmark.resource.id);
+  }
+
   const orgAndProjectNameStore = writable({ organization: "", project: "" });
   $: orgAndProjectNameStore.set({ organization, project });
 
@@ -76,7 +84,6 @@
 
   $: curUrlParams = $page.url.searchParams;
 
-  const queryClient = useQueryClient();
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
@@ -117,13 +124,7 @@
     eventBus.emit("notification", {
       message: m.bookmark_home_created(),
     });
-    return queryClient.refetchQueries({
-      queryKey: getAdminServiceListBookmarksQueryKey({
-        projectId,
-        resourceKind,
-        resourceName,
-      }),
-    });
+    return invalidateBookmarkQueries();
   }
 
   function onEdit(editingBookmark: BookmarkEntry) {
@@ -141,13 +142,7 @@
         name: bookmark.resource.displayName ?? "",
       }),
     });
-    return queryClient.refetchQueries({
-      queryKey: getAdminServiceListBookmarksQueryKey({
-        projectId,
-        resourceKind,
-        resourceName,
-      }),
-    });
+    return invalidateBookmarkQueries();
   }
 
   let open = false;
@@ -165,6 +160,7 @@
   {defaultHomeBookmarkUrl}
   onCreate={createHomeBookmark}
   onDelete={deleteBookmark}
+  onOpen={recordUsage}
   {manageProject}
 />
 
@@ -223,6 +219,7 @@
                   {bookmark}
                   {onEdit}
                   onDelete={deleteBookmark}
+                  onClick={() => recordUsage(bookmark)}
                 />
               {/key}
             {/each}
@@ -251,6 +248,7 @@
                   {bookmark}
                   {onEdit}
                   onDelete={deleteBookmark}
+                  onClick={() => recordUsage(bookmark)}
                   readOnly={!manageProject}
                 />
               {/key}

@@ -4,8 +4,8 @@
   import {
     createAdminServiceCreateBookmark,
     createAdminServiceUpdateBookmark,
-    getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
+  import { invalidateBookmarkQueries } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     type BookmarkEntry,
     formatTimeRange,
@@ -27,7 +27,6 @@
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
     V1TimeGrain,
     type V1TimeRange,
@@ -225,13 +224,7 @@
         }
         onClose();
 
-        await queryClient.refetchQueries({
-          queryKey: getAdminServiceListBookmarksQueryKey({
-            projectId,
-            resourceKind,
-            resourceName,
-          }),
-        });
+        await invalidateBookmarkQueries();
         eventBus.emit("notification", {
           message: bookmark ? m.bookmark_updated() : m.bookmark_created(),
         });
