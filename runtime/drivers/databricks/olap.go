@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/databricks-sql-go/driverctx"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -13,6 +14,10 @@ import (
 )
 
 var _ drivers.OLAPStore = (*connection)(nil)
+
+// queryTagsConf is the statement configuration the Databricks driver uses to carry
+// query tags. It appears in the error returned by workspaces that don't support them.
+const queryTagsConf = "query_tags"
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
@@ -49,19 +54,42 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.config.LogQueries {
-		c.logger.Info("databricks query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("databricks query", fields...)
 	}
+
+	// Send the query attributes as Databricks query tags, which are recorded in the
+	// query_tags column of system.query.history. The driver attaches them per statement
+	// (as a ConfOverlay on the ExecuteStatement request) rather than per session, so they
+	// stay correct even though connections are pooled and shared across users.
+	taggedCtx := c.contextWithQueryTags(ctx, stmt.QueryAttributes)
+
 	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if stmt.DryRun {
-		_, err = db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		_, err = db.ExecContext(taggedCtx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		if c.queryTagsRejected(err) {
+			_, err = db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		}
 		return nil, err
 	}
 
-	rows, err := db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	rows, err := db.QueryxContext(taggedCtx, stmt.Query, stmt.Args...)
+	if c.queryTagsRejected(err) {
+		// The workspace doesn't support query tags. Retry untagged so a metrics view
+		// that sets query_attributes still works there.
+		rows, err = db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +148,47 @@ func (c *connection) Head(ctx context.Context, db, schema, table string, limit i
 		q += fmt.Sprintf(" LIMIT %d", limit)
 	}
 	return c.Query(ctx, &drivers.Statement{Query: q})
+}
+
+// contextWithQueryTags returns a context carrying attrs as Databricks query tags.
+// The context is returned unchanged when there are no attributes, or when this
+// connection has already seen the workspace reject query tags.
+func (c *connection) contextWithQueryTags(ctx context.Context, attrs map[string]string) context.Context {
+	if len(attrs) == 0 || c.queryTagsUnsupported.Load() {
+		return ctx
+	}
+	// Copy so a later mutation of the statement's map can't race with the driver
+	// reading it while the query is in flight.
+	tags := make(map[string]string, len(attrs))
+	for k, v := range attrs {
+		tags[k] = v
+	}
+	return driverctx.NewContextWithQueryTags(ctx, tags)
+}
+
+// queryTagsRejected reports whether err is the workspace refusing the query_tags
+// configuration, meaning the query should be retried without tags.
+//
+// Query tags are sent as a statement configuration, and Databricks fails the whole
+// statement when it doesn't recognise a configuration rather than ignoring it:
+//
+//	[CONFIG_NOT_AVAILABLE.WITHOUT_SUGGESTION] Configuration query_tags is not available.
+//
+// Without this, enabling query_attributes on a metrics view would break every query
+// against a workspace that doesn't have the (Public Preview) query tags feature. The
+// result is latched on the connection so only the first query pays for the retry.
+func (c *connection) queryTagsRejected(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "CONFIG_NOT_AVAILABLE") || !strings.Contains(msg, queryTagsConf) {
+		return false
+	}
+	if c.queryTagsUnsupported.CompareAndSwap(false, true) {
+		c.logger.Warn("databricks: workspace rejected query tags, dropping query_attributes for this connection", zap.Error(err))
+	}
+	return true
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
