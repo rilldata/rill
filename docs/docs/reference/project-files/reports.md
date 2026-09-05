@@ -121,37 +121,31 @@ Supports ai resolvers only as of now.
 
       - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
 
-      - **`time_range`** - _[object]_ - Time range for the analysis period
+      - **`time_range`** - _[object]_ - Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
-
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday)
+        - **`expression`** - _[string]_ - Rill time expression (e.g., '7D as of latest/D', '1M as of latest/M')
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
         - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month')
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis. Use either a Rill time expression or fixed start and end timestamps.
 
-      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis
-
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period
-
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
+        - **`expression`** - _[string]_ - Rill time expression for the comparison period (e.g., '7D as of latest/D offset -7D')
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
         - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression for comparison period
+      - **`time_zone`** - _[string]_ - IANA time zone used to evaluate the time range expressions (e.g., 'America/New_York'). Defaults to UTC.
 
-      - **`context`** - _[object]_ - Context to constrain the AI analysis
+      - **`explore`** - _[string]_ - Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard. Combined with `watermark: inherit` on the report, time range expressions are resolved against the latest data in the metrics view instead of the report's trigger time.
 
-        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze
+      - **`dimensions`** - _[array of string]_ - List of dimensions to include in the analysis
 
-        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis
+      - **`measures`** - _[array of string]_ - List of measures to include in the analysis
 
-        - **`measures`** - _[array of string]_ - List of measures to include in analysis
+      - **`where`** - _[object]_ - Optional filter expression to apply to the analysis, in the same format as metrics view query filters
 
 ### `query`
 
@@ -257,8 +251,7 @@ data:
             expression: "1D as of latest/D"
         comparison_time_range:
             expression: "1D as of latest/D offset -1D"
-        context:
-            explore: my_explore
+        explore: my_explore
 notify:
     email:
         recipients:

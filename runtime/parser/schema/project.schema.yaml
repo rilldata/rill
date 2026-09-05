@@ -2881,8 +2881,7 @@ definitions:
               expression: "1D as of latest/D"
             comparison_time_range:
               expression: "1D as of latest/D offset -1D"
-            context:
-              explore: my_explore
+            explore: my_explore
         notify:
           email:
             recipients:
@@ -3764,71 +3763,59 @@ definitions:
                 description: Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
               time_range:
                 type: object
-                description: Time range for the analysis period
+                description: Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
                 properties:
-                  iso_duration:
+                  expression:
                     type: string
-                    description: ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
-                  iso_offset:
-                    type: string
-                    description: ISO 8601 offset from current time (e.g., P1D to start from yesterday)
+                    description: Rill time expression (e.g., '7D as of latest/D', '1M as of latest/M')
                   start:
                     type: string
                     description: Start timestamp in ISO 8601 format
                   end:
                     type: string
                     description: End timestamp in ISO 8601 format
-                  expression:
-                    type: string
-                    description: Rill time expression (e.g., 'last 7 days', 'this month')
               comparison_time_range:
                 type: object
-                description: Optional comparison time range for period-over-period analysis
+                description: Optional comparison time range for period-over-period analysis. Use either a Rill time expression or fixed start and end timestamps.
                 properties:
-                  iso_duration:
+                  expression:
                     type: string
-                    description: ISO 8601 duration for comparison period
-                  iso_offset:
-                    type: string
-                    description: ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
+                    description: Rill time expression for the comparison period (e.g., '7D as of latest/D offset -7D')
                   start:
                     type: string
                     description: Start timestamp in ISO 8601 format
                   end:
                     type: string
                     description: End timestamp in ISO 8601 format
-                  expression:
-                    type: string
-                    description: Rill time expression for comparison period
-              context:
+              time_zone:
+                type: string
+                description: IANA time zone used to evaluate the time range expressions (e.g., 'America/New_York'). Defaults to UTC.
+              explore:
+                type: string
+                description: "Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard. Combined with `watermark: inherit` on the report, time range expressions are resolved against the latest data in the metrics view instead of the report's trigger time."
+              dimensions:
+                type: array
+                items:
+                  type: string
+                description: List of dimensions to include in the analysis
+              measures:
+                type: array
+                items:
+                  type: string
+                description: List of measures to include in the analysis
+              where:
                 type: object
-                description: Context to constrain the AI analysis
-                properties:
-                  explore:
-                    type: string
-                    description: Name of the explore dashboard to analyze
-                  dimensions:
-                    type: array
-                    items:
-                      type: string
-                    description: List of dimensions to include in analysis
-                  measures:
-                    type: array
-                    items:
-                      type: string
-                    description: List of measures to include in analysis
+                description: Optional filter expression to apply to the analysis, in the same format as metrics view query filters
         required:
           - ai
         examples:
           - ai:
               prompt: "Analyze revenue trends and identify top performing regions"
               time_range:
-                iso_duration: P7D
+                expression: "7D as of latest/D"
               comparison_time_range:
-                iso_duration: P7D
-                iso_offset: P7D
-              context:
-                explore: sales_explore
+                expression: "7D as of latest/D offset -7D"
+              explore: sales_explore
 
   explore_time_range_properties:
     oneOf:

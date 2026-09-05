@@ -2,12 +2,91 @@ package reconcilers_test
 
 import (
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
+
+func TestReportAIExploreWatermarkInherit(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+`,
+		"/metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+		"/explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+		// AI report that inherits its watermark through the explore
+		"/reports/r1.yaml": `
+type: report
+display_name: AI Report
+refresh:
+  cron: 0 8 * * *
+watermark: inherit
+data:
+  ai:
+    prompt: Analyze key metrics
+    explore: e1
+notify:
+  email:
+    recipients:
+      - somebody@example.com
+`,
+		// Same report without watermark: inherit, which should use the trigger time
+		"/reports/r2.yaml": `
+type: report
+display_name: AI Report
+refresh:
+  cron: 0 8 * * *
+data:
+  ai:
+    prompt: Analyze key metrics
+    explore: e1
+notify:
+  email:
+    recipients:
+      - somebody@example.com
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+
+	r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
+	require.Len(t, r1.Meta.Refs, 1)
+	require.Equal(t, runtime.ResourceKindExplore, r1.Meta.Refs[0].Kind)
+	require.Equal(t, "e1", r1.Meta.Refs[0].Name)
+
+	// Trigger both reports.
+	// The execution's report time is recorded before the report is sent, so it is available regardless of whether the AI session could be created.
+	triggerTime := time.Now()
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
+
+	// r1 should have resolved the watermark of the explore's metrics view.
+	// The watermark is max(__time) plus one second, since it's used as an exclusive upper bound (see ResourceWatermark).
+	r1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
+	require.Len(t, r1.GetReport().State.ExecutionHistory, 1)
+	require.Equal(t, time.Date(2024, 1, 1, 0, 0, 1, 0, time.UTC), r1.GetReport().State.ExecutionHistory[0].ReportTime.AsTime())
+
+	// r2 should have used the trigger time
+	r2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r2")
+	require.Len(t, r2.GetReport().State.ExecutionHistory, 1)
+	require.WithinDuration(t, triggerTime, r2.GetReport().State.ExecutionHistory[0].ReportTime.AsTime(), time.Minute)
+}
 
 func TestReportCanvasResolveTransitiveAccess(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
