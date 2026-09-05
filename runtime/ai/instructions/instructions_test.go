@@ -114,7 +114,8 @@ description: Test`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fm, body, err := parseFrontMatter([]byte(tt.content))
+			var fm frontMatter
+			body, err := parseFrontMatter([]byte(tt.content), &fm)
 			if tt.wantErr {
 				require.Error(t, err)
 				return

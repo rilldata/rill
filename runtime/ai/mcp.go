@@ -15,9 +15,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// MCPInstructions are the instructions advertised by the MCP server.
-// It is exported so the unified MCP server in the admin service can extend it instead of restating it.
-const MCPInstructions = `
+// mcpWorkflowInstructions and mcpProjectDevInstructions are the parts of the MCP server instructions
+// that apply to every project; the skills section between them is only advertised when the project defines skills.
+//
+//nolint:gosec // G101 false positive: long instructions text, not a credential
+const mcpWorkflowInstructions = `
 # Rill MCP Server
 This server exposes APIs for querying **metrics views**, which represent Rill's metrics layer.
 
@@ -29,7 +31,17 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
+`
 
+const mcpSkillsInstructions = `
+## Skills
+Projects may define **skills**: instruction files that teach agents project-specific analysis or development practices, such as analysis playbooks and business glossaries.
+- Use "list_skills" early in a session to discover the project's skills.
+- Before doing work that a skill's description covers, use "load_skill" to fetch its full instructions and follow them.
+- Load any skill marked "always_apply" up front and treat its instructions as always in effect.
+`
+
+const mcpProjectDevInstructions = `
 ## Project Development
 If you have edit access, the server also exposes tools for inspecting and editing the project's source code, which consists of YAML and SQL files:
 - **List files:** Use "list_files" to browse the files in the project.
@@ -37,6 +49,14 @@ If you have edit access, the server also exposes tools for inspecting and editin
 - **Read a file:** Use "read_file" to read the contents of a file.
 - **Write a file:** Use "write_file" to create, update or delete a file. If the file declares a Rill resource, it returns the resource's status and any errors encountered after reconciliation.
 `
+
+// MCPInstructions are the full instructions advertised by the MCP server.
+// It is exported so the unified MCP server in the admin service, which serves all projects
+// and cannot tailor the instructions per project, can extend it instead of restating it.
+const MCPInstructions = mcpWorkflowInstructions + mcpSkillsInstructions + mcpProjectDevInstructions
+
+// mcpInstructionsWithoutSkills are the instructions advertised to clients of a project that defines no skills.
+const mcpInstructionsWithoutSkills = mcpWorkflowInstructions + mcpProjectDevInstructions
 
 // MCPToolSpecs returns the specs of all registered tools, keyed by name.
 // The specs are freshly built and owned by the caller, so they may be mutated.
@@ -55,7 +75,8 @@ func MCPToolSpecs() map[string]*mcp.Tool {
 // Since it is scoped to the session, a new MCP server should be created for each client connection.
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
-	// Create the MCP server
+	// Create the MCP server.
+	// The instructions omit the skills section; it is added during the initialization handshake if the project defines skills (see below).
 	srv := mcp.NewServer(
 		&mcp.Implementation{
 			Name:    "rill",
@@ -63,7 +84,7 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 			Version: s.runner.Runtime.Version().String(),
 		},
 		&mcp.ServerOptions{
-			Instructions: MCPInstructions,
+			Instructions: mcpInstructionsWithoutSkills,
 			InitializedHandler: func(ctx context.Context, r *mcp.InitializedRequest) {
 				// Save user agent in the session
 				clientInfo := r.Session.InitializeParams().ClientInfo
@@ -86,6 +107,31 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 			},
 		},
 	)
+
+	// Advertise the skills section of the instructions only when the project defines skills.
+	// It is resolved during the initialization handshake rather than when building the server,
+	// because the instructions are only returned on initialization while the server is rebuilt for every request.
+	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			res, err := next(ctx, method, req)
+			if method != "initialize" || err != nil {
+				return res, err
+			}
+			init, ok := res.(*mcp.InitializeResult)
+			if !ok {
+				return res, err
+			}
+			// On a load error, fail open with the skills section: it is harmless for projects without skills.
+			skills, skillsErr := s.Skills(ctx)
+			if skillsErr != nil {
+				s.logger.Warn("failed to load project skills", zap.Error(skillsErr))
+			}
+			if skillsErr != nil || len(skills) > 0 {
+				init.Instructions = MCPInstructions
+			}
+			return init, nil
+		}
+	})
 
 	// Inject the Session before every request, and trigger a flush after each request is finished.
 	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {

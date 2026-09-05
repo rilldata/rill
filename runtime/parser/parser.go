@@ -54,6 +54,7 @@ type Resource struct {
 	CanvasSpec      *runtimev1.CanvasSpec
 	APISpec         *runtimev1.APISpec
 	ConnectorSpec   *runtimev1.ConnectorSpec
+	SkillSpec       *runtimev1.SkillSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -90,6 +91,7 @@ const (
 	ResourceKindCanvas
 	ResourceKindAPI
 	ResourceKindConnector
+	ResourceKindSkill
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -122,6 +124,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAPI, nil
 	case "connector":
 		return ResourceKindConnector, nil
+	case "skill":
+		return ResourceKindSkill, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}
@@ -155,6 +159,8 @@ func (k ResourceKind) String() string {
 		return "API"
 	case ResourceKindConnector:
 		return "Connector"
+	case ResourceKindSkill:
+		return "Skill"
 	default:
 		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
@@ -297,7 +303,7 @@ func (p *Parser) IsSkippable(path string) bool {
 	if ok {
 		return false
 	}
-	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path) && !pathIsSkill(path)
 }
 
 // TrackedPathsInDir returns the paths under the given directory that the parser currently has cached results for.
@@ -372,15 +378,24 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.updatedResources = nil
 	p.deletedResources = nil
 
-	// Load entire repo
+	// Load entire repo.
+	// Skills are listed with a dedicated glob instead of adding "md" to the glob below,
+	// since matching every markdown file in the repo would count unrelated docs against drivers.RepoListLimit.
 	files, err := p.Repo.ListGlob(ctx, "**/*.{env,sql,yaml,yml}", true)
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
+	skillFiles, err := p.Repo.ListGlob(ctx, "**/SKILL.md", true)
+	if err != nil {
+		return fmt.Errorf("could not list project skill files: %w", err)
+	}
 
 	// Build paths slice
-	paths := make([]string, 0, len(files))
+	paths := make([]string, 0, len(files)+len(skillFiles))
 	for _, file := range files {
+		paths = append(paths, file.Path)
+	}
+	for _, file := range skillFiles {
 		paths = append(paths, file.Path)
 	}
 
@@ -459,7 +474,8 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
-		if !isSQL && !isYAML && !isDotEnv {
+		isSkill := pathIsSkill(path)
+		if !isSQL && !isYAML && !isDotEnv && !isSkill {
 			continue
 		}
 
@@ -638,6 +654,17 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 			err := p.parseDotEnv(ctx, path)
 			if err != nil {
 				p.addParseError(path, err, false)
+			}
+			i++
+			continue
+		} else if pathIsMarkdown(path) {
+			// Markdown files don't participate in the SQL/YAML stem machinery below.
+			// The only markdown files the parser understands are skill files; other markdown files are ignored.
+			if pathIsSkill(path) {
+				err := p.parseSkill(ctx, path)
+				if err != nil {
+					p.addParseError(path, err, false)
+				}
 			}
 			i++
 			continue
@@ -908,6 +935,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths, tags []st
 		r.APISpec = &runtimev1.APISpec{}
 	case ResourceKindConnector:
 		r.ConnectorSpec = &runtimev1.ConnectorSpec{}
+	case ResourceKindSkill:
+		r.SkillSpec = &runtimev1.SkillSpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
@@ -1102,6 +1131,11 @@ func pathIsSQL(path string) bool {
 // pathIsYAML returns true if the path is a YAML file
 func pathIsYAML(path string) bool {
 	return strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+}
+
+// pathIsMarkdown returns true if the path is a markdown file
+func pathIsMarkdown(path string) bool {
+	return strings.HasSuffix(path, ".md")
 }
 
 // pathIsRillYAML returns true if the path is rill.yaml

@@ -5,6 +5,7 @@
     Database,
     File,
     Folder,
+    GraduationCap,
     PlusCircleIcon,
     Wand,
   } from "lucide-svelte";
@@ -27,7 +28,7 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors.ts";
   import { directoryState } from "../../file-explorer/directory-store.ts";
-  import { createResourceAndNavigate } from "./new-files.ts";
+  import { createResourceAndNavigate, skillFileTemplate } from "./new-files.ts";
   import AddAiConnectorDialog from "../../connectors/ai/AddAiConnectorDialog.svelte";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "../entity-mappers.ts";
@@ -71,6 +72,11 @@
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     runtimeClient,
     currentDirectory,
+  );
+
+  $: skillDirectoryNamesQuery = useDirectoryNamesInDirectory(
+    runtimeClient,
+    "skills",
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
@@ -133,6 +139,30 @@
     await $createFile.mutateAsync({
       path,
       blob: undefined,
+      create: true,
+      createOnly: true,
+    });
+
+    await navigateToFile(`/${path}`);
+  }
+
+  /**
+   * Put a skill file (markdown instructions for the AI agents) in the skills directory
+   */
+  async function handleAddSkill() {
+    // Skill names only allow lowercase letters, numbers and hyphens, so we can't use getName, which appends "_N" suffixes
+    const existingNames = new Set(
+      ($skillDirectoryNamesQuery?.data ?? []).map((n) => n.toLowerCase()),
+    );
+    let name = "my-skill";
+    for (let i = 1; existingNames.has(name); i++) {
+      name = `my-skill-${i}`;
+    }
+    const path = `skills/${name}/SKILL.md`;
+
+    await $createFile.mutateAsync({
+      path,
+      blob: skillFileTemplate(name),
       create: true,
       createOnly: true,
     });
@@ -295,6 +325,11 @@
             size="16px"
           />
           Theme
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddSkill}>
+          <GraduationCap size="14px" class="stroke-icon-muted" />
+          AI Skill
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
         <!-- <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>

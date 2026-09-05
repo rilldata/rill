@@ -16,6 +16,8 @@ There are two places to add `ai_instructions`:
 1.  **`rill.yaml`**: Project-wide instructions that apply to all queries across your entire project.
 2.  **`<metrics_view>.yaml`**: Metrics view-specific instructions for individual dashboards.
 
+For longer, structured guidance — such as step-by-step analysis playbooks — use [skills](#skills) instead, which the AI loads on demand.
+
 ## Automatic Context Inclusion
 
 In addition to `ai_instructions`, Rill automatically includes the following in the AI context:
@@ -94,6 +96,52 @@ ai_instructions: |
   - Refunds are processed with a 2-3 day delay, so recent data may shift.
   - Weekend traffic patterns are anomalous due to our B2B focus.
 ```
+
+## Skills
+
+Skills teach Rill's AI project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) or business glossaries. Where `ai_instructions` is best for short guidance that always applies, skills hold longer, structured instructions that the AI loads only when they are relevant to the question at hand. Skills apply both in [AI Chat](/guide/ai/ai-chat) and to external AI clients connected via the [MCP Server](/guide/ai/mcp).
+
+Skills follow the [Agent Skills](https://agentskills.io) format: a skill is a directory containing a `SKILL.md` file with YAML front matter followed by markdown instructions. Rill loads skills from `skills/<name>/SKILL.md`, and also from `.agents/skills/<name>/SKILL.md` for compatibility with skills authored for other agent clients (note that the Rill Developer file explorer hides dot-directories, so prefer `skills/` for skills you edit in Rill). For example, `skills/revenue-rca/SKILL.md`:
+
+```markdown
+---
+name: revenue-rca
+description: Playbook for diagnosing revenue drops. Use when asked why revenue or bookings declined.
+---
+
+# Revenue root-cause analysis
+
+When asked why revenue declined:
+1. Establish the comparison window and compute the total change.
+2. Break the change down by `channel`, then `region`, then `plan_type`.
+3. Account for known seasonality: B2B traffic drops on weekends.
+4. State your confidence and call out data quirks that may affect the result.
+```
+
+The `description` is required: the AI sees an index of skill names and descriptions, and uses the description to decide when to load a skill. Phrase it as "what it does + when to use it". The `name` must match the skill's directory name (lowercase letters, numbers and hyphens); if omitted, it is derived from the directory.
+
+In addition to the standard Agent Skills fields, Rill supports these extension properties:
+
+```markdown
+---
+description: Business glossary for our e-commerce metrics.
+metrics_views: [orders]      # Optional: only offer this skill for analyses involving these metrics views
+agents: [analyst]            # Optional: which agents the skill applies to; defaults to [analyst]
+always_apply: true           # Optional: always include the full skill instead of loading it on demand
+---
+```
+
+- **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file.
+- **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[analyst]`.
+- **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request.
+
+Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa.
+
+Skills are parsed into resources like the rest of your project: invalid skill files (e.g. a missing `description`) show an error on the file in Rill Developer. When the AI uses a skill, the chat response's activity trace shows a "Loaded skill" step, so you can verify a skill was applied and iterate on it: edit the file, ask a test question, and check the trace.
+
+:::warning Skills are visible to all AI users
+Skill contents are provided to every user who can use AI features in the project, including viewers and, on a public project, anonymous visitors. Never put secrets or sensitive data in a skill. Access to the underlying data is still governed by your metrics view security policies.
+:::
 
 ## Visualization Tips 
 

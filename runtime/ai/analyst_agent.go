@@ -14,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai/instructions"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/parser"
+	"go.uber.org/zap"
 )
 
 const AnalystAgentName = "analyst_agent"
@@ -160,6 +162,15 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 	}
 
+	// Load project-defined skills relevant to this analysis.
+	// Skill loading failures should degrade the analysis, not fail it.
+	skills, err := s.Skills(ctx)
+	if err != nil {
+		s.logger.Warn("failed to load project skills", zap.Error(err))
+		skills = nil
+	}
+	skills = filterSkills(skills, parser.SkillAgentAnalyst, metricsViewNames)
+
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {
@@ -169,13 +180,16 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if !args.DisableCharts {
 		tools = append(tools, CreateChartName)
 	}
+	if len(skills) > 0 {
+		tools = append(tools, LoadSkillName)
+	}
 
 	// Build completion messages
 	systemPrompt, err := t.systemPrompt()
 	if err != nil {
 		return nil, err
 	}
-	userPrompt, err := t.userPrompt(ctx, metricsViewNames, args)
+	userPrompt, err := t.userPrompt(ctx, metricsViewNames, skills, args)
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +227,7 @@ func (t *AnalystAgent) systemPrompt() (string, error) {
 	return instr.Body, nil
 }
 
-func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string, args *AnalystAgentArgs) (string, error) {
+func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string, skills []*Skill, args *AnalystAgentArgs) (string, error) {
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
@@ -242,20 +256,24 @@ func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string
 		measuresQuoted[i] = fmt.Sprintf("`%s`", measure)
 	}
 
+	alwaysApplySkills, skillsIndex := skillPrompts(skills, session.logger)
+
 	data := map[string]any{
-		"prompt":           args.Prompt,
-		"ai_instructions":  session.ProjectInstructions(),
-		"is_prompt":        args.Prompt != "",
-		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
-		"explore":          args.Explore,
-		"canvas":           args.Canvas,
-		"canvas_component": args.CanvasComponent,
-		"dimensions":       strings.Join(dimensionsQuoted, ", "),
-		"measures":         strings.Join(measuresQuoted, ", "),
-		"forked":           session.Forked(),
-		"is_report":        args.IsReport,
-		"now":              time.Now(),
-		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
+		"prompt":              args.Prompt,
+		"ai_instructions":     session.ProjectInstructions(),
+		"always_apply_skills": alwaysApplySkills,
+		"skills_index":        skillsIndex,
+		"is_prompt":           args.Prompt != "",
+		"metrics_views":       strings.Join(metricsViewsQuoted, ", "),
+		"explore":             args.Explore,
+		"canvas":              args.Canvas,
+		"canvas_component":    args.CanvasComponent,
+		"dimensions":          strings.Join(dimensionsQuoted, ", "),
+		"measures":            strings.Join(measuresQuoted, ", "),
+		"forked":              session.Forked(),
+		"is_report":           args.IsReport,
+		"now":                 time.Now(),
+		"max_query_limit":     instanceCfg.AIMaxQueryLimit,
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -378,6 +396,16 @@ The system allows a max row limit of {{ .max_query_limit }} per query.
 {{ if .ai_instructions }}
 The administrator has provided the following project-wide instructions, which may or may not be relevant to this task:
 {{ .ai_instructions }}
+{{ end }}
+
+{{ if .always_apply_skills }}
+The administrator has defined the following skills that always apply to this analysis. Follow their guidance:
+{{ .always_apply_skills }}
+{{ end }}
+
+{{ if .skills_index }}
+The administrator has defined the following analysis skills. As your first step, check whether any skill's description matches the user's request. If one does, you MUST call the "load_skill" tool to retrieve it and follow its instructions before running any queries; proceed without a skill only when none of them match:
+{{ .skills_index }}
 {{ end }}
 
 {{ if .is_prompt }}

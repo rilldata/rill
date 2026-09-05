@@ -735,6 +735,10 @@ func newResourceIfModified(def *parserpkg.Resource, existing *runtimev1.Resource
 		if existing == nil || !proto.Equal(existing.GetConnector().Spec, def.ConnectorSpec) {
 			return &runtimev1.Resource{Resource: &runtimev1.Resource_Connector{Connector: &runtimev1.ConnectorV2{Spec: def.ConnectorSpec}}}
 		}
+	case parserpkg.ResourceKindSkill:
+		if existing == nil || !proto.Equal(existing.GetSkill().Spec, def.SkillSpec) {
+			return &runtimev1.Resource{Resource: &runtimev1.Resource_Skill{Skill: &runtimev1.Skill{Spec: def.SkillSpec}}}
+		}
 	default:
 		panic(fmt.Errorf("unknown resource type %q", def.Name.Kind))
 	}
