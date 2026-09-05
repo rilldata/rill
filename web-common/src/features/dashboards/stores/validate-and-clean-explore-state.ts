@@ -61,7 +61,7 @@ export function validateAndCleanExploreState(
     exploreState.ephemeralMeasures = valid.length ? valid : undefined;
     injectEphemeralMeasuresIntoMap(measures, valid);
     if (invalidEntries.length) {
-      errors.push(getMultiFieldError("calculated measure", invalidEntries));
+      errors.push(getMultiFieldError("adhoc measure", invalidEntries));
     }
   }
 

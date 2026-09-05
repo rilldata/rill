@@ -16,7 +16,7 @@
   export let types: FieldType[];
   export let excludedValues: string[] | undefined = undefined;
   export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
-  // When set, the menu footer offers a "Create calculated measure" action.
+  // When set, the menu footer offers a "Create adhoc measure" action.
   export let onCreateEphemeral: (() => void) | undefined = undefined;
   // When set, ephemeral items get an edit button invoking this.
   export let onEditEphemeral: ((name: string) => void) | undefined = undefined;

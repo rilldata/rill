@@ -90,7 +90,7 @@ export function convertLegacyStateToExplorePreset(
     preset.ephemeralMeasures = toEphemeralMeasuresParam(valid);
     injectEphemeralMeasuresIntoMap(measures, valid);
     if (invalidEntries.length) {
-      errors.push(getMultiFieldError("calculated measure", invalidEntries));
+      errors.push(getMultiFieldError("adhoc measure", invalidEntries));
     }
   }
 

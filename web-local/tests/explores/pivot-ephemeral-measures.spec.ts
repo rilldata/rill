@@ -82,9 +82,7 @@ test.describe("pivot ephemeral measures from URL state", () => {
     );
 
     // The Measures section of the field sidebar offers a create CTA.
-    await page
-      .getByRole("button", { name: "Create calculated measure" })
-      .click();
+    await page.getByRole("button", { name: "Create adhoc measure" }).click();
 
     await page.getByLabel("Name", { exact: true }).fill("Doubled");
     await page

@@ -125,7 +125,7 @@ describe("ephemeral measures URL state integration", () => {
       "http://localhost/explore/AdBids_explore?view=pivot&cols=impressions,profit&ephemeral=profit:Profit:unknown*2",
     );
     expect(errors.map((e) => e.message)).toEqual([
-      `Selected calculated measure: "profit ("unknown" is not a measure in this dashboard)" is not valid.`,
+      `Selected adhoc measure: "profit ("unknown" is not a measure in this dashboard)" is not valid.`,
       `Selected pivot column: "profit" is not valid.`,
     ]);
 
