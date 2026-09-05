@@ -592,28 +592,28 @@ func isEncodedTimeDimension(mv *runtimev1.MetricsViewSpec, fieldName string) boo
 	return ok && v != int32(runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
 }
 
-// ephemeralMeasureNames extracts and validates the optional "ephemeral_measures" renderer property.
+// ephemeralMeasureNames extracts and validates the optional "calculated_measures" renderer property.
 // Each entry defines an ephemeral measure derived from existing measures via an arithmetic expression;
 // the returned set contains the names that may be referenced alongside the metrics view's own measures.
 func ephemeralMeasureNames(props map[string]any, mvn string, mv *runtimev1.MetricsViewSpec) (map[string]bool, error) {
-	raw, ok := props["ephemeral_measures"]
+	raw, ok := props["calculated_measures"]
 	if !ok || raw == nil {
 		return nil, nil
 	}
 	list, ok := raw.([]any)
 	if !ok {
-		return nil, errors.New("renderer property 'ephemeral_measures' must be an array")
+		return nil, errors.New("renderer property 'calculated_measures' must be an array")
 	}
 	names := make(map[string]bool, len(list))
 	for _, item := range list {
 		entry, ok := item.(map[string]any)
 		if !ok {
-			return nil, errors.New("entries in 'ephemeral_measures' must be objects with 'name' and 'expression'")
+			return nil, errors.New("entries in 'calculated_measures' must be objects with 'name' and 'expression'")
 		}
 		name, _ := entry["name"].(string)
 		expression, _ := entry["expression"].(string)
 		if name == "" || expression == "" {
-			return nil, errors.New("entries in 'ephemeral_measures' must have a non-empty 'name' and 'expression'")
+			return nil, errors.New("entries in 'calculated_measures' must have a non-empty 'name' and 'expression'")
 		}
 		// Mirror metricsview.AST.checkNameForComputedField, which also rejects the time dimension.
 		// It is often absent from mv.Dimensions, so checking it here surfaces the collision at parse time rather than at query time.

@@ -19,6 +19,7 @@
 
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
   import { appendChipsToZone, splitTagItems } from "./pivot-utils";
 
   export let zone: "rows" | "columns" | null = null;
@@ -28,12 +29,17 @@
   const TAG_PREFIX = "__tag__:";
 
   const {
+    dashboardStore,
     selectors: {
       pivot: { dimensions, measures, rows, originalColumns },
       tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
     },
     exploreName,
   } = getStateManagers();
+
+  $: ephemeralDefsByName = new Map(
+    ($dashboardStore?.ephemeralMeasures ?? []).map((def) => [def.name, def]),
+  );
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let open = false;
@@ -90,10 +96,16 @@
       ? [
           <SearchableFilterSelectableGroup>{
             name: m.dashboard_measures_label(),
-            items: $measures?.map((m) => ({
-              name: m.id,
-              label: m.title,
-            })),
+            items: $measures?.map((chip) => {
+              const def = ephemeralDefsByName.get(chip.id);
+              return {
+                name: chip.id,
+                label: chip.title,
+                ...(def
+                  ? { description: def.expression, ephemeral: true }
+                  : {}),
+              };
+            }),
           },
         ]
       : []),
@@ -172,14 +184,43 @@
     {/snippet}
   </DropdownMenu.Trigger>
 
-  <SearchableMenuContent
-    allowMultiSelect={false}
-    onSelect={(name) => {
-      handleSelectValue(name);
-    }}
-    {selectableGroups}
-    selectedItems={[]}
-  />
+  {#if zone === "columns"}
+    <SearchableMenuContent
+      allowMultiSelect={false}
+      onSelect={(name) => {
+        handleSelectValue(name);
+      }}
+      {selectableGroups}
+      selectedItems={[]}
+      onEditItem={(name) => {
+        open = false;
+        const def = ephemeralDefsByName.get(name);
+        if (def) ephemeralMeasureDialog.set({ def });
+      }}
+    >
+      <button
+        slot="action"
+        class="create-ephemeral-measure"
+        type="button"
+        on:click={() => {
+          open = false;
+          ephemeralMeasureDialog.set({});
+        }}
+      >
+        <Add size="14px" />
+        {m.dashboard_pivot_ephemeral_create()}
+      </button>
+    </SearchableMenuContent>
+  {:else}
+    <SearchableMenuContent
+      allowMultiSelect={false}
+      onSelect={(name) => {
+        handleSelectValue(name);
+      }}
+      {selectableGroups}
+      selectedItems={[]}
+    />
+  {/if}
 </DropdownMenu.Root>
 
 <style lang="postcss">
@@ -196,5 +237,14 @@
   button:active,
   .active {
     @apply bg-surface-active;
+  }
+
+  .create-ephemeral-measure {
+    @apply flex w-full items-center gap-x-1.5 rounded-none border-none bg-transparent;
+    @apply h-7 px-2 text-xs text-fg-primary;
+  }
+
+  .create-ephemeral-measure:hover {
+    @apply bg-surface-hover;
   }
 </style>

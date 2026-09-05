@@ -18,11 +18,15 @@ import {
 export class AdvancedMeasureCorrector {
   private measuresMap: Map<string, MetricsViewSpecMeasure>;
   private measuresGrains: Map<string, V1TimeGrain>;
+  private ephemeralMeasureNames: Set<string>;
 
   private constructor(
     private readonly exploreState: ExploreState,
     private readonly metricsViewSpec: V1MetricsViewSpec,
   ) {
+    this.ephemeralMeasureNames = new Set(
+      exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+    );
     this.measuresMap = getMapFromArray(
       metricsViewSpec.measures ?? [],
       (m) => m.name ?? "",
@@ -58,7 +62,8 @@ export class AdvancedMeasureCorrector {
     this.exploreState.dimensionThresholdFilters.forEach(
       (dimensionThreshold) => {
         dimensionThreshold.filters = dimensionThreshold.filters.filter(
-          (dtf) => !this.measureIsValidForComponent(dtf.measure, false, false),
+          (dtf) =>
+            !this.measureIsValidForComponent(dtf.measure, false, false, false),
         );
       },
     );
@@ -138,7 +143,13 @@ export class AdvancedMeasureCorrector {
     measureName: string,
     supportsComparisonMeasure: boolean,
     supportsWindowedMeasure: boolean,
+    supportsEphemeralMeasure = true,
   ) {
+    // ephemeral measures are not in the metrics view spec;
+    // they are validated separately when parsing the URL state.
+    if (this.ephemeralMeasureNames.has(measureName)) {
+      return !supportsEphemeralMeasure;
+    }
     const measure = this.measuresMap.get(measureName);
     if (!measure) return true;
     const grain =

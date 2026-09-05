@@ -1,3 +1,4 @@
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   getURIRequestMeasure,
   URI_DIMENSION_SUFFIX,
@@ -134,9 +135,11 @@ export function getDimensionValuesForComparison(
         const hasUri = !!validSpec?.data?.metricsView?.dimensions?.find(
           (d) => d.name === dimensionName,
         )?.uri;
-        const tddMeasures: V1MetricsViewAggregationMeasure[] = measures.map(
-          (measure) => ({ name: measure }),
-        );
+        const tddMeasures: V1MetricsViewAggregationMeasure[] =
+          mapEphemeralMeasuresForRequest(
+            measures.map((measure) => ({ name: measure })),
+            dashboardStore.ephemeralMeasures,
+          );
         if (hasUri) {
           tddMeasures.push(getURIRequestMeasure(dimensionName));
         }
@@ -294,7 +297,10 @@ function getAggregationQueryForTopList(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: measures.map((measure) => ({ name: measure })),
+          measures: mapEphemeralMeasuresForRequest(
+            measures.map((measure) => ({ name: measure })),
+            dashboardStore.ephemeralMeasures,
+          ),
           dimensions: [
             { name: dimensionName },
             { name: timeDimension, timeGrain, timeZone },

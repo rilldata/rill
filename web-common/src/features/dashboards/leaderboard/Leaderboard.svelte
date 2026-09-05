@@ -1,6 +1,11 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    ephemeralMeasureNameSet,
+    mapEphemeralMeasuresForRequest,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
@@ -59,6 +64,9 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasures: MetricsViewSpecMeasure[];
+  // ephemeral measure definitions; their names may appear in
+  // leaderboardMeasures and are sent with an `expression` compute.
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
   export let leaderboardShowContextForAllMeasures: boolean;
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -153,33 +161,43 @@
         undefined,
       );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      leaderboardShowContextForAllMeasures
-        ? null
-        : leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
-      leaderboardMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+  $: ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
 
-    // Add comparison measures if there's a comparison time range
-    ...(comparisonTimeRange
-      ? (leaderboardShowContextForAllMeasures
-          ? leaderboardMeasureNames
-          : [leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
+  $: measures = mapEphemeralMeasuresForRequest(
+    [
+      ...getMeasuresForDimensionOrLeaderboardDisplay(
+        leaderboardShowContextForAllMeasures
+          ? null
+          : leaderboardSortByMeasureName,
+        dimensionThresholdFilters,
+        leaderboardMeasureNames,
+      ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
-    // Add URI measure if URI is present
-    ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
-  ];
+      // Add comparison measures if there's a comparison time range.
+      // Comparison computes are not supported for ephemeral measures.
+      ...(comparisonTimeRange
+        ? (leaderboardShowContextForAllMeasures
+            ? leaderboardMeasureNames
+            : [leaderboardSortByMeasureName]
+          )
+            .filter((name) => !ephemeralMeasureNames.has(name))
+            .flatMap((name) => getComparisonRequestMeasures(name))
+        : []),
+
+      // Add URI measure if URI is present
+      ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
+    ],
+    ephemeralMeasures,
+  );
 
   $: sort = getSort(
     sortedAscending,
     sortType,
     leaderboardSortByMeasureName,
     dimensionName,
-    !!comparisonTimeRange,
+    // Ephemeral measures have no comparison columns to sort by.
+    !!comparisonTimeRange &&
+      !ephemeralMeasureNames.has(leaderboardSortByMeasureName),
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
@@ -206,7 +224,10 @@
     runtimeClient,
     {
       metricsView: metricsViewName,
-      measures: leaderboardMeasureNames.map((name) => ({ name })),
+      measures: mapEphemeralMeasuresForRequest(
+        leaderboardMeasureNames.map((name) => ({ name })),
+        ephemeralMeasures,
+      ),
       where,
       timeRange,
     },
@@ -307,9 +328,13 @@
   // function called from the markup does not track the props it reads, so the
   // columns would go stale when the context toggle changes.
   $: measuresWithContext = new Set(
-    leaderboardShowContextForAllMeasures
+    (leaderboardShowContextForAllMeasures
       ? leaderboardMeasureNames
-      : [leaderboardSortByMeasureName],
+      : [leaderboardSortByMeasureName]
+    )
+      // Ephemeral measures have no comparison columns (the request skips
+      // their comparison computes), so don't render context columns for them.
+      .filter((name) => !ephemeralMeasureNames.has(name)),
   );
 
   $: columnCount =

@@ -1,4 +1,5 @@
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
 import { toPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
   type PivotChipData,
@@ -122,6 +123,15 @@ export function convertPartialExploreStateToUrlParams(
     }
 
     searchParams.set(ExploreStateURLParams.Filters, filterParam);
+  }
+
+  if ("ephemeralMeasures" in partialExploreState) {
+    // Always set so deleting the last definition removes it from the URL;
+    // cleanUrlParams strips the empty value.
+    searchParams.set(
+      ExploreStateURLParams.EphemeralMeasures,
+      toEphemeralMeasuresParam(partialExploreState.ephemeralMeasures),
+    );
   }
 
   switch (partialExploreState.activePage) {

@@ -1,3 +1,4 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   MetricsViewSpecMeasureType,
@@ -32,21 +33,26 @@ type AggregationMeasureRef = Pick<
 export const allMeasures = ({
   validMetricsView,
   validExplore,
-}: Pick<
-  DashboardDataSources,
-  "validMetricsView" | "validExplore"
->): MetricsViewSpecMeasure[] => {
+  dashboard,
+}: Pick<DashboardDataSources, "validMetricsView" | "validExplore"> &
+  Partial<
+    Pick<DashboardDataSources, "dashboard">
+  >): MetricsViewSpecMeasure[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
-  return (
-    validMetricsView.measures
-      .filter((m) => validExplore.measures!.includes(m.name!))
-      // Sort the filtered measures based on their order in validExplore.measures
-      .sort(
-        (a, b) =>
-          validExplore.measures!.indexOf(a.name!) -
-          validExplore.measures!.indexOf(b.name!),
-      )
+  const specMeasures = validMetricsView.measures
+    .filter((m) => validExplore.measures!.includes(m.name!))
+    // Sort the filtered measures based on their order in validExplore.measures
+    .sort(
+      (a, b) =>
+        validExplore.measures!.indexOf(a.name!) -
+        validExplore.measures!.indexOf(b.name!),
+    );
+  // ephemeral measures behave like regular measures across the
+  // explore; they get synthetic spec entries so labels/formatting resolve.
+  return appendEphemeralSpecMeasures(
+    specMeasures,
+    dashboard?.ephemeralMeasures,
   );
 };
 
@@ -57,8 +63,9 @@ export const visibleMeasures = ({
 }: DashboardDataSources): MetricsViewSpecMeasure[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
+  const all = allMeasures({ validMetricsView, validExplore, dashboard });
   return dashboard.visibleMeasures
-    .map((mes) => validMetricsView.measures?.find((m) => m.name === mes))
+    .map((mes) => all.find((m) => m.name === mes))
     .filter(Boolean) as MetricsViewSpecMeasure[];
 };
 
@@ -70,13 +77,11 @@ export const getMeasureByName = (
   };
 };
 
-export const measureLabel = ({
-  validMetricsView,
-}: DashboardDataSources): ((m: string) => string) => {
+export const measureLabel = (
+  dashData: DashboardDataSources,
+): ((m: string) => string) => {
   return (measureName) => {
-    const measure = validMetricsView?.measures?.find(
-      (d) => d.name === measureName,
-    );
+    const measure = allMeasures(dashData).find((d) => d.name === measureName);
     return measure?.displayName || measureName;
   };
 };
@@ -142,7 +147,17 @@ export const filterOutSomeAdvancedMeasures = (
 ) => {
   const measuresSeen = new Set<string>();
 
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   return measureNames.filter((measureName) => {
+    // ephemeral measures are simple aggregations; always supported.
+    if (ephemeralMeasureNames.has(measureName)) {
+      if (measuresSeen.has(measureName)) return false;
+      measuresSeen.add(measureName);
+      return true;
+    }
     const measureSpec = metricsViewSpec.measures?.find(
       (m) => m.name === measureName,
     );
@@ -181,19 +196,25 @@ export const filterOutSomeAdvancedAggregationMeasures = <
 ): T[] => {
   const measuresSeen = new Set<string>();
 
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   return measures.filter((measure) => {
+    const sourceMeasureName =
+      measure.comparisonDelta?.measure ??
+      measure.comparisonValue?.measure ??
+      measure.comparisonRatio?.measure ??
+      measure.percentOfTotal?.measure ??
+      measure.name ??
+      "";
     // Ephemeral expression measures are derived from measures already in the spec and have no spec
     // entry of their own, so there is no source measure to resolve or check for support.
-    const isEphemeralExpression =
-      !!measure.expression && typeof measure.expression === "object";
-    if (!isEphemeralExpression) {
-      const sourceMeasureName =
-        measure.comparisonDelta?.measure ??
-        measure.comparisonValue?.measure ??
-        measure.comparisonRatio?.measure ??
-        measure.percentOfTotal?.measure ??
-        measure.name ??
-        "";
+    // The same applies to comparison measures derived from an ephemeral measure.
+    const isEphemeral =
+      (!!measure.expression && typeof measure.expression === "object") ||
+      ephemeralMeasureNames.has(sourceMeasureName);
+    if (!isEphemeral) {
       const measureSpec = metricsViewSpec.measures?.find(
         (m) => m.name === sourceMeasureName,
       );

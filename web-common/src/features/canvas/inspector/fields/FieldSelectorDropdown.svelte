@@ -1,9 +1,12 @@
 <script lang="ts">
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
   import type { FieldType } from "../types";
 
@@ -12,6 +15,11 @@
   export let selectedItems: string[] = [];
   export let types: FieldType[];
   export let excludedValues: string[] | undefined = undefined;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // When set, the menu footer offers a "Create adhoc measure" action.
+  export let onCreateEphemeral: (() => void) | undefined = undefined;
+  // When set, ephemeral items get an edit button invoking this.
+  export let onEditEphemeral: ((name: string) => void) | undefined = undefined;
   export let onMultiSelect: (items: string[]) => void = () => {};
   export let open = false;
   export let searchValue = "";
@@ -31,6 +39,7 @@
     undefined,
     searchValue,
     excludedValues,
+    ephemeralMeasures,
   );
   $: selectableGroups = [
     ...(types.includes("measure")
@@ -40,10 +49,16 @@
             label: "MEASURES",
             items: $fieldData.filteredItems
               .filter((item) => $fieldData.displayMap[item]?.type === "measure")
-              .map((item) => ({
-                name: item,
-                label: $fieldData.displayMap[item].label,
-              })),
+              .map((item) => {
+                const def = ephemeralMeasures?.find((d) => d.name === item);
+                return {
+                  name: item,
+                  label: $fieldData.displayMap[item].label,
+                  ...(def
+                    ? { description: def.expression, ephemeral: true }
+                    : {}),
+                };
+              }),
           },
         ]
       : []),
@@ -104,16 +119,67 @@
 <DropdownMenu.Root bind:open>
   <slot name="trigger" {open} />
 
-  <SearchableMenuContent
-    {selectableGroups}
-    selectedItems={selectableGroups.map((group) =>
-      localSelectedItems?.filter(
-        (item) => $fieldData.displayMap[item]?.type === group.name,
-      ),
-    )}
-    {allowMultiSelect}
-    searchText={searchValue}
-    {allowSelectAll}
-    onSelect={handleSelect}
-  />
+  {#if onCreateEphemeral}
+    <SearchableMenuContent
+      {selectableGroups}
+      selectedItems={selectableGroups.map((group) =>
+        localSelectedItems?.filter(
+          (item) => $fieldData.displayMap[item]?.type === group.name,
+        ),
+      )}
+      {allowMultiSelect}
+      searchText={searchValue}
+      {allowSelectAll}
+      onSelect={handleSelect}
+      onEditItem={onEditEphemeral
+        ? (name) => {
+            open = false;
+            onEditEphemeral?.(name);
+          }
+        : undefined}
+    >
+      <button
+        slot="action"
+        class="create-ephemeral-measure"
+        type="button"
+        on:click={() => {
+          open = false;
+          onCreateEphemeral?.();
+        }}
+      >
+        <PlusIcon size="14px" />
+        {m.dashboard_pivot_ephemeral_create()}
+      </button>
+    </SearchableMenuContent>
+  {:else}
+    <SearchableMenuContent
+      {selectableGroups}
+      selectedItems={selectableGroups.map((group) =>
+        localSelectedItems?.filter(
+          (item) => $fieldData.displayMap[item]?.type === group.name,
+        ),
+      )}
+      {allowMultiSelect}
+      searchText={searchValue}
+      {allowSelectAll}
+      onSelect={handleSelect}
+      onEditItem={onEditEphemeral
+        ? (name) => {
+            open = false;
+            onEditEphemeral?.(name);
+          }
+        : undefined}
+    />
+  {/if}
 </DropdownMenu.Root>
+
+<style lang="postcss">
+  .create-ephemeral-measure {
+    @apply flex w-full items-center gap-x-1.5 rounded-none border-none bg-transparent;
+    @apply h-7 px-2 text-xs text-fg-primary;
+  }
+
+  .create-ephemeral-measure:hover {
+    @apply bg-surface-hover;
+  }
+</style>

@@ -12,6 +12,7 @@ import type {
   ScatterPlotChartProvider,
   ScatterPlotChartSpec,
 } from "@rilldata/web-common/features/components/charts";
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -190,6 +191,9 @@ export type FieldConfig<
 
 export interface CommonChartProperties {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  calculated_measures?: EphemeralMeasureSpec[];
   tooltip?: FieldConfig;
   vl_config?: string;
 }

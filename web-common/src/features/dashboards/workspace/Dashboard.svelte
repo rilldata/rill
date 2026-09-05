@@ -5,6 +5,8 @@
     extractErrorStatusCode,
     isNotFoundError,
   } from "@rilldata/web-common/lib/errors";
+  import EphemeralMeasureDialog from "@rilldata/web-common/features/dashboards/ephemeral-measures/EphemeralMeasureDialog.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -293,6 +295,10 @@
       <RowsViewerAccordion {metricsViewName} {exploreName} />
     {/if}
   </article>
+
+  {#if $ephemeralMeasureDialog}
+    <EphemeralMeasureDialog />
+  {/if}
 </ThemeProvider>
 
 <style lang="postcss">

@@ -17,6 +17,7 @@
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
+  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
@@ -55,6 +56,16 @@
 
   $: metricsView =
     "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
+
+  $: componentEphemeralMeasures = ephemeralSpecsToDefs(
+    "calculated_measures" in localParamValues
+      ? localParamValues.calculated_measures
+      : undefined,
+  );
+
+  // Components that support ephemeral measures declare the param (hidden from
+  // the UI); their measure selectors then offer creating and editing them.
+  $: supportsEphemeralMeasures = "calculated_measures" in inputParams;
 
   $: entries = Object.entries(inputParams) as [
     AllKeys<ComponentSpec>,
@@ -113,6 +124,8 @@
             id={key}
             type={config.type}
             selectedItem={localParamValues[key]}
+            ephemeralMeasures={componentEphemeralMeasures}
+            component={supportsEphemeralMeasures ? component : undefined}
             onSelect={(field) => {
               component.updateProperty(key, field);
             }}
@@ -127,6 +140,8 @@
             id={key}
             types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
+            ephemeralMeasures={componentEphemeralMeasures}
+            component={supportsEphemeralMeasures ? component : undefined}
             onMultiSelect={(field) => {
               component.updateProperty(key, field);
             }}
@@ -142,6 +157,7 @@
             id={key}
             types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
+            ephemeralMeasures={componentEphemeralMeasures}
           />
 
           <!-- BOOLEAN SWITCH -->
@@ -316,6 +332,8 @@
             {config}
             {metricsView}
             fieldConfig={localParamValues[key] || {}}
+            ephemeralMeasures={componentEphemeralMeasures}
+            component={supportsEphemeralMeasures ? component : undefined}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);

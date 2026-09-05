@@ -4,6 +4,7 @@
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
+  import { PencilIcon } from "lucide-svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type {
     MetricsViewSpecDimension,
@@ -34,7 +35,19 @@
   export let allItems: SelectableItem[] = [];
   export let tagIndex: TagIndex;
   export let type: "measure" | "dimension" = "measure";
+  // ephemeral measures: marks their rows with an fx icon; their
+  // description tooltip carries the calculation.
+  export let ephemeralNames: Set<string> = new Set();
+  // When set, ephemeral rows get an edit button that closes the menu and
+  // invokes this with the measure name.
+  export let onEditEphemeral: ((name: string) => void) | undefined = undefined;
   export let onSelectedChange: (items: string[]) => void;
+
+  function editEphemeral(e: Event, name: string) {
+    e.stopPropagation();
+    active = false;
+    onEditEphemeral?.(name);
+  }
 
   let searchText = "";
   let active = false;
@@ -338,7 +351,23 @@
                             class="truncate min-w-0 flex-1 text-left pointer-events-none text-fg-primary"
                           >
                             {displayName}
+                            {#if ephemeralNames.has(item.id)}
+                              <span class="text-[10px] font-semibold italic">
+                                ƒx
+                              </span>
+                            {/if}
                           </span>
+                          {#if onEditEphemeral && ephemeralNames.has(item.id)}
+                            <button
+                              class="{toggleButtonBaseClass} ml-auto"
+                              onclick={(e) => editEphemeral(e, item.id)}
+                              onmousedown={(e) => e.stopPropagation()}
+                              aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                              type="button"
+                            >
+                              <PencilIcon size="14px" />
+                            </button>
+                          {/if}
                           <button
                             class="{toggleButtonBaseClass} ml-auto"
                             onclick={(e) => {
@@ -384,7 +413,23 @@
                         class="truncate min-w-0 flex-1 text-left pointer-events-none"
                       >
                         {displayName}
+                        {#if ephemeralNames.has(item.id)}
+                          <span class="text-[10px] font-semibold italic">
+                            ƒx
+                          </span>
+                        {/if}
                       </span>
+                      {#if onEditEphemeral && ephemeralNames.has(item.id)}
+                        <button
+                          class="{toggleButtonBaseClass} ml-auto"
+                          onclick={(e) => editEphemeral(e, item.id)}
+                          onmousedown={(e) => e.stopPropagation()}
+                          aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                          type="button"
+                        >
+                          <PencilIcon size="14px" />
+                        </button>
+                      {/if}
                       <button
                         class="{toggleButtonBaseClass} ml-auto"
                         onclick={(e) => {
@@ -475,7 +520,23 @@
                               class="truncate min-w-0 flex-1 text-left pointer-events-none"
                             >
                               {displayName}
+                              {#if ephemeralNames.has(item.id)}
+                                <span class="text-[10px] font-semibold italic">
+                                  ƒx
+                                </span>
+                              {/if}
                             </span>
+                            {#if onEditEphemeral && ephemeralNames.has(item.id)}
+                              <button
+                                class="{toggleButtonBaseClass} ml-auto"
+                                onclick={(e) => editEphemeral(e, item.id)}
+                                onmousedown={(e) => e.stopPropagation()}
+                                aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                                type="button"
+                              >
+                                <PencilIcon size="14px" />
+                              </button>
+                            {/if}
                             <button
                               class="{toggleButtonBaseClass} ml-auto"
                               onclick={(e) => {
@@ -504,7 +565,23 @@
                           class="truncate min-w-0 flex-1 text-left pointer-events-none"
                         >
                           {displayName}
+                          {#if ephemeralNames.has(item.id)}
+                            <span class="text-[10px] font-semibold italic">
+                              ƒx
+                            </span>
+                          {/if}
                         </span>
+                        {#if onEditEphemeral && ephemeralNames.has(item.id)}
+                          <button
+                            class="{toggleButtonBaseClass} ml-auto"
+                            onclick={(e) => editEphemeral(e, item.id)}
+                            onmousedown={(e) => e.stopPropagation()}
+                            aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                            type="button"
+                          >
+                            <PencilIcon size="14px" />
+                          </button>
+                        {/if}
                         <button
                           class="{toggleButtonBaseClass} ml-auto"
                           onclick={(e) => {
@@ -546,6 +623,8 @@
             : m.explore_clear_search_to_reorder_dimensions()}
         </div>
       {/if}
+
+      <slot name="action" close={() => (active = false)} />
     </div>
   </Popover.Content>
 </Popover.Root>

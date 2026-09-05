@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
   getCommonOptions,
@@ -35,6 +36,8 @@ export interface KPIGridSpec
     ComponentFilterProperties {
   metrics_view: string;
   measures: string[];
+  // Ad-hoc measures derived from existing measures via an arithmetic expression.
+  calculated_measures?: EphemeralMeasureSpec[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
   // Defaults to false if undefined;
@@ -46,7 +49,7 @@ export interface KPIGridSpec
 export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 6, height: 4 };
-  resetParams = ["measures"];
+  resetParams = ["measures", "calculated_measures"];
   type: CanvasComponentType = "kpi_grid";
   component = KPIGrid;
 
@@ -102,6 +105,13 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
           type: "multi_fields",
           meta: { allowedTypes: ["measure"] },
           label: m.canvas_measures_label(),
+        },
+        calculated_measures: {
+          type: "calculated_measures",
+          label: m.canvas_ephemeral_measures_label(),
+          optional: true,
+          // Managed through the measures selector's create/edit dialog.
+          showInUI: false,
         },
         ...(hasTimeSeries ? timeSeriesOptions : {}),
         ...getCommonOptions(),

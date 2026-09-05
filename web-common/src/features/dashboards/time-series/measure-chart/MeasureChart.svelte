@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { splitTimeSeriesMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -33,6 +35,7 @@
   const VISIBILITY_ROOT_MARGIN = "120px";
 
   export let measure: MetricsViewSpecMeasure;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
@@ -83,6 +86,8 @@
   });
 
   $: measureName = measure.name ?? "";
+  $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
+    splitTimeSeriesMeasures([measureName], ephemeralMeasures));
   $: height = showTimeDimensionDetail ? tddChartHeight : 145;
 
   $: effectiveChartType = resolveEffectiveChartType(
@@ -124,7 +129,8 @@
     client,
     {
       metricsViewName,
-      measureNames: [measureName],
+      measureNames: tsMeasureNames,
+      ephemeralMeasures: tsEphemeralMeasures,
       where,
       timeDimension,
       timeStart,
@@ -145,7 +151,8 @@
     client,
     {
       metricsViewName,
-      measureNames: [measureName],
+      measureNames: tsMeasureNames,
+      ephemeralMeasures: tsEphemeralMeasures,
       where,
       timeDimension,
       timeStart: comparisonTimeStart,
@@ -190,6 +197,7 @@
         client,
         metricsViewName,
         measureName,
+        ephemeralMeasures,
         comparisonDimension!,
         dimensionValues,
         dimensionWhere,
@@ -208,6 +216,7 @@
           client,
           metricsViewName,
           measureName,
+          ephemeralMeasures,
           comparisonDimension!,
           dimensionValues,
           dimensionWhere,

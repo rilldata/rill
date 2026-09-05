@@ -17,6 +17,8 @@
     PivotSidebarSection,
     PivotState,
   } from "web-common/src/features/dashboards/pivot/types.ts";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
+  import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
   import PivotDrag from "./PivotDrag.svelte";
   import PivotTagRow from "./PivotTagRow.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";
@@ -213,7 +215,18 @@
         title={MEASURES_ZONE}
         label={m.dashboard_measures()}
         items={filteredMeasures}
-      />
+      >
+        <button
+          slot="header-action"
+          class="ml-auto text-fg-secondary hover:text-fg-primary"
+          type="button"
+          aria-label={m.dashboard_pivot_ephemeral_create()}
+          title={m.dashboard_pivot_ephemeral_create()}
+          on:click={() => ephemeralMeasureDialog.set({})}
+        >
+          <Add size="14px" />
+        </button>
+      </PivotDrag>
       <PivotDrag
         title={DIMENSIONS_ZONE}
         label={m.dashboard_dimensions()}

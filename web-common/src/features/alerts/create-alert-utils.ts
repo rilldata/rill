@@ -23,18 +23,33 @@ export function getNewAlertInitialFormValues(
     ? (exploreState.selectedComparisonDimension ?? "")
     : (exploreState.selectedDimensionName ?? "");
 
+  // Ephemeral measures cannot back an alert: the saved query has
+  // no definition to resolve the name against. Fall back to no prefill.
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+  const preferredMeasure =
+    exploreState.tdd?.expandedMeasureName ||
+    exploreState.leaderboardSortByMeasureName ||
+    "";
+  const measure = ephemeralMeasureNames.has(preferredMeasure)
+    ? ""
+    : preferredMeasure;
+  const criteriaMeasure = ephemeralMeasureNames.has(
+    exploreState.leaderboardSortByMeasureName ?? "",
+  )
+    ? ""
+    : (exploreState.leaderboardSortByMeasureName ?? "");
+
   return {
     name: "",
-    measure:
-      exploreState.tdd?.expandedMeasureName ||
-      exploreState.leaderboardSortByMeasureName ||
-      "",
+    measure,
     splitByDimension: dimension,
     evaluationInterval: "",
     criteria: [
       {
         ...getEmptyMeasureFilterEntry(),
-        measure: exploreState.leaderboardSortByMeasureName ?? "",
+        measure: criteriaMeasure,
       },
     ],
     criteriaOperation: V1Operation.OPERATION_AND,

@@ -1,3 +1,4 @@
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -24,7 +25,10 @@ export function createTotalsForMeasure(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: measures.map((measure) => ({ name: measure })),
+          measures: mapEphemeralMeasuresForRequest(
+            measures.map((measure) => ({ name: measure })),
+            dashboard.ephemeralMeasures,
+          ),
           where: sanitiseExpression(
             mergeDimensionAndMeasureFilters(
               dashboard.whereFilter,
@@ -78,7 +82,10 @@ export function createUnfilteredTotalsForMeasure(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: measures.map((measure) => ({ name: measure })),
+          measures: mapEphemeralMeasuresForRequest(
+            measures.map((measure) => ({ name: measure })),
+            dashboard.ephemeralMeasures,
+          ),
           where: updatedFilter,
           timeRange: {
             start: timeControls.timeStart,

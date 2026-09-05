@@ -57,7 +57,11 @@
       activeCell: null,
       columnPage: 1,
       rowPage: 1,
-      columns: tableFieldMapper(columns, metricsViewSpec),
+      columns: tableFieldMapper(
+        columns,
+        metricsViewSpec,
+        tableSpec.calculated_measures,
+      ),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
       measureFormatting,
@@ -75,7 +79,11 @@
       rowPage: 1,
       columns: [
         ...tableFieldMapper(colDimensions, metricsViewSpec),
-        ...tableFieldMapper(measures, metricsViewSpec),
+        ...tableFieldMapper(
+          measures,
+          metricsViewSpec,
+          tableSpec.calculated_measures,
+        ),
       ],
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,

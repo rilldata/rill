@@ -26,7 +26,7 @@ import {
   getTimeGrainFromDimension,
   getUriMeasuresForDimensions,
   isTimeDimension,
-  prepareMeasureForComparison,
+  prepareMeasuresForRequest,
 } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -79,7 +79,10 @@ export function createPivotAggregationRowQuery(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: prepareMeasureForComparison(measures),
+          measures: prepareMeasuresForRequest(
+            measures,
+            config.ephemeralMeasures,
+          ),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
           timeRange: {

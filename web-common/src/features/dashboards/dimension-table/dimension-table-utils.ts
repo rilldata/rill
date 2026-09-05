@@ -299,6 +299,12 @@ export function prepareVirtualizedDimTableColumns(
     allMeasures.some((am) => am.name === m),
   );
 
+  // Ephemeral measures have no comparison columns (the request skips their
+  // comparison computes), so context columns are not rendered for them.
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   // Show context columns based on selected context columns and time comparison settings
   if (selectedMeasure) {
     // If activeMeasures is provided and leaderboardShowContextForAllMeasures is true, add context columns for each active measure
@@ -307,6 +313,7 @@ export function prepareVirtualizedDimTableColumns(
       exploreState.leaderboardShowContextForAllMeasures
     ) {
       activeMeasures.forEach((measureName) => {
+        if (ephemeralMeasureNames.has(measureName)) return;
         const measure = allMeasures.find((m) => m.name === measureName);
         if (measure) {
           addContextColumnNames(
@@ -317,7 +324,7 @@ export function prepareVirtualizedDimTableColumns(
           );
         }
       });
-    } else {
+    } else if (!ephemeralMeasureNames.has(selectedMeasure.name ?? "")) {
       // Only add context columns for the leaderboardSortByMeasureName
       addContextColumnNames(
         columnNames,

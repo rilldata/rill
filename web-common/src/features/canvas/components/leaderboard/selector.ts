@@ -31,7 +31,13 @@ export function validateLeaderboardSchema(
     };
   }
 
-  const allMeasures = metricsView?.measures?.map((m) => m.name as string) || [];
+  const ephemeralMeasureNames = new Set(
+    leaderboardSpec?.calculated_measures?.map((c) => c.name) ?? [],
+  );
+  const allMeasures = [
+    ...(metricsView?.measures?.map((m) => m.name as string) || []),
+    ...ephemeralMeasureNames,
+  ];
   const allDimensions =
     metricsView?.dimensions?.map((d) => d.name || (d.column as string)) || [];
 
@@ -48,7 +54,11 @@ export function validateLeaderboardSchema(
   measures = measures.filter((c) => allMeasures.includes(c));
   dimensions = dimensions.filter((c) => allDimensions.includes(c));
 
-  const validateMeasuresRes = validateMeasures(metricsView, measures);
+  const validateMeasuresRes = validateMeasures(
+    metricsView,
+    measures,
+    ephemeralMeasureNames,
+  );
   if (!validateMeasuresRes.isValid) {
     const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
     return {

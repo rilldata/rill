@@ -3,9 +3,12 @@ import { type V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 export const isMeasureValid = (
   metricsViewSpec: V1MetricsViewSpec,
   measureName: string,
+  ephemeralMeasureNames?: Set<string>,
 ): boolean => {
   return (
-    metricsViewSpec?.measures?.some((m) => m.name === measureName) || false
+    metricsViewSpec?.measures?.some((m) => m.name === measureName) ||
+    ephemeralMeasureNames?.has(measureName) ||
+    false
   );
 };
 
@@ -21,9 +24,10 @@ export const isDimensionValid = (
 export const validateMeasures = (
   metricsSpecQueryResult: V1MetricsViewSpec,
   measureNames: string[],
+  ephemeralMeasureNames?: Set<string>,
 ): { isValid: boolean; invalidMeasures: string[] } => {
   const invalidMeasures = measureNames.filter(
-    (m) => !isMeasureValid(metricsSpecQueryResult, m),
+    (m) => !isMeasureValid(metricsSpecQueryResult, m, ephemeralMeasureNames),
   );
   return {
     isValid: invalidMeasures.length === 0,

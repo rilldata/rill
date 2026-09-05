@@ -14,7 +14,7 @@ import {
 import { get } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
-import { prepareMeasureForComparison } from "./pivot-utils";
+import { prepareMeasuresForRequest } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -106,11 +106,15 @@ export function getPivotAggregationRequest({
   isFlat: boolean;
   pivotState: PivotState;
 }): undefined | V1MetricsViewAggregationRequest {
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
     const group = [{ name: measureName }];
 
-    if (enableComparison) {
+    // Comparison columns are not supported for ephemeral measures.
+    if (enableComparison && !ephemeralMeasureNames.has(measureName)) {
       group.push(
         { name: `${measureName}${COMPARISON_DELTA}` },
         { name: `${measureName}${COMPARISON_PERCENT}` },
@@ -190,9 +194,10 @@ export function getPivotAggregationRequest({
     metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,
-    measures: enableComparison
-      ? prepareMeasureForComparison(measures)
-      : measures,
+    measures: prepareMeasuresForRequest(
+      measures,
+      exploreState.ephemeralMeasures,
+    ),
     dimensions: allDimensions,
     where: sanitiseExpression(
       mergeDimensionAndMeasureFilters(

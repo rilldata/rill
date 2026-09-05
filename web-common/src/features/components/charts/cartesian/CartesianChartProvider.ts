@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -25,6 +26,10 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client";
+import {
+  chartEphemeralMeasureNames,
+  withEphemeralMeasures,
+} from "../ephemeral-measures";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
@@ -44,6 +49,9 @@ import {
 
 export type CartesianChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  calculated_measures?: EphemeralMeasureSpec[];
   x?: FieldConfig<"nominal" | "time">;
   y?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal"> | string;
@@ -178,6 +186,8 @@ export class CartesianChartProvider {
         measures = [{ name: config.y.field }];
       }
     }
+    measures = withEphemeralMeasures(config, measures);
+    const ephemeralNames = chartEphemeralMeasureNames(config);
 
     let limit: number | undefined;
     let hasColorDimension = false;
@@ -232,7 +242,7 @@ export class CartesianChartProvider {
           !!comparisonTimeRange?.start &&
           !!comparisonTimeRange?.end;
 
-        const xAxisSort = this.resolveXAxisSort(
+        let xAxisSort = this.resolveXAxisSort(
           config,
           isMultiMeasure,
           isComparisonActive,
@@ -247,7 +257,14 @@ export class CartesianChartProvider {
             ? config.y?.fields?.[0]
             : config.y?.field;
 
-          if (sortMeasureName) {
+          if (sortMeasureName && ephemeralNames.has(sortMeasureName)) {
+            // Comparison deltas cannot be computed for ephemeral measures;
+            // fall back to sorting by the measure itself.
+            xAxisSort = {
+              name: sortMeasureName,
+              desc: xAxisSort?.desc ?? true,
+            };
+          } else if (sortMeasureName) {
             const deltaFieldName =
               sortMeasureName + ComparisonDeltaAbsoluteSuffix;
             topNMeasures = [
@@ -420,7 +437,12 @@ export class CartesianChartProvider {
         const measuresWithComparison: V1MetricsViewAggregationMeasure[] =
           Array.from(measuresSet)
             .map((measureName) => {
-              if (showTimeComparison && comparisonTimeRange?.start) {
+              // Comparison values cannot be computed for ephemeral measures.
+              if (
+                showTimeComparison &&
+                comparisonTimeRange?.start &&
+                !ephemeralNames.has(measureName)
+              ) {
                 const result: V1MetricsViewAggregationMeasure[] = [
                   { name: measureName },
                   {
@@ -440,7 +462,7 @@ export class CartesianChartProvider {
           client,
           {
             metricsView: config.metrics_view,
-            measures: measuresWithComparison,
+            measures: withEphemeralMeasures(config, measuresWithComparison),
             dimensions,
             where: combinedWhere,
             timeRange,

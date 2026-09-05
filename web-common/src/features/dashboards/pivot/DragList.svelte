@@ -73,6 +73,13 @@
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
   export let lowerIsBetterMap: Record<string, boolean> = {};
+  // ephemeral measures: marks their chips with an fx icon and
+  // exposes edit/delete actions in the chip popover.
+  export let ephemeralMeasureNames: Set<string> = new Set();
+  export let onEditEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
+  export let onDeleteEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
 
   const isDropLocation = zone === "columns" || zone === "rows";
   const DRAG_START_THRESHOLD_PX = 4;
@@ -402,6 +409,15 @@
             removable
             fmt={measureFormatting?.[item.id]}
             lowerIsBetter={lowerIsBetterMap[item.id] ?? false}
+            ephemeral={ephemeralMeasureNames.has(item.id)}
+            onEditEphemeral={ephemeralMeasureNames.has(item.id) &&
+            onEditEphemeralMeasure
+              ? () => onEditEphemeralMeasure?.(item.id)
+              : undefined}
+            onDeleteEphemeral={ephemeralMeasureNames.has(item.id) &&
+            onDeleteEphemeralMeasure
+              ? () => onDeleteEphemeralMeasure?.(item.id)
+              : undefined}
             onFormatChange={(fmt: PivotMeasureFormatting | null) =>
               setMeasureFormatting?.(item.id, fmt)}
             onmousedown={(e: MouseEvent) => handleMouseDown(e, item)}

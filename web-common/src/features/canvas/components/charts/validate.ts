@@ -3,6 +3,7 @@ import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
+import { chartEphemeralMeasureNames } from "@rilldata/web-common/features/components/charts/ephemeral-measures";
 import { getFieldsByType } from "@rilldata/web-common/features/components/charts/util";
 import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
 import { derived, type Readable } from "svelte/store";
@@ -45,7 +46,11 @@ export function validateChartSchema(
         };
       }
 
-      const validateMeasuresRes = validateMeasures(metricsView, measures);
+      const validateMeasuresRes = validateMeasures(
+        metricsView,
+        measures,
+        chartEphemeralMeasureNames(chartSpec),
+      );
       if (!validateMeasuresRes.isValid) {
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
         return {

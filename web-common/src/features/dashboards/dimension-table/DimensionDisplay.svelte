@@ -1,4 +1,8 @@
 <script lang="ts">
+  import {
+    ephemeralMeasureNameSet,
+    mapEphemeralMeasuresForRequest,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -87,23 +91,33 @@
     dimensionName,
   );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      $leaderboardShowContextForAllMeasures
-        ? null
-        : $leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
-      visibleMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+  $: ephemeralMeasureNames = ephemeralMeasureNameSet(
+    $dashboardStore.ephemeralMeasures,
+  );
 
-    // Add comparison measures if comparison time range exists
-    ...(comparisonTimeRange
-      ? ($leaderboardShowContextForAllMeasures
-          ? visibleMeasureNames
-          : [$leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
-  ];
+  $: measures = mapEphemeralMeasuresForRequest(
+    [
+      ...getMeasuresForDimensionOrLeaderboardDisplay(
+        $leaderboardShowContextForAllMeasures
+          ? null
+          : $leaderboardSortByMeasureName,
+        dimensionThresholdFilters,
+        visibleMeasureNames,
+      ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+
+      // Add comparison measures if comparison time range exists.
+      // Comparison computes are not supported for ephemeral measures.
+      ...(comparisonTimeRange
+        ? ($leaderboardShowContextForAllMeasures
+            ? visibleMeasureNames
+            : [$leaderboardSortByMeasureName]
+          )
+            .filter((name) => !ephemeralMeasureNames.has(name))
+            .flatMap((name) => getComparisonRequestMeasures(name))
+        : []),
+    ],
+    $dashboardStore.ephemeralMeasures,
+  );
   $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
     $dashboardStore,
     metricsViewSpec,
@@ -159,7 +173,9 @@
     $sortType,
     $leaderboardSortByMeasureName,
     dimensionName,
-    !!comparisonTimeRange,
+    // Ephemeral measures have no comparison columns to sort by.
+    !!comparisonTimeRange &&
+      !ephemeralMeasureNames.has($leaderboardSortByMeasureName),
   );
 
   $: where = sanitiseExpression(
