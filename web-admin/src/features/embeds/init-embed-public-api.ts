@@ -175,6 +175,13 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     return true;
   });
 
+  registerRPCMethod("navigate:back", () => {
+    window.history.back();
+  });
+  registerRPCMethod("navigate:forward", () => {
+    window.history.forward();
+  });
+
   emitNotification("ready");
 
   const stateChangeThrottler = new Throttler(
