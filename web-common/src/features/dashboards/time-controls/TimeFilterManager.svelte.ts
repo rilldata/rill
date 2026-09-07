@@ -10,8 +10,7 @@ export class TimeFilterManager implements UrlParamsStore {
   public timeRangeManager: TimeRangeManager;
   public comparisonTimeRangeManager: ComparisonTimeRangeManager;
 
-  public curStateParams = $state(new URLSearchParams());
-  public curSetParams = $state(new URLSearchParams());
+  public curParams = $state(new URLSearchParams());
 
   public constructor(
     runtimeClient: RuntimeClient,
@@ -30,32 +29,17 @@ export class TimeFilterManager implements UrlParamsStore {
     );
   }
 
-  public createListener() {
-    this.timeRangeManager.createListener();
-    this.comparisonTimeRangeManager.createListener();
-
-    $effect(() => {
-      const newParams = new URLSearchParams();
-      this.timeRangeManager.applyFilterToParams(newParams);
-      this.comparisonTimeRangeManager.applyFilterToParams(newParams);
-      if (newParams.toString() === this.curStateParams.toString()) return;
-      this.curStateParams = newParams;
-    });
-  }
-
   public setUrlParams(urlParams: URLSearchParams) {
     this.timeRangeManager.setUrlParams(urlParams);
     this.comparisonTimeRangeManager.setUrlParams(urlParams);
 
-    const newSetParams = new URLSearchParams(
-      this.timeRangeManager.curSetParams,
-    );
-    copyParamsToTarget(
-      this.comparisonTimeRangeManager.curSetParams,
-      newSetParams,
-    );
-    this.curSetParams = newSetParams;
+    const newSetParams = new URLSearchParams(this.timeRangeManager.curParams);
+    copyParamsToTarget(this.comparisonTimeRangeManager.curParams, newSetParams);
+    this.curParams = newSetParams;
   }
 
-  public applyFilterToParams(urlParams: URLSearchParams) {}
+  public applyFilterToParams(urlParams: URLSearchParams) {
+    this.timeRangeManager.applyFilterToParams(urlParams);
+    this.comparisonTimeRangeManager.applyFilterToParams(urlParams);
+  }
 }

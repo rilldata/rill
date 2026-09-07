@@ -45,6 +45,7 @@
         allowCustomRangeStore,
         maxQueryTimeRangeStore,
       },
+      dashboardProvider,
       expressionFilterManager,
     },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
@@ -183,6 +184,7 @@
 
   <div class="pointer-events-auto ml-2">
     <ExpressionFilters
+      dashboardConfigProvider={dashboardProvider}
       {expressionFilterManager}
       {timeStart}
       {timeEnd}

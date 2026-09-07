@@ -20,18 +20,33 @@
   const {
     exploreName,
     dashboardStore,
+    dashboardConfigProvider,
     expressionFilterManager,
     timeFilterManager,
   } = StateManagers;
 
+  let { metricsViewsProvider } = $derived(dashboardConfigProvider);
+
   syncStoreWithSource(
     expressionFilterManager,
     syncExpressionFilters,
-    () => expressionFilterManager.metricsViewsProvider.ready,
+    () => metricsViewsProvider.ready,
     undefined,
     // URL sync is managed by DashboardStateSync
     true,
   );
+
+  syncStoreWithSource(
+    timeFilterManager,
+    syncTimeFilters,
+    () => metricsViewsProvider.ready,
+    undefined,
+    // URL sync is managed by DashboardStateSync
+    true,
+  );
+
+  let { timeRangeManager } = $derived(timeFilterManager);
+  let { interval } = $derived(timeRangeManager);
 
   const dashboardStateSync = DashboardStateSync.getFromContext();
 
@@ -85,7 +100,6 @@
     <TimeFilters
       {timeFilterManager}
       {dashboardConfigProvider}
-      {defaultUrlParams}
       config={{
         showTimeDimensionSelector: true,
         showDefaultItem: true,
@@ -93,18 +107,17 @@
         showWatermark: true,
       }}
       context="explore"
-      {syncTimeFilters}
     />
   {/if}
 
+  <!-- TODO: timeControlsReady -->
   <ExpressionFilters
     {expressionFilterManager}
-    filteredDimensions={exploreSpec?.dimensions}
-    filteredMeasures={exploreSpec?.measures}
-    {timeStart}
-    {timeEnd}
+    {dashboardConfigProvider}
+    timeStart={interval?.start?.toString()}
+    timeEnd={interval?.end?.toString()}
     timeDimension={$dashboardStore.selectedTimeDimension}
-    {timeControlsReady}
+    timeControlsReady
     {isUrlTooLongAfterInListFilter}
   />
 </div>

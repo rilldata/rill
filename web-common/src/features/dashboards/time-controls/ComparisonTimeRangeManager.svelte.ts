@@ -35,8 +35,7 @@ export class ComparisonTimeRangeManager {
 
   public parsedTime: RillTime | undefined;
 
-  public curStateParams = $state(new URLSearchParams());
-  public curSetParams = $state(new URLSearchParams());
+  public curParams = $state(new URLSearchParams());
 
   public constructor(
     private readonly yamlConfigProvider: YAMLConfigProvider,
@@ -57,20 +56,8 @@ export class ComparisonTimeRangeManager {
     });
   }
 
-  public createListener() {
-    $effect(() => {
-      const newParams = new URLSearchParams();
-      this.applyFilterToParams(newParams);
-      if (newParams.toString() === this.curStateParams.toString()) return;
-      this.curStateParams = newParams;
-    });
-  }
-
   public setUrlParams(searchParams: URLSearchParams) {
-    this.curSetParams = copySubsetParams(
-      searchParams,
-      ComparisonTimeRangeParams,
-    );
+    this.curParams = copySubsetParams(searchParams, ComparisonTimeRangeParams);
 
     if (searchParams.has(ExploreStateURLParams.ComparisonTimeRange)) {
       this.showComparison = true;

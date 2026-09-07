@@ -56,8 +56,7 @@ export class TimeRangeManager {
   public ref: RillTimeLabel | string | undefined;
   public snapToEnd: boolean;
 
-  public curStateParams = $state(new URLSearchParams());
-  public curSetParams = $state(new URLSearchParams());
+  public curParams = $state(new URLSearchParams());
 
   public constructor(
     private readonly runtimeClient: RuntimeClient,
@@ -99,17 +98,8 @@ export class TimeRangeManager {
     );
   }
 
-  public createListener() {
-    $effect(() => {
-      const newParams = new URLSearchParams();
-      this.applyFilterToParams(newParams);
-      if (newParams.toString() === this.curStateParams.toString()) return;
-      this.curStateParams = newParams;
-    });
-  }
-
   public setUrlParams(searchParams: URLSearchParams) {
-    this.curSetParams = copySubsetParams(searchParams, TimeRangeParams);
+    this.curParams = copySubsetParams(searchParams, TimeRangeParams);
 
     this.timeGrain =
       DateTimeUnitToV1TimeGrain[
