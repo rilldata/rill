@@ -4,8 +4,9 @@ import { TimeRangeManager } from "@rilldata/web-common/features/dashboards/time-
 import { ComparisonTimeRangeManager } from "@rilldata/web-common/features/dashboards/time-controls/ComparisonTimeRangeManager.svelte.ts";
 import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils.ts";
+import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
-export class TimeFilterManager {
+export class TimeFilterManager implements UrlParamsStore {
   public timeRangeManager: TimeRangeManager;
   public comparisonTimeRangeManager: ComparisonTimeRangeManager;
 
@@ -55,4 +56,6 @@ export class TimeFilterManager {
     );
     this.curSetParams = newSetParams;
   }
+
+  public applyFilterToParams(urlParams: URLSearchParams) {}
 }

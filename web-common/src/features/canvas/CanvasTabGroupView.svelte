@@ -33,7 +33,7 @@
       <CanvasTabStrip {group} {maxWidth} {onSelect} />
 
       {#if activeTab && activeRows}
-        {#each $activeRows as row, rowIndex (rowIndex)}
+        {#each $activeRows as row, rowIndex (`${activeTab.name}-${rowIndex}`)}
           <StaticCanvasRow
             {row}
             {rowIndex}

@@ -102,6 +102,8 @@
         )
       : url;
 
+  // TODO: This doesnt handle the case where user pressed back button to go to empty url.
+  //       We need to use afterNavigate similar to explore.
   $: if (resolvedStore) {
     resolvedStore.canvasEntity
       .onUrlChange({

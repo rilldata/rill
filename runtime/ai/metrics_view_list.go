@@ -22,7 +22,8 @@ var _ Tool[*ListMetricsViewsArgs, *ListMetricsViewsResult] = (*ListMetricsViews)
 type ListMetricsViewsArgs struct{}
 
 type ListMetricsViewsResult struct {
-	MetricsViews []map[string]any `json:"metrics_views"`
+	AIInstructions string           `json:"ai_instructions,omitempty"`
+	MetricsViews   []map[string]any `json:"metrics_views"`
 }
 
 func (t *ListMetricsViews) Spec() *mcp.Tool {
@@ -91,16 +92,17 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 		i++
 	}
 
-	res := make(map[string]any)
-
 	// Find instance-wide AI context and add it to the response.
 	// NOTE: These arguably belong in the top-level instructions or other metadata, but that doesn't currently support dynamic values.
-	instance, err := t.Runtime.Instance(ctx, session.InstanceID())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance %q: %w", session.InstanceID(), err)
-	}
-	if instance.AIInstructions != "" {
-		res["ai_instructions"] = instance.AIInstructions
+	// Rill's own agents receive the project instructions directly in their prompts,
+	// so this is only for external MCP clients (identified by a non-rill user agent).
+	var aiInstructions string
+	if !strings.HasPrefix(session.CatalogSession().UserAgent, "rill") {
+		instance, err := t.Runtime.Instance(ctx, session.InstanceID())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance %q: %w", session.InstanceID(), err)
+		}
+		aiInstructions = instance.AIInstructions
 	}
 
 	var metricsViews []map[string]any
@@ -116,9 +118,9 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 			"description":  mv.State.ValidSpec.Description,
 		})
 	}
-	res["metrics_views"] = metricsViews
 
 	return &ListMetricsViewsResult{
-		MetricsViews: metricsViews,
+		AIInstructions: aiInstructions,
+		MetricsViews:   metricsViews,
 	}, nil
 }

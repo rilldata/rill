@@ -3,7 +3,6 @@ import {
   type V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config.ts";
-import type { DateTime } from "luxon";
 
 /**
  * A provider for YAML only configuration. These are only mutable during yaml editing.
@@ -93,5 +92,9 @@ export class YAMLConfigProvider {
     } else {
       delete this.requiredFilters[filter];
     }
+  }
+
+  public isPinnedOrRequiredFilter(name: string) {
+    return Boolean(this.pinnedFilters[name] || this.requiredFilters[name]);
   }
 }

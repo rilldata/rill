@@ -38,6 +38,7 @@ import {
   DashboardConfigProvider,
   ExploreDashboardConfigProvider,
 } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export type StateManagers = {
   runtimeClient: RuntimeClient;
@@ -72,6 +73,7 @@ export type StateManagers = {
   defaultExploreState: Readable<V1ExplorePreset>;
   dashboardConfigProvider: DashboardConfigProvider;
   timeFilterManager: TimeFilterManager;
+  expressionFilterManager: ExpressionFilterManager;
   cleanup: () => void;
 };
 
@@ -175,6 +177,10 @@ export function createStateManagers({
     runtimeClient,
     exploreName,
   );
+  const expressionFilterManager = new ExpressionFilterManager(
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+  );
   const timeFilterManager = new TimeFilterManager(
     runtimeClient,
     dashboardConfigProvider.metricsViewsProvider,
@@ -210,7 +216,7 @@ export function createStateManagers({
     }),
     contextColumnWidths,
     defaultExploreState,
-
+    expressionFilterManager,
     dashboardConfigProvider,
     timeFilterManager,
     cleanup: () => {
