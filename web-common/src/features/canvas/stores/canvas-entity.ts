@@ -492,6 +492,7 @@ export class CanvasEntity {
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
+    this.expressionFilterManager.setUrlParams(searchParams);
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };

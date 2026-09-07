@@ -52,7 +52,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
 
-  private curSetParams = $state<URLSearchParams | undefined>(undefined);
+  private curParams = $state<URLSearchParams | undefined>(undefined);
 
   // Shared with every manager below this one, so a chip edit reports itself
   // without the managers in between having to forward it. See `filter-events.ts`.
@@ -128,6 +128,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       return;
     }
 
+    // Use and save just the params set by this class.
     const relevantUrlParams = new URLSearchParams();
     expandedUrlParams.forEach((value, key) => {
       if (
@@ -140,8 +141,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
     // Do not update managers if params didnt change.
     if (
-      this.curSetParams &&
-      this.curSetParams.toString() === relevantUrlParams.toString()
+      this.curParams &&
+      this.curParams.toString() === relevantUrlParams.toString()
     )
       return;
 
@@ -157,7 +158,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
     ) as JoinerFilterManager;
     this.isComplexFilter = advanced;
 
-    this.curSetParams = normalizeUrlParams(
+    this.curParams = normalizeUrlParams(
       relevantUrlParams,
       this.metricsViewsProvider.metricsViewNames,
       this.singleParamFormMv,
@@ -166,7 +167,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   public setParamForMetricsView(mvName: string, param: string) {
     const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
-    const newParams = new URLSearchParams(this.curSetParams);
+    const newParams = new URLSearchParams(this.curParams);
     newParams.set(paramKey, param);
     this.setUrlParams(newParams);
   }

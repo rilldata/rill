@@ -1005,6 +1005,41 @@ export function testURLNavigationFlows(variant: ExpressionFiltersVariant) {
       assertUrlSearchHistory(urlAfterBothFilters, initialUrlSearch);
     });
 
+    it("Should apply dimension filter and going back should reset", async () => {
+      await variant.render();
+
+      const urlAfterDimensionFilter = urlSearchWithFilter(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook','Google')`,
+      );
+
+      // Go to url with dimension filter directly instead of interacting with UI.
+      variant.pageMock().gotoSearch(urlAfterDimensionFilter);
+      // Filters applied as if using the UI.
+      await waitFor(() => {
+        assertWhereFilter(
+          createAndExpression([
+            createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+              "Facebook",
+              "Google",
+            ]),
+          ]),
+        );
+      });
+      assertUrlSearch(urlAfterDimensionFilter);
+      expect(getFilterChip(AD_BIDS_PUBLISHER_DIMENSION)).toHaveTextContent(
+        "publisher Facebook +1 other",
+      );
+
+      // Go back to initial url.
+      variant.pageMock().popState(initialUrlSearch);
+      // Empty filters should show up.
+      await waitForEmptyFilters();
+
+      assertWhereFilter(createAndExpression([]));
+      assertUrlSearch(initialUrlSearch);
+      assertUrlSearchHistory(urlAfterDimensionFilter, initialUrlSearch);
+    });
+
     it("Should apply dimension and measure filters through navigation to url similar to using UI", async () => {
       await variant.render();
 
