@@ -120,7 +120,6 @@ export function getTDDAggregationRequest({
     ],
     where: buildWhereParamForDimensionTableAndTDDExports(
       exploreState.whereFilter,
-      exploreState.dimensionThresholdFilters,
       dimensionName,
       dimensionSearchText,
     ),

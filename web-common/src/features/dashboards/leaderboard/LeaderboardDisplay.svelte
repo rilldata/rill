@@ -7,7 +7,6 @@
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
@@ -21,14 +20,14 @@
   } from "./leaderboard-widths";
 
   export let metricsViewName: string;
-  export let whereFilter: V1Expression;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let whereFilter: V1Expression | undefined;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
 
   const StateManagers = getStateManagers();
   const {
+    dashboardStore,
     selectors: {
       numberFormat: {
         measureFormatters,
@@ -36,7 +35,6 @@
         measureTooltipFormatters,
         activeMeasureTooltipFormatter,
       },
-      dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
       sorting: { sortedAscending, sortType },
@@ -50,11 +48,10 @@
     actions: {
       dimensions: { setPrimaryDimension },
       sorting: { toggleSort },
-      dimensionsFilter: { toggleDimensionValueSelection },
       comparison: { toggleComparisonDimension },
     },
     exploreName,
-    dashboardStore,
+    expressionFilterManager,
   } = StateManagers;
 
   const client = useRuntimeClient();
@@ -115,13 +112,14 @@
               ephemeralMeasures={$dashboardStore.ephemeralMeasures}
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
-              {dimensionThresholdFilters}
               {tableWidth}
               {timeRange}
               {dimensionColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
-              filterExcludeMode={$isFilterExcludeMode(dimension.name)}
+              filterExcludeMode={expressionFilterManager.sortedFilterManagers.dimensions.find(
+                (dfm) => dfm.name === dimension.name,
+              )?.exclude ?? false}
               {comparisonTimeRange}
               {dimension}
               {parentElement}
@@ -129,7 +127,7 @@
               selectedValues={selectedDimensionValues(
                 client,
                 [metricsViewName],
-                $dashboardStore.whereFilter,
+                whereFilter,
                 dimension.name,
                 timeRange.start,
                 timeRange.end,
@@ -146,7 +144,12 @@
                   }}
               {setPrimaryDimension}
               {toggleSort}
-              {toggleDimensionValueSelection}
+              toggleDimensionValueSelection={(_1, value, _2, exclusive) =>
+                expressionFilterManager.dimensionFilterAction(
+                  dimension.name!,
+                  (dimensionManager) =>
+                    dimensionManager.toggleValue(value, exclusive ?? false),
+                )}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
               onDimensionColumnResize={dimensionColumn.set}

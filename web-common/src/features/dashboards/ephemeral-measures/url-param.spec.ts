@@ -5,6 +5,8 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_VIEW,
+  AD_BIDS_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
@@ -12,7 +14,8 @@ import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboard
 import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
-} from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
+  useTestFilterManager,
+} from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -78,6 +81,12 @@ describe("ephemeral url param", () => {
   });
 });
 
+// Filters live in the ExpressionFilterManager, which needs the specs of the
+// metrics view backing the explore.
+const getFilterManager = useTestFilterManager({
+  [AD_BIDS_NAME]: AD_BIDS_METRICS_VIEW,
+});
+
 describe("ephemeral measures URL state integration", () => {
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
@@ -101,6 +110,7 @@ describe("ephemeral measures URL state integration", () => {
       new URL(url),
       AD_BIDS_EXPLORE_INIT,
       defaultExplorePreset,
+      getFilterManager(),
     );
   }
 

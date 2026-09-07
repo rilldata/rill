@@ -68,12 +68,14 @@
     >
       {#each kpis as kpi, i (i)}
         <div class="min-h-32 kpi-wrapper">
-          <KPIProvider
-            spec={kpi}
-            {timeAndFilterStore}
-            {canvasName}
-            visible={$visible}
-          />
+          {#if $timeAndFilterStore}
+            <KPIProvider
+              spec={kpi}
+              {timeAndFilterStore}
+              {canvasName}
+              visible={$visible}
+            />
+          {/if}
         </div>
       {/each}
     </div>

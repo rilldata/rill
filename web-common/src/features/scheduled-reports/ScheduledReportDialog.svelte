@@ -30,7 +30,6 @@
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
-    aggregationRequestWithFilters,
     aggregationRequestWithRowsAndColumns,
     aggregationRequestWithTimeRange,
     buildAggregationRequest,
@@ -72,6 +71,9 @@
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { onDestroy } from "svelte";
 
   export let open: boolean;
   export let props:
@@ -155,15 +157,21 @@
         : {}
   ) as V1MetricsViewAggregationRequest;
 
-  $: ({ filters, timeControls } = isCanvasReport
-    ? { filters: undefined, timeControls: undefined }
-    : getFiltersAndTimeControlsFromAggregationRequest(
-        runtimeClient,
-        metricsViewName,
-        exploreName,
-        aggregationRequest,
-        $allTimeRangeResp.data?.timeRangeSummary,
-      ));
+  let filters: ExpressionFilterManager | undefined;
+  let timeControls: TimeControls | undefined;
+  let cleanup: (() => void) | undefined = undefined;
+  $: {
+    cleanup?.();
+    ({ filters, timeControls, cleanup } = isCanvasReport
+      ? { filters: undefined, timeControls: undefined, cleanup: undefined }
+      : getFiltersAndTimeControlsFromAggregationRequest(
+          runtimeClient,
+          metricsViewName,
+          exploreName,
+          aggregationRequest,
+          $allTimeRangeResp.data?.timeRangeSummary,
+        ));
+  }
 
   let currentProtobufState: string | undefined = undefined;
   if (open && props.mode === "create") {
@@ -331,13 +339,11 @@
       };
     }
 
-    const filtersState = filters!.toState();
     const timeControlsState = timeControls!.toState();
     const updatedAggregationRequest = buildAggregationRequest(
       aggregationRequest,
       [
         aggregationRequestWithTimeRange(exploreSpec, timeControlsState),
-        aggregationRequestWithFilters(filtersState),
         aggregationRequestWithRowsAndColumns({
           exploreSpec,
           rows: values.rows,
@@ -353,6 +359,7 @@
         }),
       ],
     );
+    updatedAggregationRequest.where = filters?.topLevelJoiner[metricsViewName];
     return {
       ...commonOptions,
       explore: exploreName,
@@ -426,6 +433,10 @@
       // showing error below
     }
   }
+
+  onDestroy(() => {
+    cleanup?.();
+  });
 </script>
 
 <Dialog.Root bind:open>
@@ -438,6 +449,7 @@
       {errors}
       {submit}
       {enhance}
+      metricsViewName={metricsViewName ?? ""}
       exploreName={exploreName ?? ""}
       {canvasName}
       {canvasStateOverride}

@@ -1,5 +1,4 @@
 import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
 import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -161,10 +160,7 @@ export function getPivotConfig(
           validMetricsView: metricsView,
           validExplore: explore,
         }),
-        whereFilter: mergeDimensionAndMeasureFilters(
-          dashboardStore.whereFilter,
-          dashboardStore.dimensionThresholdFilters,
-        ),
+        whereFilter: dashboardStore.whereFilter,
         pivot: dashboardStore.pivot,
         enableComparison,
         comparisonTime,

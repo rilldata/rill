@@ -3,7 +3,6 @@ import {
   getURIRequestMeasure,
   URI_DIMENSION_SUFFIX,
 } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
@@ -40,11 +39,8 @@ import {
 } from "@tanstack/svelte-query";
 import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
 import { dimensionSearchText } from "../stores/dashboard-stores";
-import {
-  getFilterForComparedDimension,
-  prepareTimeSeries,
-  transformAggregateDimensionData,
-} from "./utils";
+import { prepareTimeSeries, transformAggregateDimensionData } from "./utils";
+import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 
 const MAX_TDD_VALUES_LENGTH = 250;
 const BATCH_SIZE = 50;
@@ -86,11 +82,15 @@ export function getDimensionValuesForComparison(
     [
       ctx.metricsViewName,
       ctx.dashboardStore,
+      ctx.expressionFilterManager.exprByMetricsViewStore,
       useTimeControlStore(ctx),
       dimensionSearchText,
       ctx.validSpecStore,
     ],
-    ([name, dashboardStore, timeControls, searchText, validSpec], set) => {
+    (
+      [name, dashboardStore, exprByMv, timeControls, searchText, validSpec],
+      set,
+    ) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -102,13 +102,15 @@ export function getDimensionValuesForComparison(
 
       if (!isValidMeasureList || !dimensionName) return;
 
+      const filter = exprByMv[name];
+
       // Values to be compared
       let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
         return selectedDimensionValues(
           ctx.runtimeClient,
           [name],
-          dashboardStore?.whereFilter,
+          filter,
           dimensionName,
         ).subscribe((values) => {
           if (values.data?.length) {
@@ -120,7 +122,7 @@ export function getDimensionValuesForComparison(
           }
           return set({
             values: comparisonValues,
-            filter: dashboardStore?.whereFilter,
+            filter,
           });
         });
       } else if (surface === "table") {
@@ -152,14 +154,7 @@ export function getDimensionValuesForComparison(
               measures: tddMeasures,
               dimensions: [{ name: dimensionName }],
               where: sanitiseExpression(
-                mergeDimensionAndMeasureFilters(
-                  getDimensionFilterWithSearch(
-                    dashboardStore?.whereFilter,
-                    searchText,
-                    dimensionName,
-                  ),
-                  dashboardStore.dimensionThresholdFilters,
-                ),
+                getDimensionFilterWithSearch(filter, searchText, dimensionName),
                 undefined,
               ),
               timeRange: {
@@ -190,7 +185,7 @@ export function getDimensionValuesForComparison(
             if (topListData?.isFetching || !dimensionName)
               return {
                 values: [],
-                filter: dashboardStore?.whereFilter,
+                filter,
               };
             const columnName =
               topListData?.data?.schema?.fields?.[0]?.name || dimensionName;
@@ -210,10 +205,9 @@ export function getDimensionValuesForComparison(
               totals: totalValues,
               values: topListValues?.slice(0, MAX_TDD_VALUES_LENGTH),
               uris: uriValues?.slice(0, MAX_TDD_VALUES_LENGTH),
-              filter: getFilterForComparedDimension(
-                dimensionName,
-                dashboardStore?.whereFilter,
-              ),
+              filter:
+                getFiltersForOtherDimensions(filter, dimensionName) ??
+                createAndExpression([]),
             };
           },
         ).subscribe(set);

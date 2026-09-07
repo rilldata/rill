@@ -1,5 +1,4 @@
 import { getDimensionForTimeField } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -199,13 +198,7 @@ export function getPivotAggregationRequest({
       exploreState.ephemeralMeasures,
     ),
     dimensions: allDimensions,
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        exploreState.whereFilter,
-        exploreState.dimensionThresholdFilters,
-      ),
-      undefined,
-    ),
+    where: sanitiseExpression(exploreState.whereFilter, undefined),
     pivotOn,
     sort,
     offset: "0",
