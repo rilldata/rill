@@ -12,10 +12,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import type {
-  Filters,
-  FiltersState,
-} from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-import type {
   TimeControls,
   TimeControlState,
 } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
@@ -25,6 +21,7 @@ import {
   type StructTypeField,
   TypeCode,
   type V1ExploreSpec,
+  type V1Expression,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
@@ -46,21 +43,20 @@ export function getAlertPreviewData(
   client: RuntimeClient,
   queryClient: QueryClient,
   formValues: AlertFormValues,
-  filters: Filters,
+  expr: V1Expression | undefined,
   timeControls: TimeControls,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
     [
       useExploreValidSpec(client, formValues.exploreName),
-      filters.getStore(),
       timeControls.getStore(),
     ],
-    ([validExploreSpec, filtersState, timeControlsState], set) =>
+    ([validExploreSpec, timeControlsState], set) =>
       createQueryServiceMetricsViewAggregation(
         client,
         getAlertPreviewQueryRequest(
           formValues,
-          filtersState,
+          expr,
           timeControlsState,
           validExploreSpec.data?.explore ?? {},
         ),
@@ -77,13 +73,13 @@ export function getAlertPreviewData(
 
 function getAlertPreviewQueryRequest(
   formValues: AlertFormValues,
-  filtersArgs: FiltersState,
+  expr: V1Expression | undefined,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
   const req = getAlertQueryArgsFromFormValues(
     formValues,
-    filtersArgs,
+    expr,
     timeControlArgs,
     exploreSpec,
   );

@@ -7,12 +7,14 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewAggregation,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
-  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import type { PivotFilter } from "../pivot/types";
   import RowsViewer from "./RowsViewer.svelte";
 
@@ -21,6 +23,7 @@
 
   export let metricsViewName: string;
   export let exploreName: string;
+  export let whereFilter: V1Expression | undefined;
 
   const DEFAULT_LABEL = "Model Data";
   const INITIAL_HEIGHT_EXPANDED = 300;
@@ -45,7 +48,6 @@
   const client = useRuntimeClient();
 
   $: exploreState = useExploreState(exploreName);
-  $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: ({ activeCellFilters } = $pivotDataStore);
   $: showPivot = $showPivotStore;
@@ -65,10 +67,7 @@
 
   $: filters = isPivotCellSelected
     ? sanitiseExpression((activeCellFilters as PivotFilter).filters, undefined)
-    : sanitiseExpression(
-        mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilters),
-        undefined,
-      );
+    : sanitiseExpression(whereFilter, undefined);
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -88,7 +87,7 @@
             where: filters,
           },
         ],
-        enabled: $timeControlsStore.ready && !!$exploreState?.whereFilter,
+        enabled: $timeControlsStore.ready,
       },
     },
   );
@@ -136,13 +135,7 @@
         timeStart: timeRange.start,
         timeEnd: timeRange.end,
         timeDimension: $exploreState?.selectedTimeDimension,
-        where: sanitiseExpression(
-          mergeDimensionAndMeasureFilters(
-            $exploreState.whereFilter,
-            $exploreState.dimensionThresholdFilters,
-          ),
-          undefined,
-        ),
+        where: sanitiseExpression(whereFilter, undefined),
       },
     };
   }

@@ -6,7 +6,6 @@ import {
   createAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewAggregation,
@@ -14,7 +13,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { mergeDimensionAndMeasureFilters } from "../measure-filters/measure-filter-utils";
 import { getFiltersForOtherDimensions } from "../../selectors";
 
 type DimensionSearchArgs = {
@@ -59,14 +57,10 @@ export function useDimensionSearch(
       mode,
       searchText,
       values,
-      // TODO - revist whether passing an empty array is the correct approach - bgh
       additionalFilter: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(
-            metricsViewWheres?.get(mvName) ?? createAndExpression([]),
-            dimensionName,
-          ),
-          [],
+        getFiltersForOtherDimensions(
+          metricsViewWheres?.get(mvName) ?? createAndExpression([]),
+          dimensionName,
         ),
         undefined,
       ),
@@ -149,12 +143,9 @@ export function useAllSearchResultsCount(
       searchText,
       values,
       additionalFilter: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(
-            metricsViewWheres?.get(mvName) ?? createAndExpression([]),
-            dimensionName,
-          ),
-          [],
+        getFiltersForOtherDimensions(
+          metricsViewWheres?.get(mvName) ?? createAndExpression([]),
+          dimensionName,
         ),
         undefined,
       ),
