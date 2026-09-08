@@ -1,8 +1,14 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
+import {
+  type DashboardInfo,
+  getDashboardFromEmbedRoute,
+} from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
 import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import {
+  fetchResources,
+  ResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { buildValidatedExploreUrl } from "@rilldata/web-common/features/dashboards/state-managers/loaders/build-validated-explore-url.ts";
 import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
@@ -21,13 +27,29 @@ import {
   dashboardChatActions,
   dashboardChatOpen,
 } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
 const RESIZE_THROTTLE_TIMEOUT = 200;
 const AI_PANE_CHANGE_THROTTLE_TIMEOUT = 200;
 
+// The resource kinds an embed can render as a dashboard.
+const DashboardResourceKinds = new Set<string>([
+  ResourceKind.Explore,
+  ResourceKind.Canvas,
+]);
+
 type SetValidStateParams = {
   state: string;
+  // When false (the default) the cleaned state is applied even if some params were invalid.
+  // When true the state is only applied if there are no validation errors.
+  failOnError?: boolean;
+};
+
+type NavigateToDashboardParams = {
+  name: string;
+  // State is optional. Uses default behaviour of navigation when not specified.
+  state?: string;
   // When false (the default) the cleaned state is applied even if some params were invalid.
   // When true the state is only applied if there are no validation errors.
   failOnError?: boolean;
@@ -83,42 +105,11 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
       pageState.params,
     );
 
-    // Upfront validation is only supported for explore dashboards.
-    // For anything else (e.g. canvas) fall back to applying the state as-is.
-    if (activeDashboard?.kind !== ResourceKind.Explore) {
-      const currentUrl = new URL(pageState.url);
-      currentUrl.search = state;
-      void goto(currentUrl, { replaceState: true });
-      return { success: true, appliedState: state, errors: [] };
-    }
-
-    const { url, errors } = await buildValidatedExploreUrl(
-      client,
-      activeDashboard.name,
-      new URLSearchParams(state),
-      pageState.url,
-    );
-    const errorMessages = errors.map((error) => error.message);
-
-    if (errors.length > 0 && failOnError) {
-      return { success: false, errors: errorMessages };
-    }
-
-    // Clear any prior embed session state for this explore before navigating.
-    // buildValidatedExploreUrl intentionally ignores session storage,
-    // but applying the url via goto triggers handleURLChange which re-merges session storage for empty / view-only urls.
-    // Without this, resetting the dashboard (e.g. setValidState({ state: "" })) would restore the previous session filters
-    // instead of the validated state we just computed and returned.
-    clearExploreSessionStore(activeDashboard.name, EmbedStorageNamespacePrefix);
-
-    const currentUrl = new URL(pageState.url);
-    currentUrl.search = url.toString();
-    void goto(currentUrl, { replaceState: true });
-    return {
-      success: true,
-      appliedState: currentUrl.search.replace(/^\?/, ""),
-      errors: errorMessages,
-    };
+    return applyDashboardState(client, activeDashboard, state, pageState.url, {
+      failOnError,
+      // The dashboard stays the same, so the state change should not add a history entry.
+      replaceState: true,
+    });
   });
 
   registerRPCMethod("getThemeMode", () => {
@@ -175,12 +166,74 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     return true;
   });
 
-  registerRPCMethod("navigate:back", () => {
+  // The embed suppresses all navigation when configured with `navigation=false`,
+  // so fail loudly rather than accepting a call that would silently do nothing.
+  function assertNavigationEnabled() {
+    if (!embedStore?.navigationEnabled) {
+      throw new Error("Navigation is disabled for this embed");
+    }
+  }
+
+  registerRPCMethod("navigateBack", () => {
+    assertNavigationEnabled();
     window.history.back();
+    return true;
   });
-  registerRPCMethod("navigate:forward", () => {
+  registerRPCMethod("navigateForward", () => {
+    assertNavigationEnabled();
     window.history.forward();
+    return true;
   });
+  registerRPCMethod(
+    "navigateToDashboard",
+    async (params: NavigateToDashboardParams) => {
+      assertNavigationEnabled();
+      if (
+        typeof params !== "object" ||
+        params === null ||
+        typeof params.name !== "string"
+      ) {
+        throw new Error(
+          "Expected params to be an object with a string `name` property",
+        );
+      }
+
+      const { name, state, failOnError = false } = params;
+      if (state !== undefined && typeof state !== "string") {
+        throw new Error("Expected `state` to be a string");
+      }
+
+      const resources = await fetchResources(queryClient, client, true);
+      const targetKind = resources.find(
+        (r) =>
+          r.meta?.name?.name === name &&
+          DashboardResourceKinds.has(r.meta?.name?.kind ?? ""),
+      )?.meta?.name?.kind as ResourceKind | undefined;
+      if (!targetKind) {
+        throw new Error(`Dashboard "${name}" not found`);
+      }
+      const dashboard: DashboardInfo = { name, kind: targetKind };
+
+      const targetUrl = new URL(get(page).url);
+      targetUrl.pathname = `/-/embed/${
+        targetKind === ResourceKind.Canvas ? "canvas" : "explore"
+      }/${encodeURIComponent(name)}`;
+      // Params of the dashboard being navigated away from should never carry over.
+      targetUrl.search = "";
+
+      if (state === undefined) {
+        // Navigate without any state so that the dashboard falls back to its default behaviour.
+        void goto(targetUrl);
+        return { success: true, appliedState: "", errors: [] };
+      }
+
+      return applyDashboardState(client, dashboard, state, targetUrl, {
+        failOnError,
+        // Navigating to another dashboard should be undoable via `navigateBack`.
+        replaceState: false,
+      });
+    },
+  );
 
   emitNotification("ready");
 
@@ -237,6 +290,67 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     unsubscribe();
     resizeUnsub();
     aiPaneUnsubscribe();
+  };
+}
+
+type ApplyDashboardStateResult = {
+  success: boolean;
+  // The state that was actually applied. Omitted when the state was not applied.
+  appliedState?: string;
+  errors: string[];
+};
+
+/**
+ * Applies `state` to `targetUrl` and navigates there.
+ *
+ * For explore dashboards the state is first validated against the explore and metrics view specs,
+ * so that invalid params are dropped and the applied url is canonicalized the same way it would be
+ * if the user had navigated there directly. Upfront validation is not supported for anything else
+ * (e.g. canvas or the dashboard listing), where the state is applied as-is.
+ */
+async function applyDashboardState(
+  client: RuntimeClient,
+  dashboard: DashboardInfo | null,
+  state: string,
+  targetUrl: URL,
+  {
+    failOnError,
+    replaceState,
+  }: { failOnError: boolean; replaceState: boolean },
+): Promise<ApplyDashboardStateResult> {
+  const url = new URL(targetUrl);
+
+  if (dashboard?.kind !== ResourceKind.Explore) {
+    url.search = state;
+    void goto(url, { replaceState });
+    return { success: true, appliedState: state, errors: [] };
+  }
+
+  const { url: validatedParams, errors } = await buildValidatedExploreUrl(
+    client,
+    dashboard.name,
+    new URLSearchParams(state),
+    targetUrl,
+  );
+  const errorMessages = errors.map((error) => error.message);
+
+  if (errors.length > 0 && failOnError) {
+    return { success: false, errors: errorMessages };
+  }
+
+  // Clear any prior embed session state for this explore before navigating.
+  // buildValidatedExploreUrl intentionally ignores session storage,
+  // but applying the url via goto triggers handleURLChange which re-merges session storage for empty / view-only urls.
+  // Without this, resetting the dashboard (e.g. setValidState({ state: "" })) would restore the previous session filters
+  // instead of the validated state we just computed and returned.
+  clearExploreSessionStore(dashboard.name, EmbedStorageNamespacePrefix);
+
+  url.search = validatedParams.toString();
+  void goto(url, { replaceState });
+  return {
+    success: true,
+    appliedState: url.search.replace(/^\?/, ""),
+    errors: errorMessages,
   };
 }
 

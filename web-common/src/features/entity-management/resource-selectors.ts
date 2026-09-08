@@ -329,10 +329,12 @@ export function fetchProjectParser(
 export async function fetchResources(
   queryClient: QueryClient,
   client: RuntimeClient,
+  fromCache = false,
 ) {
   const resp = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceListResourcesQueryKey(client.instanceId, {}),
     queryFn: () => runtimeServiceListResources(client, {}),
+    ...(fromCache ? { staleTime: Infinity } : {}),
   });
   return resp.resources ?? [];
 }

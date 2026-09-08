@@ -5,6 +5,7 @@ import type {
   V1GetResourceResponse,
   V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
+  V1Resource,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { afterAll, beforeAll, vi } from "vitest";
@@ -82,6 +83,10 @@ export class DashboardFetchMocks {
         },
       },
     } as V1GetExploreResponse);
+  }
+
+  public mockListResources(resources: V1Resource[]) {
+    this.responses.set("resources__list", { resources });
   }
 
   public mockTimeRangeSummary(
@@ -198,6 +203,8 @@ export class DashboardFetchMocks {
 
     if (service === "RuntimeService" && method === "GetExplore") {
       responseData = this.responses.get(`resources__explore__${parsed.name}`);
+    } else if (service === "RuntimeService" && method === "ListResources") {
+      responseData = this.responses.get("resources__list");
     } else if (service === "RuntimeService" && method === "GetResource") {
       const name = parsed.name?.name;
       responseData = this.responses.get(`resource__${name}`);
