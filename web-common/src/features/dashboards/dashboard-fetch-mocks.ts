@@ -255,16 +255,19 @@ export class DashboardFetchMocks {
 
     if (service === "RuntimeService" && method === "GetExplore") {
       responseData = this.responses.get(`resources__explore__${parsed.name}`);
-    } else if (service === "RuntimeService" && method === "ListResources") {
-      responseData = this.responses.get("resources__list");
     } else if (service === "RuntimeService" && method === "GetResource") {
       const name = parsed.name?.name;
       responseData = this.responses.get(`resource__${name}`);
     } else if (service === "RuntimeService" && method === "ListResources") {
-      const resources = [...this.resources.values()].filter(
-        (resource) => !parsed.kind || resource.meta?.name?.kind === parsed.kind,
-      );
-      responseData = { resources };
+      if (this.responses.has("resources__list")) {
+        responseData = this.responses.get("resources__list");
+      } else {
+        const resources = [...this.resources.values()].filter(
+          (resource) =>
+            !parsed.kind || resource.meta?.name?.kind === parsed.kind,
+        );
+        responseData = { resources };
+      }
     } else if (service === "QueryService" && method === "ResolveCanvas") {
       responseData = this.responses.get(`canvas__${parsed.canvas}`);
     } else if (
