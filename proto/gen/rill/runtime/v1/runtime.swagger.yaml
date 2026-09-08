@@ -6055,6 +6055,9 @@ definitions:
           $ref: '#/definitions/v1Resource'
       nextPageToken:
         type: string
+      initializing:
+        type: boolean
+        description: True while the instance may still produce more resources, i.e. it has not finished its initial parse and reconcile.
   v1ListTablesResponse:
     type: object
     properties:

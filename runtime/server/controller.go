@@ -51,6 +51,8 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, err
 	}
 
+	initializing := ctrl.Initializing()
+
 	if req.SkipSecurityChecks {
 		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
@@ -83,7 +85,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	})
 
 	if req.PageSize == 0 {
-		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
+		return &runtimev1.ListResourcesResponse{Resources: rs, Initializing: initializing}, nil
 	}
 
 	var afterKind, afterName string
@@ -108,6 +110,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	return &runtimev1.ListResourcesResponse{
 		Resources:     rs[start:end],
 		NextPageToken: nextPageToken,
+		Initializing:  initializing,
 	}, nil
 }
 
