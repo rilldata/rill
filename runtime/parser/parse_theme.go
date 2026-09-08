@@ -83,6 +83,16 @@ var allowedCSSVariables = map[string]bool{
 	"ring-focus":  true,
 	"ring-offset": true,
 
+	// Dimension styling
+	"dimension":            true,
+	"dimension-foreground": true,
+	"dimension-border":     true,
+
+	// Measure styling
+	"measure":            true,
+	"measure-foreground": true,
+	"measure-border":     true,
+
 	// Tooltip
 	"tooltip": true,
 

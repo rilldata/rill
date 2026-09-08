@@ -6,17 +6,16 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
   mapSelectedTimeRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
-import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
   V1ExploreSpec,
+  V1Expression,
   V1MetricsViewAggregationRequest,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -46,7 +45,7 @@ export type AlertFormValues = {
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
-  filtersArgs: FiltersState,
+  expr: V1Expression | undefined,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
@@ -93,13 +92,7 @@ export function getAlertQueryArgsFromFormValues(
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        filtersArgs.whereFilter,
-        filtersArgs.dimensionThresholdFilters,
-      ),
-      undefined,
-    ),
+    where: sanitiseExpression(expr, undefined),
     having: sanitiseExpression(undefined, {
       cond: {
         op: formValues.criteriaOperation,

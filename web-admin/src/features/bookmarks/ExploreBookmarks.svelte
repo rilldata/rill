@@ -18,7 +18,6 @@
 
   export let organization: string;
   export let project: string;
-  export let metricsViewName: string;
   export let exploreName: string;
 
   const orgAndProjectNameStore = writable({ organization, project });
@@ -76,5 +75,4 @@
     defaultUrlParams: $rillDefaultExploreURLParams,
     defaultHomeBookmarkUrl: $urlForExploreYAMLDefaultState,
   }}
-  metricsViewNames={[metricsViewName]}
 />

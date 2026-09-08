@@ -70,7 +70,7 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
-			WaitingFor:   wait.ForLog("mysqld: ready for connections").WithOccurrence(2).WithStartupTimeout(15 * time.Second),
+			WaitingFor:   wait.ForLog("mysqld: ready for connections").WithOccurrence(2).WithStartupTimeout(time.Minute),
 			Image:        "mysql:8.3.0",
 			ExposedPorts: []string{"3306/tcp"},
 			Env: map[string]string{

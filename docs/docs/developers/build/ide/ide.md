@@ -23,13 +23,12 @@ You can edit these files in any IDE, and Rill will automatically detect changes 
 
 ## Using AI Agents to Build Rill Projects
 
-Rill ships built-in instructions that teach AI coding agents like **Claude Code** and **Cursor** how to build Rill projects. A single `rill init` command scaffolds everything your agent needs — resource schemas, best practices, and development conventions.
+Rill ships built-in [agent skills](/developers/agent-skills) that teach AI coding agents like **Claude Code** and **Cursor** how to build Rill projects. A single `rill init` command scaffolds everything your agent needs — resource schemas, best practices, and development conventions.
 
 ```bash
-# Add Claude Code instructions to your project
-rill init --template claude
-
-# Or add Cursor rules
-rill init --template cursor
+# Add agent skills for Claude Code, Cursor, and AGENTS.md-compatible tools
+rill init --agent all
 ```
+
+See the [Agent Skills documentation](/developers/agent-skills) for installation instructions for each tool, or the [Agentic Quickstart](/developers/get-started/ai-quickstart) for a full walkthrough.
 
