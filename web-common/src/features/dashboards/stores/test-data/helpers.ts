@@ -1,6 +1,5 @@
-import { QueryClient } from "@tanstack/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { renderInRuntimeContext } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -103,36 +102,31 @@ export function assertMetricsViewRaw(
   expect(metricsView.leaderboardSortByMeasureName).toEqual(selectedMeasure);
 }
 
-export function initStateManagers(metricsViewName?: string) {
-  metricsViewName ??= AD_BIDS_NAME;
+/**
+ * createStateManagers builds providers that call `createQuery`, so it can only run during
+ * component initialisation. renderInRuntimeContext mounts a harness that supplies the
+ * QueryClient context and an effect owner. Callers own the returned `destroy`.
+ */
+export function initStateManagers(metricsViewName = AD_BIDS_NAME) {
   const exploreName = metricsViewName + "_explore";
 
   metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   initAdBidsInStore();
 
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-        refetchOnWindowFocus: false,
-        retry: false,
-        networkMode: "always",
-      },
-    },
-  });
-  const runtimeClient = new RuntimeClient({
-    host: "http://localhost",
-    instanceId: "test",
-  });
-  const stateManagers = createStateManagers({
+  const {
+    value: stateManagers,
     queryClient,
-    metricsViewName,
-    exploreName,
-    runtimeClient,
-  });
+    destroy,
+  } = renderInRuntimeContext(({ queryClient, runtimeClient }) =>
+    createStateManagers({
+      queryClient,
+      metricsViewName,
+      exploreName,
+      runtimeClient,
+    }),
+  );
 
-  return { stateManagers, queryClient };
+  return { stateManagers, queryClient, destroy };
 }
 
 export function getPartialDashboard(

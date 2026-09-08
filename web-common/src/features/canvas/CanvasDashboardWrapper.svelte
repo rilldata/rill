@@ -2,39 +2,80 @@
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
-  import WarningIcon from "@rilldata/web-common/components/icons/WarningIcon.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
   import CanvasPdfExportView from "../exports/pdf/CanvasPdfExportView.svelte";
+  import { getMissingRequiredFilters } from "@rilldata/web-common/features/dashboards/filters/utils.ts";
+  import MissingRequiredFiltersMessage from "@rilldata/web-common/features/dashboards/filters/MissingRequiredFiltersMessage.svelte";
+  import { type Snippet } from "svelte";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import { goto } from "$app/navigation";
 
-  const client = useRuntimeClient();
+  const runtimeClient = useRuntimeClient();
+  let instanceId = $derived(runtimeClient.instanceId);
 
-  export let maxWidth: number;
-  export let clientWidth = 0;
-  export let showGrabCursor = false;
-  export let filtersEnabled: boolean | undefined;
-  export let canvasName: string;
-  export let embedded: boolean = false;
-  export let builder = false;
-  export let onClick: () => void = () => {};
+  let {
+    children,
+    canvasName,
+    maxWidth,
+    clientWidth = $bindable(0),
+    showGrabCursor = false,
+    filtersEnabled = undefined,
+    embedded = false,
+    builder = false,
+    onClick = () => {},
+  }: {
+    children: Snippet;
+    canvasName: string;
+    maxWidth: number;
+    clientWidth?: number;
+    showGrabCursor?: boolean;
+    filtersEnabled?: boolean | undefined;
+    embedded?: boolean;
+    builder?: boolean;
+    onClick?: () => void;
+  } = $props();
 
-  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+  let contentRect = $state(new DOMRectReadOnly(0, 0, 0, 0));
 
-  $: ({ instanceId } = client);
-
-  $: ({
+  let {
     canvasEntity: {
       theme,
       exportMode,
-      filterManager: { missingRequiredFiltersStore },
+      expressionFilterManager,
+      dashboardProvider,
     },
-  } = getCanvasStore(canvasName, instanceId));
+  } = $derived(getCanvasStore(canvasName, instanceId));
+  // svelte-ignore state_referenced_locally
+  syncStoreWithSource(
+    expressionFilterManager,
+    (newUrlParams) => {
+      let newSearch = newUrlParams.toString();
+      if (!newSearch) newSearch = "clear=true";
+      return goto("?" + newSearch);
+    },
+    () => expressionFilterManager.metricsViewsProvider.ready,
+  );
 
-  $: missingRequiredFilters = $missingRequiredFiltersStore;
-  $: hasMissingRequired = missingRequiredFilters.length > 0;
+  $effect(() => {
+    dashboardProvider.yamlConfigProvider.setEditable(builder);
+  });
 
-  $: ({ width: clientWidth } = contentRect);
+  let missingRequiredFilters = $derived(
+    getMissingRequiredFilters(
+      expressionFilterManager,
+      dashboardProvider.metricsViewsProvider,
+      dashboardProvider.yamlConfigProvider,
+    ),
+  );
+  // Note that this can be false when metricsViewsProvider is resolving.
+  // TODO: make sure parent waits for metricsViewsProvider.ready
+  let hasMissingRequired = $derived(missingRequiredFilters.length > 0);
+
+  $effect(() => {
+    clientWidth = contentRect.width;
+  });
 </script>
 
 <ThemeProvider theme={$theme}>
@@ -51,7 +92,7 @@
           if (e.target === e.currentTarget) onClick();
         }}
       >
-        <CanvasFilters {canvasName} {maxWidth} {builder} />
+        <CanvasFilters {canvasName} {maxWidth} />
       </header>
     {/if}
 
@@ -88,34 +129,10 @@
       }}
     >
       {#if hasMissingRequired}
-        <div class="w-full flex justify-center px-6 pt-24 pb-12">
-          <div
-            class="flex flex-col items-center text-center gap-y-3 px-8 py-10 rounded-lg border border-gray-200 bg-surface-subtle shadow-sm w-full max-w-lg"
-            role="alert"
-          >
-            <WarningIcon size="32px" className="text-amber-500" />
-            <h2 class="text-lg font-semibold text-fg-primary">
-              Select a value to continue
-            </h2>
-            <p class="text-sm text-fg-secondary">
-              This dashboard requires values for the following filter{missingRequiredFilters.length >
-              1
-                ? "s"
-                : ""}:
-            </p>
-            <ul
-              class="text-sm text-fg-primary flex flex-wrap justify-center gap-x-2 gap-y-1"
-            >
-              {#each missingRequiredFilters as missing (missing.key)}
-                <li
-                  class="px-2 py-0.5 rounded-md bg-red-50 border border-red-200 text-red-700"
-                >
-                  {missing.label}
-                </li>
-              {/each}
-            </ul>
-          </div>
-        </div>
+        <MissingRequiredFiltersMessage
+          {missingRequiredFilters}
+          metricsViewsProvider={dashboardProvider.metricsViewsProvider}
+        />
       {:else}
         <div
           class="w-full h-fit flex flex-col items-center row-container relative"
@@ -123,7 +140,7 @@
           style:min-width="420px"
           bind:contentRect
         >
-          <slot />
+          {@render children()}
         </div>
       {/if}
     </div>

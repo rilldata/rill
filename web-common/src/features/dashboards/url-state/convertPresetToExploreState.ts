@@ -1,4 +1,3 @@
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
   type PivotChipData,
@@ -75,11 +74,8 @@ export function convertPresetToExploreState(
   }
 
   if (preset.where) {
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      preset.where,
-    );
-    partialExploreState.whereFilter = dimensionFilters;
-    partialExploreState.dimensionThresholdFilters = dimensionThresholdFilters;
+    partialExploreState.whereFilter = preset.where;
+    partialExploreState.dimensionThresholdFilters = [];
   }
   if (preset.dimensionsWithInlistFilter) {
     partialExploreState.dimensionsWithInlistFilter =

@@ -1,10 +1,7 @@
 import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
@@ -52,22 +49,6 @@ export const aggregationRequestWithTimeRange = (
       ...aggregationRequest,
       timeRange,
       comparisonTimeRange,
-    };
-  };
-};
-
-export const aggregationRequestWithFilters = (filtersState: FiltersState) => {
-  return (aggregationRequest: V1MetricsViewAggregationRequest) => {
-    const whereFilter = sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        filtersState.whereFilter,
-        filtersState.dimensionThresholdFilters,
-      ),
-      undefined,
-    );
-    return {
-      ...aggregationRequest,
-      where: whereFilter,
     };
   };
 };

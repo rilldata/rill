@@ -14,6 +14,7 @@ import {
 import { assertLeaderboards } from "../utils/metricsViewHelpers";
 import { ResourceWatcher } from "../utils/ResourceWatcher";
 import { createSourceV2 } from "../utils/sourceHelpers";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 
 test.describe("explores", () => {
   test.use({ project: "Blank" });
@@ -30,6 +31,7 @@ test.describe("explores", () => {
     await assertAdBidsDashboard(page);
 
     // click on publisher=Facebook leaderboard value
+    await asyncWait(1000);
     await page.getByRole("row", { name: "Facebook 19.3k" }).click();
     await wrapRetryAssertion(() =>
       assertLeaderboards(page, [
