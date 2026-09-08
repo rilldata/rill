@@ -150,6 +150,12 @@ describe("createSmartRefetchInterval", () => {
     expect(refetchInterval(q)).toBe(INITIAL_REFETCH_INTERVAL);
   });
 
+  it("keeps polling when relevant resources are idle but the runtime is still initializing", () => {
+    // Some dashboards have been parsed already, more may still show up.
+    const q = makeQuery([makeResource({ explore: {} } as any)], true);
+    expect(refetchInterval(q)).toBe(MAX_REFETCH_INTERVAL);
+  });
+
   it("ignores non-relevant reconciling resources when relevant ones exist", () => {
     const q = makeQuery([
       makeResource({ explore: {} } as any), // idle dashboard

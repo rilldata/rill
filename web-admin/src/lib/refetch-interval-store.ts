@@ -92,22 +92,25 @@ export function createSmartRefetchInterval(
     // would poll forever off the ProjectParser, which stays RUNNING
     // indefinitely on dev/branch deployments (file watching).
     const relevantResources = resources.filter(isRelevant);
-    if (relevantResources.length === 0) {
-      // An empty list is a valid, terminal answer: the project may have no resources, or the
-      // user's security policies may have denied all of them (ListResources splices denied
-      // resources out and still returns 200). Only the runtime can tell the two apart, which is
-      // what `initializing` is for. Note the runtime hides the ProjectParser from everyone but
-      // admins, so a viewer's response never carries the reconcile state we'd otherwise infer
-      // this from.
-      return query.state.data?.initializing ? MAX_REFETCH_INTERVAL : false;
-    }
-
     const currentState = queryRefetchStateMap.get(query) || {};
     const updatedState = updateSmartRefetchMeta(
       relevantResources,
       currentState,
     );
     queryRefetchStateMap.set(query, updatedState);
+
+    if (
+      updatedState.refetchInterval === false &&
+      query.state.data.initializing
+    ) {
+      // Nothing left reconciling, but the instance can still produce resources
+      // until its initial parse and reconcile finishes, so keep polling. We
+      // can't infer this from the response: the list may be empty because the
+      // user's security policies denied everything (ListResources splices
+      // denied resources out and still returns 200), and the runtime hides the
+      // ProjectParser from everyone but admins.
+      return MAX_REFETCH_INTERVAL;
+    }
 
     return updatedState.refetchInterval;
   };

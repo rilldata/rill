@@ -3838,8 +3838,6 @@ type ListResourcesResponse struct {
 	Resources     []*Resource `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
 	NextPageToken string      `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	// True while the instance may still produce more resources, i.e. it has not finished its initial parse and reconcile.
-	// It is computed before security policies are applied, so it stays meaningful when every resource is denied.
-	// Clients should use it to tell "still building" apart from "nothing to show", instead of inferring it from an empty resource list.
 	Initializing bool `protobuf:"varint,3,opt,name=initializing,proto3" json:"initializing,omitempty"`
 }
 

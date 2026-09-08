@@ -51,9 +51,6 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, err
 	}
 
-	// Clients can't infer this from the returned resources:
-	// the list may be narrowed by req.Kind or req.Path, and the security filtering below
-	// can empty it entirely, which is indistinguishable from an instance that hasn't created any resources yet.
 	initializing := ctrl.Initializing()
 
 	if req.SkipSecurityChecks {

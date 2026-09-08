@@ -426,12 +426,11 @@ func (c *Controller) WaitUntilIdle(ctx context.Context, ignoreHidden bool) error
 
 // Initializing returns true until the controller has completed its initial parse and reconcile,
 // i.e. until the project parser has parsed the project and the resources it created have been reconciled once.
-// Once it has returned false, it returns false for the rest of the controller's lifetime:
-// later reconciles, such as a model refresh, do not make an instance initializing again.
 //
-// Callers use it to tell an instance that may still produce resources from one that is merely refreshing them.
-// This can't be inferred from a resource listing:
-// security policies may deny every resource, which is indistinguishable from an instance that hasn't created any yet.
+// It combines the two status indicators on the controller:
+// started marks the point where Run has enqueued the initial resources, before which the controller has nothing queued and would otherwise look idle;
+// initialized latches the first time the checks below all pass.
+// The latch means later reconciles, such as a model refresh, do not make the controller look like it is initializing again.
 func (c *Controller) Initializing() bool {
 	if c.initialized.Load() {
 		return false
