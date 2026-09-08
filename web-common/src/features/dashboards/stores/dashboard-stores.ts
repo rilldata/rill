@@ -298,7 +298,6 @@ const metricsViewReducers = {
         }
       }
 
-      exploreState.pivot.expanded = {};
       exploreState.pivot.rows = dimensions;
     });
   },
@@ -323,7 +322,6 @@ const metricsViewReducers = {
           }
         }
       }
-      exploreState.pivot.expanded = {};
       exploreState.pivot.columns = value;
     });
   },
@@ -332,7 +330,6 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
-      exploreState.pivot.expanded = {};
 
       if (value.type === PivotChipType.Measure) {
         exploreState.pivot.columns.push(value);
@@ -364,7 +361,6 @@ const metricsViewReducers = {
         ...exploreState.pivot,
         sorting,
         rowPage: 1,
-        expanded: {},
         activeCell: null,
       };
     });

@@ -17,6 +17,7 @@ import {
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 import { buildFinalPivotStateDetails } from "./pivot-data-assembly";
+import { buildExpandKey } from "./pivot-expand-keys";
 import {
   getFiltersForColumnHeader,
   getFiltersForRowData,
@@ -76,7 +77,11 @@ describe("pivot filter builders exclude the global where filter", () => {
   });
 
   it("getFiltersForRowHeader", () => {
-    const result = getFiltersForRowHeader(makeConfig(), "0", FLAT_DATA);
+    const result = getFiltersForRowHeader(
+      makeConfig(),
+      buildExpandKey(["US"]),
+      FLAT_DATA,
+    );
 
     expect(identsIn(result.filters)).toEqual(["country"]);
   });
@@ -92,7 +97,7 @@ describe("pivot filter builders exclude the global where filter", () => {
   it("getFiltersForCell on a flat table", () => {
     const result = getFiltersForCell(
       makeConfig(),
-      "0",
+      buildExpandKey(["US"]),
       "revenue",
       {},
       FLAT_DATA,
@@ -110,7 +115,7 @@ describe("pivot filter builders exclude the global where filter", () => {
 
     const result = getFiltersForCell(
       config,
-      "0",
+      buildExpandKey(["US"]),
       "c0v0m0",
       { region: ["NA", "EU"] },
       FLAT_DATA,
@@ -143,7 +148,7 @@ describe("rows viewer cell filters include the global where filter", () => {
   it("merges config.whereFilter into activeCellFilters", () => {
     const config = makeConfig({
       pivot: {
-        activeCell: { rowId: "0", columnId: "revenue" },
+        activeCell: { rowId: buildExpandKey(["US"]), columnId: "revenue" },
         rowPage: 1,
         showTotalsRow: false,
         sorting: [],

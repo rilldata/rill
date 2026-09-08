@@ -18,6 +18,13 @@
     isShowMoreRow,
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+  import {
+    buildExpandKey,
+    childExpandKey,
+    encodeExpandKeyValue,
+    parentExpandKey,
+    PIVOT_TOTALS_ROW_ID,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import {
     createVirtualizer,
@@ -89,15 +96,30 @@
   export let clickSelection: PivotClickSelectionState | undefined = undefined;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
-    [pivotDataStore, pivotState],
-    ([pivotData, state]) => {
+    [pivotDataStore, pivotState, config],
+    ([pivotData, state, cfg]) => {
       let tableData = [...pivotData.data];
       if (pivotData.totalsRowData) {
         tableData = [pivotData.totalsRowData, ...pivotData.data];
       }
+      const totalsRowData = pivotData.totalsRowData;
+      const rowDims = cfg.rowDimensionNames;
       return {
         data: tableData,
         columns: pivotData.columnDef,
+        // Value-based, hierarchical row ids (parent id + this row's value) so
+        // expansion survives sorting, adding a field, and data refreshes.
+        getRowId: (row, _index, parent) => {
+          if (totalsRowData && row === totalsRowData)
+            return PIVOT_TOTALS_ROW_ID;
+          if (cfg.isFlat) {
+            return buildExpandKey(rowDims.map((dim) => row[dim]));
+          }
+          const anchor = rowDims[0];
+          return parent
+            ? childExpandKey(parent.id, row[anchor])
+            : encodeExpandKeyValue(row[anchor]);
+        },
         state: {
           expanded: state.expanded,
           sorting: state.sorting,
@@ -237,7 +259,7 @@
     if (needsDomains) {
       for (const row of flatRows) {
         // Always skip the prepended grand-totals row.
-        if (hasTotalsRow && row.id === "0") continue;
+        if (hasTotalsRow && row.id === PIVOT_TOTALS_ROW_ID) continue;
         const target = row.subRows.length > 0 ? parentValues : leafValues;
         for (const cell of row.getAllCells()) {
           const meta = cell.column.columnDef.meta;
@@ -340,21 +362,20 @@
 
       if (!nextLimit) return;
 
-      // Check if this is the outermost dimension or a nested dimension
-      // Outermost dimension has rowId like "0", "1", etc. (no dots)
-      // Nested dimensions have rowId like "0.1", "0.1.2", etc.
-      const isOutermostDimension = !rowId.includes(".");
+      // The outermost "Show more" row sits at the top level (its parent key
+      // is the root ""); a nested one has a real parent node whose child
+      // limit we raise.
+      const parentKey = parentExpandKey(rowId);
 
-      if (isOutermostDimension) {
+      if (parentKey === "") {
         // Handle outermost dimension "Show more" click
         if (setPivotOutermostRowLimit) {
           setPivotOutermostRowLimit(nextLimit);
         }
       } else {
         // Handle nested dimension "Show more" click
-        const expandIndex = rowId.split(".").slice(0, -1).join(".");
-        if (expandIndex && setPivotRowLimitForExpanded) {
-          setPivotRowLimitForExpanded(expandIndex, nextLimit);
+        if (setPivotRowLimitForExpanded) {
+          setPivotRowLimitForExpanded(parentKey, nextLimit);
         }
       }
       return;

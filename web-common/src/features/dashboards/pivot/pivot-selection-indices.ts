@@ -8,6 +8,7 @@
 import type { HeaderGroup, Row } from "tanstack-table-8-svelte-5";
 import type { PivotClickSelectionState } from "./pivot-click-selection";
 import { dimKeyFromRow, nestedDimKeyFromRow } from "./pivot-click-selection";
+import { parentExpandKey } from "./pivot-expand-keys";
 import type { PivotDataRow } from "./types";
 
 function selectedColumnHeaderFilters(
@@ -215,10 +216,10 @@ export function computeAncestorRowIds(
     const selectedDepth = selectedDepthByDk.get(dk);
     if (selectedDepth === undefined) continue;
     if (row.depth !== selectedDepth) continue;
-    let id = row.id;
-    while (id.includes(".")) {
-      id = id.substring(0, id.lastIndexOf("."));
+    let id = parentExpandKey(row.id);
+    while (id !== "") {
       ancestorIds.add(id);
+      id = parentExpandKey(id);
     }
   }
   return ancestorIds;
