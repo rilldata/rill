@@ -1,7 +1,6 @@
 <script lang="ts">
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
-
   import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
@@ -17,9 +16,9 @@
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
 
   let {
-    devJTWUpdater = updateDevJWT,
+    devJWTUpdater = updateDevJWT,
   }: {
-    devJTWUpdater?: typeof updateDevJWT;
+    devJWTUpdater?: typeof updateDevJWT;
   } = $props();
 
   let viewAsMenuOpen = $state(false);
@@ -51,7 +50,7 @@
             active={viewAsMenuOpen}
             removeTooltipText={m.dashboard_clear_view()}
             onRemove={() => {
-              devJTWUpdater(queryClient, client, null);
+              devJWTUpdater(queryClient, client, null);
             }}
           >
             <div slot="body">
@@ -74,7 +73,7 @@
       {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
           onclick={() => {
-            devJTWUpdater(queryClient, client, user);
+            devJWTUpdater(queryClient, client, user);
           }}
           class="flex gap-x-2 items-center"
         >

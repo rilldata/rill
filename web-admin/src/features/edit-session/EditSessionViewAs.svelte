@@ -9,6 +9,10 @@
   import ViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/ViewAsButton.svelte";
   import { page } from "$app/state";
   import { createUpdateEditSessionDevJWT } from "@rilldata/web-admin/features/edit-session/updateEditSessionDevJWT.ts";
+  import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores.ts";
+  import { beforeNavigate } from "$app/navigation";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { get } from "svelte/store";
 
   let {
     deploymentId,
@@ -74,12 +78,27 @@
       $rillYamlPolicyCheck.data ||
       referencedMetricsViewsHavePolicy,
   );
+  let showViewAs = $derived(
+    (onExplorePreview || onCanvasPreview) && hasSecurityPolicy,
+  );
 
-  let devJTWUpdater = $derived(
+  let devJWTUpdater = $derived(
     createUpdateEditSessionDevJWT(deploymentId, editSessionJwt),
   );
+
+  // Reset mocked user when navigated to a different dashboard
+  beforeNavigate(({ to, from }) => {
+    if (!from?.params) return;
+
+    if (
+      from.params.name !== to?.params?.name &&
+      get(selectedMockUserStore) !== null
+    ) {
+      devJWTUpdater(queryClient, runtimeClient, null).catch(console.error);
+    }
+  });
 </script>
 
-{#if hasSecurityPolicy}
-  <ViewAsButton {devJTWUpdater} />
+{#if showViewAs}
+  <ViewAsButton {devJWTUpdater} />
 {/if}
