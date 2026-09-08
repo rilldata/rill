@@ -121,7 +121,7 @@ _[oneOf]_ - Data source for the alert _(required)_
 
       - **`time_range`** - _[object]_ - Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
 
-        - **`expression`** - _[string]_ - Rill time expression (e.g., '7D as of latest/D', '1M as of latest/M')
+        - **`expression`** - _[string]_ - Rill time expression. Note that snapping excludes the period containing the reference point, so '1D as of latest/D' is the day before the latest data; use '1D as of latest/D+1D' for the last day with data.
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
@@ -129,7 +129,7 @@ _[oneOf]_ - Data source for the alert _(required)_
 
       - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis. Use either a Rill time expression or fixed start and end timestamps.
 
-        - **`expression`** - _[string]_ - Rill time expression for the comparison period (e.g., '7D as of latest/D offset -7D')
+        - **`expression`** - _[string]_ - Rill time expression for the comparison period (e.g., '1D as of latest/D' when the time range is '1D as of latest/D+1D')
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 

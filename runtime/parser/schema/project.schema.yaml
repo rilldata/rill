@@ -2874,13 +2874,14 @@ definitions:
         display_name: Daily AI Insights
         refresh:
           cron: "0 8 * * *"
+        watermark: inherit # resolve "latest" against the explore's data instead of the trigger time
         data:
           ai:
             prompt: "Analyze key metrics and identify significant changes"
             time_range:
-              expression: "1D as of latest/D"
+              expression: "1D as of latest/D+1D" # the last day with data
             comparison_time_range:
-              expression: "1D as of latest/D offset -1D"
+              expression: "1D as of latest/D" # the day before it
             explore: my_explore
         notify:
           email:
@@ -3767,7 +3768,7 @@ definitions:
                 properties:
                   expression:
                     type: string
-                    description: Rill time expression (e.g., '7D as of latest/D', '1M as of latest/M')
+                    description: Rill time expression. Note that snapping excludes the period containing the reference point, so '1D as of latest/D' is the day before the latest data; use '1D as of latest/D+1D' for the last day with data.
                   start:
                     type: string
                     description: Start timestamp in ISO 8601 format
@@ -3780,7 +3781,7 @@ definitions:
                 properties:
                   expression:
                     type: string
-                    description: Rill time expression for the comparison period (e.g., '7D as of latest/D offset -7D')
+                    description: Rill time expression for the comparison period (e.g., '1D as of latest/D' when the time range is '1D as of latest/D+1D')
                   start:
                     type: string
                     description: Start timestamp in ISO 8601 format
@@ -3812,9 +3813,9 @@ definitions:
           - ai:
               prompt: "Analyze revenue trends and identify top performing regions"
               time_range:
-                expression: "7D as of latest/D"
+                expression: "7D as of latest/D+1D" # the last 7 days with data
               comparison_time_range:
-                expression: "7D as of latest/D offset -7D"
+                expression: "7D as of latest/D+1D offset -7D"
               explore: sales_explore
 
   explore_time_range_properties:
