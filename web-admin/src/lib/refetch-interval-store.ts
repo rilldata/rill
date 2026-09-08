@@ -101,7 +101,7 @@ export function createSmartRefetchInterval(
 
     if (
       updatedState.refetchInterval === false &&
-      query.state.data.initializing
+      query.state.data?.initializing
     ) {
       // Nothing left reconciling, but the instance can still produce resources
       // until its initial parse and reconcile finishes, so keep polling. We
