@@ -148,7 +148,7 @@ func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
 }
 
 func TestPostgresToDuckLakeTransfer(t *testing.T) {
-	// testmode.Expensive(t)
+	testmode.Expensive(t)
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
