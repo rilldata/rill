@@ -69,6 +69,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 
 	// Apply a limited subset of rewrites to the inner query.
 	e.rewriteApproxComparisons(ast, false)
+	e.rewriteDruidMVDFilteredGroupBy(ast)
 
 	// Generate the SQL for and execute the inner query.
 	sql, args, err := ast.SQL()

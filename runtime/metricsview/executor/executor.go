@@ -401,6 +401,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	e.rewriteDruidMVDFilteredGroupBy(ast)
+
 	if err := e.rewriteDruidGroups(ast); err != nil {
 		return nil, err
 	}
@@ -538,6 +540,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
+	e.rewriteDruidMVDFilteredGroupBy(ast)
+
 	if err := e.rewriteDruidGroups(ast); err != nil {
 		return "", err
 	}
@@ -631,6 +635,8 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 			return nil, err
 		}
+
+		e.rewriteDruidMVDFilteredGroupBy(ast)
 
 		sql, args, err := ast.SQL()
 		if err != nil {

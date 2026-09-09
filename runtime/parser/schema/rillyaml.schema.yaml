@@ -157,6 +157,12 @@ allOf:
           rill.metrics.exactify_druid_topn:
             type: boolean
             description: "Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false."
+          rill.metrics.druid_mvd_filtered_group_by:
+            type: boolean
+            description: "Narrow unnested (multi-value) dimensions to the filtered values when grouping in Druid, so results contain only the filtered values rather than every value co-occurring in matching rows. Default: false."
+          rill.metrics.druid_mvd_filtered_search:
+            type: boolean
+            description: "Extends rill.metrics.druid_mvd_filtered_group_by to dimension search (ILIKE filters) using MV_FILTER_REGEX. Requires Druid 35.0.0 or newer. Default: false."
           rill.metrics.timeseries_null_filling_implementation:
             type: string
             description: "Null-filling implementation for timeseries queries. One of `none`, `new`, or `pushdown`. Default: `pushdown`."
