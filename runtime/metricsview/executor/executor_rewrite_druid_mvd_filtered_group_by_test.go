@@ -111,34 +111,28 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			want:       map[string]druidMVDRestriction{"tags": values("a")},
 		},
 		{
-			name:       "several IN filters on one dim are intersected, nested ANDs are flattened",
+			name:       "several IN filters on one dim: the shortest list is used, nested ANDs are flattened",
 			dimensions: dims("tags"),
-			where:      and(and(in("tags", "a", "b", "c"), eq("city", "NYC")), in("tags", "c", "a", "z")),
-			want:       map[string]druidMVDRestriction{"tags": values("a", "c")},
+			where:      and(and(in("tags", "a", "b", "c"), eq("city", "NYC")), in("tags", "c", "a")),
+			want:       map[string]druidMVDRestriction{"tags": values("c", "a")},
 		},
 		{
-			name:       "IN and ILIKE on one dim: the allow list is filtered by the regex",
+			name:       "disjoint IN filters on one dim are not combined; the first (shortest) is used",
 			dimensions: dims("tags"),
-			where:      and(in("tags", "apple", "banana", "Pineapple"), ilike("tags", "%APPLE%")),
-			want:       map[string]druidMVDRestriction{"tags": values("apple", "Pineapple")},
+			where:      and(in("tags", "a"), in("tags", "b")),
+			want:       map[string]druidMVDRestriction{"tags": values("a")},
 		},
 		{
-			name:       "IN and ILIKE on one dim with nothing in common is dropped",
+			name:       "IN and ILIKE on one dim: the allow list is used and the regex ignored",
 			dimensions: dims("tags"),
-			where:      and(in("tags", "a"), ilike("tags", "%foo%")),
-			want:       nil,
+			where:      and(ilike("tags", "%APPLE%"), in("tags", "apple", "banana", "Pineapple")),
+			want:       map[string]druidMVDRestriction{"tags": values("apple", "banana", "Pineapple")},
 		},
 		{
 			name:       "two ILIKE filters on one dim: only the first is applied",
 			dimensions: dims("tags"),
 			where:      and(ilike("tags", "%foo%"), ilike("tags", "%bar%")),
 			want:       map[string]druidMVDRestriction{"tags": regex("^(?i).*foo.*$")},
-		},
-		{
-			name:       "empty intersection is dropped",
-			dimensions: dims("tags"),
-			where:      and(in("tags", "a"), in("tags", "b")),
-			want:       nil,
 		},
 		{
 			name:       "exclusion filters are ignored",
@@ -347,4 +341,36 @@ func TestDruidMVDFilteredGroupBySQLComparison(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, strings.Count(sql, `MV_FILTER_ONLY("tags", ARRAY['a'])`), "generated SQL: %s", sql)
 	require.Equal(t, 2, strings.Count(sql, `("tags") IN (?)`), "generated SQL: %s", sql)
+}
+
+// TestDruidMVDFilteredGroupBySQLSpine checks that the base select and the spine select, which share one DimFields slice in the AST, are each narrowed exactly once.
+func TestDruidMVDFilteredGroupBySQLSpine(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table: "events",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "tags", Column: "tags", Unnest: true},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+	in := func(vals ...any) *metricsview.Expression {
+		return &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorIn, Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: vals}}}}
+	}
+	qry := &metricsview.Query{
+		MetricsView: "mv",
+		Dimensions:  []metricsview.Dimension{{Name: "tags"}},
+		Measures:    []metricsview.Measure{{Name: "count"}},
+		Where:       in("a"),
+		Spine:       &metricsview.Spine{Where: &metricsview.WhereSpine{Expression: in("a", "b")}},
+	}
+
+	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
+	require.NoError(t, err)
+	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
+
+	sql, _, err := ast.SQL()
+	require.NoError(t, err)
+	require.Equal(t, 2, strings.Count(sql, `MV_FILTER_ONLY("tags", ARRAY['a'])`), "generated SQL: %s", sql)
+	require.NotContains(t, sql, `MV_FILTER_ONLY(MV_FILTER_ONLY`, "generated SQL: %s", sql)
 }

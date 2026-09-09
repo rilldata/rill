@@ -2,7 +2,7 @@ package executor
 
 import (
 	"fmt"
-	"regexp"
+	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -21,8 +21,12 @@ import (
 // Druid plans these as a filtered virtual column on the dimension, so the group-by emits only the allowed values while the row filter on the raw column keeps using its index.
 // Re-applying the filter to the grouped output instead does not work: Druid's planner pushes a filter on a group key back below the aggregation, where it regains the "array contains" semantics.
 //
-// Only top-level conjuncts of the WHERE clause are used, since every matching row is guaranteed to satisfy them; a filter under an OR could leave a row with no allowed value at all.
+// The narrowing is sound only if every row that passes the WHERE clause is guaranteed to keep at least one value; otherwise the row's measures would be dropped or attributed to NULL.
+// A single top-level conjunct of the WHERE clause gives that guarantee: every matching row contains a value satisfying it.
+// Combining conjuncts does not, since `tags IN ('a','b') AND tags IN ('b','c')` is satisfied by a row containing ['a','c'] through different elements.
+// So exactly one conjunct is used per dimension, and a filter under an OR is never used.
 // Only `IN`, `=` and `ILIKE` filters with string values are narrowed, and only for dimensions backed by a plain column, since the MV_FILTER functions require a direct column reference.
+// Exclusion filters need no counterpart: a row containing an excluded value is excluded as a whole, so nothing leaks from them.
 func (e *Executor) rewriteDruidMVDFilteredGroupBy(ast *metricsview.AST) {
 	if !e.instanceCfg.MetricsDruidMVDFilteredGroupBy {
 		return
@@ -46,8 +50,8 @@ type druidMVDRestriction struct {
 }
 
 // druidMVDRestrictions returns, for each unnested dimension in the query's GROUP BY, the restriction implied by the query's filter, if any.
-// The restrictions are taken from the top-level conjuncts of the WHERE clause of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
-// Several conjuncts on one dimension are combined as far as a single MV_FILTER call can express: allow lists are intersected, and an allow list is filtered by any regexes.
+// The restriction comes from a single top-level conjunct of the WHERE clause of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
+// If several conjuncts qualify, the shortest allow list is used, or the first regex if there is no allow list; see rewriteDruidMVDFilteredGroupBy for why they are not combined.
 // Dimensions without such a filter, or not backed by a plain column, are omitted.
 func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query, includeRegex bool) map[string]druidMVDRestriction {
 	if qry.Rows || qry.Where == nil {
@@ -72,55 +76,22 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query,
 		return nil
 	}
 
-	// Collect the allow lists and regexes per dimension.
-	allowLists := make(map[string][]string)
-	regexes := make(map[string][]string)
+	res := make(map[string]druidMVDRestriction)
 	for _, conj := range topLevelConjuncts(qry.Where) {
 		dim, vals, regex, ok := mvdRestrictionFromConjunct(conj)
 		if !ok || !eligible[dim] {
 			continue
 		}
-		if regex != "" {
-			if includeRegex {
-				regexes[dim] = append(regexes[dim], regex)
-			}
-			continue
-		}
-		if prev, ok := allowLists[dim]; ok {
-			vals = intersectStrings(prev, vals)
-		}
-		allowLists[dim] = vals
-	}
-
-	res := make(map[string]druidMVDRestriction)
-	for dim := range eligible {
-		vals, hasVals := allowLists[dim]
-		rxs := regexes[dim]
+		prev, hasPrev := res[dim]
 		switch {
-		case hasVals:
-			// Narrow the allow list by the regexes here rather than in Druid, since MV_FILTER calls cannot be nested (they require a direct column reference).
-			// The regexes are of the simple form produced by LikePatternToRegex, which Go and Druid (Java) interpret alike.
-			// A regex Go cannot compile is skipped; the allow list alone is still a safe superset.
-			for _, rx := range rxs {
-				re, err := regexp.Compile(rx)
-				if err != nil {
-					continue
-				}
-				var kept []string
-				for _, v := range vals {
-					if re.MatchString(v) {
-						kept = append(kept, v)
-					}
-				}
-				vals = kept
+		case regex != "":
+			// A regex only applies if enabled, and never replaces an allow list or an earlier regex.
+			if includeRegex && !hasPrev {
+				res[dim] = druidMVDRestriction{regex: regex}
 			}
-			// An empty allow list means the filter cannot match any row; leave the dimension alone rather than emit an empty ARRAY.
-			if len(vals) > 0 {
-				res[dim] = druidMVDRestriction{values: vals}
-			}
-		case len(rxs) > 0:
-			// Only one regex can be applied. Any single top-level conjunct is a safe restriction on its own, so the first one is used and the others are left to leak.
-			res[dim] = druidMVDRestriction{regex: rxs[0]}
+		case !hasPrev || prev.regex != "" || len(vals) < len(prev.values):
+			// An allow list replaces a regex, and a shorter allow list replaces a longer one.
+			res[dim] = druidMVDRestriction{values: vals}
 		}
 	}
 	return res
@@ -134,6 +105,9 @@ func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions map[strin
 	}
 
 	if n.FromTable != nil {
+		// The AST shares one DimFields slice between the base select and the spine select, so clone it before mutating.
+		// Otherwise the second node to be visited would wrap the already wrapped expression again.
+		n.DimFields = slices.Clone(n.DimFields)
 		for i := range n.DimFields {
 			f := &n.DimFields[i]
 			r, ok := restrictions[f.Name]
@@ -242,19 +216,4 @@ func mvdRestrictionFromConjunct(expr *metricsview.Expression) (dim string, vals 
 		vals[i] = s
 	}
 	return left.Name, vals, "", true
-}
-
-// intersectStrings returns the values of a that are also in b, in the order of a.
-func intersectStrings(a, b []string) []string {
-	inB := make(map[string]bool, len(b))
-	for _, v := range b {
-		inB[v] = true
-	}
-	var res []string
-	for _, v := range a {
-		if inB[v] {
-			res = append(res, v)
-		}
-	}
-	return res
 }
