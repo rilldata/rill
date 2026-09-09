@@ -40,7 +40,7 @@ export type ComboChartSpec = {
   metrics_view: string;
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; measure fields may name them.
-  calculated_measures?: EphemeralMeasureSpec[];
+  adhoc_measures?: EphemeralMeasureSpec[];
   x?: FieldConfig<"nominal" | "time">;
   y1?: FieldConfig<"quantitative" | "mark">;
   y2?: FieldConfig<"quantitative" | "mark">;

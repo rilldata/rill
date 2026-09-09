@@ -193,7 +193,7 @@ export interface CommonChartProperties {
   metrics_view: string;
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; measure fields may name them.
-  calculated_measures?: EphemeralMeasureSpec[];
+  adhoc_measures?: EphemeralMeasureSpec[];
   tooltip?: FieldConfig;
   vl_config?: string;
 }

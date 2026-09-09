@@ -78,7 +78,7 @@
   );
 
   let ephemeralMeasures = $derived(
-    ephemeralSpecsToDefs(leaderboardProperties.calculated_measures),
+    ephemeralSpecsToDefs(leaderboardProperties.adhoc_measures),
   );
   let allMeasuresWithEphemeral = $derived(
     appendEphemeralSpecMeasures($allMeasures, ephemeralMeasures),

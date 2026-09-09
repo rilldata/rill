@@ -44,7 +44,7 @@ export type CircularChartSpec = {
   metrics_view: string;
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; measure fields may name them.
-  calculated_measures?: EphemeralMeasureSpec[];
+  adhoc_measures?: EphemeralMeasureSpec[];
   measure?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal">;
   innerRadius?: number;

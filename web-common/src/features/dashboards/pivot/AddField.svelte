@@ -19,6 +19,7 @@
 
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import CreateEphemeralMeasureButton from "../ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
   import { appendChipsToZone, splitTagItems } from "./pivot-utils";
 
@@ -198,18 +199,10 @@
         if (def) ephemeralMeasureDialog.set({ def });
       }}
     >
-      <button
+      <CreateEphemeralMeasureButton
         slot="action"
-        class="create-ephemeral-measure"
-        type="button"
-        on:click={() => {
-          open = false;
-          ephemeralMeasureDialog.set({});
-        }}
-      >
-        <Add size="14px" />
-        {m.dashboard_pivot_ephemeral_create()}
-      </button>
+        onOpen={() => (open = false)}
+      />
     </SearchableMenuContent>
   {:else}
     <SearchableMenuContent
@@ -237,14 +230,5 @@
   button:active,
   .active {
     @apply bg-surface-active;
-  }
-
-  .create-ephemeral-measure {
-    @apply flex w-full items-center gap-x-1.5 rounded-none border-none bg-transparent;
-    @apply h-7 px-2 text-xs text-fg-primary;
-  }
-
-  .create-ephemeral-measure:hover {
-    @apply bg-surface-hover;
   }
 </style>

@@ -32,7 +32,7 @@ export function validateLeaderboardSchema(
   }
 
   const ephemeralMeasureNames = new Set(
-    leaderboardSpec?.calculated_measures?.map((c) => c.name) ?? [],
+    leaderboardSpec?.adhoc_measures?.map((c) => c.name) ?? [],
   );
   const allMeasures = [
     ...(metricsView?.measures?.map((m) => m.name as string) || []),

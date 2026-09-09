@@ -209,9 +209,7 @@ export function processPivot(
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
 
-  const ephemeralMeasures = ephemeralSpecsToDefs(
-    $tableSpec?.calculated_measures,
-  );
+  const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
 
   const config: PivotDataStoreConfig = {
@@ -299,9 +297,7 @@ export function processFlat(
   }
 
   const columns = $tableSpec?.columns || [];
-  const ephemeralMeasures = ephemeralSpecsToDefs(
-    $tableSpec?.calculated_measures,
-  );
+  const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
   const allMeasureNames = [
     ...(metricsView?.measures?.map((m) => m.name as string) || []),

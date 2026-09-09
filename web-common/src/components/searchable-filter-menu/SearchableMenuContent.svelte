@@ -98,14 +98,10 @@
               class="text-xs cursor-pointer"
               disabled={requireSelection && singleSelection && selected}
               aria-disabled={requireSelection && singleSelection && selected}
-              onclick={() => {
+              onCheckedChange={() => {
                 if (requireSelection && singleSelection && selected) return;
 
-                // Deferred so the checkbox's own toggle handler (which runs
-                // after this chained handler) cannot overwrite the state
-                // derived from the selection update. See the item state
-                // getting stuck when the update flushes synchronously.
-                queueMicrotask(() => onSelect(name));
+                onSelect(name);
               }}
             >
               <span
@@ -197,25 +193,28 @@
     {/each}
   </div>
 
-  {#if (allowSelectAll && allowMultiSelect) || $$slots.action}
+  {#if allowSelectAll && allowMultiSelect}
     <footer>
-      {#if allowSelectAll && allowMultiSelect}
-        <Button onClick={onToggleSelectAll} type="tertiary">
-          {#if allSelected}
-            {m.common_deselect_all()}
-          {:else}
-            {m.common_select_all()}
-          {/if}
-        </Button>
-      {/if}
+      <Button onClick={onToggleSelectAll} type="tertiary">
+        {#if allSelected}
+          {m.common_deselect_all()}
+        {:else}
+          {m.common_select_all()}
+        {/if}
+      </Button>
 
-      <slot name="action" />
-      {#if allowSelectAll && allowMultiSelect && numSelectedNotShown && showHiddenSelectionsCount}
+      {#if numSelectedNotShown && showHiddenSelectionsCount}
         <div class="ui-label">
           {m.common_other_values_selected({ count: numSelectedNotShown })}
         </div>
       {/if}
     </footer>
+  {/if}
+
+  {#if $$slots.action}
+    <div class="flex-none border-t border-border">
+      <slot name="action" />
+    </div>
   {/if}
 </DropdownMenu.Content>
 

@@ -6,6 +6,8 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
@@ -41,6 +43,9 @@ export type AlertFormValues = {
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
   exploreName: string;
+  // Definitions for the dashboard's ephemeral measures, so an alert can be
+  // built on one: the saved query embeds the expression it needs.
+  ephemeralMeasures?: EphemeralMeasureDef[];
 } & ReturnType<typeof getInitialScheduleFormValues>;
 
 export function getAlertQueryArgsFromFormValues(
@@ -60,35 +65,45 @@ export function getAlertQueryArgsFromFormValues(
     timeRange,
   );
 
+  // Comparison and percent-of-total computes resolve their referenced measure
+  // against the metrics view, so they cannot be built on an ephemeral measure.
+  const isEphemeralMeasure = !!formValues.ephemeralMeasures?.some(
+    (def) => def.name === formValues.measure,
+  );
+
   return {
     metricsView: formValues.metricsViewName,
-    measures: [
-      {
-        name: formValues.measure,
-      },
-      ...(comparisonTimeRange
-        ? [
-            {
-              name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
-              comparisonDelta: { measure: formValues.measure },
-            },
-            {
-              name: formValues.measure + ComparisonDeltaRelativeSuffix,
-              comparisonRatio: { measure: formValues.measure },
-            },
-          ]
-        : []),
-      ...(formValues.criteria.some(
-        (c) => c.type === MeasureFilterType.PercentOfTotal,
-      )
-        ? [
-            {
-              name: formValues.measure + ComparisonPercentOfTotal,
-              percentOfTotal: { measure: formValues.measure },
-            },
-          ]
-        : []),
-    ],
+    measures: mapEphemeralMeasuresForRequest(
+      [
+        {
+          name: formValues.measure,
+        },
+        ...(comparisonTimeRange && !isEphemeralMeasure
+          ? [
+              {
+                name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
+                comparisonDelta: { measure: formValues.measure },
+              },
+              {
+                name: formValues.measure + ComparisonDeltaRelativeSuffix,
+                comparisonRatio: { measure: formValues.measure },
+              },
+            ]
+          : []),
+        ...(!isEphemeralMeasure &&
+        formValues.criteria.some(
+          (c) => c.type === MeasureFilterType.PercentOfTotal,
+        )
+          ? [
+              {
+                name: formValues.measure + ComparisonPercentOfTotal,
+                percentOfTotal: { measure: formValues.measure },
+              },
+            ]
+          : []),
+      ],
+      formValues.ephemeralMeasures,
+    ),
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],

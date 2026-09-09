@@ -241,7 +241,6 @@
         />
         <SearchableFilterChip
           label={selectedMeasureLabel}
-          fx={ephemeralDefsByName.has(expandedMeasureName)}
           onSelect={switchMeasure}
           onEditItem={(name) => {
             const def = ephemeralDefsByName.get(name);
@@ -250,7 +249,13 @@
           selectableItems={selectableMeasures}
           selectedItems={[expandedMeasureName]}
           tooltipText="Choose a measure to display"
-        />
+        >
+          <svelte:fragment slot="additional-label">
+            {#if ephemeralDefsByName.has(expandedMeasureName)}
+              <span class="flex-none text-[10px] font-semibold italic">ƒx</span>
+            {/if}
+          </svelte:fragment>
+        </SearchableFilterChip>
       </div>
     </div>
 

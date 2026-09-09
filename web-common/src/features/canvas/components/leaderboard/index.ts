@@ -45,7 +45,7 @@ export interface LeaderboardSpec
   metrics_view: string;
   measures: string[];
   // Ad-hoc measures derived from existing measures via an arithmetic expression.
-  calculated_measures?: EphemeralMeasureSpec[];
+  adhoc_measures?: EphemeralMeasureSpec[];
   dimensions: string[];
   num_rows: number;
 }
@@ -53,7 +53,7 @@ export interface LeaderboardSpec
 export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
   minSize = { width: 3, height: 3 };
   defaultSize = { width: 6, height: 3 };
-  resetParams = ["measures", "dimensions", "calculated_measures"];
+  resetParams = ["measures", "dimensions", "adhoc_measures"];
   type: CanvasComponentType = "leaderboard";
   component = Leaderboard;
   leaderboardState: Writable<LeaderboardState>;
@@ -110,8 +110,8 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
           meta: { allowedTypes: ["measure"] },
           label: m.canvas_measures_label(),
         },
-        calculated_measures: {
-          type: "calculated_measures",
+        adhoc_measures: {
+          type: "adhoc_measures",
           label: m.canvas_ephemeral_measures_label(),
           optional: true,
           // Managed through the measures selector's create/edit dialog.

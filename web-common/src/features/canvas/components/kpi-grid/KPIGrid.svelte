@@ -23,7 +23,7 @@
   $: kpis = (kpiGridProperties.measures || []).map((measure) => ({
     metrics_view: kpiGridProperties.metrics_view,
     measure,
-    calculated_measures: kpiGridProperties.calculated_measures,
+    adhoc_measures: kpiGridProperties.adhoc_measures,
     sparkline: kpiGridProperties.sparkline,
     hide_time_range: kpiGridProperties.hide_time_range,
     comparison: kpiGridProperties.comparison,

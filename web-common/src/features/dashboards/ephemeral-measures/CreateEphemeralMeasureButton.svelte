@@ -5,6 +5,9 @@
 
   // Optional hook so menus can close themselves before the dialog opens.
   export let onOpen: (() => void) | undefined = undefined;
+  // Canvas keeps its definitions on the component spec, so it opens its own
+  // editor instead of the dashboard-wide dialog.
+  export let onCreate: () => void = () => ephemeralMeasureDialog.set({});
 </script>
 
 <button
@@ -12,7 +15,7 @@
   type="button"
   on:click={() => {
     onOpen?.();
-    ephemeralMeasureDialog.set({});
+    onCreate();
   }}
 >
   <Add size="14px" />
@@ -22,7 +25,7 @@
 <style lang="postcss">
   .create-ephemeral-measure {
     @apply flex w-full items-center gap-x-1.5;
-    @apply h-7 px-2 text-xs text-fg-primary;
+    @apply h-9 px-2 text-xs text-fg-primary;
   }
 
   .create-ephemeral-measure:hover {

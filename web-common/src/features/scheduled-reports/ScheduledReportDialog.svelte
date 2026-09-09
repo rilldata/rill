@@ -157,6 +157,13 @@
         : {}
   ) as V1MetricsViewAggregationRequest;
 
+  // The explore state only exists on the explore page (create mode);
+  // an edited report carries its definitions in the saved request.
+  $: ephemeralMeasures =
+    props.mode === "edit"
+      ? ephemeralDefsFromRequestMeasures(aggregationRequest.measures)
+      : $exploreStateStore?.ephemeralMeasures;
+
   let filters: ExpressionFilterManager | undefined;
   let timeControls: TimeControls | undefined;
   let cleanup: (() => void) | undefined = undefined;
@@ -350,12 +357,7 @@
           columns: values.columns,
           showTimeComparison: timeControlsState.showTimeComparison,
           selectedTimezone: timeControlsState.selectedTimezone,
-          // The explore state only exists on the explore page (create mode);
-          // an edited report carries its definitions in the saved request.
-          ephemeralMeasures:
-            props.mode === "edit"
-              ? ephemeralDefsFromRequestMeasures(aggregationRequest.measures)
-              : $exploreStateStore?.ephemeralMeasures,
+          ephemeralMeasures,
         }),
       ],
     );
@@ -455,6 +457,7 @@
       {canvasStateOverride}
       {filters}
       {timeControls}
+      {ephemeralMeasures}
     />
 
     {#if generalErrors}

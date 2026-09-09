@@ -9,10 +9,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { CommonChartProperties } from "./types";
 
-type EphemeralMeasureCarrier = Pick<
-  CommonChartProperties,
-  "calculated_measures"
->;
+type EphemeralMeasureCarrier = Pick<CommonChartProperties, "adhoc_measures">;
 
 /**
  * Attaches the `expression` compute to request measures whose name matches one
@@ -24,7 +21,7 @@ export function withEphemeralMeasures(
 ): V1MetricsViewAggregationMeasure[] {
   return mapEphemeralMeasuresForRequest(
     measures,
-    ephemeralSpecsToDefs(config.calculated_measures),
+    ephemeralSpecsToDefs(config.adhoc_measures),
   );
 }
 
@@ -35,8 +32,7 @@ export function chartEphemeralMeasureNames(
   config: EphemeralMeasureCarrier,
 ): Set<string> {
   return new Set(
-    ephemeralSpecsToDefs(config.calculated_measures)?.map((def) => def.name) ??
-      [],
+    ephemeralSpecsToDefs(config.adhoc_measures)?.map((def) => def.name) ?? [],
   );
 }
 
@@ -49,7 +45,7 @@ export function resolveEphemeralMeasureSpec(
   config: EphemeralMeasureCarrier,
   name: string,
 ): MetricsViewSpecMeasure | undefined {
-  const def = ephemeralSpecsToDefs(config.calculated_measures)?.find(
+  const def = ephemeralSpecsToDefs(config.adhoc_measures)?.find(
     (d) => d.name === name,
   );
   return def ? ephemeralMeasureToSpecMeasure(def) : undefined;

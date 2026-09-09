@@ -26,23 +26,13 @@ export function getNewAlertInitialFormValues(
     ? (exploreState.selectedComparisonDimension ?? "")
     : (exploreState.selectedDimensionName ?? "");
 
-  // Ephemeral measures cannot back an alert: the saved query has
-  // no definition to resolve the name against. Fall back to no prefill.
-  const ephemeralMeasureNames = new Set(
-    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
-  );
-  const preferredMeasure =
+  // Ephemeral measures can back an alert: the saved query embeds the
+  // expression, so the name resolves without the dashboard state.
+  const measure =
     exploreState.tdd?.expandedMeasureName ||
     exploreState.leaderboardSortByMeasureName ||
     "";
-  const measure = ephemeralMeasureNames.has(preferredMeasure)
-    ? ""
-    : preferredMeasure;
-  const criteriaMeasure = ephemeralMeasureNames.has(
-    exploreState.leaderboardSortByMeasureName ?? "",
-  )
-    ? ""
-    : (exploreState.leaderboardSortByMeasureName ?? "");
+  const criteriaMeasure = exploreState.leaderboardSortByMeasureName ?? "";
 
   return {
     name: "",
@@ -68,6 +58,7 @@ export function getNewAlertInitialFormValues(
 
     metricsViewName,
     exploreName: exploreName,
+    ephemeralMeasures: exploreState.ephemeralMeasures,
   };
 }
 

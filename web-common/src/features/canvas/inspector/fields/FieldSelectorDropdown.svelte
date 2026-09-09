@@ -3,10 +3,9 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
+  import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
   import type { FieldType } from "../types";
 
@@ -138,18 +137,11 @@
           }
         : undefined}
     >
-      <button
+      <CreateEphemeralMeasureButton
         slot="action"
-        class="create-ephemeral-measure"
-        type="button"
-        on:click={() => {
-          open = false;
-          onCreateEphemeral?.();
-        }}
-      >
-        <PlusIcon size="14px" />
-        {m.dashboard_pivot_ephemeral_create()}
-      </button>
+        onOpen={() => (open = false)}
+        onCreate={onCreateEphemeral}
+      />
     </SearchableMenuContent>
   {:else}
     <SearchableMenuContent
@@ -172,14 +164,3 @@
     />
   {/if}
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  .create-ephemeral-measure {
-    @apply flex w-full items-center gap-x-1.5 rounded-none border-none bg-transparent;
-    @apply h-7 px-2 text-xs text-fg-primary;
-  }
-
-  .create-ephemeral-measure:hover {
-    @apply bg-surface-hover;
-  }
-</style>

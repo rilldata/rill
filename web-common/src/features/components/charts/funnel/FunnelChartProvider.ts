@@ -41,7 +41,7 @@ export type FunnelChartSpec = {
   metrics_view: string;
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; measure fields may name them.
-  calculated_measures?: EphemeralMeasureSpec[];
+  adhoc_measures?: EphemeralMeasureSpec[];
   breakdownMode?: FunnelBreakdownMode;
   measure?: FieldConfig<"quantitative">;
   stage?: FieldConfig<"nominal">;
