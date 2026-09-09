@@ -300,7 +300,6 @@
 
   <ExpressionFilters
     expressionFilterManager={filters}
-    filteredMeasures={exploreSpec?.measures}
     {timeStart}
     {timeEnd}
     {timeDimension}

@@ -24,15 +24,10 @@
   let canPanLeft = $derived(config.canPanLeft ?? !hidePan);
   let canPanRight = $derived(config.canPanRight ?? !hidePan);
 
-  let timeRangeManager = $derived(timeFilterManager.timeRangeManager);
-  let { timeZone, minDate, maxDate } = $derived(timeRangeManager);
+  let { timeZone, minDate, maxDate } = $derived(timeFilterManager);
 
   let { metricsViewsProvider, yamlConfigProvider } = $derived(
     dashboardConfigProvider,
-  );
-
-  let comparisonTimeRangeManager = $derived(
-    timeFilterManager.comparisonTimeRangeManager,
   );
 
   function onPan() {
@@ -61,7 +56,7 @@
     {/if}
 
     <TimeRangePicker
-      {timeRangeManager}
+      {timeFilterManager}
       {metricsViewsProvider}
       {yamlConfigProvider}
       {context}
@@ -70,8 +65,7 @@
   </div>
 
   <ComparisonTimeRangePicker
-    {timeRangeManager}
-    {comparisonTimeRangeManager}
+    {timeFilterManager}
     {metricsViewsProvider}
     {config}
   />

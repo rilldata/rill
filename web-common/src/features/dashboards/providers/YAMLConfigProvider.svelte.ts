@@ -2,7 +2,10 @@ import {
   type V1ExploreTimeRange,
   type V1Expression,
 } from "@rilldata/web-common/runtime-client";
-import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config.ts";
+import {
+  DEFAULT_TIMEZONE,
+  DEFAULT_TIMEZONES,
+} from "@rilldata/web-common/lib/time/config.ts";
 
 /**
  * A provider for YAML only configuration. These are only mutable during yaml editing.
@@ -20,6 +23,7 @@ export class YAMLConfigProvider {
 
   public defaultTimeRange = $state<string | undefined>(undefined);
   public timeRanges = $state<V1ExploreTimeRange[]>([]);
+  public defaultTimeZone = $state<string>(DEFAULT_TIMEZONE);
   public timeZones = $state<string[]>(DEFAULT_TIMEZONES);
 
   public editable = $state<boolean>(false);
@@ -37,6 +41,7 @@ export class YAMLConfigProvider {
 
     defaultTimeRange,
     timeRanges,
+    defaultTimeZone,
     timeZones,
   }: {
     defaultFilters?: YAMLConfigProvider["defaultFilters"];
@@ -49,6 +54,7 @@ export class YAMLConfigProvider {
 
     defaultTimeRange?: YAMLConfigProvider["defaultTimeRange"];
     timeRanges?: YAMLConfigProvider["timeRanges"];
+    defaultTimeZone?: YAMLConfigProvider["defaultTimeZone"];
     timeZones?: YAMLConfigProvider["timeZones"];
   }) {
     this.defaultFilters = defaultFilters ?? {};
@@ -71,6 +77,7 @@ export class YAMLConfigProvider {
 
     this.defaultTimeRange = defaultTimeRange;
     this.timeRanges = timeRanges ?? [];
+    this.defaultTimeZone = defaultTimeZone ?? DEFAULT_TIMEZONE;
     this.timeZones = timeZones ?? [];
   }
 

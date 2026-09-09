@@ -46,6 +46,7 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
 
         defaultTimeRange: exploreSpec.defaultPreset?.timeRange,
         timeRanges: exploreSpec.timeRanges,
+        defaultTimeZone: exploreSpec.defaultPreset?.timezone,
         timeZones: exploreSpec.timeZones,
       });
     });

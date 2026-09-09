@@ -266,26 +266,19 @@ const metricsViewReducers = {
   syncTimeFilters(name: string, timeFilterManager: TimeFilterManager) {
     if (!name) return;
     updateMetricsExplorerByName(name, (exploreState) => {
+      if (!timeFilterManager.timeRange) return;
+
       exploreState.selectedTimeRange = {
-        name: timeFilterManager.timeRangeManager.timeRange,
-        start:
-          timeFilterManager.timeRangeManager.interval?.start?.toJSDate() ??
-          new Date(),
-        end:
-          timeFilterManager.timeRangeManager.interval?.end?.toJSDate() ??
-          new Date(),
-        interval: timeFilterManager.timeRangeManager.timeGrain,
+        name: timeFilterManager.timeRange,
+        start: timeFilterManager.interval?.start?.toJSDate() ?? new Date(),
+        end: timeFilterManager.interval?.end?.toJSDate() ?? new Date(),
+        interval: timeFilterManager.timeGrain,
       } as any;
-      exploreState.showTimeComparison =
-        timeFilterManager.comparisonTimeRangeManager.showComparison;
+      exploreState.showTimeComparison = timeFilterManager.showComparison;
       exploreState.selectedComparisonTimeRange = {
-        name: timeFilterManager.comparisonTimeRangeManager.comparisonTimeRange,
-        start:
-          timeFilterManager.comparisonTimeRangeManager.interval?.start?.toJSDate() ??
-          new Date(),
-        end:
-          timeFilterManager.comparisonTimeRangeManager.interval?.end?.toJSDate() ??
-          new Date(),
+        name: timeFilterManager.comparisonTimeRange,
+        start: timeFilterManager.interval?.start?.toJSDate() ?? new Date(),
+        end: timeFilterManager.interval?.end?.toJSDate() ?? new Date(),
       };
     });
   },

@@ -10,12 +10,6 @@
   import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
   import TimeFilters from "@rilldata/web-common/features/dashboards/time-controls/TimeFilters.svelte";
 
-  let {
-    hasTimeSeries,
-  }: {
-    hasTimeSeries: boolean;
-  } = $props();
-
   const StateManagers = getStateManagers();
   const {
     exploreName,
@@ -39,14 +33,17 @@
   syncStoreWithSource(
     timeFilterManager,
     syncTimeFilters,
-    () => metricsViewsProvider.ready,
+    () => metricsViewsProvider.ready && timeFilterManager.ready,
     undefined,
     // URL sync is managed by DashboardStateSync
     true,
   );
 
-  let { timeRangeManager } = $derived(timeFilterManager);
-  let { interval } = $derived(timeRangeManager);
+  let {
+    interval,
+    hasTimeSeries,
+    ready: timeControlsReady,
+  } = $derived(timeFilterManager);
 
   const dashboardStateSync = DashboardStateSync.getFromContext();
 
@@ -90,7 +87,9 @@
   }
 
   function syncTimeFilters() {
-    metricsExplorerStore.syncTimeFilters($exploreName, timeFilterManager);
+    if (!timeFilterManager.updating) {
+      metricsExplorerStore.syncTimeFilters($exploreName, timeFilterManager);
+    }
     return Promise.resolve();
   }
 </script>
@@ -110,14 +109,13 @@
     />
   {/if}
 
-  <!-- TODO: timeControlsReady -->
   <ExpressionFilters
     {expressionFilterManager}
     {dashboardConfigProvider}
     timeStart={interval?.start?.toString()}
     timeEnd={interval?.end?.toString()}
     timeDimension={$dashboardStore.selectedTimeDimension}
-    timeControlsReady
+    {timeControlsReady}
     {isUrlTooLongAfterInListFilter}
   />
 </div>

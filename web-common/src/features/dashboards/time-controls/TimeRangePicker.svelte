@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as Popover from "@rilldata/web-common/components/popover";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import type { TimeRangeManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeManager.svelte.ts";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import PrimaryRangeTooltip from "@rilldata/web-common/features/dashboards/time-controls/super-pill/new-time-dropdown/PrimaryRangeTooltip.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -35,15 +34,16 @@
   import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { getTimeDimensionOptions } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils.ts";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   let {
-    timeRangeManager,
+    timeFilterManager,
     metricsViewsProvider,
     yamlConfigProvider,
     context,
     config,
   }: {
-    timeRangeManager: TimeRangeManager;
+    timeFilterManager: TimeFilterManager;
     metricsViewsProvider: MetricsViewsProvider;
     yamlConfigProvider: YAMLConfigProvider;
     context: string;
@@ -72,7 +72,7 @@
     truncationGrain,
     ref,
     snapToEnd,
-  } = $derived(timeRangeManager);
+  } = $derived(timeFilterManager);
 
   let { smallestTimeGrain, maxQueryTimeRange } = $derived(metricsViewsProvider);
 
@@ -145,19 +145,19 @@
 
   function onSelectRange(range: string, ignoreSnap?: boolean) {
     open = false;
-    void timeRangeManager.onSelectRange(range, ignoreSnap);
+    void timeFilterManager.onSelectRange(range, ignoreSnap);
   }
 
   function onSelectTimeZone(zone: string) {
     open = false;
     timeZonePickerOpen = false;
-    timeRangeManager.onSelectZone(zone);
+    timeFilterManager.onSelectZone(zone);
   }
 
   function onSelectTimeDimension(dim: string) {
     open = false;
     timeAxisPickerOpen = false;
-    timeRangeManager.onSelectTimeDimension(dim);
+    timeFilterManager.onSelectTimeDimension(dim);
   }
 </script>
 
@@ -477,12 +477,12 @@
     {snapToEnd}
     {ref}
     zone={timeZone}
-    onSelectEnding={(g) => timeRangeManager.onSelectGrain(g)}
+    onSelectEnding={(g) => timeFilterManager.onSelectGrain(g)}
     onToggleAlignment={(inclusive) => {
-      timeRangeManager.onSelectAsOfOption(ref, inclusive);
+      timeFilterManager.onSelectAsOfOption(ref, inclusive);
     }}
     onSelectAsOfOption={(o) => {
-      timeRangeManager.onSelectAsOfOption(o, snapToEnd);
+      timeFilterManager.onSelectAsOfOption(o, snapToEnd);
     }}
   />
 {/if}

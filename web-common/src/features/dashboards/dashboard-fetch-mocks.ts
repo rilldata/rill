@@ -170,6 +170,21 @@ export class DashboardFetchMocks {
     );
   }
 
+  /**
+   * Mocks the intervals MetricsViewTimeRanges resolves rilltime expressions to, keyed by expression.
+   * The runtime does the resolving, so a test states the interval it expects for every expression
+   * its interactions can produce.
+   */
+  public mockResolvedRillTimes(
+    metricsViewName: string,
+    resolvedRillTimes: Record<string, { start: string; end: string }>,
+  ) {
+    this.responses.set(
+      `queries__metrics-views__resolved-rill-times__${metricsViewName}`,
+      resolvedRillTimes,
+    );
+  }
+
   private async fetchMock(url: string, body: string | Uint8Array | undefined) {
     const u = new URL(url);
 
@@ -281,6 +296,31 @@ export class DashboardFetchMocks {
       } else {
         responseData = stored;
       }
+    } else if (
+      service === "QueryService" &&
+      method === "MetricsViewTimeRanges"
+    ) {
+      const resolvedRillTimes: Record<string, { start: string; end: string }> =
+        this.responses.get(
+          `queries__metrics-views__resolved-rill-times__${parsed.metricsViewName}`,
+        ) ?? {};
+      const expressions: string[] = parsed.expressions ?? [];
+      responseData = {
+        resolvedTimeRanges: expressions
+          .map((expression) => {
+            const resolved = resolvedRillTimes[expression];
+            if (!resolved) {
+              // The caller treats a missing range as an unresolvable expression, which surfaces as
+              // a time range that never changes rather than as an error, so say so here.
+              console.error(
+                `No resolved interval mocked for rilltime expression "${expression}"`,
+              );
+              return undefined;
+            }
+            return { expression, ...resolved };
+          })
+          .filter(Boolean),
+      };
     } else if (
       service === "QueryService" &&
       method === "MetricsViewAggregation"

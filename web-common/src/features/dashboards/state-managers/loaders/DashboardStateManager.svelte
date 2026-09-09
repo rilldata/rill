@@ -35,7 +35,7 @@
   const client = useRuntimeClient();
 
   const StateManagers = getStateManagers();
-  const { expressionFilterManager } = StateManagers;
+  const { expressionFilterManager, timeFilterManager } = StateManagers;
 
   $: exploreSpecQuery = useExploreValidSpec(client, exploreName);
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
@@ -61,6 +61,7 @@
       storageNamespacePrefix,
       dataLoader,
       expressionFilterManager,
+      timeFilterManager,
     );
   }
 

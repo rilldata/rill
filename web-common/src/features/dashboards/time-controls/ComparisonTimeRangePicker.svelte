@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import type { TimeRangeManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeManager.svelte.ts";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -15,18 +14,16 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
   import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-  import { ComparisonTimeRangeManager } from "@rilldata/web-common/features/dashboards/time-controls/ComparisonTimeRangeManager.svelte.ts";
   import type { Interval } from "luxon";
   import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   let {
-    timeRangeManager,
-    comparisonTimeRangeManager,
+    timeFilterManager,
     metricsViewsProvider,
     config,
   }: {
-    timeRangeManager: TimeRangeManager;
-    comparisonTimeRangeManager: ComparisonTimeRangeManager;
+    timeFilterManager: TimeFilterManager;
     metricsViewsProvider: MetricsViewsProvider;
     config: TimeFiltersConfig;
   } = $props();
@@ -36,14 +33,17 @@
     side = "bottom",
   } = $derived(config);
 
-  let { timeRange, timeGrain, timeZone, minDate, maxDate } =
-    $derived(timeRangeManager);
   let {
+    timeRange,
+    timeGrain,
+    timeZone,
+    minDate,
+    maxDate,
     comparisonTimeRange,
     showComparison,
     comparisonTimeRangeOptions,
-    interval,
-  } = $derived(comparisonTimeRangeManager);
+    comparisonInterval,
+  } = $derived(timeFilterManager);
 
   let { smallestTimeGrain } = $derived(metricsViewsProvider);
 
@@ -67,7 +67,7 @@
 
   function onSelectComparisonRange(range: string) {
     open = false;
-    comparisonTimeRangeManager.onSelectComparisonRange(range);
+    timeFilterManager.onSelectComparisonRange(range);
   }
 </script>
 
@@ -78,7 +78,7 @@
   <button
     {disabled}
     class="flex gap-x-1.5 cursor-pointer"
-    onclick={() => comparisonTimeRangeManager.onToggleShowComparison()}
+    onclick={() => timeFilterManager.onToggleShowComparison()}
     type="button"
     aria-label={m.dashboard_toggle_time_comparison_aria()}
   >
@@ -95,7 +95,7 @@
       </Label>
     </div>
   </button>
-  {#if timeGrain && interval}
+  {#if timeGrain && comparisonInterval}
     <DropdownMenu.Root
       bind:open
       onOpenChange={() => {
@@ -119,8 +119,8 @@
                 <p>{m.time_no_comparison_period()}</p>
               {:else}
                 <b class="line-clamp-1">{label}</b>
-                {#if interval?.isValid && showFullRange}
-                  <RangeDisplay {interval} {timeGrain} />
+                {#if comparisonInterval?.isValid && showFullRange}
+                  <RangeDisplay interval={comparisonInterval} {timeGrain} />
                 {/if}
               {/if}
             </div>
@@ -176,14 +176,14 @@
           </div>
           {#if showSelector}
             <div class="bg-surface-background flex flex-col w-60 p-3">
-              {#if !interval || interval?.isValid}
+              {#if !comparisonInterval || comparisonInterval?.isValid}
                 <CalendarPlusDateInput
                   minTimeGrain={V1TimeGrainToDateTimeUnit[
                     smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
                   ]}
                   {maxDate}
                   {minDate}
-                  {interval}
+                  interval={comparisonInterval}
                   zone={timeZone}
                   onApply={applyCustomRange}
                   closeMenu={() => (open = false)}
