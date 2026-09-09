@@ -36,11 +36,21 @@ func (e *Executor) rewriteDruidMVDFilteredGroupBy(ast *metricsview.AST) {
 		return
 	}
 
-	restrictions := druidMVDRestrictions(ast.MetricsView, ast.Query, e.instanceCfg.MetricsDruidMVDFilteredSearch)
-	if len(restrictions) == 0 {
+	// A raw rows query has no GROUP BY to narrow.
+	if ast.Query.Rows {
 		return
 	}
-	applyDruidMVDRestrictions(ast.Root, restrictions)
+
+	restrictions := druidMVDRestrictions(ast.MetricsView, ast.Query.Dimensions, ast.Query.Where, e.instanceCfg.MetricsDruidMVDFilteredSearch)
+	// The spine select has its own filter (Query.Spine.Where), independent of the query's WHERE clause, and exists to keep values the WHERE clause may exclude.
+	var spineRestrictions map[string]druidMVDRestriction
+	if ast.Query.Spine != nil && ast.Query.Spine.Where != nil {
+		spineRestrictions = druidMVDRestrictions(ast.MetricsView, ast.Query.Dimensions, ast.Query.Spine.Where.Expression, e.instanceCfg.MetricsDruidMVDFilteredSearch)
+	}
+	if len(restrictions) == 0 && len(spineRestrictions) == 0 {
+		return
+	}
+	applyDruidMVDRestrictions(ast.Root, restrictions, spineRestrictions)
 }
 
 // druidMVDRestriction describes the values a group-by on an unnested dimension may emit: either an explicit allow list or a regex the values must match.
@@ -50,21 +60,21 @@ type druidMVDRestriction struct {
 	regex  string
 }
 
-// druidMVDRestrictions returns, for each unnested dimension in the query's GROUP BY, the restriction implied by the query's filter, if any.
-// The restriction comes from the top-level conjuncts of the WHERE clause of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
+// druidMVDRestrictions returns, for each unnested dimension in dims, the restriction implied by the given filter, if any.
+// The restriction comes from the top-level conjuncts of the filter of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
 // If several conjuncts qualify, the first regex is used if there is one (a search must return values matching the search text).
 // Otherwise the allow lists are merged: if one list is a subset of the other it refines it and the subset is used (e.g. the values added by rewriteQueryDruidExactify), else the union is used so that every value the filter names is kept.
 // See rewriteDruidMVDFilteredGroupBy for why the lists are never intersected.
 // Dimensions without such a filter are omitted.
-func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query, includeRegex bool) map[string]druidMVDRestriction {
-	if qry.Rows || qry.Where == nil {
+func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dimension, where *metricsview.Expression, includeRegex bool) map[string]druidMVDRestriction {
+	if where == nil {
 		return nil
 	}
 
 	// Find the unnested dimensions that the query groups by.
 	// Computed dimensions (e.g. time floors) are skipped since their name does not refer to a metrics view dimension.
 	eligible := make(map[string]bool)
-	for _, qd := range qry.Dimensions {
+	for _, qd := range dims {
 		if qd.Compute != nil {
 			continue
 		}
@@ -80,7 +90,7 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query,
 	}
 
 	res := make(map[string]druidMVDRestriction)
-	for _, conj := range topLevelConjuncts(qry.Where) {
+	for _, conj := range topLevelConjuncts(where) {
 		dim, vals, regex, ok := mvdRestrictionFromConjunct(conj)
 		if !ok || !eligible[dim] {
 			continue
@@ -106,12 +116,13 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query,
 
 // applyDruidMVDRestrictions wraps the given dimensions in MV_FILTER_ONLY or MV_FILTER_REGEX in every select node that reads directly from the underlying table.
 // Only the projected expression changes; the GROUP BY refers to it by ordinal and the WHERE clause has already been compiled against the raw column.
-func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions map[string]druidMVDRestriction) {
+// Spine selects are filtered by the spine's own filter rather than the query's, so they get spineRestrictions instead.
+func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions, spineRestrictions map[string]druidMVDRestriction) {
 	if n == nil {
 		return
 	}
 
-	if n.FromTable != nil {
+	if n.FromTable != nil && len(restrictions) > 0 {
 		// The AST shares one DimFields slice between the base select and the spine select, so clone it before mutating to avoid double-wrapping the expressions.
 		n.DimFields = slices.Clone(n.DimFields)
 		for i := range n.DimFields {
@@ -132,14 +143,14 @@ func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions map[strin
 		}
 	}
 
-	applyDruidMVDRestrictions(n.FromSelect, restrictions)
-	applyDruidMVDRestrictions(n.SpineSelect, restrictions)
-	applyDruidMVDRestrictions(n.JoinComparisonSelect, restrictions)
+	applyDruidMVDRestrictions(n.FromSelect, restrictions, spineRestrictions)
+	applyDruidMVDRestrictions(n.SpineSelect, spineRestrictions, spineRestrictions)
+	applyDruidMVDRestrictions(n.JoinComparisonSelect, restrictions, spineRestrictions)
 	for _, s := range n.LeftJoinSelects {
-		applyDruidMVDRestrictions(s, restrictions)
+		applyDruidMVDRestrictions(s, restrictions, spineRestrictions)
 	}
 	for _, s := range n.CrossJoinSelects {
-		applyDruidMVDRestrictions(s, restrictions)
+		applyDruidMVDRestrictions(s, restrictions, spineRestrictions)
 	}
 }
 

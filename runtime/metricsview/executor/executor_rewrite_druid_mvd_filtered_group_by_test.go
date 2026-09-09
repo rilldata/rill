@@ -7,10 +7,16 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/stretchr/testify/require"
 )
+
+// newDruidMVDTestExecutor returns an executor with both MVD narrowing settings enabled, sufficient for rewriteDruidMVDFilteredGroupBy.
+func newDruidMVDTestExecutor() *Executor {
+	return &Executor{instanceCfg: drivers.InstanceConfig{MetricsDruidMVDFilteredGroupBy: true, MetricsDruidMVDFilteredSearch: true}}
+}
 
 func TestDruidMVDRestrictions(t *testing.T) {
 	mv := &runtimev1.MetricsViewSpec{
@@ -55,7 +61,6 @@ func TestDruidMVDRestrictions(t *testing.T) {
 		name       string
 		dimensions []metricsview.Dimension
 		where      *metricsview.Expression
-		rows       bool
 		// noRegex disables the ILIKE narrowing (the default is to test with it enabled).
 		noRegex bool
 		want    map[string]druidMVDRestriction
@@ -230,19 +235,11 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			where:      nil,
 			want:       nil,
 		},
-		{
-			name:       "raw rows",
-			dimensions: nil,
-			where:      in("tags", "a"),
-			rows:       true,
-			want:       nil,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			qry := &metricsview.Query{Dimensions: tt.dimensions, Where: tt.where, Rows: tt.rows}
-			got := druidMVDRestrictions(mv, qry, !tt.noRegex)
+			got := druidMVDRestrictions(mv, tt.dimensions, tt.where, !tt.noRegex)
 			if tt.want == nil {
 				require.Empty(t, got)
 				return
@@ -281,7 +278,7 @@ func TestDruidMVDFilteredGroupBySQL(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
 
 	sql, args, err := ast.SQL()
 	require.NoError(t, err)
@@ -313,7 +310,7 @@ func TestDruidMVDFilteredSearchSQL(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
 
 	sql, args, err := ast.SQL()
 	require.NoError(t, err)
@@ -353,7 +350,7 @@ func TestDruidMVDFilteredGroupBySQLComparison(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
 
 	sql, _, err := ast.SQL()
 	require.NoError(t, err)
@@ -361,36 +358,49 @@ func TestDruidMVDFilteredGroupBySQLComparison(t *testing.T) {
 	require.Equal(t, 2, strings.Count(sql, `("tags") IN (?)`), "generated SQL: %s", sql)
 }
 
-// TestDruidMVDFilteredGroupBySQLSpine checks that the base select and the spine select, which share one DimFields slice in the AST, are each narrowed exactly once.
+// TestDruidMVDFilteredGroupBySQLSpine checks that the base select is narrowed by the query's filter while the spine select,
+// which has its own filter and exists to keep values the query's filter excludes, is narrowed by the spine's filter only.
+// The two selects share one DimFields slice in the AST, so each must also be wrapped exactly once.
 func TestDruidMVDFilteredGroupBySQLSpine(t *testing.T) {
 	mv := &runtimev1.MetricsViewSpec{
 		Table: "events",
 		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 			{Name: "tags", Column: "tags", Unnest: true},
+			{Name: "city", Column: "city"},
 		},
 		Measures: []*runtimev1.MetricsViewSpec_Measure{
 			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 		},
 	}
-	in := func(vals ...any) *metricsview.Expression {
-		return &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorIn, Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: vals}}}}
+	in := func(dim string, vals ...any) *metricsview.Expression {
+		return &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorIn, Expressions: []*metricsview.Expression{{Name: dim}, {Value: vals}}}}
 	}
-	qry := &metricsview.Query{
-		MetricsView: "mv",
-		Dimensions:  []metricsview.Dimension{{Name: "tags"}},
-		Measures:    []metricsview.Measure{{Name: "count"}},
-		Where:       in("a"),
-		Spine:       &metricsview.Spine{Where: &metricsview.WhereSpine{Expression: in("a", "b")}},
+	build := func(spineWhere *metricsview.Expression) string {
+		qry := &metricsview.Query{
+			MetricsView: "mv",
+			Dimensions:  []metricsview.Dimension{{Name: "tags"}},
+			Measures:    []metricsview.Measure{{Name: "count"}},
+			Where:       in("tags", "a"),
+			Spine:       &metricsview.Spine{Where: &metricsview.WhereSpine{Expression: spineWhere}},
+		}
+		ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
+		require.NoError(t, err)
+		newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+		sql, _, err := ast.SQL()
+		require.NoError(t, err)
+		return sql
 	}
 
-	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
-	require.NoError(t, err)
-	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
-
-	sql, _, err := ast.SQL()
-	require.NoError(t, err)
-	require.Equal(t, 2, strings.Count(sql, `MV_FILTER_ONLY("tags", ARRAY['a'])`), "generated SQL: %s", sql)
+	// The spine allows more values than the query: it must keep them.
+	sql := build(in("tags", "a", "b"))
+	require.Equal(t, 1, strings.Count(sql, `MV_FILTER_ONLY("tags", ARRAY['a'])`), "generated SQL: %s", sql)
+	require.Equal(t, 1, strings.Count(sql, `MV_FILTER_ONLY("tags", ARRAY['a', 'b'])`), "generated SQL: %s", sql)
 	require.NotContains(t, sql, `MV_FILTER_ONLY(MV_FILTER_ONLY`, "generated SQL: %s", sql)
+
+	// The spine does not filter the dimension: it must not be narrowed at all.
+	sql = build(in("city", "NYC"))
+	require.Equal(t, 1, strings.Count(sql, `MV_FILTER_ONLY`), "generated SQL: %s", sql)
+	require.Contains(t, sql, `MV_FILTER_ONLY("tags", ARRAY['a'])`, "generated SQL: %s", sql)
 }
 
 // TestDruidMVDFilteredSearchWithFilterSQL checks a dimension search combined with a filter on the searched dimension,
@@ -417,7 +427,7 @@ func TestDruidMVDFilteredSearchWithFilterSQL(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
 
 	sql, args, err := ast.SQL()
 	require.NoError(t, err)
@@ -446,7 +456,7 @@ func TestDruidMVDFilteredGroupBySQLExpressionDimension(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
 
 	sql, _, err := ast.SQL()
 	require.NoError(t, err)
