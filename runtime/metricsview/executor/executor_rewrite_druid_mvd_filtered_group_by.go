@@ -115,15 +115,23 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dime
 }
 
 // applyDruidMVDRestrictions narrows the dimensions in every select node that reads directly from the underlying table.
-// Spine selects are filtered by the spine's own filter rather than the query's, so they get spineRestrictions instead.
+// A where-spine select is filtered by the spine's own filter rather than the query's, so it gets spineRestrictions instead.
 func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions, spineRestrictions map[string]druidMVDRestriction) {
 	if n == nil {
 		return
 	}
 
 	wrapDimFieldsInMVDFilter(n, restrictions)
-	// A spine select reads directly from the table and has no sub-selects of its own.
-	wrapDimFieldsInMVDFilter(n.SpineSelect, spineRestrictions)
+
+	if sp := n.SpineSelect; sp != nil {
+		if sp.FromTable != nil {
+			// A where-spine reads directly from the table with the spine's own filter, and has no sub-selects of its own.
+			wrapDimFieldsInMVDFilter(sp, spineRestrictions)
+		} else {
+			// A time spine with additional dimensions wraps a select that reads from the table with the query's filter (see AST.buildSpineSelect), so it leaks like the base select and gets the same restrictions.
+			applyDruidMVDRestrictions(sp, restrictions, spineRestrictions)
+		}
+	}
 
 	applyDruidMVDRestrictions(n.FromSelect, restrictions, spineRestrictions)
 	applyDruidMVDRestrictions(n.JoinComparisonSelect, restrictions, spineRestrictions)

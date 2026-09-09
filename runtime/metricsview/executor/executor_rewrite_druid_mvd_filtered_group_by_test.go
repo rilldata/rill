@@ -463,3 +463,42 @@ func TestDruidMVDFilteredGroupBySQLExpressionDimension(t *testing.T) {
 	require.Contains(t, sql, `(MV_FILTER_ONLY(UPPER(tags), ARRAY['A'])) AS "tags_upper"`, "generated SQL: %s", sql)
 	require.Contains(t, sql, `WHERE ((UPPER(tags)) IN (?))`, "generated SQL: %s", sql)
 }
+
+// TestDruidMVDFilteredGroupBySQLTimeSpine checks that the dimension select nested inside a time spine, which reads the table with the query's filter, is narrowed like the base select.
+// Otherwise the spine would emit co-occurring values the base select no longer has, producing rows with NULL measures.
+func TestDruidMVDFilteredGroupBySQLTimeSpine(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table:         "events",
+		TimeDimension: "__time",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "tags", Column: "tags", Unnest: true},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+	start := time.Date(2025, 8, 10, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2025, 8, 12, 0, 0, 0, 0, time.UTC)
+	qry := &metricsview.Query{
+		MetricsView: "mv",
+		Dimensions: []metricsview.Dimension{
+			{Name: "day", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "__time", Grain: metricsview.TimeGrainDay}}},
+			{Name: "tags"},
+		},
+		Measures:  []metricsview.Measure{{Name: "count"}},
+		Where:     &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorIn, Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: []any{"a"}}}}},
+		TimeRange: &metricsview.TimeRange{Start: start, End: end},
+		Spine:     &metricsview.Spine{TimeRange: &metricsview.TimeSpine{Start: start, End: end, Grain: metricsview.TimeGrainDay}},
+	}
+
+	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
+	require.NoError(t, err)
+	require.NotNil(t, ast.Root.SpineSelect)
+	require.Nil(t, ast.Root.SpineSelect.FromTable, "a time spine with additional dimensions should be a wrapper around a table select")
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+
+	sql, _, err := ast.SQL()
+	require.NoError(t, err)
+	require.Equal(t, 2, strings.Count(sql, `MV_FILTER_ONLY("tags", ARRAY['a'])`), "generated SQL: %s", sql)
+	require.NotContains(t, sql, `MV_FILTER_ONLY(MV_FILTER_ONLY`, "generated SQL: %s", sql)
+}
