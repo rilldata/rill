@@ -346,11 +346,12 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 				res.Metadata = make(map[string]string, len(m))
 			}
 			for k, v := range m {
-				res.Metadata[k], err = metadataValueToString(v)
-				if err != nil {
-					err = fmt.Errorf("invalid metadata value for key %q: %w", k, err)
+				val, valErr := metadataValueToString(v)
+				if valErr != nil {
+					err = fmt.Errorf("invalid metadata value for key %q: %w", k, valErr)
 					break
 				}
+				res.Metadata[k] = val
 			}
 		}
 	}
