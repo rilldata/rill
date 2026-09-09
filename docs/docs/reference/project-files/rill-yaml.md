@@ -158,7 +158,7 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
 
   - **`rill.metrics.druid_mvd_filtered_group_by`** - _[boolean]_ - Narrow unnested (multi-value) dimensions to the filtered values when grouping in Druid, so results contain only the filtered values rather than every value co-occurring in matching rows. Default: false.
 
-  - **`rill.metrics.druid_mvd_filtered_search`** - _[boolean]_ - Extends rill.metrics.druid_mvd_filtered_group_by to dimension search (ILIKE filters) using MV_FILTER_REGEX. Requires Druid 35.0.0 or newer. Default: false.
+  - **`rill.metrics.druid_mvd_filtered_search`** - _[boolean]_ - Extends rill.metrics.druid_mvd_filtered_group_by to dimension search (ILIKE filters) using MV_FILTER_REGEX, so search results contain only values matching the search text. Requires Druid 35.0.0 or newer. Default: false.
 
   - **`rill.metrics.timeseries_null_filling_implementation`** - _[string]_ - Null-filling implementation for timeseries queries. One of `none`, `new`, or `pushdown`. Default: `pushdown`.
 

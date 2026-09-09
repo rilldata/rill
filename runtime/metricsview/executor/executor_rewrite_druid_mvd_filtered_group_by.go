@@ -51,7 +51,7 @@ type druidMVDRestriction struct {
 
 // druidMVDRestrictions returns, for each unnested dimension in the query's GROUP BY, the restriction implied by the query's filter, if any.
 // The restriction comes from a single top-level conjunct of the WHERE clause of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
-// If several conjuncts qualify, the shortest allow list is used, or the first regex if there is no allow list; see rewriteDruidMVDFilteredGroupBy for why they are not combined.
+// If several conjuncts qualify, the first regex is used if there is one (a search must return values matching the search text), otherwise the shortest allow list; see rewriteDruidMVDFilteredGroupBy for why they are not combined.
 // Dimensions without such a filter, or not backed by a plain column, are omitted.
 func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query, includeRegex bool) map[string]druidMVDRestriction {
 	if qry.Rows || qry.Where == nil {
@@ -85,12 +85,15 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query,
 		prev, hasPrev := res[dim]
 		switch {
 		case regex != "":
-			// A regex only applies if enabled, and never replaces an allow list or an earlier regex.
-			if includeRegex && !hasPrev {
+			// A regex comes from a dimension search, whose results must match the search text, so it takes precedence over an allow list.
+			// Only the first regex is used.
+			if includeRegex && prev.regex == "" {
 				res[dim] = druidMVDRestriction{regex: regex}
 			}
-		case !hasPrev || prev.regex != "" || len(vals) < len(prev.values):
-			// An allow list replaces a regex, and a shorter allow list replaces a longer one.
+		case prev.regex != "":
+			// Keep the regex.
+		case !hasPrev || len(vals) < len(prev.values):
+			// A shorter allow list replaces a longer one.
 			res[dim] = druidMVDRestriction{values: vals}
 		}
 	}

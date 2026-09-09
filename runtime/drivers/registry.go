@@ -111,6 +111,7 @@ type InstanceConfig struct {
 	// Druid unnests multi-value dimensions implicitly, so a filter on such a dimension keeps every matching row and a GROUP BY then emits every value in those rows, not just the filtered ones.
 	MetricsDruidMVDFilteredGroupBy bool `mapstructure:"rill.metrics.druid_mvd_filtered_group_by"`
 	// MetricsDruidMVDFilteredSearch extends MetricsDruidMVDFilteredGroupBy to ILIKE filters (as issued by dimension search), using MV_FILTER_REGEX.
+	// When a search is combined with a filter on the searched dimension, the search regex takes precedence, so the results contain only values matching the search text.
 	// It requires Druid 35.0.0 or newer, where MV_FILTER_REGEX was introduced. It has no effect unless MetricsDruidMVDFilteredGroupBy is also enabled.
 	MetricsDruidMVDFilteredSearch bool `mapstructure:"rill.metrics.druid_mvd_filtered_search"`
 	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.

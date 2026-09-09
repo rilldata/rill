@@ -123,10 +123,23 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			want:       map[string]druidMVDRestriction{"tags": values("a")},
 		},
 		{
-			name:       "IN and ILIKE on one dim: the allow list is used and the regex ignored",
+			name:       "ILIKE then IN on one dim (the search path's order): the regex is used",
 			dimensions: dims("tags"),
-			where:      and(ilike("tags", "%APPLE%"), in("tags", "apple", "banana", "Pineapple")),
-			want:       map[string]druidMVDRestriction{"tags": values("apple", "banana", "Pineapple")},
+			where:      and(ilike("tags", "%b%"), in("tags", "a")),
+			want:       map[string]druidMVDRestriction{"tags": regex("^(?i).*b.*$")},
+		},
+		{
+			name:       "IN then ILIKE on one dim: the regex is used",
+			dimensions: dims("tags"),
+			where:      and(in("tags", "a"), ilike("tags", "%b%")),
+			want:       map[string]druidMVDRestriction{"tags": regex("^(?i).*b.*$")},
+		},
+		{
+			name:       "IN then ILIKE on one dim with regex narrowing disabled: the allow list is used",
+			dimensions: dims("tags"),
+			where:      and(in("tags", "a"), ilike("tags", "%b%")),
+			noRegex:    true,
+			want:       map[string]druidMVDRestriction{"tags": values("a")},
 		},
 		{
 			name:       "two ILIKE filters on one dim: only the first is applied",
@@ -373,4 +386,36 @@ func TestDruidMVDFilteredGroupBySQLSpine(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, strings.Count(sql, `MV_FILTER_ONLY("tags", ARRAY['a'])`), "generated SQL: %s", sql)
 	require.NotContains(t, sql, `MV_FILTER_ONLY(MV_FILTER_ONLY`, "generated SQL: %s", sql)
+}
+
+// TestDruidMVDFilteredSearchWithFilterSQL checks a dimension search combined with a filter on the searched dimension,
+// as the Search API's SQL fallback produces (the ILIKE conjunct first, then the caller's WHERE):
+// the search regex must be the projection restriction, so the results contain only values matching the search text.
+func TestDruidMVDFilteredSearchWithFilterSQL(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table: "events",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "tags", Column: "tags", Unnest: true},
+		},
+	}
+	limit := int64(100)
+	qry := &metricsview.Query{
+		MetricsView: "mv",
+		Dimensions:  []metricsview.Dimension{{Name: "tags"}},
+		Where: whereExprForSearch(
+			&metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorIn, Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: []any{"a"}}}}},
+			"tags",
+			"b",
+		),
+		Limit: &limit,
+	}
+
+	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
+	require.NoError(t, err)
+	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
+
+	sql, args, err := ast.SQL()
+	require.NoError(t, err)
+	require.Equal(t, `SELECT (MV_FILTER_REGEX("tags", '^(?i).*b.*$')) AS "tags" FROM "events" WHERE ((REGEXP_LIKE(("tags"), ?)) AND (("tags") IN (?))) GROUP BY 1 LIMIT 100`, sql)
+	require.Equal(t, []any{"^(?i).*b.*$", "a"}, args)
 }
