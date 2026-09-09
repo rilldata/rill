@@ -10,25 +10,19 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
-// rewriteDruidMVDFilteredGroupBy narrows unnested (multi-value) dimensions in the query's GROUP BY to the values allowed by the query's filter.
+// rewriteDruidMVDFilteredGroupBy narrows unnested (multi-value) dimensions in the GROUP BY to the values the query's filter allows.
 //
-// Druid unnests multi-value dimensions implicitly.
-// A filter such as `tags IN ('a')` keeps every row whose array contains 'a', and a GROUP BY on the dimension then emits every value in those rows' arrays, not just 'a'.
-// So values that merely co-occur with the filtered ones leak into the result.
+// Druid unnests multi-value dimensions implicitly: `tags IN ('a')` keeps every row whose array contains 'a', and a GROUP BY on tags then emits every value in those arrays, not just 'a'.
+// Wrapping the grouped expression in MV_FILTER_ONLY (or MV_FILTER_REGEX for an ILIKE filter) makes the group-by emit only the allowed values, while the WHERE clause keeps filtering the raw column.
+// Re-filtering the grouped output instead does not work: Druid's planner pushes a filter on a group key back below the aggregation.
 //
-// Following Druid's own guidance, the grouped expression is wrapped in MV_FILTER_ONLY with the filter's values, e.g. `MV_FILTER_ONLY("tags", ARRAY['a'])`,
-// or in MV_FILTER_REGEX with the filter's regex for an ILIKE filter, e.g. `MV_FILTER_REGEX("tags", '^(?i).*foo.*$')`.
-// Druid plans these as a filtered virtual column on the dimension, so the group-by emits only the allowed values while the row filter on the raw column keeps using its index.
-// Re-applying the filter to the grouped output instead does not work: Druid's planner pushes a filter on a group key back below the aggregation, where it regains the "array contains" semantics.
+// Narrowing is sound only if every row that passes the WHERE clause keeps at least one value.
+// So only top-level AND conjuncts of the filter are used, and they are never intersected (see mergeAllowLists).
+// Exclusion filters are ignored: a row containing an excluded value is excluded entirely, so nothing leaks from them.
 //
-// The narrowing is sound only if every row that passes the WHERE clause is guaranteed to keep at least one value; otherwise the row's measures would be dropped or attributed to NULL.
-// A single top-level conjunct of the WHERE clause gives that guarantee: every matching row contains a value satisfying it.
-// Combining conjuncts does not, since `tags IN ('a','b') AND tags IN ('b','c')` is satisfied by a row containing ['a','c'] through different elements.
-// So conjuncts are never intersected: a regex stands alone, allow lists are merged by subset or union (see druidMVDRestrictions), and a filter under an OR is never used.
-// Only `IN`, `=` and `ILIKE` filters with string values are narrowed.
-// For a dimension backed directly by a column, Druid plans the MV_FILTER call as its optimized filtered virtual column; for an expression-backed dimension it falls back to a generic expression virtual column, which is correct but evaluated per row.
-// Exclusion filters need no counterpart: a row containing an excluded value is excluded as a whole, so nothing leaks from them.
-func (e *Executor) rewriteDruidMVDFilteredGroupBy(ast *metricsview.AST) {
+// exactified is the `dim IN (...)` expression appended by rewriteQueryDruidExactify, if any.
+// Its values are exactly the groups to return, so they replace the restriction derived from the user's filter for that dimension.
+func (e *Executor) rewriteDruidMVDFilteredGroupBy(ast *metricsview.AST, exactified *metricsview.Expression) {
 	if !e.instanceCfg.MetricsDruidMVDFilteredGroupBy {
 		return
 	}
@@ -42,7 +36,15 @@ func (e *Executor) rewriteDruidMVDFilteredGroupBy(ast *metricsview.AST) {
 	}
 
 	restrictions := druidMVDRestrictions(ast.MetricsView, ast.Query.Dimensions, ast.Query.Where, e.instanceCfg.MetricsDruidMVDFilteredSearch)
-	// The spine select has its own filter (Query.Spine.Where), independent of the query's WHERE clause, and exists to keep values the WHERE clause may exclude.
+	if exactified != nil {
+		if dim, vals, _, ok := mvdRestrictionFromConjunct(exactified); ok && druidMVDEligibleDims(ast.MetricsView, ast.Query.Dimensions)[dim] {
+			if restrictions == nil {
+				restrictions = make(map[string]druidMVDRestriction)
+			}
+			restrictions[dim] = druidMVDRestriction{values: vals}
+		}
+	}
+	// A where-spine has its own filter, so its restriction is derived from that instead.
 	var spineRestrictions map[string]druidMVDRestriction
 	if ast.Query.Spine != nil && ast.Query.Spine.Where != nil {
 		spineRestrictions = druidMVDRestrictions(ast.MetricsView, ast.Query.Dimensions, ast.Query.Spine.Where.Expression, e.instanceCfg.MetricsDruidMVDFilteredSearch)
@@ -60,19 +62,52 @@ type druidMVDRestriction struct {
 	regex  string
 }
 
-// druidMVDRestrictions returns, for each unnested dimension in dims, the restriction implied by the given filter, if any.
-// The restriction comes from the top-level conjuncts of the filter of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
-// If several conjuncts qualify, the first regex is used if there is one (a search must return values matching the search text).
-// Otherwise the allow lists are merged: if one list is a subset of the other it refines it and the subset is used (e.g. the values added by rewriteQueryDruidExactify), else the union is used so that every value the filter names is kept.
-// See rewriteDruidMVDFilteredGroupBy for why the lists are never intersected.
-// Dimensions without such a filter are omitted.
+// druidMVDRestrictions returns, per unnested dimension in dims, the restriction implied by the top-level conjuncts of the filter of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
+// A regex takes precedence, since a search must return values matching the search text; otherwise the allow lists are merged (see mergeAllowLists).
 func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dimension, where *metricsview.Expression, includeRegex bool) map[string]druidMVDRestriction {
 	if where == nil {
 		return nil
 	}
 
-	// Find the unnested dimensions that the query groups by.
-	// Computed dimensions (e.g. time floors) are skipped since their name does not refer to a metrics view dimension.
+	eligible := druidMVDEligibleDims(mv, dims)
+	if len(eligible) == 0 {
+		return nil
+	}
+
+	// Collect first, then resolve, so the result does not depend on the order or repetition of the conjuncts.
+	allowLists := make(map[string][][]string)
+	regexes := make(map[string]string)
+	for _, conj := range topLevelConjuncts(where) {
+		dim, vals, regex, ok := mvdRestrictionFromConjunct(conj)
+		if !ok || !eligible[dim] {
+			continue
+		}
+		if regex != "" {
+			if _, ok := regexes[dim]; !ok {
+				regexes[dim] = regex
+			}
+			continue
+		}
+		allowLists[dim] = append(allowLists[dim], vals)
+	}
+
+	res := make(map[string]druidMVDRestriction)
+	for dim := range eligible {
+		// A search must return values matching the search text.
+		if regex, ok := regexes[dim]; ok && includeRegex {
+			res[dim] = druidMVDRestriction{regex: regex}
+			continue
+		}
+		if lists := allowLists[dim]; len(lists) > 0 {
+			res[dim] = druidMVDRestriction{values: mergeAllowLists(lists)}
+		}
+	}
+	return res
+}
+
+// druidMVDEligibleDims returns the names of the unnested dimensions in dims.
+// Computed dimensions are skipped since their name is not a metrics view dimension.
+func druidMVDEligibleDims(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dimension) map[string]bool {
 	eligible := make(map[string]bool)
 	for _, qd := range dims {
 		if qd.Compute != nil {
@@ -85,37 +120,11 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dime
 			}
 		}
 	}
-	if len(eligible) == 0 {
-		return nil
-	}
-
-	res := make(map[string]druidMVDRestriction)
-	for _, conj := range topLevelConjuncts(where) {
-		dim, vals, regex, ok := mvdRestrictionFromConjunct(conj)
-		if !ok || !eligible[dim] {
-			continue
-		}
-		prev, hasPrev := res[dim]
-		switch {
-		case regex != "":
-			// A regex comes from a dimension search, whose results must match the search text, so it takes precedence over an allow list.
-			// Only the first regex is used.
-			if includeRegex && prev.regex == "" {
-				res[dim] = druidMVDRestriction{regex: regex}
-			}
-		case prev.regex != "":
-			// Keep the regex.
-		case !hasPrev:
-			res[dim] = druidMVDRestriction{values: vals}
-		default:
-			res[dim] = druidMVDRestriction{values: mergeAllowLists(prev.values, vals)}
-		}
-	}
-	return res
+	return eligible
 }
 
-// applyDruidMVDRestrictions narrows the dimensions in every select node that reads directly from the underlying table.
-// A where-spine select is filtered by the spine's own filter rather than the query's, so it gets spineRestrictions instead.
+// applyDruidMVDRestrictions narrows the dimensions in every select node that reads from the underlying table.
+// A where-spine select is filtered by the spine's own filter, so it gets spineRestrictions instead.
 func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions, spineRestrictions map[string]druidMVDRestriction) {
 	if n == nil {
 		return
@@ -125,10 +134,10 @@ func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions, spineRes
 
 	if sp := n.SpineSelect; sp != nil {
 		if sp.FromTable != nil {
-			// A where-spine reads directly from the table with the spine's own filter, and has no sub-selects of its own.
+			// A where-spine reads from the table with the spine's own filter.
 			wrapDimFieldsInMVDFilter(sp, spineRestrictions)
 		} else {
-			// A time spine with additional dimensions wraps a select that reads from the table with the query's filter (see AST.buildSpineSelect), so it leaks like the base select and gets the same restrictions.
+			// A time spine wraps a select that reads from the table with the query's filter (see AST.buildSpineSelect).
 			applyDruidMVDRestrictions(sp, restrictions, spineRestrictions)
 		}
 	}
@@ -143,15 +152,14 @@ func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions, spineRes
 	}
 }
 
-// wrapDimFieldsInMVDFilter rewrites the restricted dimensions of a select node that reads directly from the underlying table to MV_FILTER_ONLY or MV_FILTER_REGEX calls.
-// Only the projected expression changes; the GROUP BY refers to it by ordinal and the WHERE clause has already been compiled against the raw column.
+// wrapDimFieldsInMVDFilter rewrites the restricted dimensions of a select node that reads from the underlying table to MV_FILTER_ONLY or MV_FILTER_REGEX calls.
+// Only the projection changes; the GROUP BY refers to it by ordinal.
 func wrapDimFieldsInMVDFilter(n *metricsview.SelectNode, restrictions map[string]druidMVDRestriction) {
 	if n == nil || n.FromTable == nil || len(restrictions) == 0 {
 		return
 	}
 
-	// The AST shares one DimFields slice between the base select and the spine select, so clone it before mutating.
-	// Otherwise the second node to be visited would wrap the expression a second time, which is redundant and makes Druid fall back to a slower expression virtual column instead of its optimized filtered one.
+	// The base and spine selects share one DimFields slice; clone it so each node wraps the expression once.
 	n.DimFields = slices.Clone(n.DimFields)
 	for i := range n.DimFields {
 		f := &n.DimFields[i]
@@ -171,34 +179,45 @@ func wrapDimFieldsInMVDFilter(n *metricsview.SelectNode, restrictions map[string
 	}
 }
 
-// mergeAllowLists combines the allow lists of two conjuncts on the same dimension.
-// If one list is a subset of the other, it refines it and is returned as is.
-// Otherwise the union is returned, so that every value named by either conjunct is kept.
-// Either result is sound: every matching row contains a value from each list, so it keeps at least one value.
-// The intersection would not be, since a row may satisfy the two conjuncts through different values.
-func mergeAllowLists(a, b []string) []string {
-	inA := make(map[string]bool, len(a))
-	for _, v := range a {
-		inA[v] = true
-	}
-	inB := make(map[string]bool, len(b))
-	for _, v := range b {
-		inB[v] = true
+// mergeAllowLists merges the allow lists of several conjuncts on one dimension: a list that contains another list is dropped (the other refines it), and the rest are unioned in order of first appearance.
+// Every matching row contains a value from each list, so it keeps at least one value.
+// An intersection could leave a row with none, since a row may satisfy two conjuncts through different values.
+func mergeAllowLists(lists [][]string) []string {
+	sets := make([]map[string]bool, len(lists))
+	for i, l := range lists {
+		sets[i] = make(map[string]bool, len(l))
+		for _, v := range l {
+			sets[i][v] = true
+		}
 	}
 
-	if isSubset(b, inA) {
-		return b
-	}
-	if isSubset(a, inB) {
-		return a
-	}
-	res := slices.Clone(a)
-	for _, v := range b {
-		if !inA[v] {
-			res = append(res, v)
+	var res []string
+	seen := make(map[string]bool)
+	for i, l := range lists {
+		if isSuperset(i, lists, sets) {
+			continue
+		}
+		for _, v := range l {
+			if !seen[v] {
+				seen[v] = true
+				res = append(res, v)
+			}
 		}
 	}
 	return res
+}
+
+// isSuperset reports whether lists[i] is a strict superset of another list, or equal to an earlier one.
+func isSuperset(i int, lists [][]string, sets []map[string]bool) bool {
+	for j := range lists {
+		if j == i || !isSubset(lists[j], sets[i]) {
+			continue
+		}
+		if len(sets[j]) < len(sets[i]) || j < i {
+			return true
+		}
+	}
+	return false
 }
 
 // isSubset reports whether every value in vals is in set.

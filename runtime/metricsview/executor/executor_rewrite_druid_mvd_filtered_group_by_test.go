@@ -133,6 +133,18 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			want:       map[string]druidMVDRestriction{"tags": values("a", "b", "c")},
 		},
 		{
+			name:       "repeating a conjunct does not change the result",
+			dimensions: dims("tags"),
+			where:      and(in("tags", "a"), in("tags", "b"), in("tags", "a")),
+			want:       map[string]druidMVDRestriction{"tags": values("a", "b")},
+		},
+		{
+			name:       "a refined list is dropped and the rest unioned, regardless of order",
+			dimensions: dims("tags"),
+			where:      and(in("tags", "c"), in("tags", "a", "b"), in("tags", "b")),
+			want:       map[string]druidMVDRestriction{"tags": values("c", "b")},
+		},
+		{
 			name:       "disjoint IN filters on one dim: the union is used",
 			dimensions: dims("tags"),
 			where:      and(in("tags", "a", "b"), in("tags", "c")),
@@ -278,7 +290,7 @@ func TestDruidMVDFilteredGroupBySQL(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast, nil)
 
 	sql, args, err := ast.SQL()
 	require.NoError(t, err)
@@ -310,7 +322,7 @@ func TestDruidMVDFilteredSearchSQL(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast, nil)
 
 	sql, args, err := ast.SQL()
 	require.NoError(t, err)
@@ -350,7 +362,7 @@ func TestDruidMVDFilteredGroupBySQLComparison(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast, nil)
 
 	sql, _, err := ast.SQL()
 	require.NoError(t, err)
@@ -385,7 +397,7 @@ func TestDruidMVDFilteredGroupBySQLSpine(t *testing.T) {
 		}
 		ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 		require.NoError(t, err)
-		newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+		newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast, nil)
 		sql, _, err := ast.SQL()
 		require.NoError(t, err)
 		return sql
@@ -427,7 +439,7 @@ func TestDruidMVDFilteredSearchWithFilterSQL(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast, nil)
 
 	sql, args, err := ast.SQL()
 	require.NoError(t, err)
@@ -456,7 +468,7 @@ func TestDruidMVDFilteredGroupBySQLExpressionDimension(t *testing.T) {
 
 	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
 	require.NoError(t, err)
-	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast, nil)
 
 	sql, _, err := ast.SQL()
 	require.NoError(t, err)
@@ -495,10 +507,48 @@ func TestDruidMVDFilteredGroupBySQLTimeSpine(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ast.Root.SpineSelect)
 	require.Nil(t, ast.Root.SpineSelect.FromTable, "a time spine with additional dimensions should be a wrapper around a table select")
-	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast)
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast, nil)
 
 	sql, _, err := ast.SQL()
 	require.NoError(t, err)
 	require.Equal(t, 2, strings.Count(sql, `MV_FILTER_ONLY("tags", ARRAY['a'])`), "generated SQL: %s", sql)
 	require.NotContains(t, sql, `MV_FILTER_ONLY(MV_FILTER_ONLY`, "generated SQL: %s", sql)
+}
+
+// TestDruidMVDFilteredGroupBySQLExactified checks that the IN list appended by rewriteQueryDruidExactify replaces the user's allow lists for its dimension.
+// The user's disjoint lists would otherwise be unioned and re-admit values the TopN pre-query excluded, after exactify has removed the LIMIT in reliance on its list.
+func TestDruidMVDFilteredGroupBySQLExactified(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table: "events",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "tags", Column: "tags", Unnest: true},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+	in := func(vals ...any) *metricsview.Expression {
+		return &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorIn, Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: vals}}}}
+	}
+	exactified := in("a")
+	qry := &metricsview.Query{
+		MetricsView: "mv",
+		Dimensions:  []metricsview.Dimension{{Name: "tags"}},
+		Measures:    []metricsview.Measure{{Name: "count"}},
+		// The user's filter, with exactify's IN appended as rewriteQueryDruidExactify does.
+		Where: &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorAnd, Expressions: []*metricsview.Expression{
+			{Condition: &metricsview.Condition{Operator: metricsview.OperatorAnd, Expressions: []*metricsview.Expression{in("a"), in("b")}}},
+			exactified,
+		}}},
+		Sort: []metricsview.Sort{{Name: "tags"}},
+	}
+
+	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
+	require.NoError(t, err)
+	newDruidMVDTestExecutor().rewriteDruidMVDFilteredGroupBy(ast, exactified)
+
+	sql, _, err := ast.SQL()
+	require.NoError(t, err)
+	require.Contains(t, sql, `(MV_FILTER_ONLY("tags", ARRAY['a'])) AS "tags"`, "generated SQL: %s", sql)
+	require.NotContains(t, sql, `ARRAY['a', 'b']`, "generated SQL: %s", sql)
 }

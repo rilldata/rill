@@ -14,20 +14,21 @@ import (
 // The approach works by executing an inner query that returns the dimension values that we expect in the final result,
 // and then adding those dimension values as a filter in the outer query. The specific filter in the second query leads to more accurate measure values being returned.
 // For more details on this approach, see: https://druid.apache.org/docs/latest/querying/topnquery/#aliasing.
-func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsview.Query) error {
+// It returns the `dim IN (...)` expression it appended to the WHERE clause, or nil if the query was not rewritten.
+func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsview.Query) (*metricsview.Expression, error) {
 	// Check if it's enabled.
 	if !e.instanceCfg.MetricsExactifyDruidTopN {
-		return nil
+		return nil, nil
 	}
 
 	// Only apply for Druid.
 	if e.olap.Dialect().String() != drivers.DialectNameDruid {
-		return nil
+		return nil, nil
 	}
 
 	// Skip if the criteria for a Druid TopN query are not met.
 	if len(qry.Dimensions) != 1 || len(qry.Sort) != 1 || qry.Limit == nil || *qry.Limit > 1000 || len(qry.PivotOn) > 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Construct a new query that will just return the dimension values that we expect in the final result.
@@ -64,17 +65,17 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 	// Build an AST for the inner query.
 	ast, err := metricsview.NewAST(e.metricsView, e.security, inner, e.olap.Dialect())
 	if err != nil {
-		return fmt.Errorf("druid exactify: failed to build inner query AST: %w", err)
+		return nil, fmt.Errorf("druid exactify: failed to build inner query AST: %w", err)
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
 	e.rewriteApproxComparisons(ast, false)
-	e.rewriteDruidMVDFilteredGroupBy(ast)
+	e.rewriteDruidMVDFilteredGroupBy(ast, nil)
 
 	// Generate the SQL for and execute the inner query.
 	sql, args, err := ast.SQL()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:            sql,
@@ -84,7 +85,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Close()
 
@@ -94,12 +95,12 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 		var val any
 		if len(inner.Measures) == 0 {
 			if err := res.Scan(&val); err != nil {
-				return fmt.Errorf("druid exactify: failed to scan value: %w", err)
+				return nil, fmt.Errorf("druid exactify: failed to scan value: %w", err)
 			}
 		} else {
 			var tmp any // We're ignore the measure value, but we need to scan it.
 			if err := res.Scan(&val, &tmp); err != nil {
-				return fmt.Errorf("druid exactify: failed to scan value: %w", err)
+				return nil, fmt.Errorf("druid exactify: failed to scan value: %w", err)
 			}
 		}
 
@@ -107,7 +108,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 	}
 	err = res.Err()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
@@ -146,5 +147,5 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 	qry.Limit = nil
 	qry.Offset = nil
 
-	return nil
+	return inExpr, nil
 }
