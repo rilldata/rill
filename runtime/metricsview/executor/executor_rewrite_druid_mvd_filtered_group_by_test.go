@@ -110,16 +110,28 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			want:       map[string]druidMVDRestriction{"tags": values("a")},
 		},
 		{
-			name:       "several IN filters on one dim: the shortest list is used, nested ANDs are flattened",
+			name:       "IN filters on one dim where one refines the other (exactify): the subset is used, nested ANDs are flattened",
 			dimensions: dims("tags"),
 			where:      and(and(in("tags", "a", "b", "c"), eq("city", "NYC")), in("tags", "c", "a")),
 			want:       map[string]druidMVDRestriction{"tags": values("c", "a")},
 		},
 		{
-			name:       "disjoint IN filters on one dim are not combined; the first (shortest) is used",
+			name:       "IN filters on one dim where the first refines the second: the subset is used",
 			dimensions: dims("tags"),
-			where:      and(in("tags", "a"), in("tags", "b")),
+			where:      and(in("tags", "a"), in("tags", "a", "b")),
 			want:       map[string]druidMVDRestriction{"tags": values("a")},
+		},
+		{
+			name:       "partially overlapping IN filters on one dim: the union is used",
+			dimensions: dims("tags"),
+			where:      and(in("tags", "a", "b"), in("tags", "b", "c")),
+			want:       map[string]druidMVDRestriction{"tags": values("a", "b", "c")},
+		},
+		{
+			name:       "disjoint IN filters on one dim: the union is used",
+			dimensions: dims("tags"),
+			where:      and(in("tags", "a", "b"), in("tags", "c")),
+			want:       map[string]druidMVDRestriction{"tags": values("a", "b", "c")},
 		},
 		{
 			name:       "ILIKE then IN on one dim (the search path's order): the regex is used",

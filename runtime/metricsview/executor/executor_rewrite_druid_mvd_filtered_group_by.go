@@ -24,7 +24,8 @@ import (
 // The narrowing is sound only if every row that passes the WHERE clause is guaranteed to keep at least one value; otherwise the row's measures would be dropped or attributed to NULL.
 // A single top-level conjunct of the WHERE clause gives that guarantee: every matching row contains a value satisfying it.
 // Combining conjuncts does not, since `tags IN ('a','b') AND tags IN ('b','c')` is satisfied by a row containing ['a','c'] through different elements.
-// So exactly one conjunct is used per dimension, and a filter under an OR is never used. Only `IN`, `=` and `ILIKE` filters with string values are narrowed.
+// So conjuncts are never intersected: a regex stands alone, allow lists are merged by subset or union (see druidMVDRestrictions), and a filter under an OR is never used.
+// Only `IN`, `=` and `ILIKE` filters with string values are narrowed.
 // For a dimension backed directly by a column, Druid plans the MV_FILTER call as its optimized filtered virtual column; for an expression-backed dimension it falls back to a generic expression virtual column, which is correct but evaluated per row.
 // Exclusion filters need no counterpart: a row containing an excluded value is excluded as a whole, so nothing leaks from them.
 func (e *Executor) rewriteDruidMVDFilteredGroupBy(ast *metricsview.AST) {
@@ -50,8 +51,10 @@ type druidMVDRestriction struct {
 }
 
 // druidMVDRestrictions returns, for each unnested dimension in the query's GROUP BY, the restriction implied by the query's filter, if any.
-// The restriction comes from a single top-level conjunct of the WHERE clause of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
-// If several conjuncts qualify, the first regex is used if there is one (a search must return values matching the search text), otherwise the shortest allow list; see rewriteDruidMVDFilteredGroupBy for why they are not combined.
+// The restriction comes from the top-level conjuncts of the WHERE clause of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
+// If several conjuncts qualify, the first regex is used if there is one (a search must return values matching the search text).
+// Otherwise the allow lists are merged: if one list is a subset of the other it refines it and the subset is used (e.g. the values added by rewriteQueryDruidExactify), else the union is used so that every value the filter names is kept.
+// See rewriteDruidMVDFilteredGroupBy for why the lists are never intersected.
 // Dimensions without such a filter are omitted.
 func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query, includeRegex bool) map[string]druidMVDRestriction {
 	if qry.Rows || qry.Where == nil {
@@ -92,9 +95,10 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query,
 			}
 		case prev.regex != "":
 			// Keep the regex.
-		case !hasPrev || len(vals) < len(prev.values):
-			// A shorter allow list replaces a longer one.
+		case !hasPrev:
 			res[dim] = druidMVDRestriction{values: vals}
+		default:
+			res[dim] = druidMVDRestriction{values: mergeAllowLists(prev.values, vals)}
 		}
 	}
 	return res
@@ -137,6 +141,46 @@ func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions map[strin
 	for _, s := range n.CrossJoinSelects {
 		applyDruidMVDRestrictions(s, restrictions)
 	}
+}
+
+// mergeAllowLists combines the allow lists of two conjuncts on the same dimension.
+// If one list is a subset of the other, it refines it and is returned as is.
+// Otherwise the union is returned, so that every value named by either conjunct is kept.
+// Either result is sound: every matching row contains a value from each list, so it keeps at least one value.
+// The intersection would not be, since a row may satisfy the two conjuncts through different values.
+func mergeAllowLists(a, b []string) []string {
+	inA := make(map[string]bool, len(a))
+	for _, v := range a {
+		inA[v] = true
+	}
+	inB := make(map[string]bool, len(b))
+	for _, v := range b {
+		inB[v] = true
+	}
+
+	if isSubset(b, inA) {
+		return b
+	}
+	if isSubset(a, inB) {
+		return a
+	}
+	res := slices.Clone(a)
+	for _, v := range b {
+		if !inA[v] {
+			res = append(res, v)
+		}
+	}
+	return res
+}
+
+// isSubset reports whether every value in vals is in set.
+func isSubset(vals []string, set map[string]bool) bool {
+	for _, v := range vals {
+		if !set[v] {
+			return false
+		}
+	}
+	return true
 }
 
 // topLevelConjuncts flattens the top-level AND conditions of expr into the individual conjuncts.
