@@ -24,8 +24,8 @@ import (
 // The narrowing is sound only if every row that passes the WHERE clause is guaranteed to keep at least one value; otherwise the row's measures would be dropped or attributed to NULL.
 // A single top-level conjunct of the WHERE clause gives that guarantee: every matching row contains a value satisfying it.
 // Combining conjuncts does not, since `tags IN ('a','b') AND tags IN ('b','c')` is satisfied by a row containing ['a','c'] through different elements.
-// So exactly one conjunct is used per dimension, and a filter under an OR is never used.
-// Only `IN`, `=` and `ILIKE` filters with string values are narrowed, and only for dimensions backed by a plain column, since the MV_FILTER functions require a direct column reference.
+// So exactly one conjunct is used per dimension, and a filter under an OR is never used. Only `IN`, `=` and `ILIKE` filters with string values are narrowed.
+// For a dimension backed directly by a column, Druid plans the MV_FILTER call as its optimized filtered virtual column; for an expression-backed dimension it falls back to a generic expression virtual column, which is correct but evaluated per row.
 // Exclusion filters need no counterpart: a row containing an excluded value is excluded as a whole, so nothing leaks from them.
 func (e *Executor) rewriteDruidMVDFilteredGroupBy(ast *metricsview.AST) {
 	if !e.instanceCfg.MetricsDruidMVDFilteredGroupBy {
@@ -52,13 +52,13 @@ type druidMVDRestriction struct {
 // druidMVDRestrictions returns, for each unnested dimension in the query's GROUP BY, the restriction implied by the query's filter, if any.
 // The restriction comes from a single top-level conjunct of the WHERE clause of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
 // If several conjuncts qualify, the first regex is used if there is one (a search must return values matching the search text), otherwise the shortest allow list; see rewriteDruidMVDFilteredGroupBy for why they are not combined.
-// Dimensions without such a filter, or not backed by a plain column, are omitted.
+// Dimensions without such a filter are omitted.
 func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query, includeRegex bool) map[string]druidMVDRestriction {
 	if qry.Rows || qry.Where == nil {
 		return nil
 	}
 
-	// Find the unnested, plain-column dimensions that the query groups by.
+	// Find the unnested dimensions that the query groups by.
 	// Computed dimensions (e.g. time floors) are skipped since their name does not refer to a metrics view dimension.
 	eligible := make(map[string]bool)
 	for _, qd := range qry.Dimensions {
@@ -66,7 +66,7 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, qry *metricsview.Query,
 			continue
 		}
 		for _, dim := range mv.Dimensions {
-			if dim.Name == qd.Name && dim.Unnest && dim.Column != "" && dim.Expression == "" && dim.LookupTable == "" {
+			if dim.Name == qd.Name && dim.Unnest {
 				eligible[qd.Name] = true
 				break
 			}
@@ -108,8 +108,7 @@ func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions map[strin
 	}
 
 	if n.FromTable != nil {
-		// The AST shares one DimFields slice between the base select and the spine select, so clone it before mutating.
-		// Otherwise the second node to be visited would wrap the already wrapped expression again.
+		// The AST shares one DimFields slice between the base select and the spine select, so clone it before mutating to avoid double-wrapping the expressions.
 		n.DimFields = slices.Clone(n.DimFields)
 		for i := range n.DimFields {
 			f := &n.DimFields[i]

@@ -20,7 +20,6 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			{Name: "tags", Column: "tags", Unnest: true},
 			{Name: "cats", Column: "cats", Unnest: true},
 			{Name: "tags_expr", Expression: "UPPER(tags)", Unnest: true},
-			{Name: "tags_lookup", Column: "tags", Unnest: true, LookupTable: "lk", LookupKeyColumn: "k", LookupValueColumn: "v"},
 			{Name: "city", Column: "city"},
 		},
 	}
@@ -190,16 +189,10 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			want:       nil,
 		},
 		{
-			name:       "expression-backed dim is not narrowed",
+			name:       "expression-backed dim is narrowed",
 			dimensions: dims("tags_expr"),
 			where:      in("tags_expr", "A"),
-			want:       nil,
-		},
-		{
-			name:       "lookup dim is not narrowed",
-			dimensions: dims("tags_lookup"),
-			where:      in("tags_lookup", "a"),
-			want:       nil,
+			want:       map[string]druidMVDRestriction{"tags_expr": values("A")},
 		},
 		{
 			name:       "filtered but not grouped dim is not narrowed",
@@ -418,4 +411,33 @@ func TestDruidMVDFilteredSearchWithFilterSQL(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, `SELECT (MV_FILTER_REGEX("tags", '^(?i).*b.*$')) AS "tags" FROM "events" WHERE ((REGEXP_LIKE(("tags"), ?)) AND (("tags") IN (?))) GROUP BY 1 LIMIT 100`, sql)
 	require.Equal(t, []any{"^(?i).*b.*$", "a"}, args)
+}
+
+// TestDruidMVDFilteredGroupBySQLExpressionDimension checks that an expression-backed dimension is wrapped as a whole.
+// Druid plans this as a generic expression virtual column rather than its optimized filtered one, but the result is correct.
+func TestDruidMVDFilteredGroupBySQLExpressionDimension(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table: "events",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "tags_upper", Expression: "UPPER(tags)", Unnest: true},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+	qry := &metricsview.Query{
+		MetricsView: "mv",
+		Dimensions:  []metricsview.Dimension{{Name: "tags_upper"}},
+		Measures:    []metricsview.Measure{{Name: "count"}},
+		Where:       &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorIn, Expressions: []*metricsview.Expression{{Name: "tags_upper"}, {Value: []any{"A"}}}}},
+	}
+
+	ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
+	require.NoError(t, err)
+	applyDruidMVDRestrictions(ast.Root, druidMVDRestrictions(mv, qry, true))
+
+	sql, _, err := ast.SQL()
+	require.NoError(t, err)
+	require.Contains(t, sql, `(MV_FILTER_ONLY(UPPER(tags), ARRAY['A'])) AS "tags_upper"`, "generated SQL: %s", sql)
+	require.Contains(t, sql, `WHERE ((UPPER(tags)) IN (?))`, "generated SQL: %s", sql)
 }
