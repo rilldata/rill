@@ -613,10 +613,6 @@ func (c *Connection) periodicallyEmitStats() {
 	regularTicker := time.NewTicker(10 * time.Minute)
 	defer regularTicker.Stop()
 
-	// Cache invalidation ticker to reset billing table existence cache
-	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
-	defer cacheInvalidationTicker.Stop()
-
 	skipEstimatedSizeEmission := false
 	skipRCUEmission := false
 	for {
@@ -692,11 +688,6 @@ func (c *Connection) periodicallyEmitStats() {
 			} else if !errors.Is(err, c.ctx.Err()) {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
-		case <-cacheInvalidationTicker.C:
-			// Invalidate the billing table existence cache and skip size emission flag.
-			c.billingTableExists = nil
-			skipEstimatedSizeEmission = false
-			skipRCUEmission = false
 		case <-c.ctx.Done():
 			return
 		}
