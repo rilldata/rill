@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -19,6 +20,7 @@ type Node struct {
 	Name              string
 	Refs              []ResourceName
 	Tags              []string
+	Metadata          map[string]string
 	Paths             []string
 	YAML              *yaml.Node
 	YAMLOverride      *yaml.Node
@@ -81,6 +83,9 @@ type commonYAML struct {
 	Refs []yaml.Node `yaml:"refs"`
 	// Tags are user-defined labels for organizing and filtering resources. Parsed generically for all resource types.
 	Tags []string `yaml:"tags"`
+	// Metadata is user-defined key-value metadata. Parsed generically for all resource types.
+	// Rill does not interpret it; it is exposed on ResourceMeta for external tooling.
+	Metadata metadataMap `yaml:"metadata" mapstructure:"metadata"`
 	// ParserConfig enables setting file-level parser config.
 	ParserConfig struct {
 		Templating *bool `yaml:"templating"`
@@ -97,6 +102,64 @@ type commonYAML struct {
 	Dev yaml.Node `yaml:"dev"`
 	// Shorthand for setting "environment_overrides:prod:"
 	Prod yaml.Node `yaml:"prod"`
+}
+
+// metadataMap is a map of user-defined metadata attached to a resource.
+// Non-string scalars are coerced to their string representation, so `tier: 1` is equivalent to `tier: "1"`.
+type metadataMap map[string]string
+
+// metadataValueToString coerces a scalar metadata value to its string representation.
+func metadataValueToString(v any) (string, error) {
+	switch v := v.(type) {
+	case nil:
+		return "", nil
+	case string:
+		return v, nil
+	case bool:
+		return strconv.FormatBool(v), nil
+	case int:
+		return strconv.Itoa(v), nil
+	case int64:
+		return strconv.FormatInt(v, 10), nil
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64), nil
+	default:
+		return "", errors.New("must be a string, number or boolean")
+	}
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler.
+func (m *metadataMap) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return errors.New("metadata must be a map of key-value pairs")
+	}
+
+	res := make(metadataMap, len(node.Content)/2)
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		k, v := node.Content[i], node.Content[i+1]
+
+		var key string
+		if err := k.Decode(&key); err != nil {
+			return fmt.Errorf("invalid metadata key: %w", err)
+		}
+		if key == "" {
+			return errors.New("metadata keys can't be empty")
+		}
+		if v.Kind != yaml.ScalarNode {
+			return fmt.Errorf("metadata value for key %q must be a string, number or boolean", key)
+		}
+
+		// Scalar nodes carry the value's string representation, which coerces numbers and booleans.
+		// A null value (e.g. "owner:" with nothing after it) becomes an empty string.
+		if v.Tag == "!!null" {
+			res[key] = ""
+			continue
+		}
+		res[key] = v.Value
+	}
+
+	*m = res
+	return nil
 }
 
 // parseStem parses a pair of YAML and SQL files with the same path stem (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
@@ -163,6 +226,7 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		res.Version = cfg.Version
 		res.Name = cfg.Name
 		res.Tags = cfg.Tags
+		res.Metadata = cfg.Metadata
 		res.Connector = cfg.Connector
 		res.SQL = cfg.SQL
 		res.SQLPath = ymlPath
@@ -272,7 +336,27 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 				break
 			}
 			res.Connector = v
+		case "metadata":
+			m, ok := v.(map[string]any)
+			if !ok {
+				err = fmt.Errorf("invalid type %T for property 'metadata'", v)
+				break
+			}
+			if res.Metadata == nil {
+				res.Metadata = make(map[string]string, len(m))
+			}
+			for k, v := range m {
+				res.Metadata[k], err = metadataValueToString(v)
+				if err != nil {
+					err = fmt.Errorf("invalid metadata value for key %q: %w", k, err)
+					break
+				}
+			}
 		}
+	}
+	if len(res.Metadata) == 0 {
+		// Normalize to nil since an empty map does not survive the catalog's proto marshalling anyway.
+		res.Metadata = nil
 	}
 	if err != nil {
 		if sqlPath != "" {

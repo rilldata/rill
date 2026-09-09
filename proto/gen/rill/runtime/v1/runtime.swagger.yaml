@@ -7900,6 +7900,14 @@ definitions:
         items:
           type: string
         description: Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          Metadata is user-defined key-value metadata. Parsed generically from any resource YAML's top-level "metadata:" field.
+          Rill does not interpret it; it is exposed here for external tooling.
+          It maps to an Apache Ossie `custom_extensions` entry with vendor_name "RILL" and data `{"metadata": {...}}`.
       hidden:
         type: boolean
       version:

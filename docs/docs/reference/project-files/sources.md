@@ -109,6 +109,10 @@ _[array of string]_ - List of resource references
 
 _[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
 
+### `metadata`
+
+_[object]_ - User-defined key-value metadata attached to the resource. Rill does not interpret it; it is exposed on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
+
 ### `dev`
 
 _[object]_ - Overrides any properties in development environment.

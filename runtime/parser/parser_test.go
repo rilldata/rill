@@ -2857,6 +2857,171 @@ tests:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestMetadata(t *testing.T) {
+	// A generic "metadata:" map is parsed for all resource kinds, including strictly validated ones.
+	// Non-string scalars are coerced to strings, and an auto-generated inline explore inherits the metrics view's metadata.
+	files := map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.sql`: `
+-- @metadata.pipeline: nightly
+SELECT 1 AS id
+`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata:
+  owner: data-team
+  tier: 1
+  pii: false
+  note:
+dimensions:
+- name: foo
+  expression: id
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/mv2.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata: {}
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	resources := []*Resource{
+		{
+			Name:     ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths:    []string{"/models/m1.sql"},
+			Metadata: map[string]string{"pipeline": "nightly"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+		{
+			Name:     ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
+			Refs:     []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			Paths:    []string{"/metrics_views/mv1.yaml"},
+			Metadata: map[string]string{"owner": "data-team", "tier": "1", "pii": "false", "note": ""},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:   "duckdb",
+				Model:       "m1",
+				DisplayName: "Mv1",
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+					{Name: "foo", DisplayName: "Foo", Expression: "id"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
+					{Name: "count", DisplayName: "Count", Expression: "COUNT(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+			},
+		},
+		{
+			// An empty metadata map is normalized to nil since it does not survive the catalog's proto marshalling.
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			Paths: []string{"/metrics_views/mv2.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:   "duckdb",
+				Model:       "m1",
+				DisplayName: "Mv2",
+				Dimensions:  []*runtimev1.MetricsViewSpec_Dimension{},
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
+					{Name: "count", DisplayName: "Count", Expression: "COUNT(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestMetadataErrors(t *testing.T) {
+	// Metadata values must be scalars, keys must be non-empty, and unknown fields are still rejected.
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id`,
+		`metrics_views/nested.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata:
+  owner:
+    team: data
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/list.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata:
+  owners: [alice, bob]
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+		`metrics_views/unknown.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+metadata:
+  owner: data-team
+not_a_real_field: oops
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+	}
+
+	parseErrors := []*runtimev1.ParseError{
+		{
+			FilePath: "/metrics_views/nested.yaml",
+			Message:  `metadata value for key "owner" must be a string, number or boolean`,
+		},
+		{
+			FilePath: "/metrics_views/list.yaml",
+			Message:  `metadata value for key "owners" must be a string, number or boolean`,
+		},
+		{
+			FilePath: "/metrics_views/unknown.yaml",
+			Message:  "field not_a_real_field not found in type",
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, parseErrors)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
@@ -2886,6 +3051,8 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.Name, got.Name)
 				require.ElementsMatch(t, want.Refs, got.Refs, "for resource %q", want.Name)
 				require.ElementsMatch(t, want.Paths, got.Paths, "for resource %q", want.Name)
+				require.ElementsMatch(t, want.Tags, got.Tags, "for resource %q", want.Name)
+				require.Equal(t, want.Metadata, got.Metadata, "for resource %q", want.Name)
 				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)

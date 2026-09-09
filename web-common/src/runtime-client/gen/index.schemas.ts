@@ -2376,6 +2376,8 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export type V1ResourceMetaMetadata = { [key: string]: string };
+
 export interface V1ResourceMeta {
   name?: V1ResourceName;
   refs?: V1ResourceName[];
@@ -2383,6 +2385,10 @@ export interface V1ResourceMeta {
   filePaths?: string[];
   /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
   tags?: string[];
+  /** Metadata is user-defined key-value metadata. Parsed generically from any resource YAML's top-level "metadata:" field.
+Rill does not interpret it; it is exposed here for external tooling.
+It maps to an Apache Ossie `custom_extensions` entry with vendor_name "RILL" and data `{"metadata": {...}}`. */
+  metadata?: V1ResourceMetaMetadata;
   hidden?: boolean;
   version?: string;
   specVersion?: string;
