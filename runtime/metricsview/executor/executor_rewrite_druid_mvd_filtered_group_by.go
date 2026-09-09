@@ -114,43 +114,52 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dime
 	return res
 }
 
-// applyDruidMVDRestrictions wraps the given dimensions in MV_FILTER_ONLY or MV_FILTER_REGEX in every select node that reads directly from the underlying table.
-// Only the projected expression changes; the GROUP BY refers to it by ordinal and the WHERE clause has already been compiled against the raw column.
+// applyDruidMVDRestrictions narrows the dimensions in every select node that reads directly from the underlying table.
 // Spine selects are filtered by the spine's own filter rather than the query's, so they get spineRestrictions instead.
 func applyDruidMVDRestrictions(n *metricsview.SelectNode, restrictions, spineRestrictions map[string]druidMVDRestriction) {
 	if n == nil {
 		return
 	}
 
-	if n.FromTable != nil && len(restrictions) > 0 {
-		// The AST shares one DimFields slice between the base select and the spine select, so clone it before mutating to avoid double-wrapping the expressions.
-		n.DimFields = slices.Clone(n.DimFields)
-		for i := range n.DimFields {
-			f := &n.DimFields[i]
-			r, ok := restrictions[f.Name]
-			if !ok || !f.Unnest {
-				continue
-			}
-			if r.regex != "" {
-				f.Expr = fmt.Sprintf("MV_FILTER_REGEX(%s, %s)", f.Expr, drivers.EscapeStringValue(r.regex))
-				continue
-			}
-			quoted := make([]string, len(r.values))
-			for j, v := range r.values {
-				quoted[j] = drivers.EscapeStringValue(v)
-			}
-			f.Expr = fmt.Sprintf("MV_FILTER_ONLY(%s, ARRAY[%s])", f.Expr, strings.Join(quoted, ", "))
-		}
-	}
+	wrapDimFieldsInMVDFilter(n, restrictions)
+	// A spine select reads directly from the table and has no sub-selects of its own.
+	wrapDimFieldsInMVDFilter(n.SpineSelect, spineRestrictions)
 
 	applyDruidMVDRestrictions(n.FromSelect, restrictions, spineRestrictions)
-	applyDruidMVDRestrictions(n.SpineSelect, spineRestrictions, spineRestrictions)
 	applyDruidMVDRestrictions(n.JoinComparisonSelect, restrictions, spineRestrictions)
 	for _, s := range n.LeftJoinSelects {
 		applyDruidMVDRestrictions(s, restrictions, spineRestrictions)
 	}
 	for _, s := range n.CrossJoinSelects {
 		applyDruidMVDRestrictions(s, restrictions, spineRestrictions)
+	}
+}
+
+// wrapDimFieldsInMVDFilter rewrites the restricted dimensions of a select node that reads directly from the underlying table to MV_FILTER_ONLY or MV_FILTER_REGEX calls.
+// Only the projected expression changes; the GROUP BY refers to it by ordinal and the WHERE clause has already been compiled against the raw column.
+func wrapDimFieldsInMVDFilter(n *metricsview.SelectNode, restrictions map[string]druidMVDRestriction) {
+	if n == nil || n.FromTable == nil || len(restrictions) == 0 {
+		return
+	}
+
+	// The AST shares one DimFields slice between the base select and the spine select, so clone it before mutating.
+	// Otherwise the second node to be visited would wrap the expression a second time, which is redundant and makes Druid fall back to a slower expression virtual column instead of its optimized filtered one.
+	n.DimFields = slices.Clone(n.DimFields)
+	for i := range n.DimFields {
+		f := &n.DimFields[i]
+		r, ok := restrictions[f.Name]
+		if !ok || !f.Unnest {
+			continue
+		}
+		if r.regex != "" {
+			f.Expr = fmt.Sprintf("MV_FILTER_REGEX(%s, %s)", f.Expr, drivers.EscapeStringValue(r.regex))
+			continue
+		}
+		quoted := make([]string, len(r.values))
+		for j, v := range r.values {
+			quoted[j] = drivers.EscapeStringValue(v)
+		}
+		f.Expr = fmt.Sprintf("MV_FILTER_ONLY(%s, ARRAY[%s])", f.Expr, strings.Join(quoted, ", "))
 	}
 }
 
