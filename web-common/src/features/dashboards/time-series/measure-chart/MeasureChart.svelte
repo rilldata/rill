@@ -341,6 +341,7 @@
         chartType={effectiveChartType}
         {metricsViewName}
         {measure}
+        {ephemeralMeasures}
         {timeDimension}
         {interval}
         comparisonInterval={showComparison ? comparisonInterval : undefined}
