@@ -14,7 +14,10 @@ import { Duration } from "luxon";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
-import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains.ts";
+import {
+  MinSupportedGrain,
+  V1TimeGrainToOrder,
+} from "@rilldata/web-common/lib/time/new-grains.ts";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
@@ -253,7 +256,7 @@ export class MetricsViewsProvider {
     this.smallestTimeGrain = smallestTimeGrain;
     this.smallestGrainOrder = smallestTimeGrain
       ? smallestGrainOrder
-      : V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MINUTE];
+      : V1TimeGrainToOrder[MinSupportedGrain];
   }
 
   /**

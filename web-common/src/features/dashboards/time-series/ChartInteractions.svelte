@@ -5,50 +5,43 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
-  import {
-    type DashboardTimeControls,
-    TimeComparisonOption,
-    TimeRangePreset,
-  } from "@rilldata/web-common/lib/time/types";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
 
-  export let exploreName: string;
-  export let showComparison = false;
-  export let timeGrain: V1TimeGrain | undefined;
+  let {
+    exploreName,
+  }: {
+    exploreName: string;
+  } = $props();
 
-  let priorRange: DashboardTimeControls | null = null;
-  let button: HTMLButtonElement;
+  let priorRange = $state<string | undefined>(undefined);
+  let button = $state<HTMLButtonElement | undefined>(undefined);
 
   const explainEnabled = measureSelection.getEnabledStore();
 
   const StateManagers = getStateManagers();
-  const {
-    dashboardStore,
-    selectors: {
-      charts: { canPanLeft, canPanRight, getNewPanRange },
-    },
-    validSpecStore,
-    metricsViewName,
-  } = StateManagers;
+  const { dashboardStore, metricsViewName, timeFilterManager } = StateManagers;
 
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+  let { timeGrain, timeZone, canPanLeft, canPanRight } =
+    $derived(timeFilterManager);
 
-  $: ({ selectedScrubRange } = $dashboardStore);
+  let { selectedScrubRange } = $derived($dashboardStore);
 
-  $: selectedSubRange =
+  let selectedSubRange = $derived(
     selectedScrubRange?.start && selectedScrubRange?.end
       ? getOrderedStartEnd(selectedScrubRange.start, selectedScrubRange.end)
-      : null;
+      : null,
+  );
 
-  $: subInterval = selectedSubRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedSubRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedSubRange.end).setZone(activeTimeZone),
-      )
-    : null;
+  let subInterval = $derived(
+    selectedSubRange
+      ? Interval.fromDateTimes(
+          DateTime.fromJSDate(selectedSubRange.start).setZone(timeZone),
+          DateTime.fromJSDate(selectedSubRange.end).setZone(timeZone),
+        )
+      : null,
+  );
 
   function onKeyDown(e: KeyboardEvent) {
     const target = e.target as HTMLElement;
@@ -65,14 +58,12 @@
       $explainEnabled && e.key === "e" && !e.metaKey && !e.ctrlKey;
 
     if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
-      if ($canPanLeft) {
-        const panRange = $getNewPanRange("left");
-        if (panRange) updatePanRange(panRange.start, panRange.end);
+      if (canPanLeft) {
+        timeFilterManager.onPan("left");
       }
     } else if (e.key === "ArrowRight" && !e.metaKey && !e.altKey) {
-      if ($canPanRight) {
-        const panRange = $getNewPanRange("right");
-        if (panRange) updatePanRange(panRange.start, panRange.end);
+      if (canPanRight) {
+        timeFilterManager.onPan("right");
       }
     } else if ($dashboardStore?.selectedScrubRange?.end) {
       if (e.key === "z" && !e.metaKey && !e.ctrlKey) {
@@ -97,59 +88,32 @@
     }
   }
 
-  function updatePanRange(start: Date, end: Date) {
-    if (!timeGrain) return;
-    const timeRange = {
-      name: TimeRangePreset.CUSTOM,
-      start: start,
-      end: end,
-    };
-
-    const comparisonTimeRange = showComparison
-      ? ({
-          name: TimeComparisonOption.CONTIGUOUS,
-        } as DashboardTimeControls) // FIXME wrong typecasting across application
-      : undefined;
-
-    metricsExplorerStore.selectTimeRange(
-      exploreName,
-      timeRange,
-      timeGrain,
-      comparisonTimeRange,
-      $validSpecStore.data?.metricsView ?? {},
-    );
-  }
-
   function zoomScrub() {
     if (
       selectedScrubRange?.start instanceof Date &&
       selectedScrubRange?.end instanceof Date
     ) {
-      if ($dashboardStore.selectedTimeRange) {
-        priorRange = $dashboardStore.selectedTimeRange;
-      }
+      priorRange = timeFilterManager.timeRange;
 
       const { start, end } = getOrderedStartEnd(
         selectedScrubRange.start,
         selectedScrubRange.end,
       );
-      metricsExplorerStore.setSelectedTimeRange(exploreName, {
-        name: TimeRangePreset.CUSTOM,
-        start,
-        end,
-      });
+      void timeFilterManager.onSelectRange(
+        `${start.toISOString()} to ${end.toISOString()}`,
+      );
 
       window.addEventListener("click", cancelUndo, true);
     }
   }
 
   function clearPriorRange() {
-    priorRange = null;
+    priorRange = undefined;
   }
 
   function undoZoom() {
     if (priorRange) {
-      metricsExplorerStore.setSelectedTimeRange(exploreName, priorRange);
+      void timeFilterManager.onSelectRange(priorRange);
       clearPriorRange();
     }
   }

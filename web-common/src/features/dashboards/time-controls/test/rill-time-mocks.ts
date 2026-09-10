@@ -1,3 +1,8 @@
+import {
+  type V1ResolvedTimeRange,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
+
 /**
  * The time range summary every time filter test runs against.
  * `latest` in a rilltime expression is `max`, which deliberately sits mid hour so that a snap to a
@@ -6,13 +11,20 @@
 export const TIME_RANGE_SUMMARY = {
   min: "2024-01-01T00:00:00Z",
   max: "2024-03-31T14:30:00Z",
+  watermark: "2024-03-30T14:30:00Z",
 };
 
 /** The range the yaml preset starts the dashboard on. */
 export const DEFAULT_TIME_RANGE = "7D as of latest/D+1D";
 
 /** The ranges the yaml offers, which is what the time range dropdown lists. */
-export const YAML_TIME_RANGES = [{ range: "24h" }, { range: "4W" }];
+export const YAML_TIME_RANGES = [
+  { range: "12h" },
+  { range: "24h" },
+  { range: "4W" },
+];
+
+export const YAML_TIME_ZONES = ["UTC", "America/New_York", "Asia/Kathmandu"];
 
 /**
  * The intervals the runtime resolves rilltime expressions to, keyed by expression.
@@ -21,24 +33,45 @@ export const YAML_TIME_RANGES = [{ range: "24h" }, { range: "4W" }];
  * can produce needs an entry here. The intervals below are `latest` snapped to the grain of the
  * `as of` clause, offset by its padding, and then walked back by the range.
  */
-export const RESOLVED_RILL_TIMES: Record<
-  string,
-  { start: string; end: string }
-> = {
+export const RESOLVED_RILL_TIMES: Record<string, V1ResolvedTimeRange> = {
   // latest/D+1D is 2024-04-01T00:00:00Z, minus 7 days.
   [DEFAULT_TIME_RANGE]: {
     start: "2024-03-25T00:00:00.000Z",
     end: "2024-04-01T00:00:00.000Z",
+    grain: V1TimeGrain.TIME_GRAIN_DAY,
+  },
+  "7D as of latest/D": {
+    start: "2024-03-24T00:00:00.000Z",
+    end: "2024-03-31T00:00:00.000Z",
+    grain: V1TimeGrain.TIME_GRAIN_DAY,
+  },
+  "7D as of watermark/D": {
+    start: "2024-03-23T00:00:00.000Z",
+    end: "2024-03-30T00:00:00.000Z",
+    grain: V1TimeGrain.TIME_GRAIN_DAY,
+  },
+  "7D as of watermark/h": {
+    start: "2024-03-23T14:00:00.000Z",
+    end: "2024-03-30T14:00:00.000Z",
+    grain: V1TimeGrain.TIME_GRAIN_DAY,
   },
   // The same anchor, minus 4 weeks.
   "4W as of latest/D+1D": {
     start: "2024-03-04T00:00:00.000Z",
     end: "2024-04-01T00:00:00.000Z",
+    grain: V1TimeGrain.TIME_GRAIN_DAY,
+  },
+  // latest/h+1h is 2024-03-31T15:00:00Z, minus 12 hours.
+  "12h as of latest/h+1h": {
+    start: "2024-03-31T03:00:00.000Z",
+    end: "2024-03-31T15:00:00.000Z",
+    grain: V1TimeGrain.TIME_GRAIN_HOUR,
   },
   // latest/h+1h is 2024-03-31T15:00:00Z, minus 24 hours.
   "24h as of latest/h+1h": {
     start: "2024-03-30T15:00:00.000Z",
     end: "2024-03-31T15:00:00.000Z",
+    grain: V1TimeGrain.TIME_GRAIN_HOUR,
   },
 };
 
@@ -48,5 +81,5 @@ export function resolvedTimeRange(timeRange: string) {
   if (!resolved) {
     throw new Error(`No resolved interval mocked for "${timeRange}"`);
   }
-  return { name: timeRange, ...resolved };
+  return <V1ResolvedTimeRange>{ expression: timeRange, ...resolved };
 }

@@ -1,6 +1,9 @@
 import type { HoistedPageForComponentTests } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import { useExploreTimeFiltersVariant } from "@rilldata/web-common/features/dashboards/time-controls/test/explore-time-filters-variant";
-import { testTimeRangeFilters } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filters-suite";
+import {
+  testComparisonTimeRangeFilters,
+  testTimeRangeFilters,
+} from "@rilldata/web-common/features/dashboards/time-controls/test/time-filters-suite";
 import type { ActionResult } from "@sveltejs/kit";
 import { describe, vi } from "vitest";
 
@@ -67,4 +70,5 @@ describe("ExploreTimeFilters", () => {
   const variant = useExploreTimeFiltersVariant(hoistedPage);
 
   testTimeRangeFilters(variant);
+  testComparisonTimeRangeFilters(variant);
 });

@@ -117,10 +117,9 @@ function variantAssertions(variant: ExpressionFiltersVariant) {
      */
     assertUrlSearchHistory: (...searches: string[]) => {
       if (variant.noUrlSync) return;
-      expect(variant.pageMock().urlSearchHistory).toEqual([
-        ...variant.initialUrlSearchHistory,
-        ...searches,
-      ]);
+      variant
+        .pageMock()
+        .assertSearchHistory([...variant.initialUrlSearchHistory, ...searches]);
     },
   };
 }

@@ -277,8 +277,10 @@ const metricsViewReducers = {
       exploreState.showTimeComparison = timeFilterManager.showComparison;
       exploreState.selectedComparisonTimeRange = {
         name: timeFilterManager.comparisonTimeRange,
-        start: timeFilterManager.interval?.start?.toJSDate() ?? new Date(),
-        end: timeFilterManager.interval?.end?.toJSDate() ?? new Date(),
+        start:
+          timeFilterManager.comparisonInterval?.start?.toJSDate() ?? new Date(),
+        end:
+          timeFilterManager.comparisonInterval?.end?.toJSDate() ?? new Date(),
       };
     });
   },
@@ -487,17 +489,6 @@ const metricsViewReducers = {
     });
   },
 
-  setMetricDimensionName(name: string, dimensionName: string | null) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.selectedDimensionName = dimensionName ?? undefined;
-      if (dimensionName) {
-        exploreState.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
-      } else {
-        exploreState.activePage = DashboardState_ActivePage.DEFAULT;
-      }
-    });
-  },
-
   setComparisonDimension(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.selectedComparisonDimension = dimensionName;
@@ -537,12 +528,6 @@ const metricsViewReducers = {
     });
   },
 
-  setTimeDimension(name: string, column: string) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.selectedTimeDimension = column;
-    });
-  },
-
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.showTimeComparison = showTimeComparison;
@@ -574,15 +559,6 @@ const metricsViewReducers = {
       exploreState.selectedComparisonTimeRange = comparisonTimeRange;
 
       correctExploreState(metricsViewSpec, exploreState);
-    });
-  },
-
-  setTimeGrain(name: string, timeGrain: V1TimeGrain) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.selectedTimeRange = {
-        ...(exploreState.selectedTimeRange as DashboardTimeControls),
-        interval: timeGrain,
-      };
     });
   },
 

@@ -22,8 +22,10 @@
   import SyntaxElement from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/SyntaxElement.svelte";
   import ZoneContent from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/ZoneContent.svelte";
   import { Clock, Check } from "lucide-svelte";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains.ts";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import {
+    MinSupportedGrain,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains.ts";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
   import {
     RillAllTimeInterval,
@@ -446,7 +448,7 @@
             {interval}
             zone={timeZone}
             minTimeGrain={V1TimeGrainToDateTimeUnit[
-              smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
+              smallestTimeGrain ?? MinSupportedGrain
             ]}
             {minDate}
             {maxDate}
@@ -477,7 +479,7 @@
     {snapToEnd}
     {ref}
     zone={timeZone}
-    onSelectEnding={(g) => timeFilterManager.onSelectGrain(g)}
+    onSelectEnding={(g) => timeFilterManager.onSelectGrainEnding(g)}
     onToggleAlignment={(inclusive) => {
       timeFilterManager.onSelectAsOfOption(ref, inclusive);
     }}

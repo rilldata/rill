@@ -8,8 +8,10 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types.ts";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains.ts";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import {
+    MinSupportedGrain,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains.ts";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
@@ -179,7 +181,7 @@
               {#if !comparisonInterval || comparisonInterval?.isValid}
                 <CalendarPlusDateInput
                   minTimeGrain={V1TimeGrainToDateTimeUnit[
-                    smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
+                    smallestTimeGrain ?? MinSupportedGrain
                   ]}
                   {maxDate}
                   {minDate}

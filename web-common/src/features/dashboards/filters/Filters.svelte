@@ -3,7 +3,7 @@
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
-  import ExpressionFilters from "./ExpressionFilters.svelte";
+  import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ExpressionFilters.svelte";
   import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
   import { untrack } from "svelte";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";

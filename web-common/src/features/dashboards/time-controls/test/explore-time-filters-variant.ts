@@ -21,6 +21,7 @@ import {
   RESOLVED_RILL_TIMES,
   TIME_RANGE_SUMMARY,
   YAML_TIME_RANGES,
+  YAML_TIME_ZONES,
 } from "@rilldata/web-common/features/dashboards/time-controls/test/rill-time-mocks";
 import { waitForTimeRangeLabel } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filter-test-utils";
 import type { TimeFiltersVariant } from "@rilldata/web-common/features/dashboards/time-controls/test/time-filters-suite";
@@ -34,6 +35,7 @@ import {
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { afterAll, beforeEach, expect } from "vitest";
+import type { V1ResolvedTimeRange } from "@rilldata/web-common/runtime-client";
 
 // Url params for the dashboard before any time filter is applied, coming from the yaml preset.
 // A rilltime expression carries characters the url escapes, and the url search history holds the
@@ -80,6 +82,7 @@ export function useExploreTimeFiltersVariant(
       {
         ...AD_BIDS_EXPLORE_INIT,
         timeRanges: YAML_TIME_RANGES,
+        timeZones: YAML_TIME_ZONES,
         defaultPreset: {
           ...AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
           timeRange: DEFAULT_TIME_RANGE,
@@ -122,6 +125,7 @@ export function useExploreTimeFiltersVariant(
       getTimeGrain: () => exploreState()?.selectedTimeRange?.interval,
       getComparisonTimeRange: () =>
         testTimeRange(exploreState()?.selectedComparisonTimeRange),
+      getComparisonEnabled: () => exploreState()?.showTimeComparison ?? false,
     },
 
     render: async (initUrlSearch?: string) => {
@@ -156,9 +160,10 @@ function exploreState() {
 
 function testTimeRange(timeRange: DashboardTimeControls | undefined) {
   if (!timeRange?.name) return undefined;
-  return {
-    name: timeRange.name,
+  return <V1ResolvedTimeRange>{
+    expression: timeRange.name,
     start: timeRange.start.toISOString(),
     end: timeRange.end.toISOString(),
+    ...("interval" in timeRange ? { grain: timeRange.interval } : {}),
   };
 }

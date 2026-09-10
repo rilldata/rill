@@ -7,6 +7,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
   V1ResolveCanvasResponse,
+  V1ResolvedTimeRange,
   V1Resource,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -163,10 +164,7 @@ export class DashboardFetchMocks {
   ) {
     this.responses.set(
       `queries__metrics-views__time-ranges__${metricsViewName}`,
-      {
-        timeRanges: [{ start, end }],
-        resolvedTimeRanges: [{ expression: "PT6H", start, end }],
-      },
+      [{ expression: "PT6H", start, end }],
     );
   }
 
@@ -177,11 +175,14 @@ export class DashboardFetchMocks {
    */
   public mockResolvedRillTimes(
     metricsViewName: string,
-    resolvedRillTimes: Record<string, { start: string; end: string }>,
+    resolvedRillTimes: Record<string, V1ResolvedTimeRange>,
   ) {
     this.responses.set(
-      `queries__metrics-views__resolved-rill-times__${metricsViewName}`,
-      resolvedRillTimes,
+      `queries__metrics-views__time-ranges__${metricsViewName}`,
+      Object.entries(resolvedRillTimes).map(([expression, tr]) => ({
+        expression,
+        ...tr,
+      })),
     );
   }
 
@@ -300,26 +301,12 @@ export class DashboardFetchMocks {
       service === "QueryService" &&
       method === "MetricsViewTimeRanges"
     ) {
-      const resolvedRillTimes: Record<string, { start: string; end: string }> =
+      const resolvedTimeRanges: V1ResolvedTimeRange[] =
         this.responses.get(
-          `queries__metrics-views__resolved-rill-times__${parsed.metricsViewName}`,
+          `queries__metrics-views__time-ranges__${parsed.metricsViewName}`,
         ) ?? {};
-      const expressions: string[] = parsed.expressions ?? [];
       responseData = {
-        resolvedTimeRanges: expressions
-          .map((expression) => {
-            const resolved = resolvedRillTimes[expression];
-            if (!resolved) {
-              // The caller treats a missing range as an unresolvable expression, which surfaces as
-              // a time range that never changes rather than as an error, so say so here.
-              console.error(
-                `No resolved interval mocked for rilltime expression "${expression}"`,
-              );
-              return undefined;
-            }
-            return { expression, ...resolved };
-          })
-          .filter(Boolean),
+        resolvedTimeRanges,
       };
     } else if (
       service === "QueryService" &&

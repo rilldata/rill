@@ -16,6 +16,8 @@ import {
   allowedGrainsForInterval,
   DateTimeUnitToV1TimeGrain,
   getGrainOrder,
+  MinSupportedDateTimeUnit,
+  MinSupportedGrain,
   V1TimeGrainToDateTimeUnit,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains.ts";
@@ -32,13 +34,23 @@ import {
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { DateTime, type Interval } from "luxon";
 import { getTruncationGrain } from "@rilldata/web-common/lib/time/rill-time-grains.ts";
-import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types.ts";
+import {
+  TimeComparisonOption,
+  TimeOffsetType,
+} from "@rilldata/web-common/lib/time/types.ts";
 import {
   getAvailableComparisonsForTimeRange,
   getComparisonInterval,
 } from "@rilldata/web-common/lib/time/comparisons";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { getDefaultTimeRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
+import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+import {
+  getDurationFromMS,
+  getDurationObjectFromMS,
+  getOffset,
+  getTimeWidth,
+} from "@rilldata/web-common/lib/time/transforms";
 
 type ComparisonTimeRangeOption = {
   name: TimeComparisonOption;
@@ -66,10 +78,19 @@ export class TimeFilterManager implements UrlParamsStore {
   // Computed values
   public minDate: DateTime<true> | undefined;
   public maxDate: DateTime<true> | undefined;
-  public interval = $state<Interval | undefined>(undefined);
-  public adjustedInterval = $state<Interval | undefined>(undefined);
-  public comparisonInterval = $state<Interval | undefined>(undefined);
-  public adjustedComparisonInterval = $state<Interval | undefined>(undefined);
+  public interval = $state<Interval<true> | undefined>(undefined);
+  public adjustedInterval = $state<Interval<true> | undefined>(undefined);
+  public comparisonInterval = $state<Interval<true> | undefined>(undefined);
+  public adjustedComparisonInterval = $state<Interval<true> | undefined>(
+    undefined,
+  );
+  public canPanLeft: boolean;
+  public canPanRight: boolean;
+  // For convenience
+  public timeStart: string | undefined;
+  public timeEnd: string | undefined;
+  public comparisonTimeStart: string | undefined;
+  public comparisonTimeEnd: string | undefined;
 
   // RillTime related values
   public parsedTime: RillTime | undefined;
@@ -109,6 +130,28 @@ export class TimeFilterManager implements UrlParamsStore {
       if (!maxDate?.isValid) return undefined;
       return maxDate;
     });
+
+    this.canPanLeft = $derived.by(() => {
+      if (!this.minDate || !this.interval) return false;
+      // Selected start - min > 0
+      const diff = this.interval.start.diff(this.minDate);
+      return diff.milliseconds > 0;
+    });
+    this.canPanRight = $derived.by(() => {
+      if (!this.minDate || !this.interval) return false;
+      // max - selected end > 0
+      const diff = this.minDate.diff(this.interval.end);
+      return diff.milliseconds > 0;
+    });
+
+    this.timeStart = $derived(this.interval?.start.toJSDate().toISOString());
+    this.timeEnd = $derived(this.interval?.end.toJSDate().toISOString());
+    this.comparisonTimeStart = $derived(
+      this.comparisonInterval?.start.toJSDate().toISOString(),
+    );
+    this.comparisonTimeEnd = $derived(
+      this.comparisonInterval?.end.toJSDate().toISOString(),
+    );
 
     this.parsedTime = $derived.by(() => {
       if (!this.timeRange) return undefined;
@@ -180,10 +223,7 @@ export class TimeFilterManager implements UrlParamsStore {
       urlParams.get(ExploreStateURLParams.TimeDimension) ?? undefined;
 
     if (urlParams.has(ExploreStateURLParams.TimeRange)) {
-      void this.onSelectRange(
-        urlParams.get(ExploreStateURLParams.TimeRange)!,
-        true,
-      );
+      void this.applyTimeRange(urlParams.get(ExploreStateURLParams.TimeRange)!);
     } else {
       let defaultTimeRange = this.yamlConfigProvider.defaultTimeRange;
       if (!defaultTimeRange) {
@@ -193,22 +233,19 @@ export class TimeFilterManager implements UrlParamsStore {
         );
       }
       if (defaultTimeRange) {
-        void this.onSelectRange(defaultTimeRange, true);
+        void this.applyTimeRange(defaultTimeRange);
       } else {
         this.timeRange = undefined;
         this.interval = undefined;
       }
     }
 
-    if (urlParams.has(ExploreStateURLParams.ComparisonTimeRange)) {
-      this.showComparison = true;
-      void this.onSelectComparisonRange(
-        urlParams.get(ExploreStateURLParams.ComparisonTimeRange)!,
-      );
-    } else {
-      this.showComparison = false;
-      this.comparisonTimeRange = undefined;
-    }
+    this.showComparison = urlParams.has(
+      ExploreStateURLParams.ComparisonTimeRange,
+    );
+    this.applyComparisonRange(
+      urlParams.get(ExploreStateURLParams.ComparisonTimeRange) ?? "rill-PP",
+    );
   }
 
   public applyFilterToParams(urlParams: URLSearchParams) {
@@ -298,7 +335,25 @@ export class TimeFilterManager implements UrlParamsStore {
     }
   }
 
-  public onSelectGrain(grain: V1TimeGrain | undefined) {
+  public onPan(direction: "left" | "right") {
+    if (!this.interval) return;
+
+    const currentRangeWidth = this.interval.length("milliseconds");
+    const panAmount = getDurationObjectFromMS(currentRangeWidth);
+
+    const newStart = this.interval.start
+      .setZone(this.timeZone)
+      [direction === "left" ? "plus" : "minus"](panAmount)
+      .toISO();
+    const newEnd = this.interval.end
+      .setZone(this.timeZone)
+      [direction === "left" ? "plus" : "minus"](panAmount)
+      .toISO();
+
+    void this.applyTimeRange(`${newStart} to ${newEnd}`);
+  }
+
+  public onSelectGrainEnding(grain: V1TimeGrain | undefined) {
     if (!this.timeRange) return;
 
     const newString = constructNewString({
@@ -309,6 +364,10 @@ export class TimeFilterManager implements UrlParamsStore {
     });
 
     return this.applyTimeRange(newString);
+  }
+
+  public onSelectGrain(grain: V1TimeGrain) {
+    this.timeGrain = grain;
   }
 
   public onSelectZone(tz: string) {
@@ -343,31 +402,8 @@ export class TimeFilterManager implements UrlParamsStore {
   }
 
   public onSelectComparisonRange(range: string) {
-    // TODO: reassign when primary time range changes.
-
-    this.comparisonTimeRange = range;
-    if (!this.showComparison) {
-      this.interval = undefined;
-      return;
-    }
-
-    try {
-      const parsed = parseRillTime(range);
-      if (parsed.interval instanceof RillIsoInterval) {
-        // TODO
-      } else {
-        this.interval = getComparisonInterval(
-          this.interval,
-          range,
-          this.timeZone,
-        );
-        this.adjustedInterval = this.interval
-          ? getAdjustedInterval(this.interval, this.timeGrain, this.timeZone)
-          : undefined;
-      }
-    } catch {
-      return undefined;
-    }
+    this.applyComparisonRange(range);
+    this.showComparison = true;
   }
 
   public onToggleShowComparison() {
@@ -375,6 +411,8 @@ export class TimeFilterManager implements UrlParamsStore {
   }
 
   private async applyTimeRange(newTimeRange: string, tz = this.timeZone) {
+    measureSelection.clear();
+
     // The runtime resolves the range against the metrics views, so their names are all this needs.
     // The time range summary can still be loading at this point;
     // waiting for it here would drop the range the dashboard loaded with.
@@ -437,8 +475,7 @@ export class TimeFilterManager implements UrlParamsStore {
 
     const allowedGrains = allowedGrainsForInterval(
       latestInterval,
-      this.metricsViewsProvider.smallestTimeGrain ??
-        V1TimeGrain.TIME_GRAIN_MINUTE,
+      this.metricsViewsProvider.smallestTimeGrain ?? MinSupportedGrain,
     );
 
     const finalGrain =
@@ -456,7 +493,38 @@ export class TimeFilterManager implements UrlParamsStore {
     );
     this.timeRange = newTimeRange;
     this.timeGrain = finalGrain;
+
+    // Recalc comparison time range internal.
+    if (this.comparisonTimeRange)
+      this.applyComparisonRange(this.comparisonTimeRange);
+
     this.timeRangeReady = true;
+  }
+
+  private applyComparisonRange(newComparisonTimeRange: string) {
+    this.comparisonTimeRange = newComparisonTimeRange;
+
+    try {
+      const parsed = parseRillTime(newComparisonTimeRange);
+      if (parsed.interval instanceof RillIsoInterval) {
+        this.comparisonTimeRange = TimeComparisonOption.CONTIGUOUS;
+      }
+
+      this.comparisonInterval = getComparisonInterval(
+        this.interval,
+        newComparisonTimeRange,
+        this.timeZone,
+      );
+      this.adjustedComparisonInterval = this.comparisonInterval
+        ? getAdjustedInterval(
+            this.comparisonInterval,
+            this.timeGrain,
+            this.timeZone,
+          )
+        : undefined;
+    } catch {
+      // no-op
+    }
   }
 
   private getComparisonTimeRangeOptions() {
@@ -509,7 +577,11 @@ export class TimeFilterManager implements UrlParamsStore {
           this.timeZone,
         );
 
-        if (!comparisonTimeRange) return undefined;
+        if (
+          !comparisonTimeRange ||
+          !comparisonTimeRange.length(MinSupportedDateTimeUnit)
+        )
+          return undefined;
         return <ComparisonTimeRangeOption>{
           name: co,
           key: i,
