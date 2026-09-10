@@ -396,7 +396,6 @@ export class ResourceMeta extends Message<ResourceMeta> {
 
   /**
    * Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
-   * It is currently user-defined and exposed as-is over the API, but Rill may also populate its own keys in the future (e.g. provenance).
    *
    * @generated from field: map<string, string> metadata = 20;
    */

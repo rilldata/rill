@@ -45,7 +45,6 @@ message ResourceMeta {
   // Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
   repeated string tags = 19;
   // Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
-  // It is currently user-defined and exposed as-is over the API, but Rill may also populate its own keys in the future (e.g. provenance).
   map<string, string> metadata = 20;
   bool hidden = 7;
   int64 version = 15;
