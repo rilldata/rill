@@ -717,9 +717,8 @@ type ResourceMeta struct {
 	FilePaths []string        `protobuf:"bytes,4,rep,name=file_paths,json=filePaths,proto3" json:"file_paths,omitempty"`
 	// Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
 	Tags []string `protobuf:"bytes,19,rep,name=tags,proto3" json:"tags,omitempty"`
-	// Metadata is user-defined key-value metadata. Parsed generically from any resource YAML's top-level "metadata:" field.
-	// Rill does not interpret it; it is exposed here for external tooling.
-	// It maps to an Apache Ossie `custom_extensions` entry with vendor_name "RILL" and data `{"metadata": {...}}`.
+	// Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+	// It is currently user-defined and exposed as-is over the API, but Rill may also populate its own keys in the future (e.g. provenance).
 	Metadata          map[string]string      `protobuf:"bytes,20,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Hidden            bool                   `protobuf:"varint,7,opt,name=hidden,proto3" json:"hidden,omitempty"`
 	Version           int64                  `protobuf:"varint,15,opt,name=version,proto3" json:"version,omitempty"`

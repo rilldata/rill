@@ -67,7 +67,7 @@ _[array of string]_ - Tags for organizing and filtering the resource (e.g. on th
 
 ### `metadata`
 
-_[object]_ - User-defined key-value metadata attached to the resource. Rill does not interpret it; it is exposed on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
+_[object]_ - Free-form key-value metadata attached to the resource and exposed on its meta over the API. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
 
 ### `dev`
 

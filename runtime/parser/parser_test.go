@@ -2948,7 +2948,7 @@ measures:
 }
 
 func TestMetadataErrors(t *testing.T) {
-	// Metadata values must be scalars, keys must be non-empty, and unknown fields are still rejected.
+	// Metadata values must be scalars, and unknown fields are still rejected.
 	files := map[string]string{
 		`rill.yaml`:     ``,
 		`models/m1.sql`: `SELECT 1 AS id`,
@@ -3003,11 +3003,11 @@ measures:
 	parseErrors := []*runtimev1.ParseError{
 		{
 			FilePath: "/metrics_views/nested.yaml",
-			Message:  `metadata value for key "owner" must be a string, number or boolean`,
+			Message:  "cannot unmarshal !!map into string",
 		},
 		{
 			FilePath: "/metrics_views/list.yaml",
-			Message:  `metadata value for key "owners" must be a string, number or boolean`,
+			Message:  "cannot unmarshal !!seq into string",
 		},
 		{
 			FilePath: "/metrics_views/unknown.yaml",

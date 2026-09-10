@@ -2385,9 +2385,8 @@ export interface V1ResourceMeta {
   filePaths?: string[];
   /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
   tags?: string[];
-  /** Metadata is user-defined key-value metadata. Parsed generically from any resource YAML's top-level "metadata:" field.
-Rill does not interpret it; it is exposed here for external tooling.
-It maps to an Apache Ossie `custom_extensions` entry with vendor_name "RILL" and data `{"metadata": {...}}`. */
+  /** Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+It is currently user-defined and exposed as-is over the API, but Rill may also populate its own keys in the future (e.g. provenance). */
   metadata?: V1ResourceMetaMetadata;
   hidden?: boolean;
   version?: string;
