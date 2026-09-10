@@ -179,9 +179,8 @@ func wrapDimFieldsInMVDFilter(n *metricsview.SelectNode, restrictions map[string
 	}
 }
 
-// mergeAllowLists merges the allow lists of several conjuncts on one dimension: a list that contains another list is dropped (the other refines it), and the rest are unioned in order of first appearance.
-// Every matching row contains a value from each list, so it keeps at least one value.
-// An intersection could leave a row with none, since a row may satisfy two conjuncts through different values.
+// mergeAllowLists merges the allow lists of several conjuncts on one dimension: a list that contains another list is dropped (the small one refines it so use that)
+// and the rest are unioned in order of first appearance.
 func mergeAllowLists(lists [][]string) []string {
 	sets := make([]map[string]bool, len(lists))
 	for i, l := range lists {
@@ -213,6 +212,7 @@ func isSuperset(i int, lists [][]string, sets []map[string]bool) bool {
 		if j == i || !isSubset(lists[j], sets[i]) {
 			continue
 		}
+		// if length is equal, prefer the earlier list (j < i) to preserve order of first appearance
 		if len(sets[j]) < len(sets[i]) || j < i {
 			return true
 		}
