@@ -109,7 +109,7 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			want:       nil,
 		},
 		{
-			name:       "only the conjunct on the unnested dim is used",
+			name:       "only the condition on the unnested dim is used",
 			dimensions: dims("tags", "city"),
 			where:      and(in("tags", "a"), eq("city", "NYC")),
 			want:       map[string]druidMVDRestriction{"tags": values("a")},
@@ -170,7 +170,7 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			want:       map[string]druidMVDRestriction{"tags": values("a"), "cats": regex("^(?i)x.*$")},
 		},
 		{
-			name:       "filter under an OR is not a top-level conjunct",
+			name:       "filter under an OR is not a top-level condition",
 			dimensions: dims("tags", "city"),
 			where:      cond(metricsview.OperatorOr, ilike("tags", "%a%"), eq("city", "NYC")),
 			want:       nil,
@@ -182,9 +182,21 @@ func TestDruidMVDRestrictions(t *testing.T) {
 			want:       nil,
 		},
 		{
-			name:       "null in the list is not narrowed",
+			name:       "NULL in the list is ignored, the strings are kept",
 			dimensions: dims("tags"),
-			where:      in("tags", "a", nil),
+			where:      in("tags", "a", nil, "b"),
+			want:       map[string]druidMVDRestriction{"tags": values("a", "b")},
+		},
+		{
+			name:       "an all-NULL list is not narrowed",
+			dimensions: dims("tags"),
+			where:      in("tags", nil),
+			want:       nil,
+		},
+		{
+			name:       "EQ NULL is not narrowed",
+			dimensions: dims("tags"),
+			where:      eq("tags", nil),
 			want:       nil,
 		},
 		{
@@ -398,7 +410,7 @@ func TestDruidMVDFilteredGroupBySQLSpine(t *testing.T) {
 }
 
 // TestDruidMVDFilteredSearchWithFilterSQL checks a dimension search combined with a filter on the searched dimension,
-// as the Search API's SQL fallback produces (the ILIKE conjunct first, then the caller's WHERE):
+// as the Search API's SQL fallback produces (the ILIKE condition first, then the caller's WHERE):
 // the search regex must be the projection restriction, so the results contain only values matching the search text.
 func TestDruidMVDFilteredSearchWithFilterSQL(t *testing.T) {
 	mv := &runtimev1.MetricsViewSpec{
@@ -512,7 +524,8 @@ func TestDruidMVDFilteredGroupBySQLExactified(t *testing.T) {
 	in := func(vals ...any) *metricsview.Expression {
 		return &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorIn, Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: vals}}}}
 	}
-	exactified := in("a")
+	// Exactify's TopN included the NULL group; the NULL entry must not disable the override.
+	exactified := in("a", nil)
 	qry := &metricsview.Query{
 		MetricsView: "mv",
 		Dimensions:  []metricsview.Dimension{{Name: "tags"}},

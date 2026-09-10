@@ -23,8 +23,8 @@ import (
 //     Does not occur from the UI, which keeps one filter per dimension; the one known producer, rewriteQueryDruidExactify, is handled through the exactified parameter.
 //   - The dimension is filtered by ILIKE while MetricsDruidMVDFilteredSearch is off (MV_FILTER_REGEX needs Druid 35), or by a second ILIKE (only the first narrows).
 //     The former is every dimension search on an older Druid; dimension search issues a single ILIKE.
-//   - The dimension is filtered by a comparison, a subquery (a filter on a measure), or an IN containing NULL or a non-string value: MV_FILTER has no counterpart, and NULL is not an array value.
-//     Selecting NULL in a filter is the practical case.
+//   - The dimension is filtered by a comparison, a subquery (a filter on a measure), or an IN containing a non-string value or only NULL: MV_FILTER has no counterpart.
+//     NULL entries alongside strings are simply ignored: a NULL row stays NULL under MV_FILTER, so narrowing does not affect it.
 //   - The dimension is filtered only by a security policy or another filter outside the query's WHERE clause: those are not inspected. Rare for a multi-value dimension.
 //   - The dimension is aggregated with count_distinct without being grouped: the leak is inside the measure and would need MV_FILTER in the measure expression.
 //
@@ -45,7 +45,7 @@ func (e *Executor) rewriteDruidMVDFilteredGroupBy(ast *metricsview.AST, exactifi
 
 	restrictions := druidMVDRestrictions(ast.MetricsView, ast.Query.Dimensions, ast.Query.Where, e.instanceCfg.MetricsDruidMVDFilteredSearch)
 	if exactified != nil {
-		if dim, vals, _, ok := mvdRestrictionFromConjunct(exactified); ok && druidMVDEligibleDims(ast.MetricsView, ast.Query.Dimensions)[dim] {
+		if dim, vals, _, ok := mvdRestrictionFromCondition(exactified); ok && druidMVDEligibleDims(ast.MetricsView, ast.Query.Dimensions)[dim] {
 			if restrictions == nil {
 				restrictions = make(map[string]druidMVDRestriction)
 			}
@@ -84,8 +84,8 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dime
 
 	res := make(map[string]druidMVDRestriction)
 	ambiguous := make(map[string]bool) // dimensions with more than one allow list
-	for _, conj := range topLevelConjuncts(where) {
-		dim, vals, regex, ok := mvdRestrictionFromConjunct(conj)
+	for _, cond := range topLevelConditions(where) {
+		dim, vals, regex, ok := mvdRestrictionFromCondition(cond)
 		if !ok || !eligible[dim] {
 			continue
 		}
@@ -185,26 +185,25 @@ func wrapDimFieldsInMVDFilter(n *metricsview.SelectNode, restrictions map[string
 	}
 }
 
-// topLevelConjuncts flattens the top-level AND conditions of expr into the individual conjuncts.
-// Any other expression is returned as the only conjunct.
-func topLevelConjuncts(expr *metricsview.Expression) []*metricsview.Expression {
+// topLevelConditions flattens the top-level ANDs of expr into the individual conditions.
+// Any other expression is returned as the only condition.
+func topLevelConditions(expr *metricsview.Expression) []*metricsview.Expression {
 	if expr == nil {
 		return nil
 	}
 	if expr.Condition != nil && expr.Condition.Operator == metricsview.OperatorAnd {
 		var res []*metricsview.Expression
 		for _, sub := range expr.Condition.Expressions {
-			res = append(res, topLevelConjuncts(sub)...)
+			res = append(res, topLevelConditions(sub)...)
 		}
 		return res
 	}
 	return []*metricsview.Expression{expr}
 }
 
-// mvdRestrictionFromConjunct returns the dimension and either the values of a `dim IN (...)` or `dim = ...` condition, or the regex of a `dim ILIKE ...` condition.
+// mvdRestrictionFromCondition returns the dimension and either the values of a `dim IN (...)` or `dim = ...` condition, or the regex of a `dim ILIKE ...` condition.
 // Like the AST, it accepts the values of an IN condition either as a single list or as one expression per value (the form the frontend sends).
-// It returns false for any other shape, or if any value is not a string, since multi-value dimensions hold strings only and NULL is not an array value.
-func mvdRestrictionFromConjunct(expr *metricsview.Expression) (dim string, vals []string, regex string, ok bool) {
+func mvdRestrictionFromCondition(expr *metricsview.Expression) (dim string, vals []string, regex string, ok bool) {
 	if expr.Condition == nil || len(expr.Condition.Expressions) < 2 {
 		return "", nil, "", false
 	}
@@ -255,13 +254,20 @@ func mvdRestrictionFromConjunct(expr *metricsview.Expression) (dim string, vals 
 		return "", nil, "", false
 	}
 
-	vals = make([]string, len(raw))
-	for i, v := range raw {
+	for _, v := range raw {
+		if v == nil {
+			// skip null values as they do not affect results when added to MV_FILTER_ONLY
+			// it will exist in the WHERE clause as dim IS NULL condition
+			continue
+		}
 		s, isString := v.(string)
 		if !isString {
 			return "", nil, "", false
 		}
-		vals[i] = s
+		vals = append(vals, s)
+	}
+	if len(vals) == 0 {
+		return "", nil, "", false
 	}
 	return left.Name, vals, "", true
 }
