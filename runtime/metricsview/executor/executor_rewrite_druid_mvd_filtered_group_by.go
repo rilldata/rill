@@ -16,9 +16,17 @@ import (
 // Wrapping the grouped expression in MV_FILTER_ONLY (or MV_FILTER_REGEX for an ILIKE filter) makes the group-by emit only the allowed values, while the WHERE clause keeps filtering the raw column.
 // Re-filtering the grouped output instead does not work: Druid's planner pushes a filter on a group key back below the aggregation.
 //
-// Narrowing is sound only if every row that passes the WHERE clause keeps at least one value.
-// So only top-level AND conjuncts of the filter are used, and they are never intersected (see mergeAllowLists).
-// Exclusion filters are ignored: a row containing an excluded value is excluded entirely, so nothing leaks from them.
+// Not handled; the group-by then still emits every value co-occurring in the matching rows, as it does without this rewrite:
+//   - The dimension is filtered inside an OR, e.g. `tags IN ('a') OR city = 'NYC'`: rows admitted through the other branch need not contain an allowed value, so narrowing would drop their values.
+//     Does not occur from the UI, which ANDs its per-dimension filters.
+//   - The dimension has two IN/= conditions: applying one is arbitrary and combining them is unsound, since a row may satisfy each through a different value.
+//     Does not occur from the UI, which keeps one filter per dimension; the one known producer, rewriteQueryDruidExactify, is handled through the exactified parameter.
+//   - The dimension is filtered by ILIKE while MetricsDruidMVDFilteredSearch is off (MV_FILTER_REGEX needs Druid 35), or by a second ILIKE (only the first narrows).
+//     The former is every dimension search on an older Druid; dimension search issues a single ILIKE.
+//   - The dimension is filtered by a comparison, a subquery (a filter on a measure), or an IN containing NULL or a non-string value: MV_FILTER has no counterpart, and NULL is not an array value.
+//     Selecting NULL in a filter is the practical case.
+//   - The dimension is filtered only by a security policy or another filter outside the query's WHERE clause: those are not inspected. Rare for a multi-value dimension.
+//   - The dimension is aggregated with count_distinct without being grouped: the leak is inside the measure and would need MV_FILTER in the measure expression.
 //
 // exactified is the `dim IN (...)` expression appended by rewriteQueryDruidExactify, if any.
 // Its values are exactly the groups to return, so they replace the restriction derived from the user's filter for that dimension.
@@ -62,8 +70,8 @@ type druidMVDRestriction struct {
 	regex  string
 }
 
-// druidMVDRestrictions returns, per unnested dimension in dims, the restriction implied by the top-level conjuncts of the filter of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
-// A regex takes precedence, since a search must return values matching the search text; otherwise the allow lists are merged (see mergeAllowLists).
+// druidMVDRestrictions returns, per unnested dimension, the restriction implied by the top-level filter of the form `dim IN (...)`, `dim = ...` or, if includeRegex is set, `dim ILIKE ...`.
+// A regex takes precedence over an allow list; a dimension with two allow lists is left out (see the assumptions on rewriteDruidMVDFilteredGroupBy).
 func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dimension, where *metricsview.Expression, includeRegex bool) map[string]druidMVDRestriction {
 	if where == nil {
 		return nil
@@ -74,32 +82,30 @@ func druidMVDRestrictions(mv *runtimev1.MetricsViewSpec, dims []metricsview.Dime
 		return nil
 	}
 
-	// Collect first, then resolve, so the result does not depend on the order or repetition of the conjuncts.
-	allowLists := make(map[string][][]string)
-	regexes := make(map[string]string)
+	res := make(map[string]druidMVDRestriction)
+	ambiguous := make(map[string]bool) // dimensions with more than one allow list
 	for _, conj := range topLevelConjuncts(where) {
 		dim, vals, regex, ok := mvdRestrictionFromConjunct(conj)
 		if !ok || !eligible[dim] {
 			continue
 		}
-		if regex != "" {
-			if _, ok := regexes[dim]; !ok {
-				regexes[dim] = regex
+		prev, hasPrev := res[dim]
+		switch {
+		case regex != "":
+			if includeRegex && prev.regex == "" {
+				res[dim] = druidMVDRestriction{regex: regex}
 			}
-			continue
+		case prev.regex != "":
+			// The regex wins.
+		case hasPrev:
+			ambiguous[dim] = true
+		default:
+			res[dim] = druidMVDRestriction{values: vals}
 		}
-		allowLists[dim] = append(allowLists[dim], vals)
 	}
-
-	res := make(map[string]druidMVDRestriction)
-	for dim := range eligible {
-		// A search must return values matching the search text.
-		if regex, ok := regexes[dim]; ok && includeRegex {
-			res[dim] = druidMVDRestriction{regex: regex}
-			continue
-		}
-		if lists := allowLists[dim]; len(lists) > 0 {
-			res[dim] = druidMVDRestriction{values: mergeAllowLists(lists)}
+	for dim := range ambiguous {
+		if res[dim].regex == "" {
+			delete(res, dim)
 		}
 	}
 	return res
@@ -177,57 +183,6 @@ func wrapDimFieldsInMVDFilter(n *metricsview.SelectNode, restrictions map[string
 		}
 		f.Expr = fmt.Sprintf("MV_FILTER_ONLY(%s, ARRAY[%s])", f.Expr, strings.Join(quoted, ", "))
 	}
-}
-
-// mergeAllowLists merges the allow lists of several conjuncts on one dimension: a list that contains another list is dropped (the small one refines it so use that)
-// and the rest are unioned in order of first appearance.
-func mergeAllowLists(lists [][]string) []string {
-	sets := make([]map[string]bool, len(lists))
-	for i, l := range lists {
-		sets[i] = make(map[string]bool, len(l))
-		for _, v := range l {
-			sets[i][v] = true
-		}
-	}
-
-	var res []string
-	seen := make(map[string]bool)
-	for i, l := range lists {
-		if isSuperset(i, lists, sets) {
-			continue
-		}
-		for _, v := range l {
-			if !seen[v] {
-				seen[v] = true
-				res = append(res, v)
-			}
-		}
-	}
-	return res
-}
-
-// isSuperset reports whether lists[i] is a strict superset of another list, or equal to an earlier one.
-func isSuperset(i int, lists [][]string, sets []map[string]bool) bool {
-	for j := range lists {
-		if j == i || !isSubset(lists[j], sets[i]) {
-			continue
-		}
-		// if length is equal, prefer the earlier list (j < i) to preserve order of first appearance
-		if len(sets[j]) < len(sets[i]) || j < i {
-			return true
-		}
-	}
-	return false
-}
-
-// isSubset reports whether every value in vals is in set.
-func isSubset(vals []string, set map[string]bool) bool {
-	for _, v := range vals {
-		if !set[v] {
-			return false
-		}
-	}
-	return true
 }
 
 // topLevelConjuncts flattens the top-level AND conditions of expr into the individual conjuncts.
