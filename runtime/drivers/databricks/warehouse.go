@@ -1,6 +1,7 @@
 package databricks
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	sqld "database/sql/driver"
@@ -15,7 +16,11 @@ import (
 	"github.com/apache/arrow-go/v18/parquet"
 	"github.com/apache/arrow-go/v18/parquet/compress"
 	"github.com/apache/arrow-go/v18/parquet/pqarrow"
+	// v12 Arrow IPC writer (kernel exports v12 records); aliased to avoid clashing
+	// with the v18 arrow/ipc import above.
+	dbipc "github.com/apache/arrow/go/v12/arrow/ipc"
 	"github.com/c2h5oh/datasize"
+	dbsqlerr "github.com/databricks/databricks-sql-go/errors"
 	dbsqlrows "github.com/databricks/databricks-sql-go/rows"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -48,7 +53,18 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	db, err := sql.Open("databricks", c.config.resolveDSN())
+	// effectiveDSN auto-detects Lakehouse//RT and selects the SEA backend if needed,
+	// shared with the OLAP path so ingest works without configuration. On a
+	// non-definitive result, defer like getDB (surface the probe error / retry) rather
+	// than ingest over a possibly-wrong backend.
+	dsn, definitive, probeErr := c.effectiveDSN(ctx)
+	if !definitive {
+		if probeErr != nil {
+			return nil, probeErr
+		}
+		return nil, errors.New("databricks: could not determine warehouse protocol")
+	}
+	db, err := sql.Open("databricks", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +98,20 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	ipcStreams, err := rows.(dbsqlrows.Rows).GetArrowIPCStreams(ctx)
+	// Thrift/DBSQL uses native IPC streams. The SEA backend (Lakehouse//RT) doesn't
+	// implement them and returns ErrNotSupportedByKernel, so fall back to
+	// GetArrowBatches via kernelIPCStreams; the parquet path is identical for both.
+	dr := rows.(dbsqlrows.Rows)
+	selfDescribing := false // whether each stream carries its own schema (kernel adapter)
+	ipcStreams, err := dr.GetArrowIPCStreams(ctx)
+	if errors.Is(err, dbsqlerr.ErrNotSupportedByKernel) {
+		var batches dbsqlrows.ArrowBatchIterator
+		batches, err = dr.GetArrowBatches(ctx)
+		if err == nil {
+			ipcStreams = &kernelIPCStreams{batches: batches}
+			selfDescribing = true
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -102,12 +131,13 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	}
 
 	return &fileIterator{
-		db:         db,
-		conn:       conn,
-		rows:       rows,
-		ipcStreams: ipcStreams,
-		logger:     c.logger,
-		tempDir:    tempDir,
+		db:             db,
+		conn:           conn,
+		rows:           rows,
+		ipcStreams:     ipcStreams,
+		selfDescribing: selfDescribing,
+		logger:         c.logger,
+		tempDir:        tempDir,
 	}, nil
 }
 
@@ -116,14 +146,63 @@ type fileIterator struct {
 	conn       *sql.Conn
 	rows       sqld.Rows
 	ipcStreams dbsqlrows.ArrowIPCStreamIterator
-	logger     *zap.Logger
-	tempDir    string
+	// selfDescribing is true when each stream carries its own schema message (the
+	// kernel adapter). For native Thrift streams it's false, and subsequent streams
+	// are read with ipc.WithSchema to validate cross-stream schema consistency.
+	selfDescribing bool
+	logger         *zap.Logger
+	tempDir        string
 
 	totalRecords int64
 	downloaded   bool
 }
 
 var _ drivers.FileIterator = &fileIterator{}
+
+// kernelIPCStreams adapts the SEA backend's ArrowBatchIterator to the
+// ArrowIPCStreamIterator this file consumes, re-serializing each batch to a
+// self-contained IPC stream with the driver's v12 writer.
+type kernelIPCStreams struct {
+	batches dbsqlrows.ArrowBatchIterator
+}
+
+var _ dbsqlrows.ArrowIPCStreamIterator = &kernelIPCStreams{}
+
+func (k *kernelIPCStreams) HasNext() bool { return k.batches.HasNext() }
+
+func (k *kernelIPCStreams) Next() (io.Reader, error) {
+	rec, err := k.batches.Next()
+	if err != nil {
+		return nil, err // propagates io.EOF
+	}
+	defer rec.Release()
+
+	var buf bytes.Buffer
+	w := dbipc.NewWriter(&buf, dbipc.WithSchema(rec.Schema()))
+	if err := w.Write(rec); err != nil {
+		_ = w.Close()
+		return nil, err
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return &buf, nil
+}
+
+func (k *kernelIPCStreams) Close() { k.batches.Close() }
+
+func (k *kernelIPCStreams) SchemaBytes() ([]byte, error) {
+	sc, err := k.batches.Schema()
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	w := dbipc.NewWriter(&buf, dbipc.WithSchema(sc))
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
 
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
@@ -238,7 +317,14 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 			return nil, err
 		}
 
-		rdr, err := ipc.NewReader(stream, ipc.WithSchema(schema))
+		// Native (Thrift) subsequent streams are validated against the first stream's
+		// schema; the kernel adapter's streams are self-describing, so skip WithSchema
+		// there (each carries its own schema message).
+		var opts []ipc.Option
+		if !f.selfDescribing {
+			opts = append(opts, ipc.WithSchema(schema))
+		}
+		rdr, err := ipc.NewReader(stream, opts...)
 		if err != nil {
 			return nil, err
 		}
