@@ -13,6 +13,7 @@
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem.ts";
   import { isSimpleMeasure } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
   import { MetricsViewSpecDimensionType } from "@rilldata/web-common/runtime-client";
+  import { DashboardShortcutAction } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   let {
     expressionFilterManager,
@@ -81,6 +82,7 @@
       <Tooltip distance={8} suppress={open}>
         <button
           {...props}
+          data-dashboard-shortcut={DashboardShortcutAction.OpenFilter}
           class:addBorder
           class:active={open}
           aria-label={m.dashboard_add_filter_button()}
