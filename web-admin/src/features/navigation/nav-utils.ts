@@ -84,7 +84,8 @@ export function isPublicURLPage(page: Page): boolean {
   return (
     page.route.id.startsWith("/[organization]/[project]/-/share/[token]") ||
     isPublicReportPage(page) ||
-    isPublicAlertPage(page)
+    isPublicAlertPage(page) ||
+    isPublicAIPage(page)
   );
 }
 
@@ -100,6 +101,16 @@ export function isPublicAlertPage(page: Page): boolean {
   return (
     !!page.route.id?.startsWith("/[organization]/[project]/-/alerts/[alert]") &&
     page.url.searchParams.has("token")
+  );
+}
+
+// AI reports in creator mode link recipients to the shared AI conversation with a magic token,
+// so the conversation page is a public URL page when a token is present.
+export function isPublicAIPage(page: Page): boolean {
+  return (
+    !!page.route.id?.startsWith(
+      "/[organization]/[project]/-/ai/[conversationId]",
+    ) && page.url.searchParams.has("token")
   );
 }
 

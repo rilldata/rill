@@ -12,6 +12,9 @@ import {
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "./types";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter";
+import { DateTime, Interval } from "luxon";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import { createQuery } from "@tanstack/svelte-query";
@@ -47,7 +50,12 @@ export function extractMessageText(message: V1Message): string {
       if (message.tool === ToolName.ROUTER_AGENT) {
         try {
           const parsed = JSON.parse(rawContent);
-          return parsed.prompt || parsed.response || rawContent;
+          return (
+            parsed.prompt ||
+            parsed.response ||
+            describeReportPrompt(parsed) ||
+            rawContent
+          );
         } catch {
           return rawContent;
         }
@@ -65,6 +73,64 @@ export function extractMessageText(message: V1Message): string {
     default:
       return rawContent;
   }
+}
+
+/**
+ * Scheduled AI reports start a conversation without a user prompt; the router call only carries the analyst agent's arguments.
+ * Describe the report's scope (explore and time range) instead of showing the raw arguments.
+ * Returns undefined if the message is not a report's opening call.
+ */
+function describeReportPrompt(routerArgs: {
+  analyst_agent_args?: {
+    is_report?: boolean;
+    explore?: string;
+    time_start?: string;
+    time_end?: string;
+    comparison_time_start?: string;
+    comparison_time_end?: string;
+  };
+}): string | undefined {
+  const args = routerArgs.analyst_agent_args;
+  if (!args?.is_report) return undefined;
+
+  const explore = args.explore ?? "";
+  const timeRange =
+    args.time_start && args.time_end
+      ? formatReportTimeRange(args.time_start, args.time_end)
+      : "";
+
+  let prompt: string;
+  if (explore && timeRange) {
+    prompt = m.chat_report_prompt_explore_time_range({ explore, timeRange });
+  } else if (explore) {
+    prompt = m.chat_report_prompt_explore({ explore });
+  } else if (timeRange) {
+    prompt = m.chat_report_prompt_time_range({ timeRange });
+  } else {
+    prompt = m.chat_report_prompt();
+  }
+
+  if (args.comparison_time_start && args.comparison_time_end) {
+    prompt = m.chat_report_prompt_comparison({
+      prompt,
+      comparisonTimeRange: formatReportTimeRange(
+        args.comparison_time_start,
+        args.comparison_time_end,
+      ),
+    });
+  }
+  return prompt;
+}
+
+// Report time ranges are resolved in the report's time zone (UTC by default) and are aligned to day boundaries there.
+// Format them in UTC so the boundaries stay on whole days instead of picking up the viewer's offset.
+function formatReportTimeRange(start: string, end: string): string {
+  return prettyFormatTimeRange(
+    Interval.fromDateTimes(
+      DateTime.fromISO(start, { zone: "utc" }),
+      DateTime.fromISO(end, { zone: "utc" }),
+    ),
+  );
 }
 
 export function invalidateConversationsList(instanceId: string) {

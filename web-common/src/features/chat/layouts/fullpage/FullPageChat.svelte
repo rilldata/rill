@@ -10,6 +10,7 @@
     getConversationManager,
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
+  import ReadOnlyChatInput from "../../core/input/ReadOnlyChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConnectClientPopover from "../../connect/ConnectClientPopover.svelte";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
@@ -18,6 +19,12 @@
     conversationSidebarCollapsed,
     toggleConversationSidebar,
   } from "./fullpage-store";
+
+  // Read-only mode is for visitors who can't send messages, e.g. anonymous recipients of an AI report opened with a magic token.
+  // It hides the conversation sidebar and the header actions, and replaces the input with a notice.
+  export let readOnly = false;
+  // Awaited before a shared conversation is forked (see Conversation.sendMessage).
+  export let beforeFork: (() => Promise<void> | void) | undefined = undefined;
 
   const { adminServer } = featureFlags;
 
@@ -59,29 +66,31 @@
 
 <div class="chat-fullpage">
   <!-- Conversation List Sidebar -->
-  <ConversationSidebar
-    {conversationManager}
-    basePath={`/${organization}/${project}/-/ai`}
-    collapsed={$conversationSidebarCollapsed}
-    onToggle={toggleConversationSidebar}
-    onConversationClick={() => {
-      chatInputComponent?.focusInput();
-    }}
-    onNewConversationClick={() => {
-      chatInputComponent?.focusInput();
-    }}
-  >
-    <svelte:fragment slot="footer">
-      <slot name="sidebar-footer" />
-    </svelte:fragment>
-    <svelte:fragment slot="collapsed-footer">
-      <slot name="sidebar-collapsed-footer" />
-    </svelte:fragment>
-  </ConversationSidebar>
+  {#if !readOnly}
+    <ConversationSidebar
+      {conversationManager}
+      basePath={`/${organization}/${project}/-/ai`}
+      collapsed={$conversationSidebarCollapsed}
+      onToggle={toggleConversationSidebar}
+      onConversationClick={() => {
+        chatInputComponent?.focusInput();
+      }}
+      onNewConversationClick={() => {
+        chatInputComponent?.focusInput();
+      }}
+    >
+      <svelte:fragment slot="footer">
+        <slot name="sidebar-footer" />
+      </svelte:fragment>
+      <svelte:fragment slot="collapsed-footer">
+        <slot name="sidebar-collapsed-footer" />
+      </svelte:fragment>
+    </ConversationSidebar>
+  {/if}
 
   <!-- Main Chat Area -->
   <div class="chat-main">
-    {#if $adminServer}
+    {#if $adminServer && !readOnly}
       <div class="chat-header">
         <ConnectClientPopover />
         {#if currentConversation?.id}
@@ -105,12 +114,17 @@
 
     <div class="chat-input-section">
       <div class="chat-input-wrapper">
-        <ChatInput
-          {conversationManager}
-          onSend={onMessageSend}
-          bind:this={chatInputComponent}
-          config={projectChat}
-        />
+        {#if readOnly}
+          <ReadOnlyChatInput />
+        {:else}
+          <ChatInput
+            {conversationManager}
+            onSend={onMessageSend}
+            bind:this={chatInputComponent}
+            config={projectChat}
+            {beforeFork}
+          />
+        {/if}
       </div>
     </div>
   </div>
