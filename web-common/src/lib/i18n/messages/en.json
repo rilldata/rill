@@ -2184,6 +2184,20 @@
       }
     }
   ],
+  "users_already_member_joined_groups": [
+    {
+      "declarations": [
+        "input emails",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{emails} is already a member of this organization and was added to the selected groups",
+        "countPlural=other": "{emails} are already members of this organization and were added to the selected groups"
+      }
+    }
+  ],
   "users_and_more": "and {count} more",
   "users_attribute_key_placeholder": "Key",
   "users_attribute_value_placeholder": "Value",

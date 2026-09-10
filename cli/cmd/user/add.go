@@ -7,6 +7,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -86,6 +88,11 @@ they accept the invitation. When only --group is given, the user is added to the
 					Usergroups: groups,
 				})
 				if err != nil {
+					// The server applies the user groups even when the user is already a member, so only the role was a no-op.
+					if len(groups) > 0 && status.Code(err) == codes.AlreadyExists {
+						ch.PrintfSuccess("User %q is already a member of the organization %q, added to %s\n", email, ch.Org, groupsList(groups))
+						return nil
+					}
 					return err
 				}
 
@@ -146,6 +153,10 @@ they accept the invitation. When only --group is given, the user is added to the
 
 			// Handle adding the user to groups only.
 			// This works for org members and for users with a pending org invite (they join the groups on acceptance).
+			// Attributes apply to the user's org membership, which this path does not touch, so reject them instead of dropping them silently.
+			if attrsPB != nil {
+				return fmt.Errorf("attributes can only be set together with --role or --project")
+			}
 			for _, group := range groups {
 				_, err = client.AddUsergroupMemberUser(cmd.Context(), &adminv1.AddUsergroupMemberUserRequest{
 					Org:       ch.Org,
@@ -178,7 +189,6 @@ they accept the invitation. When only --group is given, the user is added to the
 					Org:        ch.Org,
 					Email:      email,
 					Role:       orgRole,
-					Attributes: attrsPB,
 					Usergroups: groups,
 				})
 				if err != nil {
@@ -218,12 +228,17 @@ func groupsSuffix(groups []string, pending bool) string {
 	if len(groups) == 0 {
 		return ""
 	}
+	if pending {
+		return fmt.Sprintf(" (will be added to %s on acceptance)", groupsList(groups))
+	}
+	return fmt.Sprintf(" and to %s", groupsList(groups))
+}
+
+// groupsList names the user groups, pluralizing the noun.
+func groupsList(groups []string) string {
 	noun := "user group"
 	if len(groups) > 1 {
 		noun = "user groups"
 	}
-	if pending {
-		return fmt.Sprintf(" (will be added to %s %s on acceptance)", noun, strings.Join(groups, ", "))
-	}
-	return fmt.Sprintf(" and to %s %s", noun, strings.Join(groups, ", "))
+	return fmt.Sprintf("%s %s", noun, strings.Join(groups, ", "))
 }

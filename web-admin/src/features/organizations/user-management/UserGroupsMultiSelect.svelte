@@ -19,7 +19,12 @@
   $: groupsQuery = getOrgUsergroupsInfinite(organization);
 
   // Groups are few enough per org that we load every page up front rather than paginate a dropdown.
-  $: if ($groupsQuery.hasNextPage && !$groupsQuery.isFetchingNextPage) {
+  // Stop on error: hasNextPage stays true after a failed page, which would otherwise retry in a loop.
+  $: if (
+    $groupsQuery.hasNextPage &&
+    !$groupsQuery.isFetchingNextPage &&
+    !$groupsQuery.isError
+  ) {
     void $groupsQuery.fetchNextPage();
   }
 

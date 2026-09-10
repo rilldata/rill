@@ -3,13 +3,14 @@
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceListUsergroupsForOrganizationAndUser,
     createAdminServiceRemoveUsergroupMemberUser,
-    getAdminServiceListUsergroupsForOrganizationAndUserQueryKey,
+    getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
   import UserGroupsMultiSelect from "@rilldata/web-admin/features/organizations/user-management/UserGroupsMultiSelect.svelte";
   import {
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
     invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
   } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -46,9 +47,13 @@
   const removeUsergroupMemberUser =
     createAdminServiceRemoveUsergroupMemberUser();
 
+  // The dialog does not paginate, so ask for every group in one page.
+  // The server's default of 20 would silently truncate the baseline and make those groups unremovable here.
+  $: listParams = { userId, pageSize: 1000 };
+
   $: memberGroupsQuery = createAdminServiceListUsergroupsForOrganizationAndUser(
     organization,
-    { userId },
+    listParams,
     { query: { enabled: open && !pendingAcceptance && !!userId } },
   );
 
@@ -76,6 +81,8 @@
   $: hasChanges = additions.length > 0 || removals.length > 0;
 
   function handleClose() {
+    // The dialog is locked while saving (see the markup), so this only guards direct calls
+    if (saving) return;
     open = false;
     initialized = false;
     selectedGroups = [];
@@ -84,38 +91,45 @@
 
   async function handleSave() {
     saving = true;
+    // Snapshot the target and the changes before the first await:
+    // the props and the derived additions/removals are reactive, so if they changed mid-save
+    // the remaining requests would be sent for a different user or a different selection.
+    const targetEmail = email;
+    const targetUserId = userId;
+    const toAdd = [...additions];
+    const toRemove = [...removals];
+    // The changes are applied one at a time, so track what actually landed:
+    // on a partial failure the baseline has to move with them, otherwise a retry
+    // resends a committed addition and the server rejects it as a duplicate.
+    const added: string[] = [];
+    const removed: string[] = [];
     try {
-      for (const group of additions) {
+      for (const group of toAdd) {
         await $addUsergroupMemberUser.mutateAsync({
           org: organization,
           usergroup: group,
-          email,
+          email: targetEmail,
           data: {},
         });
+        added.push(group);
       }
-      for (const group of removals) {
+      for (const group of toRemove) {
         await $removeUsergroupMemberUser.mutateAsync({
           org: organization,
           usergroup: group,
-          email,
+          email: targetEmail,
         });
+        removed.push(group);
       }
 
-      await Promise.all([
-        invalidateOrgMemberUsers(queryClient, organization),
-        invalidateOrgInvites(queryClient, organization),
-        invalidateOrgUsergroups(queryClient, organization),
-        queryClient.invalidateQueries({
-          queryKey: getAdminServiceListUsergroupsForOrganizationAndUserQueryKey(
-            organization,
-            { userId },
-          ),
-        }),
-      ]);
-
       eventBus.emit("notification", { message: m.users_groups_updated() });
+      saving = false;
       handleClose();
     } catch (error) {
+      initialGroups = [
+        ...initialGroups.filter((g) => !removed.includes(g)),
+        ...added,
+      ];
       eventBus.emit("notification", {
         message: m.users_error_updating_groups({
           message: error?.response?.data?.message ?? String(error),
@@ -123,6 +137,23 @@
         type: "error",
       });
     } finally {
+      if (added.length > 0 || removed.length > 0) {
+        await Promise.all([
+          invalidateOrgMemberUsers(queryClient, organization),
+          invalidateOrgInvites(queryClient, organization),
+          invalidateOrgUsergroups(queryClient, organization),
+          invalidateUserGroupsForUser(queryClient, organization, targetUserId),
+          // The member lists of the groups that changed, as shown in the group dialogs
+          ...[...added, ...removed].map((group) =>
+            queryClient.invalidateQueries({
+              queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
+                organization,
+                group,
+              ),
+            }),
+          ),
+        ]);
+      }
       saving = false;
     }
   }
@@ -139,7 +170,13 @@
       <div {...props} class="hidden"></div>
     {/snippet}
   </DialogTrigger>
-  <DialogContent class="translate-y-[-200px]" interactOutsideBehavior="ignore">
+  <!-- Lock the dialog while saving: closing it would let the parent point it at another user before the requests finish -->
+  <DialogContent
+    class="translate-y-[-200px]"
+    interactOutsideBehavior="ignore"
+    escapeKeydownBehavior={saving ? "ignore" : "close"}
+    noClose={saving}
+  >
     <DialogHeader>
       <DialogTitle>{m.users_manage_groups()}</DialogTitle>
     </DialogHeader>
@@ -165,6 +202,7 @@
         <UserGroupsMultiSelect
           id="manage-usergroups"
           {organization}
+          disabled={saving}
           bind:selected={selectedGroups}
         />
       </div>
@@ -176,6 +214,7 @@
               <span class="truncate" title={group}>{group}</span>
               <Button
                 type="destructive"
+                disabled={saving}
                 onClick={() =>
                   (selectedGroups = selectedGroups.filter((g) => g !== group))}
               >
@@ -190,7 +229,9 @@
     {/if}
 
     <DialogFooter>
-      <Button type="tertiary" onClick={handleClose}>{m.users_cancel()}</Button>
+      <Button type="tertiary" disabled={saving} onClick={handleClose}>
+        {m.users_cancel()}
+      </Button>
       <Button
         type="primary"
         disabled={saving || isLoading || !hasChanges}

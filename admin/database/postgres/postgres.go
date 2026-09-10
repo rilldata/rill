@@ -1087,13 +1087,25 @@ func (c *connection) UpdateUsergroupDescription(ctx context.Context, description
 
 func (c *connection) DeleteUsergroup(ctx context.Context, groupID string) error {
 	// Pending org invites reference usergroups by ID without a foreign key, so scrub the group from them first.
-	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE org_invites SET usergroup_ids = array_remove(usergroup_ids, $1::text) WHERE $1::text = ANY(usergroup_ids)", groupID)
+	// The scrub and the delete must land together, otherwise a failed delete would silently drop the invitees' group assignment.
+	ctx, tx, err := c.NewTx(ctx, true)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	_, err = c.getDB(ctx).ExecContext(ctx, "UPDATE org_invites SET usergroup_ids = array_remove(usergroup_ids, $1::text) WHERE $1::text = ANY(usergroup_ids)", groupID)
 	if err != nil {
 		return parseErr("org invites", err)
 	}
 
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups WHERE id=$1", groupID)
-	return checkDeleteRow("usergroup", res, err)
+	err = checkDeleteRow("usergroup", res, err)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
@@ -2418,9 +2430,12 @@ func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID
 	var qry strings.Builder
 	qry.WriteString("SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, COALESCE(r.name, '') as role_name")
 	if withCounts {
+		// Counts pending invitees as well, to match the members listed by FindUsergroupMemberUsers.
 		qry.WriteString(`,
 			(
 				SELECT COUNT(*) FROM usergroups_users uug WHERE uug.usergroup_id = ug.id
+			) + (
+				SELECT COUNT(*) FROM org_invites oi WHERE oi.org_id = ug.org_id AND ug.id::text = ANY(oi.usergroup_ids)
 			) as users_count
 		`)
 	}
@@ -2484,9 +2499,12 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 	var qry strings.Builder
 	qry.WriteString(`SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name", upr.resources, upr.restrict_resources`)
 	if withCounts {
+		// Counts pending invitees as well, to match the members listed by FindUsergroupMemberUsers.
 		qry.WriteString(`,
 			(
 				SELECT COUNT(*) FROM usergroups_users uug WHERE uug.usergroup_id = ug.id
+			) + (
+				SELECT COUNT(*) FROM org_invites oi WHERE oi.org_id = ug.org_id AND ug.id::text = ANY(oi.usergroup_ids)
 			) as users_count
 		`)
 	}

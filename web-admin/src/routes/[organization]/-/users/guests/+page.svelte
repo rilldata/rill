@@ -1,10 +1,7 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
-  import type {
-    V1OrganizationInvite,
-    V1OrganizationMemberUser,
-  } from "@rilldata/web-admin/client";
+  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddUsersDialog.svelte";
@@ -18,7 +15,10 @@
     getOrgUserInvites,
     getOrgUserMembers,
   } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
-  import type { OrgUserRow } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
+  import {
+    coerceInvitesToUsers,
+    type OrgUserRow,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -73,16 +73,8 @@
       (page) => page.invites ?? [],
     ) ?? [];
 
-  function coerceInvitesToUsers(invites: V1OrganizationInvite[]) {
-    return invites.map((invite) => ({
-      ...invite,
-      userEmail: invite.email,
-      roleName: invite.roleName,
-    }));
-  }
-
   $: combinedRows = [
-    ...allOrgMemberUsersRows,
+    ...(allOrgMemberUsersRows as OrgUserRow[]),
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
@@ -103,13 +95,13 @@
     } else if (filterSelection === "members") {
       // Only members (org admin, editor, viewer)
       matchesRole =
-        !("invitedBy" in user) &&
+        !user.pendingAcceptance &&
         (user.roleName === OrgUserRoles.Admin ||
           user.roleName === OrgUserRoles.Editor ||
           user.roleName === OrgUserRoles.Viewer);
     } else if (filterSelection === "pending") {
       // Only users with pending invites
-      matchesRole = "invitedBy" in user;
+      matchesRole = !!user.pendingAcceptance;
     }
 
     return matchesSearch && matchesRole;
@@ -175,7 +167,7 @@
             manageGroupsUser = {
               email: user.userEmail ?? "",
               userId: user.userId ?? "",
-              pendingAcceptance: "invitedBy" in user,
+              pendingAcceptance: !!user.pendingAcceptance,
               usergroups: user.usergroups ?? [],
             };
             isManageGroupsDialogOpen = true;

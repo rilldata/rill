@@ -654,7 +654,7 @@ func (s *Server) resolveUsergroupsForMembership(ctx context.Context, orgName str
 		seen[group.ID] = true
 
 		if !forceAccess && !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgMembers {
-			return nil, status.Error(codes.PermissionDenied, "not allowed to add user group members")
+			return nil, status.Error(codes.PermissionDenied, "not allowed to manage user group members")
 		}
 
 		if group.Managed {
@@ -760,19 +760,11 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 		attribute.String("args.email", req.Email),
 	)
 
-	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
+	groups, err := s.resolveUsergroupsForMembership(ctx, req.Org, []string{req.Usergroup}, false)
 	if err != nil {
 		return nil, err
 	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to remove user group members")
-	}
-
-	if group.Managed {
-		return nil, status.Error(codes.FailedPrecondition, "cannot edit managed user group")
-	}
+	group := groups[0]
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {

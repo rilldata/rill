@@ -6,6 +6,7 @@ import {
   getAdminServiceListOrganizationMemberUsersInfiniteQueryKey,
   getAdminServiceListOrganizationMemberUsersQueryKey,
   getAdminServiceListUsergroupMemberUsersQueryKey,
+  getAdminServiceListUsergroupsForOrganizationAndUserQueryKey,
   type V1OrganizationInvite,
   type V1OrganizationMemberUser,
   type V1OrganizationPermissions,
@@ -17,11 +18,26 @@ import type { QueryClient } from "@tanstack/query-core";
 export type AttributeRow = { key: string; value: string };
 
 // A row of the org users table: a member, or a pending invite coerced into the same shape.
-// Pending rows are recognised by the presence of invitedBy.
 export interface OrgUserRow
   extends V1OrganizationMemberUser,
     V1OrganizationInvite {
   invitedBy?: string;
+  // Set by coerceInvitesToUsers; members never carry it.
+  pendingAcceptance?: boolean;
+}
+
+// Coerces org invites into rows of the org users table, tagging them as pending.
+// The tag is explicit rather than derived from invitedBy, which is empty for an invite
+// sent by a service token or by a since-deleted user.
+export function coerceInvitesToUsers(
+  invites: V1OrganizationInvite[],
+): OrgUserRow[] {
+  return invites.map((invite) => ({
+    ...invite,
+    userEmail: invite.email,
+    roleName: invite.roleName,
+    pendingAcceptance: true,
+  }));
 }
 
 // A member of a user group as shown in the group dialogs.
@@ -134,6 +150,23 @@ export function invalidateOrgUsergroups(
         ),
     }),
   ]);
+}
+
+// The groups of one org user are read with different params by the users table dropdown (defaults)
+// and the manage groups dialog (one large page), so their query keys differ.
+// TanStack matches keys partially, so a key holding only the userId covers every variant for that user;
+// without a userId the key covers every user in the org.
+export function invalidateUserGroupsForUser(
+  queryClient: QueryClient,
+  organization: string,
+  userId?: string,
+) {
+  return queryClient.invalidateQueries({
+    queryKey: getAdminServiceListUsergroupsForOrganizationAndUserQueryKey(
+      organization,
+      userId ? { userId } : undefined,
+    ),
+  });
 }
 
 export async function invalidateAfterUserDelete(

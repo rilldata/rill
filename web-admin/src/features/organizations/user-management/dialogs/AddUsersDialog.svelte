@@ -9,6 +9,7 @@
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
     invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
     type AttributeRow,
   } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import {
@@ -53,6 +54,8 @@
   // Emails rejected because they already belong to the org, kept apart from other
   // failures (e.g. invalid attributes) so each is reported for what it is.
   let alreadyMembers: string[] = [];
+  // Set when groups were selected: the server still adds an existing member to them, so that part succeeded
+  let alreadyMembersJoinedGroups = false;
   let failedInvites: string[] = [];
   let showAttributes = false;
   // Names of the user groups every invited user is added to (or joins on acceptance)
@@ -120,6 +123,7 @@
       validators: schema,
       async onUpdate({ form }) {
         alreadyMembers = [];
+        alreadyMembersJoinedGroups = false;
         failedInvites = [];
         const succeeded: string[] = [];
         const existing: string[] = [];
@@ -179,6 +183,17 @@
           });
         }
 
+        // An existing member is reported as AlreadyExists even though the server has added them to the
+        // requested groups, so their membership counts and group lists have changed and need a refetch.
+        if (existing.length > 0 && usergroups) {
+          alreadyMembersJoinedGroups = true;
+          await Promise.all([
+            invalidateOrgMemberUsers(queryClient, organization),
+            invalidateOrgUsergroups(queryClient, organization),
+            invalidateUserGroupsForUser(queryClient, organization),
+          ]);
+        }
+
         // Keep the dialog open with an inline explanation of what went wrong
         alreadyMembers = existing;
         failedInvites = failed;
@@ -214,6 +229,7 @@
       role = "";
       isSuperUser = false;
       alreadyMembers = [];
+      alreadyMembersJoinedGroups = false;
       failedInvites = [];
       $form.emails = [""];
       $form.attributes = [];
@@ -236,6 +252,7 @@
       role = "";
       isSuperUser = false;
       alreadyMembers = [];
+      alreadyMembersJoinedGroups = false;
       failedInvites = [];
       $form.emails = [""];
       $form.attributes = [];
@@ -357,10 +374,17 @@
 
       {#if alreadyMembers.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {m.users_already_member({
-            emails: alreadyMembers.join(", "),
-            count: alreadyMembers.length,
-          })}
+          {#if alreadyMembersJoinedGroups}
+            {m.users_already_member_joined_groups({
+              emails: alreadyMembers.join(", "),
+              count: alreadyMembers.length,
+            })}
+          {:else}
+            {m.users_already_member({
+              emails: alreadyMembers.join(", "),
+              count: alreadyMembers.length,
+            })}
+          {/if}
         </div>
       {/if}
 

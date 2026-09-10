@@ -2090,7 +2090,7 @@ func TestRBAC(t *testing.T) {
 			Usergroups: []string{"g1"},
 		})
 		require.Error(t, err)
-		require.ErrorContains(t, err, "not allowed to add user group members")
+		require.ErrorContains(t, err, "not allowed to manage user group members")
 
 		// Unlike attributes, groups can be applied to a user who is already an org member
 		_, err = c1.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
