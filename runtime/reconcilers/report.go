@@ -207,7 +207,7 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:    r.C.Runtime,
 			InstanceID: r.C.InstanceID,
-			Properties: spec.ResolverProperties.AsMap(),
+			Properties: resolverProperties(spec),
 			Claims:     claims,
 			ForExport:  false,
 		})
@@ -798,7 +798,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
-		ResolverProperties: props,
+		ResolverProperties: resolverProperties(rep.Spec),
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
@@ -880,6 +880,16 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 	default:
 		return f.String()
 	}
+}
+
+// resolverProperties returns the report's resolver properties as they should be passed to the resolver.
+// For AI reports, it marks the properties as belonging to a report, which lets the resolver's validation pass (e.g. a prompt is optional).
+func resolverProperties(spec *runtimev1.ReportSpec) map[string]any {
+	props := spec.ResolverProperties.AsMap()
+	if spec.Resolver == "ai" {
+		props["is_report"] = true
+	}
+	return props
 }
 
 // computeInheritedWatermark computes the inherited watermark for the report.

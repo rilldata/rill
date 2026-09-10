@@ -88,6 +88,63 @@ notify:
 	require.WithinDuration(t, triggerTime, r2.GetReport().State.ExecutionHistory[0].ReportTime.AsTime(), time.Minute)
 }
 
+func TestReportAIResolveTransitiveAccess(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+`,
+		"/metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+		"/explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+		// A minimal AI report as it may be written by hand: no agent (defaults to the analyst agent) and no prompt (reports have a default prompt).
+		"/reports/r1.yaml": `
+type: report
+display_name: AI Report
+refresh:
+  cron: 0 8 * * *
+data:
+  ai:
+    explore: e1
+notify:
+  email:
+    recipients:
+      - somebody@example.com
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+
+	// Opening a report resolves transitive access through the report, which initializes its resolver.
+	// This must apply the same defaults as executing the report, or the resolver rejects the properties and the report cannot be opened.
+	claims := &runtime.SecurityClaims{
+		AdditionalRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"},
+					},
+				},
+			},
+		},
+	}
+	r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
+	sec, err := rt.ResolveSecurity(t.Context(), id, claims, r1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+}
+
 func TestReportCanvasResolveTransitiveAccess(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{"rill.yaml": ""},
