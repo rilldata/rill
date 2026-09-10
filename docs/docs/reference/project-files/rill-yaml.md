@@ -156,6 +156,10 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
 
   - **`rill.metrics.exactify_druid_topn`** - _[boolean]_ - Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false.
 
+  - **`rill.metrics.druid_mvd_filtered_group_by`** - _[boolean]_ - Narrow unnested (multi-value) dimensions to the filtered values when grouping in Druid, so results contain only the filtered values rather than every value co-occurring in matching rows. Default: false.
+
+  - **`rill.metrics.druid_mvd_filtered_search`** - _[boolean]_ - Extends rill.metrics.druid_mvd_filtered_group_by to dimension search (ILIKE filters) using MV_FILTER_REGEX, so search results contain only values matching the search text. Requires Druid 35.0.0 or newer. Default: false.
+
   - **`rill.metrics.timeseries_null_filling_implementation`** - _[string]_ - Null-filling implementation for timeseries queries. One of `none`, `new`, or `pushdown`. Default: `pushdown`.
 
   - **`rill.alerts.default_streaming_refresh_cron`** - _[string]_ - Default cron expression for refreshing alerts that depend on streaming refs (for example, external tables in Druid where new data may arrive at any time). Default: `0 0 * * *` (every 24 hours).
