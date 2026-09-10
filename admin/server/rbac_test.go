@@ -2165,7 +2165,15 @@ func TestRBAC(t *testing.T) {
 			pageToken = res.NextPageToken
 		}
 		require.ElementsMatch(t, emails, got)
-		require.IsIncreasing(t, got)
+		// The pages must follow the same order as a single unpaginated listing.
+		// The order itself is the database collation's, which need not match Go's byte order.
+		full, err := c1.ListUsergroupMemberUsers(ctx, &adminv1.ListUsergroupMemberUsersRequest{Org: org.Organization.Name, Usergroup: "g1", PageSize: 10})
+		require.NoError(t, err)
+		var want []string
+		for _, m := range full.Members {
+			want = append(want, m.UserEmail)
+		}
+		require.Equal(t, want, got)
 	})
 
 	t.Run("Project usergroup role updates preserve resource restrictions when omitted", func(t *testing.T) {
