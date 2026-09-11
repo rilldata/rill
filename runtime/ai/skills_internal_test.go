@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -67,4 +68,15 @@ func TestSkillPromptsCap(t *testing.T) {
 	}
 	alwaysApply, _ = skillPrompts(many, zap.NewNop())
 	require.LessOrEqual(t, len(alwaysApply), skillsMaxAlwaysApplyBytes)
+
+	// The on-demand index is bounded too, and points to list_skills for the rest
+	var wide []*Skill
+	for i := 0; i < 100; i++ {
+		wide = append(wide, &Skill{Name: fmt.Sprintf("s%d", i), Description: strings.Repeat("d", 1024)})
+	}
+	_, index = skillPrompts(wide, zap.NewNop())
+	require.LessOrEqual(t, len(index), skillsMaxIndexBytes+128)
+	require.Contains(t, index, "more skills not listed here; call list_skills")
+	require.Contains(t, index, "- s0: ")
+	require.NotContains(t, index, "- s99: ")
 }

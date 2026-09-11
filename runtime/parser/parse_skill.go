@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"gopkg.in/yaml.v3"
@@ -82,7 +83,7 @@ func (p *Parser) parseSkill(ctx context.Context, path string) error {
 	if tmp.Description == "" {
 		return errors.New(`missing required front matter field "description"`)
 	}
-	if len(tmp.Description) > 1024 {
+	if utf8.RuneCountInString(tmp.Description) > 1024 {
 		return fmt.Errorf(`front matter field "description" exceeds the maximum length of 1024 characters`)
 	}
 

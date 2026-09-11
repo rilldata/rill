@@ -149,7 +149,7 @@ name: ${name}
 # The AI uses the required description to decide when to load this skill, so phrase it as "what it does + when to use it".
 description: Describe what this skill does and when to use it.
 # metrics_views: [my_metrics_view]  # Optional: only offer this skill for analyses involving these metrics views
-# always_apply: true                # Optional: always include the full skill instead of loading it on demand
+# always_apply: true                # Optional: include the full skill in every conversation (falls back to on-demand loading if the always-apply skills exceed 32 KiB)
 ---
 
 # My skill

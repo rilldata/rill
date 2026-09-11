@@ -74,9 +74,14 @@
     currentDirectory,
   );
 
+  // Skills are keyed by name across both supported roots, so a new skill must not collide with either
   $: skillDirectoryNamesQuery = useDirectoryNamesInDirectory(
     runtimeClient,
     "skills",
+  );
+  $: agentsSkillDirectoryNamesQuery = useDirectoryNamesInDirectory(
+    runtimeClient,
+    ".agents/skills",
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
@@ -152,7 +157,10 @@
   async function handleAddSkill() {
     // Skill names only allow lowercase letters, numbers and hyphens, so we can't use getName, which appends "_N" suffixes
     const existingNames = new Set(
-      ($skillDirectoryNamesQuery?.data ?? []).map((n) => n.toLowerCase()),
+      [
+        ...($skillDirectoryNamesQuery?.data ?? []),
+        ...($agentsSkillDirectoryNamesQuery?.data ?? []),
+      ].map((n) => n.toLowerCase()),
     );
     let name = "my-skill";
     for (let i = 1; existingNames.has(name); i++) {

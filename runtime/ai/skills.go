@@ -14,6 +14,10 @@ import (
 // Skills that exceed the cap fall back to on-demand loading via the load_skill tool.
 const skillsMaxAlwaysApplyBytes = 1 << 15 // 32kb
 
+// skillsMaxIndexBytes caps the size of the skill index injected into a prompt.
+// Skills that don't fit remain discoverable via the list_skills tool.
+const skillsMaxIndexBytes = 1 << 14 // 16kb
+
 // Skill is a user-defined instruction file that teaches Rill's AI agents project-specific practices,
 // such as analysis playbooks, business glossaries, or development conventions.
 // Skills are parsed from SKILL.md files into catalog resources; see runtime/parser/parse_skill.go.
@@ -101,8 +105,10 @@ func filterSkills(skills []*Skill, agent string, metricsViewNames []string) []*S
 // skillPrompts splits skills into the always-apply bodies to inject into an agent's prompt wholesale
 // and an index of the remaining skills for the agent to fetch on demand with the load_skill tool.
 // An always-apply body that would exceed the size cap falls back to the on-demand index.
+// The index is capped too; skills that don't fit are counted and the agent is pointed to the list_skills tool.
 func skillPrompts(skills []*Skill, logger *zap.Logger) (alwaysApply, index string) {
 	var alwaysApplyBuf, indexBuf strings.Builder
+	var omitted int
 	for _, sk := range skills {
 		if sk.AlwaysApply {
 			// The cap applies to the rendered section, including its heading, not just the body.
@@ -113,7 +119,16 @@ func skillPrompts(skills []*Skill, logger *zap.Logger) (alwaysApply, index strin
 			}
 			logger.Warn("always-apply skill exceeds the prompt size cap; falling back to on-demand loading", zap.String("skill", sk.Name))
 		}
-		fmt.Fprintf(&indexBuf, "- %s: %s\n", sk.Name, sk.Description)
+		entry := fmt.Sprintf("- %s: %s\n", sk.Name, sk.Description)
+		if indexBuf.Len()+len(entry) > skillsMaxIndexBytes {
+			omitted++
+			continue
+		}
+		indexBuf.WriteString(entry)
+	}
+	if omitted > 0 {
+		logger.Warn("skill index exceeds the prompt size cap; some skills are only discoverable with list_skills", zap.Int("omitted", omitted))
+		fmt.Fprintf(&indexBuf, "- (%d more skills not listed here; call %s to see them)\n", omitted, ListSkillsName)
 	}
 	return strings.TrimSpace(alwaysApplyBuf.String()), strings.TrimSpace(indexBuf.String())
 }

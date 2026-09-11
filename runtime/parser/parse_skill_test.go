@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -86,6 +87,8 @@ description: Unclosed.
 ----
 
 Body.`,
+		// Valid: the description limit counts characters, not bytes
+		`skills/unicode/SKILL.md`: "---\ndescription: " + strings.Repeat("é", 1024) + "\n---\n\nBody.",
 		// Invalid: skills are only parsed from SKILL.md files, so a generic YAML file can't declare the kind
 		`skills/legacy.yaml`: `
 type: skill
@@ -103,6 +106,15 @@ description: Not a SKILL.md file.
 				Body:         "# Revenue RCA playbook\nAlways break revenue down by country first.",
 				MetricsViews: []string{"orders"},
 				Agents:       []string{"analyst", "developer"},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindSkill, Name: "unicode"},
+			Paths: []string{"/skills/unicode/SKILL.md"},
+			SkillSpec: &runtimev1.SkillSpec{
+				Description: strings.Repeat("é", 1024),
+				Body:        "Body.",
+				Agents:      []string{"analyst"},
 			},
 		},
 		{

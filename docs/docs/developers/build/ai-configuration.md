@@ -118,7 +118,7 @@ When asked why revenue declined:
 4. State your confidence and call out data quirks that may affect the result.
 ```
 
-The `description` is required: the AI sees an index of skill names and descriptions, and uses the description to decide when to load a skill. Phrase it as "what it does + when to use it". The `name` must match the skill's directory name (lowercase letters, numbers and hyphens); if omitted, it is derived from the directory.
+The `description` is required: the AI sees an index of skill names and descriptions, and uses the description to decide when to load a skill. Phrase it as "what it does + when to use it". Always include the `name`, which the Agent Skills format requires and other clients reject when missing. It must match the skill's directory name (lowercase letters, numbers and hyphens). Rill is lenient and derives it from the directory if omitted.
 
 In addition to the standard Agent Skills fields, Rill supports these extension properties:
 
@@ -133,7 +133,7 @@ always_apply: true           # Optional: always include the full skill instead o
 
 - **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file, and the skill is not offered to the AI until the error is fixed.
 - **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[analyst]`.
-- **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request.
+- **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request. Always-apply skills share a 32 KiB budget per conversation; a skill that doesn't fit is offered for on-demand loading instead, and a warning is logged.
 
 Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa.
 
