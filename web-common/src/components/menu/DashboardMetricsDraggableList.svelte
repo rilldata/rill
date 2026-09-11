@@ -27,6 +27,7 @@
     computeTagVisibility,
     type TagIndex,
   } from "./tag-utils";
+  import { DashboardShortcutAction } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   type SelectableItem = MetricsViewSpecMeasure | MetricsViewSpecDimension;
 
@@ -147,7 +148,18 @@
 <Popover.Root bind:open={active}>
   <Popover.Trigger>
     {#snippet child({ props })}
-      <Button {...props} type="text" theme label={tooltipText}>
+      <Button
+        {...props}
+        type="text"
+        theme
+        label={tooltipText}
+        dataAttributes={{
+          "data-dashboard-shortcut":
+            type === "measure"
+              ? DashboardShortcutAction.OpenMetricPicker
+              : DashboardShortcutAction.OpenDimensionPicker,
+        }}
+      >
         <div class="flex items-center gap-x-0.5 px-1">
           <strong>{buttonLabel}</strong>
           <span class="transition-transform" class:-rotate-180={active}>
