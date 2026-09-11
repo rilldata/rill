@@ -2,10 +2,9 @@ import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/featu
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
-import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
-  mapSelectedComparisonTimeRangeToV1TimeRange,
-  mapSelectedTimeRangeToV1TimeRange,
+  mapTimeManagerComparisonRangeToV1TimeRange,
+  mapTimeManagerRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import type {
   V1ExploreSpec,
@@ -14,6 +13,7 @@ import type {
   V1MetricsViewAggregationRequest,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export type AggregationRequestUpdater = (
   aggregationRequest: V1MetricsViewAggregationRequest,
@@ -31,18 +31,12 @@ export function buildAggregationRequest(
 }
 
 export const aggregationRequestWithTimeRange = (
-  exploreSpec: V1ExploreSpec,
-  timeControlArgs: TimeControlState,
+  timeFilterManager: TimeFilterManager,
 ) => {
   return (aggregationRequest: V1MetricsViewAggregationRequest) => {
-    const timeRange = mapSelectedTimeRangeToV1TimeRange(
-      timeControlArgs.selectedTimeRange,
-      timeControlArgs.selectedTimezone,
-      exploreSpec,
-    );
-    const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-      timeControlArgs.selectedComparisonTimeRange,
-      timeControlArgs.showTimeComparison,
+    const timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
+    const comparisonTimeRange = mapTimeManagerComparisonRangeToV1TimeRange(
+      timeFilterManager,
       timeRange,
     );
     return {

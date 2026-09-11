@@ -63,8 +63,8 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { onDestroy } from "svelte";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   export let onClose: () => void;
   export let onCancel: () => void;
@@ -107,19 +107,14 @@
       ? createAdminServiceCreateAlert()
       : createAdminServiceEditAlert();
 
-  let filters: ExpressionFilterManager;
-  let timeControls: TimeControls;
+  let expressionFilterManager: ExpressionFilterManager;
+  let timeFilterManager: TimeFilterManager;
   let cleanup: (() => void) | undefined = undefined;
   $: {
     cleanup?.();
-    ({ filters, timeControls, cleanup } =
+    ({ expressionFilterManager, timeFilterManager, cleanup } =
       props.mode === "create"
-        ? getNewAlertInitialFiltersFormValues(
-            runtimeClient,
-            metricsViewName,
-            exploreName,
-            $exploreState!,
-          )
+        ? getNewAlertInitialFiltersFormValues(runtimeClient, metricsViewName)
         : getFiltersAndTimeControlsFromAggregationRequest(
             runtimeClient,
             metricsViewName,
@@ -134,7 +129,6 @@
             $allTimeRangeResp.data?.timeRangeSummary,
           ));
   }
-  $: ({ selectedComparisonTimeRange } = timeControls);
 
   const superFormInstance = superForm(
     defaults(initialValues, alertFormValidationSchema),
@@ -194,9 +188,8 @@
           queryArgsJson: JSON.stringify(
             getAlertQueryArgsFromFormValues(
               values,
-              filters.topLevelJoiner.expr[metricsViewName],
-              timeControls.toState(),
-              exploreSpec,
+              expressionFilterManager.topLevelJoiner.expr[metricsViewName],
+              timeFilterManager,
             ),
           ),
           metricsViewName: values.metricsViewName,
@@ -283,7 +276,7 @@
     // if the user came to the delivery tab and name was not changed then auto generate it
     const name = generateAlertName(
       $form,
-      $selectedComparisonTimeRange,
+      timeFilterManager.comparisonTimeRange,
       metricsViewSpec,
     );
     if (!name) return;
@@ -324,10 +317,18 @@
     </DialogTabs.List>
     <div class="p-3 bg-surface-subtle h-[600px] overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
+        <AlertDialogDataTab
+          {superFormInstance}
+          {expressionFilterManager}
+          {timeFilterManager}
+        />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
-        <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
+        <AlertDialogCriteriaTab
+          {superFormInstance}
+          {expressionFilterManager}
+          {timeFilterManager}
+        />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
         <AlertDialogDeliveryTab {superFormInstance} {exploreName} />

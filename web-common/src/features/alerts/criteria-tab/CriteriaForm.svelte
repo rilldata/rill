@@ -7,21 +7,20 @@
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { SuperForm } from "sveltekit-superforms/client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
-  export let timeControls: TimeControls;
+  export let timeFilterManager: TimeFilterManager;
   export let index: number;
 
   const runtimeClient = useRuntimeClient();
 
   $: ({ form, errors, validate } = superFormInstance);
-  $: ({ selectedComparisonTimeRange } = timeControls);
 
   $: metricsView = useMetricsViewValidSpec(
     runtimeClient,
@@ -45,7 +44,7 @@
 
   $: typeOptions = getTypeOptions(
     $form,
-    $selectedComparisonTimeRange,
+    timeFilterManager.comparisonTimeRange,
     selectedMeasure,
   );
 

@@ -161,6 +161,7 @@ export class TimeFilterManager implements UrlParamsStore {
       const end = this.lastDefinedScrubInterval?.end ?? this.interval?.end;
       return end?.toJSDate()?.toISOString();
     });
+    // TODO: calculate vs scrub
     this.comparisonTimeStart = $derived(
       this.comparisonInterval?.start.toJSDate().toISOString(),
     );

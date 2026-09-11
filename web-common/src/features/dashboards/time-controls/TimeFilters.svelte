@@ -29,10 +29,6 @@
   let { metricsViewsProvider, yamlConfigProvider } = $derived(
     dashboardConfigProvider,
   );
-
-  function onPan() {
-    // TODO
-  }
 </script>
 
 <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
@@ -51,8 +47,18 @@
 
   <div class="wrapper">
     {#if !hidePan}
-      <Nudge {canPanLeft} {canPanRight} {onPan} direction="left" />
-      <Nudge {canPanLeft} {canPanRight} {onPan} direction="right" />
+      <Nudge
+        {canPanLeft}
+        {canPanRight}
+        onPan={(dir) => timeFilterManager.onPan(dir)}
+        direction="left"
+      />
+      <Nudge
+        {canPanLeft}
+        {canPanRight}
+        onPan={(dir) => timeFilterManager.onPan(dir)}
+        direction="right"
+      />
     {/if}
 
     <TimeRangePicker

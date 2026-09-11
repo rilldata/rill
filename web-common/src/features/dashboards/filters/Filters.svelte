@@ -40,8 +40,10 @@
   );
 
   let {
-    interval,
     hasTimeSeries,
+    timeStart,
+    timeEnd,
+    timeDimension,
     ready: timeControlsReady,
   } = $derived(timeFilterManager);
 
@@ -111,9 +113,9 @@
   <ExpressionFilters
     {expressionFilterManager}
     {dashboardConfigProvider}
-    timeStart={interval?.start?.toString()}
-    timeEnd={interval?.end?.toString()}
-    timeDimension={$dashboardStore.selectedTimeDimension}
+    {timeStart}
+    {timeEnd}
+    {timeDimension}
     {timeControlsReady}
     {isUrlTooLongAfterInListFilter}
   />
