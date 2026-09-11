@@ -216,10 +216,16 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 	// Parse the dimensions and measures selectors
 	var ok bool
 	def.dimensions, ok = tmp.Dimensions.TryResolve()
+	if err := validateExploreFieldNames("dimensions", def.dimensions); err != nil {
+		return nil, err
+	}
 	if !ok {
 		def.dimensionsSelector = tmp.Dimensions.Proto()
 	}
 	def.measures, ok = tmp.Measures.TryResolve()
+	if err := validateExploreFieldNames("measures", def.measures); err != nil {
+		return nil, err
+	}
 	if !ok {
 		def.measuresSelector = tmp.Measures.Proto()
 	}
@@ -287,12 +293,18 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 
 		var presetDimensionsSelector *runtimev1.FieldSelector
 		presetDimensions, ok := tmp.Defaults.Dimensions.TryResolve()
+		if err := validateExploreFieldNames("defaults.dimensions", presetDimensions); err != nil {
+			return nil, err
+		}
 		if !ok {
 			presetDimensionsSelector = tmp.Defaults.Dimensions.Proto()
 		}
 
 		var presetMeasuresSelector *runtimev1.FieldSelector
 		presetMeasures, ok := tmp.Defaults.Measures.TryResolve()
+		if err := validateExploreFieldNames("defaults.measures", presetMeasures); err != nil {
+			return nil, err
+		}
 		if !ok {
 			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
 		}
@@ -323,6 +335,17 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 	}
 
 	return def, nil
+}
+
+func validateExploreFieldNames(field string, names []string) error {
+	seen := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		if _, ok := seen[name]; ok {
+			return fmt.Errorf("duplicate field %q in %s", name, field)
+		}
+		seen[name] = struct{}{}
+	}
+	return nil
 }
 
 // applyToSpec assigns the parsed definition values to an ExploreSpec.
