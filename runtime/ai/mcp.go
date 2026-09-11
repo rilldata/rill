@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
@@ -100,8 +99,7 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 					}
 				}
 			},
-			KeepAlive: 30 * time.Second,
-			HasTools:  true,
+			HasTools: true,
 			GetSessionID: func() string {
 				return s.id
 			},

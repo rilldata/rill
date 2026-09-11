@@ -495,6 +495,14 @@ func TestParseISO(t *testing.T) {
 		{"With duration and offset no round to grain", "P7D", "P2D", timeutil.TimeGrainUnspecified, "2025-05-04T06:32:36Z", "2025-05-11T06:32:36Z", timeutil.TimeGrainUnspecified},
 		{"With duration, offset and round to grain", "P7D", "P2D", timeutil.TimeGrainDay, "2025-05-04T00:00:00Z", "2025-05-11T00:00:00Z", timeutil.TimeGrainUnspecified},
 		{"With DAX duration, offset and round to grain", "rill-PW", "P2D", timeutil.TimeGrainDay, "2025-05-03T00:00:00Z", "2025-05-10T00:00:00Z", timeutil.TimeGrainUnspecified},
+		// Legacy DAX comparison offsets sent by older clients
+		{"With duration and DAX previous period offset", "P7D", "rill-PP", timeutil.TimeGrainUnspecified, "2025-04-29T06:32:36Z", "2025-05-06T06:32:36Z", timeutil.TimeGrainUnspecified},
+		{"With duration and DAX previous day offset", "P7D", "rill-PD", timeutil.TimeGrainUnspecified, "2025-05-05T06:32:36Z", "2025-05-12T06:32:36Z", timeutil.TimeGrainUnspecified},
+		{"With duration and DAX previous week offset", "P7D", "rill-PW", timeutil.TimeGrainUnspecified, "2025-04-29T06:32:36Z", "2025-05-06T06:32:36Z", timeutil.TimeGrainUnspecified},
+		{"With duration and DAX previous month offset", "P7D", "rill-PM", timeutil.TimeGrainUnspecified, "2025-04-06T06:32:36Z", "2025-04-13T06:32:36Z", timeutil.TimeGrainUnspecified},
+		{"With duration and DAX previous quarter offset", "P7D", "rill-PQ", timeutil.TimeGrainUnspecified, "2025-02-06T06:32:36Z", "2025-02-13T06:32:36Z", timeutil.TimeGrainUnspecified},
+		{"With duration and DAX previous year offset", "P7D", "rill-PY", timeutil.TimeGrainUnspecified, "2024-05-06T06:32:36Z", "2024-05-13T06:32:36Z", timeutil.TimeGrainUnspecified},
+		{"With duration, DAX previous week offset and round to grain", "P7D", "rill-PW", timeutil.TimeGrainDay, "2025-04-29T00:00:00Z", "2025-05-06T00:00:00Z", timeutil.TimeGrainUnspecified},
 	}
 
 	nowTm := parseTestTime(t, now)
@@ -520,6 +528,11 @@ func TestParseISO(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseISO_InvalidOffset(t *testing.T) {
+	_, err := ParseLegacy("P7D", "rill-PX", timeutil.TimeGrainUnspecified, ParseOptions{})
+	require.ErrorContains(t, err, `invalid DAX offset "rill-PX"`)
 }
 
 func TestEval_SyntaxErrors(t *testing.T) {

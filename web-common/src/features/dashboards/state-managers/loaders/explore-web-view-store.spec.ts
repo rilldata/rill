@@ -1,9 +1,9 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
-  type HoistedPageForExploreTests,
-  PageMockForExploreTests,
-} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
+  type HoistedPageForComponentTests,
+  PageMockForComponentTests,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_EXPLORE_INIT,
@@ -11,6 +11,8 @@ import {
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_NAME,
+  AD_BIDS_METRICS_VIEW,
+  AD_BIDS_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
@@ -28,7 +30,10 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
+import {
+  getCleanMetricsExploreForAssertion,
+  useTestFilterManager,
+} from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   RUNTIME_CONTEXT_KEY,
@@ -37,7 +42,7 @@ import {
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
+const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
 vi.mock("$app/navigation", () => {
   return {
@@ -153,12 +158,18 @@ const TestCases: {
   },
 ];
 
+// Filters live in the ExpressionFilterManager rather than in explore state, so the tests need the
+// specs of the metrics view backing AD_BIDS_EXPLORE to build the filter chips.
+const getFilterManager = useTestFilterManager({
+  [AD_BIDS_NAME]: AD_BIDS_METRICS_VIEW,
+});
+
 describe("Explore web view store", () => {
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
-  let pageMock!: PageMockForExploreTests;
+  let pageMock!: PageMockForComponentTests;
 
   beforeEach(async () => {
-    pageMock = new PageMockForExploreTests(hoistedPage);
+    pageMock = new PageMockForComponentTests(hoistedPage);
 
     mocks.mockMetricsView(
       AD_BIDS_METRICS_NAME,
@@ -186,21 +197,29 @@ describe("Explore web view store", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       // apply mutations to main view to setup the initial state
-      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
-        AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
-        AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
-        AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
-        AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE_INIT),
-        AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE_INIT),
-        AD_BIDS_SORT_ASC_BY_IMPRESSIONS,
-        AD_BIDS_SORT_BY_PERCENT_VALUE,
-      ]);
+      await applyMutationsToDashboard(
+        AD_BIDS_EXPLORE_NAME,
+        [
+          AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
+          AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
+          AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+          AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY(AD_BIDS_EXPLORE_INIT),
+          AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY(AD_BIDS_EXPLORE_INIT),
+          AD_BIDS_SORT_ASC_BY_IMPRESSIONS,
+          AD_BIDS_SORT_BY_PERCENT_VALUE,
+        ],
+        getFilterManager(),
+      );
 
       const initialSearch = `view=${initView.view}${initView.additionalParams ?? ""}`;
       // simulate going to the init view's url
       pageMock.gotoSearch(initialSearch);
       // apply any mutations in the init view
-      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, initView.mutations);
+      await applyMutationsToDashboard(
+        AD_BIDS_EXPLORE_NAME,
+        initView.mutations,
+        getFilterManager(),
+      );
 
       const initState = getCleanMetricsExploreForAssertion();
 
@@ -208,7 +227,11 @@ describe("Explore web view store", () => {
       // simulate going to the view's url
       pageMock.gotoSearch(viewSearch);
       // apply any mutations in the view
-      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, view.mutations);
+      await applyMutationsToDashboard(
+        AD_BIDS_EXPLORE_NAME,
+        view.mutations,
+        getFilterManager(),
+      );
       const stateInView = getCleanMetricsExploreForAssertion();
 
       // All history changes before this are a combination of visiting the view and mutations.
@@ -259,9 +282,11 @@ describe("Explore web view store", () => {
     pageMock.assertSearchParams("");
 
     pageMock.gotoSearch(tddSearch);
-    await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
-      AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
-    ]);
+    await applyMutationsToDashboard(
+      AD_BIDS_EXPLORE_NAME,
+      [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
+      getFilterManager(),
+    );
     pageMock.assertSearchParams(
       `view=tdd&measure=${AD_BIDS_IMPRESSIONS_MEASURE}&chart_type=stacked_bar`,
     );

@@ -4,10 +4,8 @@ import {
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
-  mapExprToMeasureFilter,
   measureHasSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   COMPARISON_DELTA,
@@ -86,11 +84,8 @@ export async function getDashboardFromAggregationRequest({
 
   const shouldParseWhereFilter = Boolean(!ignoreFilters && req.where);
   if (shouldParseWhereFilter) {
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      req.where,
-    );
-    dashboard.whereFilter = dimensionFilters;
-    dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
+    // Explore state keeps dimension and measure filters collapsed into the where filter.
+    dashboard.whereFilter = req.where!;
   }
 
   const shouldParseHavingFilter = Boolean(
@@ -100,51 +95,31 @@ export async function getDashboardFromAggregationRequest({
   );
   if (shouldParseHavingFilter) {
     const dimension = req.dimensions![0].name!;
+
+    let havingFilter: V1Expression;
     if (exprHasComparison(req.having!)) {
-      // We do not support comparison based dimension threshold filter in dashboards right now.
+      // We do not support comparison based measure filters in dashboards right now.
       // So convert it to a toplist and add `in` filter.
-      const expr = await convertQueryFilterToToplistQuery(
+      havingFilter = await convertQueryFilterToToplistQuery(
         client,
         explore.metricsView ?? "",
         req,
         dimension,
       );
-      dashboard.whereFilter =
-        mergeFilters(
-          dashboard.whereFilter ?? createAndExpression([]),
-          createAndExpression([expr]),
-        ) ?? createAndExpression([]);
-    } else if (
-      req.having!.cond!.exprs!.length > 1 ||
-      dashboard.dimensionThresholdFilters.length > 0
-    ) {
-      // If there are dimension threshold and having filter we just add a subquery in where filter.
-      // This will be marked as "advanced filter" that is not editable.
-      // TODO: find a way to merge having filter into dimension threshold
-      const extraFilter = createSubQueryExpression(
+    } else {
+      // Measure filters are stored as a subquery on the dimension within the where filter.
+      havingFilter = createSubQueryExpression(
         dimension,
         getAllIdentifiers(req.having),
         req.having,
       );
-      if (dashboard.whereFilter?.cond?.exprs?.length) {
-        dashboard.whereFilter = createAndExpression([
-          dashboard.whereFilter,
-          extraFilter,
-        ]);
-      } else {
-        dashboard.whereFilter = extraFilter;
-      }
-    } else {
-      dashboard.dimensionThresholdFilters = [
-        {
-          name: dimension,
-          filters:
-            req.having?.cond?.exprs
-              ?.map(mapExprToMeasureFilter)
-              .filter((f): f is NonNullable<typeof f> => f != null) ?? [],
-        },
-      ];
     }
+
+    dashboard.whereFilter =
+      mergeFilters(
+        dashboard.whereFilter ?? createAndExpression([]),
+        createAndExpression([havingFilter]),
+      ) ?? createAndExpression([]);
   }
 
   // everything after this can be loaded from the dashboard state if present

@@ -402,6 +402,14 @@ export class ResourceMeta extends Message<ResourceMeta> {
   tags: string[] = [];
 
   /**
+   * Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+   * It is user-defined: Rill does not read or write keys in it and exposes it as-is over the API for external tooling.
+   *
+   * @generated from field: map<string, string> metadata = 20;
+   */
+  metadata: { [key: string]: string } = {};
+
+  /**
    * @generated from field: bool hidden = 7;
    */
   hidden = false;
@@ -479,6 +487,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 20, name: "metadata", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

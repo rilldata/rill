@@ -868,6 +868,8 @@ func (m *ResourceMeta) validate(all bool) error {
 
 	}
 
+	// no validation rules for Metadata
+
 	// no validation rules for Hidden
 
 	// no validation rules for Version

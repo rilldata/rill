@@ -103,7 +103,7 @@ func (p *Parser) parseSkill(ctx context.Context, path string) error {
 		refs[i] = ResourceName{Kind: ResourceKindMetricsView, Name: mv}
 	}
 
-	r, err := p.insertResource(ResourceKindSkill, name, []string{path}, nil, refs...)
+	r, err := p.insertResource(ResourceKindSkill, name, []string{path}, nil, nil, refs...)
 	if err != nil {
 		return err
 	}

@@ -107,7 +107,7 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 		if dsn == "" {
 			return nil, fmt.Errorf("must set `dsn` for models that transfer data from `mysql` to `duckdb`")
 		}
-		m.PreExec = fmt.Sprintf("INSTALL 'MYSQL'; LOAD 'MYSQL'; ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(dsn), safeDBName)
+		m.PreExec = fmt.Sprintf("INSTALL 'MYSQL'; LOAD 'MYSQL'; ATTACH OR REPLACE %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(dsn), safeDBName)
 		m.SQL = fmt.Sprintf("SELECT * FROM mysql_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
 	case "postgres":
 		dsn := inputProps.resolveDSN()
@@ -122,7 +122,7 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 		if dsn == "" {
 			return nil, fmt.Errorf("must set `database_url` or `dsn` for models that transfer data from `postgres` to `duckdb`")
 		}
-		m.PreExec = fmt.Sprintf("INSTALL 'POSTGRES'; LOAD 'POSTGRES'; ATTACH %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(dsn), safeDBName)
+		m.PreExec = fmt.Sprintf("INSTALL 'POSTGRES'; LOAD 'POSTGRES'; ATTACH OR REPLACE %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(dsn), safeDBName)
 		m.SQL = fmt.Sprintf("SELECT * FROM postgres_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
 	default:
 		return nil, fmt.Errorf("internal error: unsupported external database: %s", inputHandle.Driver())

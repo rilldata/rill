@@ -35,11 +35,12 @@ var ignorePathPrefixes = []string{
 // One file may output multiple resources and multiple files may contribute config to one resource.
 type Resource struct {
 	// Metadata
-	Name    ResourceName
-	Paths   []string
-	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified). Always sorted.
-	Tags    []string       // User-defined tags parsed from the YAML "tags:" field. Stored generically on ResourceMeta, not on per-kind specs.
-	rawRefs []ResourceName // Populated during parsing (may contain ResourceKindUnspecified)
+	Name     ResourceName
+	Paths    []string
+	Refs     []ResourceName    // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified). Always sorted.
+	Tags     []string          // User-defined tags parsed from the YAML "tags:" field. Stored generically on ResourceMeta, not on per-kind specs.
+	Metadata map[string]string // User-defined metadata parsed from the YAML "metadata:" field. Stored generically on ResourceMeta, not on per-kind specs.
+	rawRefs  []ResourceName    // Populated during parsing (may contain ResourceKindUnspecified)
 
 	// Only one of these will be non-nil
 	SourceSpec      *runtimev1.SourceSpec
@@ -879,8 +880,8 @@ func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
 
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
-// The tags parameter is stored generically on the resource and later propagated to ResourceMeta.Tags by the reconciler.
-func (p *Parser) insertResource(kind ResourceKind, name string, paths, tags []string, refs ...ResourceName) (*Resource, error) {
+// The tags and metadata parameters are stored generically on the resource and later propagated to ResourceMeta by the reconciler.
+func (p *Parser) insertResource(kind ResourceKind, name string, paths, tags []string, metadata map[string]string, refs ...ResourceName) (*Resource, error) {
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
@@ -907,10 +908,11 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths, tags []st
 
 	// Create new resource
 	r := &Resource{
-		Name:    rn,
-		Paths:   paths,
-		Tags:    tags,
-		rawRefs: refs,
+		Name:     rn,
+		Paths:    paths,
+		Tags:     tags,
+		Metadata: metadata,
+		rawRefs:  refs,
 	}
 	switch kind {
 	case ResourceKindModel:

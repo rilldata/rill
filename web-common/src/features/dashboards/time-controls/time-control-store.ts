@@ -82,6 +82,7 @@ export type ComparisonTimeRangeState = {
 export interface TimeAndFilterStore {
   timeRange: V1TimeRange;
   comparisonTimeRange: V1TimeRange | undefined;
+  dimensionOnlyWhere?: V1Expression | undefined;
   where: V1Expression | undefined;
   timeGrain: V1TimeGrain | undefined;
   showTimeComparison: boolean;
