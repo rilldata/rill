@@ -83,6 +83,16 @@ var allowedCSSVariables = map[string]bool{
 	"ring-focus":  true,
 	"ring-offset": true,
 
+	// Dimension styling
+	"dimension":            true,
+	"dimension-foreground": true,
+	"dimension-border":     true,
+
+	// Measure styling
+	"measure":            true,
+	"measure-foreground": true,
+	"measure-border":     true,
+
 	// Tooltip
 	"tooltip": true,
 
@@ -181,7 +191,7 @@ func (p *Parser) parseTheme(node *Node) error {
 		return err
 	}
 
-	r, err := p.insertResource(ResourceKindTheme, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindTheme, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}

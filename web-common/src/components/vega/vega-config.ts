@@ -101,6 +101,12 @@ export const getRillTheme: (
     },
     bar: {
       fill: barColor,
+      // Vega-Lite defaults to a fixed 1px gap between bars on binned or time-unit axes, on top
+      // of the proportional gap from the marks' `width: { band }`. Once a time bucket is only a
+      // couple of pixels wide (e.g. a year at day grain), that 1px consumes the whole bar and
+      // the chart renders as faint hairlines or nothing at all. Let the band gap alone scale
+      // with the bucket width.
+      binSpacing: 0,
     },
     line: { stroke: lineColor, strokeWidth: 1.5, strokeOpacity: 1 },
     path: { stroke: lineColor },

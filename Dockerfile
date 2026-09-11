@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y ca-certificates git curl gnupg && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         google-cloud-cli \
-        google-cloud-sdk-gke-gcloud-auth-plugin && \
+        google-cloud-cli-gke-gcloud-auth-plugin && \
     rm -rf /var/lib/apt/lists/*
 
 COPY rill /usr/local/bin

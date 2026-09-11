@@ -395,6 +395,14 @@ export class ResourceMeta extends Message<ResourceMeta> {
   tags: string[] = [];
 
   /**
+   * Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+   * It is user-defined: Rill does not read or write keys in it and exposes it as-is over the API for external tooling.
+   *
+   * @generated from field: map<string, string> metadata = 20;
+   */
+  metadata: { [key: string]: string } = {};
+
+  /**
    * @generated from field: bool hidden = 7;
    */
   hidden = false;
@@ -472,6 +480,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 20, name: "metadata", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -3256,6 +3265,14 @@ export class ExplorePreset extends Message<ExplorePreset> {
   pivotFormatting?: string;
 
   /**
+   * Ephemeral measures for the explore, serialized in the URL
+   * param format (frontend-only; persisted in URL state).
+   *
+   * @generated from field: optional string ephemeral_measures = 40;
+   */
+  ephemeralMeasures?: string;
+
+  /**
    * Chart display settings (frontend-only; persisted in URL state)
    *
    * @generated from field: optional bool chart_dynamic_y_axis = 35;
@@ -3304,6 +3321,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 37, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 38, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 39, name: "pivot_formatting", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 40, name: "ephemeral_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 

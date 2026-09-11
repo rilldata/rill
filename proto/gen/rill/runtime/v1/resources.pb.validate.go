@@ -827,6 +827,8 @@ func (m *ResourceMeta) validate(all bool) error {
 
 	}
 
+	// no validation rules for Metadata
+
 	// no validation rules for Hidden
 
 	// no validation rules for Version
@@ -5605,6 +5607,10 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.PivotFormatting != nil {
 		// no validation rules for PivotFormatting
+	}
+
+	if m.EphemeralMeasures != nil {
+		// no validation rules for EphemeralMeasures
 	}
 
 	if m.ChartDynamicYAxis != nil {

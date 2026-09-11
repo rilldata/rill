@@ -20,6 +20,7 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -54,6 +55,7 @@ export class DashboardStateSync {
     private readonly exploreName: string,
     private readonly extraPrefix: string | undefined,
     private readonly dataLoader: DashboardStateDataLoader,
+    private readonly expressionFilterManager: ExpressionFilterManager,
   ) {
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
@@ -128,7 +130,7 @@ export class DashboardStateSync {
    */
   private async handleExploreInit(initExploreState: ExploreState) {
     // If this is re-triggered any of the dependant query was refetched, then we need to make sure this is not run again.
-    if (this.initialized) return;
+    if (this.updating || this.initialized) return;
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const metricsViewSpec = validSpecData?.metricsView ?? {};
@@ -139,6 +141,8 @@ export class DashboardStateSync {
 
     // Ensure dashboard data is loaded before we proceed.
     if (!rillDefaultExploreURLParams) return;
+    this.updating = true;
+    this.expressionFilterManager.updating = true;
 
     const pageState = get(page);
 
@@ -185,9 +189,12 @@ export class DashboardStateSync {
       );
     }
 
+    this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+    this.expressionFilterManager.updating = false;
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
+      this.updating = false;
       return;
     }
 
@@ -199,6 +206,7 @@ export class DashboardStateSync {
       state: pageState.state,
     });
     this.initialized = true;
+    this.updating = false;
   }
 
   /**
@@ -238,7 +246,9 @@ export class DashboardStateSync {
     // Take the lock only once the guards have passed;
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
-    let redirectUrl: URL;
+    this.expressionFilterManager.updating = true;
+    let redirectUrl: URL | undefined = undefined;
+    // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
     try {
       if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
         // Resolve start/end by making a network call.
@@ -262,6 +272,7 @@ export class DashboardStateSync {
       metricsExplorerStore.mergePartialExplorerEntity(
         this.exploreName,
         partialExplore,
+        this.expressionFilterManager,
       );
       // Get time controls state after explore state is updated.
       const timeControlsState = get(this.timeControlStore);
@@ -292,7 +303,14 @@ export class DashboardStateSync {
       // Release before the goto below: state changes made while the navigation is in flight
       // must still be picked up by gotoNewState.
       this.updating = false;
+      if (redirectUrl) {
+        this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+      }
+      this.expressionFilterManager.updating = false;
     }
+    // Try-finally without a catch. Rest of the code is not run if the above try body throws.
+
+    if (!redirectUrl) return; // type-safety
 
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
@@ -301,7 +319,7 @@ export class DashboardStateSync {
 
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    return goto(redirectUrl, {
+    await goto(redirectUrl, {
       replaceState: true,
       state: pageState.state,
     });
@@ -318,6 +336,7 @@ export class DashboardStateSync {
     // Those methods need to replace the current URL while this does a direct navigation.
     if (this.updating) return;
     this.updating = true;
+    this.expressionFilterManager.updating = true;
 
     try {
       const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
@@ -349,6 +368,7 @@ export class DashboardStateSync {
         );
       }
 
+      this.expressionFilterManager.setUrlParams(newUrl.searchParams);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -359,6 +379,7 @@ export class DashboardStateSync {
       await goto(newUrl);
     } finally {
       this.updating = false;
+      this.expressionFilterManager.updating = false;
     }
   }
 }

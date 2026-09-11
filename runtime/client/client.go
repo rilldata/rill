@@ -82,6 +82,7 @@ func (c *Client) ListResources(ctx context.Context, req *runtimev1.ListResources
 		pageSize = 100
 	}
 
+	var initializing bool
 	resources, err := pagination.CollectAll(ctx, func(ctx context.Context, pageSize uint32, token string) ([]*runtimev1.Resource, string, error) {
 		pageReq.PageSize = pageSize
 		pageReq.PageToken = token
@@ -89,6 +90,7 @@ func (c *Client) ListResources(ctx context.Context, req *runtimev1.ListResources
 		if err != nil {
 			return nil, "", err
 		}
+		initializing = page.Initializing
 		return page.Resources, page.NextPageToken, nil
 	}, pageSize)
 	if err != nil {
@@ -104,7 +106,7 @@ func (c *Client) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return strings.Compare(an.Name, bn.Name)
 	})
 
-	return &runtimev1.ListResourcesResponse{Resources: resources}, nil
+	return &runtimev1.ListResourcesResponse{Resources: resources, Initializing: initializing}, nil
 }
 
 // Close closes the client connection.

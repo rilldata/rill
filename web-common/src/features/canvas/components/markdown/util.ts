@@ -12,7 +12,6 @@ import type {
 import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
-import type { ParsedFilters } from "../../stores/filter-state";
 import type { Readable } from "svelte/store";
 
 export function getPositionClasses(alignment: ComponentAlignment | undefined) {
@@ -104,24 +103,17 @@ function buildRequestBody(params: {
   content: string;
   applyFormatting: boolean;
   timeRange: V1TimeRange | undefined;
-  parsedMetricsViewFilters: ParsedFilters[];
+  exprByMetricsView: Record<string, V1Expression>;
   metricsViews: Record<string, V1MetricsView | undefined>;
 }): QueryServiceResolveTemplatedStringBody | null {
-  const { content, applyFormatting, timeRange, parsedMetricsViewFilters } =
-    params;
-
-  const additionalWhereByMetricsView: Record<string, V1Expression> = {};
-
-  parsedMetricsViewFilters.forEach((f) => {
-    additionalWhereByMetricsView[f.metricsViewName] = f.where;
-  });
+  const { content, applyFormatting, timeRange, exprByMetricsView } = params;
 
   return {
     body: content,
     useFormatTokens: applyFormatting,
     additionalTimeRange: timeRange,
-    ...(Object.keys(additionalWhereByMetricsView).length > 0 && {
-      additionalWhereByMetricsView,
+    ...(Object.keys(exprByMetricsView).length > 0 && {
+      additionalWhereByMetricsView: exprByMetricsView,
     }),
   };
 }
@@ -133,23 +125,16 @@ export function getResolveTemplatedStringQueryOptions(
   ReturnType<typeof getQueryServiceResolveTemplatedStringQueryOptions>
 > {
   return derived(
-    [component.parent.filterManager.metricsViewFilters],
-    ([metricsViewFilters], set) => {
+    [component.parent.expressionFilterManager.exprByMetricsViewStore],
+    ([exprByMetricsView], set) => {
       derived(
         [
           component.specStore,
           component.timeAndFilterStore,
           component.parent?.specStore ?? null,
           component.parent.timeManager.hasTimeSeriesStore,
-          ...Array.from(metricsViewFilters.values()).map((f) => f.parsed),
         ],
-        ([
-          spec,
-          timeAndFilters,
-          parentSpec,
-          hasTimeSeries,
-          ...parsedMetricsViewFilters
-        ]) => {
+        ([spec, timeAndFilters, parentSpec, hasTimeSeries]) => {
           const content = spec?.content ?? "";
           const applyFormatting = spec?.apply_formatting === true;
           const needsTemplating = hasTemplatingSyntax(content);
@@ -160,7 +145,7 @@ export function getResolveTemplatedStringQueryOptions(
             content,
             applyFormatting,
             timeRange: timeAndFilters?.timeRange,
-            parsedMetricsViewFilters,
+            exprByMetricsView,
             metricsViews,
           });
 

@@ -44,6 +44,9 @@ message ResourceMeta {
   repeated string file_paths = 4;
   // Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
   repeated string tags = 19;
+  // Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+  // It is user-defined: Rill does not read or write keys in it and exposes it as-is over the API for external tooling.
+  map<string, string> metadata = 20;
   bool hidden = 7;
   int64 version = 15;
   int64 spec_version = 5;
@@ -584,6 +587,9 @@ message ExplorePreset {
   // Per-measure pivot conditional formatting, serialized in the URL param
   // format (frontend-only; persisted in URL state).
   optional string pivot_formatting = 39;
+  // Ephemeral measures for the explore, serialized in the URL
+  // param format (frontend-only; persisted in URL state).
+  optional string ephemeral_measures = 40;
 
   // Chart display settings (frontend-only; persisted in URL state)
   optional bool chart_dynamic_y_axis = 35;
