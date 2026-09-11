@@ -15,7 +15,6 @@
   import { DateTime } from "luxon";
   import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
-  import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
   import TimeRangeOptionGroup from "@rilldata/web-common/features/dashboards/time-controls/super-pill/new-time-dropdown/TimeRangeOptionGroup.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
@@ -53,8 +52,6 @@
   } = $props();
   let {
     showTimeDimensionSelector = false,
-    allowCustomTimeRange = true,
-    showDefaultItem,
     lockTimeZone = false,
     showFullRange = true,
     showWatermark = false,
@@ -81,8 +78,8 @@
   let {
     restrictedDimensions,
     primaryTimeDimension,
-    defaultTimeRange,
     timeRanges,
+    allowCustomTimeRange,
     timeZones,
   } = $derived(yamlConfigProvider);
 
@@ -257,14 +254,6 @@
         class="flex flex-col w-56 overflow-y-auto overflow-x-hidden flex-none py-1"
       >
         <div class="overflow-x-hidden">
-          {#if showDefaultItem && defaultTimeRange}
-            <TimeRangeOptionGroup
-              {timeString}
-              options={[parseRillTime(defaultTimeRange)]}
-              onClick={onSelectRange}
-            />
-          {/if}
-
           <TimeRangeOptionGroup
             {timeString}
             options={rangeBuckets.custom}

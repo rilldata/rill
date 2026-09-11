@@ -282,6 +282,25 @@ const metricsViewReducers = {
         end:
           timeFilterManager.comparisonInterval?.end?.toJSDate() ?? new Date(),
       };
+
+      if (timeFilterManager.scrubInterval) {
+        exploreState.selectedScrubRange = {
+          start: timeFilterManager.scrubInterval.start.toJSDate(),
+          end: timeFilterManager.scrubInterval.end.toJSDate(),
+          isScrubbing: timeFilterManager.scrubInterval.isScrubbing,
+        };
+      } else {
+        exploreState.selectedScrubRange = undefined;
+      }
+      if (timeFilterManager.lastDefinedScrubInterval) {
+        exploreState.lastDefinedScrubRange = {
+          start: timeFilterManager.lastDefinedScrubInterval.start.toJSDate(),
+          end: timeFilterManager.lastDefinedScrubInterval.end.toJSDate(),
+          isScrubbing: false,
+        };
+      } else {
+        exploreState.lastDefinedScrubRange = undefined;
+      }
     });
   },
 

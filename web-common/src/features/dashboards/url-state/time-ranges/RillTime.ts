@@ -2,7 +2,7 @@ import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import { DateTime, Duration } from "luxon";
+import { DateTime, Duration, Interval } from "luxon";
 import type { DateObjectUnits } from "luxon";
 import {
   getLowerOrderGrain,
@@ -452,6 +452,17 @@ export class RillIsoInterval implements RillTimeInterval {
     }
     return timeRange;
   }
+
+  public toLuxonTimes() {
+    const start = this.start.toDateTime();
+    const end = this.end?.toDateTime();
+    const interval = end ? Interval.fromDateTimes(start, end) : undefined;
+    return {
+      start: start.isValid ? start : undefined,
+      end: end?.isValid ? end : undefined,
+      interval: interval?.isValid ? interval : undefined,
+    };
+  }
 }
 
 export class RillAllTimeInterval implements RillTimeInterval {
@@ -749,6 +760,10 @@ export class RillAbsoluteTime implements RillPointInTimeVariant {
 
   public toString() {
     return this.timeStr;
+  }
+
+  public toDateTime() {
+    return DateTime.fromObject(this.dateObject);
   }
 }
 

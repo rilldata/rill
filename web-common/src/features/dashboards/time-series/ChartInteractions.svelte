@@ -2,18 +2,11 @@
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { DateTime, Interval } from "luxon";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
-
-  let {
-    exploreName,
-  }: {
-    exploreName: string;
-  } = $props();
 
   let priorRange = $state<string | undefined>(undefined);
   let button = $state<HTMLButtonElement | undefined>(undefined);
@@ -72,7 +65,7 @@
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
         e.key === "Escape"
       ) {
-        metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
+        timeFilterManager.resetScrubRange();
       } else if (isExplainKey) {
         measureSelection.startAnomalyExplanationChat($metricsViewName);
       }

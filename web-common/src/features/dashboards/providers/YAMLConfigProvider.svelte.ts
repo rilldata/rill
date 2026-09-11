@@ -23,6 +23,7 @@ export class YAMLConfigProvider {
 
   public defaultTimeRange = $state<string | undefined>(undefined);
   public timeRanges = $state<V1ExploreTimeRange[]>([]);
+  public allowCustomTimeRange = $state(false);
   public defaultTimeZone = $state<string>(DEFAULT_TIMEZONE);
   public timeZones = $state<string[]>(DEFAULT_TIMEZONES);
 
@@ -41,6 +42,7 @@ export class YAMLConfigProvider {
 
     defaultTimeRange,
     timeRanges,
+    allowCustomTimeRange,
     defaultTimeZone,
     timeZones,
   }: {
@@ -54,6 +56,7 @@ export class YAMLConfigProvider {
 
     defaultTimeRange?: YAMLConfigProvider["defaultTimeRange"];
     timeRanges?: YAMLConfigProvider["timeRanges"];
+    allowCustomTimeRange?: YAMLConfigProvider["allowCustomTimeRange"];
     defaultTimeZone?: YAMLConfigProvider["defaultTimeZone"];
     timeZones?: YAMLConfigProvider["timeZones"];
   }) {
@@ -77,6 +80,7 @@ export class YAMLConfigProvider {
 
     this.defaultTimeRange = defaultTimeRange;
     this.timeRanges = timeRanges ?? [];
+    this.allowCustomTimeRange = allowCustomTimeRange ?? false;
     this.defaultTimeZone = defaultTimeZone ?? DEFAULT_TIMEZONE;
     this.timeZones = timeZones ?? [];
   }

@@ -32,11 +32,11 @@ import {
   RillTime,
   RillTimeLabel,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
-import { DateTime, type Interval } from "luxon";
+import { DateTime, Interval } from "luxon";
 import { getTruncationGrain } from "@rilldata/web-common/lib/time/rill-time-grains.ts";
 import {
   TimeComparisonOption,
-  TimeOffsetType,
+  TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
   getAvailableComparisonsForTimeRange,
@@ -45,12 +45,8 @@ import {
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { getDefaultTimeRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
 import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
-import {
-  getDurationFromMS,
-  getDurationObjectFromMS,
-  getOffset,
-  getTimeWidth,
-} from "@rilldata/web-common/lib/time/transforms";
+import { getDurationObjectFromMS } from "@rilldata/web-common/lib/time/transforms";
+import { getOrderedStartEndDateTime } from "@rilldata/web-common/features/dashboards/time-series/utils.ts";
 
 type ComparisonTimeRangeOption = {
   name: TimeComparisonOption;
@@ -66,6 +62,12 @@ const TimeFilterParams = new Set([
   ExploreStateURLParams.ComparisonTimeRange,
 ]);
 
+type ScrubRange = {
+  start: DateTime;
+  end: DateTime;
+  isScrubbing: boolean;
+};
+
 export class TimeFilterManager implements UrlParamsStore {
   // State set directly from URL/controls.
   public timeRange = $state<string | undefined>(undefined);
@@ -74,6 +76,10 @@ export class TimeFilterManager implements UrlParamsStore {
   public timeDimension = $state<string | undefined>(undefined);
   public comparisonTimeRange = $state<string | undefined>(undefined);
   public showComparison = $state<boolean>(false);
+  public lastDefinedScrubInterval = $state<Interval<true> | undefined>(
+    undefined,
+  );
+  public scrubInterval = $state<ScrubRange | undefined>(undefined);
 
   // Computed values
   public minDate: DateTime<true> | undefined;
@@ -99,6 +105,8 @@ export class TimeFilterManager implements UrlParamsStore {
   public snapToEnd: boolean;
   public parsedComparisonTime: RillTime | undefined;
 
+  // Options for controls
+  public aggregationOptions: V1TimeGrain[];
   public comparisonTimeRangeOptions: ComparisonTimeRangeOption[];
 
   public curParams = $state(new URLSearchParams());
@@ -144,8 +152,15 @@ export class TimeFilterManager implements UrlParamsStore {
       return diff.milliseconds > 0;
     });
 
-    this.timeStart = $derived(this.interval?.start.toJSDate().toISOString());
-    this.timeEnd = $derived(this.interval?.end.toJSDate().toISOString());
+    this.timeStart = $derived.by(() => {
+      const start =
+        this.lastDefinedScrubInterval?.start ?? this.interval?.start;
+      return start?.toJSDate()?.toISOString();
+    });
+    this.timeEnd = $derived.by(() => {
+      const end = this.lastDefinedScrubInterval?.end ?? this.interval?.end;
+      return end?.toJSDate()?.toISOString();
+    });
     this.comparisonTimeStart = $derived(
       this.comparisonInterval?.start.toJSDate().toISOString(),
     );
@@ -182,6 +197,12 @@ export class TimeFilterManager implements UrlParamsStore {
       }
     });
 
+    this.aggregationOptions = $derived(
+      allowedGrainsForInterval(
+        this.interval,
+        this.metricsViewsProvider.smallestTimeGrain,
+      ),
+    );
     this.comparisonTimeRangeOptions = $derived(
       this.getComparisonTimeRangeOptions(),
     );
@@ -246,6 +267,29 @@ export class TimeFilterManager implements UrlParamsStore {
     this.applyComparisonRange(
       urlParams.get(ExploreStateURLParams.ComparisonTimeRange) ?? "rill-PP",
     );
+
+    if (urlParams.has(ExploreStateURLParams.HighlightedTimeRange)) {
+      try {
+        const parsedHighlightRange = parseRillTime(
+          urlParams.get(ExploreStateURLParams.HighlightedTimeRange)!,
+        );
+        if (parsedHighlightRange.interval instanceof RillIsoInterval) {
+          const { start, end, interval } =
+            parsedHighlightRange.interval.toLuxonTimes();
+          this.scrubInterval =
+            start && end
+              ? {
+                  start,
+                  end,
+                  isScrubbing: false,
+                }
+              : undefined;
+          this.lastDefinedScrubInterval = interval;
+        }
+      } catch {
+        // no-op
+      }
+    }
   }
 
   public applyFilterToParams(urlParams: URLSearchParams) {
@@ -283,6 +327,21 @@ export class TimeFilterManager implements UrlParamsStore {
       );
     } else {
       urlParams.delete(ExploreStateURLParams.ComparisonTimeRange);
+    }
+
+    if (this.lastDefinedScrubInterval) {
+      const scrubStart = this.lastDefinedScrubInterval.start
+        .toJSDate()
+        .toISOString();
+      const scrubEnd = this.lastDefinedScrubInterval.end
+        .toJSDate()
+        .toISOString();
+      urlParams.set(
+        ExploreStateURLParams.HighlightedTimeRange,
+        `${scrubStart},${scrubEnd}`,
+      );
+    } else {
+      urlParams.delete(ExploreStateURLParams.HighlightedTimeRange);
     }
   }
 
@@ -410,8 +469,27 @@ export class TimeFilterManager implements UrlParamsStore {
     this.showComparison = !this.showComparison;
   }
 
+  public onScrubRange({ start, end, isScrubbing }: ScrubRange) {
+    this.scrubInterval = {
+      start,
+      end,
+      isScrubbing,
+    };
+    if (isScrubbing) return;
+
+    ({ start, end } = getOrderedStartEndDateTime(start, end));
+    const newInterval = Interval.fromDateTimes(start, end);
+    if (newInterval.isValid) this.lastDefinedScrubInterval = newInterval;
+  }
+
+  public resetScrubRange() {
+    this.lastDefinedScrubInterval = undefined;
+    this.scrubInterval = undefined;
+  }
+
   private async applyTimeRange(newTimeRange: string, tz = this.timeZone) {
     measureSelection.clear();
+    this.resetScrubRange();
 
     // The runtime resolves the range against the metrics views, so their names are all this needs.
     // The time range summary can still be loading at this point;
@@ -503,11 +581,16 @@ export class TimeFilterManager implements UrlParamsStore {
 
   private applyComparisonRange(newComparisonTimeRange: string) {
     this.comparisonTimeRange = newComparisonTimeRange;
+    if (!this.timeRange) return;
 
     try {
-      const parsed = parseRillTime(newComparisonTimeRange);
+      const parsed = parseRillTime(this.timeRange);
+      // Mark comparison as contiguous when we have an absolute primary time range
       if (parsed.interval instanceof RillIsoInterval) {
         this.comparisonTimeRange = TimeComparisonOption.CONTIGUOUS;
+      }
+      if (this.timeRange === TimeRangePreset.ALL_TIME) {
+        this.showComparison = false;
       }
 
       this.comparisonInterval = getComparisonInterval(

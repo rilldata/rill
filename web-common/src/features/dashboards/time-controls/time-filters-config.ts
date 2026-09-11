@@ -4,8 +4,6 @@ export type TimeFiltersConfig = {
   canPanRight?: boolean;
 
   showTimeDimensionSelector?: boolean;
-  allowCustomTimeRange?: boolean;
-  showDefaultItem: boolean;
   lockTimeZone?: boolean;
   showFullRange?: boolean;
   showWatermark?: boolean;

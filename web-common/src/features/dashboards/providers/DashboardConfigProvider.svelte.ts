@@ -46,6 +46,7 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
 
         defaultTimeRange: exploreSpec.defaultPreset?.timeRange,
         timeRanges: exploreSpec.timeRanges,
+        allowCustomTimeRange: exploreSpec.allowCustomTimeRange,
         defaultTimeZone: exploreSpec.defaultPreset?.timezone,
         timeZones: exploreSpec.timeZones,
       });
@@ -87,6 +88,7 @@ export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
 
           defaultTimeRange: canvasSpec.defaultPreset?.timeRange,
           timeRanges: canvasSpec.timeRanges,
+          allowCustomTimeRange: canvasSpec.allowCustomTimeRange,
           timeZones: canvasSpec.timeZones,
         });
       },

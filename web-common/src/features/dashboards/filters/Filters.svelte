@@ -101,7 +101,6 @@
       {dashboardConfigProvider}
       config={{
         showTimeDimensionSelector: true,
-        showDefaultItem: true,
         showFullRange: true,
         showWatermark: true,
       }}

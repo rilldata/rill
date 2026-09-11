@@ -14,7 +14,6 @@
     metricsExplorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
@@ -97,17 +96,15 @@
     comparisonTimeStart,
     comparisonTimeEnd,
 
+    aggregationOptions,
+
     ready: chartReady,
   } = $derived(timeFilterManager);
-
-  const timeControlsStore = useTimeControlStore(StateManagers);
 
   let grainDropdownOpen = $state(false);
   let connectNulls = $state(true);
 
   const client = useRuntimeClient();
-
-  let { aggregationOptions } = $derived($timeControlsStore);
 
   let { selectedTimezone } = $derived($dashboardStore);
 
@@ -233,11 +230,7 @@
     end: DateTime;
     isScrubbing: boolean;
   }) {
-    metricsExplorerStore.setSelectedScrubRange(exploreName, {
-      start: range.start.toJSDate(),
-      end: range.end.toJSDate(),
-      isScrubbing: range.isScrubbing,
-    });
+    timeFilterManager.onScrubRange(range);
   }
 
   function maybeClearMeasureSelection() {
@@ -363,7 +356,7 @@
                being propped open by the chart's intrinsic size (see the chart cell below) -->
           <div class="relative min-w-0">
             <MeasureChartXAxis {interval} timeGranularity={timeGrain} />
-            <ChartInteractions {exploreName} />
+            <ChartInteractions />
           </div>
         </div>
       {/if}
@@ -415,12 +408,7 @@
               {tddChartHeight}
               dynamicYAxis={dynamicYAxisScale}
               onScrub={handleScrub}
-              onScrubClear={() => {
-                metricsExplorerStore.setSelectedScrubRange(
-                  exploreName,
-                  undefined,
-                );
-              }}
+              onScrubClear={() => timeFilterManager.resetScrubRange()}
             />
 
             <DropdownMenu.Root>
