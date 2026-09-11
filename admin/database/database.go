@@ -300,6 +300,8 @@ type DB interface {
 	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
 	DeleteProjectAccessRequest(ctx context.Context, id string) error
 
+	// FindBookmarks returns the bookmarks in a project that are visible to the user: their own plus shared and default ones.
+	// resourceKind and resourceName are optional filters; when both are empty, all bookmarks in the project are returned.
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)

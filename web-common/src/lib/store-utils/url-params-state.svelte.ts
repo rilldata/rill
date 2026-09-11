@@ -34,7 +34,7 @@ export class UrlParamsState<Val, DefaultVal>
   }
 
   public static createStringParam(param: string, defaultValue: string = "") {
-    return new UrlParamsState<string, null>(
+    return new UrlParamsState<string, string>(
       param,
       (value) => (value === "" ? null : value),
       (value) => value ?? defaultValue,

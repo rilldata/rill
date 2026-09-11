@@ -2852,11 +2852,23 @@ func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) 
 	return checkDeleteRow("project access request", res, err)
 }
 
-// FindBookmarks returns a list of bookmarks for a user per project
+// FindBookmarks returns the bookmarks in a project that are visible to the user.
+// resourceKind and resourceName are optional filters; when empty, they are not applied.
 func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*database.Bookmark, error) {
+	qry := `SELECT * FROM bookmarks WHERE project_id = $1 AND (user_id = $2 OR shared = true OR "default" = true)`
+	args := []any{projectID, userID}
+	if resourceKind != "" {
+		args = append(args, resourceKind)
+		qry += fmt.Sprintf(" AND resource_kind = $%d", len(args))
+	}
+	if resourceName != "" {
+		args = append(args, resourceName)
+		qry += fmt.Sprintf(" AND lower(resource_name) = lower($%d)", len(args))
+	}
+	qry += " ORDER BY lower(display_name), created_on"
+
 	var res []*database.Bookmark
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and lower(resource_name) = lower($3) and (user_id = $4 or shared = true or "default" = true)`,
-		projectID, resourceKind, resourceName, userID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry, args...)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -2903,7 +2915,7 @@ func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBo
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, url_search=$3, shared=$4 WHERE id=$5`,
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, url_search=$3, shared=$4, updated_on=now() WHERE id=$5`,
 		opts.DisplayName, opts.Description, opts.URLSearch, opts.Shared, opts.BookmarkID)
 	return checkUpdateRow("bookmark", res, err)
 }

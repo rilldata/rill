@@ -10214,6 +10214,9 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 }
 
 /**
+ * ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
+ * the caller's own bookmarks plus shared and default bookmarks.
+ *
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
@@ -10223,14 +10226,19 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string resource_kind = 2;
+   * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+   * When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+   *
+   * @generated from field: optional string resource_kind = 2;
    */
-  resourceKind = "";
+  resourceKind?: string;
 
   /**
-   * @generated from field: string resource_name = 3;
+   * Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+   *
+   * @generated from field: optional string resource_name = 3;
    */
-  resourceName = "";
+  resourceName?: string;
 
   constructor(data?: PartialMessage<ListBookmarksRequest>) {
     super();
@@ -10241,8 +10249,8 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   static readonly typeName = "rill.admin.v1.ListBookmarksRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListBookmarksRequest {

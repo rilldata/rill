@@ -356,6 +356,7 @@
               pathname={page.url.pathname}
               {project}
               {branchPrefix}
+              hasUser={!!$user.data?.user}
             />
           {/if}
         {/if}

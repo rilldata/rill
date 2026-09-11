@@ -231,7 +231,9 @@ function isAbsoluteTimeRangeBookmark(bookmarkUrlParams: URLSearchParams) {
   }
 }
 
-function isFilterOnlyBookmark(bookmarkUrlParams: URLSearchParams): boolean {
+export function isFilterOnlyBookmark(
+  bookmarkUrlParams: URLSearchParams,
+): boolean {
   const urlParams = Array.from(bookmarkUrlParams.keys());
   return urlParams.every((param) => FILTER_ONLY_PARAMS.has(param));
 }

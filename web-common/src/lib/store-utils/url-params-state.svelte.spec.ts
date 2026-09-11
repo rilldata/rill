@@ -45,7 +45,7 @@ describe("UrlParamsState", () => {
   });
 
   it("updates the value optimistically before the URL write is flushed", async () => {
-    let q!: UrlParamsState<string, null>;
+    let q!: UrlParamsState<string, string>;
     const cleanup = $effect.root(() => {
       q = UrlParamsState.createStringParam("q");
     });
@@ -67,7 +67,7 @@ describe("UrlParamsState", () => {
   });
 
   it("batches writes from multiple stores into a single navigation", async () => {
-    let q!: UrlParamsState<string, null>;
+    let q!: UrlParamsState<string, string>;
     let status!: ArrayRuneStore<string>;
     const cleanup = $effect.root(() => {
       q = UrlParamsState.createStringParam("q");
@@ -87,7 +87,7 @@ describe("UrlParamsState", () => {
 
   it("removes the param when set to the empty/default value", async () => {
     page.url = new URL("http://localhost/?q=hello");
-    let q!: UrlParamsState<string, null>;
+    let q!: UrlParamsState<string, string>;
     const cleanup = $effect.root(() => {
       q = UrlParamsState.createStringParam("q");
     });
