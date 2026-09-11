@@ -116,6 +116,11 @@ func (p *Parser) parseDataYAML(paths []string, raw *DataYAML, contextualConnecto
 		count++
 		resolver = "ai"
 		resolverProps = raw.AI
+		// The agent can access any metrics view, so the explore is the only dependency known up front.
+		// Adding it as a ref makes reports wait for it to reconcile and lets watermark: inherit resolve time ranges against its data.
+		if explore, ok := raw.AI["explore"].(string); ok && explore != "" {
+			refs = append(refs, ResourceName{Kind: ResourceKindExplore, Name: explore})
+		}
 	}
 
 	// Handle union resolver

@@ -184,10 +184,12 @@
       !!onPublicURLPage,
   });
 
-  $: publicURLDashboardTitle = onCanvasDashboardPage
-    ? $canvasQuery.data?.canvas?.displayName || dashboard
-    : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
-      dashboard;
+  // Public URL pages without a dashboard (e.g. a shared AI conversation) render no title.
+  $: publicURLDashboardTitle =
+    (onCanvasDashboardPage
+      ? $canvasQuery.data?.canvas?.displayName || dashboard
+      : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+        dashboard) ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>

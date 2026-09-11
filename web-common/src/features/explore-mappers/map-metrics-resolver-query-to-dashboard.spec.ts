@@ -439,6 +439,25 @@ describe("mapResolverExpressionToV1Expression", () => {
         "Facebook",
       ]),
     },
+    {
+      title: "falsy scalar values are kept",
+      expression: {
+        cond: {
+          op: "in",
+          exprs: [
+            { name: AD_BIDS_PUBLISHER_DIMENSION },
+            { val: 0 as any },
+            { val: false as any },
+            { val: "" as any },
+          ],
+        },
+      },
+      expectedExpression: createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+        0,
+        false,
+        "",
+      ]),
+    },
   ];
 
   for (const { title, expression, expectedExpression } of TestCases) {
