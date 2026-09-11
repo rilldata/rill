@@ -9,6 +9,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getKeyForSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers.ts";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -53,9 +55,16 @@ vi.mock("@rilldata/web-common/features/embeds/embed-theme", () => ({
   }),
 }));
 
+const EMBED_URL = "http://localhost/-/embed";
+const EXPLORE_ROUTE = "/[organization]/[project]/-/embed/explore/[name]";
+const CANVAS_ROUTE = "/[organization]/[project]/-/embed/canvas/[name]";
+const AD_BIDS_CANVAS_NAME = "AdBids_canvas";
+
 describe("initEmbedPublicAPI", () => {
   let harness: EmbedPublicAPIHarness;
   let cleanup: () => void;
+
+  const mocks = DashboardFetchMocks.useDashboardFetchMocks();
 
   const client = new RuntimeClient({
     host: "http://localhost",
@@ -64,6 +73,10 @@ describe("initEmbedPublicAPI", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+
+    // initEmbedPublicAPI reads the embed's config (theme mode, navigation) from the
+    // EmbedStore singleton, which the embed layout initializes before calling it.
+    EmbedStore.init(new URL(`${EMBED_URL}?navigation=true`));
 
     // Construct the harness (mocks window.parent, installs the RPC handler)
     // before init so the "ready" and initial notifications are captured.
@@ -121,11 +134,6 @@ describe("initEmbedPublicAPI", () => {
   // runtime GetExplore/metrics fetches are mocked with the AD_BIDS fixtures. See
   // DashboardStateManager.spec.ts for the same API mocking approach.
   describe("setValidState", () => {
-    const EXPLORE_ROUTE = "/[organization]/[project]/-/embed/explore/[name]";
-    const CANVAS_ROUTE = "/[organization]/[project]/-/embed/canvas/[name]";
-
-    const mocks = DashboardFetchMocks.useDashboardFetchMocks();
-
     beforeEach(() => {
       queryClient.clear();
       sessionStorage.clear();
@@ -244,6 +252,226 @@ describe("initEmbedPublicAPI", () => {
       const missingState = await callSetValidState({});
       expect(missingState.error?.message).toBe(
         "Expected params to be an object with a string `state` property",
+      );
+    });
+  });
+
+  describe("navigateBack / navigateForward", () => {
+    it("drives the browser history and returns true", async () => {
+      const back = vi
+        .spyOn(window.history, "back")
+        .mockImplementation(() => {});
+      const forward = vi
+        .spyOn(window.history, "forward")
+        .mockImplementation(() => {});
+
+      expect((await harness.call("navigateBack")).result).toBe(true);
+      expect(back).toHaveBeenCalledOnce();
+
+      expect((await harness.call("navigateForward")).result).toBe(true);
+      expect(forward).toHaveBeenCalledOnce();
+
+      back.mockRestore();
+      forward.mockRestore();
+    });
+  });
+
+  describe("with navigation disabled", () => {
+    // Re-initialize the embed without `navigation=true` and re-register the methods
+    // against it, mirroring an embed configured with navigation disabled.
+    beforeEach(() => {
+      cleanup();
+      EmbedStore.init(new URL(EMBED_URL));
+      cleanup = initEmbedPublicAPI(client);
+    });
+
+    it.each(["navigateBack", "navigateForward", "navigateToDashboard"])(
+      "returns a JSON-RPC error from %s",
+      async (method) => {
+        const gotoCountBefore = harness.gotoCalls.length;
+
+        const response = await harness.call(method, {
+          name: AD_BIDS_EXPLORE_NAME,
+        });
+
+        expect(response.result).toBeUndefined();
+        expect(response.error?.message).toBe(
+          "Navigation is disabled for this embed",
+        );
+        expect(harness.gotoCalls.length).toBe(gotoCountBefore);
+      },
+    );
+
+    it("still allows state changes on the current dashboard", async () => {
+      const response = await harness.call("setState", "foo=bar");
+
+      expect(response.result).toBe(true);
+      expect(harness.lastGoto()?.url.search).toBe("?foo=bar");
+    });
+  });
+
+  // navigateToDashboard resolves the target dashboard's kind through ListResources and then
+  // applies the state the same way setValidState does.
+  describe("navigateToDashboard", () => {
+    beforeEach(() => {
+      queryClient.clear();
+      sessionStorage.clear();
+      mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
+      mocks.mockMetricsExplore(AD_BIDS_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
+        ...AD_BIDS_EXPLORE_INIT,
+        defaultPreset: AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
+      });
+      mocks.mockListResources([
+        {
+          meta: {
+            name: {
+              kind: ResourceKind.MetricsView,
+              name: AD_BIDS_METRICS_NAME,
+            },
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Explore, name: AD_BIDS_EXPLORE_NAME },
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Canvas, name: AD_BIDS_CANVAS_NAME },
+          },
+        },
+      ]);
+    });
+
+    // The ListResources and buildValidatedExploreUrl fetches resolve on a real setTimeout,
+    // so advance fake timers to let the RPC response settle before returning it.
+    async function callNavigate(params: unknown) {
+      const response = harness.call("navigateToDashboard", params);
+      await vi.advanceTimersByTimeAsync(50);
+      return response;
+    }
+
+    it("navigates to an explore dashboard with the validated state", async () => {
+      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
+
+      const response = await callNavigate({
+        name: AD_BIDS_EXPLORE_NAME,
+        state: "measures=impressions&dims=publisher",
+      });
+
+      expect(response.result).toEqual({
+        success: true,
+        appliedState: "measures=impressions&dims=publisher",
+        errors: [],
+      });
+      const last = harness.lastGoto();
+      expect(last?.url.pathname).toBe(
+        `/-/embed/explore/${AD_BIDS_EXPLORE_NAME}`,
+      );
+      expect(last?.url.search).toBe("?measures=impressions&dims=publisher");
+      // Navigating to another dashboard should be undoable via `navigateBack`.
+      expect(last?.opts).toEqual({ replaceState: false });
+    });
+
+    it("navigates to a canvas dashboard applying the state as-is", async () => {
+      harness.setRoute(EXPLORE_ROUTE, { name: AD_BIDS_EXPLORE_NAME });
+
+      const response = await callNavigate({
+        name: AD_BIDS_CANVAS_NAME,
+        state: "foo=bar",
+      });
+
+      expect(response.result).toEqual({
+        success: true,
+        appliedState: "foo=bar",
+        errors: [],
+      });
+      expect(harness.lastGoto()?.url.pathname).toBe(
+        `/-/embed/canvas/${AD_BIDS_CANVAS_NAME}`,
+      );
+      expect(harness.lastGoto()?.url.search).toBe("?foo=bar");
+    });
+
+    it("navigates without any state when state is not given", async () => {
+      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
+      // Params of the dashboard being navigated away from should not carry over.
+      harness.navigateTo("foo=bar");
+
+      const response = await callNavigate({ name: AD_BIDS_EXPLORE_NAME });
+
+      expect(response.result).toEqual({
+        success: true,
+        appliedState: "",
+        errors: [],
+      });
+      const last = harness.lastGoto();
+      expect(last?.url.pathname).toBe(
+        `/-/embed/explore/${AD_BIDS_EXPLORE_NAME}`,
+      );
+      expect(last?.url.search).toBe("");
+    });
+
+    it("does not navigate on validation errors when failOnError is true", async () => {
+      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
+      const gotoCountBefore = harness.gotoCalls.length;
+
+      const response = await callNavigate({
+        name: AD_BIDS_EXPLORE_NAME,
+        state: "measures=does_not_exist",
+        failOnError: true,
+      });
+
+      expect(response.result).toEqual({
+        success: false,
+        errors: ['Selected measure: "does_not_exist" is not valid.'],
+      });
+      expect(harness.gotoCalls.length).toBe(gotoCountBefore);
+    });
+
+    it("clears prior embed session storage before navigating to an explore", async () => {
+      const sessionKey = getKeyForSessionStore(
+        AD_BIDS_EXPLORE_NAME,
+        EmbedStorageNamespacePrefix,
+        ExploreUrlWebView.Explore,
+      );
+      // Simulate state left over from an earlier visit to the target explore. Without clearing,
+      // handleURLChange would restore it instead of the state we just applied.
+      sessionStorage.setItem(sessionKey, "f=publisher+IN+%28%27Google%27%29");
+
+      await callNavigate({ name: AD_BIDS_EXPLORE_NAME, state: "" });
+
+      expect(sessionStorage.getItem(sessionKey)).toBeNull();
+    });
+
+    it("returns a JSON-RPC error when the dashboard does not exist", async () => {
+      const response = await callNavigate({ name: "does_not_exist" });
+
+      expect(response.result).toBeUndefined();
+      expect(response.error?.message).toBe(
+        'Dashboard "does_not_exist" not found',
+      );
+    });
+
+    it("returns a JSON-RPC error when the name is not a resource of a dashboard kind", async () => {
+      const response = await callNavigate({ name: AD_BIDS_METRICS_NAME });
+
+      expect(response.error?.message).toBe(
+        `Dashboard "${AD_BIDS_METRICS_NAME}" not found`,
+      );
+    });
+
+    it("returns a JSON-RPC error when params is missing a string name", async () => {
+      const notObject = await callNavigate(AD_BIDS_EXPLORE_NAME);
+      expect(notObject.error?.message).toBe(
+        "Expected params to be an object with a string `name` property",
+      );
+
+      const nonStringState = await callNavigate({
+        name: AD_BIDS_EXPLORE_NAME,
+        state: 123,
+      });
+      expect(nonStringState.error?.message).toBe(
+        "Expected `state` to be a string",
       );
     });
   });

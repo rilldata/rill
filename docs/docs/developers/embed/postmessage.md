@@ -307,6 +307,104 @@ iframe.contentWindow.postMessage({
 
 **Note:** The AI pane is only available for dashboards when the chat feature is enabled. If the AI pane is not available, calling this method will not cause an error, but the pane will not be shown.
 
+
+### `navigateToDashboard({ name, state, failOnError })`
+
+Navigates the iframe to another dashboard in the same project.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 9,
+  method: "navigateToDashboard",
+  params: { name: "bids_explore", state: "view=pivot&tr=PT24H&grain=hour" },
+}, "*");
+```
+
+**Parameters:**
+- `name` (string): The name of the explore or canvas dashboard to navigate to, as defined in the project's YAML files.
+- `state` (string, optional): A URL query string to apply to the dashboard being navigated to. When omitted, the dashboard opens in its default state. The state of the dashboard being navigated away from is never carried over.
+- `failOnError` (boolean, optional): Behaves the same as in `setValidState`. When `false` (the default), the cleaned state is applied even when some parameters were invalid; when `true`, the navigation is skipped entirely if validation produced errors.
+
+**Response:**
+
+```json
+{ "id": 9, "result": { "success": true, "appliedState": "view=pivot&tr=PT24H&grain=hour", "errors": [] } }
+```
+
+The response has the same shape as `setValidState`: `state` is validated against the target dashboard's metrics view and explore specs, and `appliedState` is the canonicalized query string that was actually applied. As with `setValidState`, validation is currently supported for explore dashboards; for other dashboard types the state is applied as-is.
+
+**Error Response (if the dashboard does not exist):**
+
+```json
+{
+  "id": 9,
+  "error": {
+    "code": -32603,
+    "message": "Dashboard \"bids_explore\" not found"
+  }
+}
+```
+
+The same error is returned when `name` refers to a resource that is not an explore or canvas dashboard, or to a dashboard the embed's access token does not grant access to.
+
+Each call adds a browser history entry, so it can be undone with `navigateBack`.
+
+**Note:** All three navigation methods require navigation to be enabled in the embed configuration. When the embed is configured with `navigation=false`, they return an error instead of navigating:
+
+```json
+{
+  "id": 9,
+  "error": {
+    "code": -32603,
+    "message": "Navigation is disabled for this embed"
+  }
+}
+```
+
+
+### `navigateBack()`
+
+Navigates back to the previous entry in the iframe's browser history, equivalent to the browser's back button.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 10,
+  method: "navigateBack",
+}, "*");
+```
+
+**Parameters:** None.
+
+**Response:**
+
+```json
+{ "id": 10, "result": true }
+```
+
+**Note:** This method returns the `Navigation is disabled for this embed` error when the embed is configured with `navigation=false`. When navigation is enabled but there is no previous history entry, for example on the first dashboard the embed loaded, the call succeeds without navigating.
+
+
+### `navigateForward()`
+
+Navigates forward to the next entry in the iframe's browser history, equivalent to the browser's forward button.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 11,
+  method: "navigateForward",
+}, "*");
+```
+
+**Parameters:** None.
+
+**Response:**
+
+```json
+{ "id": 11, "result": true }
+```
+
+**Note:** As with `navigateBack`, this method returns an error when the embed is configured with `navigation=false`, and succeeds without navigating when there is no next history entry.
+
 ## Notifications
 
 Notifications are sent **from the iframe** to the parent window. These do not include an `id`.
@@ -329,7 +427,7 @@ Fired whenever the internal state of the iframe changes.
 
 ### `navigation({ from: string, to: string })`
 
-Fired whenever a user navigates between dashboards. This event is only emitted when navigation is enabled in the embed configuration.
+Fired whenever navigation between dashboards happens, either through a user interaction or through a `navigateToDashboard` call. This event is only emitted when navigation is enabled in the embed configuration.
 
 - `from`: The name of the dashboard the user navigated from, or `"dashboardListing"` if navigating from the dashboard listing page
 - `to`: The name of the dashboard the user navigated to, or `"dashboardListing"` if navigating to the dashboard listing page
@@ -451,6 +549,9 @@ window.addEventListener("message", async (event) => {
     const aiPaneState = await sendRequest("getAiPane");
     console.log("AI pane open:", aiPaneState.open);
     await sendRequest("setAiPane", true);
+
+    await sendRequest("navigateToDashboard", { name: "bids_canvas" });
+    await sendRequest("navigateBack");
   }
 
   if (event.data?.method === "stateChanged") {

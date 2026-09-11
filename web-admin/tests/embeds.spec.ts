@@ -606,6 +606,60 @@ test.describe("Embeds", () => {
         );
       });
     });
+
+    test("embedded canvas navigation APIs to go back/forward", async ({
+      embedPage,
+    }) => {
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
+      const frame = embedPage.frameLocator("iframe");
+
+      // Hover over leaderboard component to show the `go to explore` button
+      await frame.locator("#bids_canvas--component-1-0").hover();
+      await frame.getByLabel("Go to Programmatic Ads Bids").nth(0).click();
+      // Navigation event is fired for going to explore
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
+      );
+
+      // Assert the selected filters in explore
+      await expect(frame.getByText("Last 24 hours")).toBeVisible();
+      await expect(frame.getByText("instacart.com $1.1k")).toBeVisible();
+      // Only one measures shown.
+      await expect(
+        frame.getByLabel("Choose measures to display"),
+      ).toContainText("1 of 12 Measures");
+      // Only 3 dimensions shown.
+      await expect(
+        frame.getByLabel("Choose dimensions to display"),
+      ).toContainText("3 of 22 Dimensions");
+
+      // Call `navigateBack`
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 1337, method: "navigateBack" },
+          "*",
+        );
+      });
+      // Navigation event is fired for going back to canvas
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_explore","to":"bids_canvas"}}`,
+      );
+
+      // Call `navigateForward`
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 1337, method: "navigateForward" },
+          "*",
+        );
+      });
+      // Navigation event is fired for going forward to explore
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
+      );
+    });
   });
 
   test.describe("embedded canvas with a hidden navigation bar", () => {
