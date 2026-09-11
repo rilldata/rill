@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"sync/atomic"
 
 	dbsqllog "github.com/databricks/databricks-sql-go/logger"
 	"github.com/jmoiron/sqlx"
@@ -188,10 +187,6 @@ type connection struct {
 	db    *sqlx.DB // lazily populated using getDB
 	dbErr error
 	dbMu  *semaphore.Weighted
-
-	// Set once the workspace has rejected the query_tags configuration, after which
-	// query attributes are no longer sent. See connection.queryTagsRejected.
-	queryTagsUnsupported atomic.Bool
 }
 
 // Ping implements drivers.Handle.
