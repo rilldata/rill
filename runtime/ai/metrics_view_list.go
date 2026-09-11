@@ -116,14 +116,17 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 			if !sk.AlwaysApply {
 				continue
 			}
-			if aiInstructions.Len()+len(sk.Body) > skillsMaxAlwaysApplyBytes {
+			// The cap applies to the rendered section, including its separator and heading, not just the body.
+			var section string
+			if aiInstructions.Len() > 0 {
+				section = "\n\n"
+			}
+			section += fmt.Sprintf("## Skill: %s\n\n%s", sk.Name, sk.Body)
+			if aiInstructions.Len()+len(section) > skillsMaxAlwaysApplyBytes {
 				session.logger.Warn("always-apply skill exceeds the size cap; clients must load it with load_skill", zap.String("skill", sk.Name))
 				continue
 			}
-			if aiInstructions.Len() > 0 {
-				aiInstructions.WriteString("\n\n")
-			}
-			fmt.Fprintf(&aiInstructions, "## Skill: %s\n\n%s", sk.Name, sk.Body)
+			aiInstructions.WriteString(section)
 		}
 	}
 

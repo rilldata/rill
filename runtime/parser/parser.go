@@ -125,8 +125,6 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAPI, nil
 	case "connector":
 		return ResourceKindConnector, nil
-	case "skill":
-		return ResourceKindSkill, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}

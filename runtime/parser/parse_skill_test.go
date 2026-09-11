@@ -86,6 +86,11 @@ description: Unclosed.
 ----
 
 Body.`,
+		// Invalid: skills are only parsed from SKILL.md files, so a generic YAML file can't declare the kind
+		`skills/legacy.yaml`: `
+type: skill
+description: Not a SKILL.md file.
+`,
 	})
 
 	resources := []*Resource{
@@ -128,6 +133,7 @@ Body.`,
 		{FilePath: "/skills/Bad_Name/SKILL.md", Message: "invalid skill name"},
 		{FilePath: "/skills/blank/SKILL.md", Message: `missing required front matter field "description"`},
 		{FilePath: "/skills/unclosed/SKILL.md", Message: "unclosed front matter"},
+		{FilePath: "/skills/legacy.yaml", Message: `invalid resource type "skill"`},
 	}
 
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)

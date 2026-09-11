@@ -104,11 +104,13 @@ func filterSkills(skills []*Skill, agent string, metricsViewNames []string) []*S
 func skillPrompts(skills []*Skill, logger *zap.Logger) (alwaysApply, index string) {
 	var alwaysApplyBuf, indexBuf strings.Builder
 	for _, sk := range skills {
-		if sk.AlwaysApply && alwaysApplyBuf.Len()+len(sk.Body) <= skillsMaxAlwaysApplyBytes {
-			fmt.Fprintf(&alwaysApplyBuf, "## Skill: %s\n\n%s\n\n", sk.Name, sk.Body)
-			continue
-		}
 		if sk.AlwaysApply {
+			// The cap applies to the rendered section, including its heading, not just the body.
+			section := fmt.Sprintf("## Skill: %s\n\n%s\n\n", sk.Name, sk.Body)
+			if alwaysApplyBuf.Len()+len(section) <= skillsMaxAlwaysApplyBytes {
+				alwaysApplyBuf.WriteString(section)
+				continue
+			}
 			logger.Warn("always-apply skill exceeds the prompt size cap; falling back to on-demand loading", zap.String("skill", sk.Name))
 		}
 		fmt.Fprintf(&indexBuf, "- %s: %s\n", sk.Name, sk.Description)

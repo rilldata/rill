@@ -1,10 +1,12 @@
 package ai
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestMCPInstructions(t *testing.T) {
@@ -46,4 +48,23 @@ func TestFilterSkills(t *testing.T) {
 
 	// Developer agent
 	require.Equal(t, []string{"glossary", "modeling"}, names(filterSkills(skills, parser.SkillAgentDeveloper, nil)))
+}
+
+func TestSkillPromptsCap(t *testing.T) {
+	// The cap covers the rendered section, so a body that fits on its own but not with its heading falls back to the index.
+	skills := []*Skill{
+		{Name: "big", Description: "Big skill.", Body: strings.Repeat("x", skillsMaxAlwaysApplyBytes-len("## Skill: big\n\n")), AlwaysApply: true},
+		{Name: "small", Description: "Small skill.", Body: "Short.", AlwaysApply: true},
+	}
+	alwaysApply, index := skillPrompts(skills, zap.NewNop())
+	require.Equal(t, "## Skill: small\n\nShort.", alwaysApply)
+	require.Equal(t, "- big: Big skill.", index)
+
+	// Many empty bodies still count towards the cap through their headings
+	var many []*Skill
+	for i := 0; i < skillsMaxAlwaysApplyBytes/10; i++ {
+		many = append(many, &Skill{Name: "e", Description: "Empty.", AlwaysApply: true})
+	}
+	alwaysApply, _ = skillPrompts(many, zap.NewNop())
+	require.LessOrEqual(t, len(alwaysApply), skillsMaxAlwaysApplyBytes)
 }
