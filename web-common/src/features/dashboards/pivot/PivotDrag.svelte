@@ -20,6 +20,13 @@
   export let items: PivotChipData[];
   export let collapsed = false;
   export let tableMode: PivotTableMode = "nest";
+  // ephemeral measures: marks their chips with an fx icon and
+  // exposes edit/delete actions next to the add-to-rows/columns icons.
+  export let ephemeralMeasureNames: Set<string> = new Set();
+  export let onEditEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
+  export let onDeleteEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
 
   function toggleCollapse() {
     collapsed = !collapsed;
@@ -40,7 +47,14 @@
   {#if !collapsed}
     <div class="w-full h-fit overflow-x-hidden px-[2px] mt-2">
       {#if items.length}
-        <DragList {items} zone={title} {tableMode} />
+        <DragList
+          {items}
+          zone={title}
+          {tableMode}
+          {ephemeralMeasureNames}
+          {onEditEphemeralMeasure}
+          {onDeleteEphemeralMeasure}
+        />
       {:else}
         <p class="text-fg-secondary my-1">
           {m.dashboard_no_available_fields()}

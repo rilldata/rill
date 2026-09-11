@@ -20,14 +20,7 @@ export function getTypeOptions(
     tooltip?: string;
   }[] = [...MeasureFilterBaseTypeOptions];
 
-  // Comparison computes resolve their referenced measure against the metrics
-  // view, so they are unavailable for ephemeral measures.
-  const isEphemeralMeasure = !!formValues.ephemeralMeasures?.some(
-    (def) => def.name === selectedMeasure?.name,
-  );
-
   if (
-    !isEphemeralMeasure &&
     selectedComparisonTimeRange?.name &&
     selectedComparisonTimeRange?.name in TIME_COMPARISON
   ) {
@@ -47,20 +40,14 @@ export function getTypeOptions(
         return {
           ...o,
           label: o.shortLabel,
-          tooltip: isEphemeralMeasure
-            ? "Not available for adhoc measures."
-            : "Available when comparing time periods.",
+          tooltip: "Available when comparing time periods.",
           disabled: true,
         };
       }),
     );
   }
 
-  if (
-    !isEphemeralMeasure &&
-    selectedMeasure?.validPercentOfTotal &&
-    formValues.splitByDimension
-  ) {
+  if (selectedMeasure?.validPercentOfTotal && formValues.splitByDimension) {
     options.push(MeasureFilterPercentOfTotalOption);
   } else {
     options.push({

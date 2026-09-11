@@ -97,18 +97,12 @@ export function getPivotConfig(
         splitPivotChips(dashboardStore.pivot.columns);
 
       const ephemeralMeasures = dashboardStore.ephemeralMeasures ?? [];
-      const ephemeralMeasureNames = new Set(
-        ephemeralMeasures.map((d) => d.name),
-      );
 
       const measureNames = colMeasures.flatMap((m) => {
         const measureName = m.id;
         const group = [measureName];
 
-        // Comparison columns are not supported for ephemeral measures:
-        // the comparison computes resolve their referenced measure against
-        // the metrics view spec, which has no entry for them.
-        if (enableComparison && !ephemeralMeasureNames.has(measureName)) {
+        if (enableComparison) {
           group.push(
             `${measureName}${COMPARISON_DELTA}`,
             `${measureName}${COMPARISON_PERCENT}`,

@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    ephemeralMeasureNameSet,
-    mapEphemeralMeasuresForRequest,
-  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -81,10 +78,6 @@
     dimensionName,
   );
 
-  $: ephemeralMeasureNames = ephemeralMeasureNameSet(
-    $dashboardStore.ephemeralMeasures,
-  );
-
   $: measures = mapEphemeralMeasuresForRequest(
     [
       ...getMeasuresForDimensionOrLeaderboardDisplay(
@@ -96,14 +89,11 @@
       ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
       // Add comparison measures if comparison time range exists.
-      // Comparison computes are not supported for ephemeral measures.
       ...(comparisonTimeRange
         ? ($leaderboardShowContextForAllMeasures
             ? visibleMeasureNames
             : [$leaderboardSortByMeasureName]
-          )
-            .filter((name) => !ephemeralMeasureNames.has(name))
-            .flatMap((name) => getComparisonRequestMeasures(name))
+          ).flatMap((name) => getComparisonRequestMeasures(name))
         : []),
     ],
     $dashboardStore.ephemeralMeasures,
@@ -159,9 +149,7 @@
     $sortType,
     $leaderboardSortByMeasureName,
     dimensionName,
-    // Ephemeral measures have no comparison columns to sort by.
-    !!comparisonTimeRange &&
-      !ephemeralMeasureNames.has($leaderboardSortByMeasureName),
+    !!comparisonTimeRange,
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(

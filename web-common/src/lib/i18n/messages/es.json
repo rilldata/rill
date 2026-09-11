@@ -1624,6 +1624,8 @@
   "project_waking": "Reactivando...",
   "project_waking_up": "Reactivando su proyecto...",
   "public_url_access_expires": "El acceso vence el {date}",
+  "public_url_adhoc_measure_hidden_refs": "{measure} (usa {hidden})",
+  "public_url_adhoc_measures_omitted": "Las siguientes medidas adhoc se omitirán porque usan medidas ocultas:",
   "public_url_cancel_button": "Cancelar",
   "public_url_copied_button": "URL copiada",
   "public_url_copied_to_clipboard": "URL pública copiada al portapapeles",

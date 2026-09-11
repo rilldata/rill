@@ -3,13 +3,13 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-  import EphemeralMeasureEditor from "./EphemeralMeasureEditor.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { PivotMeasureFormatting } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
   import type { FieldType } from "../types";
+  import { canvasEphemeralMeasureEditor } from "./ephemeral-editor-store";
   import FieldChips from "./FieldChips.svelte";
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
 
@@ -37,14 +37,19 @@
 
   let open = false;
   let searchValue = "";
-  let ephemeralEditorOpen = false;
-  let ephemeralEditingDef: EphemeralMeasureDef | null = null;
 
   $: ephemeralEnabled = !!component && types.includes("measure");
 
-  function openEphemeralEditor(def: EphemeralMeasureDef | null) {
-    ephemeralEditingDef = def;
-    ephemeralEditorOpen = true;
+  // Opens the editor mounted once at the inspector root (see ComponentsEditor).
+  function openEphemeralEditor(editingDef: EphemeralMeasureDef | null) {
+    if (!component) return;
+    canvasEphemeralMeasureEditor.set({
+      component,
+      canvasName,
+      metricName,
+      editingDef,
+      onCreated: (name) => onMultiSelect([...selectedItems, name]),
+    });
   }
 
   $: ctx = getCanvasStore(canvasName, client.instanceId);
@@ -114,14 +119,3 @@
     {lowerIsBetterMap}
   />
 </div>
-
-{#if ephemeralEditorOpen && component}
-  <EphemeralMeasureEditor
-    {component}
-    {canvasName}
-    {metricName}
-    editingDef={ephemeralEditingDef}
-    onClose={() => (ephemeralEditorOpen = false)}
-    onCreated={(name) => onMultiSelect([...selectedItems, name])}
-  />
-{/if}

@@ -18,6 +18,17 @@ import { getStateManagers } from "@rilldata/web-common/features/dashboards/state
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
+/**
+ * An ad-hoc (ephemeral) measure that is omitted from a public URL because it
+ * references measures the recipient cannot see.
+ */
+export type DroppedEphemeralMeasure = {
+  name: string;
+  displayName: string;
+  // Display names of the referenced measures that are hidden.
+  hiddenMeasures: string[];
+};
+
 export function convertDateToMinutes(date: string) {
   const now = new Date();
   const future = new Date(date);
@@ -39,6 +50,7 @@ export function createFieldsAndStateForKind(
       return {
         fields: undefined,
         sanitizedState: getSanitizedStateUrl(pageState.url),
+        droppedEphemeralMeasures: [] as DroppedEphemeralMeasure[],
         queryTimeStart: undefined,
         queryTimeEnd: undefined,
       };
@@ -82,15 +94,22 @@ export function createFieldsAndStateForKind(
         $visibleDimensions,
         $visibleMeasures,
       );
+      const droppedEphemeralMeasures = getDroppedEphemeralMeasures(
+        dashboardState,
+        exploreFields,
+        metricsViewSpec.measures ?? [],
+      );
       const sanitizedState = getSanitizedExploreStateParam(
         dashboardState,
         exploreFields,
         exploreSpec,
+        new Set(droppedEphemeralMeasures.map((def) => def.name)),
       );
 
       return {
         fields: exploreFields,
         sanitizedState,
+        droppedEphemeralMeasures,
         queryTimeStart: timeControlState.timeStart,
         queryTimeEnd: timeControlState.timeEnd,
       };
@@ -132,30 +151,64 @@ function getExploreFields(
 }
 
 /**
+ * Returns the ephemeral measures that will be omitted from the public URL
+ * because they reference a measure outside `metricsViewFields`, along with the
+ * hidden measures each one depends on. Ephemeral measures are kept only when
+ * every measure they reference is visible to the recipient, so hidden fields
+ * cannot leak through expressions. An undefined `metricsViewFields` means
+ * everything is visible.
+ */
+export function getDroppedEphemeralMeasures(
+  exploreState: Pick<ExploreState, "ephemeralMeasures">,
+  metricsViewFields: string[] | undefined,
+  allMeasures: MetricsViewSpecMeasure[],
+): DroppedEphemeralMeasure[] {
+  if (!metricsViewFields || !exploreState.ephemeralMeasures?.length) return [];
+
+  const displayNameFor = (name: string) =>
+    allMeasures.find((measure) => measure.name === name)?.displayName || name;
+
+  return exploreState.ephemeralMeasures.flatMap((def) => {
+    const parsed = parseMeasureExpression(def.expression);
+    // An unparsable expression cannot be shared either, but it is not a
+    // hidden-field problem, so it is not reported to the user.
+    if (parsed.error)
+      return [
+        { name: def.name, displayName: def.displayName, hiddenMeasures: [] },
+      ];
+    const hiddenRefs = parsed.refs.filter(
+      (ref) => !metricsViewFields.includes(ref),
+    );
+    if (!hiddenRefs.length) return [];
+    return [
+      {
+        name: def.name,
+        displayName: def.displayName,
+        hiddenMeasures: hiddenRefs.map(displayNameFor),
+      },
+    ];
+  });
+}
+
+/**
  * Returns the serialized *sanitized* `state` for the current dashboard.
  * It removes all state that refers to fields that will be hidden, like filters, pivot chips, and visible field keys.
  * This ensures we do not leak hidden information to the URL recipient.
+ * `droppedEphemeralNames` holds the ephemeral measures to omit; see {@link getDroppedEphemeralMeasures}.
  */
 function getSanitizedExploreStateParam(
   exploreState: ExploreState,
   metricsViewFields: string[] | undefined,
   exploreSpec: V1ExploreSpec,
+  droppedEphemeralNames: Set<string>,
 ): string {
   // If no metrics view fields are specified, everything is visible, and there's no need to sanitize
   if (!metricsViewFields)
     return getProtoFromDashboardState(exploreState, exploreSpec);
 
   // Else, explicitly add the sanitized state that we want to remember.
-  // Ephemeral measures are kept only when every measure they reference is
-  // visible to the recipient, so hidden fields cannot leak through expressions.
   const sanitizedEphemeralMeasures = exploreState.ephemeralMeasures?.filter(
-    (def) => {
-      const parsed = parseMeasureExpression(def.expression);
-      return (
-        !parsed.error &&
-        parsed.refs.every((ref) => metricsViewFields.includes(ref))
-      );
-    },
+    (def) => !droppedEphemeralNames.has(def.name),
   );
   const sanitizedEphemeralNames = new Set(
     sanitizedEphemeralMeasures?.map((def) => def.name) ?? [],

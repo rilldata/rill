@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/features/alerts/form-utils";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { generateAlertName } from "@rilldata/web-common/features/alerts/utils";
+import { ComparisonPercentOfTotal } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   MeasureFilterOperation,
   MeasureFilterType,
@@ -143,7 +144,7 @@ describe("getAlertQueryArgsFromFormValues", () => {
     ]);
   });
 
-  it("skips percent-of-total for an ephemeral measure", () => {
+  it("builds percent-of-total on an ephemeral measure", () => {
     const req = getAlertQueryArgsFromFormValues(
       {
         ...baseFormValues,
@@ -159,7 +160,19 @@ describe("getAlertQueryArgsFromFormValues", () => {
       {},
     );
 
-    expect(req.measures).toHaveLength(1);
+    expect(req.measures).toEqual([
+      {
+        name: ephemeralMeasure.name,
+        expression: {
+          expression: ephemeralMeasure.expression,
+          displayName: ephemeralMeasure.displayName,
+        },
+      },
+      {
+        name: ephemeralMeasure.name + ComparisonPercentOfTotal,
+        percentOfTotal: { measure: ephemeralMeasure.name },
+      },
+    ]);
   });
 
   it("leaves a spec measure untouched", () => {

@@ -10,7 +10,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PencilIcon, PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
-  import EphemeralMeasureEditor from "./EphemeralMeasureEditor.svelte";
+  import { canvasEphemeralMeasureEditor } from "./ephemeral-editor-store";
 
   const client = useRuntimeClient();
 
@@ -33,15 +33,20 @@
 
   let open = false;
   let searchValue = "";
-  let ephemeralEditorOpen = false;
-  let ephemeralEditingDef: EphemeralMeasureDef | null = null;
 
   $: ephemeralEnabled = !!component && type === "measure";
 
-  function openEphemeralEditor(def: EphemeralMeasureDef | null) {
-    ephemeralEditingDef = def;
-    ephemeralEditorOpen = true;
+  // Opens the editor mounted once at the inspector root (see ComponentsEditor).
+  function openEphemeralEditor(editingDef: EphemeralMeasureDef | null) {
+    if (!component) return;
     open = false;
+    canvasEphemeralMeasureEditor.set({
+      component,
+      canvasName,
+      metricName,
+      editingDef,
+      onCreated: (name, displayName) => onSelect(name, displayName || name),
+    });
   }
 
   $: ephemeralDefsByName = new Map(
@@ -187,14 +192,3 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 </div>
-
-{#if ephemeralEditorOpen && component}
-  <EphemeralMeasureEditor
-    {component}
-    {canvasName}
-    {metricName}
-    editingDef={ephemeralEditingDef}
-    onClose={() => (ephemeralEditorOpen = false)}
-    onCreated={(name, displayName) => onSelect(name, displayName || name)}
-  />
-{/if}

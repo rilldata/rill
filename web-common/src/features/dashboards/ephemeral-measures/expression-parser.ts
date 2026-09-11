@@ -6,11 +6,20 @@
  * literals, NULL, unary minus, the binary operators + - * / %, parentheses,
  * and an allowlist of scalar functions. Everything else is rejected.
  *
+ * The syntax lives in the nearley grammar `measure-expression.ne` (compiled to
+ * `measure-expression.js`, see the npm script `build-measure-expression-grammar`).
+ * This module wraps it with the checks that a grammar cannot express well:
+ * reserved words, string literals and comments (reported with positions before
+ * parsing), and the function allowlist, arities and nesting limit (checked on
+ * the parsed tree, mirroring the server's walk).
+ *
  * The client parse exists for inline validation (position-aware errors),
  * autocomplete (extracting referenced names) and URL param validation.
  * One deliberate difference: SQL comments are rejected here, while the server
  * strips them; the server never echoes input, so this is only stricter.
  */
+import nearley from "nearley";
+import grammar from "./measure-expression.js";
 
 // Keep in sync with `measureExpressionFuncs` in runtime/metricsview/measure_expression.go.
 // maxArgs of -1 means unbounded.
@@ -294,23 +303,17 @@ export type MeasureExpressionParseResult = {
   error?: MeasureExpressionError;
 };
 
-type Token = {
-  kind:
-    | "ident"
-    | "quoted-ident"
-    | "number"
-    | "op"
-    | "lparen"
-    | "rparen"
-    | "comma"
-    | "null"
-    | "eof";
-  text: string;
-  pos: number;
-};
-
-const IDENT_START = /[A-Za-z_]/;
-const IDENT_CHAR = /[A-Za-z0-9_]/;
+// Parse tree produced by the grammar's postprocessors.
+// `pos` is the 0-based offset of the node's first character.
+type Node =
+  | { type: "literal"; literal: string; pos: number }
+  | { type: "ref"; name: string; pos: number }
+  // A bare identifier: a measure reference unless it spells a literal.
+  | { type: "word"; name: string; pos: number }
+  | { type: "func"; name: string; args: Node[]; pos: number }
+  | { type: "paren"; expr: Node; pos: number }
+  | { type: "unary"; expr: Node; pos: number }
+  | { type: "binary"; op: string; left: Node; right: Node; pos: number };
 
 class ParseError extends Error {
   position: number;
@@ -320,255 +323,7 @@ class ParseError extends Error {
   }
 }
 
-function tokenize(input: string): Token[] {
-  const tokens: Token[] = [];
-  let i = 0;
-  while (i < input.length) {
-    const ch = input[i];
-    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r") {
-      i++;
-      continue;
-    }
-    if (ch === "(") {
-      tokens.push({ kind: "lparen", text: ch, pos: i });
-      i++;
-      continue;
-    }
-    if (ch === ")") {
-      tokens.push({ kind: "rparen", text: ch, pos: i });
-      i++;
-      continue;
-    }
-    if (ch === ",") {
-      tokens.push({ kind: "comma", text: ch, pos: i });
-      i++;
-      continue;
-    }
-    if (ch === "-" && input[i + 1] === "-") {
-      // The server-side SQL parser treats `--` as a comment start.
-      throw new ParseError(
-        `comments are not allowed in the expression (found "--"); use parentheses for double negation, e.g. "a - (-b)"`,
-        i,
-      );
-    }
-    if ("+-*/%".includes(ch)) {
-      tokens.push({ kind: "op", text: ch, pos: i });
-      i++;
-      continue;
-    }
-    if (ch === '"') {
-      // Double-quoted identifier; "" escapes a quote, matching ANSI SQL.
-      const start = i;
-      i++;
-      let name = "";
-      let closed = false;
-      while (i < input.length) {
-        if (input[i] === '"') {
-          if (input[i + 1] === '"') {
-            name += '"';
-            i += 2;
-            continue;
-          }
-          closed = true;
-          i++;
-          break;
-        }
-        name += input[i];
-        i++;
-      }
-      if (!closed) {
-        throw new ParseError("unterminated quoted identifier", start);
-      }
-      if (name === "") {
-        throw new ParseError("empty quoted identifier", start);
-      }
-      tokens.push({ kind: "quoted-ident", text: name, pos: start });
-      continue;
-    }
-    if (ch === "'") {
-      throw new ParseError(
-        "string literals are not allowed in the expression",
-        i,
-      );
-    }
-    if (/[0-9]/.test(ch) || (ch === "." && /[0-9]/.test(input[i + 1] ?? ""))) {
-      const start = i;
-      const match = /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/.exec(
-        input.slice(i),
-      );
-      if (!match) {
-        throw new ParseError(`invalid number`, start);
-      }
-      tokens.push({ kind: "number", text: match[0], pos: start });
-      i += match[0].length;
-      continue;
-    }
-    if (IDENT_START.test(ch)) {
-      const start = i;
-      let name = "";
-      while (i < input.length && IDENT_CHAR.test(input[i])) {
-        name += input[i];
-        i++;
-      }
-      const lower = name.toLowerCase();
-      if (LITERAL_WORDS.has(lower)) {
-        // Parsed as literals by the server-side SQL parser.
-        tokens.push({ kind: "null", text: name, pos: start });
-      } else if (RESERVED_SQL_WORDS.has(lower)) {
-        throw new ParseError(
-          `"${name}" is a reserved SQL word; wrap it in double quotes to reference a measure with this name`,
-          start,
-        );
-      } else {
-        tokens.push({ kind: "ident", text: name, pos: start });
-      }
-      continue;
-    }
-    throw new ParseError(`unexpected character "${ch}"`, i);
-  }
-  tokens.push({ kind: "eof", text: "", pos: input.length });
-  return tokens;
-}
-
-class Parser {
-  private tokens: Token[];
-  private index = 0;
-  private complexity = 0;
-  refs: string[] = [];
-
-  constructor(tokens: Token[]) {
-    this.tokens = tokens;
-  }
-
-  // The server parser builds a left-nested tree, so every binary operator adds
-  // a nesting level toward its depth limit; mirror that with a combined budget.
-  private spendComplexity(pos: number): void {
-    this.complexity++;
-    if (this.complexity > MAX_DEPTH) {
-      throw new ParseError("expression is too deeply nested", pos);
-    }
-  }
-
-  private peek(): Token {
-    return this.tokens[this.index];
-  }
-
-  private next(): Token {
-    return this.tokens[this.index++];
-  }
-
-  parse(): void {
-    this.parseAdditive(0);
-    const tok = this.peek();
-    if (tok.kind !== "eof") {
-      throw new ParseError(`unexpected "${tok.text}"`, tok.pos);
-    }
-  }
-
-  private parseAdditive(depth: number): void {
-    this.parseMultiplicative(depth);
-    while (this.peek().kind === "op" && "+-".includes(this.peek().text)) {
-      this.spendComplexity(this.next().pos);
-      this.parseMultiplicative(depth);
-    }
-  }
-
-  private parseMultiplicative(depth: number): void {
-    this.parseUnary(depth);
-    while (this.peek().kind === "op" && "*/%".includes(this.peek().text)) {
-      this.spendComplexity(this.next().pos);
-      this.parseUnary(depth);
-    }
-  }
-
-  private parseUnary(depth: number): void {
-    if (depth > MAX_DEPTH) {
-      throw new ParseError("expression is too deeply nested", this.peek().pos);
-    }
-    if (this.peek().kind === "op" && this.peek().text === "-") {
-      this.spendComplexity(this.peek().pos);
-      this.next();
-      this.parseUnary(depth + 1);
-      return;
-    }
-    this.parsePrimary(depth);
-  }
-
-  private parsePrimary(depth: number): void {
-    const tok = this.next();
-    switch (tok.kind) {
-      case "number":
-      case "null":
-        return;
-      case "quoted-ident":
-        this.addRef(tok.text);
-        return;
-      case "ident": {
-        if (this.peek().kind === "lparen") {
-          this.parseFunctionCall(tok, depth);
-          return;
-        }
-        this.addRef(tok.text);
-        return;
-      }
-      case "lparen": {
-        this.parseAdditive(depth + 1);
-        const close = this.next();
-        if (close.kind !== "rparen") {
-          throw new ParseError("expected closing parenthesis", close.pos);
-        }
-        return;
-      }
-      case "eof":
-        throw new ParseError("unexpected end of expression", tok.pos);
-      default:
-        throw new ParseError(`unexpected "${tok.text}"`, tok.pos);
-    }
-  }
-
-  private parseFunctionCall(nameTok: Token, depth: number): void {
-    const fnName = nameTok.text.toLowerCase();
-    const spec = EPHEMERAL_MEASURE_FUNCTIONS[fnName];
-    if (!spec) {
-      throw new ParseError(
-        `unsupported function "${nameTok.text}"`,
-        nameTok.pos,
-      );
-    }
-    this.next(); // consume the lparen
-    let argCount = 0;
-    if (this.peek().kind !== "rparen") {
-      for (;;) {
-        this.parseAdditive(depth + 1);
-        argCount++;
-        if (this.peek().kind === "comma") {
-          this.next();
-          continue;
-        }
-        break;
-      }
-    }
-    const close = this.next();
-    if (close.kind !== "rparen") {
-      throw new ParseError("expected closing parenthesis", close.pos);
-    }
-    if (
-      argCount < spec.minArgs ||
-      (spec.maxArgs >= 0 && argCount > spec.maxArgs)
-    ) {
-      throw new ParseError(
-        `function "${nameTok.text}" does not accept ${argCount} argument(s)`,
-        nameTok.pos,
-      );
-    }
-  }
-
-  private addRef(name: string): void {
-    if (!this.refs.includes(name)) {
-      this.refs.push(name);
-    }
-  }
-}
+const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 
 /**
  * Parses and validates an ephemeral measure expression.
@@ -592,9 +347,9 @@ export function parseMeasureExpression(
     };
   }
   try {
-    const parser = new Parser(tokenize(expression));
-    parser.parse();
-    if (parser.refs.length === 0) {
+    const refs: string[] = [];
+    walk(parse(expression), 0, refs);
+    if (refs.length === 0) {
       return {
         refs: [],
         error: {
@@ -603,11 +358,192 @@ export function parseMeasureExpression(
         },
       };
     }
-    return { refs: parser.refs };
+    return { refs };
   } catch (e) {
     if (e instanceof ParseError) {
       return { refs: [], error: { message: e.message, position: e.position } };
     }
     throw e;
   }
+}
+
+/**
+ * Runs the grammar and turns its failures into position-aware errors.
+ * Lexical problems the grammar only reports as a generic syntax error (reserved
+ * words, string literals, comments, malformed quoted identifiers) are found by a
+ * pre-scan; whichever error comes first in the input wins, so errors are always
+ * reported left to right.
+ */
+function parse(expression: string): Node {
+  const lexical = scanLexicalErrors(expression);
+  const parser = new nearley.Parser(compiledGrammar);
+  try {
+    parser.feed(expression);
+  } catch (e) {
+    const offset = (e as { offset?: number }).offset ?? 0;
+    if (lexical && lexical.position <= offset) throw lexical;
+    throw syntaxError(expression, offset);
+  }
+  if (lexical) throw lexical;
+  const root = parser.results[0] as Node | undefined;
+  if (!root) {
+    // The input is a valid prefix of an expression but ends too early.
+    const partial = partialNumberError(expression, expression.length);
+    if (partial) throw partial;
+    const opens = (expression.match(/\(/g) ?? []).length;
+    const closes = (expression.match(/\)/g) ?? []).length;
+    throw new ParseError(
+      opens > closes
+        ? "expected closing parenthesis"
+        : "unexpected end of expression",
+      expression.length,
+    );
+  }
+  return root;
+}
+
+/**
+ * Scans the raw input for constructs the server rejects or interprets
+ * differently, which the grammar cannot describe with a useful message.
+ * Returns the first one found, if any.
+ */
+function scanLexicalErrors(input: string): ParseError | undefined {
+  let i = 0;
+  while (i < input.length) {
+    const ch = input[i];
+    if (ch === '"') {
+      const start = i;
+      let length = 0;
+      i++;
+      for (;;) {
+        if (i >= input.length) {
+          return new ParseError("unterminated quoted identifier", start);
+        }
+        if (input[i] === '"') {
+          if (input[i + 1] !== '"') break;
+          i++;
+        }
+        length++;
+        i++;
+      }
+      i++;
+      if (length === 0) return new ParseError("empty quoted identifier", start);
+      continue;
+    }
+    if (ch === "'") {
+      return new ParseError(
+        "string literals are not allowed in the expression",
+        i,
+      );
+    }
+    if (ch === "-" && input[i + 1] === "-") {
+      // The server-side SQL parser treats `--` as a comment start.
+      return new ParseError(
+        `comments are not allowed in the expression (found "--"); use parentheses for double negation, e.g. "a - (-b)"`,
+        i,
+      );
+    }
+    if (/[A-Za-z_]/.test(ch)) {
+      const start = i;
+      while (i < input.length && /[A-Za-z0-9_]/.test(input[i])) i++;
+      const word = input.slice(start, i);
+      if (RESERVED_SQL_WORDS.has(word.toLowerCase())) {
+        return new ParseError(
+          `"${word}" is a reserved SQL word; wrap it in double quotes to reference a measure with this name`,
+          start,
+        );
+      }
+      continue;
+    }
+    i++;
+  }
+  return undefined;
+}
+
+/**
+ * Describes the token at `offset` that the grammar could not accept.
+ */
+function syntaxError(input: string, offset: number): ParseError {
+  const partial = partialNumberError(input, offset);
+  if (partial) return partial;
+  if (offset >= input.length) {
+    return new ParseError("unexpected end of expression", offset);
+  }
+  const rest = input.slice(offset);
+  const token =
+    /^[A-Za-z_][A-Za-z0-9_]*/.exec(rest)?.[0] ??
+    /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/.exec(rest)?.[0] ??
+    /^"(?:[^"]|"")*"/.exec(rest)?.[0].slice(1, -1).replace(/""/g, '"') ??
+    (/^[-+*/%(),]/.test(rest) ? rest[0] : undefined);
+  if (token === undefined) {
+    return new ParseError(`unexpected character "${rest[0]}"`, offset);
+  }
+  return new ParseError(`unexpected "${token}"`, offset);
+}
+
+/**
+ * The grammar consumes the "e" (and sign) of an exponent before knowing whether
+ * digits follow, so a failure right after one is really a malformed number,
+ * e.g. "1e" or "2.5e+"; report it at the start of the number.
+ */
+function partialNumberError(
+  input: string,
+  offset: number,
+): ParseError | undefined {
+  const match = /(?:\d+\.?\d*|\.\d+)[eE][+-]?$/.exec(input.slice(0, offset));
+  if (!match) return undefined;
+  return new ParseError(`invalid number "${match[0]}"`, match.index);
+}
+
+/**
+ * Validates the parsed tree and collects referenced measure names, in order of
+ * first appearance. Mirrors the server's `parseNode`: every node, including
+ * parentheses, counts one level toward the nesting limit, so a flat chain of
+ * binary operators is bounded as well as deep nesting.
+ */
+function walk(node: Node, depth: number, refs: string[]): void {
+  if (depth > MAX_DEPTH) {
+    throw new ParseError("expression is too deeply nested", node.pos);
+  }
+  switch (node.type) {
+    case "literal":
+      return;
+    case "ref":
+      addRef(refs, node.name);
+      return;
+    case "word":
+      // Bare true/false/null parse as literals server-side.
+      if (!LITERAL_WORDS.has(node.name.toLowerCase())) addRef(refs, node.name);
+      return;
+    case "func": {
+      const spec = EPHEMERAL_MEASURE_FUNCTIONS[node.name.toLowerCase()];
+      if (!spec) {
+        throw new ParseError(`unsupported function "${node.name}"`, node.pos);
+      }
+      const argCount = node.args.length;
+      if (
+        argCount < spec.minArgs ||
+        (spec.maxArgs >= 0 && argCount > spec.maxArgs)
+      ) {
+        throw new ParseError(
+          `function "${node.name}" does not accept ${argCount} argument(s)`,
+          node.pos,
+        );
+      }
+      for (const arg of node.args) walk(arg, depth + 1, refs);
+      return;
+    }
+    case "paren":
+    case "unary":
+      walk(node.expr, depth + 1, refs);
+      return;
+    case "binary":
+      walk(node.left, depth + 1, refs);
+      walk(node.right, depth + 1, refs);
+      return;
+  }
+}
+
+function addRef(refs: string[], name: string): void {
+  if (!refs.includes(name)) refs.push(name);
 }

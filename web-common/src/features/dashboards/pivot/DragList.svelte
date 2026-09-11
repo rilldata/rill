@@ -5,6 +5,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { PencilIcon, Trash2 } from "lucide-svelte";
   import { writable } from "svelte/store";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
@@ -436,12 +437,52 @@
               items = items.filter((i) => i.id !== item.id);
               onUpdate(items);
             }}
-          />
+          >
+            <span
+              slot="body"
+              class="text-[10px] font-semibold italic"
+              class:hidden={!ephemeralMeasureNames.has(item.id)}
+            >
+              ƒx
+            </span>
+          </PivotChip>
         {/if}
       </div>
 
       {#if zone !== "rows" && zone !== "columns"}
         <div class="icons">
+          {#if zone === "Measures" && ephemeralMeasureNames.has(item.id)}
+            {#if onEditEphemeralMeasure}
+              <Tooltip distance={8} location="top" alignment="start">
+                <button
+                  class="icon-wrapper"
+                  onclick={() => onEditEphemeralMeasure?.(item.id)}
+                  aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                  type="button"
+                >
+                  <PencilIcon size="14px" />
+                </button>
+                <TooltipContent slot="tooltip-content">
+                  {m.dashboard_pivot_ephemeral_edit_title()}
+                </TooltipContent>
+              </Tooltip>
+            {/if}
+            {#if onDeleteEphemeralMeasure}
+              <Tooltip distance={8} location="top" alignment="start">
+                <button
+                  class="icon-wrapper"
+                  onclick={() => onDeleteEphemeralMeasure?.(item.id)}
+                  aria-label={m.common_delete()}
+                  type="button"
+                >
+                  <Trash2 size="14px" />
+                </button>
+                <TooltipContent slot="tooltip-content">
+                  {m.common_delete()}
+                </TooltipContent>
+              </Tooltip>
+            {/if}
+          {/if}
           {#if (zone === "Time" || zone === "Dimensions") && tableMode === "nest"}
             <Tooltip distance={8} location="top" alignment="start">
               <button

@@ -1615,6 +1615,8 @@
   "project_waking": "Waking...",
   "project_waking_up": "Waking up your project...",
   "public_url_access_expires": "Access expires {date}",
+  "public_url_adhoc_measure_hidden_refs": "{measure} (uses {hidden})",
+  "public_url_adhoc_measures_omitted": "The following adhoc measures will be omitted because they use hidden measures:",
   "public_url_cancel_button": "Cancel",
   "public_url_copied_button": "Copied URL",
   "public_url_copied_to_clipboard": "Public URL copied to clipboard",

@@ -12,6 +12,8 @@
     splitTagItems,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { onMount } from "svelte";
   import type {
     PivotSidebarSection,
@@ -39,8 +41,26 @@
     "timeStart" | "timeEnd" | "minTimeGrain"
   >;
 
+  const { exploreName, dashboardStore, validSpecStore } = getStateManagers();
+
   $: ({ rows, columns, tableMode } = pivotState);
   $: splitColumns = splitPivotChips(columns);
+  $: ephemeralMeasureNames = new Set(
+    $dashboardStore.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
+  function editEphemeralMeasure(id: string) {
+    const def = $dashboardStore.ephemeralMeasures?.find((d) => d.name === id);
+    if (def) ephemeralMeasureDialog.set({ def });
+  }
+
+  function deleteEphemeralMeasure(id: string) {
+    metricsExplorerStore.removeEphemeralMeasure(
+      $exploreName,
+      id,
+      $validSpecStore.data?.explore,
+    );
+  }
 
   let sidebarHeight = 0;
   let searchText = "";
@@ -215,6 +235,9 @@
         title={MEASURES_ZONE}
         label={m.dashboard_measures()}
         items={filteredMeasures}
+        {ephemeralMeasureNames}
+        onEditEphemeralMeasure={editEphemeralMeasure}
+        onDeleteEphemeralMeasure={deleteEphemeralMeasure}
       >
         <button
           slot="header-action"

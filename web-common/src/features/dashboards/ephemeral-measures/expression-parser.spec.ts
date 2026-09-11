@@ -1,4 +1,6 @@
+import nearley from "nearley";
 import { describe, it, expect } from "vitest";
+import grammar from "./measure-expression.js";
 import {
   EPHEMERAL_MEASURE_FUNCTIONS,
   MAX_EPHEMERAL_EXPRESSION_LENGTH,
@@ -35,6 +37,11 @@ describe("parseMeasureExpression", () => {
       ["ROUND(a, 2)", ["a"]],
       ['"rank" + a', ["rank", "a"]],
       ["true + a", ["a"]],
+      ["a\r+\rb", ["a", "b"]],
+      ["1. * a", ["a"]],
+      [".5 * a", ["a"]],
+      ["1.e5 * a", ["a"]],
+      ["  a  ", ["a"]],
     ];
     it.each(cases)("%s", (expr, refs) => {
       const res = parseMeasureExpression(expr);
@@ -72,6 +79,15 @@ describe("parseMeasureExpression", () => {
       ["(a", "expected closing parenthesis"],
       ["revenue -- cost", "comments are not allowed"],
       ["rank + 1", "reserved SQL word"],
+      ["if(a)", "reserved SQL word"],
+      ['"" + a', "empty quoted identifier"],
+      ["1e + a", 'invalid number "1e"'],
+      ["a * 2.5e+", 'invalid number "2.5e+"'],
+      ["(", "expected closing parenthesis"],
+      ["a)", 'unexpected ")"'],
+      ['"a" "b"', 'unexpected "b"'],
+      ["round()", "does not accept 0 argument"],
+      ["a.b", "unexpected character"],
     ];
     it.each(cases)("%s", (expr, message) => {
       const res = parseMeasureExpression(expr);
@@ -81,9 +97,46 @@ describe("parseMeasureExpression", () => {
   });
 
   it("reports error positions", () => {
-    const res = parseMeasureExpression("revenue - 'oops'");
-    expect(res.error).toBeDefined();
-    expect(res.error!.position).toBe(10);
+    const cases: Array<[string, number]> = [
+      ["revenue - 'oops'", 10],
+      ["a + select", 4],
+      ["a + b @ c", 6],
+      ["a + foo(b)", 4],
+      ["a + round(b, 1, 2)", 4],
+      ["(a + b", 6],
+      ["a +", 3],
+    ];
+    for (const [expr, position] of cases) {
+      expect(parseMeasureExpression(expr).error?.position, expr).toBe(position);
+    }
+  });
+
+  // Lexical problems are found by a pre-scan of the whole input, so make sure
+  // they never mask a grammar error that appears earlier in the expression.
+  it("reports the first error in reading order", () => {
+    expect(parseMeasureExpression('coalesce true "x').error).toEqual({
+      message: 'unexpected "true"',
+      position: 9,
+    });
+    expect(parseMeasureExpression("'x' + select").error?.message).toContain(
+      "string literals",
+    );
+  });
+
+  it("parses without ambiguity", () => {
+    const compiled = nearley.Grammar.fromCompiled(grammar);
+    for (const expr of [
+      "revenue - cost",
+      "a - -b",
+      "round(a / b, 2) * -1.5e3 + (c % d)",
+      'coalesce("a b", NULL, .5)',
+      "1.",
+      "greatest(a, b, c) - least(a, b)",
+    ]) {
+      const parser = new nearley.Parser(compiled);
+      parser.feed(expr);
+      expect(parser.results, expr).toHaveLength(1);
+    }
   });
 
   it("rejects deeply nested expressions", () => {

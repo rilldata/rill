@@ -65,12 +65,6 @@ export function getAlertQueryArgsFromFormValues(
     timeRange,
   );
 
-  // Comparison and percent-of-total computes resolve their referenced measure
-  // against the metrics view, so they cannot be built on an ephemeral measure.
-  const isEphemeralMeasure = !!formValues.ephemeralMeasures?.some(
-    (def) => def.name === formValues.measure,
-  );
-
   return {
     metricsView: formValues.metricsViewName,
     measures: mapEphemeralMeasuresForRequest(
@@ -78,7 +72,7 @@ export function getAlertQueryArgsFromFormValues(
         {
           name: formValues.measure,
         },
-        ...(comparisonTimeRange && !isEphemeralMeasure
+        ...(comparisonTimeRange
           ? [
               {
                 name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
@@ -90,8 +84,7 @@ export function getAlertQueryArgsFromFormValues(
               },
             ]
           : []),
-        ...(!isEphemeralMeasure &&
-        formValues.criteria.some(
+        ...(formValues.criteria.some(
           (c) => c.type === MeasureFilterType.PercentOfTotal,
         )
           ? [

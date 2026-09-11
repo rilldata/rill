@@ -7,7 +7,7 @@
   import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
   import type { FieldType } from "../types";
-  import EphemeralMeasureEditor from "./EphemeralMeasureEditor.svelte";
+  import { canvasEphemeralMeasureEditor } from "./ephemeral-editor-store";
   import FieldChips from "./FieldChips.svelte";
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
 
@@ -27,14 +27,19 @@
 
   let open = false;
   let searchValue = "";
-  let ephemeralEditorOpen = false;
-  let ephemeralEditingDef: EphemeralMeasureDef | null = null;
 
   $: ephemeralEnabled = !!component && types.includes("measure");
 
-  function openEphemeralEditor(def: EphemeralMeasureDef | null) {
-    ephemeralEditingDef = def;
-    ephemeralEditorOpen = true;
+  // Opens the editor mounted once at the inspector root (see ComponentsEditor).
+  function openEphemeralEditor(editingDef: EphemeralMeasureDef | null) {
+    if (!component) return;
+    canvasEphemeralMeasureEditor.set({
+      component,
+      canvasName,
+      metricName,
+      editingDef,
+      onCreated: (name) => onMultiSelect([...selectedItems, name]),
+    });
   }
 
   $: ctx = getCanvasStore(canvasName, client.instanceId);
@@ -92,14 +97,3 @@
     </svelte:fragment>
   </FieldSelectorDropdown>
 </div>
-
-{#if ephemeralEditorOpen && component}
-  <EphemeralMeasureEditor
-    {component}
-    {canvasName}
-    {metricName}
-    editingDef={ephemeralEditingDef}
-    onClose={() => (ephemeralEditorOpen = false)}
-    onCreated={(name) => onMultiSelect([...selectedItems, name])}
-  />
-{/if}

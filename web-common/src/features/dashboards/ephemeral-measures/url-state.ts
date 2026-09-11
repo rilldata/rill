@@ -4,6 +4,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { ephemeralMeasureToSpecMeasure } from "./measure-mapping";
 import { fromEphemeralMeasuresParam } from "./url-param";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { EphemeralMeasureDef } from "./types";
 import {
   isReferenceableMeasure,
@@ -88,4 +89,34 @@ export function injectEphemeralMeasuresIntoMap(
   for (const def of defs) {
     measures.set(def.name, ephemeralMeasureToSpecMeasure(def));
   }
+}
+
+/**
+ * Returns the definitions the explore state actually uses: visible or
+ * leaderboard measures, the sort measure, the expanded TDD measure and pivot
+ * chips. Only these go into the URL; the rest stay in the per-metrics-view
+ * library (see `library.ts`), which keeps shared links from growing with
+ * every definition the user has ever created.
+ */
+export function referencedEphemeralMeasures(
+  exploreState: Partial<ExploreState>,
+): EphemeralMeasureDef[] {
+  const defs = exploreState.ephemeralMeasures ?? [];
+  if (!defs.length) return defs;
+  if (exploreState.allMeasuresVisible) return defs;
+
+  const referenced = new Set<string>([
+    ...(exploreState.visibleMeasures ?? []),
+    ...(exploreState.leaderboardMeasureNames ?? []),
+    ...(exploreState.pivot?.rows ?? []).map((chip) => chip.id),
+    ...(exploreState.pivot?.columns ?? []).map((chip) => chip.id),
+    ...(exploreState.pivot?.sorting ?? []).map((sort) => sort.id),
+  ]);
+  if (exploreState.leaderboardSortByMeasureName) {
+    referenced.add(exploreState.leaderboardSortByMeasureName);
+  }
+  if (exploreState.tdd?.expandedMeasureName) {
+    referenced.add(exploreState.tdd.expandedMeasureName);
+  }
+  return defs.filter((def) => referenced.has(def.name));
 }

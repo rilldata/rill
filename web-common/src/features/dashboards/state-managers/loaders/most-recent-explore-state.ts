@@ -67,7 +67,8 @@ export function saveMostRecentPartialExploreState(
       {
         selectedTimezone: exploreState.selectedTimezone,
 
-        ephemeralMeasures: exploreState.ephemeralMeasures,
+        // Ad-hoc measure definitions are stored per metrics view instead; see
+        // ephemeral-measures/library.ts.
         visibleMeasures: exploreState.visibleMeasures,
         allMeasuresVisible: exploreState.allMeasuresVisible,
         visibleDimensions: exploreState.visibleDimensions,

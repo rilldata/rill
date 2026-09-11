@@ -86,12 +86,7 @@ export const aggregationRequestWithRowsAndColumns = ({
           { name: measureName },
         ];
 
-        // Comparison computes are not supported for ephemeral measures.
-        if (
-          showTimeComparison &&
-          aggregationRequest.comparisonTimeRange &&
-          !ephemeralMeasureNames.has(measureName)
-        ) {
+        if (showTimeComparison && aggregationRequest.comparisonTimeRange) {
           group.push(...getComparisonRequestMeasures(measureName));
         }
 

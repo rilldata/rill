@@ -4,7 +4,6 @@
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import EyeIcon from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
-  import { PencilIcon } from "lucide-svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type {
     MetricsViewSpecDimension,
@@ -15,6 +14,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Button } from "../button";
   import Search from "../search/Search.svelte";
+  import DashboardMetricsItemLabel from "./DashboardMetricsItemLabel.svelte";
   import DashboardMetricsTagRow from "./DashboardMetricsTagRow.svelte";
   import TagFilterBanner from "./TagFilterBanner.svelte";
   import {
@@ -347,27 +347,15 @@
                               className="fill-icon pointer-events-none"
                             />
                           {/if}
-                          <span
-                            class="truncate min-w-0 flex-1 text-left pointer-events-none text-fg-primary"
-                          >
+                          <DashboardMetricsItemLabel
                             {displayName}
-                            {#if ephemeralNames.has(item.id)}
-                              <span class="text-[10px] font-semibold italic">
-                                ƒx
-                              </span>
-                            {/if}
-                          </span>
-                          {#if onEditEphemeral && ephemeralNames.has(item.id)}
-                            <button
-                              class="{toggleButtonBaseClass} ml-auto"
-                              onclick={(e) => editEphemeral(e, item.id)}
-                              onmousedown={(e) => e.stopPropagation()}
-                              aria-label={m.dashboard_pivot_ephemeral_edit_title()}
-                              type="button"
-                            >
-                              <PencilIcon size="14px" />
-                            </button>
-                          {/if}
+                            class="text-fg-primary"
+                            ephemeral={ephemeralNames.has(item.id)}
+                            onEdit={onEditEphemeral
+                              ? (e) => editEphemeral(e, item.id)
+                              : undefined}
+                            buttonClass={toggleButtonBaseClass}
+                          />
                           <button
                             class="{toggleButtonBaseClass} ml-auto"
                             onclick={(e) => {
@@ -409,27 +397,14 @@
                           className="fill-icon pointer-events-none"
                         />
                       {/if}
-                      <span
-                        class="truncate min-w-0 flex-1 text-left pointer-events-none"
-                      >
+                      <DashboardMetricsItemLabel
                         {displayName}
-                        {#if ephemeralNames.has(item.id)}
-                          <span class="text-[10px] font-semibold italic">
-                            ƒx
-                          </span>
-                        {/if}
-                      </span>
-                      {#if onEditEphemeral && ephemeralNames.has(item.id)}
-                        <button
-                          class="{toggleButtonBaseClass} ml-auto"
-                          onclick={(e) => editEphemeral(e, item.id)}
-                          onmousedown={(e) => e.stopPropagation()}
-                          aria-label={m.dashboard_pivot_ephemeral_edit_title()}
-                          type="button"
-                        >
-                          <PencilIcon size="14px" />
-                        </button>
-                      {/if}
+                        ephemeral={ephemeralNames.has(item.id)}
+                        onEdit={onEditEphemeral
+                          ? (e) => editEphemeral(e, item.id)
+                          : undefined}
+                        buttonClass={toggleButtonBaseClass}
+                      />
                       <button
                         class="{toggleButtonBaseClass} ml-auto"
                         onclick={(e) => {
@@ -516,27 +491,14 @@
                           <Tooltip.Trigger
                             class="w-full flex gap-x-1 justify-between items-center"
                           >
-                            <span
-                              class="truncate min-w-0 flex-1 text-left pointer-events-none"
-                            >
+                            <DashboardMetricsItemLabel
                               {displayName}
-                              {#if ephemeralNames.has(item.id)}
-                                <span class="text-[10px] font-semibold italic">
-                                  ƒx
-                                </span>
-                              {/if}
-                            </span>
-                            {#if onEditEphemeral && ephemeralNames.has(item.id)}
-                              <button
-                                class="{toggleButtonBaseClass} ml-auto"
-                                onclick={(e) => editEphemeral(e, item.id)}
-                                onmousedown={(e) => e.stopPropagation()}
-                                aria-label={m.dashboard_pivot_ephemeral_edit_title()}
-                                type="button"
-                              >
-                                <PencilIcon size="14px" />
-                              </button>
-                            {/if}
+                              ephemeral={ephemeralNames.has(item.id)}
+                              onEdit={onEditEphemeral
+                                ? (e) => editEphemeral(e, item.id)
+                                : undefined}
+                              buttonClass={toggleButtonBaseClass}
+                            />
                             <button
                               class="{toggleButtonBaseClass} ml-auto"
                               onclick={(e) => {
@@ -561,27 +523,14 @@
                           </Tooltip.Content>
                         </Tooltip.Root>
                       {:else}
-                        <span
-                          class="truncate min-w-0 flex-1 text-left pointer-events-none"
-                        >
+                        <DashboardMetricsItemLabel
                           {displayName}
-                          {#if ephemeralNames.has(item.id)}
-                            <span class="text-[10px] font-semibold italic">
-                              ƒx
-                            </span>
-                          {/if}
-                        </span>
-                        {#if onEditEphemeral && ephemeralNames.has(item.id)}
-                          <button
-                            class="{toggleButtonBaseClass} ml-auto"
-                            onclick={(e) => editEphemeral(e, item.id)}
-                            onmousedown={(e) => e.stopPropagation()}
-                            aria-label={m.dashboard_pivot_ephemeral_edit_title()}
-                            type="button"
-                          >
-                            <PencilIcon size="14px" />
-                          </button>
-                        {/if}
+                          ephemeral={ephemeralNames.has(item.id)}
+                          onEdit={onEditEphemeral
+                            ? (e) => editEphemeral(e, item.id)
+                            : undefined}
+                          buttonClass={toggleButtonBaseClass}
+                        />
                         <button
                           class="{toggleButtonBaseClass} ml-auto"
                           onclick={(e) => {

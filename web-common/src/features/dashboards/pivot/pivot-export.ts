@@ -105,15 +105,11 @@ export function getPivotAggregationRequest({
   isFlat: boolean;
   pivotState: PivotState;
 }): undefined | V1MetricsViewAggregationRequest {
-  const ephemeralMeasureNames = new Set(
-    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
-  );
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
     const group = [{ name: measureName }];
 
-    // Comparison columns are not supported for ephemeral measures.
-    if (enableComparison && !ephemeralMeasureNames.has(measureName)) {
+    if (enableComparison) {
       group.push(
         { name: `${measureName}${COMPARISON_DELTA}` },
         { name: `${measureName}${COMPARISON_PERCENT}` },
