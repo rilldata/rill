@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"testing"
 	"time"
@@ -76,7 +77,7 @@ func RefreshModelAndWait(t testing.TB, rt *runtime.Runtime, id string, model *ru
 
 	// Create refresh trigger
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
-	err = ctrl.Create(ctx, trgName, nil, nil, nil, nil, false, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
@@ -110,7 +111,7 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 
 	// Create refresh trigger
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
-	err = ctrl.Create(ctx, trgName, nil, nil, nil, nil, false, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
@@ -193,6 +194,7 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 	require.ElementsMatch(t, a.Meta.Refs, b.Meta.Refs)
 	require.True(t, proto.Equal(a.Meta.Owner, b.Meta.Owner), "expected: %v\nactual: %v", a.Meta.Owner, b.Meta.Owner)
 	require.ElementsMatch(t, a.Meta.FilePaths, b.Meta.FilePaths)
+	require.True(t, maps.Equal(a.Meta.Metadata, b.Meta.Metadata), "expected: %v\nactual: %v", a.Meta.Metadata, b.Meta.Metadata)
 	require.Greater(t, b.Meta.Version, int64(0))
 	require.Greater(t, b.Meta.SpecVersion, int64(0))
 	require.Greater(t, b.Meta.StateVersion, int64(0))

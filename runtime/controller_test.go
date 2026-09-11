@@ -1520,7 +1520,7 @@ func TestControllerInitializing(t *testing.T) {
 
 	// A refresh is not an initial build, so the instance must not report initializing again,
 	// not even while the refresh trigger is queued and its model is reconciling.
-	err = ctrl.Create(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: "trigger"}, nil, nil, nil, nil, false, &runtimev1.Resource{
+	err = ctrl.Create(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: "trigger"}, nil, nil, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
