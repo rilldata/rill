@@ -17,6 +17,7 @@
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
+  import DefaultSortInput from "./DefaultSortInput.svelte";
   import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
@@ -247,6 +248,10 @@
               component.updateProperty(key, newValue);
             }}
           />
+
+          <!-- DEFAULT SORT (table / pivot) -->
+        {:else if config.type === "default_sort" && component instanceof PivotCanvasComponent}
+          <DefaultSortInput {component} label={config.label ?? key} />
 
           <!-- SWITCHER TABS -->
         {:else if config.type === "switcher_tab"}
