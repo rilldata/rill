@@ -25,6 +25,7 @@ import {
   type SimpleToolCall,
 } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
+import { clickUIAction } from "../../ui-actions";
 
 // =============================================================================
 // RENDER MODES
@@ -111,6 +112,11 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createSimpleTooCall,
     onCall: handleNavigateToolCall,
   },
+  [ToolName.CLICK_UI]: {
+    renderMode: "block",
+    createBlock: createSimpleTooCall,
+    onCall: handleClickUIToolCall,
+  },
 
   // All other tools default to "inline" (shown in thinking blocks)
 };
@@ -143,6 +149,23 @@ function handleNavigateToolCall(callMessage: V1Message) {
     switch (content.kind) {
       case "file":
         void navigateToFile(addLeadingSlash(content.name));
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function handleClickUIToolCall(callMessage: V1Message) {
+  if (!callMessage.contentData) return;
+  try {
+    const content = JSON.parse(callMessage.contentData) as {
+      action_id?: string;
+    };
+    if (!content.action_id) return;
+    if (!clickUIAction(content.action_id)) {
+      console.warn(
+        `[AI UI action] Action is no longer uniquely available: ${content.action_id}`,
+      );
     }
   } catch (err) {
     console.error(err);

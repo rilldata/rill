@@ -11,6 +11,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ArrowUp } from "lucide-svelte";
+  import { getAvailableUIActions } from "../ui-actions";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -46,9 +47,18 @@
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage(additionalContext, {
-        onStreamStart: () => editor.commands.setContent(""),
-      });
+      await currentConversation.sendMessage(
+        {
+          ...additionalContext,
+          uiContext: {
+            pagePath: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+            actions: getAvailableUIActions(),
+          },
+        },
+        {
+          onStreamStart: () => editor.commands.setContent(""),
+        },
+      );
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
