@@ -82,7 +82,6 @@ export function syncStoreWithSource(
       lock = false;
       return;
     }
-
     try {
       // Do not react to `sync` method changes
       const syncPromise = untrack(() => sync(newUrlParams));

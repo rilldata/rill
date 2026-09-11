@@ -33,8 +33,12 @@ import {
   contextColWidthDefaults,
   type ContextColWidths,
 } from "../leaderboard-context-column";
+import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import {
+  DashboardConfigProvider,
+  ExploreDashboardConfigProvider,
+} from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { ExploreDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
 export type StateManagers = {
   runtimeClient: RuntimeClient;
@@ -67,6 +71,8 @@ export type StateManagers = {
    */
   contextColumnWidths: Writable<ContextColWidths>;
   defaultExploreState: Readable<V1ExplorePreset>;
+  dashboardConfigProvider: DashboardConfigProvider;
+  timeFilterManager: TimeFilterManager;
   expressionFilterManager: ExpressionFilterManager;
   cleanup: () => void;
 };
@@ -167,13 +173,19 @@ export function createStateManagers({
     },
   );
 
-  const dashboardProvider = new ExploreDashboardConfigProvider(
+  const dashboardConfigProvider = new ExploreDashboardConfigProvider(
     runtimeClient,
     exploreName,
   );
   const expressionFilterManager = new ExpressionFilterManager(
-    dashboardProvider.metricsViewsProvider,
-    dashboardProvider.yamlConfigProvider,
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+  );
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+    true,
   );
 
   return {
@@ -205,8 +217,10 @@ export function createStateManagers({
     contextColumnWidths,
     defaultExploreState,
     expressionFilterManager,
+    dashboardConfigProvider,
+    timeFilterManager,
     cleanup: () => {
-      dashboardProvider.cleanup?.();
+      dashboardConfigProvider.cleanup?.();
     },
   };
 }

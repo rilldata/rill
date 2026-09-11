@@ -24,7 +24,7 @@ export function isSomeFieldTainted(taintedFields: TaintedFields<any>) {
 
 export function generateAlertName(
   formValues: AlertFormValues,
-  selectedComparisonTimeRange: DashboardTimeControls | undefined,
+  selectedComparisonTimeRange: string | undefined,
   metricsViewSpec: V1MetricsViewSpec,
 ) {
   const firstCriteria = formValues.criteria[0];
@@ -43,11 +43,11 @@ export function generateAlertName(
 
   let comparisonTitle = "";
   if (
-    selectedComparisonTimeRange?.name &&
-    selectedComparisonTimeRange?.name in TIME_COMPARISON
+    selectedComparisonTimeRange &&
+    selectedComparisonTimeRange in TIME_COMPARISON
   ) {
     const label =
-      TIME_COMPARISON[selectedComparisonTimeRange.name].label.toLowerCase();
+      TIME_COMPARISON[selectedComparisonTimeRange].label.toLowerCase();
     comparisonTitle = ` vs ${label}`;
   }
 

@@ -6,12 +6,12 @@
   import { CriteriaGroupOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { Trash2Icon } from "lucide-svelte";
   import type { SuperForm } from "sveltekit-superforms/client";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
-  export let timeControls: TimeControls;
+  export let timeFilterManager: TimeFilterManager;
 
   $: ({ form } = superFormInstance);
 
@@ -51,7 +51,7 @@
             <Trash2Icon size="16px" />
           </button>
         </div>
-        <CriteriaForm {superFormInstance} {timeControls} {index} />
+        <CriteriaForm {superFormInstance} {timeFilterManager} {index} />
       </div>
     {/each}
     <Button type="tertiary" onClick={handleAddCriteria}

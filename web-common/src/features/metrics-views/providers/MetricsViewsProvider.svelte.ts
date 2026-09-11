@@ -5,6 +5,7 @@ import {
   type MetricsViewSpecMeasure,
   type V1MetricsViewSpec,
   type V1Resource,
+  V1TimeGrain,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -13,6 +14,10 @@ import { Duration } from "luxon";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
+import {
+  MinSupportedGrain,
+  V1TimeGrainToOrder,
+} from "@rilldata/web-common/lib/time/new-grains.ts";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
@@ -60,6 +65,9 @@ export class MetricsViewsProvider {
   public timeRangeSummary: V1TimeRangeSummary | undefined;
   /** Smallest restriction across the metrics views, since it has to hold for all of them. */
   public maxQueryTimeRange: Duration | undefined;
+  /** Smallest time grain across the metrics views, since it has to hold for all of them. */
+  public smallestTimeGrain: V1TimeGrain | undefined;
+  public smallestGrainOrder: number;
   /** True once every metrics view has a spec and every time series metrics view has a summary. */
   public ready: boolean;
   public metricsViewNames = $state<string[]>([]);
@@ -186,6 +194,9 @@ export class MetricsViewsProvider {
     > = {};
     const dimensions: MetricsViewSpecDimension[] = [];
 
+    let smallestTimeGrain: V1TimeGrain | undefined = undefined;
+    let smallestGrainOrder: number | undefined = Infinity;
+
     for (const metricsViewName of this.metricsViewNames) {
       const res = this.resources.find(
         (resource) =>
@@ -221,6 +232,18 @@ export class MetricsViewsProvider {
         specsForDimension[metricsViewName] = dimension;
       });
 
+      if (spec.smallestTimeGrain) {
+        const specGrainOrder = V1TimeGrainToOrder[spec.smallestTimeGrain];
+
+        if (!smallestTimeGrain) {
+          smallestTimeGrain = spec.smallestTimeGrain;
+          smallestGrainOrder = specGrainOrder;
+        } else if (specGrainOrder < smallestGrainOrder) {
+          smallestTimeGrain = spec.smallestTimeGrain;
+          smallestGrainOrder = specGrainOrder;
+        }
+      }
+
       this.subscribeToTimeRange(metricsViewName, spec);
     }
 
@@ -230,6 +253,10 @@ export class MetricsViewsProvider {
     this.simpleMeasures = simpleMeasures;
     this.dimensionSpecs = dimensionSpecs;
     this.dimensions = dimensions;
+    this.smallestTimeGrain = smallestTimeGrain;
+    this.smallestGrainOrder = smallestTimeGrain
+      ? smallestGrainOrder
+      : V1TimeGrainToOrder[MinSupportedGrain];
   }
 
   /**

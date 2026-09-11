@@ -43,3 +43,12 @@ export function unorderedParamsAreEqual(
   }
   return true;
 }
+
+export function copySubsetParams(src: URLSearchParams, params: Set<string>) {
+  const newParams = new URLSearchParams();
+  for (const param of params) {
+    if (!src.has(param)) continue;
+    newParams.set(param, src.get(param)!);
+  }
+  return newParams;
+}

@@ -35,6 +35,7 @@ import {
   type PivotMeasureFormatting,
   type PivotTableMode,
 } from "../pivot/types";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
@@ -262,6 +263,47 @@ const metricsViewReducers = {
     });
   },
 
+  syncTimeFilters(name: string, timeFilterManager: TimeFilterManager) {
+    if (!name) return;
+    updateMetricsExplorerByName(name, (exploreState) => {
+      if (!timeFilterManager.timeRange) return;
+
+      exploreState.selectedTimeRange = {
+        name: timeFilterManager.timeRange,
+        start: timeFilterManager.interval?.start?.toJSDate() ?? new Date(),
+        end: timeFilterManager.interval?.end?.toJSDate() ?? new Date(),
+        interval: timeFilterManager.timeGrain,
+      } as any;
+      exploreState.showTimeComparison = timeFilterManager.showComparison;
+      exploreState.selectedComparisonTimeRange = {
+        name: timeFilterManager.comparisonTimeRange,
+        start:
+          timeFilterManager.comparisonInterval?.start?.toJSDate() ?? new Date(),
+        end:
+          timeFilterManager.comparisonInterval?.end?.toJSDate() ?? new Date(),
+      };
+
+      if (timeFilterManager.scrubInterval) {
+        exploreState.selectedScrubRange = {
+          start: timeFilterManager.scrubInterval.start.toJSDate(),
+          end: timeFilterManager.scrubInterval.end.toJSDate(),
+          isScrubbing: timeFilterManager.scrubInterval.isScrubbing,
+        };
+      } else {
+        exploreState.selectedScrubRange = undefined;
+      }
+      if (timeFilterManager.lastDefinedScrubInterval) {
+        exploreState.lastDefinedScrubRange = {
+          start: timeFilterManager.lastDefinedScrubInterval.start.toJSDate(),
+          end: timeFilterManager.lastDefinedScrubInterval.end.toJSDate(),
+          isScrubbing: false,
+        };
+      } else {
+        exploreState.lastDefinedScrubRange = undefined;
+      }
+    });
+  },
+
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
       if (mode) {
@@ -466,17 +508,6 @@ const metricsViewReducers = {
     });
   },
 
-  setMetricDimensionName(name: string, dimensionName: string | null) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.selectedDimensionName = dimensionName ?? undefined;
-      if (dimensionName) {
-        exploreState.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
-      } else {
-        exploreState.activePage = DashboardState_ActivePage.DEFAULT;
-      }
-    });
-  },
-
   setComparisonDimension(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.selectedComparisonDimension = dimensionName;
@@ -516,12 +547,6 @@ const metricsViewReducers = {
     });
   },
 
-  setTimeDimension(name: string, column: string) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.selectedTimeDimension = column;
-    });
-  },
-
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.showTimeComparison = showTimeComparison;
@@ -553,15 +578,6 @@ const metricsViewReducers = {
       exploreState.selectedComparisonTimeRange = comparisonTimeRange;
 
       correctExploreState(metricsViewSpec, exploreState);
-    });
-  },
-
-  setTimeGrain(name: string, timeGrain: V1TimeGrain) {
-    updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.selectedTimeRange = {
-        ...(exploreState.selectedTimeRange as DashboardTimeControls),
-        interval: timeGrain,
-      };
     });
   },
 

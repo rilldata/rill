@@ -7,6 +7,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
   V1ResolveCanvasResponse,
+  V1ResolvedTimeRange,
   V1Resource,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -163,10 +164,25 @@ export class DashboardFetchMocks {
   ) {
     this.responses.set(
       `queries__metrics-views__time-ranges__${metricsViewName}`,
-      {
-        timeRanges: [{ start, end }],
-        resolvedTimeRanges: [{ expression: "PT6H", start, end }],
-      },
+      [{ expression: "PT6H", start, end }],
+    );
+  }
+
+  /**
+   * Mocks the intervals MetricsViewTimeRanges resolves rilltime expressions to, keyed by expression.
+   * The runtime does the resolving, so a test states the interval it expects for every expression
+   * its interactions can produce.
+   */
+  public mockResolvedRillTimes(
+    metricsViewName: string,
+    resolvedRillTimes: Record<string, V1ResolvedTimeRange>,
+  ) {
+    this.responses.set(
+      `queries__metrics-views__time-ranges__${metricsViewName}`,
+      Object.entries(resolvedRillTimes).map(([expression, tr]) => ({
+        expression,
+        ...tr,
+      })),
     );
   }
 
@@ -281,6 +297,17 @@ export class DashboardFetchMocks {
       } else {
         responseData = stored;
       }
+    } else if (
+      service === "QueryService" &&
+      method === "MetricsViewTimeRanges"
+    ) {
+      const resolvedTimeRanges: V1ResolvedTimeRange[] =
+        this.responses.get(
+          `queries__metrics-views__time-ranges__${parsed.metricsViewName}`,
+        ) ?? {};
+      responseData = {
+        resolvedTimeRanges,
+      };
     } else if (
       service === "QueryService" &&
       method === "MetricsViewAggregation"

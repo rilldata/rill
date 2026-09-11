@@ -264,6 +264,18 @@ export class JoinerFilterManager {
     };
   }
 
+  public removeManagerByName(name: string) {
+    this.managers = {
+      ...this.managers,
+      dimensionManagers: this.managers.dimensionManagers.filter(
+        (dfm) => dfm.name !== name,
+      ),
+      measureManagers: this.managers.measureManagers.filter(
+        (mfm) => mfm.name !== name,
+      ),
+    };
+  }
+
   public clear() {
     this.managers = JoinerFilterManager.parseJoinerExpressionManagers(
       this.metricsViewsProvider,
