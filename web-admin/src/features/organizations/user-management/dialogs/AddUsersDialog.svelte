@@ -2,10 +2,14 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import { createAdminServiceAddOrganizationMemberUser } from "@rilldata/web-admin/client";
+  import UserGroupsMultiSelect from "@rilldata/web-admin/features/organizations/user-management/UserGroupsMultiSelect.svelte";
   import {
     buildInviteAttributes,
+    buildInviteUsergroups,
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
+    invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
     type AttributeRow,
   } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import {
@@ -50,13 +54,18 @@
   // Emails rejected because they already belong to the org, kept apart from other
   // failures (e.g. invalid attributes) so each is reported for what it is.
   let alreadyMembers: string[] = [];
+  // Set when groups were selected: the server still adds an existing member to them, so that part succeeded
+  let alreadyMembersJoinedGroups = false;
   let failedInvites: string[] = [];
   let showAttributes = false;
+  // Names of the user groups every invited user is added to (or joins on acceptance)
+  let selectedGroups: string[] = [];
 
   async function handleCreate(
     newEmail: string,
     newRole: string,
     attributes: Record<string, string> | undefined,
+    usergroups: string[] | undefined,
     isSuperUser: boolean = false,
   ) {
     await $addOrganizationMemberUser.mutateAsync({
@@ -65,6 +74,7 @@
         email: newEmail,
         role: newRole,
         attributes,
+        usergroups,
         superuserForceAccess: isSuperUser,
       },
     });
@@ -72,6 +82,8 @@
     await invalidateOrgMemberUsers(queryClient, organization);
 
     await invalidateOrgInvites(queryClient, organization);
+
+    if (usergroups) await invalidateOrgUsergroups(queryClient, organization);
 
     email = "";
     role = "";
@@ -111,6 +123,7 @@
       validators: schema,
       async onUpdate({ form }) {
         alreadyMembers = [];
+        alreadyMembersJoinedGroups = false;
         failedInvites = [];
         const succeeded: string[] = [];
         const existing: string[] = [];
@@ -121,13 +134,20 @@
         const emails = values.emails.map((e) => e.trim()).filter(Boolean);
         if (emails.length === 0) return;
 
-        // The same attributes apply to every invited email
+        // The same attributes and groups apply to every invited email
         const attributes = buildInviteAttributes(values.attributes);
+        const usergroups = buildInviteUsergroups(selectedGroups);
 
         const results = await Promise.all(
           emails.map(async (email, index) => {
             try {
-              await handleCreate(email, values.role, attributes, isSuperUser);
+              await handleCreate(
+                email,
+                values.role,
+                attributes,
+                usergroups,
+                isSuperUser,
+              );
               return { index, email, success: true, alreadyMember: false };
             } catch (error) {
               console.error("Error adding user to organization", error);
@@ -161,6 +181,17 @@
               role: values.role,
             }),
           });
+        }
+
+        // An existing member is reported as AlreadyExists even though the server has added them to the
+        // requested groups, so their membership counts and group lists have changed and need a refetch.
+        if (existing.length > 0 && usergroups) {
+          alreadyMembersJoinedGroups = true;
+          await Promise.all([
+            invalidateOrgMemberUsers(queryClient, organization),
+            invalidateOrgUsergroups(queryClient, organization),
+            invalidateUserGroupsForUser(queryClient, organization),
+          ]);
         }
 
         // Keep the dialog open with an inline explanation of what went wrong
@@ -198,10 +229,12 @@
       role = "";
       isSuperUser = false;
       alreadyMembers = [];
+      alreadyMembersJoinedGroups = false;
       failedInvites = [];
       $form.emails = [""];
       $form.attributes = [];
       showAttributes = false;
+      selectedGroups = [];
     }
   }}
 >
@@ -219,10 +252,12 @@
       role = "";
       isSuperUser = false;
       alreadyMembers = [];
+      alreadyMembersJoinedGroups = false;
       failedInvites = [];
       $form.emails = [""];
       $form.attributes = [];
       showAttributes = false;
+      selectedGroups = [];
     }}
   >
     <DialogHeader>
@@ -297,6 +332,20 @@
       </MultiInput>
 
       <div class="mt-3 flex flex-col gap-y-1">
+        <label for="invite-usergroups" class="text-xs font-medium">
+          {m.users_user_groups()}
+        </label>
+        <div class="text-[11px] text-fg-secondary">
+          {m.users_user_groups_hint()}
+        </div>
+        <UserGroupsMultiSelect
+          id="invite-usergroups"
+          {organization}
+          bind:selected={selectedGroups}
+        />
+      </div>
+
+      <div class="mt-3 flex flex-col gap-y-1">
         <button
           type="button"
           class="flex items-center gap-x-1 text-xs font-medium text-fg-secondary hover:text-fg-primary w-fit"
@@ -325,10 +374,17 @@
 
       {#if alreadyMembers.length > 0}
         <div class="text-sm text-red-500 py-2">
-          {m.users_already_member({
-            emails: alreadyMembers.join(", "),
-            count: alreadyMembers.length,
-          })}
+          {#if alreadyMembersJoinedGroups}
+            {m.users_already_member_joined_groups({
+              emails: alreadyMembers.join(", "),
+              count: alreadyMembers.length,
+            })}
+          {:else}
+            {m.users_already_member({
+              emails: alreadyMembers.join(", "),
+              count: alreadyMembers.length,
+            })}
+          {/if}
         </div>
       {/if}
 

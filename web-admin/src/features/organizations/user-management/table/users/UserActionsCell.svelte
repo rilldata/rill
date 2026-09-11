@@ -27,6 +27,7 @@
   // This also avoids rendering the modal per row.
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onConvertToMember: () => void;
+  export let onManageGroups: () => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
@@ -83,6 +84,14 @@
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end">
+      {#if organizationPermissions.manageOrgMembers}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          onclick={onManageGroups}
+        >
+          {m.users_manage_groups()}
+        </DropdownMenu.Item>
+      {/if}
       {#if role === OrgUserRoles.Guest && !pendingAcceptance}
         <DropdownMenu.Item
           class="font-normal flex items-center"

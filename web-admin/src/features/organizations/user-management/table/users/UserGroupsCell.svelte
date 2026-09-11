@@ -9,11 +9,15 @@
   export let organization: string;
   export let userId: string;
   export let groupCount: number;
+  // For a pending invitee, the groups stored on the invite (there is no user to query yet)
+  export let pendingAcceptance: boolean = false;
+  export let usergroups: string[] = [];
   export let onEditUserGroup: (groupName: string) => void;
+  export let onManageGroups: (() => void) | undefined = undefined;
 
   let isDropdownOpen = false;
   const userGroupsEnabledStore = writable(false);
-  $: userGroupsEnabledStore.set(isDropdownOpen);
+  $: userGroupsEnabledStore.set(isDropdownOpen && !pendingAcceptance);
 
   const userGroupsQuery = getUserGroupsForUsersInOrg(
     organization,
@@ -21,7 +25,8 @@
     userGroupsEnabledStore,
   );
   $: ({ data: userGroups, isPending, error } = $userGroupsQuery);
-  $: hasGroups = groupCount > 0;
+  $: count = pendingAcceptance ? usergroups.length : groupCount;
+  $: hasGroups = count > 0;
 </script>
 
 {#if hasGroups}
@@ -32,7 +37,7 @@
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
       <span class="capitalize">
-        {m.users_group_count({ count: groupCount })}
+        {m.users_group_count({ count })}
       </span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
@@ -41,7 +46,13 @@
       {/if}
     </Dropdown.Trigger>
     <Dropdown.Content align="start">
-      {#if isPending}
+      {#if pendingAcceptance}
+        {#each usergroups as name (name)}
+          <Dropdown.Item onclick={() => onEditUserGroup(name)}>
+            <span class="text-fg-primary">{name}</span>
+          </Dropdown.Item>
+        {/each}
+      {:else if isPending}
         {m.users_loading()}
       {:else if error}
         {m.users_error()}
@@ -56,6 +67,12 @@
             {/if}
           </Dropdown.Item>
         {/each}
+      {/if}
+      {#if onManageGroups}
+        <Dropdown.Separator />
+        <Dropdown.Item onclick={onManageGroups}>
+          <span class="text-fg-primary">{m.users_manage_groups()}</span>
+        </Dropdown.Item>
       {/if}
     </Dropdown.Content>
   </Dropdown.Root>

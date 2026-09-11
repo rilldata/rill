@@ -2080,6 +2080,10 @@ message AddOrganizationMemberUserRequest {
   // Custom attributes to set on the new membership.
   // If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
   google.protobuf.Struct attributes = 5;
+  // Names of user groups in the org to add the user to.
+  // If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+  // Groups are additive: on a re-invite they are merged with the groups already on the invite.
+  repeated string usergroups = 6;
   bool superuser_force_access = 4;
 }
 
@@ -2344,6 +2348,10 @@ message AddProjectMemberUserRequest {
   // If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
   // Setting attributes requires permission to manage org members.
   google.protobuf.Struct attributes = 7;
+  // Names of user groups in the org to add the user to (user groups are org-scoped).
+  // If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+  // Setting user groups requires permission to manage org members.
+  repeated string usergroups = 8;
 }
 
 message AddProjectMemberUserResponse {
@@ -3634,6 +3642,9 @@ message UsergroupMemberUser {
   string user_email = 3;
   string user_name = 2;
   string user_photo_url = 7;
+  // True if the user has been invited to the group but has not signed up yet.
+  // For pending members, user_id, user_name and user_photo_url are empty.
+  bool pending_acceptance = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -3643,6 +3654,8 @@ message OrganizationInvite {
   string role_name = 2;
   string invited_by = 3;
   google.protobuf.Struct attributes = 4;
+  // Names of the user groups the user will be added to when the invite is accepted.
+  repeated string usergroups = 5;
 }
 
 message ProjectInvite {

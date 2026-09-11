@@ -2228,6 +2228,20 @@
       }
     }
   ],
+  "users_already_member_joined_groups": [
+    {
+      "declarations": [
+        "input emails",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{emails} is already a member of this organization and was added to the selected groups",
+        "countPlural=other": "{emails} are already members of this organization and were added to the selected groups"
+      }
+    }
+  ],
   "users_and_more": "and {count} more",
   "users_attribute_key_placeholder": "Key",
   "users_attribute_value_placeholder": "Value",
@@ -2254,6 +2268,16 @@
   "users_create": "Create",
   "users_custom_attributes": "Custom attributes",
   "users_custom_attributes_hint": "Applied to every invited user's organization membership. Can be referenced in security policies.",
+  "users_user_groups": "User groups",
+  "users_user_groups_hint": "Applied to every invited user. Users who have not signed up yet join the groups when they accept the invitation.",
+  "users_select_groups": "Select groups",
+  "users_search_groups": "Search groups",
+  "users_no_groups_available": "No user groups in this organization yet",
+  "users_manage_groups": "Manage groups",
+  "users_manage_groups_description": "Choose the user groups for {email}.",
+  "users_manage_groups_pending_hint": "This user has not accepted their invitation yet. They will join the selected groups when they accept it.",
+  "users_groups_updated": "User groups updated",
+  "users_error_updating_groups": "Failed to update user groups: {message}",
   "users_email_or_group_placeholder": "Email or group, separated by commas",
   "users_email_placeholder": "Add emails, separated by commas",
   "users_error": "Error",

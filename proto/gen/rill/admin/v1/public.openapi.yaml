@@ -1428,6 +1428,11 @@ components:
                     type: string
                 roleName:
                     type: string
+                usergroups:
+                    description: Names of the user groups the user will be added to when the invite is accepted.
+                    items:
+                        type: string
+                    type: array
             type: object
         v1OrganizationMemberService:
             properties:
@@ -2479,6 +2484,11 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                pendingAcceptance:
+                    description: |-
+                        True if the user has been invited to the group but has not signed up yet.
+                        For pending members, user_id, user_name and user_photo_url are empty.
+                    type: boolean
                 updatedOn:
                     format: date-time
                     type: string
@@ -2805,6 +2815,14 @@ paths:
                                     type: string
                                 superuserForceAccess:
                                     type: boolean
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to.
+                                        If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                                        Groups are additive: on a re-invite they are merged with the groups already on the invite.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3235,6 +3253,14 @@ paths:
                                     type: boolean
                                 role:
                                     type: string
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to (user groups are org-scoped).
+                                        If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                                        Setting user groups requires permission to manage org members.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
