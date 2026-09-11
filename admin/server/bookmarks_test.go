@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestBookmarks(t *testing.T) {
@@ -83,22 +84,22 @@ func TestBookmarks(t *testing.T) {
 	})
 
 	t.Run("listing can be filtered by resource", func(t *testing.T) {
-		res, err := admin.ListBookmarks(ctx, &adminv1.ListBookmarksRequest{ProjectId: projectID, ResourceKind: exploreKind, ResourceName: "explore1"})
+		res, err := admin.ListBookmarks(ctx, &adminv1.ListBookmarksRequest{ProjectId: projectID, ResourceKind: proto.String(exploreKind), ResourceName: proto.String("explore1")})
 		require.NoError(t, err)
 		require.Equal(t, []string{"Shared explore bookmark"}, bookmarkNames(res.Bookmarks))
 
 		// The resource name is matched case-insensitively.
-		res, err = viewer.ListBookmarks(ctx, &adminv1.ListBookmarksRequest{ProjectId: projectID, ResourceKind: exploreKind, ResourceName: "EXPLORE1"})
+		res, err = viewer.ListBookmarks(ctx, &adminv1.ListBookmarksRequest{ProjectId: projectID, ResourceKind: proto.String(exploreKind), ResourceName: proto.String("EXPLORE1")})
 		require.NoError(t, err)
 		require.Equal(t, []string{"Shared explore bookmark", "Viewer personal explore bookmark"}, bookmarkNames(res.Bookmarks))
 
 		// Filtering by kind only.
-		res, err = admin.ListBookmarks(ctx, &adminv1.ListBookmarksRequest{ProjectId: projectID, ResourceKind: canvasKind})
+		res, err = admin.ListBookmarks(ctx, &adminv1.ListBookmarksRequest{ProjectId: projectID, ResourceKind: proto.String(canvasKind)})
 		require.NoError(t, err)
 		require.Equal(t, []string{"Admin personal canvas bookmark"}, bookmarkNames(res.Bookmarks))
 
 		// A resource name without a kind is rejected.
-		_, err = admin.ListBookmarks(ctx, &adminv1.ListBookmarksRequest{ProjectId: projectID, ResourceName: "explore1"})
+		_, err = admin.ListBookmarks(ctx, &adminv1.ListBookmarksRequest{ProjectId: projectID, ResourceName: proto.String("explore1")})
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
 

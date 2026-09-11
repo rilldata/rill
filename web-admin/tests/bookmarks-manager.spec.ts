@@ -1,27 +1,35 @@
 import { expect } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { test } from "./setup/base";
+import { ADMIN_STORAGE_STATE } from "./setup/constants";
 
 const BOOKMARK_NAME = "Manager bookmark";
 const BOOKMARK_DESCRIPTION = "Created for the bookmark manager test.";
 const RENAMED_BOOKMARK_NAME = "Manager bookmark renamed";
 
 test.describe.serial("Bookmark manager", () => {
-  test("Create a bookmark from a dashboard", async ({ adminPage }) => {
-    await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
+  // The adminPage fixture is test-scoped, so the hook builds its own admin context.
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext({
+      storageState: ADMIN_STORAGE_STATE,
+    });
+    const page = await context.newPage();
+    await page.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
-    await interactWithTimeRangeMenu(adminPage, async () => {
-      await adminPage.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
 
-    await adminPage.getByLabel("Other bookmark dropdown").click();
-    await adminPage
+    await page.getByLabel("Other bookmark dropdown").click();
+    await page
       .getByRole("menuitem", { name: "Bookmark current view", exact: true })
       .click();
-    await adminPage.getByTitle("Label").fill(BOOKMARK_NAME);
-    await adminPage.getByTitle("Description").fill(BOOKMARK_DESCRIPTION);
-    await adminPage.getByRole("button", { name: "Save" }).click();
-    await expect(adminPage.getByText("Bookmark created")).toBeVisible();
+    await page.getByTitle("Label").fill(BOOKMARK_NAME);
+    await page.getByTitle("Description").fill(BOOKMARK_DESCRIPTION);
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Bookmark created")).toBeVisible();
+
+    await context.close();
   });
 
   test("Project home lists bookmarks and sorts them", async ({ adminPage }) => {
@@ -112,7 +120,16 @@ test.describe.serial("Bookmark manager", () => {
     await expect(renamedEntry).not.toBeVisible();
 
     // The dashboard's bookmark dropdown no longer lists it either.
-    await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
+    // Navigate within the app so the dropdown reads the cached (invalidated) list instead of a fresh page load.
+    await adminPage
+      .getByRole("link", { name: "Dashboards", exact: true })
+      .click();
+    await adminPage
+      .getByRole("link", { name: "Programmatic Ads Auction For Bookmarks" })
+      .click();
+    await expect(adminPage).toHaveURL(
+      /\/e2e\/openrtb\/explore\/auction_explore_bookmarks/,
+    );
     await adminPage.getByLabel("Other bookmark dropdown").click();
     await expect(
       adminPage.getByRole("menuitem", {

@@ -59,7 +59,6 @@ describe("buildBookmarkRows", () => {
     expect(row.dashboardTitle).toBe("Programmatic Ads Auction");
     expect(row.category).toBe("personal");
     expect(row.filtersOnly).toBe(false);
-    expect(row.isLegacy).toBe(false);
   });
 
   it("links canvas bookmarks to the canvas and falls back to the resource name as title", () => {
@@ -91,11 +90,24 @@ describe("buildBookmarkRows", () => {
     expect(row.dashboardKind).toBeUndefined();
   });
 
-  it("opens legacy bookmarks on the dashboard without params", () => {
-    const [row] = rowsFor([bookmark({ urlSearch: "", data: "AAAA" })]);
-    expect(row.isLegacy).toBe(true);
+  it("opens legacy explore bookmarks through the state param", () => {
+    const [row] = rowsFor([bookmark({ urlSearch: "", data: "AAAA+/=" })]);
     expect(row.filtersOnly).toBe(false);
-    expect(row.href).toBe("/org/proj/explore/auction_explore");
+    expect(row.href).toBe(
+      "/org/proj/explore/auction_explore?state=AAAA%2B%2F%3D",
+    );
+  });
+
+  it("uses legacy canvas bookmark data as the search, like the canvas dropdown", () => {
+    const [row] = rowsFor([
+      bookmark({
+        resourceKind: ResourceKind.Canvas,
+        resourceName: "overview_canvas",
+        urlSearch: "",
+        data: "tr=P1D",
+      }),
+    ]);
+    expect(row.href).toBe("/org/proj/canvas/overview_canvas?tr=P1D");
   });
 
   it("detects filters-only bookmarks", () => {

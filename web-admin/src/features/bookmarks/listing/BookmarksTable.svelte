@@ -21,7 +21,7 @@
   } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors.ts";
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ListTable from "@rilldata/web-admin/components/list-table/ListTable.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import { AlertDialogConfirmation } from "@rilldata/web-common/components/alert-dialog";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
@@ -207,7 +207,7 @@
     {/if}
 
     <div class="flex flex-col flex-grow min-w-0">
-      <ResourceList
+      <ListTable
         kind="bookmark"
         data={filteredRows}
         {columns}
@@ -231,7 +231,7 @@
             />
           {/if}
         </svelte:fragment>
-      </ResourceList>
+      </ListTable>
 
       {#if hasMoreBookmarks}
         <div class="pl-4 py-1">

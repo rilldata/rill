@@ -1,6 +1,7 @@
 import type { V1Bookmark } from "@rilldata/web-admin/client";
 import { isFilterOnlyBookmark } from "@rilldata/web-admin/features/bookmarks/utils.ts";
 import type { SortOption } from "@rilldata/web-common/components/table-toolbar";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -10,12 +11,8 @@ export type BookmarkCategory = "home" | "managed" | "personal";
 export type BookmarkListRow = {
   bookmark: V1Bookmark;
   category: BookmarkCategory;
-  // True when the bookmark stores only filter and time range params.
+  // True when the bookmark stores only filter and time range params. Always false for legacy bookmarks, whose state is opaque here.
   filtersOnly: boolean;
-  // Legacy bookmarks store their state as proto data instead of url params.
-  // The manager cannot resolve that state, so they open the dashboard without it.
-  // The bookmark dropdown on the dashboard still resolves it.
-  isLegacy: boolean;
   // Kind of the dashboard the bookmark is for. Undefined for kinds the manager cannot open.
   dashboardKind: ResourceKind.Explore | ResourceKind.Canvas | undefined;
   // Display name of the dashboard. Falls back to the resource name when the dashboard is not among the project's resources.
@@ -65,8 +62,7 @@ export function buildBookmarkRows({
     const kind = bookmark.resourceKind ?? "";
     const name = bookmark.resourceName ?? "";
     const slug = DashboardSlugByKind[kind];
-    const urlSearch = normalizeUrlSearch(bookmark.urlSearch);
-    const isLegacy = !urlSearch && !!bookmark.data;
+    const urlSearch = bookmarkUrlSearch(bookmark);
     const category: BookmarkCategory = bookmark.default
       ? "home"
       : bookmark.shared
@@ -76,9 +72,7 @@ export function buildBookmarkRows({
     return {
       bookmark,
       category,
-      filtersOnly:
-        !isLegacy && isFilterOnlyBookmark(new URLSearchParams(urlSearch)),
-      isLegacy,
+      filtersOnly: isFilterOnlyBookmark(new URLSearchParams(urlSearch)),
       dashboardKind: slug
         ? (kind as ResourceKind.Explore | ResourceKind.Canvas)
         : undefined,
@@ -159,8 +153,21 @@ function dashboardKey(kind: string, name: string) {
   return `${kind}:${name.toLowerCase()}`;
 }
 
-// Bookmarks created through the UI store the search with a leading "?"; tolerate ones that do not.
-function normalizeUrlSearch(urlSearch: string | undefined) {
+// Search string that restores the bookmark's state on its dashboard, with a leading "?"; empty when the bookmark has no state.
+// Legacy explore bookmarks store their state as proto data instead of url params;
+// the explore page resolves that data through the "state" url param (see convertURLToExplorePreset).
+// Canvas bookmarks never used that format, so their data is used as the search as-is, matching the canvas bookmark dropdown.
+function bookmarkUrlSearch(bookmark: V1Bookmark) {
+  let urlSearch = bookmark.urlSearch;
+  if (!urlSearch && bookmark.data) {
+    urlSearch =
+      DashboardSlugByKind[bookmark.resourceKind ?? ""] === "explore"
+        ? new URLSearchParams({
+            [ExploreStateURLParams.LegacyProtoState]: bookmark.data,
+          }).toString()
+        : bookmark.data;
+  }
   if (!urlSearch) return "";
+  // Bookmarks created through the UI store the search with a leading "?"; tolerate ones that do not.
   return urlSearch.startsWith("?") ? urlSearch : `?${urlSearch}`;
 }

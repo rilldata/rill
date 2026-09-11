@@ -13,7 +13,7 @@ import (
 )
 
 // ListBookmarks returns the bookmarks in a project that are visible to the user: their own plus shared and default ones.
-// The resource kind and name are optional filters; when both are empty, all bookmarks in the project are returned.
+// The resource kind and name are optional filters; when both are unset, all bookmarks in the project are returned.
 func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRequest) (*adminv1.ListBookmarksResponse, error) {
 	claims := auth.GetClaims(ctx)
 	// Error if authenticated as anything other than a user
@@ -21,7 +21,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	if req.ResourceName != "" && req.ResourceKind == "" {
+	if req.GetResourceName() != "" && req.GetResourceKind() == "" {
 		return nil, status.Error(codes.InvalidArgument, "resource_kind is required when resource_name is set")
 	}
 
@@ -40,7 +40,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
 	}
 
-	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.ResourceKind, req.ResourceName, claims.OwnerID())
+	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.GetResourceKind(), req.GetResourceName(), claims.OwnerID())
 	if err != nil {
 		return nil, err
 	}

@@ -48,12 +48,13 @@
   tabindex="-1"
 >
   <a
-    class="flex flex-row items-center gap-x-3 min-w-0 grow h-full py-2.5"
+    class="flex flex-row items-start gap-x-3 min-w-0 grow h-full py-2.5"
     href={row.href}
     aria-label={m.bookmark_entry_aria_label({ name: displayName })}
     onclick={() => onOpen(row)}
   >
-    <Icon size="16px" className="shrink-0 text-fg-secondary" />
+    <!-- Offset centers the 16px icon on the 20px title line. -->
+    <Icon size="16px" className="shrink-0 mt-0.5 text-fg-secondary" />
     <div class="flex flex-col gap-y-1 min-w-0 grow">
       <div class="flex gap-x-2 items-center min-h-[20px]">
         <span
@@ -65,20 +66,6 @@
           <Tag color="blue">{m.bookmark_tag_home()}</Tag>
         {:else if row.category === "managed"}
           <Tag color="gray">{m.bookmark_tag_managed()}</Tag>
-        {/if}
-        {#if row.isLegacy}
-          <Tooltip.Root>
-            <Tooltip.Trigger>
-              {#snippet child({ props })}
-                <span {...props}>
-                  <Tag color="amber">{m.bookmark_tag_legacy()}</Tag>
-                </span>
-              {/snippet}
-            </Tooltip.Trigger>
-            <Tooltip.Content side="bottom">
-              {m.bookmark_legacy_tooltip()}
-            </Tooltip.Content>
-          </Tooltip.Root>
         {/if}
       </div>
       <div

@@ -94,10 +94,13 @@ export function getProjectBookmarksQueryOptions(
 /**
  * Invalidates every bookmarks list query: the per-dashboard ones behind the bookmark dropdowns and the project-wide one behind the bookmark manager.
  * The generated query keys are `["/v1/users/bookmarks", params]`, so the param-less key prefix-matches all of them.
+ * Inactive queries are refetched too: the global query client disables refetchOnMount,
+ * so a list that is not on screen (e.g. the project home while on a dashboard) would otherwise show stale data when it remounts.
  */
 export function invalidateBookmarkQueries() {
   return queryClient.invalidateQueries({
     queryKey: getAdminServiceListBookmarksQueryKey(),
+    refetchType: "all",
   });
 }
 

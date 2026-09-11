@@ -2536,7 +2536,7 @@ export type AdminServiceListBookmarksParams = {
   projectId?: string;
   /**
  * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
-When both resource_kind and resource_name are empty, all bookmarks in the project are returned.
+When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
  */
   resourceKind?: string;
   /**

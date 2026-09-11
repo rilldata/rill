@@ -13,22 +13,23 @@
   } from "tanstack-table-8-svelte-5";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
-  import ResourceListToolbar from "./ResourceListToolbar.svelte";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import ListTableToolbar from "./ListTableToolbar.svelte";
   import { flip } from "svelte/animate";
 
+  // Renders a tanstack table as a bordered list of rows with client-side search, sorting and pinning.
+  // Rows are opaque to this component: callers supply the columns and a stable row id.
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
   export let columnVisibility: Record<string, boolean> = {};
+  // Singular noun for the empty states, e.g. "dashboard".
   export let kind: string;
   export let toolbar: boolean = true;
   export let fixedRowHeight: boolean = true;
   export let sorting: SortingState = [];
+  // Ids (as returned by getRowId) of rows pinned to the top.
   export let pinnedRows: string[] = [];
   export let maxRows: number | undefined = undefined;
-  // Defaults to the resource name, which is only meaningful for runtime resources.
-  export let getRowId: ((row: unknown, index: number) => string) | undefined =
-    undefined;
+  export let getRowId: (row: unknown, index: number) => string;
 
   function setSorting(newSorting: SortingState) {
     options.update((old) => ({
@@ -67,13 +68,7 @@
       columnVisibility,
       rowPinning: {},
     },
-    getRowId(originalRow, index) {
-      if (getRowId) return getRowId(originalRow, index);
-      return (
-        (originalRow as V1Resource).meta?.name?.name?.toLowerCase() ??
-        index.toString()
-      );
-    },
+    getRowId,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -104,16 +99,16 @@
 <div class="flex flex-col gap-y-3 w-full">
   {#if toolbar}
     <slot name="toolbar">
-      <ResourceListToolbar />
+      <ListTableToolbar />
     </slot>
   {/if}
 
   <div class="w-full">
     <slot name="header" />
-    <ul role="list" class="resource-list">
+    <ul role="list" class="list-table">
       {#each limitedRows as row (row.id)}
         <li
-          class="resource-list-item"
+          class="list-table-item"
           class:fixed-height={fixedRowHeight}
           animate:flip={{ duration: 200 }}
         >
@@ -124,7 +119,7 @@
           {/each}
         </li>
       {:else}
-        <li class="resource-list-item-empty">
+        <li class="list-table-item-empty">
           <div class="text-center py-16">
             {#if isFiltered}
               <!-- Filtered empty state: no results match search -->
@@ -152,37 +147,37 @@
 </div>
 
 <style lang="postcss">
-  .resource-list {
+  .list-table {
     @apply list-none p-0 m-0 w-full;
   }
 
-  .resource-list-item,
-  .resource-list-item-empty {
+  .list-table-item,
+  .list-table-item-empty {
     @apply block w-full border bg-surface-background;
   }
 
-  .resource-list-item.fixed-height {
+  .list-table-item.fixed-height {
     @apply h-[60px];
   }
 
   /* Remove top border on non-first items to avoid double borders */
-  .resource-list-item + .resource-list-item {
+  .list-table-item + .list-table-item {
     @apply border-t-0;
   }
 
   /* Rounded corners on first and last items */
-  .resource-list-item:first-child,
-  .resource-list-item-empty:first-child {
+  .list-table-item:first-child,
+  .list-table-item-empty:first-child {
     @apply rounded-t-lg;
   }
 
-  .resource-list-item:last-child,
-  .resource-list-item-empty:last-child {
+  .list-table-item:last-child,
+  .list-table-item-empty:last-child {
     @apply rounded-b-lg;
   }
 
   /* Hover effect on list items */
-  .resource-list-item:hover {
+  .list-table-item:hover {
     @apply bg-surface-hover;
   }
 </style>
