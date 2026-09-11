@@ -33,7 +33,7 @@ var spec = drivers.Spec{
 			Description: "AWS access key ID for explicit credentials",
 			Placeholder: "Enter your AWS access key ID",
 			Secret:      true,
-			Required:    true,
+			Required:    false,
 		},
 		{
 			Key:         "aws_secret_access_key",
@@ -42,7 +42,7 @@ var spec = drivers.Spec{
 			Description: "AWS secret access key for explicit credentials",
 			Placeholder: "Enter your AWS secret access key",
 			Secret:      true,
-			Required:    true,
+			Required:    false,
 		},
 		{
 			Key:         "region",
@@ -113,14 +113,15 @@ type driver struct{}
 var _ drivers.Driver = driver{}
 
 type ConfigProperties struct {
-	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
-	SessionToken    string `mapstructure:"aws_access_token"`
-	Region          string `mapstructure:"region"`
-	Endpoint        string `mapstructure:"endpoint"`
-	RoleARN         string `mapstructure:"aws_role_arn"`
-	RoleSessionName string `mapstructure:"aws_role_session_name"`
-	ExternalID      string `mapstructure:"aws_external_id"`
+	AccessKeyID          string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey      string `mapstructure:"aws_secret_access_key"`
+	SessionToken         string `mapstructure:"aws_access_token"`
+	Region               string `mapstructure:"region"`
+	Endpoint             string `mapstructure:"endpoint"`
+	RoleARN              string `mapstructure:"aws_role_arn"`
+	RoleSessionName      string `mapstructure:"aws_role_session_name"`
+	ExternalID           string `mapstructure:"aws_external_id"`
+	WebIdentityTokenFile string `mapstructure:"aws_web_identity_token_file"`
 	// A list of bucket path prefixes that this connector is allowed to access.
 	// Useful when different buckets or bucket prefixes use different credentials,
 	// allowing the system to select the appropriate connector based on the bucket path.
@@ -320,6 +321,9 @@ func GetConfigWithTemporaryCredentials(ctx context.Context, confProp *ConfigProp
 	cfg.SecretAccessKey = creds.SecretAccessKey
 	cfg.SessionToken = creds.SessionToken
 	cfg.RoleARN = ""
+	cfg.RoleSessionName = ""
+	cfg.ExternalID = ""
+	cfg.WebIdentityTokenFile = ""
 	return &cfg, nil
 }
 
@@ -454,7 +458,14 @@ func getAWSConfig(ctx context.Context, confProp *ConfigProperties, logger *zap.L
 
 // newCredentialsProvider returns credentials for connecting to AWS.
 func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (aws.CredentialsProvider, error) {
-	// 1. If a role ARN is provided, assume it.
+	// WebIdentityTokenFile is an explicit credential source injected by the hosted
+	// runtime. It intentionally remains available when AllowHostAccess is false;
+	// that flag only prevents discovery of ambient credentials from the host.
+	if confProp.WebIdentityTokenFile != "" && confProp.RoleARN != "" {
+		return awsutil.NewWebIdentityCredentials(ctx, confProp.RoleARN, confProp.RoleSessionName, confProp.Region,
+			stscreds.IdentityTokenFile(confProp.WebIdentityTokenFile), logger)
+	}
+	// If a role ARN is provided, assume it using base credentials.
 	if confProp.RoleARN != "" {
 		return assumeRole(ctx, confProp, logger)
 	}
