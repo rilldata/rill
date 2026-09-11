@@ -221,6 +221,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+	ctx = ai.WithUIContext(ctx, uiContextFromPB(req.UiContext))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -340,6 +341,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+	ctx = ai.WithUIContext(ctx, uiContextFromPB(req.UiContext))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -457,6 +459,33 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return err
 	}
 	return nil
+}
+
+func uiContextFromPB(pb *runtimev1.UIContext) *ai.UIContext {
+	if pb == nil {
+		return nil
+	}
+
+	// Keep browser-supplied display metadata small and predictable before it is
+	// included in an LLM system message. The click tool independently verifies
+	// the selected ID against this list.
+	const maxActions = 100
+	actions := make([]ai.UIAction, 0, min(len(pb.Actions), maxActions))
+	for _, action := range pb.Actions {
+		if action == nil || action.Id == "" || len(action.Id) > 128 || len(action.Label) > 256 {
+			continue
+		}
+		actions = append(actions, ai.UIAction{ID: action.Id, Label: action.Label})
+		if len(actions) == maxActions {
+			break
+		}
+	}
+
+	pagePath := pb.PagePath
+	if len(pagePath) > 2048 {
+		pagePath = pagePath[:2048]
+	}
+	return &ai.UIContext{PagePath: pagePath, Actions: actions}
 }
 
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.

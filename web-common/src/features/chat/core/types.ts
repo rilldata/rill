@@ -58,6 +58,7 @@ export const ToolName = {
 
   // Common tools
   NAVIGATE: "navigate",
+  CLICK_UI: "click_ui",
 } as const;
 
 // =============================================================================

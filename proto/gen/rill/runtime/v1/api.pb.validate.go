@@ -10845,6 +10845,244 @@ var _ interface {
 	ErrorName() string
 } = DeveloperAgentContextValidationError{}
 
+// Validate checks the field values on UIAction with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *UIAction) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UIAction with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in UIActionMultiError, or nil
+// if none found.
+func (m *UIAction) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UIAction) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Label
+
+	if len(errors) > 0 {
+		return UIActionMultiError(errors)
+	}
+
+	return nil
+}
+
+// UIActionMultiError is an error wrapping multiple validation errors returned
+// by UIAction.ValidateAll() if the designated constraints aren't met.
+type UIActionMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UIActionMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UIActionMultiError) AllErrors() []error { return m }
+
+// UIActionValidationError is the validation error returned by
+// UIAction.Validate if the designated constraints aren't met.
+type UIActionValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UIActionValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UIActionValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UIActionValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UIActionValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UIActionValidationError) ErrorName() string { return "UIActionValidationError" }
+
+// Error satisfies the builtin error interface
+func (e UIActionValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUIAction.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UIActionValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UIActionValidationError{}
+
+// Validate checks the field values on UIContext with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *UIContext) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UIContext with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in UIContextMultiError, or nil
+// if none found.
+func (m *UIContext) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UIContext) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PagePath
+
+	for idx, item := range m.GetActions() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, UIContextValidationError{
+						field:  fmt.Sprintf("Actions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, UIContextValidationError{
+						field:  fmt.Sprintf("Actions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return UIContextValidationError{
+					field:  fmt.Sprintf("Actions[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return UIContextMultiError(errors)
+	}
+
+	return nil
+}
+
+// UIContextMultiError is an error wrapping multiple validation errors returned
+// by UIContext.ValidateAll() if the designated constraints aren't met.
+type UIContextMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UIContextMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UIContextMultiError) AllErrors() []error { return m }
+
+// UIContextValidationError is the validation error returned by
+// UIContext.Validate if the designated constraints aren't met.
+type UIContextValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UIContextValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UIContextValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UIContextValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UIContextValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UIContextValidationError) ErrorName() string { return "UIContextValidationError" }
+
+// Error satisfies the builtin error interface
+func (e UIContextValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUIContext.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UIContextValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UIContextValidationError{}
+
 // Validate checks the field values on FeedbackAgentContext with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -12327,6 +12565,35 @@ func (m *CompleteRequest) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetUiContext()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "UiContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "UiContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUiContext()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteRequestValidationError{
+				field:  "UiContext",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return CompleteRequestMultiError(errors)
 	}
@@ -12682,6 +12949,35 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return CompleteStreamingRequestValidationError{
 				field:  "FeedbackAgentContext",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUiContext()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "UiContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "UiContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUiContext()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteStreamingRequestValidationError{
+				field:  "UiContext",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
