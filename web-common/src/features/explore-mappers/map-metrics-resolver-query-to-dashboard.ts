@@ -135,7 +135,8 @@ export function mapResolverExpressionToV1Expression(
     return { ident: expr.name };
   }
 
-  if (expr.val) {
+  // Check presence rather than truthiness: 0, false and "" are valid filter values.
+  if (expr.val !== undefined) {
     return { val: expr.val };
   }
 

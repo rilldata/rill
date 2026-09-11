@@ -23,20 +23,23 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  // Anonymous visitors of a shared conversation (public URL page) are not logged in,
-  // so the cookie-authenticated project query would fail; it's only needed for the MCP dialog.
   $: onPublicURLPage = isPublicURLPage($page);
+  const user = createAdminServiceGetCurrentUser();
+  $: loggedIn = !!$user.data?.user;
+
+  // Cookie-authenticated project query. On a public URL page (a shared conversation opened with a magic token) it tells us
+  // whether the logged-in visitor has access to the project in their own right; anonymous visitors can't run it.
   $: projectQuery = createAdminServiceGetProject(
     organization,
     project,
     undefined,
-    { query: { enabled: !onPublicURLPage } },
+    { query: { enabled: loggedIn } },
   );
   $: isPublic = $projectQuery.data?.project?.public ?? true;
 
-  // Anonymous visitors (e.g. recipients of an AI report opened with a magic token) get a read-only view of the conversation.
-  const user = createAdminServiceGetCurrentUser();
-  $: loggedIn = !!$user.data?.user;
+  // Visitors who can't continue the conversation get a read-only view: anonymous visitors, and logged-in visitors of a shared
+  // conversation who don't have access to the project (continuing forks the conversation under their own credentials).
+  $: readOnly = !loggedIn || (onPublicURLPage && !$projectQuery.isSuccess);
 
   // A logged-in user opening a shared conversation with a magic token reads it through the token,
   // but the token only grants read access to the conversation. Continuing it forks the conversation,
@@ -74,10 +77,7 @@
 </script>
 
 <div class="chat-page-wrapper">
-  <ProjectChat
-    readOnly={!loggedIn}
-    beforeFork={switchToUserCredentialsBeforeFork}
-  >
+  <ProjectChat {readOnly} beforeFork={switchToUserCredentialsBeforeFork}>
     <svelte:fragment slot="sidebar-footer">
       <Button
         type="secondary"

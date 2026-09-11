@@ -10,7 +10,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -785,13 +784,6 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		UserAttributes: userAttrs,
 		SkipChecks:     false,
 		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
-	}
-
-	// Get resolver properties from spec and add is_report flag
-	props := rep.Spec.ResolverProperties.AsMap()
-	props["is_report"] = true
-	if props["agent"] == nil {
-		props["agent"] = ai.AnalystAgentName
 	}
 
 	// Execute AI resolver

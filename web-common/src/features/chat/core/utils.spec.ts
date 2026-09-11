@@ -43,6 +43,32 @@ describe("extractMessageText", () => {
     expect(text).not.toContain("analyst_agent_args");
   });
 
+  it("describes the report before its configured prompt", () => {
+    const text = extractMessageText(
+      routerCall({
+        prompt: "Analyze key metrics",
+        analyst_agent_args: { explore: "requests", is_report: true },
+      }),
+    );
+    expect(text).toEqual("AI report for requests\n\nAnalyze key metrics");
+  });
+
+  it("keeps day boundaries in the report's time zone", () => {
+    const text = extractMessageText(
+      routerCall({
+        prompt: "",
+        analyst_agent_args: {
+          is_report: true,
+          time_start: "2026-09-09T00:00:00-04:00",
+          time_end: "2026-09-10T00:00:00-04:00",
+        },
+      }),
+    );
+    // Locale-independent: the days stay 9 and 10 and no time suffix is added.
+    expect(text).toMatch(/^AI report covering .*9.*10.*2026$/);
+    expect(text).not.toContain("(");
+  });
+
   it("describes a report without an explore or time range", () => {
     expect(
       extractMessageText(

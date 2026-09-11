@@ -51,9 +51,9 @@ export function extractMessageText(message: V1Message): string {
         try {
           const parsed = JSON.parse(rawContent);
           return (
+            describeReportPrompt(parsed) ||
             parsed.prompt ||
             parsed.response ||
-            describeReportPrompt(parsed) ||
             rawContent
           );
         } catch {
@@ -76,11 +76,12 @@ export function extractMessageText(message: V1Message): string {
 }
 
 /**
- * Scheduled AI reports start a conversation without a user prompt; the router call only carries the analyst agent's arguments.
- * Describe the report's scope (explore and time range) instead of showing the raw arguments.
+ * The router call that opens a scheduled AI report carries the analyst agent's arguments and, optionally, the report's configured prompt.
+ * Describe the report's scope (explore and time range) instead of showing the raw arguments, followed by the prompt if there is one.
  * Returns undefined if the message is not a report's opening call.
  */
 function describeReportPrompt(routerArgs: {
+  prompt?: string;
   analyst_agent_args?: {
     is_report?: boolean;
     explore?: string;
@@ -119,16 +120,17 @@ function describeReportPrompt(routerArgs: {
       ),
     });
   }
-  return prompt;
+  return routerArgs.prompt ? `${prompt}\n\n${routerArgs.prompt}` : prompt;
 }
 
-// Report time ranges are resolved in the report's time zone (UTC by default) and are aligned to day boundaries there.
-// Format them in UTC so the boundaries stay on whole days instead of picking up the viewer's offset.
+// Report time ranges are resolved in the report's time zone and serialized with that zone's offset,
+// aligned to day boundaries there. Keep the offset when formatting so the boundaries stay on whole days
+// instead of picking up the viewer's offset.
 function formatReportTimeRange(start: string, end: string): string {
   return prettyFormatTimeRange(
     Interval.fromDateTimes(
-      DateTime.fromISO(start, { zone: "utc" }),
-      DateTime.fromISO(end, { zone: "utc" }),
+      DateTime.fromISO(start, { setZone: true }),
+      DateTime.fromISO(end, { setZone: true }),
     ),
   );
 }
