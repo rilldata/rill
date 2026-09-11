@@ -243,6 +243,8 @@ There are two places to add `ai_instructions`:
 1. `rill.yaml` for project-wide context, such as instructions on how to use Rill MCP Server
 2. Every metrics view YAML (`<metrics_view>.yaml`), with examples of Explore URLs for that metrics view
 
+For longer, structured guidance — such as analysis playbooks and business glossaries — you can also define [skills](/developers/build/ai-configuration#skills) in your project. External MCP clients discover them with the `list_skills` tool and load them on demand with `load_skill`.
+
 For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/developers/build/ai-configuration).
 
 You can look at one of our [example projects](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) to see how these are used. Experiment with the instructions and see what works best for your requirements.
@@ -258,6 +260,8 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 - __*Get metrics view spec*__ – Use `get_metrics_view` to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
 - __*Query the time range*__ – Use `query_metrics_view_summary` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
 - __*Query the metrics*__ – Use `query_metrics_view` to run queries to get aggregated results.
+- __*List skills*__ – Use `list_skills` to discover the [skills](/developers/build/ai-configuration#skills) defined in the project.
+- __*Load a skill*__ – Use `load_skill` to fetch a skill's full instructions before doing work its description covers.
 
 
 ### Usage Examples
