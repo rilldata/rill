@@ -159,6 +159,9 @@ message DashboardState {
 
   // Per-measure conditional formatting (heatmap / data bar) for pivot cells.
   repeated PivotConditionalFormat pivot_conditional_formatting = 44;
+
+  // Ephemeral measures defined for the explore.
+  repeated EphemeralMeasure ephemeral_measures = 45;
 }
 
 message DashboardTimeRange {
@@ -182,6 +185,19 @@ message PivotElement {
     rill.runtime.v1.TimeGrain pivot_time_dimension = 1;
     string pivot_dimension = 2;
   }
+}
+
+// An ephemeral measure defined ad-hoc for an explore dashboard,
+// derived from existing metrics view measures via an arithmetic expression.
+message EphemeralMeasure {
+  // Query alias, e.g. "profit". Must not collide with metrics view field names.
+  string name = 1;
+  // Display name shown in the UI, e.g. "Profit".
+  string display_name = 2;
+  // Arithmetic expression over existing measure names, e.g. "revenue - cost".
+  string expression = 3;
+  // Optional format preset for rendering values.
+  string format_preset = 4;
 }
 
 // Conditional formatting applied to a measure's cells in a pivot table.

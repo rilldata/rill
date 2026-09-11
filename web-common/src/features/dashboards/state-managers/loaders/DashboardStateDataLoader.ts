@@ -5,7 +5,12 @@ import {
 } from "@rilldata/web-common/features/compound-query-result";
 import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import {
+  loadEphemeralMeasureLibrary,
+  mergeEphemeralMeasureDefs,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/library";
 import { getMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -373,8 +378,43 @@ export class DashboardStateDataLoader {
     const finalExploreState = cascadingExploreStateMerge(
       nonEmptyExploreStateOrder,
     ) as ExploreState;
+    this.mergeEphemeralMeasureLibrary(
+      metricsViewSpec,
+      exploreSpec,
+      finalExploreState,
+    );
     correctExploreState(metricsViewSpec, finalExploreState);
 
     return finalExploreState;
+  }
+
+  /**
+   * Restores ad-hoc measure definitions from the per-metrics-view library.
+   * The URL only carries the definitions the state references, so this is what
+   * brings back hidden definitions, and definitions created in another explore
+   * on the same metrics view. Definitions from the state win over stored copies.
+   */
+  private mergeEphemeralMeasureLibrary(
+    metricsViewSpec: V1MetricsViewSpec,
+    exploreSpec: V1ExploreSpec,
+    exploreState: ExploreState,
+  ) {
+    if (this.disableMostRecentDashboardState || !exploreSpec.metricsView) {
+      return;
+    }
+    const library = loadEphemeralMeasureLibrary(
+      exploreSpec.metricsView,
+      this.storageNamespacePrefix,
+    );
+    if (!library.length) return;
+    // Validate stored definitions against the current spec, dropping any that
+    // reference measures this explore does not expose.
+    const libraryState: Partial<ExploreState> = { ephemeralMeasures: library };
+    validateAndCleanExploreState(metricsViewSpec, exploreSpec, libraryState);
+    if (!libraryState.ephemeralMeasures?.length) return;
+    exploreState.ephemeralMeasures = mergeEphemeralMeasureDefs(
+      exploreState.ephemeralMeasures ?? [],
+      libraryState.ephemeralMeasures,
+    );
   }
 }

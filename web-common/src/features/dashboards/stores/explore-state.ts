@@ -1,3 +1,4 @@
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   LeaderboardContextColumn,
@@ -31,6 +32,15 @@ export interface ExploreState {
    * or else all measure will be hidden
    */
   visibleMeasures: string[];
+
+  /**
+   * Ad-hoc measures derived from existing metrics view measures via an
+   * arithmetic expression (e.g. Profit = revenue - cost). Shared by all
+   * views (leaderboards, charts, pivot, ...) and encoded in the `ephemeral` URL
+   * param. Definitions are independent of usage: an unused definition stays
+   * available in the measure menus until explicitly deleted.
+   */
+  ephemeralMeasures?: EphemeralMeasureDef[];
 
   /**
    * While the `visibleMeasureKeys` has the list of visible measures,

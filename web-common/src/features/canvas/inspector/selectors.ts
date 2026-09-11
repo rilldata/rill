@@ -1,3 +1,5 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import type { FieldType } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import {
@@ -25,6 +27,8 @@ export function useMetricFieldData(
   searchableItems: string[] | undefined = undefined,
   searchValue = "",
   excludedValues: string[] | undefined = undefined,
+  // ephemeral measures defined on the component spec.
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined,
 ) {
   const { metricsView, timeManager } = ctx.canvasEntity;
 
@@ -42,11 +46,15 @@ export function useMetricFieldData(
       const timeDimension = metricsViewSpec?.timeDimension;
 
       if (type.includes("measure")) {
-        items = measures.map((m) => m.name as string);
+        const allMeasures = appendEphemeralSpecMeasures(
+          measures,
+          ephemeralMeasures,
+        );
+        items = allMeasures.map((m) => m.name as string);
         Object.assign(
           displayMap,
           Object.fromEntries(
-            measures.map((item) => [
+            allMeasures.map((item) => [
               item.name as string,
               { label: getMeasureDisplayName(item), type: "measure" },
             ]),

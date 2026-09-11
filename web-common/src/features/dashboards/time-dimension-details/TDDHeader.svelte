@@ -3,6 +3,7 @@
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -67,17 +68,25 @@
     expressionFilterManager,
   } = stateManagers;
 
+  const ephemeralDefsByName = $derived(
+    new Map(
+      ($dashboardStore?.ephemeralMeasures ?? []).map((def) => [def.name, def]),
+    ),
+  );
+
   const selectableMeasures = $derived(
     $allMeasures
       .filter((m) => m.name !== undefined || m.displayName !== undefined)
-      .map((m) =>
+      .map((m) => {
+        const def = ephemeralDefsByName.get(m.name || "");
         // Note: undefined values are filtered out above, so the
         // empty string fallback is unreachable.
-        ({
+        return {
           name: m.name || "",
           label: m.displayName || "",
-        }),
-      ),
+          ...(def ? { description: def.expression, ephemeral: true } : {}),
+        };
+      }),
   );
 
   const selectedMeasureLabel = $derived(
@@ -233,10 +242,20 @@
         <SearchableFilterChip
           label={selectedMeasureLabel}
           onSelect={switchMeasure}
+          onEditItem={(name) => {
+            const def = ephemeralDefsByName.get(name);
+            if (def) ephemeralMeasureDialog.set({ def });
+          }}
           selectableItems={selectableMeasures}
           selectedItems={[expandedMeasureName]}
           tooltipText="Choose a measure to display"
-        />
+        >
+          <svelte:fragment slot="additional-label">
+            {#if ephemeralDefsByName.has(expandedMeasureName)}
+              <span class="flex-none text-[10px] font-semibold italic">ƒx</span>
+            {/if}
+          </svelte:fragment>
+        </SearchableFilterChip>
       </div>
     </div>
 

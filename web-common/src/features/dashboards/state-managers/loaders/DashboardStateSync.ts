@@ -1,6 +1,11 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
+import {
+  syncEphemeralMeasureLibrary,
+  upsertIntoEphemeralMeasureLibrary,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/library";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { saveMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import {
   metricsExplorerStore,
@@ -15,6 +20,7 @@ import {
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
@@ -41,6 +47,9 @@ export class DashboardStateSync {
   private readonly unsubExploreState: (() => void) | undefined;
 
   private initialized = false;
+  // Ad-hoc measure definitions as of the last persisted state.
+  // Used to detect deletions to mirror into the per-metrics-view library.
+  private lastEphemeralMeasures: EphemeralMeasureDef[] | undefined;
   // There can be cases when updating either the url or the state can impact the code handling the other part.
   // So we need a lock to make sure an update doesn't trigger the counterpart code.
   private updating = false;
@@ -94,6 +103,26 @@ export class DashboardStateSync {
   public teardown() {
     this.unsubInit?.();
     this.unsubExploreState?.();
+  }
+
+  /**
+   * Mirrors the state's ad-hoc measure definitions into the per-metrics-view
+   * library: edits and additions are upserted, and a definition that was in
+   * the previously persisted state but is gone now was deleted by the user.
+   */
+  private syncEphemeralMeasureLibrary(
+    exploreSpec: V1ExploreSpec,
+    next: EphemeralMeasureDef[] | undefined,
+  ) {
+    if (exploreSpec.metricsView) {
+      syncEphemeralMeasureLibrary(
+        exploreSpec.metricsView,
+        this.extraPrefix,
+        this.lastEphemeralMeasures,
+        next,
+      );
+    }
+    this.lastEphemeralMeasures = next;
   }
 
   public getUrlForExploreState(exploreState: ExploreState) {
@@ -187,7 +216,15 @@ export class DashboardStateSync {
         this.extraPrefix,
         initExploreState,
       );
+      // Definitions from the URL or a bookmark join the library; a missing
+      // definition on init is not a deletion, so only upsert here.
+      upsertIntoEphemeralMeasureLibrary(
+        exploreSpec.metricsView ?? "",
+        this.extraPrefix,
+        initExploreState.ephemeralMeasures,
+      );
     }
+    this.lastEphemeralMeasures = initExploreState.ephemeralMeasures;
 
     this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
     this.expressionFilterManager.updating = false;
@@ -298,6 +335,10 @@ export class DashboardStateSync {
           this.extraPrefix,
           updatedExploreState,
         );
+        this.syncEphemeralMeasureLibrary(
+          exploreSpec,
+          updatedExploreState.ephemeralMeasures,
+        );
       }
     } finally {
       // Release before the goto below: state changes made while the navigation is in flight
@@ -365,6 +406,10 @@ export class DashboardStateSync {
           this.exploreName,
           this.extraPrefix,
           exploreState,
+        );
+        this.syncEphemeralMeasureLibrary(
+          exploreSpec,
+          exploreState.ephemeralMeasures,
         );
       }
 

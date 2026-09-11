@@ -275,8 +275,9 @@ func (b *BaseDialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	}
 }
 
+// SafeDivideExpression returns a division that yields NULL instead of an error, infinity or NaN when the denominator is zero.
 func (b *BaseDialect) SafeDivideExpression(numExpr, denExpr string) string {
-	return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
+	return fmt.Sprintf("(%s)/NULLIF(CAST(%s AS DOUBLE), 0)", numExpr, denExpr)
 }
 
 func (b *BaseDialect) OrderByExpression(name string, desc bool) string {

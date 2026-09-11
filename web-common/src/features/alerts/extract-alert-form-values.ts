@@ -1,5 +1,6 @@
 import { getSnoozeValueFromAlertSpec } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   getEmptyMeasureFilterEntry,
   mapExprToMeasureFilter,
@@ -22,6 +23,7 @@ export type AlertFormValuesSubset = Pick<
   | "splitByDimension"
   | "criteria"
   | "criteriaOperation"
+  | "ephemeralMeasures"
 >;
 
 export function extractAlertFormValues(
@@ -44,6 +46,8 @@ export function extractAlertFormValues(
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
+    // An edited alert carries its ephemeral definitions in the saved query.
+    ephemeralMeasures: ephemeralDefsFromRequestMeasures(measures),
   };
 }
 

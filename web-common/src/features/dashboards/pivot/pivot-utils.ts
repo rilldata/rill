@@ -30,6 +30,8 @@ import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/d
 import { SHOW_MORE_BUTTON } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -95,8 +97,11 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
+  // Ephemeral measure definitions are part of the key so editing an
+  // expression (without renaming) refetches instead of serving cached data.
+  const ephemeralMeasuresKey = JSON.stringify(config.ephemeralMeasures ?? []);
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}_${ephemeralMeasuresKey}`;
 }
 
 /**
@@ -538,6 +543,21 @@ export function prepareMeasureForComparison(
 
     return measure;
   });
+}
+
+/**
+ * Maps plain measure names to request measures: comparison-suffixed names get
+ * their comparison compute, and ephemeral measure names get the `expression`
+ * compute carrying their definition.
+ */
+export function prepareMeasuresForRequest(
+  measures: V1MetricsViewAggregationMeasure[],
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
+): V1MetricsViewAggregationMeasure[] {
+  return mapEphemeralMeasuresForRequest(
+    prepareMeasureForComparison(measures),
+    ephemeralMeasures,
+  );
 }
 
 export function canEnablePivotComparison(

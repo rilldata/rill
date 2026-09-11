@@ -1,4 +1,7 @@
 <script lang="ts">
+  import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
+  import { ephemeralMeasureNameSet } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
@@ -10,6 +13,7 @@
 
   const ctx = getStateManagers();
   const {
+    dashboardStore,
     selectors: {
       measures: { allMeasures, visibleMeasures },
       tags: { measureTagIndex },
@@ -29,6 +33,13 @@
     return value !== undefined;
   }
 
+  function openEphemeralMeasureEditor(name: string) {
+    const def = $dashboardStore?.ephemeralMeasures?.find(
+      (d) => d.name === name,
+    );
+    if (def) ephemeralMeasureDialog.set({ def });
+  }
+
   // Query-context props for MeasureBigNumber
   $: chartReady = !!$timeControlsStore.ready;
 </script>
@@ -40,7 +51,13 @@
     allItems={$allMeasures}
     tagIndex={$measureTagIndex}
     selectedItems={visibleMeasureNames}
-  />
+    ephemeralNames={ephemeralMeasureNameSet($dashboardStore?.ephemeralMeasures)}
+    onEditEphemeral={openEphemeralMeasureEditor}
+  >
+    <div class="border-t border-border" slot="action" let:close>
+      <CreateEphemeralMeasureButton onOpen={close} />
+    </div>
+  </DashboardMetricsDraggableList>
 
   <div class="flex flex-row flex-wrap mt-2 gap-x-7 gap-y-9">
     {#each $visibleMeasures as measure (measure.name)}
@@ -48,6 +65,7 @@
         <!-- FIXME: I can't select the big number by the measure id. -->
         <MeasureBigNumber
           {measure}
+          ephemeralMeasures={$dashboardStore.ephemeralMeasures}
           withTimeseries={false}
           {metricsViewName}
           where={whereFilter}

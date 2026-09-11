@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import {
     conditionalFormatSpecToMeasureFormatting,
     type PivotCanvasComponent,
@@ -17,6 +18,7 @@
   export let id: string;
   export let selectedItems: string[] = [];
   export let types: FieldType[];
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
 
   $: spec = component.specStore;
   $: measureFormatting = conditionalFormatSpecToMeasureFormatting(
@@ -31,6 +33,8 @@
   {id}
   {selectedItems}
   {types}
+  {ephemeralMeasures}
+  {component}
   onMultiSelect={(items) =>
     component.updateProperty(id as AllKeys<PivotSpec | TableSpec>, items)}
   {measureFormatting}

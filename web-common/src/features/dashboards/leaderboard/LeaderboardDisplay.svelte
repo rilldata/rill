@@ -27,6 +27,7 @@
 
   const StateManagers = getStateManagers();
   const {
+    dashboardStore,
     selectors: {
       numberFormat: {
         measureFormatters,
@@ -108,6 +109,7 @@
               {metricsViewName}
               leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
               leaderboardMeasures={$leaderboardMeasures}
+              ephemeralMeasures={$dashboardStore.ephemeralMeasures}
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {tableWidth}

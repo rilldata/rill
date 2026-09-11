@@ -1,3 +1,4 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
 import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -95,6 +96,8 @@ export function getPivotConfig(
       const { dimension: colDimensions, measure: colMeasures } =
         splitPivotChips(dashboardStore.pivot.columns);
 
+      const ephemeralMeasures = dashboardStore.ephemeralMeasures ?? [];
+
       const measureNames = colMeasures.flatMap((m) => {
         const measureName = m.id;
         const group = [measureName];
@@ -138,10 +141,15 @@ export function getPivotConfig(
         measureNames,
         rowDimensionNames,
         colDimensionNames,
-        allMeasures: allMeasures({
-          validMetricsView: metricsView,
-          validExplore: explore,
-        }),
+        // Ephemeral measures get a synthetic spec entry so column definitions
+        // (labels, formatters, tooltips) resolve them like any other measure.
+        allMeasures: appendEphemeralSpecMeasures(
+          allMeasures({
+            validMetricsView: metricsView,
+            validExplore: explore,
+          }),
+          ephemeralMeasures,
+        ),
         allDimensions: allDimensions({
           validMetricsView: metricsView,
           validExplore: explore,
@@ -153,6 +161,7 @@ export function getPivotConfig(
         time,
         searchText,
         isFlat,
+        ephemeralMeasures,
       };
 
       const currentKey = getPivotConfigKey(config);

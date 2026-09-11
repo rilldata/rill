@@ -1,3 +1,5 @@
+import { fromEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
+import { injectEphemeralMeasuresIntoMap } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
   type PivotChipData,
@@ -66,6 +68,19 @@ export function convertPresetToExploreState(
     ) ?? [],
     (d) => d.name!,
   );
+
+  // The preset's ephemeral measures were already validated when the preset
+  // was built (convertURLToExplorePreset); resolve them and make their names
+  // valid everywhere a measure name is used below.
+  if (preset.ephemeralMeasures !== undefined) {
+    const { ephemeralMeasures } = fromEphemeralMeasuresParam(
+      preset.ephemeralMeasures,
+    );
+    partialExploreState.ephemeralMeasures = ephemeralMeasures.length
+      ? ephemeralMeasures
+      : undefined;
+    injectEphemeralMeasuresIntoMap(measures, ephemeralMeasures);
+  }
 
   if (preset.view) {
     partialExploreState.activePage = Number(
@@ -246,8 +261,10 @@ function fromExploreUrlParams(
       errors.push(getMultiFieldError("measure", missingMeasures));
     }
 
+    // `measures` includes ephemeral measures, so a hidden spec measure can
+    // never be masked by a visible ephemeral one.
     partialExploreState.allMeasuresVisible =
-      selectedMeasures.length === explore.measures?.length;
+      selectedMeasures.length === measures.size;
     partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 

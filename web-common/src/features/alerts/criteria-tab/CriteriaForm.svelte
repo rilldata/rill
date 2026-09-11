@@ -6,6 +6,7 @@
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -28,9 +29,14 @@
     $form["metricsViewName"],
   );
 
-  $: measure = $metricsView.data?.measures?.find(
-    (m) => m.name === $form["measure"],
-  );
+  // Ephemeral measures have no spec entry; synthesize one so their display
+  // name and criteria options resolve like any other measure.
+  $: allMeasures = [
+    ...($metricsView.data?.measures ?? []),
+    ...($form["ephemeralMeasures"] ?? []).map(ephemeralMeasureToSpecMeasure),
+  ];
+
+  $: measure = allMeasures.find((m) => m.name === $form["measure"]);
   $: measureOptions = [
     {
       value: $form["measure"],
@@ -39,7 +45,7 @@
         : (measure?.expression ?? $form["measure"]),
     },
   ];
-  $: selectedMeasure = $metricsView.data?.measures?.find(
+  $: selectedMeasure = allMeasures.find(
     (m) => m.name === $form["criteria"][index].measure,
   );
 

@@ -1,3 +1,4 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 
@@ -8,10 +9,13 @@ export const activeMeasure = (
     return undefined;
   }
 
-  const activeMeasure = dashData.validMetricsView.measures.find(
-    (measure) => measure.name === activeMeasureName(dashData),
-  );
-  return activeMeasure;
+  // Ephemeral measures can be the sort measure too; they have no spec entry,
+  // so synthesize one for formatters and tooltips.
+  const name = activeMeasureName(dashData);
+  return appendEphemeralSpecMeasures(
+    dashData.validMetricsView.measures,
+    dashData.dashboard.ephemeralMeasures,
+  ).find((measure) => measure.name === name);
 };
 
 export const activeMeasureName = (dashData: DashboardDataSources): string => {

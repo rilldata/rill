@@ -493,7 +493,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonValue != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonValue.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonValue.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -513,7 +513,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonDelta != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonDelta.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonDelta.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -533,7 +533,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonRatio != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonRatio.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonRatio.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -559,7 +559,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, fmt.Errorf("totals not computed for %s", qm.Name)
 		}
 
-		m, err := a.LookupMeasure(qm.Compute.PercentOfTotal.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.PercentOfTotal.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -725,6 +725,27 @@ func (a *AST) LookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSp
 	for _, m := range a.MetricsView.Measures {
 		if m.Name == name {
 			return m, nil
+		}
+	}
+
+	return nil, fmt.Errorf("measure %q not found", name)
+}
+
+// resolveReferencedMeasure resolves a measure referenced by name from another measure,
+// such as the base measure of a comparison delta or a measure referenced by a derived measure.
+// The referenced measure is either a measure in the metrics view or an expression measure defined in the same query,
+// which lets ad-hoc measures support comparisons without being declared in the metrics view.
+// Expression measures may only reference metrics view measures, so the recursion is at most one level deep.
+func (a *AST) resolveReferencedMeasure(name string, visible bool) (*runtimev1.MetricsViewSpec_Measure, error) {
+	for _, m := range a.MetricsView.Measures {
+		if m.Name == name {
+			return a.LookupMeasure(name, visible)
+		}
+	}
+
+	for _, qm := range a.Query.Measures {
+		if qm.Name == name && qm.Compute != nil && qm.Compute.Expression != nil {
+			return a.ResolveMeasure(qm, visible)
 		}
 	}
 
@@ -1065,7 +1086,7 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 
 	for _, rm := range referencedMeasures {
 		// Note we pass visible==false because the measure won't be projected into the current node's SELECT list, only brought into scope for derived measures.
-		m, err := a.LookupMeasure(rm, false)
+		m, err := a.resolveReferencedMeasure(rm, false)
 		if err != nil {
 			return err
 		}

@@ -14,9 +14,13 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.
 	var measureIndices []int
 	for i, measure := range qry.Measures {
 		if measure.Compute != nil && measure.Compute.PercentOfTotal != nil {
-			measures = append(measures, metricsview.Measure{
-				Name: measure.Compute.PercentOfTotal.Measure,
-			})
+			// The referenced measure is usually a metrics view measure, but it may also be an expression measure defined in the same query,
+			// in which case the totals query must carry its expression compute.
+			totalOf := metricsview.Measure{Name: measure.Compute.PercentOfTotal.Measure}
+			if qm, ok := queryExpressionMeasure(qry, totalOf.Name); ok {
+				totalOf = qm
+			}
+			measures = append(measures, totalOf)
 			measureIndices = append(measureIndices, i)
 		}
 	}

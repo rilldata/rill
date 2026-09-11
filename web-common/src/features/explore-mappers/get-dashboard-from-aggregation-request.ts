@@ -1,4 +1,5 @@
 import { splitDimensionsAndMeasuresAsRowsAndColumns } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
+import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -72,6 +73,19 @@ export async function getDashboardFromAggregationRequest({
     loadedFromState = true;
   }
 
+  // Reports and alerts embed ephemeral measure definitions in the request itself,
+  // so recover them here: the saved dashboard state may be missing (older reports)
+  // or absent entirely, and without the definitions the names cannot be resolved.
+  const requestEphemeralMeasures = ephemeralDefsFromRequestMeasures(
+    req.measures,
+  );
+  if (requestEphemeralMeasures && !dashboard.ephemeralMeasures?.length) {
+    dashboard.ephemeralMeasures = requestEphemeralMeasures;
+  }
+  const ephemeralMeasureNames = new Set(
+    dashboard.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   await fillTimeRange(
     client,
     explore,
@@ -139,8 +153,11 @@ export async function getDashboardFromAggregationRequest({
     dashboard.visibleMeasures = req.measures
       .map((m) => m.name ?? "")
       .filter((m) => !measureHasSuffix(m));
+    // Ephemeral measures are not part of the explore spec, so they must not
+    // count towards "all spec measures are visible".
     dashboard.allMeasuresVisible =
-      dashboard.visibleMeasures.length === explore.measures?.length;
+      dashboard.visibleMeasures.filter((m) => !ephemeralMeasureNames.has(m))
+        .length === explore.measures?.length;
   }
 
   // if the selected sort is a measure set it to leaderboardSortByMeasureName
@@ -230,7 +247,8 @@ function getPivotStateFromRequest(
   const mapMeasure = (mes: V1MetricsViewAggregationMeasure): PivotChipData => {
     return {
       id: mes.name!,
-      title: mes.name!,
+      // Ephemeral measures carry their display name on the expression compute.
+      title: mes.expression?.displayName || mes.name!,
       type: PivotChipType.Measure,
     };
   };

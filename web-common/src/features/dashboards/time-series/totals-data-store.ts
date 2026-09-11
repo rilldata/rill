@@ -1,3 +1,4 @@
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -19,7 +20,10 @@ export function createTotalsForMeasure(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: measures.map((measure) => ({ name: measure })),
+          measures: mapEphemeralMeasuresForRequest(
+            measures.map((measure) => ({ name: measure })),
+            dashboard.ephemeralMeasures,
+          ),
           where: sanitiseExpression(dashboard.whereFilter, undefined),
           timeRange: {
             start: isComparison
@@ -58,7 +62,10 @@ export function createUnfilteredTotalsForMeasure(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: measures.map((measure) => ({ name: measure })),
+          measures: mapEphemeralMeasuresForRequest(
+            measures.map((measure) => ({ name: measure })),
+            dashboard.ephemeralMeasures,
+          ),
           where: updatedFilter,
           timeRange: {
             start: timeControls.timeStart,
