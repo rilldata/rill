@@ -14,6 +14,14 @@ import (
 func TestSkills(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
+			"models/orders.sql": `SELECT 1 AS revenue`,
+			"metrics/orders.yaml": `
+type: metrics_view
+model: orders
+measures:
+- name: revenue
+  expression: SUM(revenue)
+`,
 			"skills/revenue-rca/SKILL.md": `---
 name: revenue-rca
 description: Playbook for diagnosing revenue drops.
@@ -30,8 +38,16 @@ agents: [analyst, developer]
 ---
 
 ARPU excludes trial users.`,
+			// Scoped to a metrics view that doesn't exist: fails reconciliation and must not reach the agents
+			"skills/stale/SKILL.md": `---
+description: Scoped to a missing metrics view.
+metrics_views: [missing]
+---
+
+Stale instructions.`,
 		},
 	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 1, 0)
 	s := newSession(t, rt, instanceID)
 
 	// List skills: sorted by name

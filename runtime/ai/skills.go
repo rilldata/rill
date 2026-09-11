@@ -47,6 +47,12 @@ func (s *BaseSession) Skills(ctx context.Context) ([]*Skill, error) {
 
 	skills := make([]*Skill, 0, len(rs))
 	for _, r := range rs {
+		// Skip skills that failed reconciliation (e.g. scoped to a metrics view that doesn't exist),
+		// so that the validation actually keeps invalid instructions away from the agents.
+		if r.Meta.ReconcileError != "" {
+			s.logger.Warn("skipping skill with reconcile error", zap.String("skill", r.Meta.Name.Name), zap.String("error", r.Meta.ReconcileError))
+			continue
+		}
 		spec := r.GetSkill().Spec
 		var path string
 		if len(r.Meta.FilePaths) > 0 {
@@ -71,6 +77,7 @@ func (s *BaseSession) Skills(ctx context.Context) ([]*Skill, error) {
 
 // filterSkills returns the skills relevant to the given agent and metrics view context.
 // A skill scoped to specific metrics views is included only if the context references one of them.
+// Metrics view names are compared case-insensitively, matching how the catalog identifies resources.
 // An empty context includes all of the agent's skills: scoping is a relevance filter, not access control.
 func filterSkills(skills []*Skill, agent string, metricsViewNames []string) []*Skill {
 	var res []*Skill
@@ -80,7 +87,7 @@ func filterSkills(skills []*Skill, agent string, metricsViewNames []string) []*S
 		}
 		if len(sk.MetricsViews) > 0 && len(metricsViewNames) > 0 {
 			relevant := slices.ContainsFunc(sk.MetricsViews, func(mv string) bool {
-				return slices.Contains(metricsViewNames, mv)
+				return slices.ContainsFunc(metricsViewNames, func(name string) bool { return strings.EqualFold(name, mv) })
 			})
 			if !relevant {
 				continue

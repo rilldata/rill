@@ -38,6 +38,9 @@ func TestFilterSkills(t *testing.T) {
 	// Matching metrics view context
 	require.Equal(t, []string{"rca", "glossary"}, names(filterSkills(skills, parser.SkillAgentAnalyst, []string{"orders"})))
 
+	// Metrics view names are matched case-insensitively, like the catalog
+	require.Equal(t, []string{"rca", "glossary"}, names(filterSkills(skills, parser.SkillAgentAnalyst, []string{"Orders"})))
+
 	// Non-matching metrics view context: scoped skills are excluded, unscoped ones remain
 	require.Equal(t, []string{"glossary"}, names(filterSkills(skills, parser.SkillAgentAnalyst, []string{"bids"})))
 

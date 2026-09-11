@@ -131,7 +131,7 @@ always_apply: true           # Optional: always include the full skill instead o
 ---
 ```
 
-- **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file.
+- **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file, and the skill is not offered to the AI until the error is fixed.
 - **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[analyst]`.
 - **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request.
 

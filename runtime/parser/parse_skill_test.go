@@ -74,6 +74,18 @@ description: Invalid name.
 ---
 
 Body.`,
+		// Invalid: whitespace-only description
+		`skills/blank/SKILL.md`: `---
+description: "   "
+---
+
+Body.`,
+		// Invalid: the closing delimiter must be exactly "---", so a horizontal rule doesn't close the front matter
+		`skills/unclosed/SKILL.md`: `---
+description: Unclosed.
+----
+
+Body.`,
 	})
 
 	resources := []*Resource{
@@ -114,6 +126,8 @@ Body.`,
 		{FilePath: "/skills/mismatch/SKILL.md", Message: `must match the skill's directory name`},
 		{FilePath: "/skills/typo/SKILL.md", Message: "failed to parse front matter"},
 		{FilePath: "/skills/Bad_Name/SKILL.md", Message: "invalid skill name"},
+		{FilePath: "/skills/blank/SKILL.md", Message: `missing required front matter field "description"`},
+		{FilePath: "/skills/unclosed/SKILL.md", Message: "unclosed front matter"},
 	}
 
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)

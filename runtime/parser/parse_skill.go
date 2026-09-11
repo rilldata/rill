@@ -78,6 +78,7 @@ func (p *Parser) parseSkill(ctx context.Context, path string) error {
 	if len(name) > 64 || !skillNameRegexp.MatchString(name) {
 		return fmt.Errorf("invalid skill name %q: names must be at most 64 characters of lowercase letters, numbers and non-consecutive hyphens", name)
 	}
+	tmp.Description = strings.TrimSpace(tmp.Description)
 	if tmp.Description == "" {
 		return errors.New(`missing required front matter field "description"`)
 	}
@@ -119,29 +120,24 @@ func (p *Parser) parseSkill(ctx context.Context, path string) error {
 	return nil
 }
 
+// skillFrontMatterDelimiterRegexp matches a line consisting solely of "---", which delimits the front matter.
+var skillFrontMatterDelimiterRegexp = regexp.MustCompile(`(?m)^---\r?$`)
+
 // parseSkillFrontMatter splits a SKILL.md file into YAML front matter and a markdown body,
 // strictly decoding the front matter into the provided struct.
 func parseSkillFrontMatter(content string, into *skillYAML) (string, error) {
 	content = strings.TrimSpace(content)
-	if !strings.HasPrefix(content, "---\n") && !strings.HasPrefix(content, "---\r\n") {
+
+	// The front matter is enclosed by the first two delimiter lines, the first of which must open the file.
+	delims := skillFrontMatterDelimiterRegexp.FindAllStringIndex(content, 2)
+	if len(delims) == 0 || delims[0][0] != 0 {
 		return "", errors.New(`skill files must start with YAML front matter delimited by "---" lines`)
 	}
-
-	rest := strings.TrimPrefix(strings.TrimPrefix(content, "---"), "\r")[1:] // Skip "---\n" or "---\r\n"
-
-	// A closing delimiter on the very next line means the front matter is empty.
-	// It is handled here because the search below requires the delimiter to be preceded by a newline.
-	if rest == "---" || strings.HasPrefix(rest, "---\n") || strings.HasPrefix(rest, "---\r\n") {
-		// Leave the struct zero-valued so required-field validation reports the actual problem
-		return strings.TrimSpace(strings.TrimPrefix(rest, "---")), nil
-	}
-
-	endIdx := strings.Index(rest, "\n---")
-	if endIdx == -1 {
+	if len(delims) < 2 {
 		return "", errors.New(`unclosed front matter: missing closing "---" line`)
 	}
-	frontMatter := rest[:endIdx]
-	body := strings.TrimSpace(rest[endIdx+len("\n---"):])
+	frontMatter := content[delims[0][1]:delims[1][0]]
+	body := strings.TrimSpace(content[delims[1][1]:])
 
 	if strings.TrimSpace(frontMatter) == "" {
 		// Empty front matter; leave the struct zero-valued so required-field validation reports the actual problem

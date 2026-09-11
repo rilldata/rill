@@ -107,32 +107,36 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine if it's the first invocation of the agent in this session.
 	first := len(s.Messages(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName))) == 1
 
+	// Resolve the metrics views tied to the dashboard being explored, if any.
+	// This runs on every invocation because the metrics views scope the skills and the prompt context;
+	// only the pre-invoked tool calls below are limited to the first invocation.
+	var metricsViewNames []string
+	if args.Explore != "" {
+		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
+		if err != nil {
+			return nil, err
+		}
+		metricsViewNames = append(metricsViewNames, metricsView.Meta.Name.Name)
+	} else if args.Canvas != "" {
+		_, metricsViews, err := t.getValidCanvasAndMetricsViews(ctx, args.Canvas)
+		if err != nil {
+			return nil, err
+		}
+		for _, res := range metricsViews {
+			metricsViewNames = append(metricsViewNames, res.Meta.Name.Name)
+		}
+	}
+
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
 	// TODO: This uses `first`, but that may not be safe if the user has navigated to another dashboard. We probably need some more sophisticated de-duplication here.
-	var metricsViewNames []string
 	if first {
-		if args.Explore != "" {
-			_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
-			if err != nil {
-				return nil, err
-			}
-			metricsViewNames = append(metricsViewNames, metricsView.Meta.Name.Name)
-		} else if args.Canvas != "" {
+		if args.Canvas != "" {
 			// Pre-invoke the get_canvas tool to get the canvas definition.
 			_, err := s.CallTool(ctx, RoleAssistant, GetCanvasName, nil, &GetCanvasArgs{
 				Canvas: args.Canvas,
 			})
 			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
-			}
-
-			_, metricsViews, err := t.getValidCanvasAndMetricsViews(ctx, args.Canvas)
-			if err != nil {
-				return nil, err
-			}
-
-			for _, res := range metricsViews {
-				metricsViewNames = append(metricsViewNames, res.Meta.Name.Name)
 			}
 		}
 
