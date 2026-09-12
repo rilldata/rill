@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -20,7 +21,40 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultTemperature = 0.1
+const (
+	defaultTemperature             = 0.1
+	structuredOutputModeJSONSchema = "json_schema"
+	structuredOutputModeJSONObject = "json_object"
+)
+
+// reservedExtraBodyFields are owned by Rill or would change assumptions made
+// by Complete (for example that a non-streaming request returns one choice).
+// Provider-specific extensions such as thinking and chat_template_kwargs are
+// intentionally not reserved.
+var reservedExtraBodyFields = map[string]struct{}{
+	"audio":                 {},
+	"api_key":               {},
+	"api_type":              {},
+	"api_version":           {},
+	"base_url":              {},
+	"function_call":         {},
+	"functions":             {},
+	"max_completion_tokens": {},
+	"max_output_tokens":     {},
+	"max_tokens":            {},
+	"messages":              {},
+	"modalities":            {},
+	"model":                 {},
+	"n":                     {},
+	"parallel_tool_calls":   {},
+	"reasoning_effort":      {},
+	"response_format":       {},
+	"stream":                {},
+	"stream_options":        {},
+	"temperature":           {},
+	"tool_choice":           {},
+	"tools":                 {},
+}
 
 func init() {
 	drivers.Register("openai", driver{})
@@ -86,6 +120,22 @@ var spec = drivers.Spec{
 			Description: "The version of the OpenAI API to use (e.g., '2023-05-15'). Required when APIType is APITypeAzure or APITypeAzureAD",
 			Placeholder: "",
 		},
+		{
+			Key:         "structured_output_mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Structured Output Mode",
+			Description: "How output schemas are requested: json_schema (default) or json_object for compatible providers that do not support JSON Schema.",
+			Default:     structuredOutputModeJSONSchema,
+		},
+		{
+			Key:         "extra_body",
+			Type:        drivers.UnspecifiedPropertyType,
+			Required:    false,
+			DisplayName: "Extra Request Body",
+			Description: "Advanced map of provider-specific JSON fields added to chat completion requests. Core request and response-shape fields cannot be overridden.",
+			NoPrompt:    true,
+		},
 	},
 	ImplementsAI: true,
 }
@@ -109,6 +159,9 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 
 	if conf.APIKey == "" {
 		return nil, errors.New("API key is required")
+	}
+	if err := conf.validate(); err != nil {
+		return nil, err
 	}
 
 	var opts []option.RequestOption
@@ -151,14 +204,47 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey          string   `mapstructure:"api_key"`
-	Model           string   `mapstructure:"model"`
-	MaxOutputTokens int64    `mapstructure:"max_output_tokens"`
-	ReasoningEffort string   `mapstructure:"reasoning_effort"`
-	Temperature     *float64 `mapstructure:"temperature"`
-	BaseURL         string   `mapstructure:"base_url"`
-	APIType         string   `mapstructure:"api_type"`
-	APIVersion      string   `mapstructure:"api_version"`
+	APIKey               string         `mapstructure:"api_key"`
+	Model                string         `mapstructure:"model"`
+	MaxOutputTokens      int64          `mapstructure:"max_output_tokens"`
+	ReasoningEffort      string         `mapstructure:"reasoning_effort"`
+	Temperature          *float64       `mapstructure:"temperature"`
+	BaseURL              string         `mapstructure:"base_url"`
+	APIType              string         `mapstructure:"api_type"`
+	APIVersion           string         `mapstructure:"api_version"`
+	StructuredOutputMode string         `mapstructure:"structured_output_mode"`
+	ExtraBody            map[string]any `mapstructure:"extra_body"`
+}
+
+func (c *configProperties) validate() error {
+	switch c.getStructuredOutputMode() {
+	case structuredOutputModeJSONSchema, structuredOutputModeJSONObject:
+	default:
+		return fmt.Errorf("invalid structured_output_mode %q: must be %q or %q", c.StructuredOutputMode, structuredOutputModeJSONSchema, structuredOutputModeJSONObject)
+	}
+
+	var reserved []string
+	for key := range c.ExtraBody {
+		if _, ok := reservedExtraBodyFields[strings.ToLower(key)]; ok {
+			reserved = append(reserved, key)
+		}
+	}
+	if len(reserved) > 0 {
+		sort.Strings(reserved)
+		return fmt.Errorf("extra_body cannot override core request fields: %s", strings.Join(reserved, ", "))
+	}
+
+	if _, err := json.Marshal(c.ExtraBody); err != nil {
+		return fmt.Errorf("extra_body must contain JSON-serializable values: %w", err)
+	}
+	return nil
+}
+
+func (c *configProperties) getStructuredOutputMode() string {
+	if c.StructuredOutputMode != "" {
+		return strings.ToLower(c.StructuredOutputMode)
+	}
+	return structuredOutputModeJSONSchema
 }
 
 func (c *configProperties) getModel() string {
@@ -326,16 +412,34 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 	if o.config.ReasoningEffort != "" {
 		params.ReasoningEffort = shared.ReasoningEffort(o.config.ReasoningEffort)
 	}
+	if len(o.config.ExtraBody) > 0 {
+		params.SetExtraFields(o.config.ExtraBody)
+	}
 
 	// Set response format based on output schema
 	if opts.OutputSchema != nil {
-		params.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
-			OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{
-				JSONSchema: openai.ResponseFormatJSONSchemaJSONSchemaParam{
-					Name:   "llm_completion_result",
-					Schema: opts.OutputSchema,
+		// Fallback for OpenAI-compatible providers without json_schema support:
+		// degrade to json_object and inject the schema as an explicit instruction.
+		if o.config.getStructuredOutputMode() == structuredOutputModeJSONObject {
+			schemaJSON, err := json.Marshal(opts.OutputSchema)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal output schema: %w", err)
+			}
+			schemaInstruction := openai.SystemMessage(
+				"Return ONLY a single valid JSON object that conforms exactly to this JSON Schema (no prose, no markdown fences): " + string(schemaJSON))
+			params.Messages = append([]openai.ChatCompletionMessageParamUnion{schemaInstruction}, params.Messages...)
+			params.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
+				OfJSONObject: &shared.ResponseFormatJSONObjectParam{},
+			}
+		} else {
+			params.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
+				OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{
+					JSONSchema: openai.ResponseFormatJSONSchemaJSONSchemaParam{
+						Name:   "llm_completion_result",
+						Schema: opts.OutputSchema,
+					},
 				},
-			},
+			}
 		}
 	}
 
