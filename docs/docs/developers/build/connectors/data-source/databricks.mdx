@@ -56,6 +56,15 @@ catalog: "main"     # optional
 schema: "default"   # optional
 ```
 
+:::info Lakehouse//RT warehouses
+Lakehouse//RT (real-time) warehouses only support the Statement Execution API (SEA)
+protocol and reject the default Thrift protocol. Rill **auto-detects** this: if a
+warehouse rejects Thrift, the connector transparently switches to the SEA backend — no
+configuration needed. (You can also force it with `use_kernel: true`.) SEA requires a
+Rill build that links the `databricks_kernel` backend; otherwise the connection fails
+with a clear error. Ordinary DBSQL warehouses keep using Thrift.
+:::
+
 **Step 2: Add credentials to `.env`**
 
 ```bash
