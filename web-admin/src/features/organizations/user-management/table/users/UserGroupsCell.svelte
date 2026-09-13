@@ -17,7 +17,9 @@
 
   let isDropdownOpen = false;
   const userGroupsEnabledStore = writable(false);
-  $: userGroupsEnabledStore.set(isDropdownOpen && !pendingAcceptance);
+  $: userGroupsEnabledStore.set(
+    isDropdownOpen && !pendingAcceptance && hasGroups,
+  );
 
   const userGroupsQuery = getUserGroupsForUsersInOrg(
     organization,
@@ -27,17 +29,20 @@
   $: ({ data: userGroups, isPending, error } = $userGroupsQuery);
   $: count = pendingAcceptance ? usergroups.length : groupCount;
   $: hasGroups = count > 0;
+  // The dropdown is the only entry point to "Manage groups" from the table,
+  // so it must also open for a member with no groups yet
+  $: interactive = hasGroups || !!onManageGroups;
 </script>
 
-{#if hasGroups}
+{#if interactive}
   <Dropdown.Root bind:open={isDropdownOpen}>
     <Dropdown.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
         ? 'bg-gray-200'
         : 'hover:bg-surface-hover'} px-2 py-1"
     >
-      <span class="capitalize">
-        {m.users_group_count({ count })}
+      <span class="capitalize" class:text-fg-secondary={!hasGroups}>
+        {hasGroups ? m.users_group_count({ count }) : m.users_no_groups()}
       </span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
@@ -46,7 +51,9 @@
       {/if}
     </Dropdown.Trigger>
     <Dropdown.Content align="start">
-      {#if pendingAcceptance}
+      {#if !hasGroups}
+        <!-- Nothing to list; only the manage action below -->
+      {:else if pendingAcceptance}
         {#each usergroups as name (name)}
           <Dropdown.Item onclick={() => onEditUserGroup(name)}>
             <span class="text-fg-primary">{name}</span>
@@ -69,7 +76,9 @@
         {/each}
       {/if}
       {#if onManageGroups}
-        <Dropdown.Separator />
+        {#if hasGroups}
+          <Dropdown.Separator />
+        {/if}
         <Dropdown.Item onclick={onManageGroups}>
           <span class="text-fg-primary">{m.users_manage_groups()}</span>
         </Dropdown.Item>
