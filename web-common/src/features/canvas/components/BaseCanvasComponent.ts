@@ -9,6 +9,7 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
   V1Resource,
@@ -27,7 +28,6 @@ import type {
   TimeAndFilterStore,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   CanvasEntity,
   ComponentPath,
