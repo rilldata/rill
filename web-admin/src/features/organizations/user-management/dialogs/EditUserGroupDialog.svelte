@@ -13,6 +13,7 @@
   import {
     invalidateOrgInvites,
     invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
     pendingInviteesMatching,
     type GroupMemberRow,
   } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
@@ -150,6 +151,8 @@
       });
 
       await invalidateOrgUsergroups(queryClient, organization);
+      // The per-user group lists show the group by name
+      await invalidateUserGroupsForUser(queryClient, organization);
 
       eventBus.emit("notification", { message: m.groups_renamed() });
     } catch (error) {
@@ -206,6 +209,8 @@
       await invalidateOrgUsergroups(queryClient, organization);
       // Pending invites carry their groups, so the users table needs a refresh too
       await invalidateOrgInvites(queryClient, organization);
+      // The per-user group lists (users table cell and manage groups dialog) changed for every user touched
+      await invalidateUserGroupsForUser(queryClient, organization);
 
       pendingAdditions = [];
       pendingRemovals = [];

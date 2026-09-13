@@ -12,6 +12,7 @@
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
     invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
     pendingInviteesMatching,
     type GroupMemberRow,
   } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
@@ -174,6 +175,8 @@
       await invalidateOrgMemberUsers(queryClient, organization);
       // Pending invites carry their groups, so the users table needs a refresh too
       await invalidateOrgInvites(queryClient, organization);
+      // The per-user group lists (users table cell and manage groups dialog) changed for every user added
+      await invalidateUserGroupsForUser(queryClient, organization);
 
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(

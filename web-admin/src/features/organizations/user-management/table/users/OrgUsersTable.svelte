@@ -136,7 +136,7 @@
   };
   $: columns = guestOnly
     ? [UserCell, UserGroupCell, ProjectsCell, ContextActionsCell]
-    : [UserCell, RoleCell, UserGroupCell, ContextActionsCell];
+    : [UserCell, RoleCell, UserGroupCell];
 
   function handleLoadMore() {
     if (usersQuery.hasNextPage) {

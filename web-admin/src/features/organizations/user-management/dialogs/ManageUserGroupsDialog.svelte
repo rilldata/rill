@@ -54,16 +54,24 @@
   $: memberGroupsQuery = createAdminServiceListUsergroupsForOrganizationAndUser(
     organization,
     listParams,
-    { query: { enabled: open && !pendingAcceptance && !!userId } },
+    {
+      query: {
+        enabled: open && !pendingAcceptance && !!userId,
+        // The query is disabled while closed, so it is inactive when the group dialogs invalidate it,
+        // and the global client does not refetch on mount: without this a reopen would seed from a stale cache.
+        refetchOnMount: true,
+      },
+    },
   );
 
-  // Seed the selection once per opening, from the invite for pending users and from the query for members
+  // Seed the selection once per opening, from the invite for pending users and from the query for members.
+  // For members, wait for the refetch above to settle so the baseline is not taken from the cached result.
   $: if (open && !initialized) {
     if (pendingAcceptance) {
       initialGroups = [...currentGroups];
       selectedGroups = [...currentGroups];
       initialized = true;
-    } else if ($memberGroupsQuery.data) {
+    } else if ($memberGroupsQuery.isSuccess && !$memberGroupsQuery.isFetching) {
       initialGroups =
         $memberGroupsQuery.data.usergroups
           ?.filter((g) => !g.managed)
@@ -74,7 +82,9 @@
     }
   }
 
-  $: isLoading = open && !pendingAcceptance && $memberGroupsQuery.isLoading;
+  // Hold the form until the baseline is seeded, so a refetch on reopen does not flash an empty selection
+  $: isLoading =
+    open && !pendingAcceptance && !initialized && !$memberGroupsQuery.isError;
 
   $: additions = selectedGroups.filter((g) => !initialGroups.includes(g));
   $: removals = initialGroups.filter((g) => !selectedGroups.includes(g));

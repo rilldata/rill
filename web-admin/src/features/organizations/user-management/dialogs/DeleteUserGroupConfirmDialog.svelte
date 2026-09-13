@@ -2,7 +2,10 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import { createAdminServiceDeleteUsergroup } from "@rilldata/web-admin/client";
-  import { invalidateOrgUsergroups } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
+  import {
+    invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -32,6 +35,8 @@
       });
 
       await invalidateOrgUsergroups(queryClient, organization);
+      // The deleted group disappears from every member's group list
+      await invalidateUserGroupsForUser(queryClient, organization);
 
       eventBus.emit("notification", { message: m.groups_deleted() });
     } catch (error) {
