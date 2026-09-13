@@ -789,10 +789,13 @@ func convertLikeExpressionToRegexExpression(like *Expression) (*Expression, erro
 	if !ok {
 		return nil, fmt.Errorf("the pattern expression for regex match function must be a string value, got %T", like.Value)
 	}
-	// convert pattern to a case insensitive regex match pattern, e.g. "%foo%" becomes "^(?i).*foo.*$"
-	pattern := strings.ReplaceAll(val, "%", ".*")
-	pattern = fmt.Sprintf("^(?i)%s$", pattern)
-	return &Expression{Value: pattern}, nil
+	return &Expression{Value: LikePatternToRegex(val)}, nil
+}
+
+// LikePatternToRegex converts a SQL LIKE pattern to a case insensitive regex match pattern, e.g. "%foo%" becomes "^(?i).*foo.*$".
+// It is exported so that rewrites which narrow a dimension to the values matching an ILIKE filter (see the Druid MVD executor rewrite) use exactly the regex the filter is compiled with.
+func LikePatternToRegex(pattern string) string {
+	return fmt.Sprintf("^(?i)%s$", strings.ReplaceAll(pattern, "%", ".*"))
 }
 
 // skipMetricsViewSecurity implements the MetricsViewSecurity interface in a way that allows all access.

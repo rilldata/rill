@@ -18,6 +18,7 @@ type CustomInputTypes =
   | "rill_time"
   | "sparkline"
   | "comparison_options"
+  | "map_color"
   | "vega_spec"
   | "switcher_tab"
   | "ai_generate"
@@ -47,6 +48,7 @@ export type ChartFieldInput = {
   excludedValues?: string[];
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;
+  geoOnly?: boolean;
   originSelector?: boolean;
   sortSelector?: SortSelectorConfig;
   limitSelector?: { defaultLimit: number };
@@ -91,6 +93,11 @@ export interface ComponentInputParam {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
     chartFieldInput?: ChartFieldInput;
+    /**
+     * Marks a measure/dimension field as removable, showing a remove button on
+     * the selected chip. On removal the property is cleared from the spec.
+     */
+    isRemovable?: boolean;
     layout?: "default" | "grouped";
     /**
      * If true, the boolean input will be inverted. This is useful when true

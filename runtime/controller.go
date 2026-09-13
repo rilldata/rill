@@ -111,6 +111,11 @@ type Controller struct {
 	// Status indicators
 	closed   atomic.Bool   // Indicates if the controller is running
 	closedCh chan struct{} // Closed when the controller is closed
+	// started indicates that Run has enqueued the initial set of resources.
+	// Until then the controller has nothing queued and would otherwise look idle.
+	started bool
+	// initialized indicates that the initial parse and reconcile has completed. See Initializing.
+	initialized atomic.Bool
 	// subscribers tracks subscribers to catalog events.
 	subscribers      map[int]SubscribeCallback
 	nextSubscriberID int
@@ -179,6 +184,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.enqueue(r.Meta.Name)
 		}
 	}
+	c.started = true
 	c.mu.Unlock()
 
 	// Ticker for periodically flushing catalog changes
@@ -418,6 +424,51 @@ func (c *Controller) WaitUntilIdle(ctx context.Context, ignoreHidden bool) error
 	return ctx.Err()
 }
 
+// Initializing returns true until the controller has completed its initial parse and reconcile,
+// i.e. until the project parser has parsed the project and the resources it created have been reconciled once.
+//
+// It combines the two status indicators on the controller:
+// started marks the point where Run has enqueued the initial resources, before which the controller has nothing queued and would otherwise look idle;
+// initialized latches the first time the checks below all pass.
+// The latch means later reconciles, such as a model refresh, do not make the controller look like it is initializing again.
+func (c *Controller) Initializing() bool {
+	if c.initialized.Load() {
+		return false
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	// Run hasn't enqueued the initial resources yet, so the controller only looks idle.
+	if !c.started {
+		return true
+	}
+
+	// There's still work queued or in flight.
+	// Hidden resources are ignored: they never surface in the UI, and short-lived refresh triggers keep appearing long after startup.
+	if len(c.queue) != 0 {
+		return true
+	}
+	for _, inv := range c.invocations {
+		if !inv.isHidden {
+			return true
+		}
+	}
+
+	// The project parser is hidden, but it creates every other resource, so we can't be done before it has parsed the project.
+	// While watching for file changes it stays running indefinitely; it only starts watching after the initial parse.
+	parser, err := c.catalog.get(GlobalProjectParserName, false, false)
+	if err != nil {
+		return true // The parser hasn't been created yet.
+	}
+	if parser.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE && !parser.GetProjectParser().GetState().GetWatching() {
+		return true
+	}
+
+	c.initialized.Store(true)
+	return false
+}
+
 // Get returns a resource by name.
 // Soft-deleted resources (i.e. resources where DeletedOn != nil) are not returned.
 func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clone bool) (*runtimev1.Resource, error) {
@@ -490,8 +541,8 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 
 // Create creates a resource and enqueues it for reconciliation.
 // If a resource with the same name is currently being deleted, the deletion will be cancelled.
-// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
-func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, hidden bool, r *runtimev1.Resource) error {
+// The tags and metadata parameters are stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, metadata map[string]string, hidden bool, r *runtimev1.Resource) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -516,7 +567,7 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 		requeued = true
 	}
 
-	err := c.catalog.create(name, refs, owner, paths, tags, hidden, r)
+	err := c.catalog.create(name, refs, owner, paths, tags, metadata, hidden, r)
 	if err != nil {
 		return err
 	}
@@ -529,8 +580,8 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 
 // UpdateMeta updates a resource's meta fields and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
-// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
-func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string) error {
+// The tags and metadata parameters are stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, metadata map[string]string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -550,7 +601,7 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 		return err
 	}
 
-	err = c.catalog.updateMeta(name, refs, owner, paths, tags)
+	err = c.catalog.updateMeta(name, refs, owner, paths, tags, metadata)
 	if err != nil {
 		return err
 	}
@@ -566,8 +617,8 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 
 // UpdateName renames a resource and updates annotations, and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
-// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
-func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths, tags []string) error {
+// The tags and metadata parameters are stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths, tags []string, metadata map[string]string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -602,7 +653,7 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	}
 	c.enqueue(newName)
 
-	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths, tags)
+	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths, tags, metadata)
 	if err != nil {
 		return err
 	}
@@ -971,7 +1022,7 @@ func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
 	}
 
 	// Create a new resource with the old name, so we can delete it separately.
-	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Hidden, r)
+	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Metadata, r.Meta.Hidden, r)
 	if err != nil {
 		return err
 	}
@@ -1030,7 +1081,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 		return err
 	}
 
-	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Hidden, r)
+	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Metadata, r.Meta.Hidden, r)
 	if err != nil {
 		return err
 	}

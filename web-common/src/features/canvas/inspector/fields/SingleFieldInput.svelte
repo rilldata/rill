@@ -28,6 +28,7 @@
   // selector offers creating and editing ephemeral measures.
   export let component: BaseCanvasComponent | undefined = undefined;
   export let isRemovable = false;
+  export let geoOnly = false;
   export let onSelect: (item: string, displayName: string) => void = () => {};
   export let onRemove: () => void = () => {};
 
@@ -71,6 +72,7 @@
     searchValue,
     effectiveExcludedValues,
     type === "measure" ? ephemeralMeasures : undefined,
+    geoOnly,
   );
 </script>
 

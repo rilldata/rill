@@ -2973,6 +2973,13 @@ export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
    */
   nextPageToken = "";
 
+  /**
+   * True while the instance may still produce more resources, i.e. it has not finished its initial parse and reconcile.
+   *
+   * @generated from field: bool initializing = 3;
+   */
+  initializing = false;
+
   constructor(data?: PartialMessage<ListResourcesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2983,6 +2990,7 @@ export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resources", kind: "message", T: Resource, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "initializing", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesResponse {

@@ -7,6 +7,7 @@
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
   import VegaSpecInput from "@rilldata/web-common/features/canvas/inspector/chart/VegaSpecInput.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import MapColorSelector from "../components/map/MapColorSelector.svelte";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AIGenerateButton from "./AIGenerateButton.svelte";
@@ -126,8 +127,12 @@
             selectedItem={localParamValues[key]}
             ephemeralMeasures={componentEphemeralMeasures}
             component={supportsEphemeralMeasures ? component : undefined}
+            isRemovable={config.meta?.isRemovable ?? false}
             onSelect={(field) => {
               component.updateProperty(key, field);
+            }}
+            onRemove={() => {
+              component.updateProperty(key, undefined);
             }}
           />
 
@@ -347,6 +352,17 @@
             {config}
             {metricsView}
             markConfig={localParamValues[key] || {}}
+            onChange={(updatedConfig) => {
+              localParamValues[key] = updatedConfig;
+              component.updateProperty(key, updatedConfig);
+            }}
+          />
+          <!-- MAP COLOR CONFIG -->
+        {:else if metricsView && config.type === "map_color"}
+          <MapColorSelector
+            {canvasName}
+            {metricsView}
+            colorConfig={localParamValues[key]}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);

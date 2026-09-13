@@ -160,6 +160,7 @@
         type={isDimension ? "dimension" : "measure"}
         includeTime={!chartFieldInput?.hideTimeDimension}
         excludedValues={chartFieldInput?.excludedValues}
+        geoOnly={chartFieldInput?.geoOnly ?? false}
         selectedItem={fieldConfig?.field}
         {ephemeralMeasures}
         {component}

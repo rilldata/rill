@@ -27,7 +27,7 @@ export function emailIsPublic(email: string) {
   return RillPublicEmailDomains.includes(domain);
 }
 
-function getDomain(email: string) {
+export function getDomain(email: string) {
   const domainParts = email.split("@");
   return domainParts.length ? domainParts[domainParts.length - 1] : "";
 }

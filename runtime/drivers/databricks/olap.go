@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/databricks-sql-go/driverctx"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -49,8 +50,24 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.config.LogQueries {
-		c.logger.Info("databricks query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("databricks query", fields...)
 	}
+
+	// Send the query attributes as Databricks query tags, recorded in the query_tags
+	// column of system.query.history. The driver attaches them per statement rather than
+	// per session, so they stay correct even though connections are pooled across users.
+	if len(stmt.QueryAttributes) > 0 {
+		ctx = driverctx.NewContextWithQueryTags(ctx, stmt.QueryAttributes)
+	}
+
 	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err

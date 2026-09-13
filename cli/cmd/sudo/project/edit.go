@@ -5,6 +5,7 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/spf13/cobra"
 )
 
@@ -12,6 +13,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var prodSlots, devSlots int
 	var prodVersion string
 	var overrideDiskGB int64
+	var cloudEditingDisabled bool
 
 	editCmd := &cobra.Command{
 		Use:   "edit <org> <project>",
@@ -26,18 +28,18 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				SuperuserForceAccess: true,
 			}
 
-			isEditRequested := false
+			isProjectEditRequested := false
 			if cmd.Flags().Changed("prod-slots") {
 				if prodSlots <= 0 {
 					return fmt.Errorf("--prod-slots must be greater than zero")
 				}
 				prodSlotsInt64 := int64(prodSlots)
 				req.ProdSlots = &prodSlotsInt64
-				isEditRequested = true
+				isProjectEditRequested = true
 			}
 			if cmd.Flags().Changed("prod-version") {
 				req.ProdVersion = &prodVersion
-				isEditRequested = true
+				isProjectEditRequested = true
 			}
 			if cmd.Flags().Changed("dev-slots") {
 				if devSlots <= 0 {
@@ -45,7 +47,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				devSlotsInt64 := int64(devSlots)
 				req.DevSlots = &devSlotsInt64
-				isEditRequested = true
+				isProjectEditRequested = true
 			}
 			if cmd.Flags().Changed("override-disk-gb") {
 				if overrideDiskGB < 0 {
@@ -53,10 +55,11 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				v := overrideDiskGB
 				req.OverrideDiskGb = &v
-				isEditRequested = true
+				isProjectEditRequested = true
 			}
 
-			if !isEditRequested {
+			isCloudEditingEditRequested := cmd.Flags().Changed("cloud-editing-disabled")
+			if !isProjectEditRequested && !isCloudEditingEditRequested {
 				ch.Printf("No edit requested\n")
 				return nil
 			}
@@ -66,13 +69,43 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			updatedProj, err := client.UpdateProject(ctx, req)
-			if err != nil {
-				return err
+			var updatedProject *adminv1.Project
+			if isProjectEditRequested {
+				res, err := client.UpdateProject(ctx, req)
+				if err != nil {
+					return err
+				}
+				updatedProject = res.Project
+			}
+
+			if isCloudEditingEditRequested {
+				res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+					Org:                  args[0],
+					Project:              args[1],
+					SuperuserForceAccess: true,
+				})
+				if err != nil {
+					return err
+				}
+
+				annotations, changed := setCloudEditingDisabledAnnotation(res.Project.Annotations, cloudEditingDisabled)
+				if changed {
+					updatedAnnotations, err := client.SudoUpdateAnnotations(ctx, &adminv1.SudoUpdateAnnotationsRequest{
+						Org:         args[0],
+						Project:     args[1],
+						Annotations: annotations,
+					})
+					if err != nil {
+						return err
+					}
+					updatedProject = updatedAnnotations.Project
+				} else {
+					updatedProject = res.Project
+				}
 			}
 
 			ch.PrintfSuccess("Updated project\n")
-			ch.PrintProjects([]*adminv1.Project{updatedProj.Project})
+			ch.PrintProjects([]*adminv1.Project{updatedProject})
 
 			return nil
 		},
@@ -82,5 +115,27 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().IntVar(&devSlots, "dev-slots", 0, "Slots to allocate for dev deployments")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
 	editCmd.Flags().Int64Var(&overrideDiskGB, "override-disk-gb", 0, "Override disk size in GB for prod and dev deployments (0 clears the override)")
+	editCmd.Flags().BoolVar(&cloudEditingDisabled, "cloud-editing-disabled", false, "Hide cloud editing in the UI even when enabled in rill.yaml")
 	return editCmd
+}
+
+func setCloudEditingDisabledAnnotation(annotations map[string]string, disabled bool) (map[string]string, bool) {
+	res := make(map[string]string, len(annotations)+1)
+	for k, v := range annotations {
+		res[k] = v
+	}
+
+	if disabled {
+		if res[runtime.CloudEditingDisabledAnnotation] == "true" {
+			return res, false
+		}
+		res[runtime.CloudEditingDisabledAnnotation] = "true"
+		return res, true
+	}
+
+	if _, ok := res[runtime.CloudEditingDisabledAnnotation]; !ok {
+		return res, false
+	}
+	delete(res, runtime.CloudEditingDisabledAnnotation)
+	return res, true
 }
