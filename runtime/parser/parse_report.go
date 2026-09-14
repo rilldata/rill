@@ -155,6 +155,12 @@ func (p *Parser) parseReport(node *Node) error {
 		if err != nil {
 			return fmt.Errorf("encountered invalid property type: %w", err)
 		}
+
+		// Add the queried metrics view as a ref, like the metrics resolver does.
+		// Among other things, this is what lets `watermark: inherit` resolve against the metrics view's data.
+		if mv := metricsViewFromLegacyQueryArgs(tmp.Query.ArgsJSON); mv != "" {
+			node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: mv})
+		}
 	}
 
 	// Parse export format
@@ -306,4 +312,20 @@ func parseExportFormat(s string) (runtimev1.ExportFormat, error) {
 		}
 		return runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED, fmt.Errorf("invalid export format %q", s)
 	}
+}
+
+// metricsViewFromLegacyQueryArgs extracts the metrics view name from the JSON args of a legacy metrics query.
+// The query protos name the field either `metrics_view` or `metrics_view_name`, and protojson accepts both the snake and camel case forms.
+// It returns an empty string if the args are not valid JSON or do not name a metrics view.
+func metricsViewFromLegacyQueryArgs(argsJSON string) string {
+	var args map[string]any
+	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
+		return ""
+	}
+	for _, key := range []string{"metrics_view", "metrics_view_name", "metricsView", "metricsViewName"} {
+		if mv, ok := args[key].(string); ok && mv != "" {
+			return mv
+		}
+	}
+	return ""
 }
