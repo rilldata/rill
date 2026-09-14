@@ -1784,7 +1784,10 @@ annotations:
 		{
 			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
 			Paths: []string{"/alerts/a1.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			Refs: []ResourceName{
+				{Kind: ResourceKindModel, Name: "m1"},
+				{Kind: ResourceKindMetricsView, Name: "mv1"},
+			},
 			AlertSpec: &runtimev1.AlertSpec{
 				DisplayName: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
