@@ -137,10 +137,20 @@ export function isCanvasReportSpec(reportSpec: V1ReportSpec): boolean {
   return !!reportSpec.annotations?.canvas;
 }
 
+// AI reports run the AI resolver and deliver a link to an AI conversation instead of a dashboard export.
+export function isAIReportSpec(reportSpec: V1ReportSpec): boolean {
+  return reportSpec.resolver === "ai";
+}
+
 export function getDashboardNameFromReport(reportSpec: V1ReportSpec): string {
   if (reportSpec.annotations?.canvas) return reportSpec.annotations.canvas;
 
   if (reportSpec.annotations?.explore) return reportSpec.annotations.explore;
+
+  // AI reports optionally scope the analysis to an explore via the resolver's `explore` property.
+  if (isAIReportSpec(reportSpec)) {
+    return (reportSpec.resolverProperties?.explore as string | undefined) ?? "";
+  }
 
   if (reportSpec.annotations?.web_open_path)
     return getExploreName(reportSpec.annotations.web_open_path);
