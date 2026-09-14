@@ -43,6 +43,29 @@ func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
 	return res
 }
 
+func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+	expr, err := d.MetricsViewDimensionExpression(dim)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+	}
+	alias := d.EscapeAlias(dim.Name)
+	if !dim.Unnest {
+		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
+	}
+	unnestCol := drivers.TempName(fmt.Sprintf("unnested_%s_", dim.Name))
+	tbl, _, _, err := d.LateralUnnest(expr, drivers.TempName("tbl"), unnestCol)
+	if err != nil {
+		return "", "", err
+	}
+	return fmt.Sprintf(`%s AS %s`, d.EscapeIdentifier(unnestCol), alias), ", " + tbl, nil
+}
+
+// LateralUnnest wraps FLATTEN in an inline view so the element is exposed under colName instead of FLATTEN's fixed VALUE column.
+// VALUE is a VARIANT for semi-structured arrays and would otherwise surface as JSON-encoded text, so it is cast to VARCHAR.
+func (d *dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	return fmt.Sprintf(`LATERAL (SELECT VALUE::VARCHAR AS %s FROM TABLE(FLATTEN(INPUT => %s))) %s`, d.EscapeIdentifier(colName), expr, tableAlias), true, false, nil
+}
+
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""

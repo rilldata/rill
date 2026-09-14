@@ -70,6 +70,24 @@ func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
 	return res
 }
 
+func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+	expr, err := d.MetricsViewDimensionExpression(dim)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+	}
+	alias := d.EscapeAlias(dim.Name)
+	if !dim.Unnest {
+		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
+	}
+	unnestColName := d.EscapeIdentifier(drivers.TempName(fmt.Sprintf("unnested_%s_", dim.Name)))
+	return fmt.Sprintf(`%s AS %s`, unnestColName, alias), fmt.Sprintf(`, UNNEST(%s) AS %s`, expr, unnestColName), nil
+}
+
+// LateralUnnest returns a comma join with UNNEST. BigQuery exposes each array element directly under the alias, so there is no tuple to index into.
+func (d *dialect) LateralUnnest(expr, _, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	return fmt.Sprintf(`UNNEST(%s) AS %s`, expr, d.EscapeIdentifier(colName)), false, false, nil
+}
+
 func (d *dialect) JoinOnExpression(lhs, rhs string) string {
 	// BigQuery requires plain equality for FULL joins
 	return fmt.Sprintf("coalesce(CAST(%s AS STRING), '__rill_sentinel__') = coalesce(CAST(%s AS STRING), '__rill_sentinel__')", lhs, rhs)

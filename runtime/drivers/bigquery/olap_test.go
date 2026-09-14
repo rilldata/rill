@@ -2,12 +2,14 @@ package bigquery_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -120,6 +122,114 @@ func TestOLAP(t *testing.T) {
 		})
 	}
 }
+
+func TestUnnestDimension(t *testing.T) {
+	testmode.Expensive(t)
+	_, olap := acquireTestBigQuery(t)
+
+	mv := &runtimev1.MetricsViewSpec{
+		Database:       "rilldata",
+		DatabaseSchema: "integration_test",
+		Table:          "all_datatypes",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "array_string_col", Column: "array_string_col", Unnest: true},
+			{Name: "int_col", Column: "int_col"},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+
+	// Same query shape as the executor's dimension validation.
+	dialect := olap.Dialect()
+	escapeTable := dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
+	sel, unnestClause, err := dialect.DimensionSelect(escapeTable, mv.Dimensions[0])
+	require.NoError(t, err)
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", sel, escapeTable, unnestClause), DryRun: true})
+	require.NoError(t, err)
+
+	// Control: rows whose array contains 'sample1', computed without the metrics view code paths.
+	control := queryRows(t, olap, "SELECT COUNT(*) AS count FROM `rilldata.integration_test.all_datatypes` WHERE 'sample1' IN UNNEST(array_string_col)", nil)
+	require.Len(t, control, 1)
+	matching := control[0]["count"].(int64)
+	require.Greater(t, matching, int64(0))
+
+	arrayEq := func(op metricsview.Operator, val any) *metricsview.Expression {
+		return &metricsview.Expression{Condition: &metricsview.Condition{
+			Operator:    op,
+			Expressions: []*metricsview.Expression{{Name: "array_string_col"}, {Value: val}},
+		}}
+	}
+
+	tests := []struct {
+		name string
+		qry  *metricsview.Query
+		want []map[string]any
+	}{
+		{
+			name: "group by unnest dimension",
+			qry: &metricsview.Query{
+				Dimensions: []metricsview.Dimension{{Name: "array_string_col"}},
+				Measures:   []metricsview.Measure{{Name: "count"}},
+			},
+			want: []map[string]any{{"array_string_col": "sample1", "count": matching}},
+		},
+		{
+			name: "eq filter on unnest dimension",
+			qry: &metricsview.Query{
+				Measures: []metricsview.Measure{{Name: "count"}},
+				Where:    arrayEq(metricsview.OperatorEq, "sample1"),
+			},
+			want: []map[string]any{{"count": matching}},
+		},
+		{
+			name: "in filter on unnest dimension",
+			qry: &metricsview.Query{
+				Measures: []metricsview.Measure{{Name: "count"}},
+				Where:    arrayEq(metricsview.OperatorIn, []any{"sample1", "missing"}),
+			},
+			want: []map[string]any{{"count": matching}},
+		},
+		{
+			name: "eq filter on unnest dimension with no match",
+			qry: &metricsview.Query{
+				Measures: []metricsview.Measure{{Name: "count"}},
+				Where:    arrayEq(metricsview.OperatorEq, "missing"),
+			},
+			want: []map[string]any{{"count": int64(0)}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.qry.MetricsView = "all_datatypes"
+			ast, err := metricsview.NewAST(mv, allowAllSecurity{}, tt.qry, dialect)
+			require.NoError(t, err)
+			sql, args, err := ast.SQL()
+			require.NoError(t, err)
+			require.Equal(t, tt.want, queryRows(t, olap, sql, args))
+		})
+	}
+}
+
+func queryRows(t *testing.T, olap drivers.OLAPStore, query string, args []any) []map[string]any {
+	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: query, Args: args})
+	require.NoError(t, err)
+	defer rows.Close()
+	var res []map[string]any
+	for rows.Next() {
+		row := make(map[string]any)
+		require.NoError(t, rows.MapScan(row))
+		res = append(res, row)
+	}
+	require.NoError(t, rows.Err())
+	return res
+}
+
+type allowAllSecurity struct{}
+
+func (allowAllSecurity) CanAccessField(string) bool         { return true }
+func (allowAllSecurity) RowFilter() string                  { return "" }
+func (allowAllSecurity) QueryFilter() *runtimev1.Expression { return nil }
 
 func TestEmptyRows(t *testing.T) {
 	testmode.Expensive(t)
