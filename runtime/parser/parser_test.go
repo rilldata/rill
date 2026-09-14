@@ -1449,6 +1449,7 @@ annotations:
 		{
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
 			Paths: []string{"/reports/r1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "mv1"}},
 			ReportSpec: &runtimev1.ReportSpec{
 				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
@@ -1476,6 +1477,7 @@ annotations:
 		{
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
 			Paths: []string{"/reports/r2.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "mv1"}},
 			ReportSpec: &runtimev1.ReportSpec{
 				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
@@ -1515,6 +1517,57 @@ annotations:
 					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
 				}},
 				Annotations: map[string]string{"canvas": "c1"},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestReportLegacyQueryMetricsViewRef(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Reports created from the UI pass the query args as JSON with camel case keys.
+		`reports/r1.yaml`: `
+type: report
+display_name: My Report
+refresh:
+  cron: 0 * * * *
+watermark: inherit
+query:
+  name: MetricsViewAggregation
+  args_json: '{"metricsViewName":"mv1","measures":[{"name":"m1"}]}'
+export:
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "mv1"}},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:     "My Report",
+				RefreshSchedule: &runtimev1.Schedule{Cron: "0 * * * *"},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metricsViewName":"mv1","measures":[{"name":"m1"}]}`,
+				})),
+				ExportFormat: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+				}},
+				WatermarkInherit: true,
 			},
 		},
 	}
@@ -1731,7 +1784,10 @@ annotations:
 		{
 			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
 			Paths: []string{"/alerts/a1.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			Refs: []ResourceName{
+				{Kind: ResourceKindModel, Name: "m1"},
+				{Kind: ResourceKindMetricsView, Name: "mv1"},
+			},
 			AlertSpec: &runtimev1.AlertSpec{
 				DisplayName: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
