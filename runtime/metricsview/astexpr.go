@@ -296,7 +296,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		}
 		var unnestColAlias string
 		if tupleStyle {
-			unnestColAlias = b.ast.Dialect.EscapeMember(unnestTableAlias, left.Name)
+			unnestColAlias = b.ast.Dialect.UnnestedColumn(unnestTableAlias, left.Name)
 		} else {
 			unnestColAlias = b.ast.Dialect.EscapeAlias(left.Name)
 		}
@@ -320,18 +320,23 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			not = true
 		}
 
-		// Output: [NOT] EXISTS (SELECT 1 FROM <unnestFrom> WHERE <unnestColAlias> <operator> <right>)
+		// Evaluate the condition per source row so a row matches once even if several of its elements match.
+		// Output: [NOT] EXISTS (SELECT 1 FROM <unnestFrom> WHERE <unnestColAlias> <operator> <right>), unless the dialect has a native array expression.
 		if not {
 			b.writeString("NOT ")
 		}
-		b.writeString("EXISTS (SELECT 1 FROM ")
-		b.writeString(unnestFrom)
-		b.writeString(" WHERE ")
-		err = b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+		open, elem, closing, ok := b.ast.Dialect.ArrayAnyExpression(leftExpr, unnestTableAlias)
+		if !ok {
+			open = "EXISTS (SELECT 1 FROM " + unnestFrom + " WHERE "
+			elem = unnestColAlias
+			closing = ")"
+		}
+		b.writeString(open)
+		err = b.writeBinaryConditionInner(nil, right, elem, op)
 		if err != nil {
 			return err
 		}
-		b.writeByte(')')
+		b.writeString(closing)
 		return nil
 	}
 

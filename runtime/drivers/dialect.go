@@ -51,6 +51,12 @@ type Dialect interface {
 	GetArrayContainsFunction() (string, error)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
 	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
+	// UnnestedColumn returns the expression for the array element exposed by LateralUnnest in tuple style.
+	UnnestedColumn(tableAlias, colName string) string
+	// ArrayAnyExpression returns fragments for a condition that is true if any element of arrExpr satisfies it.
+	// The condition on a single element is written between open and close and references the element as elem.
+	// ok is false if the dialect has no such expression, in which case a correlated EXISTS subquery over LateralUnnest is used.
+	ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool)
 	UnnestSQLSuffix(tbl string) string
 	// AutoUnnest wraps an expression so the dialect unnests it automatically (used when LateralUnnest reports auto == true).
 	AutoUnnest(expr string) string
@@ -216,6 +222,14 @@ func (b *BaseDialect) DimensionSelect(escapeTable string, dim *runtimev1.Metrics
 
 func (b *BaseDialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, b.escapeIdentifier(colName)), true, false, nil
+}
+
+func (b *BaseDialect) UnnestedColumn(tableAlias, colName string) string {
+	return b.EscapeMember(tableAlias, colName)
+}
+
+func (b *BaseDialect) ArrayAnyExpression(_, _ string) (open, elem, closing string, ok bool) {
+	return "", "", "", false
 }
 
 func (b *BaseDialect) UnnestSQLSuffix(tbl string) string {

@@ -83,9 +83,12 @@ func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimen
 	return fmt.Sprintf(`%s AS %s`, unnestColName, alias), fmt.Sprintf(`, UNNEST(%s) AS %s`, expr, unnestColName), nil
 }
 
-// LateralUnnest returns a comma join with UNNEST. BigQuery exposes each array element directly under the alias, so there is no tuple to index into.
-func (d *dialect) LateralUnnest(expr, _, colName string) (tbl string, tupleStyle, auto bool, err error) {
-	return fmt.Sprintf(`UNNEST(%s) AS %s`, expr, d.EscapeIdentifier(colName)), false, false, nil
+// LateralUnnest wraps each array element in a STRUCT so it can be addressed as tableAlias.colName.
+// BigQuery's UNNEST exposes scalar elements directly under the alias, which the AST cannot address in tuple style.
+// Tuple style is required so that filters on unselected unnest dimensions become EXISTS subqueries instead of joins that duplicate rows.
+func (d *dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	elem := d.EscapeIdentifier(tableAlias + "_elem")
+	return fmt.Sprintf(`UNNEST(ARRAY(SELECT AS STRUCT %s AS %s FROM UNNEST(%s) AS %s)) AS %s`, elem, d.EscapeIdentifier(colName), expr, elem, d.EscapeIdentifier(tableAlias)), true, false, nil
 }
 
 func (d *dialect) JoinOnExpression(lhs, rhs string) string {

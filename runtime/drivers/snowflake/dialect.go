@@ -53,17 +53,28 @@ func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimen
 		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
 	}
 	unnestCol := drivers.TempName(fmt.Sprintf("unnested_%s_", dim.Name))
-	tbl, _, _, err := d.LateralUnnest(expr, drivers.TempName("tbl"), unnestCol)
+	tableAlias := drivers.TempName("tbl")
+	tbl, _, _, err := d.LateralUnnest(expr, tableAlias, unnestCol)
 	if err != nil {
 		return "", "", err
 	}
-	return fmt.Sprintf(`%s AS %s`, d.EscapeIdentifier(unnestCol), alias), ", " + tbl, nil
+	return fmt.Sprintf(`%s AS %s`, d.UnnestedColumn(tableAlias, unnestCol), alias), ", " + tbl, nil
 }
 
-// LateralUnnest wraps FLATTEN in an inline view so the element is exposed under colName instead of FLATTEN's fixed VALUE column.
-// VALUE is a VARIANT for semi-structured arrays and would otherwise surface as JSON-encoded text, so it is cast to VARCHAR.
+// LateralUnnest aliases every FLATTEN output column so the element is addressable as tableAlias.colName.
+// FLATTEN cannot be wrapped in an inline view because Snowflake does not resolve the outer array column inside it.
 func (d *dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
-	return fmt.Sprintf(`LATERAL (SELECT VALUE::VARCHAR AS %s FROM TABLE(FLATTEN(INPUT => %s))) %s`, d.EscapeIdentifier(colName), expr, tableAlias), true, false, nil
+	return fmt.Sprintf(`LATERAL FLATTEN(INPUT => %s) %s (seq, key, path, index, %s, this)`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
+}
+
+// UnnestedColumn casts the element to VARCHAR. FLATTEN yields VARIANT elements for semi-structured arrays, which the driver returns as JSON-encoded text.
+func (d *dialect) UnnestedColumn(tableAlias, colName string) string {
+	return d.EscapeMember(tableAlias, colName) + "::VARCHAR"
+}
+
+// ArrayAnyExpression uses FILTER because Snowflake rejects correlated FLATTEN inside EXISTS subqueries.
+func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
+	return fmt.Sprintf("(ARRAY_SIZE(FILTER(%s, %s -> ", arrExpr, elemAlias), elemAlias + "::VARCHAR", ")) > 0)", true
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {

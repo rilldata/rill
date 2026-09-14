@@ -127,13 +127,23 @@ func TestUnnestDimension(t *testing.T) {
 	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
+	// Rows with overlapping and empty arrays, so joins that duplicate source rows are detectable.
+	name := "test_unnest_" + uuid.New().String()[:8]
+	table := "`rilldata.integration_test." + name + "`"
+	t.Cleanup(func() {
+		err := olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE IF EXISTS " + table})
+		require.NoError(t, err)
+	})
+	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE " + table + " AS SELECT id, tags FROM UNNEST(ARRAY<STRUCT<id INT64, tags ARRAY<STRING>>>[(1, ['a', 'b']), (2, ['b']), (3, ['c']), (4, ARRAY<STRING>[])])"})
+	require.NoError(t, err)
+
 	mv := &runtimev1.MetricsViewSpec{
 		Database:       "rilldata",
 		DatabaseSchema: "integration_test",
-		Table:          "all_datatypes",
+		Table:          name,
 		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
-			{Name: "array_string_col", Column: "array_string_col", Unnest: true},
-			{Name: "int_col", Column: "int_col"},
+			{Name: "tags", Column: "tags", Unnest: true},
+			{Name: "id", Column: "id"},
 		},
 		Measures: []*runtimev1.MetricsViewSpec_Measure{
 			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
@@ -148,17 +158,14 @@ func TestUnnestDimension(t *testing.T) {
 	err = olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", sel, escapeTable, unnestClause), DryRun: true})
 	require.NoError(t, err)
 
-	// Control: rows whose array contains 'sample1', computed without the metrics view code paths.
-	control := queryRows(t, olap, "SELECT COUNT(*) AS count FROM `rilldata.integration_test.all_datatypes` WHERE 'sample1' IN UNNEST(array_string_col)", nil)
-	require.Len(t, control, 1)
-	matching := control[0]["count"].(int64)
-	require.Greater(t, matching, int64(0))
-
-	arrayEq := func(op metricsview.Operator, val any) *metricsview.Expression {
+	tagsFilter := func(op metricsview.Operator, val any) *metricsview.Expression {
 		return &metricsview.Expression{Condition: &metricsview.Condition{
 			Operator:    op,
-			Expressions: []*metricsview.Expression{{Name: "array_string_col"}, {Value: val}},
+			Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: val}},
 		}}
+	}
+	count := func(where *metricsview.Expression) *metricsview.Query {
+		return &metricsview.Query{Measures: []metricsview.Measure{{Name: "count"}}, Where: where}
 	}
 
 	tests := []struct {
@@ -169,39 +176,60 @@ func TestUnnestDimension(t *testing.T) {
 		{
 			name: "group by unnest dimension",
 			qry: &metricsview.Query{
-				Dimensions: []metricsview.Dimension{{Name: "array_string_col"}},
+				Dimensions: []metricsview.Dimension{{Name: "tags"}},
 				Measures:   []metricsview.Measure{{Name: "count"}},
+				Sort:       []metricsview.Sort{{Name: "tags"}},
 			},
-			want: []map[string]any{{"array_string_col": "sample1", "count": matching}},
+			want: []map[string]any{
+				{"tags": "a", "count": int64(1)},
+				{"tags": "b", "count": int64(2)},
+				{"tags": "c", "count": int64(1)},
+			},
 		},
 		{
-			name: "eq filter on unnest dimension",
-			qry: &metricsview.Query{
-				Measures: []metricsview.Measure{{Name: "count"}},
-				Where:    arrayEq(metricsview.OperatorEq, "sample1"),
-			},
-			want: []map[string]any{{"count": matching}},
+			// Row 1 matches both values but must be counted once.
+			name: "in filter counts each source row once",
+			qry:  count(tagsFilter(metricsview.OperatorIn, []any{"a", "b"})),
+			want: []map[string]any{{"count": int64(2)}},
 		},
 		{
-			name: "in filter on unnest dimension",
-			qry: &metricsview.Query{
-				Measures: []metricsview.Measure{{Name: "count"}},
-				Where:    arrayEq(metricsview.OperatorIn, []any{"sample1", "missing"}),
-			},
-			want: []map[string]any{{"count": matching}},
+			// Excludes rows containing 'a' even if they also contain other values; keeps the empty array.
+			name: "nin filter excludes rows containing any listed value",
+			qry:  count(tagsFilter(metricsview.OperatorNin, []any{"a"})),
+			want: []map[string]any{{"count": int64(3)}},
 		},
 		{
-			name: "eq filter on unnest dimension with no match",
-			qry: &metricsview.Query{
-				Measures: []metricsview.Measure{{Name: "count"}},
-				Where:    arrayEq(metricsview.OperatorEq, "missing"),
-			},
+			name: "eq filter",
+			qry:  count(tagsFilter(metricsview.OperatorEq, "b")),
+			want: []map[string]any{{"count": int64(2)}},
+		},
+		{
+			name: "neq filter excludes rows containing the value",
+			qry:  count(tagsFilter(metricsview.OperatorNeq, "b")),
+			want: []map[string]any{{"count": int64(2)}},
+		},
+		{
+			name: "eq filter with no match",
+			qry:  count(tagsFilter(metricsview.OperatorEq, "missing")),
 			want: []map[string]any{{"count": int64(0)}},
+		},
+		{
+			name: "filter combined with group by on another dimension",
+			qry: &metricsview.Query{
+				Dimensions: []metricsview.Dimension{{Name: "id"}},
+				Measures:   []metricsview.Measure{{Name: "count"}},
+				Where:      tagsFilter(metricsview.OperatorIn, []any{"a", "b"}),
+				Sort:       []metricsview.Sort{{Name: "id"}},
+			},
+			want: []map[string]any{
+				{"id": int64(1), "count": int64(1)},
+				{"id": int64(2), "count": int64(1)},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.qry.MetricsView = "all_datatypes"
+			tt.qry.MetricsView = name
 			ast, err := metricsview.NewAST(mv, allowAllSecurity{}, tt.qry, dialect)
 			require.NoError(t, err)
 			sql, args, err := ast.SQL()
