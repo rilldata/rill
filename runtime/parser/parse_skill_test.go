@@ -94,6 +94,10 @@ Body.`,
 type: skill
 description: Not a SKILL.md file.
 `,
+		// Ignored: supporting files inside a skill directory are not project resources, even when they look like some
+		`skills/revenue-rca/references/example.sql`: `SELECT 1 AS revenue`,
+		`skills/revenue-rca/scripts/config.yaml`:    "type: model\nsql: [not valid",
+		`.agents/skills/glossary/assets/terms.yaml`: `type: nonsense`,
 		// Ignored: SKILL.md files outside the skill roots are neither parsed nor reported
 		`.claude/skills/stray/SKILL.md`: `not a rill skill`,
 		`docs/SKILL.md`:                 `not a rill skill`,
@@ -156,6 +160,15 @@ description: Not a SKILL.md file.
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, perrors)
 
+	// Skill support files are skipped by incremental reparses too
+	require.True(t, p.IsSkippable("/skills/revenue-rca/references/example.sql"))
+	require.False(t, p.IsSkippable("/skills/revenue-rca/SKILL.md"))
+	require.False(t, p.IsSkippable("/skills/legacy.yaml"))
+	diff, err := p.Reparse(ctx, []string{"/skills/revenue-rca/references/example.sql"})
+	require.NoError(t, err)
+	require.Empty(t, diff.Added)
+	require.Empty(t, diff.Modified)
+
 	// Incremental reparse: edit a skill file
 	putRepo(t, repo, map[string]string{
 		`skills/formatting/SKILL.md`: `---
@@ -165,7 +178,7 @@ always_apply: true
 
 Report percentages with two decimals.`,
 	})
-	diff, err := p.Reparse(ctx, []string{"/skills/formatting/SKILL.md"})
+	diff, err = p.Reparse(ctx, []string{"/skills/formatting/SKILL.md"})
 	require.NoError(t, err)
 	require.Equal(t, []ResourceName{{Kind: ResourceKindSkill, Name: "formatting"}}, diff.Modified)
 	require.Equal(t, "Report percentages with two decimals.", p.Resources[ResourceName{Kind: ResourceKindSkill, Name: "formatting"}.Normalized()].SkillSpec.Body)

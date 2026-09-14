@@ -135,7 +135,7 @@ always_apply: true           # Optional: always include the full skill instead o
 - **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[analyst]`.
 - **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request. Always-apply skills share a 32 KiB budget per conversation; a skill that doesn't fit is offered for on-demand loading instead, and a warning is logged.
 
-Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa.
+Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa. A skill directory may also hold supporting files (such as `references/` or `scripts/`) as the format allows; Rill ignores everything in a skill directory except `SKILL.md`, so a SQL or YAML example inside a skill is not parsed as a project resource.
 
 Skills are parsed into resources like the rest of your project: invalid skill files (e.g. a missing `description`) show an error on the file in Rill Developer. When the AI uses a skill, the chat response's activity trace shows a "Loaded skill" step, so you can verify a skill was applied and iterate on it: edit the file, ask a test question, and check the trace.
 

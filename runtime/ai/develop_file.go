@@ -11,6 +11,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai/instructions"
+	"github.com/rilldata/rill/runtime/parser"
+	"go.uber.org/zap"
 )
 
 const DevelopFileName = "develop_file"
@@ -87,14 +89,24 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 		return nil, fmt.Errorf("invalid input: unsupported resource type %q", args.Type)
 	}
 
+	// Load project-defined skills relevant to development.
+	// The sub-agent does not see the parent conversation, so it needs the skills in its own prompt.
+	// Skill loading failures should degrade the response, not fail it.
+	s := GetSession(ctx)
+	skills, err := s.Skills(ctx)
+	if err != nil {
+		s.logger.Warn("failed to load project skills", zap.Error(err))
+		skills = nil
+	}
+	skills = filterSkills(skills, parser.SkillAgentDeveloper, nil)
+
 	// Prepare the user prompt
-	userPrompt, err := t.userPrompt(ctx, args)
+	userPrompt, err := t.userPrompt(ctx, skills, args)
 	if err != nil {
 		return nil, err
 	}
 
 	// Pre-invoke some tool calls
-	s := GetSession(ctx)
 	_, err = s.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
 	if err != nil {
 		return nil, err
@@ -118,21 +130,27 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
 
+	// Determine tools that can be used
+	tools := []string{
+		SearchFilesName,
+		ReadFileName,
+		WriteFileName,
+		GetMetricsViewName,
+		ListBucketsName,
+		ListBucketObjectsName,
+		ListTablesName,
+		ShowTableName,
+		QuerySQLName,
+	}
+	if len(skills) > 0 {
+		tools = append(tools, ListSkillsName, LoadSkillName)
+	}
+
 	// Run an LLM tool call loop
 	var response string
 	err = s.Complete(ctx, "File developer loop", &response, &CompleteOptions{
-		Messages: messages,
-		Tools: []string{
-			SearchFilesName,
-			ReadFileName,
-			WriteFileName,
-			GetMetricsViewName,
-			ListBucketsName,
-			ListBucketObjectsName,
-			ListTablesName,
-			ShowTableName,
-			QuerySQLName,
-		},
+		Messages:      messages,
+		Tools:         tools,
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})
@@ -145,7 +163,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	}, nil
 }
 
-func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (string, error) {
+func (t *DevelopFile) userPrompt(ctx context.Context, skills []*Skill, args *DevelopFileArgs) (string, error) {
 	// Get default OLAP info
 	olapInfo, err := defaultOLAPInfo(ctx, t.Runtime, GetSession(ctx).InstanceID())
 	if err != nil {
@@ -164,13 +182,16 @@ func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (st
 
 	// Prepare template data.
 	session := GetSession(ctx)
+	alwaysApplySkills, skillsIndex := skillPrompts(skills, session.logger)
 	data := map[string]any{
-		"path":               args.Path,
-		"type":               args.Type,
-		"prompt":             args.Prompt,
-		"ai_instructions":    session.ProjectInstructions(),
-		"default_olap_info":  olapInfo,
-		"metrics_views_info": metricsViewsInfo,
+		"path":                args.Path,
+		"type":                args.Type,
+		"prompt":              args.Prompt,
+		"ai_instructions":     session.ProjectInstructions(),
+		"always_apply_skills": alwaysApplySkills,
+		"skills_index":        skillsIndex,
+		"default_olap_info":   olapInfo,
+		"metrics_views_info":  metricsViewsInfo,
 	}
 
 	// Generate the user prompt
@@ -190,6 +211,14 @@ Here is some additional context that may or may not be relevant to your task:
 {{ if .metrics_views_info }}- The project's metrics views and their exact field names:
 {{ .metrics_views_info }}{{ end }}
 {{ if .ai_instructions }}- The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}{{ end }}
+{{ if .always_apply_skills }}
+The user has defined the following skills that always apply to development work in this project. Follow their guidance:
+{{ .always_apply_skills }}
+{{ end }}
+{{ if .skills_index }}
+The user has defined the following development skills. Before doing work that a skill's description covers, you MUST call the "load_skill" tool to retrieve it and follow its instructions:
+{{ .skills_index }}
+{{ end }}
 `, data)
 }
 

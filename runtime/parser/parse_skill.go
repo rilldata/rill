@@ -160,6 +160,20 @@ func pathIsSkill(path string) bool {
 	return ok
 }
 
+// pathIsSkillSupportFile returns true if the path is inside a skill's directory without being its SKILL.md.
+// Per the Agent Skills format, a skill directory may hold supporting files such as scripts, references and examples.
+// Those are ignored by the parser, so a SQL or YAML example inside a skill does not become a project resource.
+func pathIsSkillSupportFile(path string) bool {
+	if pathIsSkill(path) {
+		return false
+	}
+	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	if len(parts) > 3 && parts[0] == "skills" {
+		return true
+	}
+	return len(parts) > 4 && parts[0] == ".agents" && parts[1] == "skills"
+}
+
 // skillNameForPath returns the skill name for a path, or false if the path does not declare a skill.
 // Skills are declared by SKILL.md files at `/skills/<name>/SKILL.md` or `/.agents/skills/<name>/SKILL.md`.
 func skillNameForPath(path string) (string, bool) {

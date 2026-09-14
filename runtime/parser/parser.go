@@ -392,6 +392,10 @@ func (p *Parser) reload(ctx context.Context) error {
 	// Build paths slice
 	paths := make([]string, 0, len(files)+len(skillFiles))
 	for _, file := range files {
+		// Skill support files match the glob but are not project resources.
+		if pathIsIgnored(file.Path) {
+			continue
+		}
 		paths = append(paths, file.Path)
 	}
 	for _, file := range skillFiles {
@@ -1159,7 +1163,7 @@ func pathIsIgnored(p string) bool {
 			return true
 		}
 	}
-	return false
+	return pathIsSkillSupportFile(p)
 }
 
 // normalizePath normalizes a user-provided path to the format returned from ListGlob.
