@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 
 	dbsqllog "github.com/databricks/databricks-sql-go/logger"
 	"github.com/jmoiron/sqlx"
@@ -79,6 +80,14 @@ var spec = drivers.Spec{
 			Placeholder: "default",
 			Hint:        "Schema within the catalog (optional; defaults to the workspace default)",
 		},
+		{
+			Key:         "use_kernel",
+			Type:        drivers.BooleanPropertyType,
+			DisplayName: "Use SEA (Statement Execution API)",
+			Hint: "Force the SEA backend instead of Thrift. Lakehouse//RT warehouses are " +
+				"auto-detected and switched to SEA automatically, so this is usually unnecessary. " +
+				"Requires a Rill build with the databricks_kernel backend (CGO); defaults to false.",
+		},
 	},
 	ImplementsOLAP:      true,
 	ImplementsWarehouse: true,
@@ -94,6 +103,10 @@ type configProperties struct {
 	Catalog    string `mapstructure:"catalog"`
 	Schema     string `mapstructure:"schema"`
 	LogQueries bool   `mapstructure:"log_queries"`
+	// UseKernel forces the driver's SEA backend. Lakehouse//RT is auto-detected and
+	// switched to SEA even when this is false (see getDB), so it's an override.
+	// Needs a build with the databricks_kernel backend; default false = Thrift.
+	UseKernel bool `mapstructure:"use_kernel"`
 }
 
 func (c *configProperties) validate() error {
@@ -124,10 +137,17 @@ func (c *configProperties) validate() error {
 
 func (c *configProperties) resolveDSN() string {
 	if c.DSN != "" {
+		if c.UseKernel {
+			return withUseKernel(c.DSN)
+		}
 		return c.DSN
 	}
 	params := url.Values{}
 	params.Set("timezone", "UTC")
+	// Opt in to the SEA backend (required for Lakehouse//RT); default is Thrift.
+	if c.UseKernel {
+		params.Set("useKernel", "true")
+	}
 	if c.Catalog != "" {
 		params.Set("catalog", c.Catalog)
 	}
@@ -143,6 +163,35 @@ func (c *configProperties) resolveDSN() string {
 		RawQuery: params.Encode(),
 	}
 	return u.String()
+}
+
+// withUseKernel forces useKernel=true on a resolved DSN. It is only called when SEA is
+// required (explicit use_kernel, or RT auto-detect), so any existing useKernel in the
+// DSN — including useKernel=false — is dropped in favor of true. It splits at the first
+// '?' (the query separator) and rewrites only the query part; it avoids url.Parse
+// because the driver also accepts scheme-less DSNs (token:...@host), which url.Parse
+// would misread (treating "token" as the scheme).
+func withUseKernel(dsn string) string {
+	base, query, hasQuery := strings.Cut(dsn, "?")
+	if !hasQuery || query == "" {
+		return base + "?useKernel=true"
+	}
+	parts := strings.Split(query, "&")
+	kept := parts[:0]
+	for _, p := range parts {
+		if strings.HasPrefix(p, "useKernel=") {
+			continue // drop any existing useKernel (true or false)
+		}
+		kept = append(kept, p)
+	}
+	kept = append(kept, "useKernel=true")
+	return base + "?" + strings.Join(kept, "&")
+}
+
+// rtRequiresSEA reports whether err is a Lakehouse//RT warehouse rejecting the
+// Thrift protocol (the driver surfaces the server's message verbatim).
+func rtRequiresSEA(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "not supported for Thrift protocol")
 }
 
 func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -187,6 +236,12 @@ type connection struct {
 	db    *sqlx.DB // lazily populated using getDB
 	dbErr error
 	dbMu  *semaphore.Weighted
+
+	// resolvedDSN is the DSN to connect with, computed by effectiveDSN (auto-detects
+	// Lakehouse//RT and upgrades to the SEA backend). Empty until a *definitive*
+	// probe outcome is reached, so a transient probe failure is not cached.
+	dsnMu       sync.Mutex
+	resolvedDSN string
 }
 
 // Ping implements drivers.Handle.
@@ -303,9 +358,64 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return c.db, c.dbErr
 	}
 
-	c.db, c.dbErr = sqlx.Open("databricks", c.config.resolveDSN())
+	// Only build (and permanently cache) the shared pool once the backend is
+	// *definitively* known. On a non-definitive result we surface the probe error
+	// (which may be a real misconfiguration or a transient blip) without caching it,
+	// so the caller can retry and we re-probe. c.db is thus never swapped or closed
+	// here, so a pool already handed to concurrent callers is never closed underneath.
+	dsn, definitive, probeErr := c.effectiveDSN(ctx)
+	if !definitive {
+		if probeErr != nil {
+			return nil, probeErr
+		}
+		return nil, errors.New("databricks: could not determine warehouse protocol")
+	}
+	c.db, c.dbErr = sqlx.Open("databricks", dsn)
 	if c.dbErr != nil {
 		return nil, c.dbErr
 	}
 	return c.db, c.dbErr
+}
+
+// effectiveDSN resolves the DSN to connect with, auto-detecting Lakehouse//RT: if SEA
+// wasn't explicitly requested (use_kernel) and the warehouse rejects Thrift, it upgrades
+// the DSN to the SEA backend. It returns whether the result is definitive (safe to
+// cache) and, when not, the probe error that prevented a decision — callers surface that
+// error and re-resolve next time rather than lock onto the wrong backend or mask a real
+// failure. It's the single shared RT-detection point for the OLAP (getDB) and warehouse
+// ingest paths, so RT works without any configuration.
+func (c *connection) effectiveDSN(ctx context.Context) (dsn string, definitive bool, probeErr error) {
+	c.dsnMu.Lock()
+	defer c.dsnMu.Unlock()
+	if c.resolvedDSN != "" {
+		return c.resolvedDSN, true, nil
+	}
+
+	base := c.config.resolveDSN()
+	if c.config.UseKernel {
+		c.resolvedDSN = base // already carries useKernel=true
+		return base, true, nil
+	}
+
+	probe, err := sqlx.Open("databricks", base)
+	if err != nil {
+		return base, false, err // can't even open; don't cache
+	}
+	defer probe.Close() //nolint:errcheck // best-effort close of the probe connection
+
+	// Only cache a *definitive* outcome. A clean ping means Thrift works; the RT
+	// rejection means switch to SEA. Any other ping error is returned uncached (with
+	// the error) — it may be transient (a blip, re-probed next call) or persistent (a
+	// bad token / wrong host), and surfacing it verbatim avoids both locking onto the
+	// wrong backend and masking a real misconfiguration behind auto-detection.
+	switch perr := probe.PingContext(ctx); {
+	case perr == nil:
+		c.resolvedDSN = base
+	case rtRequiresSEA(perr):
+		c.logger.Info("databricks: warehouse rejected Thrift (Lakehouse//RT); switching to the SEA backend")
+		c.resolvedDSN = withUseKernel(base)
+	default:
+		return base, false, perr // transient or persistent — surface it, don't cache
+	}
+	return c.resolvedDSN, true, nil
 }

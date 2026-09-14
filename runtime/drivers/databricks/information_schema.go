@@ -2,6 +2,8 @@ package databricks
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -137,34 +139,39 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 
 func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
 	prefix := catalogPrefix(database)
-	q := fmt.Sprintf(`
-	SELECT
-		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS is_view,
-		c.column_name,
-		c.data_type
-	FROM %sinformation_schema.tables t
-	JOIN %sinformation_schema.columns c
-	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-	WHERE t.table_schema = ? AND t.table_name = ?
-	ORDER BY c.ordinal_position
-	`, prefix, prefix)
 
 	conn, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := conn.QueryContext(ctx, q, databaseSchema, name)
+	// Query the table type and columns separately rather than JOINing
+	// information_schema.tables and information_schema.columns. The join forces a
+	// shuffle that Lakehouse//RT's Photon rejects (PHOTON_INTERNAL_ERROR), after
+	// which RT refuses the retry; two filtered point-lookups avoid the shuffle and
+	// are equivalent on DBSQL.
+	var tableType string
+	err = conn.QueryRowContext(ctx,
+		fmt.Sprintf("SELECT table_type FROM %sinformation_schema.tables WHERE table_schema = ? AND table_name = ?", prefix),
+		databaseSchema, name,
+	).Scan(&tableType)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	rows, err := conn.QueryContext(ctx,
+		fmt.Sprintf("SELECT column_name, data_type FROM %sinformation_schema.columns WHERE table_schema = ? AND table_name = ? ORDER BY ordinal_position", prefix),
+		databaseSchema, name,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var isView bool
 	var fields []*runtimev1.StructType_Field
 	var colName, colType string
 	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
+		if err := rows.Scan(&colName, &colType); err != nil {
 			return nil, err
 		}
 		fields = append(fields, &runtimev1.StructType_Field{
@@ -180,7 +187,7 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name 
 		Database:       database,
 		DatabaseSchema: databaseSchema,
 		Name:           name,
-		View:           isView,
+		View:           tableType == "VIEW",
 		Schema:         &runtimev1.StructType{Fields: fields},
 	}, nil
 }
