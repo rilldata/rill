@@ -2,7 +2,7 @@ package ai
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"slices"
 	"strings"
 
@@ -10,13 +10,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// skillsMaxAlwaysApplyBytes caps the total size of always-apply skill bodies injected into a prompt.
-// Skills that exceed the cap fall back to on-demand loading via the load_skill tool.
+// skillsMaxAlwaysApplyBytes caps the total size of always-apply skill bodies appended to the ai_instructions returned to external MCP clients.
+// Skills that exceed the cap must be loaded with the load_skill tool instead.
 const skillsMaxAlwaysApplyBytes = 1 << 15 // 32kb
-
-// skillsMaxIndexBytes caps the size of the skill index injected into a prompt.
-// Skills that don't fit remain discoverable via the list_skills tool.
-const skillsMaxIndexBytes = 1 << 14 // 16kb
 
 // Skill is a user-defined instruction file that teaches Rill's AI agents project-specific practices,
 // such as analysis playbooks, business glossaries, or development conventions.
@@ -90,66 +86,34 @@ func checkSkillAccess(ctx context.Context) (bool, error) {
 	return len(skills) > 0, nil
 }
 
-// filterSkills returns the skills relevant to the given agent and metrics view context.
-// A skill scoped to specific metrics views is included only if the context references one of them.
-// Metrics view names are compared case-insensitively, matching how the catalog identifies resources.
-// An empty context includes all of the agent's skills: scoping is a relevance filter, not access control.
-func filterSkills(skills []*Skill, agent string, metricsViewNames []string) []*Skill {
+// skillsForAgent returns the skills that apply to the given agent.
+func skillsForAgent(skills []*Skill, agent string) []*Skill {
 	var res []*Skill
 	for _, sk := range skills {
-		if !slices.Contains(sk.Agents, agent) {
-			continue
+		if slices.Contains(sk.Agents, agent) {
+			res = append(res, sk)
 		}
-		if len(sk.MetricsViews) > 0 && len(metricsViewNames) > 0 {
-			relevant := slices.ContainsFunc(sk.MetricsViews, func(mv string) bool {
-				return slices.ContainsFunc(metricsViewNames, func(name string) bool { return strings.EqualFold(name, mv) })
-			})
-			if !relevant {
-				continue
-			}
-		}
-		res = append(res, sk)
 	}
 	return res
 }
 
-// skillSection renders an always-apply skill as a section for inclusion in a prompt or in ai_instructions.
-// A skill scoped to metrics views states its scope, since it may be injected where no metrics view has been selected yet.
-func skillSection(sk *Skill) string {
-	var scope string
-	if len(sk.MetricsViews) > 0 {
-		scope = fmt.Sprintf("Applies to the metrics views: %s.\n\n", strings.Join(sk.MetricsViews, ", "))
+// preloadSkills seeds the current call with the tool calls that make the project's skills available to an agent:
+// a list_skills call so the agent can discover skills and load them on demand, and a load_skill call for each of the agent's always-apply skills.
+// The seeded calls become part of the agent's context like any other pre-invoked tool call.
+// Tool errors are recorded in the session and don't fail the agent; only context cancellation is returned.
+func preloadSkills(ctx context.Context, s *Session, skills []*Skill, agent string) error {
+	_, err := s.CallTool(ctx, RoleAssistant, ListSkillsName, nil, &ListSkillsArgs{})
+	if err != nil && errors.Is(err, ctx.Err()) {
+		return err
 	}
-	return fmt.Sprintf("## Skill: %s\n\n%s%s", sk.Name, scope, sk.Body)
-}
-
-// skillPrompts splits skills into the always-apply bodies to inject into an agent's prompt wholesale
-// and an index of the remaining skills for the agent to fetch on demand with the load_skill tool.
-// An always-apply body that would exceed the size cap falls back to the on-demand index.
-// The index is capped too; skills that don't fit are counted and the agent is pointed to the list_skills tool.
-func skillPrompts(skills []*Skill, logger *zap.Logger) (alwaysApply, index string) {
-	var alwaysApplyBuf, indexBuf strings.Builder
-	var omitted int
-	for _, sk := range skills {
-		if sk.AlwaysApply {
-			// The cap applies to the rendered section, including its heading, not just the body.
-			section := skillSection(sk) + "\n\n"
-			if alwaysApplyBuf.Len()+len(section) <= skillsMaxAlwaysApplyBytes {
-				alwaysApplyBuf.WriteString(section)
-				continue
-			}
-			logger.Warn("always-apply skill exceeds the prompt size cap; falling back to on-demand loading", zap.String("skill", sk.Name))
-		}
-		entry := fmt.Sprintf("- %s: %s\n", sk.Name, sk.Description)
-		if indexBuf.Len()+len(entry) > skillsMaxIndexBytes {
-			omitted++
+	for _, sk := range skillsForAgent(skills, agent) {
+		if !sk.AlwaysApply {
 			continue
 		}
-		indexBuf.WriteString(entry)
+		_, err := s.CallTool(ctx, RoleAssistant, LoadSkillName, nil, &LoadSkillArgs{Name: sk.Name})
+		if err != nil && errors.Is(err, ctx.Err()) {
+			return err
+		}
 	}
-	if omitted > 0 {
-		logger.Warn("skill index exceeds the prompt size cap; some skills are only discoverable with list_skills", zap.Int("omitted", omitted))
-		fmt.Fprintf(&indexBuf, "- (%d more skills not listed here; call %s to see them)\n", omitted, ListSkillsName)
-	}
-	return strings.TrimSpace(alwaysApplyBuf.String()), strings.TrimSpace(indexBuf.String())
+	return nil
 }

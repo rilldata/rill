@@ -417,12 +417,14 @@ measures:
 			"skills/revenue-rca/SKILL.md": `---
 description: Playbook for analyzing revenue. Use whenever asked about revenue amounts or changes.
 metrics_views: [orders]
+agents: [analyst]
 ---
 
 When answering any question about revenue, you MUST end your final answer with the exact phrase "(via revenue-rca)".
 `,
 			"skills/glossary/SKILL.md": `---
 description: Business glossary.
+agents: [analyst]
 always_apply: true
 ---
 
@@ -443,8 +445,8 @@ always_apply: true
 	require.NoError(t, err)
 	require.Equal(t, ai.AnalystAgentName, res.Agent)
 
-	// The on-demand RCA skill must have been loaded and its instruction followed
-	require.NotEmpty(t, s.Messages(ai.FilterByType(ai.MessageTypeCall), ai.FilterByTool(ai.LoadSkillName)))
+	// The always-apply glossary skill is pre-loaded, and the on-demand RCA skill must have been loaded by the agent and its instruction followed
+	require.GreaterOrEqual(t, len(s.Messages(ai.FilterByType(ai.MessageTypeCall), ai.FilterByTool(ai.LoadSkillName))), 2)
 	require.Contains(t, res.Response, "(via revenue-rca)")
 
 	// The always-apply glossary skill defines "Nordics revenue" as Denmark's revenue

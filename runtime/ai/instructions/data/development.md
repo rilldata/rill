@@ -197,9 +197,9 @@ Rill loads skills from `skills/<name>/SKILL.md`, and also from `.agents/skills/<
 The front matter supports these properties:
 - `description:` (required) a short summary used to decide when the skill applies; write it as "what it does + when to use it"
 - `name:` always include it (the Agent Skills format requires it, even though Rill derives it from the directory when omitted); must match the directory name; lowercase letters, numbers and hyphens only
-- `metrics_views:` (optional, Rill extension) list of metrics view names; the skill is only offered when the analysis involves one of them
-- `agents:` (optional, Rill extension) list of agents the skill applies to, `analyst` and/or `developer`; defaults to `[analyst]`
-- `always_apply:` (optional, Rill extension) if `true`, the skill's full body is always injected into the agent's context instead of being loaded on demand; use for short, broadly applicable guidance such as glossaries (always-apply skills share a 32 KiB budget; a skill that doesn't fit falls back to on-demand loading)
+- `metrics_views:` (optional, Rill extension) list of metrics view names the skill is relevant to; the analyst uses it to decide when to load the skill
+- `agents:` (optional, Rill extension) list of agents the skill applies to, `analyst` and/or `developer`; defaults to `[developer]`, so analysis skills must set `agents: [analyst]`
+- `always_apply:` (optional, Rill extension) if `true`, the skill is loaded up front in every conversation instead of on demand; use for short, broadly applicable guidance such as glossaries
 
 Skill contents are visible to every user who can use AI features in the project, so they must never contain secrets.
 
@@ -309,4 +309,14 @@ Avoid these mistakes when developing a project:
 - **Making unrelated "drive by" improvements:** Never make changes that the user did not request, even if you notice something that looks wrong or could be improved. Stay focused on the task at hand. If you spot an unrelated issue, mention it in your final response instead of fixing it.
 - **Calling navigate too early:** Do NOT call `navigate` while iterating on changes. Only call it once, at the very end, right before your final response.
 - **Don't stop if there are errors:** When a file has an error after you made changes, keep looping until you have done your best to fix the error. You should not give up easily, the user expects you to try and fix errors.
+{% end %}
+
+{% if not .external %}
+## Using skills
+
+The project may define **skills**: instruction files with project-specific development practices and conventions.
+If a "list_skills" result is present in the conversation, the project defines skills. Then:
+- Skills marked "always_apply" have already been loaded for you; treat their instructions as always in effect.
+- Only use skills whose "agents" include "developer".
+- Before doing work that a skill's description covers, you MUST call "load_skill" to retrieve it and follow its instructions.
 {% end %}

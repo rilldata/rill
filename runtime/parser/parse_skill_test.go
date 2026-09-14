@@ -124,7 +124,7 @@ description: Not a SKILL.md file.
 			SkillSpec: &runtimev1.SkillSpec{
 				Description: strings.Repeat("é", 1024),
 				Body:        "Body.",
-				Agents:      []string{"analyst"},
+				Agents:      []string{"developer"},
 			},
 		},
 		{
@@ -133,7 +133,7 @@ description: Not a SKILL.md file.
 			SkillSpec: &runtimev1.SkillSpec{
 				Description: "Business glossary.",
 				Body:        "ARPU excludes trial users.",
-				Agents:      []string{"analyst"},
+				Agents:      []string{"developer"},
 			},
 		},
 		{
@@ -142,7 +142,7 @@ description: Not a SKILL.md file.
 			SkillSpec: &runtimev1.SkillSpec{
 				Description: "House formatting rules.",
 				Body:        "Report percentages with one decimal.",
-				Agents:      []string{"analyst"},
+				Agents:      []string{"developer"},
 				AlwaysApply: true,
 			},
 		},

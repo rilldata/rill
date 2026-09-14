@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -27,6 +28,7 @@ measures:
 name: revenue-rca
 description: Playbook for diagnosing revenue drops.
 metrics_views: [orders]
+agents: [analyst]
 ---
 
 # Revenue RCA playbook
@@ -74,6 +76,50 @@ Stale instructions.`,
 	// Load an unknown skill: the error lists the available names
 	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.LoadSkillName, &loadRes, &ai.LoadSkillArgs{Name: "nope"})
 	require.ErrorContains(t, err, "glossary, revenue-rca")
+}
+
+// TestSkillsPreload verifies that preloading seeds a list_skills call and a load_skill call
+// for each of the agent's always-apply skills, and nothing else.
+func TestSkillsPreload(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"skills/glossary/SKILL.md": `---
+description: Business glossary.
+agents: [analyst]
+always_apply: true
+---
+
+ARPU excludes trial users.`,
+			"skills/revenue-rca/SKILL.md": `---
+description: Revenue playbook.
+agents: [analyst]
+---
+
+Break revenue down by country.`,
+			"skills/conventions/SKILL.md": `---
+description: Modeling conventions.
+always_apply: true
+---
+
+Always materialize models.`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+	s := newSession(t, rt, instanceID)
+
+	skills, err := s.Skills(t.Context())
+	require.NoError(t, err)
+	require.NoError(t, ai.PreloadSkills(t.Context(), s, skills, parser.SkillAgentAnalyst))
+
+	require.Len(t, s.Messages(ai.FilterByType(ai.MessageTypeCall), ai.FilterByTool(ai.ListSkillsName)), 1)
+	loads := s.Messages(ai.FilterByType(ai.MessageTypeCall), ai.FilterByTool(ai.LoadSkillName))
+	require.Len(t, loads, 1)
+	require.Contains(t, loads[0].Content, `"glossary"`)
+	// The developer-only always-apply skill and the on-demand skill are not loaded
+	for _, m := range s.Messages(ai.FilterByType(ai.MessageTypeResult), ai.FilterByTool(ai.LoadSkillName)) {
+		require.NotContains(t, m.Content, "Always materialize models.")
+		require.NotContains(t, m.Content, "Break revenue down by country.")
+	}
 }
 
 // TestSkillsEmptyProject verifies that the skill tools are not available in a project without skills.
@@ -142,12 +188,14 @@ measures:
 `,
 			"skills/glossary/SKILL.md": `---
 description: Business glossary.
+agents: [analyst]
 always_apply: true
 ---
 
 ARPU excludes trial users.`,
 			"skills/on-demand/SKILL.md": `---
 description: An on-demand skill.
+agents: [analyst]
 ---
 
 Not injected wholesale.`,
@@ -155,13 +203,21 @@ Not injected wholesale.`,
 			"skills/orders-rca/SKILL.md": `---
 description: Orders playbook.
 metrics_views: [orders]
+agents: [analyst]
 always_apply: true
 ---
 
 Break revenue down by country.`,
+			// Developer skill (the default agent): not relevant to external analysis clients
+			"skills/dev-conventions/SKILL.md": `---
+description: Modeling conventions.
+always_apply: true
+---
+
+Always materialize models.`,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
 
 	newSession := func(t *testing.T, userAgent string, claims *runtime.SecurityClaims) *ai.Session {
 		r := ai.NewRunner(rt, activity.NewNoopClient())
@@ -186,6 +242,7 @@ Break revenue down by country.`,
 	require.Contains(t, res.AIInstructions, "## Skill: glossary\n\nARPU excludes trial users.")
 	require.Contains(t, res.AIInstructions, "## Skill: orders-rca\n\nApplies to the metrics views: orders.\n\nBreak revenue down by country.")
 	require.NotContains(t, res.AIInstructions, "Not injected wholesale.")
+	require.NotContains(t, res.AIInstructions, "## Skill: dev-conventions")
 
 	// Rill's own agents: no enrichment (skills are injected into their prompts instead)
 	s = newSession(t, "rill-web", &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true})

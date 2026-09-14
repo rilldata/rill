@@ -118,22 +118,22 @@ When asked why revenue declined:
 4. State your confidence and call out data quirks that may affect the result.
 ```
 
-The `description` is required: the AI sees an index of skill names and descriptions, and uses the description to decide when to load a skill. Phrase it as "what it does + when to use it". Always include the `name`, which the Agent Skills format requires and other clients reject when missing. It must match the skill's directory name (lowercase letters, numbers and hyphens). Rill is lenient and derives it from the directory if omitted.
+The `description` is required: the AI sees the list of skills with their descriptions, and uses the description to decide when to load a skill. Phrase it as "what it does + when to use it". Always include the `name`, which the Agent Skills format requires and other clients reject when missing. It must match the skill's directory name (lowercase letters, numbers and hyphens). Rill is lenient and derives it from the directory if omitted.
 
 In addition to the standard Agent Skills fields, Rill supports these extension properties:
 
 ```markdown
 ---
 description: Business glossary for our e-commerce metrics.
-metrics_views: [orders]      # Optional: only offer this skill for analyses involving these metrics views
-agents: [analyst]            # Optional: which agents the skill applies to; defaults to [analyst]
-always_apply: true           # Optional: always include the full skill instead of loading it on demand
+metrics_views: [orders]      # Optional: the metrics views this skill is relevant to
+agents: [analyst]            # Optional: which agents the skill applies to; defaults to [developer]
+always_apply: true           # Optional: load the skill up front in every conversation instead of on demand
 ---
 ```
 
-- **`metrics_views`** scopes a skill to specific metrics views, so for example a marketing playbook is not offered during a finance analysis. It is a relevance filter, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file, and the skill is not offered to the AI until the error is fixed.
-- **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[analyst]`.
-- **`always_apply`** injects the skill's full contents into every conversation, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries; keep always-apply skills small since they are included in every request. Always-apply skills share a 32 KiB budget per conversation; a skill that doesn't fit is offered for on-demand loading instead, and a warning is logged.
+- **`metrics_views`** tells the AI which metrics views a skill is relevant to, so for example a marketing playbook is not used during a finance analysis. It is a relevance hint, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file, and the skill is not offered to the AI until the error is fixed.
+- **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[developer]`, so skills written for coding agents (such as the Rill development skills that `rill init` writes to `.agents/skills/`) are not offered to the analyst. Set `agents: [analyst]` on analysis skills.
+- **`always_apply`** loads the skill up front in every conversation instead of on demand, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries. For external MCP clients, always-apply skills are also appended to the `ai_instructions` returned by `list_metrics_views`, up to 32 KiB in total; a skill that doesn't fit must be loaded with `load_skill` and a warning is logged.
 
 Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa. A skill directory may also hold supporting files (such as `references/` or `scripts/`) as the format allows; Rill ignores everything in a skill directory except `SKILL.md`, so a SQL or YAML example inside a skill is not parsed as a project resource.
 

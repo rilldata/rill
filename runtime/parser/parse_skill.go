@@ -87,9 +87,11 @@ func (p *Parser) parseSkill(ctx context.Context, path string) error {
 		return fmt.Errorf(`front matter field "description" exceeds the maximum length of 1024 characters`)
 	}
 
+	// Skills default to the developer agent: skills authored for other agent clients are coding skills,
+	// which would confuse the analyst if they were offered to it. Analysis skills opt in with `agents: [analyst]`.
 	agents := tmp.Agents
 	if len(agents) == 0 {
-		agents = []string{SkillAgentAnalyst}
+		agents = []string{SkillAgentDeveloper}
 	}
 	for _, agent := range agents {
 		if agent != SkillAgentAnalyst && agent != SkillAgentDeveloper {

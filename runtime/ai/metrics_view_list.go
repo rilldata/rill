@@ -115,7 +115,7 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 		// The skills have their own byte budget, matching the in-app agents, so long ai_instructions do not crowd them out.
 		// The cap applies to the rendered section, including its separator and heading, not just the body.
 		var skillBytes int
-		for _, sk := range filterSkills(skills, parser.SkillAgentAnalyst, nil) {
+		for _, sk := range skillsForAgent(skills, parser.SkillAgentAnalyst) {
 			if !sk.AlwaysApply {
 				continue
 			}
@@ -123,7 +123,12 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 			if aiInstructions.Len() > 0 {
 				section = "\n\n"
 			}
-			section += skillSection(sk)
+			section += fmt.Sprintf("## Skill: %s\n\n", sk.Name)
+			// The tool has no selected metrics view, so a scoped skill states its scope.
+			if len(sk.MetricsViews) > 0 {
+				section += fmt.Sprintf("Applies to the metrics views: %s.\n\n", strings.Join(sk.MetricsViews, ", "))
+			}
+			section += sk.Body
 			if skillBytes+len(section) > skillsMaxAlwaysApplyBytes {
 				session.logger.Warn("always-apply skill exceeds the size cap; clients must load it with load_skill", zap.String("skill", sk.Name))
 				continue

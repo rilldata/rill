@@ -89,19 +89,16 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 		return nil, fmt.Errorf("invalid input: unsupported resource type %q", args.Type)
 	}
 
-	// Load project-defined skills relevant to development.
-	// The sub-agent does not see the parent conversation, so it needs the skills in its own prompt.
-	// Skill loading failures should degrade the response, not fail it.
+	// Load the project's skills. Loading failures should degrade the response, not fail it.
 	s := GetSession(ctx)
 	skills, err := s.Skills(ctx)
 	if err != nil {
 		s.logger.Warn("failed to load project skills", zap.Error(err))
 		skills = nil
 	}
-	skills = filterSkills(skills, parser.SkillAgentDeveloper, nil)
 
 	// Prepare the user prompt
-	userPrompt, err := t.userPrompt(ctx, skills, args)
+	userPrompt, err := t.userPrompt(ctx, args)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +117,13 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	})
 	if ctx.Err() != nil { // Ignore tool error since the file may not exist
 		return nil, ctx.Err()
+	}
+	// Pre-invoke the skill tools so the sub-agent, which does not see the parent conversation, discovers the project's skills and follows the always-apply ones.
+	if len(skills) > 0 {
+		err = preloadSkills(ctx, s, skills, parser.SkillAgentDeveloper)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Build initial completion messages
@@ -163,7 +167,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	}, nil
 }
 
-func (t *DevelopFile) userPrompt(ctx context.Context, skills []*Skill, args *DevelopFileArgs) (string, error) {
+func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (string, error) {
 	// Get default OLAP info
 	olapInfo, err := defaultOLAPInfo(ctx, t.Runtime, GetSession(ctx).InstanceID())
 	if err != nil {
@@ -182,16 +186,13 @@ func (t *DevelopFile) userPrompt(ctx context.Context, skills []*Skill, args *Dev
 
 	// Prepare template data.
 	session := GetSession(ctx)
-	alwaysApplySkills, skillsIndex := skillPrompts(skills, session.logger)
 	data := map[string]any{
-		"path":                args.Path,
-		"type":                args.Type,
-		"prompt":              args.Prompt,
-		"ai_instructions":     session.ProjectInstructions(),
-		"always_apply_skills": alwaysApplySkills,
-		"skills_index":        skillsIndex,
-		"default_olap_info":   olapInfo,
-		"metrics_views_info":  metricsViewsInfo,
+		"path":               args.Path,
+		"type":               args.Type,
+		"prompt":             args.Prompt,
+		"ai_instructions":    session.ProjectInstructions(),
+		"default_olap_info":  olapInfo,
+		"metrics_views_info": metricsViewsInfo,
 	}
 
 	// Generate the user prompt
@@ -211,14 +212,6 @@ Here is some additional context that may or may not be relevant to your task:
 {{ if .metrics_views_info }}- The project's metrics views and their exact field names:
 {{ .metrics_views_info }}{{ end }}
 {{ if .ai_instructions }}- The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}{{ end }}
-{{ if .always_apply_skills }}
-The user has defined the following skills that always apply to development work in this project. Follow their guidance:
-{{ .always_apply_skills }}
-{{ end }}
-{{ if .skills_index }}
-The user has defined the following development skills. Before doing work that a skill's description covers, you MUST call the "load_skill" tool to retrieve it and follow its instructions:
-{{ .skills_index }}
-{{ end }}
 `, data)
 }
 

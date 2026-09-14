@@ -51,21 +51,19 @@ func (t *DeveloperAgent) CheckAccess(ctx context.Context) (bool, error) {
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
 	s := GetSession(ctx)
 
-	// Load project-defined skills relevant to development.
-	// Skill loading failures should degrade the response, not fail it.
+	// Load the project's skills. Loading failures should degrade the response, not fail it.
 	skills, err := s.Skills(ctx)
 	if err != nil {
 		s.logger.Warn("failed to load project skills", zap.Error(err))
 		skills = nil
 	}
-	skills = filterSkills(skills, parser.SkillAgentDeveloper, nil)
 
 	// Generate the prompts
 	systemPrompt, err := t.systemPrompt()
 	if err != nil {
 		return nil, err
 	}
-	userPrompt, err := t.userPrompt(ctx, skills, args)
+	userPrompt, err := t.userPrompt(ctx, args)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +83,14 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		})
 		if ctx.Err() != nil { // Ignore tool error since the file may not exist
 			return nil, ctx.Err()
+		}
+	}
+	// Pre-invoke the skill tools so the agent discovers the project's skills and follows the always-apply ones.
+	// The conversation history only carries the agent's previous calls and responses, so like the calls above this runs on every invocation.
+	if len(skills) > 0 {
+		err = preloadSkills(ctx, s, skills, parser.SkillAgentDeveloper)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -109,7 +115,6 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		NavigateName,
 	}
 	if len(skills) > 0 {
-		// list_skills is needed when the prompt's skill index is capped and refers the agent to it for the rest.
 		tools = append(tools, ListSkillsName, LoadSkillName)
 	}
 
@@ -139,7 +144,7 @@ func (t *DeveloperAgent) systemPrompt() (string, error) {
 	return instr.Body, nil
 }
 
-func (t *DeveloperAgent) userPrompt(ctx context.Context, skills []*Skill, args *DeveloperAgentArgs) (string, error) {
+func (t *DeveloperAgent) userPrompt(ctx context.Context, args *DeveloperAgentArgs) (string, error) {
 	// Get default OLAP info
 	olapInfo, err := defaultOLAPInfo(ctx, t.Runtime, GetSession(ctx).InstanceID())
 	if err != nil {
@@ -148,15 +153,12 @@ func (t *DeveloperAgent) userPrompt(ctx context.Context, skills []*Skill, args *
 
 	// Prepare template data.
 	session := GetSession(ctx)
-	alwaysApplySkills, skillsIndex := skillPrompts(skills, session.logger)
 	data := map[string]any{
-		"prompt":              args.Prompt,
-		"init_project":        args.InitProject,
-		"current_file_path":   args.CurrentFilePath,
-		"ai_instructions":     session.ProjectInstructions(),
-		"always_apply_skills": alwaysApplySkills,
-		"skills_index":        skillsIndex,
-		"default_olap_info":   olapInfo,
+		"prompt":            args.Prompt,
+		"init_project":      args.InitProject,
+		"current_file_path": args.CurrentFilePath,
+		"ai_instructions":   session.ProjectInstructions(),
+		"default_olap_info": olapInfo,
 	}
 
 	// Generate the system prompt
@@ -176,16 +178,6 @@ Feel free to change the default OLAP connector if it makes sense for the task.
 
 {{ if .ai_instructions }}
 The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}
-{{ end }}
-
-{{ if .always_apply_skills }}
-The user has defined the following skills that always apply to development work in this project. Follow their guidance:
-{{ .always_apply_skills }}
-{{ end }}
-
-{{ if .skills_index }}
-The user has defined the following development skills. Before doing work that a skill's description covers, you MUST call the "load_skill" tool to retrieve it and follow its instructions:
-{{ .skills_index }}
 {{ end }}
 
 For context, here are some details about the project's default OLAP connector: {{ .default_olap_info }}.
