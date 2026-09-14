@@ -95,7 +95,9 @@ type: skill
 description: Not a SKILL.md file.
 `,
 		// Ignored: supporting files inside a skill directory are not project resources, even when they look like some
+		`skills/revenue-rca/example.sql`:            `SELECT 1 AS revenue`,
 		`skills/revenue-rca/references/example.sql`: `SELECT 1 AS revenue`,
+		`.agents/skills/glossary/config.yaml`:       `type: nonsense`,
 		`skills/revenue-rca/scripts/config.yaml`:    "type: model\nsql: [not valid",
 		`.agents/skills/glossary/assets/terms.yaml`: `type: nonsense`,
 		// Ignored: SKILL.md files outside the skill roots are neither parsed nor reported
@@ -162,6 +164,8 @@ description: Not a SKILL.md file.
 
 	// Skill support files are skipped by incremental reparses too
 	require.True(t, p.IsSkippable("/skills/revenue-rca/references/example.sql"))
+	require.True(t, p.IsSkippable("/skills/revenue-rca/example.sql"))
+	require.True(t, p.IsSkippable("/.agents/skills/glossary/config.yaml"))
 	require.False(t, p.IsSkippable("/skills/revenue-rca/SKILL.md"))
 	require.False(t, p.IsSkippable("/skills/legacy.yaml"))
 	diff, err := p.Reparse(ctx, []string{"/skills/revenue-rca/references/example.sql"})
@@ -188,6 +192,26 @@ Report percentages with two decimals.`,
 	diff, err = p.Reparse(ctx, []string{"/skills/formatting/SKILL.md"})
 	require.NoError(t, err)
 	require.Equal(t, []ResourceName{{Kind: ResourceKindSkill, Name: "formatting"}}, diff.Deleted)
+}
+
+func TestPathIsSkillSupportFile(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"/skills/foo/example.sql", true},
+		{"/skills/foo/references/example.sql", true},
+		{"/.agents/skills/foo/config.yaml", true},
+		{"/.agents/skills/foo/scripts/run.yaml", true},
+		{"/skills/foo/SKILL.md", false},
+		{"/.agents/skills/foo/SKILL.md", false},
+		{"/skills/legacy.yaml", false},
+		{"/.agents/skills/loose.yaml", false},
+		{"/models/orders.sql", false},
+	}
+	for _, tt := range tests {
+		require.Equal(t, tt.want, pathIsSkillSupportFile(tt.path), "path %q", tt.path)
+	}
 }
 
 func TestSkillNameForPath(t *testing.T) {

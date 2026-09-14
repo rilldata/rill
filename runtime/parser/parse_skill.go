@@ -168,10 +168,10 @@ func pathIsSkillSupportFile(path string) bool {
 		return false
 	}
 	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	if len(parts) > 3 && parts[0] == "skills" {
+	if len(parts) >= 3 && parts[0] == "skills" {
 		return true
 	}
-	return len(parts) > 4 && parts[0] == ".agents" && parts[1] == "skills"
+	return len(parts) >= 4 && parts[0] == ".agents" && parts[1] == "skills"
 }
 
 // skillNameForPath returns the skill name for a path, or false if the path does not declare a skill.
