@@ -107,26 +107,32 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 		aiInstructions.WriteString(instance.AIInstructions)
 
 		// Append always-apply skills so external clients receive them without extra round-trips.
+		// Skills are gated on UseAI like the skill tools, so a client that cannot use them does not receive their contents.
 		// Skill loading failures should degrade the response, not fail it.
-		skills, err := session.Skills(ctx)
-		if err != nil {
-			session.logger.Warn("failed to load project skills", zap.Error(err))
-		}
-		for _, sk := range filterSkills(skills, parser.SkillAgentAnalyst, nil) {
-			if !sk.AlwaysApply {
-				continue
+		if session.Claims().Can(runtime.UseAI) {
+			skills, err := session.Skills(ctx)
+			if err != nil {
+				session.logger.Warn("failed to load project skills", zap.Error(err))
 			}
+			// The skills have their own byte budget, matching the in-app agents, so long ai_instructions do not crowd them out.
 			// The cap applies to the rendered section, including its separator and heading, not just the body.
-			var section string
-			if aiInstructions.Len() > 0 {
-				section = "\n\n"
+			var skillBytes int
+			for _, sk := range filterSkills(skills, parser.SkillAgentAnalyst, nil) {
+				if !sk.AlwaysApply {
+					continue
+				}
+				var section string
+				if aiInstructions.Len() > 0 {
+					section = "\n\n"
+				}
+				section += skillSection(sk)
+				if skillBytes+len(section) > skillsMaxAlwaysApplyBytes {
+					session.logger.Warn("always-apply skill exceeds the size cap; clients must load it with load_skill", zap.String("skill", sk.Name))
+					continue
+				}
+				aiInstructions.WriteString(section)
+				skillBytes += len(section)
 			}
-			section += fmt.Sprintf("## Skill: %s\n\n%s", sk.Name, sk.Body)
-			if aiInstructions.Len()+len(section) > skillsMaxAlwaysApplyBytes {
-				session.logger.Warn("always-apply skill exceeds the size cap; clients must load it with load_skill", zap.String("skill", sk.Name))
-				continue
-			}
-			aiInstructions.WriteString(section)
 		}
 	}
 

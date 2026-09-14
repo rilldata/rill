@@ -94,6 +94,10 @@ Body.`,
 type: skill
 description: Not a SKILL.md file.
 `,
+		// Ignored: SKILL.md files outside the skill roots are neither parsed nor reported
+		`.claude/skills/stray/SKILL.md`: `not a rill skill`,
+		`docs/SKILL.md`:                 `not a rill skill`,
+		`skills/nested/deeper/SKILL.md`: `not a rill skill`,
 	})
 
 	resources := []*Resource{

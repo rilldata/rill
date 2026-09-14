@@ -1,6 +1,7 @@
 package ai_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -124,8 +125,19 @@ Body.`,
 // ai_instructions field of list_metrics_views for external MCP clients,
 // but not for Rill's own agents (which receive them directly in their prompts).
 func TestSkillsInListMetricsViews(t *testing.T) {
+	// The project instructions alone fill the always-apply budget, which must not crowd out the skills.
+	longInstructions := "Revenue always refers to net revenue. " + strings.Repeat("x", 1<<15)
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
+			"rill.yaml":         "ai_instructions: " + longInstructions,
+			"models/orders.sql": `SELECT 1 AS revenue`,
+			"metrics/orders.yaml": `
+type: metrics_view
+model: orders
+measures:
+- name: revenue
+  expression: SUM(revenue)
+`,
 			"skills/glossary/SKILL.md": `---
 description: Business glossary.
 always_apply: true
@@ -137,11 +149,19 @@ description: An on-demand skill.
 ---
 
 Not injected wholesale.`,
+			// Scoped always-apply skill: injected with its scope, since the tool has no selected metrics view
+			"skills/orders-rca/SKILL.md": `---
+description: Orders playbook.
+metrics_views: [orders]
+always_apply: true
+---
+
+Break revenue down by country.`,
 		},
 	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
 
-	newSessionWithUserAgent := func(t *testing.T, userAgent string) *ai.Session {
-		claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
+	newSession := func(t *testing.T, userAgent string, claims *runtime.SecurityClaims) *ai.Session {
 		r := ai.NewRunner(rt, activity.NewNoopClient())
 		s, err := r.Session(t.Context(), &ai.SessionOptions{
 			InstanceID: instanceID,
@@ -155,17 +175,25 @@ Not injected wholesale.`,
 		return s
 	}
 
-	// External MCP client: always-apply skill body is included, on-demand skill is not
-	s := newSessionWithUserAgent(t, "mcp-client")
+	// External MCP client: always-apply skill bodies are included after the project instructions, on-demand skill is not
+	s := newSession(t, "mcp-client", &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true})
 	var res *ai.ListMetricsViewsResult
 	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &res, &ai.ListMetricsViewsArgs{})
 	require.NoError(t, err)
-	require.Contains(t, res.AIInstructions, "## Skill: glossary")
-	require.Contains(t, res.AIInstructions, "ARPU excludes trial users.")
+	require.True(t, strings.HasPrefix(res.AIInstructions, longInstructions))
+	require.Contains(t, res.AIInstructions, "## Skill: glossary\n\nARPU excludes trial users.")
+	require.Contains(t, res.AIInstructions, "## Skill: orders-rca\n\nApplies to the metrics views: orders.\n\nBreak revenue down by country.")
 	require.NotContains(t, res.AIInstructions, "Not injected wholesale.")
 
+	// Without UseAI, the skill tools are unavailable, so the skills are not injected either (the project instructions still are)
+	s = newSession(t, "mcp-client", &runtime.SecurityClaims{UserID: uuid.NewString(), Permissions: []runtime.Permission{runtime.ReadMetrics, runtime.ReadObjects}})
+	res = nil
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &res, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.Equal(t, longInstructions, res.AIInstructions)
+
 	// Rill's own agents: no enrichment (skills are injected into their prompts instead)
-	s = newSessionWithUserAgent(t, "rill-web")
+	s = newSession(t, "rill-web", &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true})
 	res = nil
 	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &res, &ai.ListMetricsViewsArgs{})
 	require.NoError(t, err)

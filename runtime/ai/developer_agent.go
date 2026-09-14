@@ -109,7 +109,8 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		NavigateName,
 	}
 	if len(skills) > 0 {
-		tools = append(tools, LoadSkillName)
+		// list_skills is needed when the prompt's skill index is capped and refers the agent to it for the rest.
+		tools = append(tools, ListSkillsName, LoadSkillName)
 	}
 
 	// Run an LLM tool call loop

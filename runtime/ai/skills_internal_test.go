@@ -51,6 +51,15 @@ func TestFilterSkills(t *testing.T) {
 	require.Equal(t, []string{"glossary", "modeling"}, names(filterSkills(skills, parser.SkillAgentDeveloper, nil)))
 }
 
+func TestSkillSection(t *testing.T) {
+	// An unscoped skill renders as a heading and body
+	require.Equal(t, "## Skill: glossary\n\nARPU excludes trial users.", skillSection(&Skill{Name: "glossary", Body: "ARPU excludes trial users."}))
+
+	// A scoped skill states its scope, since it may be injected where no metrics view has been selected yet
+	sk := &Skill{Name: "orders-rca", MetricsViews: []string{"orders", "refunds"}, Body: "Break revenue down by country."}
+	require.Equal(t, "## Skill: orders-rca\n\nApplies to the metrics views: orders, refunds.\n\nBreak revenue down by country.", skillSection(sk))
+}
+
 func TestSkillPromptsCap(t *testing.T) {
 	// The cap covers the rendered section, so a body that fits on its own but not with its heading falls back to the index.
 	skills := []*Skill{

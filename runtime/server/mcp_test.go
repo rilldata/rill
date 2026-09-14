@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -193,4 +195,20 @@ ARPU excludes trial users.`,
 	defer conn.Close()
 
 	require.Contains(t, conn.InitializeResult().Instructions, "## Skills")
+
+	// A client without UseAI is not offered the skill tools, so the skills section is omitted for it
+	token, err := auth.NewDevToken(nil, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics})
+	require.NoError(t, err)
+	httpClient := &http.Client{Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		req.Header.Set("Authorization", "Bearer "+token)
+		return http.DefaultTransport.RoundTrip(req)
+	})}
+	conn, err = mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL, HTTPClient: httpClient}, nil)
+	require.NoError(t, err)
+	defer conn.Close()
+	require.NotContains(t, conn.InitializeResult().Instructions, "## Skills")
 }
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }

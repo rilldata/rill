@@ -22,13 +22,12 @@ const skillsMaxIndexBytes = 1 << 14 // 16kb
 // such as analysis playbooks, business glossaries, or development conventions.
 // Skills are parsed from SKILL.md files into catalog resources; see runtime/parser/parse_skill.go.
 type Skill struct {
-	Name         string   `json:"name"`
-	Path         string   `json:"path"`
-	Description  string   `json:"description"`
-	MetricsViews []string `json:"metrics_views,omitempty"`
-	Agents       []string `json:"agents"`
-	AlwaysApply  bool     `json:"always_apply"`
-	Body         string   `json:"body"`
+	Name         string
+	Description  string
+	MetricsViews []string
+	Agents       []string
+	AlwaysApply  bool
+	Body         string
 }
 
 // Skills lazily loads the project's skills from the catalog, memoizing the result for the lifetime of the session.
@@ -58,13 +57,8 @@ func (s *BaseSession) Skills(ctx context.Context) ([]*Skill, error) {
 			continue
 		}
 		spec := r.GetSkill().Spec
-		var path string
-		if len(r.Meta.FilePaths) > 0 {
-			path = r.Meta.FilePaths[0]
-		}
 		skills = append(skills, &Skill{
 			Name:         r.Meta.Name.Name,
-			Path:         path,
 			Description:  spec.Description,
 			MetricsViews: spec.MetricsViews,
 			Agents:       spec.Agents,
@@ -102,6 +96,16 @@ func filterSkills(skills []*Skill, agent string, metricsViewNames []string) []*S
 	return res
 }
 
+// skillSection renders an always-apply skill as a section for inclusion in a prompt or in ai_instructions.
+// A skill scoped to metrics views states its scope, since it may be injected where no metrics view has been selected yet.
+func skillSection(sk *Skill) string {
+	var scope string
+	if len(sk.MetricsViews) > 0 {
+		scope = fmt.Sprintf("Applies to the metrics views: %s.\n\n", strings.Join(sk.MetricsViews, ", "))
+	}
+	return fmt.Sprintf("## Skill: %s\n\n%s%s", sk.Name, scope, sk.Body)
+}
+
 // skillPrompts splits skills into the always-apply bodies to inject into an agent's prompt wholesale
 // and an index of the remaining skills for the agent to fetch on demand with the load_skill tool.
 // An always-apply body that would exceed the size cap falls back to the on-demand index.
@@ -112,7 +116,7 @@ func skillPrompts(skills []*Skill, logger *zap.Logger) (alwaysApply, index strin
 	for _, sk := range skills {
 		if sk.AlwaysApply {
 			// The cap applies to the rendered section, including its heading, not just the body.
-			section := fmt.Sprintf("## Skill: %s\n\n%s\n\n", sk.Name, sk.Body)
+			section := skillSection(sk) + "\n\n"
 			if alwaysApplyBuf.Len()+len(section) <= skillsMaxAlwaysApplyBytes {
 				alwaysApplyBuf.WriteString(section)
 				continue

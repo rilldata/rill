@@ -10,6 +10,7 @@ import (
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/jsonschemautil"
 	"go.uber.org/zap"
 )
@@ -118,6 +119,10 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 			init, ok := res.(*mcp.InitializeResult)
 			if !ok {
 				return res, err
+			}
+			// Clients without UseAI are not offered the skill tools, so they are not told about skills either.
+			if !s.Claims().Can(runtime.UseAI) {
+				return init, nil
 			}
 			// On a load error, fail open with the skills section: it is harmless for projects without skills.
 			skills, skillsErr := s.Skills(ctx)

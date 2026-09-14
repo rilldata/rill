@@ -378,13 +378,13 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.deletedResources = nil
 
 	// Load entire repo.
-	// Skills are listed with a dedicated glob instead of adding "md" to the glob below,
-	// since matching every markdown file in the repo would count unrelated docs against drivers.RepoListLimit.
+	// Skills are listed with a dedicated glob over the skill roots (see skillNameForPath) instead of adding "md" to the glob below,
+	// since matching every markdown file, or every SKILL.md, in the repo would count unrelated files against drivers.RepoListLimit and maxFiles.
 	files, err := p.Repo.ListGlob(ctx, "**/*.{env,sql,yaml,yml}", true)
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
-	skillFiles, err := p.Repo.ListGlob(ctx, "**/SKILL.md", true)
+	skillFiles, err := p.Repo.ListGlob(ctx, "{skills,.agents/skills}/*/SKILL.md", true)
 	if err != nil {
 		return fmt.Errorf("could not list project skill files: %w", err)
 	}
