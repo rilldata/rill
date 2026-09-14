@@ -36,17 +36,9 @@
     row.bookmark.updatedOn ? new Date(row.bookmark.updatedOn) : null,
   );
   let lastUsed = $derived(row.lastUsed ? new Date(row.lastUsed) : null);
-
-  let hovered = $state(false);
 </script>
 
-<div
-  class="flex flex-row items-center gap-x-2 group px-4 w-full h-full"
-  onmouseenter={() => (hovered = true)}
-  onmouseleave={() => (hovered = false)}
-  role="row"
-  tabindex="-1"
->
+<div class="flex flex-row items-center gap-x-2 group px-4 w-full h-full">
   <a
     class="flex flex-row items-start gap-x-3 min-w-0 grow h-full py-2.5"
     href={row.href}
@@ -113,25 +105,26 @@
     </div>
   </a>
   {#if row.canManage}
-    <div class="flex flex-row justify-end items-center gap-x-1 w-16 shrink-0">
-      {#if hovered}
-        <Button
-          square
-          type="tertiary"
-          label={m.bookmark_edit()}
-          onClick={() => onEdit(row)}
-        >
-          <Pencil size="16px" />
-        </Button>
-        <Button
-          square
-          type="tertiary"
-          label={m.bookmark_delete_bookmark()}
-          onClick={() => onDelete(row)}
-        >
-          <Trash size="16px" />
-        </Button>
-      {/if}
+    <!-- Actions stay mounted so keyboard and touch users can reach them; they are revealed on hover or focus. -->
+    <div
+      class="flex flex-row justify-end items-center gap-x-1 w-16 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+    >
+      <Button
+        square
+        type="tertiary"
+        label={m.bookmark_edit()}
+        onClick={() => onEdit(row)}
+      >
+        <Pencil size="16px" />
+      </Button>
+      <Button
+        square
+        type="tertiary"
+        label={m.bookmark_delete_bookmark()}
+        onClick={() => onDelete(row)}
+      >
+        <Trash size="16px" />
+      </Button>
     </div>
   {/if}
 </div>
