@@ -69,8 +69,7 @@ explore:
 	// jwt, err := auth.NewDevToken(nil, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI})
 	// require.NoError(t, err)
 
-	// The project defines no skills, so the instructions omit the skills section
-	require.NotContains(t, conn.InitializeResult().Instructions, "## Skills")
+	require.Contains(t, conn.InitializeResult().Instructions, "## Skills")
 
 	// Test tool listings
 	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
@@ -90,8 +89,6 @@ explore:
 		ai.ReadFileName,
 		ai.SearchFilesName,
 		ai.WriteFileName,
-		ai.ListSkillsName,
-		ai.LoadSkillName,
 	}
 	require.Len(t, tools.Tools, len(expectedTools))
 	for _, tool := range tools.Tools {
@@ -168,9 +165,9 @@ explore:
 	require.ErrorContains(t, err, `want "object"`)
 }
 
-// TestMCPInstructionsWithSkills asserts that the skills section of the MCP server instructions
-// is advertised when the project defines skills.
-func TestMCPInstructionsWithSkills(t *testing.T) {
+// TestMCPSkillTools asserts that the skill tools are only advertised when the project defines skills
+// (TestMCP covers a project without skills) and the caller can use AI.
+func TestMCPSkillTools(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": "",
@@ -194,9 +191,18 @@ ARPU excludes trial users.`,
 	require.NoError(t, err)
 	defer conn.Close()
 
-	require.Contains(t, conn.InitializeResult().Instructions, "## Skills")
+	toolNames := func(t *testing.T, conn *mcp.ClientSession) []string {
+		tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
+		require.NoError(t, err)
+		var names []string
+		for _, tool := range tools.Tools {
+			names = append(names, tool.Name)
+		}
+		return names
+	}
+	require.Subset(t, toolNames(t, conn), []string{ai.ListSkillsName, ai.LoadSkillName})
 
-	// A client without UseAI is not offered the skill tools, so the skills section is omitted for it
+	// A client without UseAI is not offered the skill tools
 	token, err := auth.NewDevToken(nil, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics})
 	require.NoError(t, err)
 	httpClient := &http.Client{Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -206,7 +212,8 @@ ARPU excludes trial users.`,
 	conn, err = mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL, HTTPClient: httpClient}, nil)
 	require.NoError(t, err)
 	defer conn.Close()
-	require.NotContains(t, conn.InitializeResult().Instructions, "## Skills")
+	require.NotSubset(t, toolNames(t, conn), []string{ai.ListSkillsName})
+	require.NotSubset(t, toolNames(t, conn), []string{ai.LoadSkillName})
 }
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)

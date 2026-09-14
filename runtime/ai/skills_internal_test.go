@@ -11,13 +11,9 @@ import (
 )
 
 func TestMCPInstructions(t *testing.T) {
+	require.Contains(t, MCPInstructions, "## Workflow Overview")
 	require.Contains(t, MCPInstructions, "## Skills")
-	require.NotContains(t, mcpInstructionsWithoutSkills, "## Skills")
-	// The surrounding sections are present either way
-	for _, instr := range []string{MCPInstructions, mcpInstructionsWithoutSkills} {
-		require.Contains(t, instr, "## Workflow Overview")
-		require.Contains(t, instr, "## Project Development")
-	}
+	require.Contains(t, MCPInstructions, "## Project Development")
 }
 
 func TestFilterSkills(t *testing.T) {

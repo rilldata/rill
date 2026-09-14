@@ -76,18 +76,20 @@ Stale instructions.`,
 	require.ErrorContains(t, err, "glossary, revenue-rca")
 }
 
+// TestSkillsEmptyProject verifies that the skill tools are not available in a project without skills.
 func TestSkillsEmptyProject(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 	s := newSession(t, rt, instanceID)
 
-	var listRes *ai.ListSkillsResult
-	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListSkillsName, &listRes, &ai.ListSkillsArgs{})
-	require.NoError(t, err)
-	require.Empty(t, listRes.Skills)
-
-	var loadRes *ai.LoadSkillResult
-	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.LoadSkillName, &loadRes, &ai.LoadSkillArgs{Name: "anything"})
-	require.ErrorContains(t, err, "does not define any skills")
+	for _, name := range []string{ai.ListSkillsName, ai.LoadSkillName} {
+		tool, ok := s.Tool(name)
+		require.True(t, ok)
+		allowed, err := tool.CheckAccess(ai.WithSession(t.Context(), s))
+		require.NoError(t, err)
+		require.False(t, allowed, "tool %q access", name)
+	}
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.LoadSkillName, nil, &ai.LoadSkillArgs{Name: "anything"})
+	require.ErrorContains(t, err, "access denied")
 }
 
 // TestSkillsValidation verifies that invalid skill files surface as parse errors on the file,
@@ -185,13 +187,6 @@ Break revenue down by country.`,
 	require.Contains(t, res.AIInstructions, "## Skill: orders-rca\n\nApplies to the metrics views: orders.\n\nBreak revenue down by country.")
 	require.NotContains(t, res.AIInstructions, "Not injected wholesale.")
 
-	// Without UseAI, the skill tools are unavailable, so the skills are not injected either (the project instructions still are)
-	s = newSession(t, "mcp-client", &runtime.SecurityClaims{UserID: uuid.NewString(), Permissions: []runtime.Permission{runtime.ReadMetrics, runtime.ReadObjects}})
-	res = nil
-	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &res, &ai.ListMetricsViewsArgs{})
-	require.NoError(t, err)
-	require.Equal(t, longInstructions, res.AIInstructions)
-
 	// Rill's own agents: no enrichment (skills are injected into their prompts instead)
 	s = newSession(t, "rill-web", &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true})
 	res = nil
@@ -203,7 +198,15 @@ Break revenue down by country.`,
 // TestSkillsMCPAccess verifies that the skill tools are exposed to any principal with UseAI,
 // including viewers without repo access.
 func TestSkillsMCPAccess(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"skills/glossary/SKILL.md": `---
+description: Business glossary.
+---
+
+ARPU excludes trial users.`,
+		},
+	})
 
 	newMCPSession := func(t *testing.T, permissions ...runtime.Permission) *ai.Session {
 		claims := &runtime.SecurityClaims{

@@ -49,8 +49,7 @@ func (t *ListSkills) Spec() *mcp.Tool {
 }
 
 func (t *ListSkills) CheckAccess(ctx context.Context) (bool, error) {
-	s := GetSession(ctx)
-	return s.Claims().Can(runtime.UseAI), nil
+	return checkSkillAccess(ctx)
 }
 
 func (t *ListSkills) Handler(ctx context.Context, args *ListSkillsArgs) (*ListSkillsResult, error) {

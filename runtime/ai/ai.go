@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
@@ -212,6 +213,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		acquireCatalog: func(ctx context.Context) (drivers.CatalogStore, func(), error) {
 			return r.Runtime.Catalog(ctx, opts.InstanceID)
 		},
+		skillsMu: ctxsync.NewRWMutex(),
 
 		dto:         session,
 		messages:    messages,
@@ -541,7 +543,7 @@ type BaseSession struct {
 	messagesDirty bool
 	subscribers   map[chan *Message]struct{}
 
-	skillsMu     sync.Mutex
+	skillsMu     ctxsync.RWMutex
 	skillsLoaded bool
 	skills       []*Skill
 }

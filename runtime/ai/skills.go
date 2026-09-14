@@ -32,7 +32,10 @@ type Skill struct {
 
 // Skills lazily loads the project's skills from the catalog, memoizing the result for the lifetime of the session.
 func (s *BaseSession) Skills(ctx context.Context) ([]*Skill, error) {
-	s.skillsMu.Lock()
+	err := s.skillsMu.Lock(ctx)
+	if err != nil {
+		return nil, err
+	}
 	defer s.skillsMu.Unlock()
 	if s.skillsLoaded {
 		return s.skills, nil
@@ -71,6 +74,20 @@ func (s *BaseSession) Skills(ctx context.Context) ([]*Skill, error) {
 	s.skills = skills
 	s.skillsLoaded = true
 	return s.skills, nil
+}
+
+// checkSkillAccess checks whether the skill tools should be available in the current session.
+// They are only exposed when the project defines skills, so clients of projects without skills never see them.
+func checkSkillAccess(ctx context.Context) (bool, error) {
+	s := GetSession(ctx)
+	if !s.Claims().Can(runtime.UseAI) {
+		return false, nil
+	}
+	skills, err := s.Skills(ctx)
+	if err != nil {
+		return false, err
+	}
+	return len(skills) > 0, nil
 }
 
 // filterSkills returns the skills relevant to the given agent and metrics view context.
