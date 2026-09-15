@@ -31,6 +31,7 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import DashboardShortcuts from "../shortcuts/DashboardShortcuts.svelte";
   import {
     DEFAULT_TDD_CHART_HEIGHT,
     DEFAULT_TIMESERIES_WIDTH,
@@ -161,6 +162,7 @@
 </script>
 
 <ThemeProvider theme={$theme}>
+  <DashboardShortcuts />
   <article
     class="flex flex-col overflow-y-hidden bg-surface-background"
     bind:clientWidth={exploreContainerWidth}
