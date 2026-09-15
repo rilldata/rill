@@ -2,9 +2,10 @@ package runtime
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -200,24 +201,23 @@ func generateKey(cfg cachedConnectionConfig) string {
 	sb.WriteString(":")
 	sb.WriteString(cfg.driver)
 	sb.WriteString(":")
-	keys := maps.Keys(cfg.config)
-	slices.Sort(keys)
-	for _, key := range keys {
-		sb.WriteString(key)
-		sb.WriteString(":")
-		sb.WriteString(fmt.Sprint(cfg.config[key]))
-		sb.WriteString(" ")
-	}
+	writeConfigHash(&sb, cfg.config)
 	if cfg.provision {
 		sb.WriteString(":provision=true:")
-		keys := maps.Keys(cfg.provisionArgs)
-		slices.Sort(keys)
-		for _, key := range keys {
-			sb.WriteString(key)
-			sb.WriteString(":")
-			sb.WriteString(fmt.Sprint(cfg.provisionArgs[key]))
-			sb.WriteString(" ")
-		}
+		writeConfigHash(&sb, cfg.provisionArgs)
 	}
 	return sb.String()
+}
+
+// writeConfigHash adds a deterministic, type-preserving identity for a connector configuration without embedding
+// credentials in the cache key. JSON is canonical for the JSON-shaped connector maps produced by the parser (map
+// keys are sorted by encoding/json, and strings/maps/slices remain distinct). The typed Go representation is a
+// compatibility fallback for legacy driver configs containing values JSON cannot encode.
+func writeConfigHash(sb *strings.Builder, config map[string]any) {
+	canonical, err := json.Marshal(config)
+	if err != nil {
+		canonical = []byte(fmt.Sprintf("%#v", config))
+	}
+	sum := sha256.Sum256(canonical)
+	fmt.Fprintf(sb, "%x", sum)
 }
