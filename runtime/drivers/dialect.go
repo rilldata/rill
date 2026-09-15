@@ -47,13 +47,14 @@ type Dialect interface {
 	GetCastExprForLike() string
 	SupportsRegexMatch() bool
 	GetRegexMatchFunction() (string, error)
-	RequiresArrayContainsForInOperator() bool
 	// ArrayContainsAnyExpression returns an expression that is true if the array arrExpr contains any of the comma-separated valuesExpr.
-	ArrayContainsAnyExpression(arrExpr, valuesExpr string) (string, error)
-	// ArrayContainsSubqueryExpression is like ArrayContainsAnyExpression but takes a parenthesized subquery whose values are in the column valueCol.
 	// ok is false if the dialect has no such expression, in which case the condition is evaluated against the unnested elements instead.
+	ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool)
+	// ArrayContainsSubqueryExpression is like ArrayContainsAnyExpression but takes a parenthesized subquery whose values are in the column valueCol.
 	ArrayContainsSubqueryExpression(arrExpr, subquerySQL, valueCol string) (expr string, ok bool)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
+	// LateralUnnest returns the join clause that unnests expr. If tupleStyle is false the element is referenced by colName alone,
+	// and the dialect must implement ArrayAnyExpression since it cannot be referenced from a correlated subquery.
 	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
 	// UnnestedColumn returns the expression for the array element exposed by LateralUnnest in tuple style.
 	UnnestedColumn(tableAlias, colName string) string
@@ -244,12 +245,8 @@ func (b *BaseDialect) AutoUnnest(expr string) string {
 	return expr
 }
 
-func (b *BaseDialect) RequiresArrayContainsForInOperator() bool {
-	return false
-}
-
-func (b *BaseDialect) ArrayContainsAnyExpression(_, _ string) (string, error) {
-	return "", fmt.Errorf("array contains not supported for %s dialect", b.String())
+func (b *BaseDialect) ArrayContainsAnyExpression(_, _ string) (expr string, ok bool) {
+	return "", false
 }
 
 func (b *BaseDialect) ArrayContainsSubqueryExpression(_, _, _ string) (expr string, ok bool) {

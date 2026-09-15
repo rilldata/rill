@@ -86,11 +86,9 @@ func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, clo
 	return fmt.Sprintf("COALESCE(EXISTS(%s, %s -> ", arrExpr, elemAlias), elemAlias, "), FALSE)", true
 }
 
-func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
-
 // ArrayContainsAnyExpression wraps arrays_overlap in COALESCE for the same reason as ArrayAnyExpression.
-func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (string, error) {
-	return fmt.Sprintf("COALESCE(arrays_overlap(%s, array(%s)), FALSE)", arrExpr, valuesExpr), nil
+func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool) {
+	return fmt.Sprintf("COALESCE(arrays_overlap(%s, array(%s)), FALSE)", arrExpr, valuesExpr), true
 }
 
 // ArrayContainsSubqueryExpression collects the subquery into an array because Databricks does not allow subqueries inside lambda functions.
