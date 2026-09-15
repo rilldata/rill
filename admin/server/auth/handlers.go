@@ -207,9 +207,7 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	// Redirect to auth provider (canonical domain flow)
 	redirectURL := a.oauth2.AuthCodeURL(state)
 	if signup {
-		// Set custom parameters for signup using AuthCodeOption
-		customOption := oauth2.SetAuthURLParam("screen_hint", "signup")
-		redirectURL = a.oauth2.AuthCodeURL(state, customOption)
+		redirectURL = a.oauth2.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "create"))
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
@@ -611,16 +609,24 @@ func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// Build and redirect to the auth provider logout URL.
-	logoutURL, err := url.Parse("https://" + a.opts.AuthDomain + "/v2/logout")
+	// Build the provider logout URL.
+	// Standard OIDC providers expose end_session_endpoint; Auth0 uses /v2/logout with "returnTo".
+	logoutEndpoint := a.endSessionEndpoint
+	redirectParam := "post_logout_redirect_uri"
+	if logoutEndpoint == "" {
+		logoutEndpoint = "https://" + a.opts.AuthDomain + "/v2/logout"
+		redirectParam = "returnTo"
+	}
+
+	logoutURL, err := url.Parse(logoutEndpoint)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	parameters := url.Values{}
-	parameters.Add("returnTo", a.admin.URLs.AuthLogoutCallback())
-	parameters.Add("client_id", a.opts.AuthClientID)
-	logoutURL.RawQuery = parameters.Encode()
+	params := url.Values{}
+	params.Set("client_id", a.opts.AuthClientID)
+	params.Set(redirectParam, a.admin.URLs.AuthLogoutCallback())
+	logoutURL.RawQuery = params.Encode()
 	http.Redirect(w, r, logoutURL.String(), http.StatusTemporaryRedirect)
 }
 
