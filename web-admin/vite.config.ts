@@ -1,13 +1,37 @@
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { svelteTesting } from "@testing-library/svelte/vite";
 import dns from "dns";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import { readPublicEmailDomains } from "./src/features/projects/user-management/readPublicEmailDomains";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
 
 export default defineConfig({
+  test: {
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          exclude: [...configDefaults.exclude, "**/*.component.spec.ts"],
+        },
+      },
+      {
+        extends: true,
+        plugins: [svelteTesting()],
+        ssr: {
+          noExternal: ["lucide-svelte", "bits-ui", "runed", "svelte-toolbelt"],
+        },
+        test: {
+          name: "components",
+          environment: "jsdom",
+          include: ["src/**/*.component.spec.ts"],
+        },
+      },
+    ],
+  },
   resolve: {
     alias: {
       "@rilldata/web-admin": "/src",

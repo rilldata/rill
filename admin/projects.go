@@ -197,6 +197,7 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 
 	impactsDeployments := (oldProj.ProdVersion != opts.ProdVersion) ||
 		(oldProj.ProdSlots != opts.ProdSlots) ||
+		(oldProj.DevSlots != opts.DevSlots) ||
 		(oldProj.Name != opts.Name) ||
 		(oldProj.Subpath != opts.Subpath) ||
 		(oldProj.PrimaryBranch != opts.PrimaryBranch) ||
@@ -246,8 +247,7 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		}
 	}
 
-	// TODO: changing prod related fields like slots, branch etc should only impact prod deployments, but for now we update all deployments
-	// NOTE: there is no way to change dev-slots right now
+	// TODO: changing environment-specific fields like slots should only impact deployments in that environment, but for now we update all deployments.
 	err = s.UpdateDeploymentsForProject(ctx, proj)
 	if err != nil {
 		return nil, err
