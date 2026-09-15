@@ -74,6 +74,7 @@ export class FileArtifacts {
         case ResourceKind.Canvas:
         case ResourceKind.Theme:
         case ResourceKind.API:
+        case ResourceKind.Skill:
           // set query data for GetResource to avoid refetching data we already have
           queryClient.setQueryData(
             getRuntimeServiceGetResourceQueryKey(client.instanceId, {
