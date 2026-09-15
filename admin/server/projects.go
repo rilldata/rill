@@ -32,9 +32,9 @@ const prodDeplTTL = 14 * 24 * time.Hour
 
 // defaultProdSlots and defaultDevSlots are the slot counts applied when a CreateProject
 // request omits them (e.g. the UI, or older CLIs that don't pass these fields).
-const defaultProdSlots = 4
+const defaultProdSlots = 2
 
-const defaultDevSlots = 4
+const defaultDevSlots = 2
 
 // runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
 // This TTL is not used for tokens created for internal communication between the admin and runtime services.
