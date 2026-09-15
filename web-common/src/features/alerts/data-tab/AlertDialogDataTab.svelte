@@ -9,6 +9,7 @@
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
   import type { ExpressionFilterManager } from "../../dashboards/filters/ExpressionFilterManager.svelte.ts";
 
@@ -25,19 +26,23 @@
   $: exploreName = $form["exploreName"];
   $: metricsView = useMetricsViewValidSpec(runtimeClient, metricsViewName);
 
-  $: measureOptions =
-    $metricsView.data?.measures
-      ?.filter(
-        (m) =>
-          !m.window &&
-          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
-      )
-      .map((m) => ({
-        value: m.name as string,
-        label: m.displayName?.length
-          ? m.displayName
-          : (m.expression ?? (m.name as string)),
-      })) ?? [];
+  // Ephemeral measures have no spec entry; synthesize one so they can be
+  // selected as the alert's measure.
+  $: measureOptions = [
+    ...($metricsView.data?.measures ?? []),
+    ...($form["ephemeralMeasures"] ?? []).map(ephemeralMeasureToSpecMeasure),
+  ]
+    .filter(
+      (m) =>
+        !m.window &&
+        m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+    )
+    .map((m) => ({
+      value: m.name as string,
+      label: m.displayName?.length
+        ? m.displayName
+        : (m.expression ?? (m.name as string)),
+    }));
   $: dimensionOptions = [
     {
       value: "",
