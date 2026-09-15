@@ -438,13 +438,11 @@
               onUpdate(items);
             }}
           >
-            <span
-              slot="body"
-              class="text-[10px] font-semibold italic"
-              class:hidden={!ephemeralMeasureNames.has(item.id)}
-            >
-              ƒx
-            </span>
+            <svelte:fragment slot="body">
+              {#if ephemeralMeasureNames.has(item.id)}
+                <span class="text-[10px] font-semibold italic">ƒx</span>
+              {/if}
+            </svelte:fragment>
           </PivotChip>
         {/if}
       </div>
