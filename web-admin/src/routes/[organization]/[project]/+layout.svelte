@@ -36,6 +36,7 @@
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
+    isPublicAIPage,
     isPublicURLPage,
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -80,9 +81,13 @@
     handleBranchNavigation(nav, activeBranch, organization, project, goto),
   );
 
-  // Token: from route params, or from search params on report/alert pages
+  // Token: from route params, or from search params on report/alert/AI conversation pages
   let token = $derived.by(() => {
-    if (isPublicReportPage(page) || isPublicAlertPage(page)) {
+    if (
+      isPublicReportPage(page) ||
+      isPublicAlertPage(page) ||
+      isPublicAIPage(page)
+    ) {
       return page.url.searchParams.get("token") ?? page.params.token;
     }
     return page.params.token;

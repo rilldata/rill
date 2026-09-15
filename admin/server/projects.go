@@ -1174,6 +1174,14 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	if err != nil {
 		return nil, err
 	}
+
+	// User groups are org-scoped, so adding to them requires org-level member management permission (checked by the resolver).
+	// Resolve them up front, so an invalid group fails the request before anything is written or emailed.
+	groups, err := s.resolveUsergroupsForMembership(ctx, org.Name, req.Usergroups, false)
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := usergroupIDs(groups)
 	if org.QuotaOutstandingInvites >= 0 && count >= org.QuotaOutstandingInvites {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q can at most have %d outstanding invitations", org.Name, org.QuotaOutstandingInvites)
 	}
@@ -1216,11 +1224,12 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		// Insert an organization guest invite (will fail with a constraint error if an org-level invite already exists).
 		// NOTE: Not using a transaction here for simplicity. The operation is idempotent and worst-case the user becomes a guest member with no access.
 		err = s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-			Email:      req.Email,
-			OrgID:      proj.OrganizationID,
-			RoleID:     guestRole.ID,
-			InviterID:  invitedByUserID,
-			Attributes: attrs,
+			Email:        req.Email,
+			OrgID:        proj.OrganizationID,
+			RoleID:       guestRole.ID,
+			InviterID:    invitedByUserID,
+			UsergroupIDs: groupIDs,
+			Attributes:   attrs,
 		})
 		if err != nil && !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -1241,6 +1250,16 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 			err = s.admin.DB.UpdateOrganizationInviteAttributes(ctx, orgInvite.ID, attrs)
 			if err != nil {
 				return nil, err
+			}
+		}
+
+		// User groups are additive: merge them with the groups already on the invite.
+		if orgInviteExisted {
+			if mergedGroupIDs, changed := mergeUnique(orgInvite.UsergroupIDs, groupIDs); changed {
+				err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, orgInvite.ID, mergedGroupIDs)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 
@@ -1320,6 +1339,12 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		if err := s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID, restrictResources, resources); err != nil {
 			return nil, err
 		}
+	}
+
+	// Unlike attributes, user groups are additive and org-scoped, so they can be applied whether or not the user was already an org member.
+	err = s.admin.DB.InsertUsergroupsMemberUser(ctx, user.ID, groupIDs)
+	if err != nil {
+		return nil, err
 	}
 
 	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{

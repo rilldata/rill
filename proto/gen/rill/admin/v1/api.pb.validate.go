@@ -47025,6 +47025,8 @@ func (m *UsergroupMemberUser) validate(all bool) error {
 
 	// no validation rules for UserPhotoUrl
 
+	// no validation rules for PendingAcceptance
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
