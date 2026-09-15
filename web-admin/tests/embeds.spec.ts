@@ -414,6 +414,94 @@ test.describe("Embeds", () => {
       );
     });
 
+    // `window.history.back()` / `forward()` traverse the tab's joint session history, which
+    // interleaves the host page's entries with the iframe's, so the navigation APIs move through the
+    // embed's own history instead. These two tests pin down the cases where the difference shows.
+    test("navigateBack on the first dashboard leaves the host page alone", async ({
+      embedPage,
+    }) => {
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
+      const frame = embedPage.frameLocator("iframe");
+      await expect(frame.getByLabel("Select time range")).toBeVisible();
+
+      const hostUrl = embedPage.url();
+      // The response is posted before a navigation would complete, so watch for one instead of
+      // asserting on its absence straight away. A traversal of the tab's history shows up here,
+      // whether it reverts a host page entry or unloads the host page altogether.
+      const hostNavigation = embedPage
+        .waitForEvent("framenavigated", {
+          predicate: (navigated) => navigated === embedPage.mainFrame(),
+          timeout: 2_000,
+        })
+        .then((navigated) => navigated.url())
+        .catch(() => null);
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 1400, method: "navigateBack" },
+          "*",
+        );
+      });
+      await recorder.expectContaining(`{"id":1400,"result":true}`);
+
+      // The embed has no earlier entry of its own, so nothing was navigated. Traversing the tab's
+      // history here would have taken the host page back to wherever it came from.
+      expect(await hostNavigation).toBeNull();
+      expect(embedPage.url()).toBe(hostUrl);
+      await expect(frame.getByLabel("Select time range")).toBeVisible();
+    });
+
+    test("navigateBack only moves the embed when the host page has navigated too", async ({
+      embedPage,
+    }) => {
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
+      const frame = embedPage.frameLocator("iframe");
+      await expect(frame.getByLabel("Select time range")).toBeVisible();
+
+      // Give the embed an entry of its own to go back from.
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1401,
+            method: "navigateToDashboard",
+            params: { name: "bids_canvas" },
+          },
+          "*",
+        );
+      });
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_explore","to":"bids_canvas"}}`,
+      );
+
+      // The host page then navigates itself, which puts its entry ahead of the embed's in the tab's
+      // history. A `history.back()` from the iframe would revert this instead of the embed's.
+      await embedPage.evaluate(() => {
+        window.location.hash = "host-step";
+      });
+      await embedPage.waitForFunction(
+        () => window.location.hash === "#host-step",
+      );
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 1402, method: "navigateBack" },
+          "*",
+        );
+      });
+
+      // The embed returned to the dashboard it came from,
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
+      );
+      // and the host page's own navigation was left untouched.
+      expect(embedPage.url()).toContain("#host-step");
+    });
+
     test.describe("embedded explore with initial state", () => {
       test.use({
         embeddedInitialState:
@@ -605,6 +693,60 @@ test.describe("Embeds", () => {
           "tr=PT6H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
+    });
+
+    test("embedded canvas navigation APIs to go back/forward", async ({
+      embedPage,
+    }) => {
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
+      const frame = embedPage.frameLocator("iframe");
+
+      // Hover over leaderboard component to show the `go to explore` button
+      await frame.locator("#bids_canvas--component-1-0").hover();
+      await frame.getByLabel("Go to Programmatic Ads Bids").nth(0).click();
+      // Navigation event is fired for going to explore
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
+      );
+
+      // Assert the selected filters in explore
+      await expect(frame.getByText("Last 24 hours")).toBeVisible();
+      await expect(frame.getByText("instacart.com $1.1k")).toBeVisible();
+      // Only one measures shown.
+      await expect(
+        frame.getByLabel("Choose measures to display"),
+      ).toContainText("1 of 12 Measures");
+      // Only 3 dimensions shown.
+      await expect(
+        frame.getByLabel("Choose dimensions to display"),
+      ).toContainText("3 of 22 Dimensions");
+
+      // Call `navigateBack`
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 1337, method: "navigateBack" },
+          "*",
+        );
+      });
+      // Navigation event is fired for going back to canvas
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_explore","to":"bids_canvas"}}`,
+      );
+
+      // Call `navigateForward`
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 1337, method: "navigateForward" },
+          "*",
+        );
+      });
+      // Navigation event is fired for going forward to explore
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
+      );
     });
   });
 

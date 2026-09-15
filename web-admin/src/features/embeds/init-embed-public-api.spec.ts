@@ -9,9 +9,20 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getKeyForSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
 import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers.ts";
+import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/last-visited-state";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from "vitest";
 import initEmbedPublicAPI from "./init-embed-public-api";
 import { EmbedStorageNamespacePrefix } from "./constants.ts";
 import {
@@ -53,9 +64,16 @@ vi.mock("@rilldata/web-common/features/embeds/embed-theme", () => ({
   }),
 }));
 
+const EMBED_URL = "http://localhost/-/embed";
+const EXPLORE_ROUTE = "/[organization]/[project]/-/embed/explore/[name]";
+const CANVAS_ROUTE = "/[organization]/[project]/-/embed/canvas/[name]";
+const AD_BIDS_CANVAS_NAME = "AdBids_canvas";
+
 describe("initEmbedPublicAPI", () => {
   let harness: EmbedPublicAPIHarness;
   let cleanup: () => void;
+
+  const mocks = DashboardFetchMocks.useDashboardFetchMocks();
 
   const client = new RuntimeClient({
     host: "http://localhost",
@@ -64,6 +82,10 @@ describe("initEmbedPublicAPI", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+
+    // initEmbedPublicAPI reads the embed's config (theme mode, navigation) from the
+    // EmbedStore singleton, which the embed layout initializes before calling it.
+    EmbedStore.init(new URL(`${EMBED_URL}?navigation=true`));
 
     // Construct the harness (mocks window.parent, installs the RPC handler)
     // before init so the "ready" and initial notifications are captured.
@@ -121,14 +143,10 @@ describe("initEmbedPublicAPI", () => {
   // runtime GetExplore/metrics fetches are mocked with the AD_BIDS fixtures. See
   // DashboardStateManager.spec.ts for the same API mocking approach.
   describe("setValidState", () => {
-    const EXPLORE_ROUTE = "/[organization]/[project]/-/embed/explore/[name]";
-    const CANVAS_ROUTE = "/[organization]/[project]/-/embed/canvas/[name]";
-
-    const mocks = DashboardFetchMocks.useDashboardFetchMocks();
-
     beforeEach(() => {
       queryClient.clear();
       sessionStorage.clear();
+      lastVisitedState.clear();
       mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
       mocks.mockMetricsExplore(AD_BIDS_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
         ...AD_BIDS_EXPLORE_INIT,
@@ -233,6 +251,20 @@ describe("initEmbedPublicAPI", () => {
       expect(sessionStorage.getItem(sessionKey)).toBeNull();
     });
 
+    it("clears the prior canvas snapshot before applying the state", async () => {
+      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
+      // Canvases keep their last visited state in memory rather than in session storage,
+      // but it is restored on an empty url just like the explore session state is.
+      lastVisitedState.set(
+        AD_BIDS_CANVAS_NAME,
+        "f=publisher+IN+%28%27Google%27%29",
+      );
+
+      await callSetValidState({ state: "" });
+
+      expect(lastVisitedState.has(AD_BIDS_CANVAS_NAME)).toBe(false);
+    });
+
     it("returns a JSON-RPC error when params is not an object with a string state", async () => {
       onExploreRoute();
 
@@ -244,6 +276,362 @@ describe("initEmbedPublicAPI", () => {
       const missingState = await callSetValidState({});
       expect(missingState.error?.message).toBe(
         "Expected params to be an object with a string `state` property",
+      );
+    });
+  });
+
+  // navigateBack / navigateForward move through the urls the embed has visited rather than
+  // traversing the tab's history, which is shared with the host page. See embed-navigation-stack.ts.
+  describe("navigateBack / navigateForward", () => {
+    let back: MockInstance<() => void>;
+    let forward: MockInstance<() => void>;
+
+    beforeEach(() => {
+      back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+      forward = vi
+        .spyOn(window.history, "forward")
+        .mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      back.mockRestore();
+      forward.mockRestore();
+    });
+
+    /** The search of the url the last `goto` navigated to, or undefined if it did not navigate. */
+    async function navigate(method: "navigateBack" | "navigateForward") {
+      const gotoCountBefore = harness.gotoCalls.length;
+      const response = await harness.call(method);
+
+      expect(response.result).toBe(true);
+      // The tab's history is never traversed, whether or not the embed moved.
+      expect(back).not.toHaveBeenCalled();
+      expect(forward).not.toHaveBeenCalled();
+
+      if (harness.gotoCalls.length === gotoCountBefore) return undefined;
+      return harness.lastGoto()?.url.search;
+    }
+
+    it("is a no-op on the dashboard the embed loaded with", async () => {
+      // The embed has no earlier entry of its own, so there is nothing to go back to. Traversing
+      // the tab's history here would revert whatever the host page did before embedding.
+      expect(await navigate("navigateBack")).toBeUndefined();
+      expect(await navigate("navigateForward")).toBeUndefined();
+    });
+
+    it("moves through the urls the embed has visited", async () => {
+      harness.navigateTo("step=1");
+      harness.navigateTo("step=2");
+
+      expect(await navigate("navigateBack")).toBe("?step=1");
+      expect(await navigate("navigateBack")).toBe("");
+      // Back at the entry the embed loaded with, so the next back does nothing.
+      expect(await navigate("navigateBack")).toBeUndefined();
+
+      expect(await navigate("navigateForward")).toBe("?step=1");
+      expect(await navigate("navigateForward")).toBe("?step=2");
+      expect(await navigate("navigateForward")).toBeUndefined();
+    });
+
+    it("does not count a replaced url as a step of its own", async () => {
+      harness.navigateTo("step=1");
+      // Explores canonicalize their url on load with a replace, which must not become something
+      // the user has to go back through.
+      harness.navigateTo("step=1&grain=hour", { replaceState: true });
+
+      expect(await navigate("navigateBack")).toBe("");
+    });
+
+    it("follows a traversal the browser's back button drove", async () => {
+      harness.navigateTo("step=1");
+      harness.navigateTo("step=2");
+
+      // The host's chrome (or the user) takes the tab back onto the embed's previous entry.
+      harness.simulateTabTraversal(-1);
+      expect(harness.currentUrl.search).toBe("?step=1");
+
+      // The embed's position moved with it, so forward returns to the entry left behind.
+      expect(await navigate("navigateForward")).toBe("?step=2");
+    });
+
+    it("keeps only the most recent entries", async () => {
+      // Each dashboard state change pushes an entry, so a long-lived embed must not accumulate them
+      // without bound.
+      for (let step = 1; step <= 120; step++)
+        harness.navigateTo(`step=${step}`);
+
+      const searches: (string | undefined)[] = [];
+      for (let i = 0; i < 100; i++) {
+        searches.push(await navigate("navigateBack"));
+      }
+
+      // The most recent urls are all still there to step back through,
+      expect(searches[0]).toBe("?step=119");
+      expect(searches[98]).toBe("?step=21");
+      // but the ones before them were dropped rather than kept for the whole session.
+      expect(searches[99]).toBeUndefined();
+    });
+
+    it("drops the entries ahead once the embed navigates again", async () => {
+      harness.navigateTo("step=1");
+      harness.navigateTo("step=2");
+      expect(await navigate("navigateBack")).toBe("?step=1");
+
+      harness.navigateTo("step=3");
+
+      // `step=2` is no longer reachable, exactly as a push truncates the tab's forward entries.
+      expect(await navigate("navigateForward")).toBeUndefined();
+      expect(await navigate("navigateBack")).toBe("?step=1");
+    });
+  });
+
+  describe("with navigation disabled", () => {
+    // Re-initialize the embed without `navigation=true` and re-register the methods
+    // against it, mirroring an embed configured with navigation disabled.
+    beforeEach(() => {
+      cleanup();
+      EmbedStore.init(new URL(EMBED_URL));
+      cleanup = initEmbedPublicAPI(client);
+    });
+
+    it.each(["navigateBack", "navigateForward", "navigateToDashboard"])(
+      "returns a JSON-RPC error from %s",
+      async (method) => {
+        const gotoCountBefore = harness.gotoCalls.length;
+
+        const response = await harness.call(method, {
+          name: AD_BIDS_EXPLORE_NAME,
+        });
+
+        expect(response.result).toBeUndefined();
+        expect(response.error?.message).toBe(
+          "Navigation is disabled for this embed",
+        );
+        expect(harness.gotoCalls.length).toBe(gotoCountBefore);
+      },
+    );
+
+    it("still allows state changes on the current dashboard", async () => {
+      const response = await harness.call("setState", "foo=bar");
+
+      expect(response.result).toBe(true);
+      expect(harness.lastGoto()?.url.search).toBe("?foo=bar");
+    });
+  });
+
+  // navigateToDashboard resolves the target dashboard's kind through ListResources and then
+  // applies the state the same way setValidState does.
+  describe("navigateToDashboard", () => {
+    beforeEach(() => {
+      queryClient.clear();
+      sessionStorage.clear();
+      lastVisitedState.clear();
+      mocks.mockMetricsView(AD_BIDS_METRICS_NAME, AD_BIDS_METRICS_INIT);
+      mocks.mockMetricsExplore(AD_BIDS_EXPLORE_NAME, AD_BIDS_METRICS_INIT, {
+        ...AD_BIDS_EXPLORE_INIT,
+        defaultPreset: AD_BIDS_PRESET_WITHOUT_TIMESTAMP,
+      });
+      mocks.mockListResources([
+        {
+          meta: {
+            name: {
+              kind: ResourceKind.MetricsView,
+              name: AD_BIDS_METRICS_NAME,
+            },
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Explore, name: AD_BIDS_EXPLORE_NAME },
+          },
+        },
+        {
+          meta: {
+            name: { kind: ResourceKind.Canvas, name: AD_BIDS_CANVAS_NAME },
+          },
+        },
+      ]);
+    });
+
+    // The ListResources and buildValidatedExploreUrl fetches resolve on a real setTimeout,
+    // so advance fake timers to let the RPC response settle before returning it.
+    async function callNavigate(params: unknown) {
+      const response = harness.call("navigateToDashboard", params);
+      await vi.advanceTimersByTimeAsync(50);
+      return response;
+    }
+
+    it("navigates to an explore dashboard with the validated state", async () => {
+      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
+
+      const response = await callNavigate({
+        name: AD_BIDS_EXPLORE_NAME,
+        state: "measures=impressions&dims=publisher",
+      });
+
+      expect(response.result).toEqual({
+        success: true,
+        appliedState: "measures=impressions&dims=publisher",
+        errors: [],
+      });
+      const last = harness.lastGoto();
+      expect(last?.url.pathname).toBe(
+        `/-/embed/explore/${AD_BIDS_EXPLORE_NAME}`,
+      );
+      expect(last?.url.search).toBe("?measures=impressions&dims=publisher");
+      // Navigating to another dashboard should be undoable via `navigateBack`.
+      expect(last?.opts).toEqual({ replaceState: false });
+    });
+
+    it("navigates to a canvas dashboard applying the state as-is", async () => {
+      harness.setRoute(EXPLORE_ROUTE, { name: AD_BIDS_EXPLORE_NAME });
+
+      const response = await callNavigate({
+        name: AD_BIDS_CANVAS_NAME,
+        state: "foo=bar",
+      });
+
+      expect(response.result).toEqual({
+        success: true,
+        appliedState: "foo=bar",
+        errors: [],
+      });
+      expect(harness.lastGoto()?.url.pathname).toBe(
+        `/-/embed/canvas/${AD_BIDS_CANVAS_NAME}`,
+      );
+      expect(harness.lastGoto()?.url.search).toBe("?foo=bar");
+    });
+
+    it("navigates without any state when state is not given", async () => {
+      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
+      // Params of the dashboard being navigated away from should not carry over.
+      harness.navigateTo("foo=bar");
+
+      const response = await callNavigate({ name: AD_BIDS_EXPLORE_NAME });
+
+      expect(response.result).toEqual({
+        success: true,
+        appliedState: "",
+        errors: [],
+      });
+      const last = harness.lastGoto();
+      expect(last?.url.pathname).toBe(
+        `/-/embed/explore/${AD_BIDS_EXPLORE_NAME}`,
+      );
+      expect(last?.url.search).toBe("");
+    });
+
+    it("does not navigate on validation errors when failOnError is true", async () => {
+      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
+      const gotoCountBefore = harness.gotoCalls.length;
+
+      const response = await callNavigate({
+        name: AD_BIDS_EXPLORE_NAME,
+        state: "measures=does_not_exist",
+        failOnError: true,
+      });
+
+      expect(response.result).toEqual({
+        success: false,
+        errors: ['Selected measure: "does_not_exist" is not valid.'],
+      });
+      expect(harness.gotoCalls.length).toBe(gotoCountBefore);
+    });
+
+    it("clears prior embed session storage before navigating to an explore", async () => {
+      const sessionKey = getKeyForSessionStore(
+        AD_BIDS_EXPLORE_NAME,
+        EmbedStorageNamespacePrefix,
+        ExploreUrlWebView.Explore,
+      );
+      // Simulate state left over from an earlier visit to the target explore. Without clearing,
+      // handleURLChange would restore it instead of the state we just applied.
+      sessionStorage.setItem(sessionKey, "f=publisher+IN+%28%27Google%27%29");
+
+      await callNavigate({ name: AD_BIDS_EXPLORE_NAME, state: "" });
+
+      expect(sessionStorage.getItem(sessionKey)).toBeNull();
+    });
+
+    it("clears prior embed session storage when navigating without a state", async () => {
+      const sessionKey = getKeyForSessionStore(
+        AD_BIDS_EXPLORE_NAME,
+        EmbedStorageNamespacePrefix,
+        ExploreUrlWebView.Explore,
+      );
+      sessionStorage.setItem(sessionKey, "f=publisher+IN+%28%27Google%27%29");
+
+      // Omitting `state` opens the dashboard in its default state, so state left over from an
+      // earlier visit must not be restored either.
+      await callNavigate({ name: AD_BIDS_EXPLORE_NAME });
+
+      expect(sessionStorage.getItem(sessionKey)).toBeNull();
+    });
+
+    it.each([{ state: "" }, {}])(
+      "clears the prior canvas snapshot when navigating to a canvas with %o",
+      async (params) => {
+        harness.setRoute(EXPLORE_ROUTE, { name: AD_BIDS_EXPLORE_NAME });
+        lastVisitedState.set(
+          AD_BIDS_CANVAS_NAME,
+          "f=publisher+IN+%28%27Google%27%29",
+        );
+
+        await callNavigate({ name: AD_BIDS_CANVAS_NAME, ...params });
+
+        expect(lastVisitedState.has(AD_BIDS_CANVAS_NAME)).toBe(false);
+      },
+    );
+
+    it("can be undone with navigateBack", async () => {
+      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
+      harness.navigateTo("foo=bar");
+
+      await callNavigate({
+        name: AD_BIDS_EXPLORE_NAME,
+        state: "dims=publisher",
+      });
+      expect(harness.lastGoto()?.url.pathname).toBe(
+        `/-/embed/explore/${AD_BIDS_EXPLORE_NAME}`,
+      );
+
+      expect((await harness.call("navigateBack")).result).toBe(true);
+
+      // Back on the canvas the embed navigated away from, with the state it had at the time.
+      const last = harness.lastGoto();
+      expect(last?.url.pathname).toBe("/-/embed");
+      expect(last?.url.search).toBe("?foo=bar");
+    });
+
+    it("returns a JSON-RPC error when the dashboard does not exist", async () => {
+      const response = await callNavigate({ name: "does_not_exist" });
+
+      expect(response.result).toBeUndefined();
+      expect(response.error?.message).toBe(
+        'Dashboard "does_not_exist" not found',
+      );
+    });
+
+    it("returns a JSON-RPC error when the name is not a resource of a dashboard kind", async () => {
+      const response = await callNavigate({ name: AD_BIDS_METRICS_NAME });
+
+      expect(response.error?.message).toBe(
+        `Dashboard "${AD_BIDS_METRICS_NAME}" not found`,
+      );
+    });
+
+    it("returns a JSON-RPC error when params is missing a string name", async () => {
+      const notObject = await callNavigate(AD_BIDS_EXPLORE_NAME);
+      expect(notObject.error?.message).toBe(
+        "Expected params to be an object with a string `name` property",
+      );
+
+      const nonStringState = await callNavigate({
+        name: AD_BIDS_EXPLORE_NAME,
+        state: 123,
+      });
+      expect(nonStringState.error?.message).toBe(
+        "Expected `state` to be a string",
       );
     });
   });

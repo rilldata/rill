@@ -53,8 +53,7 @@ import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboard
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
-
-export const lastVisitedState = new Map<string, string>();
+import { lastVisitedState } from "./last-visited-state";
 
 // URL param encoding each tab group's active tab as comma-separated `tabgroup_name.tab_name`
 // references, e.g. `?tabs=deep_dive.detail,financials.costs`.
