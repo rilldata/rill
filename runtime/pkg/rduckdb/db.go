@@ -659,9 +659,8 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) (resErr e
 
 	// copy the old table to new table
 	newVersion := newVersion()
-	var newDir string
+	newDir := d.localTableDir(newName, newVersion)
 	if oldMeta.Type == "TABLE" {
-		newDir = d.localTableDir(newName, newVersion)
 		err = copyDir(d.localTableDir(newName, newVersion), d.localTableDir(oldName, oldMeta.Version))
 		if err != nil {
 			_ = os.RemoveAll(newDir)
@@ -675,9 +674,11 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) (resErr e
 			return fmt.Errorf("rename: rename table failed: %w", err)
 		}
 	} else {
-		err = copyDir(d.localTableDir(newName, ""), d.localTableDir(oldName, ""))
+		// Views have no data files, but startup requires their version directory to exist.
+		err = d.initLocalTable(newName, newVersion)
 		if err != nil {
-			return fmt.Errorf("rename: copy view failed: %w", err)
+			_ = os.RemoveAll(newDir)
+			return fmt.Errorf("rename: initialize view failed: %w", err)
 		}
 	}
 
@@ -690,9 +691,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) (resErr e
 		SQL:            oldMeta.SQL,
 	}
 	if err := d.pushToRemote(ctx, newName, newTableOldMeta, meta); err != nil {
-		if newDir != "" {
-			_ = os.RemoveAll(newDir)
-		}
+		_ = os.RemoveAll(newDir)
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
 	}
 
@@ -703,9 +702,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) (resErr e
 	// drop the old table in remote
 	err = d.deleteRemote(ctx, oldName, "")
 	if err != nil {
-		if newDir != "" {
-			_ = os.RemoveAll(newDir)
-		}
+		_ = os.RemoveAll(newDir)
 		return fmt.Errorf("rename: unable to delete old table %q from remote: %w", oldName, err)
 	}
 
