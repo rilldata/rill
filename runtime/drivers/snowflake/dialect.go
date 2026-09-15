@@ -72,6 +72,12 @@ func (d *dialect) UnnestedColumn(tableAlias, colName string) string {
 	return d.EscapeMember(tableAlias, colName) + "::VARCHAR"
 }
 
+func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
+
+func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (string, error) {
+	return fmt.Sprintf("ARRAYS_OVERLAP(%s, ARRAY_CONSTRUCT(%s))", arrExpr, valuesExpr), nil
+}
+
 // ArrayAnyExpression uses FILTER because Snowflake rejects correlated FLATTEN inside EXISTS subqueries.
 func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
 	return fmt.Sprintf("(ARRAY_SIZE(FILTER(%s, %s -> ", arrExpr, elemAlias), elemAlias + "::VARCHAR", ")) > 0)", true

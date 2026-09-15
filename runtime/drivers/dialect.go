@@ -48,14 +48,15 @@ type Dialect interface {
 	SupportsRegexMatch() bool
 	GetRegexMatchFunction() (string, error)
 	RequiresArrayContainsForInOperator() bool
-	GetArrayContainsFunction() (string, error)
+	// ArrayContainsAnyExpression returns an expression that is true if the array arrExpr contains any of the comma-separated valuesExpr.
+	ArrayContainsAnyExpression(arrExpr, valuesExpr string) (string, error)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
 	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
 	// UnnestedColumn returns the expression for the array element exposed by LateralUnnest in tuple style.
 	UnnestedColumn(tableAlias, colName string) string
 	// ArrayAnyExpression returns fragments for a condition that is true if any element of arrExpr satisfies it.
 	// The condition on a single element is written between open and close and references the element as elem.
-	// ok is false if the dialect has no such expression, in which case a correlated EXISTS subquery over LateralUnnest is used.
+	// ok is false if the dialect has no such expression, in which case a correlated EXISTS subquery over LateralUnnest is used where possible.
 	ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool)
 	UnnestSQLSuffix(tbl string) string
 	// AutoUnnest wraps an expression so the dialect unnests it automatically (used when LateralUnnest reports auto == true).
@@ -244,7 +245,7 @@ func (b *BaseDialect) RequiresArrayContainsForInOperator() bool {
 	return false
 }
 
-func (b *BaseDialect) GetArrayContainsFunction() (string, error) {
+func (b *BaseDialect) ArrayContainsAnyExpression(_, _ string) (string, error) {
 	return "", fmt.Errorf("array contains not supported for %s dialect", b.String())
 }
 

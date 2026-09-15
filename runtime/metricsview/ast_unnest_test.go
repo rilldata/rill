@@ -6,6 +6,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/bigquery"
+	"github.com/rilldata/rill/runtime/drivers/databricks"
 	"github.com/rilldata/rill/runtime/drivers/snowflake"
 	"github.com/stretchr/testify/require"
 )
@@ -40,14 +41,14 @@ func TestUnnestSQL(t *testing.T) {
 			name:    "bigquery: group by unnest dim",
 			dialect: bigquery.DialectBigQuery,
 			dims:    []Dimension{{Name: "tags"}},
-			wantSQL: "SELECT (`t0`.`tags`) AS `tags`, (count(*)) AS `count` FROM `test_table`, UNNEST(ARRAY(SELECT AS STRUCT `t0_elem` AS `tags` FROM UNNEST(`tags`) AS `t0_elem`)) AS `t0` GROUP BY 1",
+			wantSQL: "SELECT (`tags`) AS `tags`, (count(*)) AS `count` FROM `test_table`, UNNEST(`tags`) AS `tags` GROUP BY 1",
 		},
 		{
 			name:     "bigquery: filter on unnest dim not in select",
 			dialect:  bigquery.DialectBigQuery,
 			dims:     []Dimension{{Name: "city"}},
 			where:    tagsEqA,
-			wantSQL:  "SELECT (`city`) AS `city`, (count(*)) AS `count` FROM `test_table` WHERE EXISTS (SELECT 1 FROM UNNEST(ARRAY(SELECT AS STRUCT `t0_elem` AS `tags` FROM UNNEST(`tags`) AS `t0_elem`)) AS `t0` WHERE ((`t0`.`tags`) = ?)) GROUP BY 1",
+			wantSQL:  "SELECT (`city`) AS `city`, (count(*)) AS `count` FROM `test_table` WHERE EXISTS (SELECT 1 FROM UNNEST(`tags`) AS `t0` WHERE ((`t0`) = ?)) GROUP BY 1",
 			wantArgs: []any{"a"},
 		},
 		{
@@ -72,8 +73,22 @@ func TestUnnestSQL(t *testing.T) {
 				Operator:    OperatorNin,
 				Expressions: []*Expression{{Name: "tags"}, {Value: []any{"a", "b"}}},
 			}},
-			wantSQL:  `SELECT (city) AS "city", (count(*)) AS "count" FROM test_table WHERE NOT (ARRAY_SIZE(FILTER(tags, t0 -> ((t0::VARCHAR) IN (?,?)))) > 0) GROUP BY 1`,
+			wantSQL:  `SELECT (city) AS "city", (count(*)) AS "count" FROM test_table WHERE (NOT ARRAYS_OVERLAP((tags), ARRAY_CONSTRUCT(?,?))) GROUP BY 1`,
 			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "databricks: group by unnest dim",
+			dialect: databricks.DialectDatabricks,
+			dims:    []Dimension{{Name: "tags"}},
+			wantSQL: "SELECT (`t0`.`tags`) AS `tags`, (count(*)) AS `count` FROM `test_table` LATERAL VIEW EXPLODE(`tags`) t0 AS `tags` GROUP BY 1",
+		},
+		{
+			name:     "databricks: filter on unnest dim not in select",
+			dialect:  databricks.DialectDatabricks,
+			dims:     []Dimension{{Name: "city"}},
+			where:    tagsEqA,
+			wantSQL:  "SELECT (`city`) AS `city`, (count(*)) AS `count` FROM `test_table` WHERE EXISTS(`tags`, t0 -> ((t0) = ?)) GROUP BY 1",
+			wantArgs: []any{"a"},
 		},
 	}
 

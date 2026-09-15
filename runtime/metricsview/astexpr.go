@@ -277,8 +277,8 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
 
-		// For IN/NIN on unnest dimensions backed by DuckDB or ClickHouse, use native array-contains
-		// functions (list_has_any / hasAny). This avoids double-counting when a row's array contains multiple matching values.
+		// For IN/NIN on unnest dimensions, prefer a native array-contains expression over an unnest join where the dialect supports it.
+		// It avoids scanning the unnested rows and double-counting rows whose array contains multiple matching values.
 		if (op == OperatorIn || op == OperatorNin) && b.ast.Dialect.RequiresArrayContainsForInOperator() {
 			return b.writeArrayContainsCondition(leftExpr, right, op == OperatorNin)
 		}
@@ -294,16 +294,18 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			leftExpr = b.ast.Dialect.AutoUnnest(leftExpr)
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
-		var unnestColAlias string
-		if tupleStyle {
-			unnestColAlias = b.ast.Dialect.UnnestedColumn(unnestTableAlias, left.Name)
-		} else {
-			unnestColAlias = b.ast.Dialect.EscapeAlias(left.Name)
-		}
-
-		if !tupleStyle { // if tupleStyle, then we cannot refer to the column by table alias
+		// A filter on an unnest dimension that is not selected should match each source row once, even if several of its elements match.
+		// Prefer the dialect's native any-element expression, then a correlated EXISTS subquery over the unnest join.
+		// If the dialect can do neither, fall back to joining the unnest into the outer query, which duplicates rows with several matching elements.
+		open, elem, closing, ok := b.ast.Dialect.ArrayAnyExpression(leftExpr, unnestTableAlias)
+		if !ok && !tupleStyle {
 			b.ast.unnests = append(b.ast.unnests, unnestFrom)
-			return b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+			return b.writeBinaryConditionInner(nil, right, b.ast.Dialect.EscapeAlias(left.Name), op)
+		}
+		if !ok {
+			open = "EXISTS (SELECT 1 FROM " + unnestFrom + " WHERE "
+			elem = b.ast.Dialect.UnnestedColumn(unnestTableAlias, left.Name)
+			closing = ")"
 		}
 
 		// Need to move "NOT" to outside of the subquery
@@ -320,16 +322,8 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			not = true
 		}
 
-		// Evaluate the condition per source row so a row matches once even if several of its elements match.
-		// Output: [NOT] EXISTS (SELECT 1 FROM <unnestFrom> WHERE <unnestColAlias> <operator> <right>), unless the dialect has a native array expression.
 		if not {
 			b.writeString("NOT ")
-		}
-		open, elem, closing, ok := b.ast.Dialect.ArrayAnyExpression(leftExpr, unnestTableAlias)
-		if !ok {
-			open = "EXISTS (SELECT 1 FROM " + unnestFrom + " WHERE "
-			elem = unnestColAlias
-			closing = ")"
 		}
 		b.writeString(open)
 		err = b.writeBinaryConditionInner(nil, right, elem, op)
@@ -683,24 +677,14 @@ func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Exp
 	if not {
 		b.writeString("NOT ")
 	}
-	arrayContainsFunc, err := b.ast.Dialect.GetArrayContainsFunction()
+	// NULL values in the list are not handled separately: ClickHouse's hasAny and Snowflake's ARRAYS_OVERLAP match them, while DuckDB's list_has_any and Databricks' arrays_overlap ignore them.
+	// There is no reliable way to check for NULL elements; leftExpr IS NULL checks for a NULL array, not NULL elements.
+	b.args = append(b.args, vals...)
+	expr, err := b.ast.Dialect.ArrayContainsAnyExpression("("+leftExpr+")", strings.TrimSuffix(strings.Repeat("?,", len(vals)), ","))
 	if err != nil {
 		return err
 	}
-	b.writeString(arrayContainsFunc)
-	b.writeByte('(')
-	b.writeParenthesizedString(leftExpr)
-	b.writeString(", [")
-	// not handling NULL values separately as clickhouse hasAny function takes care of it however, duckdb ignores null values in the list_has_any function, but there is no reliable way to make it work,
-	// but even using leftExpr IS NULL does not solve the issue as it checks for null array rather than null values in the array.
-	for i, val := range vals {
-		if i > 0 {
-			b.writeByte(',')
-		}
-		b.writeString("?")
-		b.args = append(b.args, val)
-	}
-	b.writeString("])")
+	b.writeString(expr)
 	b.writeByte(')')
 
 	return nil

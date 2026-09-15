@@ -6,7 +6,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse"
+	"github.com/rilldata/rill/runtime/drivers/databricks"
 	"github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/drivers/snowflake"
 	"github.com/stretchr/testify/require"
 )
 
@@ -137,6 +139,59 @@ func TestArrayContainsCondition(t *testing.T) {
 			}},
 			wantSQL:  `(hasAny(("tags"), [?,?]))`,
 			wantArgs: []any{nil, "a"},
+		},
+		{
+			name:    "databricks: in on unnest dim uses arrays_overlap",
+			dialect: databricks.DialectDatabricks,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorIn,
+				Expressions: []*Expression{
+					{Name: "tags"},
+					{Value: []any{"a", "b"}},
+				},
+			}},
+			wantSQL:  "(arrays_overlap((`tags`), array(?,?)))",
+			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "databricks: nin on unnest dim uses NOT arrays_overlap",
+			dialect: databricks.DialectDatabricks,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorNin,
+				Expressions: []*Expression{
+					{Name: "tags"},
+					{Value: []any{"a", "b"}},
+				},
+			}},
+			wantSQL:  "(NOT arrays_overlap((`tags`), array(?,?)))",
+			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "databricks: in on unnest dim already in select falls back to normal IN",
+			dialect: databricks.DialectDatabricks,
+			dims:    []Dimension{{Name: "tags"}},
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorIn,
+				Expressions: []*Expression{
+					{Name: "tags"},
+					{Value: []any{"a", "b"}},
+				},
+			}},
+			wantSQL:  "((`t0`.`tags`) IN (?,?))",
+			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "snowflake: in on unnest dim uses ARRAYS_OVERLAP",
+			dialect: snowflake.DialectSnowflake,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorIn,
+				Expressions: []*Expression{
+					{Name: "tags"},
+					{Value: []any{"a", "b"}},
+				},
+			}},
+			wantSQL:  "(ARRAYS_OVERLAP((tags), ARRAY_CONSTRUCT(?,?)))",
+			wantArgs: []any{"a", "b"},
 		},
 		{
 			name:    "duckdb: in on non-unnest dim uses normal IN",

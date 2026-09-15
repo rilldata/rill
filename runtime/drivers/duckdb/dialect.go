@@ -40,7 +40,9 @@ func (d *dialect) EscapeTable(db, schema, table string) string {
 
 func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
 
-func (d *dialect) GetArrayContainsFunction() (string, error) { return "list_has_any", nil }
+func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (string, error) {
+	return fmt.Sprintf("list_has_any(%s, [%s])", arrExpr, valuesExpr), nil
+}
 
 func (d *dialect) OrderByExpression(name string, desc bool) string {
 	res := d.EscapeIdentifier(name)

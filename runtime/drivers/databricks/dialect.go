@@ -71,12 +71,23 @@ func (d *dialect) DimensionSelect(escapeTable string, dim *runtimev1.MetricsView
 	return sel, fmt.Sprintf(` LATERAL VIEW EXPLODE(%s) %s AS %s`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
+// LateralUnnest uses tuple style so the element is referenced as tableAlias.colName; an unqualified colName is ambiguous when it matches the source column.
 func (d *dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
-	return fmt.Sprintf(`LATERAL VIEW EXPLODE(%s) %s AS %s`, expr, tableAlias, d.EscapeIdentifier(colName)), false, false, nil
+	return fmt.Sprintf(`LATERAL VIEW EXPLODE(%s) %s AS %s`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
 }
 
 func (d *dialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(" %s", tbl)
+}
+
+func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
+	return fmt.Sprintf("EXISTS(%s, %s -> ", arrExpr, elemAlias), elemAlias, ")", true
+}
+
+func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
+
+func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (string, error) {
+	return fmt.Sprintf("arrays_overlap(%s, array(%s))", arrExpr, valuesExpr), nil
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
