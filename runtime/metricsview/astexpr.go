@@ -127,8 +127,14 @@ func (b *sqlExprBuilder) subquerySQL(sub *Subquery) (string, []any, error) {
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to generate SQL for subquery: %w", err)
 	}
-	// The dimension is selected by its alias, which some dialects (e.g. Snowflake) escape differently from identifiers.
-	return fmt.Sprintf("(SELECT %s FROM (%s))", b.ast.Dialect.EscapeAlias(sub.Dimension.Name), sql), args, nil
+	// Output: (SELECT <dimension> FROM (<subquery>))
+	var out strings.Builder
+	out.WriteString("(SELECT ")
+	out.WriteString(b.ast.Dialect.EscapeAlias(sub.Dimension.Name))
+	out.WriteString(" FROM (")
+	out.WriteString(sql)
+	out.WriteString("))")
+	return out.String(), args, nil
 }
 
 func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
@@ -285,40 +291,25 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		// It avoids scanning the unnested rows and double-counting rows whose array contains multiple matching values.
 		// Subqueries (e.g. from measure filters) only take this path if the dialect can consume them; otherwise they are evaluated against the unnested elements below.
 		if op == OperatorIn || op == OperatorNin {
-			var expr string
-			var args []any
-			var ok bool
-			if vals, isList := right.Value.([]any); isList {
-				if len(vals) == 0 {
-					if op == OperatorNin {
-						b.writeString("TRUE")
-					} else {
-						b.writeString("FALSE")
-					}
+			if vals, ok := right.Value.([]any); ok {
+				if b.writeArrayContainsCondition(leftExpr, vals, op == OperatorNin) {
 					return nil
 				}
-				// NULL values in the list are not handled separately: ClickHouse's hasAny matches them, while DuckDB's list_has_any and Databricks' arrays_overlap ignore them.
-				// There is no reliable way to check for NULL elements; leftExpr IS NULL checks for a NULL array, not NULL elements.
-				expr, ok = b.ast.Dialect.ArrayContainsAnyExpression("("+leftExpr+")", strings.TrimSuffix(strings.Repeat("?,", len(vals)), ","))
-				args = vals
 			} else if right.Subquery != nil {
-				var sql string
-				var err error
-				sql, args, err = b.subquerySQL(right.Subquery)
+				sql, args, err := b.subquerySQL(right.Subquery)
 				if err != nil {
 					return err
 				}
-				expr, ok = b.ast.Dialect.ArrayContainsSubqueryExpression("("+leftExpr+")", sql, b.ast.Dialect.EscapeAlias(right.Subquery.Dimension.Name))
-			}
-			if ok {
-				b.writeByte('(')
-				if op == OperatorNin {
-					b.writeString("NOT ")
+				if expr, ok := b.ast.Dialect.ArrayContainsSubqueryExpression("("+leftExpr+")", sql, b.ast.Dialect.EscapeAlias(right.Subquery.Dimension.Name)); ok {
+					b.writeByte('(')
+					if op == OperatorNin {
+						b.writeString("NOT ")
+					}
+					b.writeString(expr)
+					b.writeByte(')')
+					b.args = append(b.args, args...)
+					return nil
 				}
-				b.writeString(expr)
-				b.writeByte(')')
-				b.args = append(b.args, args...)
-				return nil
 			}
 		}
 
@@ -693,6 +684,36 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 	b.writeByte(')')
 
 	return nil
+}
+
+// writeArrayContainsCondition writes a native array-contains condition for vals.
+// It returns false without writing anything if the dialect has no such expression.
+func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, vals []any, not bool) bool {
+	if len(vals) == 0 {
+		if not {
+			b.writeString("TRUE")
+		} else {
+			b.writeString("FALSE")
+		}
+		return true
+	}
+
+	// NULL values in the list are not handled separately: ClickHouse's hasAny matches them, while DuckDB's list_has_any and Databricks' arrays_overlap ignore them.
+	// There is no reliable way to check for NULL elements; leftExpr IS NULL checks for a NULL array, not NULL elements.
+	expr, ok := b.ast.Dialect.ArrayContainsAnyExpression("("+leftExpr+")", strings.TrimSuffix(strings.Repeat("?,", len(vals)), ","))
+	if !ok {
+		return false
+	}
+
+	b.writeByte('(')
+	if not {
+		b.writeString("NOT ")
+	}
+	b.writeString(expr)
+	b.writeByte(')')
+	b.args = append(b.args, vals...)
+
+	return true
 }
 
 func (b *sqlExprBuilder) writeByte(v byte) {
