@@ -15,8 +15,11 @@ import {
   createQueryServiceMetricsViewTimeRange,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
+  type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import type { ConnectError } from "@connectrpc/connect";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, readable, type Readable } from "svelte/store";
 
 export type MapQueryRequest = {
@@ -104,19 +107,38 @@ export function mapQueryToDashboard(
   // backwards compatibility for older alerts created on metrics explore directly
   if (!exploreName) exploreName = metricsViewName;
 
+  const validSpecStore = useExploreValidSpec(
+    client,
+    exploreName,
+    undefined,
+    queryClient,
+  );
+  // Metrics views without a time dimension have no time range to fetch.
+  const timeRangeSummaryStore: CreateQueryResult<
+    V1MetricsViewTimeRangeResponse,
+    ConnectError
+  > = derived(validSpecStore, (validSpec, set) =>
+    createQueryServiceMetricsViewTimeRange(
+      client,
+      { metricsViewName },
+      {
+        query: {
+          enabled: !!validSpec.data?.metricsView?.timeDimension,
+        },
+      },
+      queryClient,
+    ).subscribe(set),
+  );
+
   return derived(
-    [
-      useExploreValidSpec(client, exploreName, undefined, queryClient),
-      // TODO: handle non-timestamp dashboards
-      createQueryServiceMetricsViewTimeRange(
-        client,
-        { metricsViewName },
-        undefined,
-        queryClient,
-      ),
-    ],
+    [validSpecStore, timeRangeSummaryStore],
     ([validSpecResp, timeRangeSummary], set) => {
-      if (validSpecResp.isLoading || timeRangeSummary.isLoading) {
+      const hasTimeDimension = !!validSpecResp.data?.metricsView?.timeDimension;
+
+      if (
+        validSpecResp.isLoading ||
+        (hasTimeDimension && !timeRangeSummary.data && !timeRangeSummary.error)
+      ) {
         set({
           isFetching: true,
           isLoading: true,
@@ -125,7 +147,7 @@ export function mapQueryToDashboard(
         return;
       }
 
-      if (validSpecResp.error || timeRangeSummary.error) {
+      if (validSpecResp.error || (hasTimeDimension && timeRangeSummary.error)) {
         set({
           isFetching: false,
           isLoading: false,
@@ -151,7 +173,7 @@ export function mapQueryToDashboard(
       }
 
       // Type guard
-      if (!timeRangeSummary.data?.timeRangeSummary) {
+      if (hasTimeDimension && !timeRangeSummary.data?.timeRangeSummary) {
         set({
           isFetching: false,
           isLoading: false,
@@ -183,7 +205,7 @@ export function mapQueryToDashboard(
         req: queryRequestProperties,
         metricsView,
         explore,
-        timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
+        timeRangeSummary: timeRangeSummary.data?.timeRangeSummary,
         executionTime,
         exploreProtoState,
         ignoreFilters,
