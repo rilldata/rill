@@ -8,6 +8,8 @@ test.describe("canvas time filters", () => {
   test("save default filters button works", async ({ page }) => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
+    await expect(page.getByText("Total records 1,122")).toBeVisible();
+
     await page.getByRole("button", { name: "Options" }).click();
     await page.getByRole("button", { name: "Add filter button" }).click();
     await page.getByRole("menuitem", { name: "Domain" }).click();
@@ -50,6 +52,8 @@ test.describe("canvas time filters", () => {
 
   test("default filters load", async ({ page }) => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
+
+    await expect(page.getByText("Total records 1,122")).toBeVisible();
 
     await page.getByRole("button", { name: "Options" }).click();
     await page.getByRole("button", { name: "Add filter button" }).click();

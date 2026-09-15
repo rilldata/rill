@@ -439,6 +439,7 @@
   "canvas_kpi": "KPI",
   "canvas_label_angle": "Ángulo de etiqueta",
   "canvas_leaderboard": "Ranking",
+  "canvas_map": "Mapa",
   "canvas_left_y_axis_label": "Eje Y izquierdo",
   "canvas_legend_bottom": "Abajo",
   "canvas_legend_left": "Izquierda",
@@ -626,6 +627,12 @@
   "chat_new_conversation": "Nueva conversación",
   "chat_no_conversations": "Aún no hay conversaciones.",
   "chat_placeholder_analyst": "Escribe una pregunta, o presiona @ para insertar una métrica, dimensión o medida.",
+  "chat_read_only_notice": "Inicia sesión para continuar esta conversación. Solo los miembros de este proyecto pueden enviar mensajes.",
+  "chat_report_prompt": "Informe de IA",
+  "chat_report_prompt_comparison": "{prompt}, comparado con {comparisonTimeRange}",
+  "chat_report_prompt_explore": "Informe de IA para {explore}",
+  "chat_report_prompt_explore_time_range": "Informe de IA para {explore} que cubre {timeRange}",
+  "chat_report_prompt_time_range": "Informe de IA que cubre {timeRange}",
   "chat_send_message": "Enviar mensaje",
   "chat_share_conversation": "Compartir conversación",
   "chat_share_copied": "¡Copiado!",
@@ -915,6 +922,7 @@
   "dashboard_total_row": "Fila de totales",
   "dashboard_view_as": "Ver como",
   "dashboard_view_as_disabled": "No disponible durante la edición del proyecto",
+  "dashboard_view_as_error": "No se pudo ver como usuario",
   "dashboard_view_raw_aggregated_data": "Ver datos sin procesar de la celda agregada",
   "dashboard_viewing_as": "Viendo como <b>{email}</b>",
   "dialog_close_without_saving_alert_desc": "Aún no has guardado los cambios de esta alerta, por lo que cerrar esta ventana perderá tu trabajo.",
@@ -1236,9 +1244,17 @@
   "filter_advanced_beta": "Avanzado (BETA)",
   "filter_advanced_warning": "Los filtros avanzados son una funcionalidad experimental. Puede haber errores.",
   "filter_converted_to_select": "Tipo de filtro convertido a Seleccionar",
+  "filter_dimension": "dimensión",
+  "filter_dimension_chip_aria": "filtro {name}",
+  "filter_dimension_chip_tooltip": "Haz clic para editar los filtros de esta dimensión",
+  "filter_dimension_result_count_aria": "recuento de resultados de {name}",
+  "filter_dimension_results_aria": "resultados de {name}",
+  "filter_dimension_search_list_aria": "lista de búsqueda de {name}",
   "filter_dimensions": "DIMENSIONES",
   "filter_enter_search_term": "Ingresa un término de búsqueda",
   "filter_enter_search_term_select": "Ingresa un término de búsqueda",
+  "filter_exclude_label": "Excluir {label}",
+  "filter_in_list_too_long": "La lista es demasiado larga. Elimina algunos valores.",
   "filter_make_optional": "Hacer filtro opcional",
   "filter_make_required": "Hacer filtro obligatorio",
   "filter_measure_for_dimension": "para {dimension}",
@@ -1264,10 +1280,45 @@
   "filter_mode_in_list_description": "Crear un filtro basado en una lista de valores",
   "filter_mode_select": "Seleccionar",
   "filter_mode_select_description": "Seleccionar valores manualmente para este filtro",
+  "filter_no_results": "sin resultados",
   "filter_paste_list_hint": "Pegar una lista separada por comas o \\n",
   "filter_pin": "Fijar filtro",
   "filter_pin_tooltip": "Haz clic para fijar o desfijar: mantener este filtro visible en la parte superior para que otros usuarios no puedan eliminarlo.",
+  "filter_remove_values": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "eliminar {count} valor",
+        "countPlural=other": "eliminar {count} valores"
+      }
+    }
+  ],
+  "filter_required_dimension": "dimensión obligatoria",
+  "filter_required_missing_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Este dashboard requiere un valor para el siguiente filtro:",
+        "countPlural=other": "Este dashboard requiere valores para los siguientes filtros:"
+      }
+    }
+  ],
+  "filter_required_missing_title": "Selecciona un valor para continuar",
   "filter_required_tooltip": "Haz clic para marcar este filtro como obligatorio. Los visualizadores deben establecer un valor para que el dashboard se cargue.",
+  "filter_search_error": "error",
+  "filter_search_matched_count": "{count} de {total} coincidencias",
+  "filter_search_result_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} resultado",
+        "countPlural=other": "{count} resultados"
+      }
+    }
+  ],
   "filter_unpin": "Desfijar filtro",
   "footer_report_issue": "Reportar un problema",
   "footer_rill_developer": "Rill Developer",
@@ -2213,6 +2264,20 @@
       }
     }
   ],
+  "users_already_member_joined_groups": [
+    {
+      "declarations": [
+        "input emails",
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{emails} ya es miembro de esta organización y se agregó a los grupos seleccionados",
+        "countPlural=other": "{emails} ya son miembros de esta organización y se agregaron a los grupos seleccionados"
+      }
+    }
+  ],
   "users_and_more": "y {count} más",
   "users_attribute_key_placeholder": "Clave",
   "users_attribute_value_placeholder": "Valor",
@@ -2239,6 +2304,16 @@
   "users_create": "Crear",
   "users_custom_attributes": "Atributos personalizados",
   "users_custom_attributes_hint": "Se aplican a la membresía de la organización de cada usuario invitado. Se pueden usar en políticas de seguridad.",
+  "users_user_groups": "Grupos de usuarios",
+  "users_user_groups_hint": "Se aplica a todos los usuarios invitados. Los usuarios que aún no se han registrado se unen a los grupos al aceptar la invitación.",
+  "users_select_groups": "Seleccionar grupos",
+  "users_search_groups": "Buscar grupos",
+  "users_no_groups_available": "Aún no hay grupos de usuarios en esta organización",
+  "users_manage_groups": "Administrar grupos",
+  "users_manage_groups_description": "Elige los grupos de usuarios para {email}.",
+  "users_manage_groups_pending_hint": "Este usuario aún no ha aceptado su invitación. Se unirá a los grupos seleccionados cuando la acepte.",
+  "users_groups_updated": "Grupos de usuarios actualizados",
+  "users_error_updating_groups": "No se pudieron actualizar los grupos de usuarios: {message}",
   "users_email_or_group_placeholder": "Correo o grupo, separados por comas",
   "users_email_placeholder": "Agregar correos, separados por comas",
   "users_error": "Error",

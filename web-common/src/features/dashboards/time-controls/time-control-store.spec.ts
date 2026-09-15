@@ -408,14 +408,21 @@ describe("time-control-store", () => {
       metricsView,
       AD_BIDS_EXPLORE_INIT,
     );
-    const { stateManagers, queryClient } = initStateManagers();
+    const { stateManagers, queryClient, destroy } = initStateManagers();
     const timeControlsStore = createTimeControlStore(stateManagers);
 
     const { unmount } = render(TimeControlsStoreTest, {
       timeControlsStore,
     });
 
-    return { unmount, queryClient, timeControlsStore };
+    return {
+      unmount: () => {
+        unmount();
+        destroy();
+      },
+      queryClient,
+      timeControlsStore,
+    };
   }
 });
 

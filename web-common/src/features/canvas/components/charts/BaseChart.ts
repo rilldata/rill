@@ -16,7 +16,6 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { transformChartSpecToPivotState } from "@rilldata/web-common/features/components/charts/explore-transformer";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -133,9 +132,6 @@ export abstract class BaseChart<
 
   getExploreTransformerProperties(): Partial<ExploreState> {
     const spec = get(this.specStore);
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      this.componentFilters,
-    );
 
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
     const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);
@@ -149,8 +145,7 @@ export abstract class BaseChart<
     const passComparison = comparisonChartTypes.includes(this.type);
 
     return {
-      whereFilter: dimensionFilters,
-      dimensionThresholdFilters,
+      whereFilter: this.componentFilters,
       ...(passComparison ? {} : { showTimeComparison: false }),
       activePage: tddLink.canLink
         ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL

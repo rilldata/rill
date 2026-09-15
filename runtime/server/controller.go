@@ -51,6 +51,8 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, err
 	}
 
+	initializing := ctrl.Initializing()
+
 	if req.SkipSecurityChecks {
 		if !claims.Can(runtime.ReadInstance) {
 			return nil, ErrForbidden
@@ -83,7 +85,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	})
 
 	if req.PageSize == 0 {
-		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
+		return &runtimev1.ListResourcesResponse{Resources: rs, Initializing: initializing}, nil
 	}
 
 	var afterKind, afterName string
@@ -108,6 +110,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	return &runtimev1.ListResourcesResponse{
 		Resources:     rs[start:end],
 		NextPageToken: nextPageToken,
+		Initializing:  initializing,
 	}, nil
 }
 
@@ -495,7 +498,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	name := fmt.Sprintf("trigger_%s", randomString(8))
 	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: name}
 	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
-	err = ctrl.Create(ctx, n, nil, nil, nil, nil, false, r)
+	err = ctrl.Create(ctx, n, nil, nil, nil, nil, nil, false, r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create trigger: %w", err)
 	}

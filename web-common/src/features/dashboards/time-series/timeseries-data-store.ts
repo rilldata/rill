@@ -1,4 +1,3 @@
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { filterOutSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -65,13 +64,7 @@ export function createMetricsViewTimeSeries(
         {
           metricsViewName,
           measureNames: measures,
-          where: sanitiseExpression(
-            mergeDimensionAndMeasureFilters(
-              dashboardStore.whereFilter,
-              dashboardStore.dimensionThresholdFilters,
-            ),
-            undefined,
-          ),
+          where: sanitiseExpression(dashboardStore.whereFilter, undefined),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
             : timeControls.adjustedStart,
@@ -246,7 +239,7 @@ export function createTimeSeriesDataStore(
           }
           if (primaryTotal.error) {
             isError = true;
-            error["totals"] = (primaryTotal.error as Error).message;
+            error["totals"] = primaryTotal.error.message;
           }
           const primaryIsFetching = primary.isFetching;
           const primaryTotalIsFetching = primaryTotal.isFetching;

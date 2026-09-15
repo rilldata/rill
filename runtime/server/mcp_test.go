@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -66,6 +68,8 @@ explore:
 	// TODO: Use JWT with limited permissions when mcp-go supports client-side auth.
 	// jwt, err := auth.NewDevToken(nil, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI})
 	// require.NoError(t, err)
+
+	require.Contains(t, conn.InitializeResult().Instructions, "## Skills")
 
 	// Test tool listings
 	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
@@ -160,3 +164,58 @@ explore:
 	})
 	require.ErrorContains(t, err, `want "object"`)
 }
+
+// TestMCPSkillTools asserts that the skill tools are only advertised when the project defines skills
+// (TestMCP covers a project without skills) and the caller can use AI.
+func TestMCPSkillTools(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"skills/glossary/SKILL.md": `---
+description: Business glossary.
+---
+
+ARPU excludes trial users.`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "mcp/test", Version: "1.0.0"}, nil)
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, nil)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	toolNames := func(t *testing.T, conn *mcp.ClientSession) []string {
+		tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
+		require.NoError(t, err)
+		var names []string
+		for _, tool := range tools.Tools {
+			names = append(names, tool.Name)
+		}
+		return names
+	}
+	require.Subset(t, toolNames(t, conn), []string{ai.ListSkillsName, ai.LoadSkillName})
+
+	// A client without UseAI is not offered the skill tools
+	token, err := auth.NewDevToken(nil, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics})
+	require.NoError(t, err)
+	httpClient := &http.Client{Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		req.Header.Set("Authorization", "Bearer "+token)
+		return http.DefaultTransport.RoundTrip(req)
+	})}
+	conn, err = mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL, HTTPClient: httpClient}, nil)
+	require.NoError(t, err)
+	defer conn.Close()
+	require.NotSubset(t, toolNames(t, conn), []string{ai.ListSkillsName})
+	require.NotSubset(t, toolNames(t, conn), []string{ai.LoadSkillName})
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }

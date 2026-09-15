@@ -76,6 +76,16 @@ var (
 		"PQ": "-1Q/Q to ref/Q",
 		"PY": "-1Y/Y to ref/Y",
 	}
+	// Mapping for our old rill-<DAX> comparison offsets to ISO durations.
+	// Older reports/alerts may send these as the offset of a legacy comparison time range.
+	// "PP" (previous period) is handled separately since it depends on the main interval.
+	daxOffsetNotations = map[string]string{
+		"PD": "P1D",
+		"PW": "P1W",
+		"PM": "P1M",
+		"PQ": "P3M",
+		"PY": "P1Y",
+	}
 	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
 		"S": timeutil.TimeGrainSecond,
@@ -352,7 +362,19 @@ func ParseLegacy(duration, offset string, roundToGrain timeutil.TimeGrain, parse
 
 	if offset != "" {
 		if strings.HasPrefix(offset, "rill-") {
-			return nil, fmt.Errorf("offset cannot have DAX notation")
+			dax := strings.TrimPrefix(offset, "rill-")
+			if dax == "PP" {
+				rt.Offset = &Offset{
+					PreviousPeriod: &PreviousPeriod{Prefix: "-", Num: 1},
+				}
+				return rt, nil
+			}
+
+			iso, ok := daxOffsetNotations[dax]
+			if !ok {
+				return nil, fmt.Errorf("invalid DAX offset %q", offset)
+			}
+			offset = iso
 		}
 
 		offsetGrainPart, err := parseISODuration(offset)

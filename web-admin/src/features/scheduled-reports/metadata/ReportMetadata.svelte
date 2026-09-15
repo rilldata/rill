@@ -10,10 +10,17 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
-  import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
+  import {
+    getMappedAIExploreUrl,
+    getMappedExploreUrl,
+  } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
+  import type { AIResolverProps } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
-  import { stripInternalReportParams } from "@rilldata/web-common/features/scheduled-reports/utils";
+  import {
+    isAIReportSpec,
+    stripInternalReportParams,
+  } from "@rilldata/web-common/features/scheduled-reports/utils";
   import {
     ResourceKind,
     useResource,
@@ -54,6 +61,7 @@
 
   $: reportSpec = $reportQuery.data?.resource?.report?.spec;
   $: isCanvasReport = !!reportSpec?.annotations?.canvas;
+  $: isAIReport = !!reportSpec && isAIReportSpec(reportSpec);
 
   // Get dashboard
   $: dashboardName = useReportDashboardName(runtimeClient, report);
@@ -127,7 +135,17 @@
     ).toString();
     return search ? `${path}?${search}` : path;
   })();
-  $: dashboardUrl = isCanvasReport ? canvasUrl : $exploreUrl;
+  // AI reports link to the explore they analyze, with the report's scope (dimensions, measures, time ranges, filter) applied.
+  $: aiExploreUrl = getMappedAIExploreUrl(
+    (reportSpec?.resolverProperties ?? {}) as AIResolverProps,
+    isAIReport ? ($dashboardName.data ?? "") : "",
+    { client: runtimeClient, organization, project },
+  );
+  $: dashboardUrl = isCanvasReport
+    ? canvasUrl
+    : isAIReport
+      ? $aiExploreUrl
+      : $exploreUrl;
 
   // Actions
   const queryClient = useQueryClient();
@@ -168,17 +186,19 @@
             />
           </svelte:fragment>
         </ProjectAccessControls>
-        <!-- Format -->
-        <span>
-          {exportFormatToPrettyString(reportSpec.exportFormat)}
-        </span>
-        <!-- Limit (not applicable to PDF exports) -->
-        {#if reportSpec.exportFormat !== V1ExportFormat.EXPORT_FORMAT_PDF}
+        <!-- Format and limit (not applicable to AI reports, which deliver a conversation instead of an export) -->
+        {#if !isAIReport}
           <span>
-            • {reportSpec.exportLimit === "0"
-              ? m.report_no_row_limit()
-              : m.report_row_limit({ count: reportSpec.exportLimit })}
+            {exportFormatToPrettyString(reportSpec.exportFormat)}
           </span>
+          <!-- Limit (not applicable to PDF exports) -->
+          {#if reportSpec.exportFormat !== V1ExportFormat.EXPORT_FORMAT_PDF}
+            <span>
+              • {reportSpec.exportLimit === "0"
+                ? m.report_no_row_limit()
+                : m.report_row_limit({ count: reportSpec.exportLimit })}
+            </span>
+          {/if}
         {/if}
       </div>
       <div class="flex gap-x-2 items-center">

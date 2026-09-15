@@ -48,24 +48,10 @@ export class AdvancedMeasureCorrector {
   }
 
   private correct() {
-    this.correctFilters();
+    // Filters are owned by ExpressionFilterManager, which corrects them itself.
     this.correctLeaderboards();
     this.correctTimeDimensionDetails();
     this.correctPivot();
-  }
-
-  private correctFilters() {
-    this.exploreState.dimensionThresholdFilters.forEach(
-      (dimensionThreshold) => {
-        dimensionThreshold.filters = dimensionThreshold.filters.filter(
-          (dtf) => !this.measureIsValidForComponent(dtf.measure, false, false),
-        );
-      },
-    );
-    this.exploreState.dimensionThresholdFilters =
-      this.exploreState.dimensionThresholdFilters.filter(
-        (dt) => dt.filters.length,
-      );
   }
 
   private correctLeaderboards() {

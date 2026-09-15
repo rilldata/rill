@@ -1,6 +1,12 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
-import { act, screen, waitFor } from "@testing-library/svelte";
-import { expect } from "vitest";
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/svelte";
+import { beforeAll, expect, vi } from "vitest";
 
 export function useDashboardFetchMocksForComponentTests() {
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
@@ -38,6 +44,66 @@ export function useDashboardFetchMocksForComponentTests() {
   return mocks;
 }
 
+/**
+ * bits-ui 2.x uses PointerEvent APIs that jsdom doesn't support.
+ * Polyfill the missing types and methods so pointer-based interactions work in tests.
+ */
+export function mockPointerEventsForComponentTesting() {
+  beforeAll(() => {
+    if (typeof globalThis.PointerEvent === "undefined") {
+      (globalThis as Record<string, unknown>).PointerEvent =
+        class PointerEvent extends MouseEvent {
+          readonly pointerId: number;
+          readonly pointerType: string;
+          constructor(
+            type: string,
+            init?: PointerEventInit & Record<string, unknown>,
+          ) {
+            super(type, init);
+            this.pointerId = (init?.pointerId as number) ?? 0;
+            this.pointerType = (init?.pointerType as string) ?? "mouse";
+          }
+        };
+    }
+    if (!HTMLElement.prototype.hasPointerCapture) {
+      HTMLElement.prototype.hasPointerCapture = () => false;
+    }
+    if (!HTMLElement.prototype.releasePointerCapture) {
+      HTMLElement.prototype.releasePointerCapture = () => {};
+    }
+    if (!HTMLElement.prototype.scrollIntoView) {
+      HTMLElement.prototype.scrollIntoView = () => {};
+    }
+  });
+}
+
+/**
+ * jsdom does not implement ResizeObserver, which a `bind:contentRect` needs. jsdom gives elements
+ * no layout either, so the observer would never have a resize to report; a stub that never calls
+ * back leaves the bound rect at its initial zero size, which is what a test sees regardless.
+ */
+export function mockResizeObserverForComponentTesting() {
+  beforeAll(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class ResizeObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+  });
+}
+
+/**
+ * bits-ui schedules a body scroll lock cleanup that runs after the test ends, which throws
+ * "document is not defined" once jsdom is torn down. Await this in an `afterAll` to let it run.
+ */
+export async function waitForBodyScrollCleanup() {
+  await new Promise((resolve) => window.setTimeout(resolve, 30));
+}
+
+/** Adds a filter chip for `name` through the "add filter" menu. */
 export async function addFilter(name: string) {
   await act(() => {
     screen.getByLabelText("Add filter button").click();
@@ -51,4 +117,261 @@ export async function addFilter(name: string) {
   await waitFor(() =>
     expect(screen.queryByRole("menuitem", { name })).toBeNull(),
   );
+}
+
+/** The chip for `name`, whose text content is the filter as the user sees it. */
+export function getFilterChip(name: string) {
+  return screen.getByLabelText(`Open ${name} filter`);
+}
+
+/** Opens or closes the dropdown of the chip for `name`. */
+export async function toggleFilter(name: string) {
+  await act(() => getFilterChip(name).click());
+}
+
+export async function closeFilter(name: string) {
+  await toggleFilter(name);
+  await waitFor(() =>
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
+  );
+}
+
+/** The text of the mode selector trigger, which is the mode the open dropdown is in. */
+export function getDimensionFilterModeText() {
+  return document.getElementById("dimension-filter-mode-selector")!.textContent;
+}
+
+/** Picks a mode in the open dimension filter dropdown. */
+export async function selectDimensionFilterMode(name: RegExp) {
+  await selectFromDropdown("dimension-filter-mode-selector", name);
+}
+
+/** Removes the dimension chip for `label`. */
+export async function removeDimensionFilter(label: string) {
+  await act(() =>
+    within(screen.getByLabelText(`${label} filter`))
+      .getByLabelText("Remove")
+      .click(),
+  );
+}
+
+/**
+ * Picks the option matching `name` in the `Select` with trigger id `triggerId`.
+ *
+ * bits-ui 2.x Select: open via keyboard (Space) on the trigger, then navigate with Home and
+ * ArrowDown and select with Space. Pointer events don't work reliably in jsdom because bits-ui's
+ * item ref tracking requires real layout.
+ */
+export async function selectFromDropdown(triggerId: string, name: RegExp) {
+  const trigger = document.getElementById(triggerId)!;
+  trigger.focus();
+  await act(async () => {
+    await fireEvent.keyDown(trigger, { key: " " });
+  });
+  await waitFor(() =>
+    expect(screen.getByRole("option", { name })).toBeVisible(),
+  );
+
+  // Highlight the first option, then walk down to the target. bits-ui highlights the current
+  // value on open, so navigating from a known position keeps this independent of the option
+  // the select was on.
+  await act(async () => {
+    await fireEvent.keyDown(trigger, { key: "Home" });
+  });
+  const targetIndex = screen
+    .getAllByRole("option")
+    .findIndex((option) => name.test(option.textContent.trim()));
+  for (let i = 0; i < targetIndex; i++) {
+    await act(async () => {
+      await fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    });
+  }
+
+  // Space commits the highlighted option. Enter would too, but it also reaches the window level
+  // handler the dimension and measure filters have, which applies and closes the whole filter.
+  await act(async () => {
+    await fireEvent.keyDown(trigger, { key: " " });
+  });
+}
+
+/** Types `text` into the search input of the open dimension filter dropdown. */
+export async function typeInDimensionFilterSearch(name: string, text: string) {
+  await act(() =>
+    fireEvent.input(screen.getByLabelText(`${name} search list`), {
+      target: { value: text },
+    }),
+  );
+}
+
+/**
+ * The text of each item in the results of the open dimension filter dropdown.
+ * bits-ui 2.x renders items as adjacent elements without whitespace, so checking individual
+ * items is more reliable than toHaveTextContent.
+ */
+export function getDimensionFilterResults(name: string) {
+  const group = screen.getByLabelText(`${name} results`);
+  const items = group.querySelectorAll(
+    "[data-dropdown-menu-item], [data-dropdown-menu-checkbox-item]",
+  );
+  return Array.from(items).map((el) => el.textContent?.trim() ?? "");
+}
+
+/** Waits for the result count of the open dimension filter dropdown to be `count`. */
+export async function waitForDimensionFilterResultCount(
+  name: string,
+  count: string,
+) {
+  await waitFor(() =>
+    expect(screen.getByLabelText(`${name} result count`)).toHaveTextContent(
+      count,
+    ),
+  );
+}
+
+/**
+ * The footer button of the open dimension filter dropdown that selects or deselects every value in
+ * the result list. Only Select mode has it; the other modes have an Apply button in its place. Its
+ * label is the action it performs, so it reads "Deselect all" once everything is selected.
+ */
+export function getSelectAllButton() {
+  return screen.getByRole("button", { name: /^(Select|Deselect) all$/ });
+}
+
+/** Selects or deselects every value in the results of the open dimension filter dropdown. */
+export async function toggleSelectAll() {
+  await act(() => getSelectAllButton().click());
+}
+
+/** Checks `values` in the open dimension filter dropdown, which is in Select mode. */
+export async function selectValues(values: string[]) {
+  await waitFor(() => expect(screen.getByText(values[0])).toBeVisible());
+  for (const value of values) {
+    await act(() => screen.getByText(value).click());
+  }
+}
+
+/**
+ * Waits for the results of the open dimension filter dropdown to be `values`.
+ * Select mode has no result count to wait on, unlike the other two modes.
+ */
+export async function waitForDimensionFilterResults(
+  name: string,
+  values: string[],
+) {
+  await waitFor(() => expect(getDimensionFilterResults(name)).toEqual(values));
+}
+
+/** Flips the include/exclude toggle of the open dimension filter dropdown. */
+export async function toggleExclude() {
+  await act(() =>
+    fireEvent.click(screen.getByLabelText("Include exclude toggle")),
+  );
+}
+
+/**
+ * The chip for the measure filter with `label`, whose text content is the filter as the user sees
+ * it. Measure chips are labelled by the measure's display name, without the `filter` suffix the
+ * dimension chips have.
+ */
+export function getMeasureFilterChip(label: string) {
+  return screen.getByLabelText(`Open ${label}`);
+}
+
+/** Removes the measure chip for `label`. */
+export async function removeMeasureFilter(label: string) {
+  await act(() =>
+    within(screen.getByLabelText(label)).getByLabelText("Remove").click(),
+  );
+}
+
+/** Opens or closes the popover of the measure chip for `label`. */
+export async function toggleMeasureFilter(label: string) {
+  await act(() => getMeasureFilterChip(label).click());
+}
+
+/**
+ * Closes the popover of the measure chip for `label`, discarding whatever the form holds.
+ * The popover has no `role="menu"`, so `closeFilter` does not work for measure chips.
+ */
+export async function closeMeasureFilter(label: string) {
+  await toggleMeasureFilter(label);
+  await waitFor(() => expect(isMeasureFilterFormOpen()).toBe(false));
+}
+
+export async function waitForEmptyFilters() {
+  await waitFor(() =>
+    expect(screen.getByText("No filters selected")).toBeVisible(),
+  );
+}
+
+export async function clearFilters() {
+  await act(() =>
+    screen.getByRole("button", { name: "Clear filters" }).click(),
+  );
+  await waitForEmptyFilters();
+}
+
+/**
+ * Whether the measure filter form is open.
+ *
+ * bits-ui owns the id of the popover content, and jsdom gives the popover no layout to check
+ * visibility against, so the form controls are what is left to key off.
+ */
+export function isMeasureFilterFormOpen() {
+  return !!document.getElementById("value1");
+}
+
+/**
+ * Fills the fields that are passed in on the measure filter form of the open popover.
+ * Does not apply the filter; the form only reaches the dashboard through Apply.
+ */
+export async function fillMeasureFilterForm({
+  dimension,
+  operation,
+  value1,
+  value2,
+}: {
+  dimension?: RegExp;
+  operation?: RegExp;
+  value1?: string;
+  value2?: string;
+}) {
+  if (dimension) await selectFromDropdown("dimension", dimension);
+  if (operation) await selectFromDropdown("operation", operation);
+  if (value1 !== undefined) await typeInMeasureFilterValue("value1", value1);
+  if (value2 !== undefined) await typeInMeasureFilterValue("value2", value2);
+}
+
+/**
+ * Submits the measure filter form of the open popover, which is the only way a measure filter
+ * reaches the dashboard.
+ *
+ * superforms validates the form in a macrotask, so the click alone leaves nothing to assert on.
+ * A valid form closes the popover; an invalid one keeps it open and renders its errors.
+ */
+export async function applyMeasureFilter() {
+  await act(async () => {
+    screen.getByRole("button", { name: "Apply" }).click();
+    await new Promise((resolve) => window.setTimeout(resolve));
+    await new Promise((resolve) => window.setTimeout(resolve));
+  });
+}
+
+async function typeInMeasureFilterValue(id: string, value: string) {
+  await act(() =>
+    fireEvent.input(document.getElementById(id)!, { target: { value } }),
+  );
+}
+
+/**
+ * Applies the staged filter, which Contains and In List modes need, and which is the only way a
+ * measure filter reaches the dashboard.
+ */
+export async function applyFilter() {
+  await act(() => screen.getByRole("button", { name: "Apply" }).click());
+}
+
+/** The open dropdown applies the staged filter on a window level Enter. */
+export async function pressEnter() {
+  await act(() => fireEvent.keyDown(window, { key: "Enter" }));
 }

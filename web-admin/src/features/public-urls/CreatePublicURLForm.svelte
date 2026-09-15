@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import {
     createAdminServiceIssueMagicAuthToken,
     getAdminServiceListMagicAuthTokensQueryKey,
-    type AdminServiceIssueMagicAuthTokenBody,
   } from "@rilldata/web-admin/client";
-  import { isCanvasDashboardPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -25,40 +23,68 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import CanvasFiltersSection from "./CanvasFiltersSection.svelte";
-  import ExploreFiltersSection from "./ExploreFiltersSection.svelte";
-  import { convertDateToMinutes } from "./form-utils";
+  import {
+    convertDateToMinutes,
+    createFieldsAndStateForKind,
+  } from "./form-utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
   import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
+  import {
+    CanvasDashboardConfigProvider,
+    ExploreDashboardConfigProvider,
+  } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import { onDestroy } from "svelte";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
+  let {
+    dashboardResource,
+  }: { dashboardResource: { kind: ResourceKind; name: string } } = $props();
+
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
 
-  $: ({ organization, project, dashboard } = $page.params);
-  $: isCanvas = isCanvasDashboardPage($page);
+  let { organization, project, dashboard } = $derived(page.params);
 
-  $: isTitleEmpty = $form.title.trim() === "";
+  let url = $state<string | null>(null);
+  let setExpiration = $state(false);
+  let apiError: string = $state("");
+  let popoverOpen = $state(false);
+  let copied = $state(false);
 
-  let url: string | null = null;
-  let setExpiration = false;
-  let apiError: string;
-  let popoverOpen = false;
-  let copied = false;
+  // svelte-ignore state_referenced_locally
+  const { kind: dashboardKind, name: dashboardName } = dashboardResource;
+  const isExplore = dashboardKind === ResourceKind.Explore;
 
-  // These will be set by the child components via callbacks
-  let hasSomeFilter = false;
-  let dashboardDataProvider:
-    | (() => Partial<AdminServiceIssueMagicAuthTokenBody>)
-    | null = null;
+  const dashboardConfigProvider = isExplore
+    ? new ExploreDashboardConfigProvider(runtimeClient, dashboardName)
+    : new CanvasDashboardConfigProvider(runtimeClient, dashboardName);
+  const expressionFilterManager = new ExpressionFilterManager(
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+  );
 
-  function handleFilterStateChange(hasFilters: boolean) {
-    hasSomeFilter = hasFilters;
-  }
+  // Always load from current state. This is the only route to overwrite bookmark state.
+  // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
+  syncStoreWithSource(
+    expressionFilterManager,
+    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
+    () => dashboardConfigProvider.metricsViewsProvider.ready,
+  );
 
-  function handleProvideFilters(
-    provider: () => Partial<AdminServiceIssueMagicAuthTokenBody>,
-  ) {
-    dashboardDataProvider = provider;
-  }
+  const exprByMetricsView = $derived(expressionFilterManager.exprByMetricsView);
+  const hasSomeFilter = $derived(Object.keys(exprByMetricsView).length > 0);
+
+  const sanitisedFilterState = createFieldsAndStateForKind(
+    dashboardKind,
+    expressionFilterManager,
+  );
+  let { fields, sanitizedState, queryTimeStart, queryTimeEnd } = $derived(
+    $sanitisedFilterState,
+  );
 
   const formId = "create-public-url-form";
 
@@ -83,18 +109,15 @@
         const values = form.data;
 
         try {
-          if (!dashboardDataProvider) {
-            throw new Error("Dashboard data provider not initialized");
-          }
-
-          const dashboardData = dashboardDataProvider();
-
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
             org: organization,
             project,
             data: {
-              ...dashboardData,
+              resourceType: dashboardResource?.kind,
               resourceName: dashboard,
+              metricsViewFilters: exprByMetricsView,
+              fields,
+              state: sanitizedState,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
@@ -119,6 +142,24 @@
     },
   );
 
+  let isTitleEmpty = $derived($form.title.trim() === "");
+
+  $effect(() => {
+    if (setExpiration && $form.expiresAt === null) {
+      // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
+      $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
+      popoverOpen = true;
+    } else if (!setExpiration) {
+      $form.expiresAt = null;
+      popoverOpen = false;
+    }
+  });
+
+  let { length: allErrorsLength } = $derived($allErrors);
+  let maxExpirationDate = $derived(
+    DateTime.now().plus({ years: 1 }).startOf("day"),
+  );
+
   function onCopy() {
     copyToClipboard(url, "URL copied to clipboard", false);
     copied = true;
@@ -128,18 +169,9 @@
     }, 2_000);
   }
 
-  $: if (setExpiration && $form.expiresAt === null) {
-    // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
-    $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
-    popoverOpen = true;
-  } else if (!setExpiration) {
-    $form.expiresAt = null;
-    popoverOpen = false;
-  }
-
-  $: ({ length: allErrorsLength } = $allErrors);
-
-  $: maxExpirationDate = DateTime.now().plus({ years: 1 }).startOf("day");
+  onDestroy(() => {
+    dashboardConfigProvider.cleanup?.();
+  });
 </script>
 
 {#if !url}
@@ -204,17 +236,27 @@
       {/if}
     </div>
 
-    {#if isCanvas}
-      <CanvasFiltersSection
-        {dashboard}
-        onFilterStateChange={handleFilterStateChange}
-        onProvideFilters={handleProvideFilters}
-      />
-    {:else}
-      <ExploreFiltersSection
-        onFilterStateChange={handleFilterStateChange}
-        onProvideFilters={handleProvideFilters}
-      />
+    {#if hasSomeFilter}
+      <hr class="mt-4 mb-4" />
+
+      <div class="flex flex-col gap-y-1">
+        <p class="text-xs text-fg-primary font-normal">
+          {m.public_url_filters_locked_hidden()}
+        </p>
+        <div class="flex flex-col gap-2 my-2">
+          <ReadonlyExpressionFilters
+            {expressionFilterManager}
+            {queryTimeStart}
+            {queryTimeEnd}
+          />
+        </div>
+      </div>
+
+      {#if isExplore}
+        <p class="text-xs text-fg-primary font-normal mt-4 mb-4">
+          {m.public_url_measures_dimensions_limited()}
+        </p>
+      {/if}
     {/if}
 
     <Button

@@ -1,11 +1,13 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import {
+  getSelectedValuesInFilter,
+  getWhereFilterExpressionIndex,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
-  filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -33,6 +35,7 @@ import {
   type PivotMeasureFormatting,
   type PivotTableMode,
 } from "../pivot/types";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -124,12 +127,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   const dimensionsSet = new Set(explore.dimensions ?? []);
   const measuresSet = new Set(explore.measures ?? []);
 
-  exploreState.whereFilter =
-    filterExpressions(exploreState.whereFilter, (e) => {
-      if (!e.cond?.exprs?.length) return true;
-      return dimensionsSet.has(e.cond.exprs[0].ident!);
-    }) ?? createAndExpression([]);
-
   if (
     exploreState.selectedDimensionName &&
     !dimensionsSet.has(exploreState.selectedDimensionName)
@@ -164,10 +161,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
 const metricsViewReducers = {
   init(name: string, initState: ExploreState) {
     update((state) => {
-      // TODO: revisit this during the url state / restore user refactor
-      initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        initState.whereFilter,
-      );
       state.entities[name] = structuredClone(initState);
       state.entities[name].name = name;
 
@@ -196,9 +189,6 @@ const metricsViewReducers = {
       if (!partial.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        partial.whereFilter,
-      );
       correctExploreState(metricsView, exploreState);
     });
   },
@@ -206,6 +196,7 @@ const metricsViewReducers = {
   mergePartialExplorerEntity(
     name: string,
     partialExploreState: Partial<ExploreState>,
+    expressionFilterManager: ExpressionFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -213,14 +204,22 @@ const metricsViewReducers = {
       for (const key in partialExploreState) {
         exploreState[key] = partialExploreState[key];
       }
+
+      const mvName =
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+      if (mvName) {
+        exploreState.whereFilter =
+          expressionFilterManager.topLevelJoiner.expr[mvName] ??
+          createAndExpression([]);
+        exploreState.dimensionsWithInlistFilter =
+          expressionFilterManager.inList;
+      }
+
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
       if (!partialExploreState.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        partialExploreState.whereFilter,
-      );
       // Partial comes from getMergedExploreState and is already corrected
     });
   },
@@ -234,6 +233,32 @@ const metricsViewReducers = {
 
       // remove references to non existent dimensions
       syncDimensions(explore, exploreState);
+    });
+  },
+
+  syncExpressionFilter(
+    name: string,
+    expressionFilterManager: ExpressionFilterManager,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      const mvName =
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+      if (mvName) {
+        const newWhereFilter =
+          expressionFilterManager.topLevelJoiner.expr[mvName] ??
+          createAndExpression([]);
+        // Read before whereFilter is replaced, since the pin moves with the values it points at.
+        exploreState.tdd.pinIndex = getUpdatedPinIndex(
+          exploreState.tdd.pinIndex,
+          exploreState.selectedComparisonDimension,
+          exploreState.whereFilter,
+          newWhereFilter,
+        );
+
+        exploreState.whereFilter = newWhereFilter;
+        exploreState.dimensionsWithInlistFilter =
+          expressionFilterManager.inList;
+      }
     });
   },
 
@@ -719,6 +744,30 @@ function getPinIndexForDimension(
 
   // 1st entry in the expression is the identifier. hence the -2 here.
   return dimExpr.cond.exprs.length - 2;
+}
+
+/**
+ * `tdd.pinIndex` is an index into the comparison dimension's selected values,
+ * so removing or reordering those values leaves the pin on the wrong row.
+ * Everything up to and including the pin stays pinned,
+ * and the pin is dropped once none of those values are selected anymore.
+ */
+export function getUpdatedPinIndex(
+  pinIndex: number,
+  dimensionName: string | undefined,
+  oldWhereFilter: V1Expression | undefined,
+  newWhereFilter: V1Expression | undefined,
+) {
+  if (pinIndex === -1 || !dimensionName) return pinIndex;
+
+  const oldValues = getSelectedValuesInFilter(oldWhereFilter, dimensionName);
+  const newValues = getSelectedValuesInFilter(newWhereFilter, dimensionName);
+  // A contains filter gets its values from a search query rather than the expression,
+  // so there is nothing to remap against. Leave the pin as is.
+  if (!oldValues || !newValues) return pinIndex;
+
+  const pinnedValues = new Set(oldValues.slice(0, pinIndex + 1));
+  return newValues.findLastIndex((v) => pinnedValues.has(v));
 }
 
 export const dimensionSearchText = writable("");

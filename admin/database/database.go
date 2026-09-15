@@ -155,6 +155,7 @@ type DB interface {
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*UsergroupMemberUser, error)
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
+	InsertUsergroupsMemberUser(ctx context.Context, userID string, groupIDs []string) error
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
@@ -1052,11 +1053,14 @@ type ProjectMemberUser struct {
 type UsergroupMemberUser struct {
 	ID          string
 	Email       string
-	DisplayName string    `db:"display_name"`
-	PhotoURL    string    `db:"photo_url"`
-	RoleName    string    `db:"name"`
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
+	DisplayName string `db:"display_name"`
+	PhotoURL    string `db:"photo_url"`
+	// PendingAcceptance is true for users who have been invited to the group but have not signed up yet.
+	// For pending members, ID, DisplayName and PhotoURL are empty.
+	PendingAcceptance bool      `db:"pending_acceptance"`
+	RoleName          string    `db:"name"`
+	CreatedOn         time.Time `db:"created_on"`
+	UpdatedOn         time.Time `db:"updated_on"`
 }
 
 // MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
@@ -1089,6 +1093,7 @@ type OrganizationInviteWithRole struct {
 	ID         string
 	Email      string
 	RoleName   string         `db:"role_name"`
+	Usergroups []string       `db:"usergroups"` // Names of the user groups the user will be added to on acceptance
 	Attributes map[string]any `db:"attributes"`
 	InvitedBy  *string        `db:"invited_by"`
 }
@@ -1166,11 +1171,12 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 }
 
 type InsertOrganizationInviteOptions struct {
-	Email      string `validate:"email"`
-	InviterID  string
-	OrgID      string `validate:"required"`
-	RoleID     string `validate:"required"`
-	Attributes map[string]any
+	Email        string `validate:"email"`
+	InviterID    string
+	OrgID        string `validate:"required"`
+	RoleID       string `validate:"required"`
+	UsergroupIDs []string
+	Attributes   map[string]any
 }
 
 type InsertProjectInviteOptions struct {

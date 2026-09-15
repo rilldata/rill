@@ -3,13 +3,16 @@ import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils.ts";
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import { page } from "$app/stores";
+import { get } from "svelte/store";
 
 export function getNewAlertInitialFormValues(
   metricsViewName: string,
@@ -64,18 +67,29 @@ export function getNewAlertInitialFiltersFormValues(
     metricsViewName,
     exploreName,
   );
-  const filters = new Filters(metricsViewMetadata, {
-    whereFilter: exploreState.whereFilter ?? createAndExpression([]),
-    dimensionsWithInlistFilter: exploreState.dimensionsWithInlistFilter ?? [],
-    dimensionThresholdFilters: exploreState.dimensionThresholdFilters ?? [],
-    dimensionFilterExcludeMode:
-      exploreState.dimensionFilterExcludeMode ?? new Map<string, boolean>(),
-  });
+
+  const metricsViewProvider = new MetricsViewsProvider(client, [
+    metricsViewName,
+  ]);
+  const yamlConfigProvider = new YAMLConfigProvider();
+  const filters = new ExpressionFilterManager(
+    metricsViewProvider,
+    yamlConfigProvider,
+  );
+  filters.setUrlParams(get(page).url.searchParams);
+
   const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange: exploreState.selectedTimeRange,
     selectedComparisonTimeRange: exploreState.selectedComparisonTimeRange,
     showTimeComparison: exploreState.showTimeComparison ?? false,
     selectedTimezone: exploreState.selectedTimezone ?? "UTC",
   });
-  return { filters, timeControls };
+  return {
+    filters,
+    timeControls,
+    cleanup: () => {
+      metricsViewProvider.cleanup();
+      yamlConfigProvider.cleanup?.();
+    },
+  };
 }

@@ -1,22 +1,24 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
-  import type {
-    V1OrganizationInvite,
-    V1OrganizationMemberUser,
-  } from "@rilldata/web-admin/client";
+  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddUsersDialog.svelte";
   import AddGuestsDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddGuestsDialog.svelte";
   import ConvertGuestToMemberDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ConvertGuestToMemberDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
+  import ManageUserGroupsDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ManageUserGroupsDialog.svelte";
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/user-management/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/user-management/table/users/OrgUsersTable.svelte";
   import {
     getOrgUserInvites,
     getOrgUserMembers,
   } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
+  import {
+    coerceInvitesToUsers,
+    type OrgUserRow,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -35,6 +37,13 @@
   let isAddGuestsDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let editingUserGroupName = "";
+  let isManageGroupsDialogOpen = false;
+  let manageGroupsUser: {
+    email: string;
+    userId: string;
+    pendingAcceptance: boolean;
+    usergroups: string[];
+  } | null = null;
   let convertGuestUser: V1OrganizationMemberUser | undefined = undefined;
   let convertGuestDialogOpen = false;
 
@@ -64,16 +73,8 @@
       (page) => page.invites ?? [],
     ) ?? [];
 
-  function coerceInvitesToUsers(invites: V1OrganizationInvite[]) {
-    return invites.map((invite) => ({
-      ...invite,
-      userEmail: invite.email,
-      roleName: invite.roleName,
-    }));
-  }
-
   $: combinedRows = [
-    ...allOrgMemberUsersRows,
+    ...(allOrgMemberUsersRows as OrgUserRow[]),
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
@@ -94,13 +95,13 @@
     } else if (filterSelection === "members") {
       // Only members (org admin, editor, viewer)
       matchesRole =
-        !("invitedBy" in user) &&
+        !user.pendingAcceptance &&
         (user.roleName === OrgUserRoles.Admin ||
           user.roleName === OrgUserRoles.Editor ||
           user.roleName === OrgUserRoles.Viewer);
     } else if (filterSelection === "pending") {
       // Only users with pending invites
-      matchesRole = "invitedBy" in user;
+      matchesRole = !!user.pendingAcceptance;
     }
 
     return matchesSearch && matchesRole;
@@ -162,6 +163,15 @@
             editingUserGroupName = groupName;
             isEditUserGroupDialogOpen = true;
           }}
+          onManageGroups={(user: OrgUserRow) => {
+            manageGroupsUser = {
+              email: user.userEmail ?? "",
+              userId: user.userId ?? "",
+              pendingAcceptance: !!user.pendingAcceptance,
+              usergroups: user.usergroups ?? [],
+            };
+            isManageGroupsDialogOpen = true;
+          }}
           onConvertToMember={(user) => {
             convertGuestUser = user;
             convertGuestDialogOpen = true;
@@ -186,6 +196,17 @@
     bind:open={isEditUserGroupDialogOpen}
     groupName={editingUserGroupName}
     currentUserEmail={$currentUser.data?.user.email}
+  />
+{/if}
+
+{#if manageGroupsUser}
+  <ManageUserGroupsDialog
+    bind:open={isManageGroupsDialogOpen}
+    {organization}
+    email={manageGroupsUser.email}
+    userId={manageGroupsUser.userId}
+    pendingAcceptance={manageGroupsUser.pendingAcceptance}
+    currentGroups={manageGroupsUser.usergroups}
   />
 {/if}
 

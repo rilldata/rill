@@ -1047,6 +1047,8 @@ export interface V1OrganizationInvite {
   roleName?: string;
   invitedBy?: string;
   attributes?: V1OrganizationInviteAttributes;
+  /** Names of the user groups the user will be added to when the invite is accepted. */
+  usergroups?: string[];
 }
 
 export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
@@ -1780,6 +1782,9 @@ export interface V1UsergroupMemberUser {
   userEmail?: string;
   userName?: string;
   userPhotoUrl?: string;
+  /** True if the user has been invited to the group but has not signed up yet.
+For pending members, user_id, user_name and user_photo_url are empty. */
+  pendingAcceptance?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1975,6 +1980,10 @@ export type AdminServiceAddOrganizationMemberUserBody = {
   /** Custom attributes to set on the new membership.
 If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted. */
   attributes?: AdminServiceAddOrganizationMemberUserBodyAttributes;
+  /** Names of user groups in the org to add the user to.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+Groups are additive: on a re-invite they are merged with the groups already on the invite. */
+  usergroups?: string[];
   superuserForceAccess?: boolean;
 };
 
@@ -2205,6 +2214,10 @@ export type AdminServiceAddProjectMemberUserBody = {
 If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
 Setting attributes requires permission to manage org members. */
   attributes?: AdminServiceAddProjectMemberUserBodyAttributes;
+  /** Names of user groups in the org to add the user to (user groups are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting user groups requires permission to manage org members. */
+  usergroups?: string[];
 };
 
 export type AdminServiceCreatePersonalFileBody = {

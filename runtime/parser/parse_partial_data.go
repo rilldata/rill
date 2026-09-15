@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"golang.org/x/exp/maps"
@@ -116,6 +117,11 @@ func (p *Parser) parseDataYAML(paths []string, raw *DataYAML, contextualConnecto
 		count++
 		resolver = "ai"
 		resolverProps = raw.AI
+		// The agent can access any metrics view, so the explore is the only dependency known up front.
+		// Adding it as a ref makes reports wait for it to reconcile and lets watermark: inherit resolve time ranges against its data.
+		if explore, ok := raw.AI["explore"].(string); ok && explore != "" {
+			refs = append(refs, ResourceName{Kind: ResourceKindExplore, Name: explore})
+		}
 	}
 
 	// Handle union resolver
@@ -152,4 +158,20 @@ func (p *Parser) parseDataYAML(paths []string, raw *DataYAML, contextualConnecto
 	}
 
 	return resolver, resolverPropsPB, refs, nil
+}
+
+// metricsViewFromLegacyQueryArgs extracts the metrics view name from the JSON args of a legacy metrics query.
+// The query protos name the field either `metrics_view` or `metrics_view_name`, and protojson accepts both the snake and camel case forms.
+// It returns an empty string if the args are not valid JSON or do not name a metrics view.
+func metricsViewFromLegacyQueryArgs(argsJSON string) string {
+	var args map[string]any
+	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
+		return ""
+	}
+	for _, key := range []string{"metrics_view", "metrics_view_name", "metricsView", "metricsViewName"} {
+		if mv, ok := args[key].(string); ok && mv != "" {
+			return mv
+		}
+	}
+	return ""
 }

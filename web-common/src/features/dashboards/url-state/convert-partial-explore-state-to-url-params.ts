@@ -1,4 +1,3 @@
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { toPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
   type PivotChipData,
@@ -109,14 +108,10 @@ export function convertPartialExploreStateToUrlParams(
   }
 
   if ("whereFilter" in partialExploreState) {
-    const expr = mergeDimensionAndMeasureFilters(
-      partialExploreState.whereFilter,
-      partialExploreState.dimensionThresholdFilters ?? [],
-    );
     let filterParam = "";
-    if (expr && expr?.cond?.exprs?.length) {
+    if (partialExploreState.whereFilter?.cond?.exprs?.length) {
       filterParam = convertExpressionToFilterParam(
-        expr,
+        partialExploreState.whereFilter,
         partialExploreState.dimensionsWithInlistFilter,
       );
     }

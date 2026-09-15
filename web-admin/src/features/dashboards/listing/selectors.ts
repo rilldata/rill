@@ -1,10 +1,10 @@
 import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-import {
-  createSmartRefetchInterval,
-  isResourceReconciling,
-} from "@rilldata/web-admin/lib/refetch-interval-store";
+import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors";
-import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ListResourcesResponse,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -78,13 +78,16 @@ function isManagedOrShared({
 }
 
 /**
- * Returns true when the runtime is still in its initial build phase:
- * no dashboards exist yet AND non-parser resources are still reconciling.
+ * Returns true when the runtime is still in its initial build phase, i.e. no dashboards exist yet
+ * and the runtime reports that more resources may still appear.
  *
- * Used to show a "building" state instead of "no dashboards yet" during
- * deployment startup. In steady state (e.g., a model refresh on a project
- * that already has dashboards), this returns false because the dashboards
- * exist — even if other resources are reconciling.
+ * Used to show a "building" state instead of "no dashboards yet" during deployment startup. In
+ * steady state (e.g., a model refresh on a project that already has dashboards), this returns false
+ * because the dashboards exist — even if other resources are reconciling.
+ *
+ * An empty response is never enough to infer "still building" on its own: ListResources returns 200
+ * with an empty list when security policies deny every resource, which a deny-by-default project
+ * does for users who are entitled to nothing. Only `initializing` distinguishes the two.
  */
 export function useIsInitialBuild(client: RuntimeClient) {
   return createRuntimeServiceListResources(
@@ -92,18 +95,16 @@ export function useIsInitialBuild(client: RuntimeClient) {
     {},
     {
       query: {
-        select: (data): boolean => {
-          const resources = data.resources;
-          if (!resources?.length) return true;
-          const hasDashboards = resources.some((r) => r.canvas || r.explore);
-          if (hasDashboards) return false;
-          return resources.some(
-            (r) => !r.projectParser && isResourceReconciling(r),
-          );
-        },
+        select: isInitialBuild,
         enabled: !!client.instanceId,
         refetchInterval: dashboardRefetchInterval,
       },
     },
   );
+}
+
+export function isInitialBuild(data: V1ListResourcesResponse): boolean {
+  const resources = data.resources ?? [];
+  if (resources.some((r) => r.canvas || r.explore)) return false;
+  return data.initializing ?? false;
 }

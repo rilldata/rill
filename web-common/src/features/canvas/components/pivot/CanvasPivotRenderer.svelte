@@ -37,14 +37,17 @@
 
   // FilterManager and metrics view for filter application
   $: canvasEntity = component.parent;
-  $: filterManager = canvasEntity.filterManager;
+  $: filterManager = canvasEntity.expressionFilterManager;
   $: spec = component.specStore;
   $: metricsViewName = $spec?.metrics_view;
   $: selfFilteredDimensions = component.selfFilteredDimensions;
 
-  $: whereFilterStore = derived(filterManager.filterMapStore, (filterMap) => {
-    return metricsViewName ? filterMap.get(metricsViewName) : undefined;
-  });
+  $: whereFilterStore = derived(
+    filterManager.exprByMetricsViewStore,
+    (filterMap) => {
+      return metricsViewName ? filterMap[metricsViewName] : undefined;
+    },
+  );
 
   // Create click-to-filter orchestration; recreated when inputs become available
   let clickToFilter: PivotClickToFilterResult | undefined;
@@ -59,7 +62,6 @@
         pivotConfig,
         pivotDataStore,
         filterManager,
-        metricsViewName,
         componentId,
         activeComponent: canvasEntity.activeComponent,
         selfFilteredDimensions,

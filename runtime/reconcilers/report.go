@@ -10,7 +10,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -207,7 +206,7 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:    r.C.Runtime,
 			InstanceID: r.C.InstanceID,
-			Properties: spec.ResolverProperties.AsMap(),
+			Properties: resolverProperties(spec),
 			Claims:     claims,
 			ForExport:  false,
 		})
@@ -787,18 +786,11 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
 	}
 
-	// Get resolver properties from spec and add is_report flag
-	props := rep.Spec.ResolverProperties.AsMap()
-	props["is_report"] = true
-	if props["agent"] == nil {
-		props["agent"] = ai.AnalystAgentName
-	}
-
 	// Execute AI resolver
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
-		ResolverProperties: props,
+		ResolverProperties: resolverProperties(rep.Spec),
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
@@ -882,11 +874,35 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 	}
 }
 
+// resolverProperties returns the report's resolver properties as they should be passed to the resolver.
+// For AI reports, it marks the properties as belonging to a report, which lets the resolver's validation pass (e.g. a prompt is optional).
+func resolverProperties(spec *runtimev1.ReportSpec) map[string]any {
+	props := spec.ResolverProperties.AsMap()
+	if spec.Resolver == "ai" {
+		props["is_report"] = true
+	}
+	return props
+}
+
 // computeInheritedWatermark computes the inherited watermark for the report.
 // It returns false if the watermark could not be computed.
 func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
 	var t time.Time
 	for _, ref := range refs {
+		// Explores (referenced by AI reports) inherit the watermark of their metrics view.
+		// Resolving the metrics view here instead of in the watermark query keeps the query's cache keyed on the metrics view's data.
+		if ref.Kind == runtime.ResourceKindExplore {
+			res, err := r.C.Get(ctx, ref, false)
+			if err != nil {
+				return t, false, fmt.Errorf("failed to get explore %q: %w", ref.Name, err)
+			}
+			spec := res.GetExplore().State.ValidSpec
+			if spec == nil {
+				return t, false, fmt.Errorf("explore %q is not valid", ref.Name)
+			}
+			ref = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
+		}
+
 		q := &queries.ResourceWatermark{
 			ResourceKind: ref.Kind,
 			ResourceName: ref.Name,

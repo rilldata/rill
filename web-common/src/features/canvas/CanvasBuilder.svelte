@@ -64,7 +64,7 @@
   const MIN_DRAG_DISTANCE = 8;
 
   let initialMousePosition: { x: number; y: number } | null = null;
-  let clientWidth: number;
+  let clientWidth: number = 0;
   let offset = { x: 0, y: 0 };
   let dragComponent: BaseCanvasComponent | null = null;
   let pendingDragComponent: BaseCanvasComponent | null = null;

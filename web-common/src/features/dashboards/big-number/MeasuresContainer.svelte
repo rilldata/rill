@@ -1,16 +1,15 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
-  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
   export let metricsViewName: string;
+  export let whereFilter: V1Expression | undefined;
 
   const ctx = getStateManagers();
   const {
-    dashboardStore,
     selectors: {
       measures: { allMeasures, visibleMeasures },
       tags: { measureTagIndex },
@@ -31,13 +30,6 @@
   }
 
   // Query-context props for MeasureBigNumber
-  $: chartWhere = sanitiseExpression(
-    mergeDimensionAndMeasureFilters(
-      $dashboardStore?.whereFilter,
-      $dashboardStore?.dimensionThresholdFilters,
-    ),
-    undefined,
-  );
   $: chartReady = !!$timeControlsStore.ready;
 </script>
 
@@ -58,7 +50,7 @@
           {measure}
           withTimeseries={false}
           {metricsViewName}
-          where={chartWhere}
+          where={whereFilter}
           ready={chartReady}
         />
       </div>

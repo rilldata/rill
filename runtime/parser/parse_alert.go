@@ -226,6 +226,12 @@ func (p *Parser) parseAlert(node *Node) error {
 		if err != nil {
 			return fmt.Errorf("encountered invalid property type: %w", err)
 		}
+
+		// Add the queried metrics view as a ref, like the metrics resolver does.
+		// Among other things, this is what lets `watermark: inherit` resolve against the metrics view's data.
+		if mv := metricsViewFromLegacyQueryArgs(tmp.Query.ArgsJSON); mv != "" {
+			node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: mv})
+		}
 	}
 
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
@@ -270,7 +276,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Track alert
-	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}
