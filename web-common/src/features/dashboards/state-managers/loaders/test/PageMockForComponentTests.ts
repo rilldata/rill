@@ -1,5 +1,6 @@
 import type { afterNavigate } from "$app/navigation";
 import { AD_BIDS_EXPLORE_NAME } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import type { ActionResult, AfterNavigate, Page } from "@sveltejs/kit";
 import { writable, get, type Readable, type Updater } from "svelte/store";
 import { expect } from "vitest";
@@ -128,8 +129,17 @@ export class PageMockForComponentTests {
 
   public assertSearchParams(expectedSearch: string) {
     const actualSearch = normalizeSearch(get(this.hoistedPage).url);
-    expect(actualSearch).toEqual(
-      new URLSearchParams(expectedSearch).toString(),
+    expect(sortSearchParams(actualSearch)).toEqual(
+      sortSearchParams(expectedSearch),
+    );
+  }
+
+  /**
+   * Asserts the full url search history, ignoring the order params were set in.
+   */
+  public assertSearchHistory(expectedSearches: string[]) {
+    expect(this.urlSearchHistory.map(sortSearchParams)).toEqual(
+      expectedSearches.map(sortSearchParams),
     );
   }
 
@@ -177,4 +187,67 @@ function normalizeSearch(url: URL) {
   // Instead of handling this at every place in tests, we just remove it.
   if (normalizedSearch === "clear=true") normalizedSearch = "";
   return normalizedSearch;
+}
+
+/**
+ * Order in which `convertPartialExploreStateToUrlParams` adds params to the url.
+ * Params added under more than one web view are ordered by their 1st occurrence.
+ */
+const UrlParamOrder: string[] = [
+  ExploreStateURLParams.WebView,
+
+  // Time controls, added by `toTimeRangesUrl`.
+  ExploreStateURLParams.TimeRange,
+  ExploreStateURLParams.TimeDimension,
+  ExploreStateURLParams.TimeZone,
+  ExploreStateURLParams.ComparisonTimeRange,
+  ExploreStateURLParams.TimeGrain,
+  ExploreStateURLParams.ComparisonDimension,
+  ExploreStateURLParams.HighlightedTimeRange,
+
+  ExploreStateURLParams.Filters,
+
+  // Explore view, added by `toExploreUrlParams`.
+  ExploreStateURLParams.VisibleMeasures,
+  ExploreStateURLParams.VisibleDimensions,
+  ExploreStateURLParams.ExpandedDimension,
+  ExploreStateURLParams.SortBy,
+  ExploreStateURLParams.SortType,
+  ExploreStateURLParams.SortDirection,
+  ExploreStateURLParams.LeaderboardMeasures,
+  ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+  ExploreStateURLParams.DynamicYAxisScale,
+  ExploreStateURLParams.ChartType,
+
+  // Time dimension detail view, added by `toTimeDimensionUrlParams`.
+  ExploreStateURLParams.ExpandedMeasure,
+
+  // Pivot view, added by `toPivotUrlParams`.
+  ExploreStateURLParams.PivotRows,
+  ExploreStateURLParams.PivotColumns,
+  ExploreStateURLParams.PivotTableMode,
+  ExploreStateURLParams.PivotRowLimit,
+  ExploreStateURLParams.PivotShowTotalsColumn,
+  ExploreStateURLParams.PivotShowTotalsRow,
+  ExploreStateURLParams.PivotFormatting,
+];
+const UrlParamOrderMap = new Map(UrlParamOrder.map((p, i) => [p, i]));
+
+/**
+ * Sorts params in the order `convertPartialExploreStateToUrlParams` adds them,
+ * so that the assertion is not sensitive to the order params were set in.
+ * Unknown params retain their relative order and are placed at the end.
+ */
+function sortSearchParams(search: string) {
+  const entries = [...new URLSearchParams(search).entries()];
+  const sortedEntries = entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => {
+      const aOrder = UrlParamOrderMap.get(a.entry[0]) ?? UrlParamOrder.length;
+      const bOrder = UrlParamOrderMap.get(b.entry[0]) ?? UrlParamOrder.length;
+      return aOrder === bOrder ? a.index - b.index : aOrder - bOrder;
+    })
+    .map(({ entry }) => entry);
+
+  return new URLSearchParams(sortedEntries).toString();
 }

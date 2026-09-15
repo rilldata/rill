@@ -16,6 +16,7 @@ import {
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
 import type { TimeSeriesDatum } from "./timeseries-data-store";
+import type { DateTime } from "luxon";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -105,6 +106,18 @@ export function localToTimeZoneOffset(dt: Date, zone: string) {
 export function getOrderedStartEnd(start: Date, stop: Date) {
   const startMs = start?.getTime();
   const stopMs = stop?.getTime();
+
+  if (startMs > stopMs) {
+    return { start: stop, end: start };
+  } else {
+    return { start, end: stop };
+  }
+}
+
+// Return start and end of the time range that is ordered.
+export function getOrderedStartEndDateTime(start: DateTime, stop: DateTime) {
+  const startMs = start?.get("millisecond");
+  const stopMs = stop?.get("millisecond");
 
   if (startMs > stopMs) {
     return { start: stop, end: start };

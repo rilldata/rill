@@ -70,8 +70,8 @@
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { onDestroy } from "svelte";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   export let open: boolean;
   export let props:
@@ -154,19 +154,21 @@
         : {}
   ) as V1MetricsViewAggregationRequest;
 
-  let filters: ExpressionFilterManager | undefined;
-  let timeControls: TimeControls | undefined;
+  let expressionFilterManager: ExpressionFilterManager | undefined;
+  let timeFilterManager: TimeFilterManager | undefined;
   let cleanup: (() => void) | undefined = undefined;
   $: {
     cleanup?.();
-    ({ filters, timeControls, cleanup } = isCanvasReport
-      ? { filters: undefined, timeControls: undefined, cleanup: undefined }
+    ({ expressionFilterManager, timeFilterManager, cleanup } = isCanvasReport
+      ? {
+          expressionFilterManager: undefined,
+          timeFilterManager: undefined,
+          cleanup: undefined,
+        }
       : getFiltersAndTimeControlsFromAggregationRequest(
           runtimeClient,
           metricsViewName,
-          exploreName,
           aggregationRequest,
-          $allTimeRangeResp.data?.timeRangeSummary,
         ));
   }
 
@@ -336,21 +338,23 @@
       };
     }
 
-    const timeControlsState = timeControls!.toState();
     const updatedAggregationRequest = buildAggregationRequest(
       aggregationRequest,
       [
-        aggregationRequestWithTimeRange(exploreSpec, timeControlsState),
+        ...(timeFilterManager
+          ? [aggregationRequestWithTimeRange(timeFilterManager)]
+          : []),
         aggregationRequestWithRowsAndColumns({
           exploreSpec,
           rows: values.rows,
           columns: values.columns,
-          showTimeComparison: timeControlsState.showTimeComparison,
-          selectedTimezone: timeControlsState.selectedTimezone,
+          showTimeComparison: timeFilterManager?.showComparison ?? false,
+          selectedTimezone: timeFilterManager?.timeZone ?? "UTC",
         }),
       ],
     );
-    updatedAggregationRequest.where = filters?.topLevelJoiner[metricsViewName];
+    updatedAggregationRequest.where =
+      expressionFilterManager?.topLevelJoiner[metricsViewName];
     return {
       ...commonOptions,
       explore: exploreName,
@@ -440,12 +444,11 @@
       {errors}
       {submit}
       {enhance}
-      metricsViewName={metricsViewName ?? ""}
       exploreName={exploreName ?? ""}
       {canvasName}
       {canvasStateOverride}
-      {filters}
-      {timeControls}
+      {expressionFilterManager}
+      {timeFilterManager}
     />
 
     {#if generalErrors}

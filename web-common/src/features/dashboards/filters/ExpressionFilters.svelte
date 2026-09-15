@@ -7,11 +7,11 @@
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
   import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
+  import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   let {
     expressionFilterManager,
-    filteredMeasures,
-    filteredDimensions,
+    dashboardConfigProvider,
 
     timeEnd,
     timeStart,
@@ -21,10 +21,7 @@
     isUrlTooLongAfterInListFilter,
   }: {
     expressionFilterManager: ExpressionFilterManager;
-    // Explore spec can restrict the available dimension/measure vs metrics views.
-    // This is passed in explore context.
-    filteredDimensions?: string[];
-    filteredMeasures?: string[];
+    dashboardConfigProvider: DashboardConfigProvider;
 
     timeStart: string | undefined;
     timeEnd: string | undefined;
@@ -37,15 +34,17 @@
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
 
-  let metricsViewsProvider = $derived(
-    expressionFilterManager.metricsViewsProvider,
+  let { metricsViewsProvider, yamlConfigProvider } = $derived(
+    dashboardConfigProvider,
   );
-  let yamlConfigProvider = $derived(expressionFilterManager.yamlConfigProvider);
+
+  let { restrictedMeasures, restrictedDimensions } =
+    $derived(yamlConfigProvider);
 
   let allDimensions = $derived(
-    filteredDimensions
+    restrictedDimensions
       ? metricsViewsProvider.dimensions.filter((d) =>
-          filteredDimensions.includes(d.name!),
+          restrictedDimensions.includes(d.name!),
         )
       : metricsViewsProvider.dimensions,
   );
@@ -65,18 +64,18 @@
 
   let excludedDimensions = $derived(
     Object.fromEntries(
-      filteredDimensions
+      restrictedDimensions
         ? metricsViewsProvider.dimensions
-            .filter((d) => !filteredDimensions.includes(d.name!))
+            .filter((d) => !restrictedDimensions.includes(d.name!))
             .map((m) => [m.name!, true])
         : [],
     ),
   );
   let excludedMeasures = $derived(
     Object.fromEntries(
-      filteredMeasures
+      restrictedMeasures
         ? metricsViewsProvider.measures
-            .filter((m) => !filteredMeasures.includes(m.name!))
+            .filter((m) => !restrictedMeasures.includes(m.name!))
             .map((m) => [m.name!, true])
         : [],
     ),

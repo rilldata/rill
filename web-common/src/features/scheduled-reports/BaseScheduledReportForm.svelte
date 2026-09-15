@@ -5,7 +5,6 @@
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
@@ -33,20 +32,26 @@
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import {
+    CanvasDashboardConfigProvider,
+    type DashboardConfigProvider,
+    ExploreDashboardConfigProvider,
+  } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   export let formId: string;
   export let data: Readable<ReportValues>;
   export let errors: SuperFormErrors<ReportValues>;
   export let submit: () => void;
   export let enhance;
-  export let metricsViewName: string;
   export let exploreName: string;
   export let canvasName: string = "";
   // Canvas state (URL search string) to display instead of the page URL; set when
   // editing a report so the filter bar shows the report's captured state.
   export let canvasStateOverride: string | undefined = undefined;
-  export let filters: ExpressionFilterManager | undefined = undefined;
-  export let timeControls: TimeControls | undefined = undefined;
+  export let expressionFilterManager: ExpressionFilterManager | undefined =
+    undefined;
+  export let timeFilterManager: TimeFilterManager | undefined = undefined;
 
   const RUN_AS_OPTIONS = [
     {
@@ -85,6 +90,14 @@
   );
   $: canvasFiltersEnabled =
     $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
+
+  let dashboardConfigProvider: DashboardConfigProvider;
+  $: {
+    dashboardConfigProvider?.cleanup?.();
+    dashboardConfigProvider = exploreName
+      ? new ExploreDashboardConfigProvider(runtimeClient, exploreName)
+      : new CanvasDashboardConfigProvider(runtimeClient, canvasName);
+  }
 
   // Keyboard counterpart of the read-only filter bar's pointer-events guard:
   // its controls remain focusable, so kick focus back out to keep them inoperable.
@@ -238,7 +251,7 @@
         </Tooltip>
       </div>
 
-      {#if filters && timeControls}
+      {#if expressionFilterManager && timeFilterManager}
         <div class="flex flex-col gap-y-3">
           <InputLabel
             label={m.report_form_filters()}
@@ -246,10 +259,9 @@
             capitalize={false}
           />
           <FiltersForm
-            {filters}
-            {metricsViewName}
-            {exploreName}
-            {timeControls}
+            {expressionFilterManager}
+            {timeFilterManager}
+            {dashboardConfigProvider}
             side="top"
           />
         </div>

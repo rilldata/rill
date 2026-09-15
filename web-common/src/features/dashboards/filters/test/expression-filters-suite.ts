@@ -47,8 +47,10 @@ import { screen, waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 
 /**
- * How a test reads the filter state back. Explore takes it from the dashboard store the filter bar
- * writes to, while a standalone filter bar has the manager itself as the only holder of the state.
+ * How a test reads the filter state back.
+ * Explore takes it from the dashboard store the filter bar writes to,
+ * while a standalone filter bar has the manager itself as the only holder of the state.
+ * TODO: this should not be needed and all variants should read/write from the manager.
  */
 export interface ExpressionFilterManagerAccessor {
   /** The filter as it reached whatever consumes the filter bar. */
@@ -58,8 +60,9 @@ export interface ExpressionFilterManagerAccessor {
 }
 
 /**
- * One way of rendering the filter bar. The tests in this file drive the UI identically for every
- * variant, so a variant only covers where the filter state ends up and how it reaches the url.
+ * One way of rendering the filter bar.
+ * The tests in this file drive the UI identically for every variant,
+ * so a variant only covers where the filter state ends up and how it reaches the url.
  */
 export interface ExpressionFiltersVariant {
   /** Renders the filter bar and resolves once it is ready for interaction. */
@@ -78,8 +81,8 @@ export interface ExpressionFiltersVariant {
 }
 
 /**
- * `getMeasureDisplayName` falls back to the measure expression when the measure has no display
- * name, so the add filter menu and the measure chips read `count(*)` instead of `impressions`.
+ * `getMeasureDisplayName` falls back to the measure expression when the measure has no display name,
+ * so the add filter menu and the measure chips read `count(*)` instead of `impressions`.
  */
 export const AD_BIDS_IMPRESSIONS_MEASURE_LABEL = "count(*)";
 
@@ -87,7 +90,7 @@ export const AD_BIDS_IMPRESSIONS_MEASURE_LABEL = "count(*)";
  * The assertions that differ between variants, bound to one of them.
  * Every test asserts through these, so the test bodies themselves stay variant agnostic.
  */
-export function variantAssertions(variant: ExpressionFiltersVariant) {
+function variantAssertions(variant: ExpressionFiltersVariant) {
   return {
     initialUrlSearch: variant.initialUrlSearch,
     urlSearchWithFilter: (filter: string) =>
@@ -114,10 +117,9 @@ export function variantAssertions(variant: ExpressionFiltersVariant) {
      */
     assertUrlSearchHistory: (...searches: string[]) => {
       if (variant.noUrlSync) return;
-      expect(variant.pageMock().urlSearchHistory).toEqual([
-        ...variant.initialUrlSearchHistory,
-        ...searches,
-      ]);
+      variant
+        .pageMock()
+        .assertSearchHistory([...variant.initialUrlSearchHistory, ...searches]);
     },
   };
 }

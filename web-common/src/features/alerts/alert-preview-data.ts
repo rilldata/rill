@@ -11,16 +11,11 @@ import {
   ComparisonPercentOfTotal,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-import type {
-  TimeControls,
-  TimeControlState,
-} from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
   type StructTypeField,
   TypeCode,
-  type V1ExploreSpec,
   type V1Expression,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
@@ -33,6 +28,7 @@ import type {
   CreateQueryResult,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export type AlertPreviewResponse = {
   rows: V1MetricsViewAggregationResponseDataItem[];
@@ -44,22 +40,14 @@ export function getAlertPreviewData(
   queryClient: QueryClient,
   formValues: AlertFormValues,
   expr: V1Expression | undefined,
-  timeControls: TimeControls,
+  timeFilterManager: TimeFilterManager,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
-    [
-      useExploreValidSpec(client, formValues.exploreName),
-      timeControls.getStore(),
-    ],
-    ([validExploreSpec, timeControlsState], set) =>
+    [useExploreValidSpec(client, formValues.exploreName)],
+    ([validExploreSpec], set) =>
       createQueryServiceMetricsViewAggregation(
         client,
-        getAlertPreviewQueryRequest(
-          formValues,
-          expr,
-          timeControlsState,
-          validExploreSpec.data?.explore ?? {},
-        ),
+        getAlertPreviewQueryRequest(formValues, expr, timeFilterManager),
         {
           query: getAlertPreviewQueryOptions(
             formValues,
@@ -74,25 +62,23 @@ export function getAlertPreviewData(
 function getAlertPreviewQueryRequest(
   formValues: AlertFormValues,
   expr: V1Expression | undefined,
-  timeControlArgs: TimeControlState,
-  exploreSpec: V1ExploreSpec,
+  timeFilterManager: TimeFilterManager,
 ): V1MetricsViewAggregationRequest {
   const req = getAlertQueryArgsFromFormValues(
     formValues,
     expr,
-    timeControlArgs,
-    exploreSpec,
+    timeFilterManager,
   );
 
   req.limit = "50"; // arbitrary limit to make sure we do not pull too much of data
-  if (!timeControlArgs.selectedTimeRange?.end) return req;
+  if (!timeFilterManager.timeEnd) return req;
 
+  // TODO: revisit this logic
   if (req.timeRange && !req.timeRange.expression) {
-    req.timeRange.end = timeControlArgs.selectedTimeRange.end.toISOString();
+    req.timeRange.end = timeFilterManager.timeEnd;
   }
   if (req.comparisonTimeRange && !req.comparisonTimeRange.expression) {
-    req.comparisonTimeRange.end =
-      timeControlArgs.selectedTimeRange.end.toISOString();
+    req.comparisonTimeRange.end = timeFilterManager.comparisonTimeEnd;
   }
   return req;
 }
