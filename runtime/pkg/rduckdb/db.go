@@ -661,7 +661,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) (resErr e
 	newVersion := newVersion()
 	newDir := d.localTableDir(newName, newVersion)
 	if oldMeta.Type == "TABLE" {
-		err = copyDir(d.localTableDir(newName, newVersion), d.localTableDir(oldName, oldMeta.Version))
+		err = copyDir(newDir, d.localTableDir(oldName, oldMeta.Version))
 		if err != nil {
 			_ = os.RemoveAll(newDir)
 			return fmt.Errorf("rename: copy table failed: %w", err)
