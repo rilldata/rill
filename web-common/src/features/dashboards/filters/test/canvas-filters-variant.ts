@@ -2,7 +2,7 @@ import {
   getCanvasStore,
   removeCanvasStore,
 } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/last-visited-state";
 import CanvasExpressionFiltersTest from "@rilldata/web-common/features/dashboards/filters/test/CanvasExpressionFiltersTest.svelte";
 import type { ExpressionFiltersVariant } from "@rilldata/web-common/features/dashboards/filters/test/expression-filters-suite";
 import {

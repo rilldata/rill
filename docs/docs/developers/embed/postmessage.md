@@ -116,6 +116,8 @@ iframe.contentWindow.postMessage({
 
 `success` is `false` when `failOnError` is `true` and validation produced errors, in which case the state is not applied and `appliedState` is omitted. `appliedState` is the canonicalized query string that was actually applied to the dashboard. `errors` contains a message for each invalid parameter.
 
+Applying a state also discards the state the dashboard was last viewed with in this embed session, so the dashboard renders exactly the state that was applied. In particular, `setValidState({ state: "" })` resets the dashboard to its default view rather than restoring the previously viewed filters.
+
 
 ### `getState()`
 
@@ -322,7 +324,7 @@ iframe.contentWindow.postMessage({
 
 **Parameters:**
 - `name` (string): The name of the explore or canvas dashboard to navigate to, as defined in the project's YAML files.
-- `state` (string, optional): A URL query string to apply to the dashboard being navigated to. When omitted, the dashboard opens in its default state. The state of the dashboard being navigated away from is never carried over.
+- `state` (string, optional): A URL query string to apply to the dashboard being navigated to. When omitted, the dashboard opens in its default state, even if it was previously visited with filters applied in this embed session. The state of the dashboard being navigated away from is never carried over.
 - `failOnError` (boolean, optional): Behaves the same as in `setValidState`. When `false` (the default), the cleaned state is applied even when some parameters were invalid; when `true`, the navigation is skipped entirely if validation produced errors.
 
 **Response:**
@@ -364,7 +366,7 @@ Each call adds a browser history entry, so it can be undone with `navigateBack`.
 
 ### `navigateBack()`
 
-Navigates back to the previous entry in the iframe's browser history, equivalent to the browser's back button.
+Navigates the iframe back to the dashboard and state it was at before its most recent navigation.
 
 ```js
 iframe.contentWindow.postMessage({
@@ -381,12 +383,16 @@ iframe.contentWindow.postMessage({
 { "id": 10, "result": true }
 ```
 
-**Note:** This method returns the `Navigation is disabled for this embed` error when the embed is configured with `navigation=false`. When navigation is enabled but there is no previous history entry, for example on the first dashboard the embed loaded, the call succeeds without navigating.
+Navigation is confined to the iframe. `navigateBack` steps through the dashboards and states visited inside the embed, and never navigates, reloads, or unloads the host page, even when the host page navigated more recently than the embed did. When there is nothing earlier to return to, for example on the first dashboard the embed loaded, the call succeeds without navigating.
+
+Note that this is not the same as the browser's back button, which traverses the whole tab's history: that history interleaves the host page's entries with the embed's, so the browser's back button may undo a host page navigation instead of an embed one. For the same reason, calling `history.back()` on the iframe from the host page is not equivalent to `navigateBack` and is not supported.
+
+**Note:** This method returns the `Navigation is disabled for this embed` error when the embed is configured with `navigation=false`.
 
 
 ### `navigateForward()`
 
-Navigates forward to the next entry in the iframe's browser history, equivalent to the browser's forward button.
+Navigates the iframe forward to the dashboard and state a `navigateBack` moved away from.
 
 ```js
 iframe.contentWindow.postMessage({
@@ -403,7 +409,9 @@ iframe.contentWindow.postMessage({
 { "id": 11, "result": true }
 ```
 
-**Note:** As with `navigateBack`, this method returns an error when the embed is configured with `navigation=false`, and succeeds without navigating when there is no next history entry.
+As with `navigateBack`, this is confined to the iframe and never navigates the host page. Navigating the embed somewhere new discards the forward entries, so a `navigateForward` after that succeeds without navigating, as does one when the embed has not been taken back.
+
+**Note:** As with `navigateBack`, this method returns an error when the embed is configured with `navigation=false`.
 
 ## Notifications
 

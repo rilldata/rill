@@ -11,6 +11,11 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { buildValidatedExploreUrl } from "@rilldata/web-common/features/dashboards/state-managers/loaders/build-validated-explore-url.ts";
 import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
+import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/last-visited-state.ts";
+import {
+  EmbedNavigationStack,
+  readSvelteKitHistoryIndex,
+} from "@rilldata/web-admin/features/embeds/embed-navigation-stack.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import type { PageContentResized } from "@rilldata/web-common/lib/event-bus/events.ts";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
@@ -59,6 +64,7 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
   const embedThemeStore = getEmbedThemeStoreInstance();
 
   const embedStore = EmbedStore.getInstance();
+  const navigationStack = new EmbedNavigationStack();
   const themeModeFromUrl = embedStore?.themeMode;
   if (themeModeFromUrl) {
     if (
@@ -174,16 +180,21 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     }
   }
 
-  registerRPCMethod("navigateBack", () => {
+  // Navigation is confined to the iframe. `window.history.back()` / `forward()` traverse the tab's
+  // joint session history, so they can revert a navigation the host page made, or unload the host
+  // page altogether when the embed has no earlier entry of its own. Moving through the embed's own
+  // history with `goto` can only ever navigate the iframe; see embed-navigation-stack.ts.
+  function navigateWithinEmbed(delta: -1 | 1) {
     assertNavigationEnabled();
-    window.history.back();
+    const url = navigationStack.take(delta);
+    // There is nothing to navigate to at the edge of the embed's history,
+    // e.g. a back on the dashboard the embed loaded with, so the call succeeds without navigating.
+    if (url !== undefined) void goto(url);
     return true;
-  });
-  registerRPCMethod("navigateForward", () => {
-    assertNavigationEnabled();
-    window.history.forward();
-    return true;
-  });
+  }
+
+  registerRPCMethod("navigateBack", () => navigateWithinEmbed(-1));
+  registerRPCMethod("navigateForward", () => navigateWithinEmbed(1));
   registerRPCMethod(
     "navigateToDashboard",
     async (params: NavigateToDashboardParams) => {
@@ -223,6 +234,9 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
 
       if (state === undefined) {
         // Navigate without any state so that the dashboard falls back to its default behaviour.
+        // The state persisted from an earlier visit is dropped as well, otherwise the dashboard
+        // would come back up with those filters instead of its default state.
+        clearDashboardSessionState(dashboard);
         void goto(targetUrl);
         return { success: true, appliedState: "", errors: [] };
       }
@@ -243,6 +257,13 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
   );
   // Keep this at the end so that RPC methods are already available and "ready" has been fired.
   const unsubscribe = page.subscribe(({ url }) => {
+    // Track where the embed has been, whoever navigated it: an embed API call, a user interaction
+    // inside the dashboard, or a traversal of the tab's history.
+    navigationStack.record(
+      url.pathname + url.search,
+      readSvelteKitHistoryIndex(),
+    );
+
     // Throttle the state change event.
     // This avoids too many events being fired when state is changed quickly.
     // This also avoids early events being fired just before dashboard is ready but is routed to.
@@ -319,39 +340,54 @@ async function applyDashboardState(
   }: { failOnError: boolean; replaceState: boolean },
 ): Promise<ApplyDashboardStateResult> {
   const url = new URL(targetUrl);
+  let errorMessages: string[] = [];
 
-  if (dashboard?.kind !== ResourceKind.Explore) {
+  if (dashboard?.kind === ResourceKind.Explore) {
+    const { url: validatedParams, errors } = await buildValidatedExploreUrl(
+      client,
+      dashboard.name,
+      new URLSearchParams(state),
+      targetUrl,
+    );
+    errorMessages = errors.map((error) => error.message);
+
+    if (errors.length > 0 && failOnError) {
+      return { success: false, errors: errorMessages };
+    }
+
+    url.search = validatedParams.toString();
+  } else {
     url.search = state;
-    void goto(url, { replaceState });
-    return { success: true, appliedState: state, errors: [] };
   }
 
-  const { url: validatedParams, errors } = await buildValidatedExploreUrl(
-    client,
-    dashboard.name,
-    new URLSearchParams(state),
-    targetUrl,
-  );
-  const errorMessages = errors.map((error) => error.message);
+  // Clear the state persisted for this dashboard before navigating.
+  // The state applied here is derived from `state` alone, but applying the url via goto triggers the
+  // dashboard's redirect handling, which restores the persisted state for empty / view-only urls.
+  // Without this, resetting the dashboard (e.g. setValidState({ state: "" })) would restore the previous
+  // filters instead of the state we just computed and returned.
+  if (dashboard) clearDashboardSessionState(dashboard);
 
-  if (errors.length > 0 && failOnError) {
-    return { success: false, errors: errorMessages };
-  }
-
-  // Clear any prior embed session state for this explore before navigating.
-  // buildValidatedExploreUrl intentionally ignores session storage,
-  // but applying the url via goto triggers handleURLChange which re-merges session storage for empty / view-only urls.
-  // Without this, resetting the dashboard (e.g. setValidState({ state: "" })) would restore the previous session filters
-  // instead of the validated state we just computed and returned.
-  clearExploreSessionStore(dashboard.name, EmbedStorageNamespacePrefix);
-
-  url.search = validatedParams.toString();
   void goto(url, { replaceState });
   return {
     success: true,
     appliedState: url.search.replace(/^\?/, ""),
     errors: errorMessages,
   };
+}
+
+/**
+ * Clears the state persisted for a dashboard from an earlier visit within this embed session.
+ * Explores keep it in session storage, canvases in an in-memory snapshot.
+ */
+function clearDashboardSessionState(dashboard: DashboardInfo) {
+  switch (dashboard.kind) {
+    case ResourceKind.Explore:
+      clearExploreSessionStore(dashboard.name, EmbedStorageNamespacePrefix);
+      break;
+    case ResourceKind.Canvas:
+      lastVisitedState.delete(dashboard.name);
+      break;
+  }
 }
 
 const EmbedParams = [
