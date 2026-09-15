@@ -191,6 +191,7 @@ func TestDryRun(t *testing.T) {
 
 // TestUnnestDimension creates a table in the DSN's current database and schema, so the DSN must point at a writable schema.
 func TestUnnestDimension(t *testing.T) {
+	t.Skip("skipping due to inactive Snowflake account")
 	testmode.Expensive(t)
 	_, olap := acquireTestSnowflake(t)
 

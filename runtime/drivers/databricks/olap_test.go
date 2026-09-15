@@ -176,6 +176,7 @@ func TestQuerySchema(t *testing.T) {
 }
 
 func TestUnnestDimension(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
 	testmode.Expensive(t)
 	_, olap := acquireTestDatabricks(t)
 
