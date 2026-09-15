@@ -1854,7 +1854,7 @@
   "settings_dev_slots_title": "Development slots",
   "settings_slots_edit": "Change slots",
   "settings_slots_invalid": "Enter a positive whole number of slots.",
-  "settings_slots_restart_description": "Changing slots updates deployments and may briefly interrupt access. Resource usage and costs may change.",
+  "settings_slots_restart_description": "Changing slots reconciles the project again and may restart deployments, briefly interrupting access. Resource usage and costs may change.",
   "settings_slots_title": "Production slots",
   "settings_thumbnail_description": "Click to upload your thumbnail. The thumbnail will be used when sharing links to Rill in applications like Slack.",
   "settings_thumbnail_title": "Thumbnail",

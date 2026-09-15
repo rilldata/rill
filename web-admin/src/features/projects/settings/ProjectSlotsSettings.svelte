@@ -7,6 +7,7 @@
     getAdminServiceListProjectsForOrganizationQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
+  import DangerZone from "@rilldata/web-admin/components/settings/DangerZone.svelte";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import ClusterSize from "@rilldata/web-admin/features/projects/status/overview/ClusterSize.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -106,58 +107,64 @@
   }
 </script>
 
-<SettingsContainer title={m.settings_deployment_slots_title()}>
-  <form
-    id="project-slots-form"
-    aria-label={m.settings_deployment_slots_title()}
-    onsubmit={(event) => {
-      event.preventDefault();
-      void saveSlots();
-    }}
-    class="flex flex-col gap-4"
-  >
-    <p>{m.settings_deployment_slots_description()}</p>
-    <div class="grid grid-cols-1 gap-5 {showDevSlots ? 'md:grid-cols-2' : ''}">
-      {#each fields as { field, label } (field)}
-        <div class="flex flex-col gap-2">
-          <Input
-            id={field}
-            {label}
-            inputType="number"
-            value={editedSlots[field] ?? projectData?.[field] ?? ""}
-            oninput={(event: Event) => {
-              editedSlots[field] = (
-                event.currentTarget as HTMLInputElement
-              ).value;
-              error = undefined;
-            }}
-            disabled={!canManage || isPending}
-            errors={editedSlots[field] !== undefined &&
-            !validSlots(slots[field])
-              ? m.settings_slots_invalid()
-              : undefined}
-            alwaysShowError
-            textClass="text-sm"
-            additionalClass="max-w-[260px]"
-          />
-          {#if validSlots(slots[field])}<ClusterSize
-              slots={slots[field]}
-            />{/if}
-        </div>
-      {/each}
-    </div>
-    <p>{m.settings_slots_restart_description()}</p>
-    {#if error}<p role="alert" class="text-red-500">{error}</p>{/if}
-  </form>
-  {#snippet action()}
-    <Button
-      type="primary"
-      submitForm
-      form="project-slots-form"
-      disabled={!canSave}
-      loading={isPending}
+<DangerZone>
+  <SettingsContainer title={m.settings_deployment_slots_title()}>
+    <form
+      id="project-slots-form"
+      aria-label={m.settings_deployment_slots_title()}
+      onsubmit={(event) => {
+        event.preventDefault();
+        void saveSlots();
+      }}
+      class="flex flex-col gap-4"
     >
-      {m.settings_save_button()}
-    </Button>
-  {/snippet}
-</SettingsContainer>
+      <p>{m.settings_deployment_slots_description()}</p>
+      <div
+        class="grid grid-cols-1 gap-5 {showDevSlots ? 'md:grid-cols-2' : ''}"
+      >
+        {#each fields as { field, label } (field)}
+          <div class="flex flex-col gap-2">
+            <Input
+              id={field}
+              {label}
+              inputType="number"
+              value={editedSlots[field] ?? projectData?.[field] ?? ""}
+              oninput={(event: Event) => {
+                editedSlots[field] = (
+                  event.currentTarget as HTMLInputElement
+                ).value;
+                error = undefined;
+              }}
+              disabled={!canManage || isPending}
+              errors={editedSlots[field] !== undefined &&
+              !validSlots(slots[field])
+                ? m.settings_slots_invalid()
+                : undefined}
+              alwaysShowError
+              textClass="text-sm"
+              additionalClass="max-w-[260px]"
+            />
+            {#if validSlots(slots[field])}<ClusterSize
+                slots={slots[field]}
+              />{/if}
+          </div>
+        {/each}
+      </div>
+      <p class="text-red-600 dark:text-red-400">
+        {m.settings_slots_restart_description()}
+      </p>
+      {#if error}<p role="alert" class="text-red-500">{error}</p>{/if}
+    </form>
+    {#snippet action()}
+      <Button
+        type="primary"
+        submitForm
+        form="project-slots-form"
+        disabled={!canSave}
+        loading={isPending}
+      >
+        {m.settings_save_button()}
+      </Button>
+    {/snippet}
+  </SettingsContainer>
+</DangerZone>

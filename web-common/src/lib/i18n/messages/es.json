@@ -1863,7 +1863,7 @@
   "settings_dev_slots_title": "Slots de desarrollo",
   "settings_slots_edit": "Cambiar slots",
   "settings_slots_invalid": "Introduce un número entero positivo de slots.",
-  "settings_slots_restart_description": "Cambiar los slots actualiza los despliegues y puede interrumpir brevemente el acceso. El uso de recursos y los costos pueden cambiar.",
+  "settings_slots_restart_description": "Cambiar los slots vuelve a reconciliar el proyecto y puede reiniciar los despliegues, interrumpiendo brevemente el acceso. El uso de recursos y los costos pueden cambiar.",
   "settings_slots_title": "Slots de producción",
   "settings_thumbnail_description": "Haga clic para subir su miniatura. La miniatura se usará al compartir enlaces a Rill en aplicaciones como Slack.",
   "settings_thumbnail_title": "Miniatura",
