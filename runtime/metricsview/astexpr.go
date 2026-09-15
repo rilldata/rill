@@ -81,6 +81,18 @@ func (b *sqlExprBuilder) writeValue(val any) error {
 }
 
 func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
+	expr, args, err := b.subqueryExpr(sub)
+	if err != nil {
+		return err
+	}
+	b.writeString(expr)
+	b.args = append(b.args, args...)
+	return nil
+}
+
+// subqueryExpr builds the SQL for a subquery and returns it as a parenthesized scalar subquery
+// selecting the subquery's dimension, along with its bound args. It does not write to the builder.
+func (b *sqlExprBuilder) subqueryExpr(sub *Subquery) (string, []any, error) {
 	// We construct a Query that combines the parent Query's contextual info with that of the Subquery.
 	outer := b.ast.Query
 	inner := &Query{
@@ -110,21 +122,15 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 	}
 	innerAST, err := NewAST(b.ast.MetricsView, innerSecurity, inner, b.ast.Dialect)
 	if err != nil {
-		return fmt.Errorf("failed to create AST for subquery: %w", err)
+		return "", nil, fmt.Errorf("failed to create AST for subquery: %w", err)
 	}
 	sql, args, err := innerAST.SQL()
 	if err != nil {
-		return fmt.Errorf("failed to generate SQL for subquery: %w", err)
+		return "", nil, fmt.Errorf("failed to generate SQL for subquery: %w", err)
 	}
 
 	// Output: (SELECT <dimension> FROM (<subquery>))
-	b.writeString("(SELECT ")
-	b.writeString(b.ast.Dialect.EscapeIdentifier(sub.Dimension.Name))
-	b.writeString(" FROM (")
-	b.writeString(sql)
-	b.writeString("))")
-	b.args = append(b.args, args...)
-	return nil
+	return fmt.Sprintf("(SELECT %s FROM (%s))", b.ast.Dialect.EscapeIdentifier(sub.Dimension.Name), sql), args, nil
 }
 
 func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
@@ -279,7 +285,8 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// For IN/NIN on unnest dimensions backed by DuckDB or ClickHouse, use native array-contains
 		// functions (list_has_any / hasAny). This avoids double-counting when a row's array contains multiple matching values.
-		if (op == OperatorIn || op == OperatorNin) && b.ast.Dialect.RequiresArrayContainsForInOperator() {
+		// These functions only accept a literal list, so a subquery right-hand side is handled separately below.
+		if (op == OperatorIn || op == OperatorNin) && right.Value != nil && b.ast.Dialect.RequiresArrayContainsForInOperator() {
 			return b.writeArrayContainsCondition(leftExpr, right, op == OperatorNin)
 		}
 
@@ -294,6 +301,29 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			leftExpr = b.ast.Dialect.AutoUnnest(leftExpr)
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
+
+		// For IN/NIN with a subquery right-hand side on a dialect that unnests via an array join (tupleStyle == false, e.g. ClickHouse),
+		// adding the join would double-count rows whose array contains multiple matching values. Use a per-row array-contains expression instead.
+		// On dialects that unnest via a lateral EXISTS semi-join (tupleStyle == true, e.g. DuckDB), the fall-through below already avoids duplication.
+		if !tupleStyle && (op == OperatorIn || op == OperatorNin) && right.Subquery != nil && b.ast.Dialect.RequiresArrayContainsForInOperator() {
+			subExpr, subArgs, err := b.subqueryExpr(right.Subquery)
+			if err != nil {
+				return err
+			}
+			containsExpr, err := b.ast.Dialect.ArrayContainsSubqueryExpr(leftExpr, subExpr)
+			if err != nil {
+				return err
+			}
+			b.writeByte('(')
+			if op == OperatorNin {
+				b.writeString("NOT ")
+			}
+			b.writeString(containsExpr)
+			b.writeByte(')')
+			b.args = append(b.args, subArgs...)
+			return nil
+		}
+
 		var unnestColAlias string
 		if tupleStyle {
 			unnestColAlias = b.ast.Dialect.EscapeMember(unnestTableAlias, left.Name)
