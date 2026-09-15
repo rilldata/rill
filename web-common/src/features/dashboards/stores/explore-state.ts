@@ -36,7 +36,7 @@ export interface ExploreState {
   /**
    * Ad-hoc measures derived from existing metrics view measures via an
    * arithmetic expression (e.g. Profit = revenue - cost). Shared by all
-   * views (leaderboards, charts, pivot, ...) and encoded in the `ephemeral` URL
+   * views (leaderboards, charts, pivot, ...) and encoded in the `adhoc_m` URL
    * param. Definitions are independent of usage: an unused definition stays
    * available in the measure menus until explicitly deleted.
    */

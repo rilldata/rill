@@ -5,7 +5,7 @@
 // references to existing measures, numeric literals, basic arithmetic and a
 // small allowlist of functions. Definitions live on the explore state, are
 // shared by all views (leaderboards, charts, pivot, ...) and are encoded in
-// the `ephemeral` URL param so shared links reproduce them.
+// the `adhoc_m` URL param so shared links reproduce them.
 export type EphemeralMeasureDef = {
   // Query alias, e.g. "profit". Must not collide with metrics view field names.
   name: string;

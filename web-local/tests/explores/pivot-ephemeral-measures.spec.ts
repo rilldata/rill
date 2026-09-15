@@ -3,7 +3,7 @@ import { test } from "../setup/base";
 import { validateTableContents } from "../utils/tableHelpers";
 import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
 
-// ephemeral measures are encoded in the `ephemeral` URL param, so a
+// ephemeral measures are encoded in the `adhoc_m` URL param, so a
 // shared pivot URL reproduces them without any project or YAML changes.
 // Definitions can be created in the pivot UI or arrive via a shared URL.
 test.describe("pivot ephemeral measures from URL state", () => {
@@ -18,7 +18,7 @@ test.describe("pivot ephemeral measures from URL state", () => {
     await waitForReconciliation(page);
 
     await page.goto(
-      `${baseUrl}/explore/AdBids_metrics_explore?view=pivot&rows=publisher&cols=total_records,doubled&ephemeral=doubled:Doubled:total_records*2`,
+      `${baseUrl}/explore/AdBids_metrics_explore?view=pivot&rows=publisher&cols=total_records,doubled&adhoc_m=doubled:Doubled:total_records*2`,
     );
 
     // The ephemeral measure renders as a chip in the columns zone...
@@ -42,7 +42,7 @@ test.describe("pivot ephemeral measures from URL state", () => {
 
     // The definition survives in the URL for sharing.
     const url = new URL(page.url());
-    expect(url.searchParams.get("ephemeral")).toBe(
+    expect(url.searchParams.get("adhoc_m")).toBe(
       "doubled:Doubled:total_records*2",
     );
   });
@@ -54,7 +54,7 @@ test.describe("pivot ephemeral measures from URL state", () => {
     await waitForReconciliation(page);
 
     await page.goto(
-      `${baseUrl}/explore/AdBids_metrics_explore?measures=total_records,doubled&ephemeral=doubled:Doubled:total_records*2`,
+      `${baseUrl}/explore/AdBids_metrics_explore?measures=total_records,doubled&adhoc_m=doubled:Doubled:total_records*2`,
     );
 
     // The big number renders the ephemeral measure with its computed total
@@ -111,7 +111,7 @@ test.describe("pivot ephemeral measures from URL state", () => {
     // expression are URI-encoded per field by the ephemeral param grammar, so the
     // param value keeps that layer after URLSearchParams decoding.
     const url = new URL(page.url());
-    expect(url.searchParams.get("ephemeral")).toBe(
+    expect(url.searchParams.get("adhoc_m")).toBe(
       "doubled:Doubled:total_records%20*%202",
     );
   });
@@ -125,7 +125,7 @@ test.describe("pivot ephemeral measures from URL state", () => {
     await waitForReconciliation(page);
 
     await page.goto(
-      `${baseUrl}/explore/AdBids_metrics_explore?view=pivot&rows=publisher&cols=total_records,bad&ephemeral=bad:Bad:unknown_measure*2`,
+      `${baseUrl}/explore/AdBids_metrics_explore?view=pivot&rows=publisher&cols=total_records,bad&adhoc_m=bad:Bad:unknown_measure*2`,
     );
 
     // The invalid definition and its column are dropped; the rest renders.

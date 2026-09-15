@@ -5,6 +5,7 @@ import type {
 import { ephemeralMeasureToSpecMeasure } from "./measure-mapping";
 import { fromEphemeralMeasuresParam } from "./url-param";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { EphemeralMeasureDef } from "./types";
 import {
   isReferenceableMeasure,
@@ -56,7 +57,7 @@ export function validateEphemeralDefsAgainstSpec(
 }
 
 /**
- * Parses and validates a `ephemeral` URL param value.
+ * Parses and validates an `adhoc_m` URL param value.
  */
 export function parseAndValidateEphemeralParam(
   param: string,
@@ -92,31 +93,50 @@ export function injectEphemeralMeasuresIntoMap(
 }
 
 /**
- * Returns the definitions the explore state actually uses: visible or
- * leaderboard measures, the sort measure, the expanded TDD measure and pivot
- * chips. Only these go into the URL; the rest stay in the per-metrics-view
- * library (see `library.ts`), which keeps shared links from growing with
- * every definition the user has ever created.
+ * Returns the definitions the active page actually shows: visible and
+ * leaderboard measures plus the sort measure on the explore page, the expanded
+ * measure on the TDD page, and the row, column and sort chips on the pivot
+ * page. Only these go into the URL, matching the other params each page
+ * emits; the rest stay in the per-metrics-view library (see `library.ts`) and
+ * in the per-view session store, so hidden definitions are never lost and
+ * shared links do not grow with every definition the user has ever created.
  */
 export function referencedEphemeralMeasures(
   exploreState: Partial<ExploreState>,
 ): EphemeralMeasureDef[] {
   const defs = exploreState.ephemeralMeasures ?? [];
   if (!defs.length) return defs;
-  if (exploreState.allMeasuresVisible) return defs;
 
-  const referenced = new Set<string>([
-    ...(exploreState.visibleMeasures ?? []),
-    ...(exploreState.leaderboardMeasureNames ?? []),
-    ...(exploreState.pivot?.rows ?? []).map((chip) => chip.id),
-    ...(exploreState.pivot?.columns ?? []).map((chip) => chip.id),
-    ...(exploreState.pivot?.sorting ?? []).map((sort) => sort.id),
-  ]);
-  if (exploreState.leaderboardSortByMeasureName) {
-    referenced.add(exploreState.leaderboardSortByMeasureName);
-  }
-  if (exploreState.tdd?.expandedMeasureName) {
-    referenced.add(exploreState.tdd.expandedMeasureName);
+  const referenced = new Set<string>();
+  switch (exploreState.activePage) {
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
+      if (exploreState.tdd?.expandedMeasureName) {
+        referenced.add(exploreState.tdd.expandedMeasureName);
+      }
+      break;
+    case DashboardState_ActivePage.PIVOT:
+      for (const chip of [
+        ...(exploreState.pivot?.rows ?? []),
+        ...(exploreState.pivot?.columns ?? []),
+      ]) {
+        referenced.add(chip.id);
+      }
+      for (const sort of exploreState.pivot?.sorting ?? []) {
+        referenced.add(sort.id);
+      }
+      break;
+    default:
+      // Explore and dimension table pages.
+      if (exploreState.allMeasuresVisible) return defs;
+      for (const name of [
+        ...(exploreState.visibleMeasures ?? []),
+        ...(exploreState.leaderboardMeasureNames ?? []),
+      ]) {
+        referenced.add(name);
+      }
+      if (exploreState.leaderboardSortByMeasureName) {
+        referenced.add(exploreState.leaderboardSortByMeasureName);
+      }
   }
   return defs.filter((def) => referenced.has(def.name));
 }

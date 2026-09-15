@@ -3,6 +3,7 @@ import type { TimeControlState } from "@rilldata/web-common/features/dashboards/
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
+import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
 import {
   ExploreUrlWebView,
   FromActivePageMap,
@@ -52,6 +53,17 @@ export function updateExploreSessionStore(
     exploreState,
     timeControlsState,
   );
+  // The address bar only carries the ad-hoc measures the current page shows.
+  // The session store keeps every definition, since a stored view's own params
+  // (visible measures, pivot chips, ...) are validated against the definitions
+  // in the same entry when the view is restored; a narrowed list would drop
+  // the measures another view still shows.
+  if (exploreState.ephemeralMeasures?.length) {
+    urlSearchParams.set(
+      ExploreStateURLParams.EphemeralMeasures,
+      toEphemeralMeasuresParam(exploreState.ephemeralMeasures),
+    );
+  }
   try {
     // Store the full url for the web view
     setExploreStateForWebView(

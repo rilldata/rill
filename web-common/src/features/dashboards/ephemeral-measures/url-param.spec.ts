@@ -116,7 +116,7 @@ describe("ephemeral measures URL state integration", () => {
 
   it("restores ephemeral measures and their pivot columns from the URL", () => {
     const errors = applyUrl(
-      "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=impressions,profit&ephemeral=profit:Profit:impressions*2",
+      "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=impressions,profit&adhoc_m=profit:Profit:impressions*2",
     );
     expect(errors).toEqual([]);
 
@@ -132,7 +132,7 @@ describe("ephemeral measures URL state integration", () => {
 
   it("drops definitions referencing unknown measures, and their columns", () => {
     const errors = applyUrl(
-      "http://localhost/explore/AdBids_explore?view=pivot&cols=impressions,profit&ephemeral=profit:Profit:unknown*2",
+      "http://localhost/explore/AdBids_explore?view=pivot&cols=impressions,profit&adhoc_m=profit:Profit:unknown*2",
     );
     expect(errors.map((e) => e.message)).toEqual([
       `Selected adhoc measure: "profit ("unknown" is not a measure in this dashboard)" is not valid.`,
@@ -150,7 +150,7 @@ describe("ephemeral measures URL state integration", () => {
     // publisher_count exists in the metrics view but not in the explore, and
     // the server rejects computed fields that collide with any measure.
     const errors = applyUrl(
-      "http://localhost/explore/AdBids_explore?view=pivot&cols=publisher_count&ephemeral=publisher_count:PC:impressions*2",
+      "http://localhost/explore/AdBids_explore?view=pivot&cols=publisher_count&adhoc_m=publisher_count:PC:impressions*2",
     );
     expect(errors.length).toBe(2);
     expect(errors[0].message).toContain("already used by another field");
@@ -161,7 +161,7 @@ describe("ephemeral measures URL state integration", () => {
 
   it("does not report all measures visible while a spec measure is hidden", () => {
     const errors = applyUrl(
-      "http://localhost/explore/AdBids_explore?measures=impressions,profit&ephemeral=profit:Profit:impressions*2",
+      "http://localhost/explore/AdBids_explore?measures=impressions,profit&adhoc_m=profit:Profit:impressions*2",
     );
     expect(errors).toEqual([]);
     const state = getCleanMetricsExploreForAssertion();
@@ -171,7 +171,7 @@ describe("ephemeral measures URL state integration", () => {
 
   it("drops definitions whose name collides with a metrics view field", () => {
     const errors = applyUrl(
-      "http://localhost/explore/AdBids_explore?view=pivot&cols=bid_price&ephemeral=bid_price:Custom:impressions*2",
+      "http://localhost/explore/AdBids_explore?view=pivot&cols=bid_price&adhoc_m=bid_price:Custom:impressions*2",
     );
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain("already used by another field");
@@ -182,7 +182,7 @@ describe("ephemeral measures URL state integration", () => {
 
   it("accepts conditional formatting on an ephemeral measure", () => {
     const errors = applyUrl(
-      "http://localhost/explore/AdBids_explore?view=pivot&cols=profit&ephemeral=profit:Profit:impressions*2&format=profit:heatmap:greens",
+      "http://localhost/explore/AdBids_explore?view=pivot&cols=profit&adhoc_m=profit:Profit:impressions*2&format=profit:heatmap:greens",
     );
     expect(errors).toEqual([]);
 
