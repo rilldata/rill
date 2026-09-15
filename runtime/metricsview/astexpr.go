@@ -81,6 +81,17 @@ func (b *sqlExprBuilder) writeValue(val any) error {
 }
 
 func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
+	sql, args, err := b.subquerySQL(sub)
+	if err != nil {
+		return err
+	}
+	b.writeString(sql)
+	b.args = append(b.args, args...)
+	return nil
+}
+
+// subquerySQL returns "(SELECT <dimension> FROM (<subquery>))" and its args.
+func (b *sqlExprBuilder) subquerySQL(sub *Subquery) (string, []any, error) {
 	// We construct a Query that combines the parent Query's contextual info with that of the Subquery.
 	outer := b.ast.Query
 	inner := &Query{
@@ -110,21 +121,20 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 	}
 	innerAST, err := NewAST(b.ast.MetricsView, innerSecurity, inner, b.ast.Dialect)
 	if err != nil {
-		return fmt.Errorf("failed to create AST for subquery: %w", err)
+		return "", nil, fmt.Errorf("failed to create AST for subquery: %w", err)
 	}
 	sql, args, err := innerAST.SQL()
 	if err != nil {
-		return fmt.Errorf("failed to generate SQL for subquery: %w", err)
+		return "", nil, fmt.Errorf("failed to generate SQL for subquery: %w", err)
 	}
-
 	// Output: (SELECT <dimension> FROM (<subquery>))
-	b.writeString("(SELECT ")
-	b.writeString(b.ast.Dialect.EscapeIdentifier(sub.Dimension.Name))
-	b.writeString(" FROM (")
-	b.writeString(sql)
-	b.writeString("))")
-	b.args = append(b.args, args...)
-	return nil
+	var out strings.Builder
+	out.WriteString("(SELECT ")
+	out.WriteString(b.ast.Dialect.EscapeAlias(sub.Dimension.Name))
+	out.WriteString(" FROM (")
+	out.WriteString(sql)
+	out.WriteString("))")
+	return out.String(), args, nil
 }
 
 func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
@@ -277,10 +287,30 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
 
-		// For IN/NIN on unnest dimensions backed by DuckDB or ClickHouse, use native array-contains
-		// functions (list_has_any / hasAny). This avoids double-counting when a row's array contains multiple matching values.
-		if (op == OperatorIn || op == OperatorNin) && b.ast.Dialect.RequiresArrayContainsForInOperator() {
-			return b.writeArrayContainsCondition(leftExpr, right, op == OperatorNin)
+		// For IN/NIN on unnest dimensions, prefer a native array-contains expression over an unnest join where the dialect supports it.
+		// It avoids scanning the unnested rows and double-counting rows whose array contains multiple matching values.
+		// Subqueries (e.g. from measure filters) only take this path if the dialect can consume them; otherwise they are evaluated against the unnested elements below.
+		if op == OperatorIn || op == OperatorNin {
+			if vals, ok := right.Value.([]any); ok {
+				if b.writeArrayContainsCondition(leftExpr, vals, op == OperatorNin) {
+					return nil
+				}
+			} else if right.Subquery != nil {
+				sql, args, err := b.subquerySQL(right.Subquery)
+				if err != nil {
+					return err
+				}
+				if expr, ok := b.ast.Dialect.ArrayContainsSubqueryExpression("("+leftExpr+")", sql, b.ast.Dialect.EscapeAlias(right.Subquery.Dimension.Name)); ok {
+					b.writeByte('(')
+					if op == OperatorNin {
+						b.writeString("NOT ")
+					}
+					b.writeString(expr)
+					b.writeByte(')')
+					b.args = append(b.args, args...)
+					return nil
+				}
+			}
 		}
 
 		// Generate unnest join
@@ -294,16 +324,16 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			leftExpr = b.ast.Dialect.AutoUnnest(leftExpr)
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
-		var unnestColAlias string
-		if tupleStyle {
-			unnestColAlias = b.ast.Dialect.EscapeMember(unnestTableAlias, left.Name)
-		} else {
-			unnestColAlias = b.ast.Dialect.EscapeAlias(left.Name)
+		// A filter on an unnest dimension that is not selected should match each source row once, even if several of its elements match.
+		// Prefer the dialect's native any-element expression, otherwise use a correlated EXISTS subquery over the unnest join.
+		open, elem, closing, ok := b.ast.Dialect.ArrayAnyExpression(leftExpr, unnestTableAlias)
+		if !ok && !tupleStyle {
+			return fmt.Errorf("dialect %s cannot filter on unnest dimension %q: it must support tuple-style unnest or an array any-element expression", b.ast.Dialect, left.Name)
 		}
-
-		if !tupleStyle { // if tupleStyle, then we cannot refer to the column by table alias
-			b.ast.unnests = append(b.ast.unnests, unnestFrom)
-			return b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+		if !ok {
+			open = "EXISTS (SELECT 1 FROM " + unnestFrom + " WHERE "
+			elem = b.ast.Dialect.UnnestedColumn(unnestTableAlias, left.Name)
+			closing = ")"
 		}
 
 		// Need to move "NOT" to outside of the subquery
@@ -320,18 +350,15 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			not = true
 		}
 
-		// Output: [NOT] EXISTS (SELECT 1 FROM <unnestFrom> WHERE <unnestColAlias> <operator> <right>)
 		if not {
 			b.writeString("NOT ")
 		}
-		b.writeString("EXISTS (SELECT 1 FROM ")
-		b.writeString(unnestFrom)
-		b.writeString(" WHERE ")
-		err = b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+		b.writeString(open)
+		err = b.writeBinaryConditionInner(nil, right, elem, op)
 		if err != nil {
 			return err
 		}
-		b.writeByte(')')
+		b.writeString(closing)
 		return nil
 	}
 
@@ -659,46 +686,34 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 	return nil
 }
 
-func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Expression, not bool) error {
-	vals, ok := right.Value.([]any)
-	if !ok {
-		return fmt.Errorf("the right value must be a list of values for an array IN condition")
-	}
-
+// writeArrayContainsCondition writes a native array-contains condition for vals.
+// It returns false without writing anything if the dialect has no such expression.
+func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, vals []any, not bool) bool {
 	if len(vals) == 0 {
 		if not {
 			b.writeString("TRUE")
 		} else {
 			b.writeString("FALSE")
 		}
-		return nil
+		return true
+	}
+
+	// NULL values in the list are not handled separately: ClickHouse's hasAny matches them, while DuckDB's list_has_any and Databricks' arrays_overlap ignore them.
+	// There is no reliable way to check for NULL elements; leftExpr IS NULL checks for a NULL array, not NULL elements.
+	expr, ok := b.ast.Dialect.ArrayContainsAnyExpression("("+leftExpr+")", strings.TrimSuffix(strings.Repeat("?,", len(vals)), ","))
+	if !ok {
+		return false
 	}
 
 	b.writeByte('(')
 	if not {
 		b.writeString("NOT ")
 	}
-	arrayContainsFunc, err := b.ast.Dialect.GetArrayContainsFunction()
-	if err != nil {
-		return err
-	}
-	b.writeString(arrayContainsFunc)
-	b.writeByte('(')
-	b.writeParenthesizedString(leftExpr)
-	b.writeString(", [")
-	// not handling NULL values separately as clickhouse hasAny function takes care of it however, duckdb ignores null values in the list_has_any function, but there is no reliable way to make it work,
-	// but even using leftExpr IS NULL does not solve the issue as it checks for null array rather than null values in the array.
-	for i, val := range vals {
-		if i > 0 {
-			b.writeByte(',')
-		}
-		b.writeString("?")
-		b.args = append(b.args, val)
-	}
-	b.writeString("])")
+	b.writeString(expr)
 	b.writeByte(')')
+	b.args = append(b.args, vals...)
 
-	return nil
+	return true
 }
 
 func (b *sqlExprBuilder) writeByte(v byte) {

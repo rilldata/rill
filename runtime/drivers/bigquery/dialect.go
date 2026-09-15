@@ -70,6 +70,36 @@ func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
 	return res
 }
 
+func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+	expr, err := d.MetricsViewDimensionExpression(dim)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+	}
+	alias := d.EscapeAlias(dim.Name)
+	if !dim.Unnest {
+		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
+	}
+	unnestColName := d.EscapeIdentifier(drivers.TempName(fmt.Sprintf("unnested_%s_", dim.Name)))
+	return fmt.Sprintf(`%s AS %s`, unnestColName, alias), fmt.Sprintf(`, UNNEST(%s) AS %s`, expr, unnestColName), nil
+}
+
+// LateralUnnest returns a comma join with UNNEST. BigQuery exposes each element directly under the alias, so there is no tuple to index into.
+func (d *dialect) LateralUnnest(expr, _, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	return fmt.Sprintf(`UNNEST(%s) AS %s`, expr, d.EscapeIdentifier(colName)), false, false, nil
+}
+
+// ArrayContainsSubqueryExpression joins the subquery to the unnested array.
+// BigQuery cannot de-correlate an IN subquery that references another table inside a correlated EXISTS.
+// UNNEST comes first so that the array expression resolves against the outer query and cannot be shadowed by the subquery's column.
+func (d *dialect) ArrayContainsSubqueryExpression(arrExpr, subquerySQL, valueCol string) (expr string, ok bool) {
+	return fmt.Sprintf("EXISTS (SELECT 1 FROM UNNEST(%s) AS e JOIN %s AS s ON e = s.%s)", arrExpr, subquerySQL, valueCol), true
+}
+
+func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
+	elem = d.EscapeIdentifier(elemAlias)
+	return fmt.Sprintf("EXISTS (SELECT 1 FROM UNNEST(%s) AS %s WHERE ", arrExpr, elem), elem, ")", true
+}
+
 func (d *dialect) JoinOnExpression(lhs, rhs string) string {
 	// BigQuery requires plain equality for FULL joins
 	return fmt.Sprintf("coalesce(CAST(%s AS STRING), '__rill_sentinel__') = coalesce(CAST(%s AS STRING), '__rill_sentinel__')", lhs, rhs)

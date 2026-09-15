@@ -71,12 +71,29 @@ func (d *dialect) DimensionSelect(escapeTable string, dim *runtimev1.MetricsView
 	return sel, fmt.Sprintf(` LATERAL VIEW EXPLODE(%s) %s AS %s`, dim.Expression, unnestTableName, unnestColName), nil
 }
 
+// LateralUnnest uses tuple style so the element is referenced as tableAlias.colName; an unqualified colName is ambiguous when it matches the source column.
 func (d *dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
-	return fmt.Sprintf(`LATERAL VIEW EXPLODE(%s) %s AS %s`, expr, tableAlias, d.EscapeIdentifier(colName)), false, false, nil
+	return fmt.Sprintf(`LATERAL VIEW EXPLODE(%s) %s AS %s`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
 }
 
 func (d *dialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(" %s", tbl)
+}
+
+// ArrayAnyExpression wraps EXISTS in COALESCE: it returns NULL rather than false when no element matches and some element is NULL,
+// which would otherwise make negated filters drop the row.
+func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
+	return fmt.Sprintf("COALESCE(EXISTS(%s, %s -> ", arrExpr, elemAlias), elemAlias, "), FALSE)", true
+}
+
+// ArrayContainsAnyExpression wraps arrays_overlap in COALESCE for the same reason as ArrayAnyExpression.
+func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool) {
+	return fmt.Sprintf("COALESCE(arrays_overlap(%s, array(%s)), FALSE)", arrExpr, valuesExpr), true
+}
+
+// ArrayContainsSubqueryExpression collects the subquery into an array because Databricks does not allow subqueries inside lambda functions.
+func (d *dialect) ArrayContainsSubqueryExpression(arrExpr, subquerySQL, valueCol string) (expr string, ok bool) {
+	return fmt.Sprintf("COALESCE(arrays_overlap(%s, (SELECT collect_list(s.%s) FROM %s AS s)), FALSE)", arrExpr, valueCol, subquerySQL), true
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
