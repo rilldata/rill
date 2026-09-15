@@ -150,7 +150,7 @@ func TestArrayContainsCondition(t *testing.T) {
 					{Value: []any{"a", "b"}},
 				},
 			}},
-			wantSQL:  "(arrays_overlap((`tags`), array(?,?)))",
+			wantSQL:  "(COALESCE(arrays_overlap((`tags`), array(?,?)), FALSE))",
 			wantArgs: []any{"a", "b"},
 		},
 		{
@@ -163,7 +163,7 @@ func TestArrayContainsCondition(t *testing.T) {
 					{Value: []any{"a", "b"}},
 				},
 			}},
-			wantSQL:  "(NOT arrays_overlap((`tags`), array(?,?)))",
+			wantSQL:  "(NOT COALESCE(arrays_overlap((`tags`), array(?,?)), FALSE))",
 			wantArgs: []any{"a", "b"},
 		},
 		{
@@ -181,7 +181,7 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{"a", "b"},
 		},
 		{
-			name:    "snowflake: in on unnest dim uses ARRAYS_OVERLAP",
+			name:    "snowflake: in on unnest dim uses FILTER",
 			dialect: snowflake.DialectSnowflake,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorIn,
@@ -190,7 +190,7 @@ func TestArrayContainsCondition(t *testing.T) {
 					{Value: []any{"a", "b"}},
 				},
 			}},
-			wantSQL:  "(ARRAYS_OVERLAP((tags), ARRAY_CONSTRUCT(?,?)))",
+			wantSQL:  "COALESCE(ARRAY_SIZE(FILTER(tags, t2 -> ((t2::VARCHAR) IN (?,?)))) > 0, FALSE)",
 			wantArgs: []any{"a", "b"},
 		},
 		{

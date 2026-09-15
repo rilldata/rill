@@ -72,15 +72,17 @@ func (d *dialect) UnnestedColumn(tableAlias, colName string) string {
 	return d.EscapeMember(tableAlias, colName) + "::VARCHAR"
 }
 
-func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
-
-func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (string, error) {
-	return fmt.Sprintf("ARRAYS_OVERLAP(%s, ARRAY_CONSTRUCT(%s))", arrExpr, valuesExpr), nil
+// ArrayContainsSubqueryExpression aggregates the subquery into an array and tests each element against it.
+// An IN subquery inside the FILTER lambda causes an internal error in Snowflake, and ARRAYS_OVERLAP does not accept structured arrays.
+func (d *dialect) ArrayContainsSubqueryExpression(arrExpr, subquerySQL, valueCol string) (expr string, ok bool) {
+	return fmt.Sprintf("COALESCE(ARRAY_SIZE(FILTER(%s, x -> ARRAY_CONTAINS(x::VARCHAR::VARIANT, (SELECT ARRAY_AGG(s.%s) FROM %s AS s)))) > 0, FALSE)", arrExpr, valueCol, subquerySQL), true
 }
 
 // ArrayAnyExpression uses FILTER because Snowflake rejects correlated FLATTEN inside EXISTS subqueries.
+// It also serves IN filters: ARRAYS_OVERLAP does not accept structured arrays and compares raw VARIANT elements, which would not match the VARCHAR values shown by UnnestedColumn.
+// FILTER(NULL, ...) is NULL, so the result is coalesced to FALSE to keep rows with a NULL array under negated filters.
 func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
-	return fmt.Sprintf("(ARRAY_SIZE(FILTER(%s, %s -> ", arrExpr, elemAlias), elemAlias + "::VARCHAR", ")) > 0)", true
+	return fmt.Sprintf("COALESCE(ARRAY_SIZE(FILTER(%s, %s -> ", arrExpr, elemAlias), elemAlias + "::VARCHAR", ")) > 0, FALSE)", true
 }
 
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {

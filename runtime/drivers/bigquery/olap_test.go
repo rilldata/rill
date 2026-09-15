@@ -127,14 +127,15 @@ func TestUnnestDimension(t *testing.T) {
 	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
-	// Rows with overlapping and empty arrays, so joins that duplicate source rows are detectable.
+	// Rows with overlapping, empty and NULL arrays, so joins that duplicate source rows and NULL handling are detectable.
+	// BigQuery arrays cannot contain NULL elements, and a NULL array is stored as an empty array.
 	name := "test_unnest_" + uuid.New().String()[:8]
 	table := "`rilldata.integration_test." + name + "`"
 	t.Cleanup(func() {
 		err := olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE IF EXISTS " + table})
 		require.NoError(t, err)
 	})
-	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE " + table + " AS SELECT id, tags FROM UNNEST(ARRAY<STRUCT<id INT64, tags ARRAY<STRING>>>[(1, ['a', 'b']), (2, ['b']), (3, ['c']), (4, ARRAY<STRING>[])])"})
+	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE " + table + " AS SELECT id, tags FROM UNNEST(ARRAY<STRUCT<id INT64, tags ARRAY<STRING>>>[(1, ['a', 'b']), (2, ['b']), (3, ['c']), (4, ARRAY<STRING>[]), (5, NULL)])"})
 	require.NoError(t, err)
 
 	mv := &runtimev1.MetricsViewSpec{
@@ -193,10 +194,10 @@ func TestUnnestDimension(t *testing.T) {
 			want: []map[string]any{{"count": int64(2)}},
 		},
 		{
-			// Excludes rows containing 'a' even if they also contain other values; keeps the empty array.
+			// Excludes rows containing 'a' even if they also contain other values; keeps the empty and NULL arrays.
 			name: "nin filter excludes rows containing any listed value",
 			qry:  count(tagsFilter(metricsview.OperatorNin, []any{"a"})),
-			want: []map[string]any{{"count": int64(3)}},
+			want: []map[string]any{{"count": int64(4)}},
 		},
 		{
 			name: "eq filter",
@@ -206,12 +207,28 @@ func TestUnnestDimension(t *testing.T) {
 		{
 			name: "neq filter excludes rows containing the value",
 			qry:  count(tagsFilter(metricsview.OperatorNeq, "b")),
-			want: []map[string]any{{"count": int64(2)}},
+			want: []map[string]any{{"count": int64(3)}},
 		},
 		{
 			name: "eq filter with no match",
 			qry:  count(tagsFilter(metricsview.OperatorEq, "missing")),
 			want: []map[string]any{{"count": int64(0)}},
+		},
+		{
+			// Measure filter: the only dimension value with more than one row is 'b'.
+			name: "in filter with measure-filter subquery",
+			qry: count(&metricsview.Expression{Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorIn,
+				Expressions: []*metricsview.Expression{
+					{Name: "tags"},
+					{Subquery: &metricsview.Subquery{
+						Dimension: metricsview.Dimension{Name: "tags"},
+						Measures:  []metricsview.Measure{{Name: "count"}},
+						Having:    &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorGt, Expressions: []*metricsview.Expression{{Name: "count"}, {Value: 1}}}},
+					}},
+				},
+			}}),
+			want: []map[string]any{{"count": int64(2)}},
 		},
 		{
 			name: "filter combined with group by on another dimension",
