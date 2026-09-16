@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -87,4 +89,46 @@ measures:
 			{Dimension: "domain", Value: "foo.com"},
 		}, res)
 	})
+}
+
+// TestSearchDruidSQLCastsNonStringDimensions checks the per-dimension SQL that the search fallback (UNION ALL) query generates for Druid.
+// Druid has no ILIKE, so the search is compiled to REGEXP_LIKE, which only accepts string operands:
+// dimensions with a known non-string type (including the time dimension) must be cast to VARCHAR, while string dimensions and dimensions of unknown type are matched directly.
+func TestSearchDruidSQLCastsNonStringDimensions(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table:         "events",
+		TimeDimension: "__time",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "__time", Column: "__time", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+			{Name: "account_id", Column: "account_id", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}},
+			{Name: "account_name", Column: "account_name", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+			{Name: "domain", Column: "domain"},
+		},
+	}
+
+	cases := map[string]string{
+		"__time":       `SELECT ("__time") AS "__time" FROM "events" WHERE (REGEXP_LIKE(CAST(("__time") AS VARCHAR), ?)) GROUP BY 1`,
+		"account_id":   `SELECT ("account_id") AS "account_id" FROM "events" WHERE (REGEXP_LIKE(CAST(("account_id") AS VARCHAR), ?)) GROUP BY 1`,
+		"account_name": `SELECT ("account_name") AS "account_name" FROM "events" WHERE (REGEXP_LIKE(("account_name"), ?)) GROUP BY 1`,
+		"domain":       `SELECT ("domain") AS "domain" FROM "events" WHERE (REGEXP_LIKE(("domain"), ?)) GROUP BY 1`,
+	}
+	for dim, want := range cases {
+		t.Run(dim, func(t *testing.T) {
+			qry := &metricsview.Query{
+				MetricsView: "mv",
+				Dimensions:  []metricsview.Dimension{{Name: dim}},
+				Where: &metricsview.Expression{Condition: &metricsview.Condition{
+					Operator:    metricsview.OperatorIlike,
+					Expressions: []*metricsview.Expression{{Name: dim}, {Value: "%tvc%"}},
+				}},
+			}
+			ast, err := metricsview.NewAST(mv, runtime.ResolvedSecurityOpen, qry, druid.DialectDruid)
+			require.NoError(t, err)
+
+			sql, args, err := ast.SQL()
+			require.NoError(t, err)
+			require.Equal(t, want, sql)
+			require.Equal(t, []any{"^(?i).*tvc.*$"}, args)
+		})
+	}
 }
