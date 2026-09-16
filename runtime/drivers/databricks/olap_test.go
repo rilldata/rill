@@ -1,6 +1,11 @@
 package databricks_test
 
 import (
+	"context"
+	"fmt"
+	"github.com/google/uuid"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"strings"
 	"testing"
 	"time"
@@ -169,6 +174,148 @@ func TestQuerySchema(t *testing.T) {
 	require.Equal(t, "int32_col", schema.Fields[0].Name)
 	require.Equal(t, "string_col", schema.Fields[1].Name)
 }
+
+func TestUnnestDimension(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
+	testmode.Expensive(t)
+	_, olap := acquireTestDatabricks(t)
+
+	// Rows with overlapping, empty, NULL-element and NULL arrays, so joins that duplicate source rows and NULL handling are detectable.
+	// The table is created in the DSN's current schema.
+	name := "test_unnest_" + uuid.New().String()[:8]
+	t.Cleanup(func() {
+		err := olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE IF EXISTS " + name})
+		require.NoError(t, err)
+	})
+	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE " + name + " AS SELECT CAST(id AS BIGINT) AS id, tags FROM VALUES (1, array('a', 'b')), (2, array('b')), (3, array('c')), (4, CAST(array() AS ARRAY<STRING>)), (5, array('c', NULL)), (6, CAST(NULL AS ARRAY<STRING>)) AS t(id, tags)"})
+	require.NoError(t, err)
+
+	mv := &runtimev1.MetricsViewSpec{
+		Table: name,
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "tags", Column: "tags", Unnest: true},
+			{Name: "id", Column: "id"},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+
+	// Same query shape as the executor's dimension validation.
+	dialect := olap.Dialect()
+	escapeTable := dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
+	sel, unnestClause, err := dialect.DimensionSelect(escapeTable, mv.Dimensions[0])
+	require.NoError(t, err)
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", sel, escapeTable, unnestClause), DryRun: true})
+	require.NoError(t, err)
+
+	tagsFilter := func(op metricsview.Operator, val any) *metricsview.Expression {
+		return &metricsview.Expression{Condition: &metricsview.Condition{
+			Operator:    op,
+			Expressions: []*metricsview.Expression{{Name: "tags"}, {Value: val}},
+		}}
+	}
+	count := func(where *metricsview.Expression) *metricsview.Query {
+		return &metricsview.Query{Measures: []metricsview.Measure{{Name: "count"}}, Where: where}
+	}
+
+	tests := []struct {
+		name string
+		qry  *metricsview.Query
+		want []map[string]any
+	}{
+		{
+			name: "group by unnest dimension",
+			qry: &metricsview.Query{
+				Dimensions: []metricsview.Dimension{{Name: "tags"}},
+				Measures:   []metricsview.Measure{{Name: "count"}},
+				Sort:       []metricsview.Sort{{Name: "tags"}},
+			},
+			want: []map[string]any{
+				{"tags": "a", "count": int64(1)},
+				{"tags": "b", "count": int64(2)},
+				{"tags": "c", "count": int64(2)},
+				{"tags": nil, "count": int64(1)},
+			},
+		},
+		{
+			// Row 1 matches both values but must be counted once.
+			name: "in filter counts each source row once",
+			qry:  count(tagsFilter(metricsview.OperatorIn, []any{"a", "b"})),
+			want: []map[string]any{{"count": int64(2)}},
+		},
+		{
+			// Excludes rows containing 'a' even if they also contain other values; keeps the empty, NULL-element and NULL arrays.
+			name: "nin filter excludes rows containing any listed value",
+			qry:  count(tagsFilter(metricsview.OperatorNin, []any{"a"})),
+			want: []map[string]any{{"count": int64(5)}},
+		},
+		{
+			name: "eq filter",
+			qry:  count(tagsFilter(metricsview.OperatorEq, "b")),
+			want: []map[string]any{{"count": int64(2)}},
+		},
+		{
+			// Keeps the NULL-element and NULL arrays: a NULL comparison must not be treated as a match.
+			name: "neq filter excludes rows containing the value",
+			qry:  count(tagsFilter(metricsview.OperatorNeq, "b")),
+			want: []map[string]any{{"count": int64(4)}},
+		},
+		{
+			name: "ilike filter",
+			qry:  count(tagsFilter(metricsview.OperatorIlike, "%B%")),
+			want: []map[string]any{{"count": int64(2)}},
+		},
+		{
+			name: "eq filter with no match",
+			qry:  count(tagsFilter(metricsview.OperatorEq, "missing")),
+			want: []map[string]any{{"count": int64(0)}},
+		},
+		{
+			name: "filter combined with group by on another dimension",
+			qry: &metricsview.Query{
+				Dimensions: []metricsview.Dimension{{Name: "id"}},
+				Measures:   []metricsview.Measure{{Name: "count"}},
+				Where:      tagsFilter(metricsview.OperatorIn, []any{"a", "b"}),
+				Sort:       []metricsview.Sort{{Name: "id"}},
+			},
+			want: []map[string]any{
+				{"id": int64(1), "count": int64(1)},
+				{"id": int64(2), "count": int64(1)},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.qry.MetricsView = mv.Table
+			ast, err := metricsview.NewAST(mv, allowAllSecurity{}, tt.qry, dialect)
+			require.NoError(t, err)
+			sql, args, err := ast.SQL()
+			require.NoError(t, err)
+			require.Equal(t, tt.want, queryRows(t, olap, sql, args))
+		})
+	}
+}
+
+func queryRows(t *testing.T, olap drivers.OLAPStore, query string, args []any) []map[string]any {
+	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: query, Args: args})
+	require.NoError(t, err)
+	defer rows.Close()
+	var res []map[string]any
+	for rows.Next() {
+		row := make(map[string]any)
+		require.NoError(t, rows.MapScan(row))
+		res = append(res, row)
+	}
+	require.NoError(t, rows.Err())
+	return res
+}
+
+type allowAllSecurity struct{}
+
+func (allowAllSecurity) CanAccessField(string) bool         { return true }
+func (allowAllSecurity) RowFilter() string                  { return "" }
+func (allowAllSecurity) QueryFilter() *runtimev1.Expression { return nil }
 
 func acquireTestDatabricks(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "databricks")

@@ -47,10 +47,19 @@ type Dialect interface {
 	GetCastExprForLike() string
 	SupportsRegexMatch() bool
 	GetRegexMatchFunction() (string, error)
-	RequiresArrayContainsForInOperator() bool
-	GetArrayContainsFunction() (string, error)
+	// ArrayContainsAnyExpression returns an expression that is true if the array arrExpr contains any of the comma-separated valuesExpr.
+	// ok is false if the dialect has no such expression, in which case the condition is evaluated against the unnested elements instead.
+	ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
+	// LateralUnnest returns the join clause that unnests expr. If tupleStyle is false the element is referenced by colName alone,
+	// and the dialect must implement ArrayAnyExpression since it cannot be referenced from a correlated subquery.
 	LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error)
+	// UnnestedColumn returns the expression for the array element exposed by LateralUnnest in tuple style.
+	UnnestedColumn(tableAlias, colName string) string
+	// ArrayAnyExpression returns fragments for a condition that is true if any element of arrExpr satisfies it.
+	// The condition on a single element is written between open and close and references the element as elem.
+	// ok is false if the dialect has no such expression, in which case a correlated EXISTS subquery over LateralUnnest is used where possible.
+	ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool)
 	UnnestSQLSuffix(tbl string) string
 	// AutoUnnest wraps an expression so the dialect unnests it automatically (used when LateralUnnest reports auto == true).
 	AutoUnnest(expr string) string
@@ -218,6 +227,14 @@ func (b *BaseDialect) LateralUnnest(expr, tableAlias, colName string) (tbl strin
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, b.escapeIdentifier(colName)), true, false, nil
 }
 
+func (b *BaseDialect) UnnestedColumn(tableAlias, colName string) string {
+	return b.EscapeMember(tableAlias, colName)
+}
+
+func (b *BaseDialect) ArrayAnyExpression(_, _ string) (open, elem, closing string, ok bool) {
+	return "", "", "", false
+}
+
 func (b *BaseDialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(", %s", tbl)
 }
@@ -226,12 +243,8 @@ func (b *BaseDialect) AutoUnnest(expr string) string {
 	return expr
 }
 
-func (b *BaseDialect) RequiresArrayContainsForInOperator() bool {
-	return false
-}
-
-func (b *BaseDialect) GetArrayContainsFunction() (string, error) {
-	return "", fmt.Errorf("array contains not supported for %s dialect", b.String())
+func (b *BaseDialect) ArrayContainsAnyExpression(_, _ string) (expr string, ok bool) {
+	return "", false
 }
 
 func (b *BaseDialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
