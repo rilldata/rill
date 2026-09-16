@@ -122,12 +122,14 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.Nil(t, org)
 
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{
-		Name:        "foo",
-		Description: "hello world",
+		Name:               "foo",
+		Description:        "hello world",
+		DefaultProvisioner: "provisioner-a",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
+	require.Equal(t, "provisioner-a", org.DefaultProvisioner)
 	require.Less(t, time.Since(org.CreatedOn), 10*time.Second)
 	require.Less(t, time.Since(org.UpdatedOn), 10*time.Second)
 
@@ -137,6 +139,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "bar", org.Name)
+	require.Equal(t, "", org.DefaultProvisioner)
 
 	orgs, err := db.FindOrganizations(ctx, "", 1000)
 	require.NoError(t, err)
@@ -147,14 +150,24 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
+	require.Equal(t, "provisioner-a", org.DefaultProvisioner)
 
 	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:        org.Name,
-		Description: "",
+		Name:               org.Name,
+		Description:        "",
+		DefaultProvisioner: "provisioner-b",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "", org.Description)
+	require.Equal(t, "provisioner-b", org.DefaultProvisioner)
+
+	// Check the default provisioner can be cleared
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name: org.Name,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "", org.DefaultProvisioner)
 
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)

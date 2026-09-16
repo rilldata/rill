@@ -30,6 +30,30 @@ func TestOrg(t *testing.T) {
 	require.Contains(t, res.Output, org1)
 	require.Contains(t, res.Output, desc1)
 
+	// Check the default project role can be set on its own.
+	// This flag used to not count towards the "at least one flag must be set" check.
+	res = u1.Run(t, "org", "edit", org1, "--default-project-role", "editor")
+	require.Equal(t, 0, res.ExitCode)
+
+	// Set the org's default provisioner. "static" is the provisioner configured by testadmin.
+	res = u1.Run(t, "org", "edit", org1, "--default-provisioner", "static")
+	require.Equal(t, 0, res.ExitCode)
+	res = u1.Run(t, "org", "show", org1)
+	require.Equal(t, 0, res.ExitCode)
+	require.Contains(t, res.Output, "Default Provisioner: static")
+
+	// Check an unknown provisioner is rejected
+	res = u1.Run(t, "org", "edit", org1, "--default-provisioner", "nonexistent")
+	require.Equal(t, 1, res.ExitCode)
+	require.Contains(t, res.Output, `provisioner "nonexistent" is not configured`)
+
+	// Check the default provisioner can be cleared
+	res = u1.Run(t, "org", "edit", org1, "--default-provisioner", "")
+	require.Equal(t, 0, res.ExitCode)
+	res = u1.Run(t, "org", "show", org1)
+	require.Equal(t, 0, res.ExitCode)
+	require.Contains(t, res.Output, "Default Provisioner: \n")
+
 	// Create another org
 	org2 := randomName()
 	res = u1.Run(t, "org", "create", org2)

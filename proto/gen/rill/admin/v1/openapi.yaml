@@ -1393,6 +1393,8 @@ components:
                     type: string
                 defaultProjectRoleId:
                     type: string
+                defaultProvisioner:
+                    type: string
                 description:
                     type: string
                 displayName:
@@ -2218,6 +2220,19 @@ components:
                     type: string
             type: object
         v1SudoUpdateOrganizationCustomDomainResponse:
+            properties:
+                organization:
+                    $ref: '#/components/schemas/v1Organization'
+            type: object
+        v1SudoUpdateOrganizationDefaultProvisionerRequest:
+            properties:
+                defaultProvisioner:
+                    description: Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoUpdateOrganizationDefaultProvisionerResponse:
             properties:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
@@ -3116,6 +3131,8 @@ paths:
                                 billingEmail:
                                     type: string
                                 defaultProjectRole:
+                                    type: string
+                                defaultProvisioner:
                                     type: string
                                 description:
                                     type: string
@@ -7569,6 +7586,32 @@ paths:
                 SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
                 It only updates the custom domain in the database, which is used to ensure correct redirects.
                 The DNS records and ingress TLS must be configured separately.
+    /v1/superuser/organization/default-provisioner:
+        patch:
+            operationId: AdminService_SudoUpdateOrganizationDefaultProvisioner
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoUpdateOrganizationDefaultProvisionerRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoUpdateOrganizationDefaultProvisionerResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+                It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
     /v1/superuser/organization/trial/extend:
         post:
             operationId: AdminService_SudoExtendTrial
