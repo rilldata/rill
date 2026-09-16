@@ -31,6 +31,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+  import CanvasFilterParamsSync from "@rilldata/web-common/features/canvas/CanvasFilterParamsSync.svelte";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
@@ -182,6 +183,10 @@
             isolated
             urlStateOverride={canvasStateOverride}
           >
+            <CanvasFilterParamsSync
+              {canvasName}
+              urlStateOverride={canvasStateOverride}
+            />
             <div class="readonly-filter-bar" onfocusin={blurFocusedDescendant}>
               <CanvasFilters {canvasName} maxWidth={820} readOnly />
             </div>
