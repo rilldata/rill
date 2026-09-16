@@ -506,6 +506,8 @@ paths:
                 type: string
               defaultProjectRole:
                 type: string
+              defaultProvisioner:
+                type: string
               billingEmail:
                 type: string
       x-visibility: public
@@ -4146,6 +4148,27 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
+  /v1/superuser/organization/default-provisioner:
+    patch:
+      summary: |-
+        SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+        It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+      operationId: AdminService_SudoUpdateOrganizationDefaultProvisioner
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationDefaultProvisionerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationDefaultProvisionerRequest'
   /v1/superuser/organization/trial/extend:
     post:
       summary: SudoExtendTrial extends the trial period for an organization
@@ -6250,6 +6273,8 @@ definitions:
         type: string
       defaultProjectRoleId:
         type: string
+      defaultProvisioner:
+        type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
       billingCustomerId:
@@ -7073,6 +7098,19 @@ definitions:
       customDomain:
         type: string
   v1SudoUpdateOrganizationCustomDomainResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+  v1SudoUpdateOrganizationDefaultProvisionerRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      defaultProvisioner:
+        type: string
+        description: Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+  v1SudoUpdateOrganizationDefaultProvisionerResponse:
     type: object
     properties:
       organization:

@@ -12,6 +12,16 @@ There are currently two supported provisioner implementations:
 ## Configuration
 
 The provisioners are configured using the environment variable `RILL_ADMIN_PROVISIONER_SET_JSON` with a named set of provisioners using a format like the following example. More provisioners of the same type can be configured, this is a useful for example to support deployments to different Kubernetes clusters. Furthermore the name of the default provisioner needs to be specified with `RILL_ADMIN_DEFAULT_PROVISIONER`, this provisioner will be used for all deployed projects where a provisioner is not explicitly chosen.
+
+### Choosing a provisioner for runtimes
+
+When provisioning a runtime, the provisioner is resolved in this order:
+1. The project's provisioner, if set (`rill project edit --provisioner`).
+2. The org's default provisioner, if set (`rill org edit --default-provisioner`, or `rill sudo org set-default-provisioner`).
+3. The global default provisioner (`RILL_ADMIN_DEFAULT_PROVISIONER`).
+
+Note that a provisioner resource's provisioner is immutable once provisioned, so changing the project-level or org-level provisioner only takes effect for runtimes provisioned afterwards. Existing deployments stay on their current provisioner.
+
 ```json
 {
   "static-example":

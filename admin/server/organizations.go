@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -180,6 +181,9 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	if req.DisplayName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.display_name", *req.DisplayName))
 	}
+	if req.DefaultProvisioner != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.default_provisioner", *req.DefaultProvisioner))
+	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
@@ -189,6 +193,13 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
+	}
+
+	if req.DefaultProvisioner != nil {
+		err := s.validateRuntimeProvisioner(*req.DefaultProvisioner)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	logoAssetID := org.LogoAssetID
@@ -252,6 +263,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		ThumbnailAssetID:                    thumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                defaultProjectRoleID,
+		DefaultProvisioner:                  valOrDefault(req.DefaultProvisioner, org.DefaultProvisioner),
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -1053,6 +1065,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		CustomDomain:                        org.CustomDomain,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
 		QuotaSlotsTotal:                     int(valOrDefault(req.SlotsTotal, int32(org.QuotaSlotsTotal))),
@@ -1104,6 +1117,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		CustomDomain:                        req.CustomDomain,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -1132,6 +1146,81 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 	return &adminv1.SudoUpdateOrganizationCustomDomainResponse{
 		Organization: s.organizationToDTO(org, true),
 	}, nil
+}
+
+func (s *Server) SudoUpdateOrganizationDefaultProvisioner(ctx context.Context, req *adminv1.SudoUpdateOrganizationDefaultProvisionerRequest) (*adminv1.SudoUpdateOrganizationDefaultProvisionerResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.default_provisioner", req.DefaultProvisioner),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage default provisioners")
+	}
+
+	err := s.validateRuntimeProvisioner(req.DefaultProvisioner)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
+		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
+		CustomDomain:                        org.CustomDomain,
+		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  req.DefaultProvisioner,
+		QuotaProjects:                       org.QuotaProjects,
+		QuotaDeployments:                    org.QuotaDeployments,
+		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
+		CreatedByUserID:                     org.CreatedByUserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoUpdateOrganizationDefaultProvisionerResponse{
+		Organization: s.organizationToDTO(org, true),
+	}, nil
+}
+
+// validateRuntimeProvisioner checks that the named provisioner is present in the provisioner set
+// and is able to provision runtimes. An empty name is valid and means the provisioner is not
+// pinned at this level, i.e. that provisioning should fall back to the next level of defaulting.
+func (s *Server) validateRuntimeProvisioner(name string) error {
+	if name == "" {
+		return nil
+	}
+
+	p, ok := s.admin.ProvisionerSet[name]
+	if !ok {
+		return status.Errorf(codes.InvalidArgument, "provisioner %q is not configured", name)
+	}
+
+	if !p.Supports(provisioner.ResourceTypeRuntime) {
+		return status.Errorf(codes.InvalidArgument, "provisioner %q does not support runtimes", name)
+	}
+
+	return nil
 }
 
 func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *adminv1.Organization {
@@ -1185,6 +1274,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 	}
 
 	if privileged {
+		res.DefaultProvisioner = o.DefaultProvisioner
 		res.BillingCustomerId = o.BillingCustomerID
 		res.PaymentCustomerId = o.PaymentCustomerID
 		res.BillingEmail = o.BillingEmail

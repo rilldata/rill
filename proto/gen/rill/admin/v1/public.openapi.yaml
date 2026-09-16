@@ -1393,6 +1393,8 @@ components:
                     type: string
                 defaultProjectRoleId:
                     type: string
+                defaultProvisioner:
+                    type: string
                 description:
                     type: string
                 displayName:
@@ -2222,6 +2224,19 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1SudoUpdateOrganizationDefaultProvisionerRequest:
+            properties:
+                defaultProvisioner:
+                    description: Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoUpdateOrganizationDefaultProvisionerResponse:
+            properties:
+                organization:
+                    $ref: '#/components/schemas/v1Organization'
+            type: object
         v1SudoUpdateOrganizationQuotasRequest:
             properties:
                 deployments:
@@ -2666,6 +2681,8 @@ paths:
                                 billingEmail:
                                     type: string
                                 defaultProjectRole:
+                                    type: string
+                                defaultProvisioner:
                                     type: string
                                 description:
                                     type: string
@@ -3960,6 +3977,7 @@ paths:
     /v1/superuser/organization/billing/customer_id: {}
     /v1/superuser/organization/billing/report-usage: {}
     /v1/superuser/organization/custom-domain: {}
+    /v1/superuser/organization/default-provisioner: {}
     /v1/superuser/organization/trial/extend: {}
     /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}

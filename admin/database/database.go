@@ -391,6 +391,7 @@ type Organization struct {
 	ThumbnailAssetID                    *string   `db:"thumbnail_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	DefaultProjectRoleID                *string   `db:"default_project_role_id"`
+	DefaultProvisioner                  string    `db:"default_provisioner"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
 	QuotaProjects                       int       `db:"quota_projects"`
@@ -419,6 +420,7 @@ type InsertOrganizationOptions struct {
 	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
+	DefaultProvisioner                  string
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -443,6 +445,7 @@ type UpdateOrganizationOptions struct {
 	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
+	DefaultProvisioner                  string
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int

@@ -782,6 +782,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   defaultProjectRole?: string;
 
   /**
+   * @generated from field: optional string default_provisioner = 10;
+   */
+  defaultProvisioner?: string;
+
+  /**
    * @generated from field: optional string billing_email = 4;
    */
   billingEmail?: string;
@@ -803,6 +808,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 10, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
@@ -6807,6 +6813,88 @@ export class SudoUpdateOrganizationCustomDomainResponse extends Message<SudoUpda
 
   static equals(a: SudoUpdateOrganizationCustomDomainResponse | PlainMessage<SudoUpdateOrganizationCustomDomainResponse> | undefined, b: SudoUpdateOrganizationCustomDomainResponse | PlainMessage<SudoUpdateOrganizationCustomDomainResponse> | undefined): boolean {
     return proto3.util.equals(SudoUpdateOrganizationCustomDomainResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerRequest
+ */
+export class SudoUpdateOrganizationDefaultProvisionerRequest extends Message<SudoUpdateOrganizationDefaultProvisionerRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+   *
+   * @generated from field: string default_provisioner = 2;
+   */
+  defaultProvisioner = "";
+
+  constructor(data?: PartialMessage<SudoUpdateOrganizationDefaultProvisionerRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateOrganizationDefaultProvisionerRequest | PlainMessage<SudoUpdateOrganizationDefaultProvisionerRequest> | undefined, b: SudoUpdateOrganizationDefaultProvisionerRequest | PlainMessage<SudoUpdateOrganizationDefaultProvisionerRequest> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateOrganizationDefaultProvisionerRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerResponse
+ */
+export class SudoUpdateOrganizationDefaultProvisionerResponse extends Message<SudoUpdateOrganizationDefaultProvisionerResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Organization organization = 1;
+   */
+  organization?: Organization;
+
+  constructor(data?: PartialMessage<SudoUpdateOrganizationDefaultProvisionerResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "message", T: Organization },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateOrganizationDefaultProvisionerResponse | PlainMessage<SudoUpdateOrganizationDefaultProvisionerResponse> | undefined, b: SudoUpdateOrganizationDefaultProvisionerResponse | PlainMessage<SudoUpdateOrganizationDefaultProvisionerResponse> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateOrganizationDefaultProvisionerResponse, a, b);
   }
 }
 
@@ -16649,6 +16737,11 @@ export class Organization extends Message<Organization> {
   defaultProjectRoleId = "";
 
   /**
+   * @generated from field: string default_provisioner = 19;
+   */
+  defaultProvisioner = "";
+
+  /**
    * @generated from field: rill.admin.v1.OrganizationQuotas quotas = 4;
    */
   quotas?: OrganizationQuotas;
@@ -16706,6 +16799,7 @@ export class Organization extends Message<Organization> {
     { no: 17, name: "thumbnail_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "default_project_role_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

@@ -1030,6 +1030,7 @@ export interface V1Organization {
   thumbnailUrl?: string;
   customDomain?: string;
   defaultProjectRoleId?: string;
+  defaultProvisioner?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -1601,6 +1602,16 @@ export interface V1SudoUpdateOrganizationCustomDomainResponse {
   organization?: V1Organization;
 }
 
+export interface V1SudoUpdateOrganizationDefaultProvisionerRequest {
+  org?: string;
+  /** Name of the provisioner to use by default. Empty unsets the org's default provisioner. */
+  defaultProvisioner?: string;
+}
+
+export interface V1SudoUpdateOrganizationDefaultProvisionerResponse {
+  organization?: V1Organization;
+}
+
 export interface V1SudoUpdateOrganizationQuotasRequest {
   org?: string;
   projects?: number;
@@ -1900,6 +1911,7 @@ export type AdminServiceUpdateOrganizationBody = {
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
+  defaultProvisioner?: string;
   billingEmail?: string;
 };
 

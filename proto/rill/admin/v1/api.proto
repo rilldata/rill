@@ -946,6 +946,15 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+  // It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+  rpc SudoUpdateOrganizationDefaultProvisioner(SudoUpdateOrganizationDefaultProvisionerRequest) returns (SudoUpdateOrganizationDefaultProvisionerResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/default-provisioner",
+      body: "*"
+    };
+  }
+
 
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
@@ -1454,6 +1463,7 @@ message UpdateOrganizationRequest {
   optional string favicon_asset_id = 7;
   optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
+  optional string default_provisioner = 10;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
@@ -2255,6 +2265,16 @@ message SudoUpdateOrganizationCustomDomainRequest {
 }
 
 message SudoUpdateOrganizationCustomDomainResponse {
+  Organization organization = 1;
+}
+
+message SudoUpdateOrganizationDefaultProvisionerRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  // Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+  string default_provisioner = 2;
+}
+
+message SudoUpdateOrganizationDefaultProvisionerResponse {
   Organization organization = 1;
 }
 
@@ -3463,6 +3483,7 @@ message Organization {
   string thumbnail_url = 17;
   string custom_domain = 10;
   string default_project_role_id = 16;
+  string default_provisioner = 19;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
