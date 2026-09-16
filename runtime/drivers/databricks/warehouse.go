@@ -53,16 +53,14 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	// effectiveDSN auto-detects Lakehouse//RT and selects the SEA backend if needed,
-	// shared with the OLAP path so ingest works without configuration. On a
-	// non-definitive result, defer like getDB (surface the probe error / retry) rather
-	// than ingest over a possibly-wrong backend.
-	dsn, definitive, probeErr := c.effectiveDSN(ctx)
-	if !definitive {
-		if probeErr != nil {
-			return nil, probeErr
-		}
-		return nil, errors.New("databricks: could not determine warehouse protocol")
+	err = c.dbMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	dsn, err := c.backendDSN(ctx)
+	c.dbMu.Release(1)
+	if err != nil {
+		return nil, err
 	}
 	db, err := sql.Open("databricks", dsn)
 	if err != nil {
@@ -102,14 +100,12 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	// implement them and returns ErrNotSupportedByKernel, so fall back to
 	// GetArrowBatches via kernelIPCStreams; the parquet path is identical for both.
 	dr := rows.(dbsqlrows.Rows)
-	selfDescribing := false // whether each stream carries its own schema (kernel adapter)
 	ipcStreams, err := dr.GetArrowIPCStreams(ctx)
 	if errors.Is(err, dbsqlerr.ErrNotSupportedByKernel) {
 		var batches dbsqlrows.ArrowBatchIterator
 		batches, err = dr.GetArrowBatches(ctx)
 		if err == nil {
 			ipcStreams = &kernelIPCStreams{batches: batches}
-			selfDescribing = true
 		}
 	}
 	if err != nil {
@@ -131,13 +127,12 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 	}
 
 	return &fileIterator{
-		db:             db,
-		conn:           conn,
-		rows:           rows,
-		ipcStreams:     ipcStreams,
-		selfDescribing: selfDescribing,
-		logger:         c.logger,
-		tempDir:        tempDir,
+		db:         db,
+		conn:       conn,
+		rows:       rows,
+		ipcStreams: ipcStreams,
+		logger:     c.logger,
+		tempDir:    tempDir,
 	}, nil
 }
 
@@ -146,12 +141,8 @@ type fileIterator struct {
 	conn       *sql.Conn
 	rows       sqld.Rows
 	ipcStreams dbsqlrows.ArrowIPCStreamIterator
-	// selfDescribing is true when each stream carries its own schema message (the
-	// kernel adapter). For native Thrift streams it's false, and subsequent streams
-	// are read with ipc.WithSchema to validate cross-stream schema consistency.
-	selfDescribing bool
-	logger         *zap.Logger
-	tempDir        string
+	logger     *zap.Logger
+	tempDir    string
 
 	totalRecords int64
 	downloaded   bool
@@ -317,14 +308,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 			return nil, err
 		}
 
-		// Native (Thrift) subsequent streams are validated against the first stream's
-		// schema; the kernel adapter's streams are self-describing, so skip WithSchema
-		// there (each carries its own schema message).
-		var opts []ipc.Option
-		if !f.selfDescribing {
-			opts = append(opts, ipc.WithSchema(schema))
-		}
-		rdr, err := ipc.NewReader(stream, opts...)
+		rdr, err := ipc.NewReader(stream, ipc.WithSchema(schema))
 		if err != nil {
 			return nil, err
 		}

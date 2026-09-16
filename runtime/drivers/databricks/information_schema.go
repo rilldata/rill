@@ -155,7 +155,10 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name 
 		fmt.Sprintf("SELECT table_type FROM %sinformation_schema.tables WHERE table_schema = ? AND table_name = ?", prefix),
 		databaseSchema, name,
 	).Scan(&tableType)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, drivers.ErrNotFound
+	}
+	if err != nil {
 		return nil, err
 	}
 
